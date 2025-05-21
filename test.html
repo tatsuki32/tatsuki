@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<!-- Application Structure Plan: 
+  - The SPA is organized into thematic sections for intuitive exploration: Overview, The Problem (Current State & Impacts, Why We're Stuck), The Solution (Success Stories, Concrete Measures, Support Tools), and The Future (Digital Wellbeing).
+  - A fixed top navigation bar allows smooth scrolling to each section.
+  - Each major section begins with an introductory paragraph explaining its purpose and content.
+  - "The Problem" section will use interactive charts (Chart.js) to visualize statistics and organized lists for impacts.
+  - "The Solution" section will present actionable steps, possibly as interactive checklists, and a filterable list of support tools based on Table 3.
+  - This structure was chosen to logically group the report's information, making it easier for users to find topics of interest and encouraging interactive exploration rather than passive reading. It aims to guide the user from understanding the problem to finding solutions.
+-->
+<!-- Visualization & Content Choices:
+  - Current State of Dependency (Report Table 1):
+    - Info: Smartphone necessity, dependency self-awareness, overall net dependency, youth dependency rates, dependency genres.
+    - Goal: Visually convey the prevalence and seriousness of dependency.
+    - Viz/Presentation: Bar charts (Chart.js) for percentages of each item, donut charts for breakdowns (e.g., self-awareness). Interactive HTML table for detailed data.
+    - Interaction: Hover over chart elements to display detailed figures. Table sortable by columns.
+    - Justification: Graphing numbers aids intuitive understanding and facilitates comparison.
+    - Library/Method: Chart.js, HTML/Tailwind.
+  - Negative Impacts (Report Table 2):
+    - Info: Wasted time, mental effects, physical effects, impact on relationships.
+    - Goal: Comprehensively and clearly present the wide range of negative effects.
+    - Viz/Presentation: Accordion UI for each category. Each item with a Unicode icon and short description. Key figures (e.g., lifetime wasted) displayed prominently.
+    - Interaction: Accordion open/close.
+    - Justification: Organizes information, allowing users to selectively view details. Icons enhance visibility.
+    - Library/Method: HTML/Tailwind, JavaScript (for accordion).
+  - Support Tools (Report Table 3):
+    - Info: App name, features, characteristics, OS, price.
+    - Goal: Help users find suitable support tools.
+    - Viz/Presentation: Card-based layout. Each card includes app info and a Unicode icon.
+    - Interaction: Filtering by OS and price.
+    - Justification: Organizes many options and allows users to narrow them down based on their needs.
+    - Library/Method: HTML/Tailwind, JavaScript (for filtering).
+  - Actionable Steps:
+    - Info: Time limits, environmental setup, alternative activities.
+    - Goal: Encourage practical actions.
+    - Viz/Presentation: Interactive checklist.
+    - Interaction: Checkbox on/off (state not saved, for interactivity).
+    - Justification: Active user engagement increases awareness of measures.
+    - Library/Method: HTML/Tailwind, JavaScript.
+-->
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>スマホ・SNS依存対策 SPA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap');
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: #FFFAF0; /* FloralWhite - Warm Neutral */
+            color: #36454F; /* Charcoal - Dark text for readability */
+        }
+        .nav-active {
+            color: #FF8C00; /* DarkOrange - Accent for active nav */
+            font-weight: 600;
+        }
+        .section-title {
+            color: #2E8B57; /* SeaGreen - Complimentary color for titles */
+        }
+        .card {
+            background-color: #F0FFF0; /* Honeydew - Light green for cards */
+            border-left: 5px solid #3CB371; /* MediumSeaGreen - Accent border */
+        }
+        .button-primary {
+            background-color: #FF7F50; /* Coral - Accent for buttons */
+            color: white;
+        }
+        .button-primary:hover {
+            background-color: #FF6347; /* Tomato - Darker accent on hover */
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        .accordion-content {
+            display: none;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        .accordion-button.active + .accordion-content {
+            display: block;
+        }
+        .tab-button.active {
+            border-bottom-color: #FF7F50; /* Coral */
+            color: #FF7F50;
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <header class="bg-white shadow-md sticky top-0 z-50">
+        <nav class="container mx-auto px-6 py-3">
+            <div class="flex items-center justify-between">
+                <div class="text-xl font-semibold text-gray-700">📱 デジタルウェルビーイングガイド</div>
+                <div class="hidden md:flex space-x-4">
+                    <a href="#overview" class="nav-link text-gray-600 hover:text-orange-500">概要</a>
+                    <a href="#problem" class="nav-link text-gray-600 hover:text-orange-500">問題の深掘り</a>
+                    <a href="#solution" class="nav-link text-gray-600 hover:text-orange-500">解決への道</a>
+                    <a href="#tools" class="nav-link text-gray-600 hover:text-orange-500">支援ツール</a>
+                    <a href="#future" class="nav-link text-gray-600 hover:text-orange-500">未来へ</a>
+                </div>
+                <div class="md:hidden">
+                    <button id="mobile-menu-button" class="text-gray-600 focus:outline-none">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+                    </button>
+                </div>
+            </div>
+            <div id="mobile-menu" class="hidden md:hidden mt-2 space-y-2">
+                <a href="#overview" class="block nav-link text-gray-600 hover:text-orange-500">概要</a>
+                <a href="#problem" class="block nav-link text-gray-600 hover:text-orange-500">問題の深掘り</a>
+                <a href="#solution" class="block nav-link text-gray-600 hover:text-orange-500">解決への道</a>
+                <a href="#tools" class="block nav-link text-gray-600 hover:text-orange-500">支援ツール</a>
+                <a href="#future" class="block nav-link text-gray-600 hover:text-orange-500">未来へ</a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto px-6 py-8">
+
+        <section id="overview" class="mb-12 scroll-mt-20">
+            <h2 class="text-3xl font-bold section-title mb-6 text-center">はじめに：デジタル社会の光と影</h2>
+            <p class="text-lg text-gray-700 leading-relaxed mb-4">
+                現代社会において、スマートフォンやソーシャルメディアは私たちの生活に不可欠なツールですが、その過度な利用は深刻な問題を引き起こしています。「1日に10時間もスマホを見て人生を無駄にしているのでは？」「なぜ依存から抜け出せないのか？」といった悩みは、多くの人が抱える現代的な課題です。このアプリケーションは、そのような悩みに科学的根拠に基づいた洞察を提供し、依存の実態、弊害、そして克服のための具体的な対策と成功事例を分かりやすく解説します。あなたのデジタルライフを見つめ直し、より充実した毎日を送るための一助となれば幸いです。
+            </p>
+        </section>
+
+        <section id="problem" class="mb-12 scroll-mt-20">
+            <h2 class="text-3xl font-bold section-title mb-8 text-center">問題の深掘り：依存の実態とメカニズム</h2>
+            <p class="text-lg text-gray-700 leading-relaxed mb-6 text-center">
+                スマートフォンやSNSへの依存は、私たちの時間、心身の健康、人間関係にどのような影響を与えているのでしょうか？そして、なぜ私たちはこれらのデジタルツールから離れられないのでしょうか？このセクションでは、データや研究に基づいて依存の現状を明らかにし、その背後にある心理的・技術的なメカニズムを掘り下げます。
+            </p>
+
+            <div class="mb-10 p-6 bg-white rounded-lg shadow-lg">
+                <h3 class="text-2xl font-semibold text-gray-800 mb-4">📊 依存の現状：データで見る日本の実態</h3>
+                <p class="text-gray-600 mb-4">日本のスマートフォン利用者の多くがその必要性を感じている一方で、依存を自覚している人は一部に留まります。しかし、調査データはより広範な依存傾向を示唆しています。特に若年層のリスクは高く、注意が必要です。</p>
+                <div class="grid md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <h4 class="text-xl font-medium text-gray-700 mb-2 text-center">スマホ必要度と依存自覚</h4>
+                        <div class="chart-container h-64 md:h-80"><canvas id="dependencyAwarenessChart"></canvas></div>
+                        <p class="text-sm text-gray-500 mt-2 text-center">出典: レポート内 [3]</p>
+                    </div>
+                    <div>
+                        <h4 class="text-xl font-medium text-gray-700 mb-2 text-center">年代別ネット依存傾向 (10代)</h4>
+                        <div class="chart-container h-64 md:h-80"><canvas id="youthDependencyChart"></canvas></div>
+                        <p class="text-sm text-gray-500 mt-2 text-center">出典: レポート内 [4]</p>
+                    </div>
+                </div>
+                <div class="overflow-x-auto bg-gray-50 p-4 rounded-md">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">項目</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">データ/傾向</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">関連する示唆</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200 text-sm">
+                            <tr>
+                                <td class="px-4 py-2 whitespace-nowrap">スマホ必要度</td>
+                                <td class="px-4 py-2">81.1%が「困る」</td>
+                                <td class="px-4 py-2">生活必需品としての認識</td>
+                            </tr>
+                            <tr>
+                                <td class="px-4 py-2 whitespace-nowrap">スマホ依存自己自覚</td>
+                                <td class="px-4 py-2">合計62.5%が依存を自覚</td>
+                                <td class="px-4 py-2">実際の依存傾向との乖離の可能性</td>
+                            </tr>
+                             <tr>
+                                <td class="px-4 py-2 whitespace-nowrap">ネット依存傾向（全体 IAT）</td>
+                                <td class="px-4 py-2">78%以上に依存傾向</td>
+                                <td class="px-4 py-2">潜在的依存層が広い</td>
+                            </tr>
+                            <tr>
+                                <td class="px-4 py-2 whitespace-nowrap">FoMO（見逃すことへの恐怖）</td>
+                                <td class="px-4 py-2">SNS過剰利用につながる</td>
+                                <td class="px-4 py-2">依存の根源的駆動力</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <p class="text-xs text-gray-500 mt-2 text-right">出典: レポート内 表1より抜粋</p>
+                </div>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="p-6 bg-white rounded-lg shadow-lg">
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-4">💔 心身への深刻な悪影響</h3>
+                    <p class="text-gray-600 mb-4">スマホの使い過ぎは、時間の浪費だけでなく、私たちの心と体に様々な悪影響を及ぼします。睡眠不足、集中力の低下、ストレス増加、さらには「脳疲労」や「スマホ認知症」のリスクも指摘されています。</p>
+                    <ul class="space-y-3 text-gray-700">
+                        <li class="flex items-start"><span class="text-xl mr-2">⏳</span><div><strong>時間の浪費:</strong> 生涯で約9年分もの時間を失う可能性。学習や自己成長の機会損失。</div></li>
+                        <li class="flex items-start"><span class="text-xl mr-2">🧠</span><div><strong>精神的影響:</strong> ストレス増加、自己肯定感低下、うつ、孤独感、FoMO。脳疲労による記憶力・判断力低下。</div></li>
+                        <li class="flex items-start"><span class="text-xl mr-2">💪</span><div><strong>身体的影響:</strong> 睡眠の質低下、集中力低下、姿勢悪化（ストレートネック）、視力低下、運動不足。</div></li>
+                    </ul>
+                     <p class="text-sm text-gray-500 mt-4">詳細はレポート第1.2節をご参照ください。</p>
+                </div>
+
+                <div class="p-6 bg-white rounded-lg shadow-lg">
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-4">🔗 なぜ抜け出せないのか？</h3>
+                     <p class="text-gray-600 mb-4">「いいね！」による脳の報酬システム、ユーザーを惹きつけるアルゴリズム、そして「見逃すことへの恐怖（FoMO）」や社会的比較といった心理的要因が、私たちをスマホやSNSに縛り付けています。</p>
+                    <ul class="space-y-3 text-gray-700">
+                        <li class="flex items-start"><span class="text-xl mr-2">🎯</span><div><strong>脳の報酬システム:</strong> 「いいね！」や通知によるドーパミン放出が快感を生み、依存を強化。</div></li>
+                        <li class="flex items-start"><span class="text-xl mr-2">⚙️</span><div><strong>アルゴリズムの設計:</strong> ユーザーの関心に合わせたコンテンツ表示で、長時間利用を促す。</div></li>
+                        <li class="flex items-start"><span class="text-xl mr-2">😥</span><div><strong>心理的要因:</strong> FoMO、社会的比較による自己肯定感の低下、承認欲求が依存を深める。</div></li>
+                         <li class="flex items-start"><span class="text-xl mr-2">🏢</span><div><strong>仕事上の必要性:</strong> 「常時接続」の期待が、プライベートとの境界を曖昧にし、心理的負担を増加。</div></li>
+                    </ul>
+                    <p class="text-sm text-gray-500 mt-4">詳細はレポート第2章をご参照ください。</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="solution" class="mb-12 scroll-mt-20">
+            <h2 class="text-3xl font-bold section-title mb-8 text-center">解決への道：対策と成功談</h2>
+            <p class="text-lg text-gray-700 leading-relaxed mb-6 text-center">
+                依存からの脱却は不可能ではありません。実際に多くの人が、意識的な取り組みを通じて、スマートフォンやSNSとの健全な関係を再構築しています。このセクションでは、依存を克服した人々の体験談から具体的なステップを学び、今日から実践できる個人レベルの対策や、仕事とスマホ利用を両立させるためのヒントを探ります。
+            </p>
+            
+            <div class="mb-10 p-6 bg-white rounded-lg shadow-lg">
+                <h3 class="text-2xl font-semibold text-gray-800 mb-4">🌟 成功事例から学ぶ</h3>
+                <p class="text-gray-600 mb-4">1日に何時間もスマホに費やしていた人が利用時間を大幅に削減できたケースや、SNS断ちで心の平穏を取り戻した体験談など、具体的な成功例は私たちに勇気とヒントを与えてくれます。共通するのは、明確な目的意識、環境の工夫、そして代替行動の見つけることの重要性です。</p>
+                <div class="space-y-4">
+                    <div class="card p-4 rounded-md">
+                        <h4 class="font-semibold text-lg text-emerald-700">ケース1：大幅な時間削減</h4>
+                        <p class="text-gray-600 text-sm">「時間がない」悩みからスマホ依存に気づき、アプリ厳選や物理的距離を置くことで、1日平均7時間超から2時間へ削減。モチベーション維持のために「スマホをやめて何をしたいか」を明確化。（レポート第3.1節より）</p>
+                    </div>
+                    <div class="card p-4 rounded-md">
+                        <h4 class="font-semibold text-lg text-emerald-700">ケース2：SNSデトックスの効果</h4>
+                        <p class="text-gray-600 text-sm">30日間の主要SNS完全遮断実験。予想以上の安心感と読書量の増加を体験。特定の時間帯（午前中など）の遮断で集中力と生産性が向上。（レポート第3.1節より）</p>
+                    </div>
+                     <div class="card p-4 rounded-md">
+                        <h4 class="font-semibold text-lg text-emerald-700">ケース3：ゲーム依存からの回復（家族のサポート）</h4>
+                        <p class="text-gray-600 text-sm">中学生のゲーム依存に対し、親が直接的な注意を避け「聞く側」に徹することで、コミュニケーションが改善し登校可能に。「ゲームとの共存」を目指すアプローチと周囲の理解が鍵。（レポート第3.1節より）</p>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <h3 class="text-2xl font-semibold text-gray-800 mb-6 text-center">🛠️ 今日からできる具体的な対策</h3>
+                <div class="flex flex-wrap justify-center border-b border-gray-300 mb-6">
+                    <button class="tab-button py-2 px-4 text-gray-600 hover:text-orange-500 font-medium border-b-2 border-transparent active" data-tab="personal">個人でできる対策</button>
+                    <button class="tab-button py-2 px-4 text-gray-600 hover:text-orange-500 font-medium border-b-2 border-transparent" data-tab="work">仕事との両立</button>
+                </div>
+
+                <div id="personal" class="tab-content">
+                    <p class="text-gray-600 mb-6">デジタルツールと健全な関係を築くために、今日から始められる実践的なステップです。小さなことから意識して習慣を変えていきましょう。</p>
+                    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div class="bg-gray-50 p-4 rounded-lg shadow">
+                            <h4 class="font-semibold text-md text-emerald-700 mb-2">1. 利用時間の制限と管理</h4>
+                            <ul class="list-disc list-inside text-sm space-y-1 text-gray-700">
+                                <li>スクリーンタイム機能で利用状況を把握・制限設定</li>
+                                <li>アプリブロッカーやタイマーアプリ導入</li>
+                                <li>通知オフ、おやすみモード活用</li>
+                            </ul>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-lg shadow">
+                            <h4 class="font-semibold text-md text-emerald-700 mb-2">2. 環境の整備と習慣の変更</h4>
+                            <ul class="list-disc list-inside text-sm space-y-1 text-gray-700">
+                                <li>娯楽系アプリ削除、別デバイスへ移動</li>
+                                <li>パスワード記憶削除でログインを面倒に</li>
+                                <li>スマホを物理的に遠ざける</li>
+                                <li>「ながらスマホ」をやめる</li>
+                                <li>定期的なデジタルデトックスデー設定</li>
+                                <li>アナログツール（目覚まし時計、紙の手帳）活用</li>
+                            </ul>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-lg shadow">
+                            <h4 class="font-semibold text-md text-emerald-700 mb-2">3. 代替行動と自己成長</h4>
+                            <ul class="list-disc list-inside text-sm space-y-1 text-gray-700">
+                                <li>非デジタルな趣味（読書、運動、アート）</li>
+                                <li>現実の人間関係を強化（対面での交流）</li>
+                                <li>マインドフルネス実践（瞑想、ジャーナリング）</li>
+                                <li>「やりたいことリスト」作成と実行</li>
+                            </ul>
+                        </div>
+                    </div>
+                     <p class="text-sm text-gray-500 mt-6">詳細はレポート第4.1節をご参照ください。</p>
+                </div>
+
+                <div id="work" class="tab-content hidden">
+                    <p class="text-gray-600 mb-6">「仕事だから仕方ない」と考えがちですが、仕事の効率を維持しつつ、スマホとの健全な境界線を引くことは可能です。意識的な「切り離し」が鍵となります。</p>
+                     <div class="grid md:grid-cols-2 gap-6">
+                        <div class="bg-gray-50 p-4 rounded-lg shadow">
+                            <h4 class="font-semibold text-md text-emerald-700 mb-2">1. 仕事とプライベートの心理的ディタッチメント</h4>
+                            <ul class="list-disc list-inside text-sm space-y-1 text-gray-700">
+                                <li>明確なルール設定（例：帰宅後は仕事メールを見ない）</li>
+                                <li>気分転換（寄り道、軽い運動、趣味）</li>
+                                <li>感覚的な切り替え（香りの使い分け、入浴）</li>
+                            </ul>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-lg shadow">
+                            <h4 class="font-semibold text-md text-emerald-700 mb-2">2. 業務時間外の連絡対応と組織文化</h4>
+                            <ul class="list-disc list-inside text-sm space-y-1 text-gray-700">
+                                <li>組織による境界線設定の推進（時間外連絡の抑制）</li>
+                                <li>仕事のストレス管理策の検討</li>
+                                <li>待機勤務の負担は上司に相談</li>
+                            </ul>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-lg shadow md:col-span-2">
+                            <h4 class="font-semibold text-md text-emerald-700 mb-2">3. 職場でのデジタルウェルビーイング促進</h4>
+                            <ul class="list-disc list-inside text-sm space-y-1 text-gray-700">
+                                <li>SMARTな目標設定で効率的な時間管理</li>
+                                <li>ポモドーロテクニック活用（作業25分＋休憩5分）</li>
+                                <li>PCでできる作業はスマホを使わない</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <p class="text-sm text-gray-500 mt-6">詳細はレポート第4.2節をご参照ください。</p>
+                </div>
+            </div>
+        </section>
+        
+        <section id="tools" class="mb-12 scroll-mt-20">
+            <h2 class="text-3xl font-bold section-title mb-8 text-center">支援ツール：デジタルデトックスを助けるアプリ</h2>
+            <p class="text-lg text-gray-700 leading-relaxed mb-6 text-center">
+                デジタルデトックスやスマホ利用時間の管理をサポートしてくれるアプリはたくさんあります。ここではレポートで紹介されているツールの一部を、OSや価格帯で絞り込める形でご紹介します。自分に合ったツールを見つけて、より効果的に対策を進めましょう。
+            </p>
+            <div class="mb-6 flex flex-col sm:flex-row justify-center items-center space-y-4 sm:space-y-0 sm:space-x-4">
+                <div>
+                    <label for="osFilter" class="mr-2 text-gray-700">OSで絞り込み:</label>
+                    <select id="osFilter" class="p-2 border border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500">
+                        <option value="all">すべて</option>
+                        <option value="Android">Android</option>
+                        <option value="iOS">iOS</option>
+                        <option value="Both">Android & iOS</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="priceFilter" class="mr-2 text-gray-700">価格で絞り込み:</label>
+                    <select id="priceFilter" class="p-2 border border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500">
+                        <option value="all">すべて</option>
+                        <option value="free">無料</option>
+                        <option value="paid">有料</option>
+                        <option value="in-app">アプリ内課金あり</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="toolsContainer" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            </div>
+             <p class="text-sm text-gray-500 mt-6 text-center">上記はレポート表3掲載ツールの一部です。詳細はレポートをご参照ください。</p>
+        </section>
+
+        <section id="future" class="scroll-mt-20">
+            <h2 class="text-3xl font-bold section-title mb-6 text-center">未来へ：より良いデジタルライフのために</h2>
+            <p class="text-lg text-gray-700 leading-relaxed mb-4">
+                スマートフォンやソーシャルメディアは、私たちの生活を豊かにする強力なツールです。問題はその使い方にあります。依存から抜け出し、これらのテクノロジーと健全な関係を築くことで、私たちはその恩恵を最大限に享受しつつ、心身の健康と充実した人生を取り戻すことができます。このアプリケーションが、皆さんのデジタルウェルビーイング確立への一歩を踏み出すための羅針盤となることを心から願っています。意識的な選択と行動を通じて、よりバランスの取れた、自分らしいデジタルライフを創造していきましょう。
+            </p>
+        </section>
+    </main>
+
+    <footer class="bg-gray-800 text-white py-8 mt-12">
+        <div class="container mx-auto px-6 text-center">
+            <p>&copy; 2025 デジタルウェルビーイングガイド. All rights reserved.</p>
+            <p class="text-sm mt-2">このアプリケーションは、提供されたレポートに基づいて作成された情報提供を目的とするものです。</p>
+        </div>
+    </footer>
+
+    <script>
+        // Mobile menu toggle
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const mobileMenu = document.getElementById('mobile-menu');
+        mobileMenuButton.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+
+        // Smooth scroll and active nav link
+        const navLinks = document.querySelectorAll('.nav-link');
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetId = link.getAttribute('href');
+                const targetElement = document.querySelector(targetId);
+                if (targetElement) {
+                    // Account for sticky header height
+                    const headerOffset = document.querySelector('header').offsetHeight;
+                    const elementPosition = targetElement.getBoundingClientRect().top;
+                    const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+                    
+                    window.scrollTo({
+                        top: offsetPosition,
+                        behavior: 'smooth'
+                    });
+                }
+                // Close mobile menu on link click
+                if (!mobileMenu.classList.contains('hidden')) {
+                    mobileMenu.classList.add('hidden');
+                }
+            });
+        });
+        
+        window.addEventListener('scroll', () => {
+            let current = '';
+            const sections = document.querySelectorAll('section');
+            const headerHeight = document.querySelector('header').offsetHeight;
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop - headerHeight - 50; // Adjusted for better accuracy
+                if (pageYOffset >= sectionTop) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.classList.remove('nav-active');
+                if (link.getAttribute('href').substring(1) === current) {
+                    link.classList.add('nav-active');
+                }
+            });
+        });
+
+
+        // Chart.js data and initialization
+        const dependencyAwarenessData = {
+            labels: ['スマホがないと困る (計)', 'スマホ依存をかなり自覚', 'スマホ依存をやや自覚'],
+            datasets: [{
+                label: '割合 (%)',
+                data: [81.1, 23.4, 39.1],
+                backgroundColor: ['#FFC107', '#4CAF50', '#2196F3'],
+                borderColor: ['#FFC107', '#4CAF50', '#2196F3'],
+                borderWidth: 1
+            }]
+        };
+        new Chart(document.getElementById('dependencyAwarenessChart'), {
+            type: 'bar',
+            data: dependencyAwarenessData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { y: { beginAtZero: true, max: 100 } },
+                plugins: { legend: { display: false }, title: { display: false } }
+            }
+        });
+
+        const youthDependencyData = {
+            labels: ['2016年', '2017年'],
+            datasets: [{
+                label: '10代ネット依存率 (%)',
+                data: [8.6, 20.1],
+                backgroundColor: ['#FF9800', '#F44336'],
+                borderColor: ['#FF9800', '#F44336'],
+                borderWidth: 1,
+                fill: false,
+                tension: 0.1
+            }]
+        };
+        new Chart(document.getElementById('youthDependencyChart'), {
+            type: 'line',
+            data: youthDependencyData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { y: { beginAtZero: true, max: 25 } },
+                plugins: { legend: { display: true, position: 'bottom' }, title: { display: false } }
+            }
+        });
+        
+        // Accordion functionality
+        const accordionButtons = document.querySelectorAll('.accordion-button');
+        accordionButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const content = button.nextElementSibling;
+                button.classList.toggle('active');
+                if (content.style.maxHeight) {
+                    content.style.maxHeight = null;
+                } else {
+                    content.style.maxHeight = content.scrollHeight + "px";
+                }
+            });
+        });
+
+        // Tab functionality
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const tabId = button.dataset.tab;
+
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+
+                tabContents.forEach(content => {
+                    if (content.id === tabId) {
+                        content.classList.remove('hidden');
+                    } else {
+                        content.classList.add('hidden');
+                    }
+                });
+            });
+        });
+        
+        // Support Tools Data and Filtering
+        const toolsData = [
+            { name: "Android Digital Wellbeing", os: "Android", priceCategory: "free", priceText: "無料", features: "利用状況確認、アプリ制限、通知オフなどOS標準機能。" },
+            { name: "Forest", os: "Both", priceCategory: "paid", priceText: "650円 (アプリ内課金あり)", features: "スマホを触らない時間で木が成長。ゲーム感覚で継続。" },
+            { name: "スクリーンタイム(StayFree)", os: "Both", priceCategory: "free", priceText: "無料", features: "使用時間通知、アプリ/ウェブサイトブロック。" },
+            { name: "Flipd: focus & study timer", os: "Both", priceCategory: "in-app", priceText: "無料 (アプリ内課金あり)", features: "スマホ使用禁止タイマー、アプリ無効化。" },
+            { name: "AppBlock", os: "Both", priceCategory: "in-app", priceText: "無料 (アプリ内課金あり)", features: "アプリ利用制限、通知停止、スケジュール設定。" },
+            { name: "Cleverest", os: "Both", priceCategory: "free", priceText: "無料", features: "スマホ利用制限時間設定、アバター育成ゲーム。" },
+            { name: "BFT - Bear Focus Timer", os: "iOS", priceCategory: "paid", priceText: "300円", features: "ポモドーロテクニック。可愛いクマのキャラクター。" },
+            { name: "BlockSite", os: "Android", priceCategory: "in-app", priceText: "無料 (アプリ内課金あり)", features: "アプリ/ウェブサイトブロック、スケジュール設定。" },
+            { name: "UBhind", os: "Android", priceCategory: "in-app", priceText: "無料 (アプリ内課金あり)", features: "アプリ別統計、スマホ自動ロック。" },
+            { name: "スマホ依存症から脱却 Detox", os: "Android", priceCategory: "in-app", priceText: "無料 (アプリ内課金あり)", features: "タイマー設定によるスマホ強制ロック。" },
+            { name: "スマホをやめれば魚が育つ", os: "Both", priceCategory: "in-app", priceText: "無料 (アプリ内課金あり)", features: "スマホを触らない時間で魚を育成。" },
+            { name: "Collect (コレクト)", os: "Both", priceCategory: "free", priceText: "無料", features: "25分間のスマホ利用制限で宝物獲得。" },
+            { name: "Blackout", os: "Android", priceCategory: "in-app", priceText: "無料 (アプリ内課金あり)", features: "日時指定によるスマホ機能強制制限。" },
+            { name: "フォーカス・プラント", os: "Both", priceCategory: "in-app", priceText: "無料 (アプリ内課金あり)", features: "スマホを触らない時間で魔法の植物を育成。" }
+        ];
+
+        const toolsContainer = document.getElementById('toolsContainer');
+        const osFilter = document.getElementById('osFilter');
+        const priceFilter = document.getElementById('priceFilter');
+
+        function renderTools(filteredTools) {
+            toolsContainer.innerHTML = '';
+            if (filteredTools.length === 0) {
+                toolsContainer.innerHTML = '<p class="text-gray-500 col-span-full text-center">該当するツールはありません。</p>';
+                return;
+            }
+            filteredTools.forEach(tool => {
+                const card = `
+                    <div class="card p-5 rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300">
+                        <h4 class="font-semibold text-lg text-emerald-800 mb-2">${tool.name}</h4>
+                        <p class="text-sm text-gray-600 mb-1"><span class="font-medium">OS:</span> ${tool.os === 'Both' ? 'Android, iOS' : tool.os}</p>
+                        <p class="text-sm text-gray-600 mb-3"><span class="font-medium">価格:</span> ${tool.priceText}</p>
+                        <p class="text-sm text-gray-700 leading-relaxed">${tool.features}</p>
+                    </div>
+                `;
+                toolsContainer.innerHTML += card;
+            });
+        }
+
+        function filterTools() {
+            const selectedOs = osFilter.value;
+            const selectedPrice = priceFilter.value;
+
+            const filtered = toolsData.filter(tool => {
+                const osMatch = selectedOs === 'all' || tool.os === selectedOs || (selectedOs === 'Both' && tool.os === 'Both');
+                const priceMatch = selectedPrice === 'all' || tool.priceCategory === selectedPrice;
+                return osMatch && priceMatch;
+            });
+            renderTools(filtered);
+        }
+
+        osFilter.addEventListener('change', filterTools);
+        priceFilter.addEventListener('change', filterTools);
+
+        renderTools(toolsData); // Initial render
+
+    </script>
+</body>
+</html>
