@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>空室の管理 | お宿 ひさ家</title>
+<style>
+  :root {
+    --bg: #f7f4ee; --surface: #fff; --ink: #2a2622; --muted: #6f675e; --line: #e4ddd1;
+    --accent: #2f4f4a; --accent-soft: #e5eeec; --warm: #a8552f; --closed: #efebe4;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1b1a18; --surface: #252320; --ink: #eee8df; --muted: #a69d92; --line: #3a3631;
+      --accent: #8fbfb5; --accent-soft: #2b3a37; --warm: #e09a76; --closed: #22201d;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: system-ui, "Hiragino Sans", sans-serif; line-height: 1.6; }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .sub { color: var(--muted); font-size: 14px; margin: 0 0 20px; }
+  .bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+  .bar h2 { font-size: 18px; margin: 0; }
+  button { font: inherit; cursor: pointer; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); padding: 8px 14px; }
+  button.primary { background: var(--accent); color: var(--surface); border-color: var(--accent); font-weight: 700; }
+  .cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .h { text-align: center; font-size: 12px; color: var(--muted); }
+  .c { aspect-ratio: 1 / 1; border-radius: 8px; border: 0; background: var(--closed); color: var(--muted);
+       display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 14px; padding: 0; }
+  .c.blank { background: transparent; cursor: default; }
+  .c.open { background: var(--accent-soft); color: var(--ink); font-weight: 700; }
+  .c.full { background: var(--closed); color: var(--warm); font-weight: 700; }
+  .c.sel { outline: 2px solid var(--accent); }
+  .c small { font-size: 10px; font-weight: 500; }
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin: 16px 0; }
+  .panel h3 { margin: 0 0 10px; font-size: 16px; }
+  .stepper { display: flex; align-items: center; gap: 12px; }
+  .stepper output { font-size: 28px; font-weight: 700; min-width: 3ch; text-align: center; }
+  .stepper button { width: 48px; height: 48px; font-size: 22px; padding: 0; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .note { color: var(--muted); font-size: 13px; }
+  ol.how { padding-left: 20px; font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>空室の管理</h1>
+  <p class="sub">日付を押して、その日の残り部屋数を変えます。終わったら「書き出す」を押してください。</p>
+
+  <div class="bar">
+    <button id="prev" aria-label="前の月">‹</button>
+    <h2 id="title"></h2>
+    <button id="next" aria-label="次の月">›</button>
+  </div>
+  <div class="cal" id="cal"></div>
+
+  <div class="panel" id="panel" hidden>
+    <h3 id="selTitle"></h3>
+    <div class="stepper">
+      <button id="minus" aria-label="1室減らす">−</button>
+      <output id="count"></output>
+      <button id="plus" aria-label="1室増やす">＋</button>
+      <span class="note" id="countNote"></span>
+    </div>
+    <div class="row">
+      <button id="setFull">満室にする</button>
+      <button id="setClosed">休館日にする</button>
+    </div>
+  </div>
+
+  <div class="row">
+    <button class="primary" id="export">data.js を書き出す</button>
+  </div>
+  <p class="note" id="changed"></p>
+
+  <div class="panel">
+    <h3>予約が入ったときの流れ</h3>
+    <ol class="how">
+      <li>予約のメールが届いたら、この画面でその日を押して「−」で1室減らす</li>
+      <li>じゃらん・楽天で予約が入ったときも、同じように減らす</li>
+      <li>「data.js を書き出す」で保存したファイルを、公開しているサイトの data.js と差し替える</li>
+    </ol>
+    <p class="note">この画面は宿の方だけが使うものです。インターネットには公開しないでください。</p>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script>
+(() => {
+  const D = window.HISAYA_DATA;
+  const WEEK = ["日", "月", "火", "水", "木", "金", "土"];
+  const MAX_ROOMS = 20;
+  const $ = (id) => document.getElementById(id);
+  const pad = (n) => String(n).padStart(2, "0");
+  const keyOf = (y, m, d) => `${y}-${pad(m)}-${pad(d)}`;
+
+  const now = new Date();
+  let y = now.getFullYear(), m = now.getMonth() + 1, sel = null, dirty = 0;
+
+  function render() {
+    $("title").textContent = `${y}年${m}月`;
+    const cal = $("cal");
+    cal.replaceChildren();
+    WEEK.forEach((w) => { const h = document.createElement("div"); h.className = "h"; h.textContent = w; cal.append(h); });
+    const first = new Date(y, m - 1, 1).getDay();
+    const last = new Date(y, m, 0).getDate();
+    for (let i = 0; i < first; i++) { const c = document.createElement("div"); c.className = "c blank"; cal.append(c); }
+    let openCount = 0;
+    for (let d = 1; d <= last; d++) {
+      const k = keyOf(y, m, d);
+      const n = D.openDays[k];
+      if (n > 0) openCount++;
+      const c = document.createElement("button");
+      c.className = "c" + (n > 0 ? " open" : n === 0 ? " full" : "") + (k === sel ? " sel" : "");
+      c.append(String(d));
+      const s = document.createElement("small");
+      s.textContent = n > 0 ? `残${n}` : n === 0 ? "満室" : "休";
+      c.append(s);
+      c.onclick = () => { sel = k; render(); };
+      cal.append(c);
+    }
+    $("title").textContent += `（営業 ${openCount} 日）`;
+    renderPanel();
+  }
+
+  function renderPanel() {
+    $("panel").hidden = !sel;
+    if (!sel) return;
+    const [, mm, dd] = sel.split("-").map(Number);
+    const n = D.openDays[sel];
+    $("selTitle").textContent = `${mm}月${dd}日`;
+    $("count").textContent = n === undefined ? "休" : n;
+    $("countNote").textContent = n === undefined ? "休館日（＋で営業日にする）" : n === 0 ? "満室" : "室 空いています";
+  }
+
+  function set(n) {
+    if (n === undefined) delete D.openDays[sel];
+    else D.openDays[sel] = Math.max(0, Math.min(MAX_ROOMS, n));
+    dirty++;
+    $("changed").textContent = `${dirty} か所変更しました。書き出すまで公開ページには反映されません。`;
+    render();
+  }
+
+  $("plus").onclick = () => set((D.openDays[sel] ?? -1) + 1);
+  $("minus").onclick = () => { const n = D.openDays[sel]; if (n !== undefined) set(n - 1); };
+  $("setFull").onclick = () => set(0);
+  $("setClosed").onclick = () => set(undefined);
+  $("prev").onclick = () => { m--; if (m < 1) { m = 12; y--; } sel = null; render(); };
+  $("next").onclick = () => { m++; if (m > 12) { m = 1; y++; } sel = null; render(); };
+
+  $("export").onclick = () => {
+    const sorted = {};
+    Object.keys(D.openDays).sort().forEach((k) => { sorted[k] = D.openDays[k]; });
+    D.openDays = sorted;
+    const text =
+      "// お宿 ひさ家 予約ページのデータ（admin.html で書き出し）\n" +
+      "// 空室（openDays）は admin.html で編集する。プラン内容・料金は宿への確認が必要。\n" +
+      "window.HISAYA_DATA = " + JSON.stringify(D, null, 2) + ";\n";
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([text], { type: "text/javascript" }));
+    a.download = "data.js";
+    a.click();
+    URL.revokeObjectURL(a.href);
+    dirty = 0;
+    $("changed").textContent = "書き出しました。ダウンロードした data.js を差し替えてください。";
+  };
+
+  render();
+})();
+</script>
+</body>
+</html>

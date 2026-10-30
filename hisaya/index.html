@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ご予約 | お宿 ひさ家</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Noto+Serif+JP:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f7f4ee;
+    --surface: #ffffff;
+    --ink: #2a2622;
+    --muted: #6f675e;
+    --line: #e4ddd1;
+    --accent: #2f4f4a;
+    --accent-soft: #e5eeec;
+    --warm: #a8552f;
+    --warm-soft: #f6e7df;
+    --closed: #efebe4;
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1b1a18;
+      --surface: #252320;
+      --ink: #eee8df;
+      --muted: #a69d92;
+      --line: #3a3631;
+      --accent: #8fbfb5;
+      --accent-soft: #2b3a37;
+      --warm: #e09a76;
+      --warm-soft: #3d2c24;
+      --closed: #22201d;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Noto Sans JP", system-ui, sans-serif;
+    line-height: 1.7;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 0 16px; }
+  h1, h2, h3 { font-family: "Noto Serif JP", serif; font-weight: 700; line-height: 1.4; }
+
+  header.hero { padding: 48px 0 28px; text-align: center; }
+  .hero .area { color: var(--muted); letter-spacing: .2em; font-size: 13px; margin: 0; }
+  .hero h1 { font-size: clamp(28px, 6vw, 40px); margin: 6px 0 10px; letter-spacing: .08em; }
+  .hero p.lead { color: var(--muted); margin: 0; font-size: 15px; }
+
+  .steps { display: flex; gap: 8px; justify-content: center; margin: 8px 0 24px; padding: 0; list-style: none; font-size: 13px; }
+  .steps li { padding: 4px 12px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); background: var(--surface); }
+  .steps li.on { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+
+  section.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; margin-bottom: 20px; }
+  section.card h2 { font-size: 20px; margin: 0 0 4px; }
+  .sub { color: var(--muted); font-size: 14px; margin: 0 0 16px; }
+
+  /* 営業日の一覧 */
+  .open-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; }
+  .day-chip {
+    border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; background: var(--surface);
+    text-align: left; cursor: pointer; font: inherit; color: inherit;
+  }
+  .day-chip:hover:not(:disabled) { border-color: var(--accent); }
+  .day-chip.selected { border-color: var(--accent); background: var(--accent-soft); outline: 2px solid var(--accent); outline-offset: -2px; }
+  .day-chip:disabled { cursor: default; opacity: .55; }
+  .day-chip .d { font-weight: 700; font-size: 16px; display: block; }
+  .day-chip .w { color: var(--muted); font-size: 12px; }
+  .rooms { display: inline-block; margin-top: 4px; font-size: 13px; font-weight: 700; color: var(--accent); }
+  .rooms.few { color: var(--warm); }
+  .rooms.full { color: var(--muted); font-weight: 500; }
+
+  .month-tabs { display: flex; gap: 8px; margin-bottom: 14px; overflow-x: auto; padding-bottom: 2px; }
+  .month-tabs button {
+    flex: none; border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+    padding: 6px 14px; border-radius: 999px; font: inherit; font-size: 14px; cursor: pointer;
+  }
+  .month-tabs button.on { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+
+  /* カレンダー */
+  details.cal-toggle { margin-top: 16px; }
+  details.cal-toggle summary { cursor: pointer; color: var(--accent); font-size: 14px; }
+  .cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 12px; }
+  .cal .h { text-align: center; font-size: 12px; color: var(--muted); padding: 4px 0; }
+  .cal .h.sun { color: var(--warm); }
+  .cal .c {
+    aspect-ratio: 1 / 1; border-radius: 8px; background: var(--closed); color: var(--muted);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 13px; border: 0; font: inherit;
+  }
+  .cal .c.blank { background: transparent; }
+  .cal .c.open { background: var(--accent-soft); color: var(--ink); cursor: pointer; font-weight: 700; }
+  .cal .c.open.selected { outline: 2px solid var(--accent); }
+  .cal .c.full { background: var(--closed); color: var(--muted); }
+  .cal .c small { font-size: 10px; font-weight: 500; }
+
+  /* プラン */
+  .plans { display: grid; gap: 12px; }
+  .plan {
+    border: 1px solid var(--line); border-radius: 12px; padding: 16px; cursor: pointer; background: var(--surface);
+    display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; text-align: left; font: inherit; color: inherit; width: 100%;
+  }
+  .plan:hover { border-color: var(--accent); }
+  .plan.selected { border-color: var(--accent); background: var(--accent-soft); }
+  .plan h3 { margin: 0; font-size: 17px; grid-column: 1 / -1; }
+  .plan .meta { color: var(--muted); font-size: 13px; }
+  .plan .desc { margin: 0; font-size: 14px; grid-column: 1 / -1; }
+  .plan .price { font-weight: 700; font-size: 18px; text-align: right; white-space: nowrap; }
+  .plan .price small { font-size: 12px; color: var(--muted); font-weight: 500; }
+  .tags { display: flex; gap: 6px; flex-wrap: wrap; grid-column: 1 / -1; }
+  .tag { font-size: 11px; padding: 1px 8px; border-radius: 999px; background: var(--warm-soft); color: var(--warm); }
+  .empty { color: var(--muted); font-size: 14px; padding: 12px 0; }
+
+  /* フォーム */
+  form { display: grid; gap: 14px; }
+  label { display: grid; gap: 4px; font-size: 14px; font-weight: 500; }
+  .req { color: var(--warm); font-size: 12px; margin-left: 4px; }
+  input, select, textarea {
+    font: inherit; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line);
+    background: var(--bg); color: var(--ink); width: 100%;
+  }
+  input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .consent { display: flex; gap: 8px; align-items: flex-start; font-weight: 400; }
+  .consent input { width: auto; margin-top: 5px; }
+  .summary { background: var(--bg); border-radius: 12px; padding: 14px 16px; font-size: 14px; }
+  .summary dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 16px; margin: 0; }
+  .summary dt { color: var(--muted); }
+  .summary dd { margin: 0; }
+  .total { font-size: 20px; font-weight: 700; }
+  button.primary {
+    background: var(--accent); color: var(--surface); border: 0; padding: 14px; border-radius: 12px;
+    font: inherit; font-weight: 700; font-size: 16px; cursor: pointer;
+  }
+  button.primary:disabled { opacity: .45; cursor: not-allowed; }
+  .note { color: var(--muted); font-size: 12px; }
+  .done { text-align: center; padding: 28px 8px; }
+  .done h2 { font-size: 22px; }
+  [hidden] { display: none !important; }
+
+  footer { padding: 24px 0 40px; color: var(--muted); font-size: 13px; text-align: center; }
+  .demo-banner { background: var(--warm-soft); color: var(--warm); font-size: 13px; text-align: center; padding: 6px 16px; }
+
+  @media (max-width: 520px) {
+    .row2 { grid-template-columns: 1fr; }
+    section.card { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+<div class="demo-banner" id="demoBanner" hidden>試作版です。空室・料金はサンプルで、送信しても予約は成立しません。</div>
+
+<header class="hero wrap">
+  <p class="area" id="innArea"></p>
+  <h1 id="innName"></h1>
+  <p class="lead">営業日が限られた小さな宿です。空いている日とお部屋の数を、ひと目でご確認いただけます。</p>
+</header>
+
+<main class="wrap">
+  <ol class="steps" aria-label="予約の流れ">
+    <li id="st1" class="on">1. 日にち</li>
+    <li id="st2">2. プラン</li>
+    <li id="st3">3. お客様情報</li>
+  </ol>
+
+  <section class="card" aria-labelledby="h-days">
+    <h2 id="h-days">ご宿泊日を選ぶ</h2>
+    <p class="sub">営業日だけを並べています。数字は残りのお部屋の数です。</p>
+    <div class="month-tabs" id="monthTabs" role="tablist"></div>
+    <div class="open-list" id="openList"></div>
+    <details class="cal-toggle">
+      <summary>カレンダーで見る</summary>
+      <div class="cal" id="cal"></div>
+    </details>
+  </section>
+
+  <section class="card" id="planSection" aria-labelledby="h-plans" hidden>
+    <h2 id="h-plans">プランを選ぶ</h2>
+    <p class="sub" id="planSub"></p>
+    <div class="plans" id="planList"></div>
+  </section>
+
+  <section class="card" id="formSection" aria-labelledby="h-form" hidden>
+    <h2 id="h-form">お客様情報</h2>
+    <p class="sub">お申し込みのあと、宿から確定のご連絡をいたします。</p>
+    <form id="form" novalidate>
+      <div class="row2">
+        <label><span>大人の人数<span class="req">必須</span></span>
+          <select name="adults" id="adults"></select>
+        </label>
+        <label>お部屋の数
+          <select name="rooms" id="roomsSel"></select>
+        </label>
+      </div>
+      <label><span>お名前<span class="req">必須</span></span>
+        <input name="name" autocomplete="name" required maxlength="60">
+      </label>
+      <div class="row2">
+        <label><span>電話番号<span class="req">必須</span></span>
+          <input name="tel" type="tel" autocomplete="tel" required maxlength="20" pattern="[0-9０-９\-－ ]{10,}">
+        </label>
+        <label><span>メールアドレス<span class="req">必須</span></span>
+          <input name="email" type="email" autocomplete="email" required maxlength="120">
+        </label>
+      </div>
+      <label>到着予定の時刻
+        <select name="arrival">
+          <option>15:00〜16:00</option><option>16:00〜17:00</option><option>17:00〜18:00</option><option>18:00 以降</option>
+        </select>
+      </label>
+      <label>ご要望（アレルギー・送迎など）
+        <textarea name="notes" rows="3" maxlength="500"></textarea>
+      </label>
+
+      <div class="summary" id="summary"></div>
+
+      <label class="consent">
+        <input type="checkbox" id="consent" required>
+        <span>入力した情報を、ご予約の確認・ご連絡のためだけに宿が利用することに同意します。</span>
+      </label>
+      <button type="submit" class="primary" id="submitBtn" disabled>この内容で申し込む</button>
+      <p class="note">お支払いは当日、宿でお願いいたします。カード番号などはこのページでは入力しません。</p>
+    </form>
+  </section>
+
+  <section class="card done" id="doneSection" hidden>
+    <h2>お申し込みを受け付けました</h2>
+    <p id="doneText"></p>
+    <p class="note">ご予約は、宿からの確定のご連絡をもって成立します。</p>
+  </section>
+</main>
+
+<footer class="wrap" id="footer"></footer>
+
+<script src="data.js"></script>
+<script>
+(() => {
+  const D = window.HISAYA_DATA;
+  const WEEK = ["日", "月", "火", "水", "木", "金", "土"];
+  const $ = (id) => document.getElementById(id);
+  const yen = (n) => n.toLocaleString("ja-JP") + "円";
+  const pad = (n) => String(n).padStart(2, "0");
+  const keyOf = (y, m, d) => `${y}-${pad(m)}-${pad(d)}`;
+  const parse = (k) => { const [y, m, d] = k.split("-").map(Number); return new Date(y, m - 1, d); };
+  const label = (k) => { const t = parse(k); return `${t.getMonth() + 1}月${t.getDate()}日（${WEEK[t.getDay()]}）`; };
+  const todayKey = (() => { const t = new Date(); return keyOf(t.getFullYear(), t.getMonth() + 1, t.getDate()); })();
+
+  const state = { month: null, date: null, plan: null };
+
+  // 今日以降の営業日だけを使う
+  const days = Object.keys(D.openDays).filter((k) => k >= todayKey).sort();
+  const months = [...new Set(days.map((k) => k.slice(0, 7)))];
+  state.month = months[0] || null;
+
+  $("innName").textContent = D.inn.name;
+  $("innArea").textContent = D.inn.area;
+  $("demoBanner").hidden = Boolean(D.formEndpoint);
+  $("footer").textContent = `${D.inn.name}　${D.inn.address}　TEL ${D.inn.tel}　チェックイン ${D.inn.checkin} / チェックアウト ${D.inn.checkout}`;
+
+  function roomsBadge(n) {
+    const s = document.createElement("span");
+    s.className = "rooms" + (n === 0 ? " full" : n <= 1 ? " few" : "");
+    s.textContent = n === 0 ? "満室" : `残り ${n} 室`;
+    return s;
+  }
+
+  function renderMonths() {
+    const tabs = $("monthTabs");
+    tabs.replaceChildren();
+    months.forEach((m) => {
+      const b = document.createElement("button");
+      const [y, mm] = m.split("-").map(Number);
+      const open = days.filter((k) => k.startsWith(m) && D.openDays[k] > 0).length;
+      b.textContent = `${y}年${mm}月（${open}日）`;
+      b.className = m === state.month ? "on" : "";
+      b.setAttribute("role", "tab");
+      b.setAttribute("aria-selected", m === state.month);
+      b.onclick = () => { state.month = m; renderDays(); };
+      tabs.append(b);
+    });
+  }
+
+  function renderDays() {
+    renderMonths();
+    const list = $("openList");
+    list.replaceChildren();
+    const inMonth = days.filter((k) => k.startsWith(state.month));
+    if (!inMonth.length) {
+      list.innerHTML = '<p class="empty">この月の営業日はまだ公開されていません。</p>';
+    }
+    inMonth.forEach((k) => {
+      const n = D.openDays[k];
+      const t = parse(k);
+      const b = document.createElement("button");
+      b.className = "day-chip" + (k === state.date ? " selected" : "");
+      b.disabled = n === 0;
+      const d = document.createElement("span"); d.className = "d"; d.textContent = `${t.getMonth() + 1}/${t.getDate()}`;
+      const w = document.createElement("span"); w.className = "w"; w.textContent = `${WEEK[t.getDay()]}曜日`;
+      b.append(d, w, document.createElement("br"), roomsBadge(n));
+      b.setAttribute("aria-label", `${label(k)} ${n === 0 ? "満室" : `残り${n}室`}`);
+      b.onclick = () => selectDate(k);
+      list.append(b);
+    });
+    renderCal();
+  }
+
+  function renderCal() {
+    const cal = $("cal");
+    cal.replaceChildren();
+    if (!state.month) return;
+    WEEK.forEach((w, i) => {
+      const h = document.createElement("div");
+      h.className = "h" + (i === 0 ? " sun" : "");
+      h.textContent = w;
+      cal.append(h);
+    });
+    const [y, m] = state.month.split("-").map(Number);
+    const first = new Date(y, m - 1, 1).getDay();
+    const last = new Date(y, m, 0).getDate();
+    for (let i = 0; i < first; i++) {
+      const c = document.createElement("div"); c.className = "c blank"; cal.append(c);
+    }
+    for (let d = 1; d <= last; d++) {
+      const k = keyOf(y, m, d);
+      const n = k >= todayKey ? D.openDays[k] : undefined;
+      const c = document.createElement(n > 0 ? "button" : "div");
+      c.className = "c" + (n > 0 ? " open" : n === 0 ? " full" : "") + (k === state.date ? " selected" : "");
+      c.append(String(d));
+      const s = document.createElement("small");
+      s.textContent = n > 0 ? `残${n}` : n === 0 ? "満室" : "休";
+      c.append(s);
+      if (n > 0) c.onclick = () => selectDate(k);
+      cal.append(c);
+    }
+  }
+
+  // 月-日の期間（年またぎ可）に入っているか
+  function inSeason(k, s) {
+    const md = k.slice(5);
+    return s.from <= s.to ? md >= s.from && md <= s.to : md >= s.from || md <= s.to;
+  }
+
+  function selectDate(k) {
+    state.date = k;
+    state.plan = null;
+    renderDays();
+    $("st2").classList.add("on");
+    $("planSection").hidden = false;
+    $("formSection").hidden = true;
+    $("planSub").textContent = `${label(k)}　残り ${D.openDays[k]} 室`;
+    const list = $("planList");
+    list.replaceChildren();
+    const plans = D.plans.filter((p) => inSeason(k, p.season));
+    if (!plans.length) list.innerHTML = '<p class="empty">この日にご用意できるプランはありません。</p>';
+    plans.forEach((p) => {
+      const b = document.createElement("button");
+      b.className = "plan";
+      const h = document.createElement("h3"); h.textContent = p.name;
+      const meta = document.createElement("span"); meta.className = "meta"; meta.textContent = p.meal;
+      const price = document.createElement("span"); price.className = "price";
+      if (p.price) {
+        price.textContent = yen(p.price);
+        const sm = document.createElement("small"); sm.textContent = p.priceNote ? ` ${p.priceNote}／人` : "／人";
+        price.append(sm);
+      } else {
+        price.innerHTML = "<small>料金はお問い合わせ</small>";
+      }
+      const desc = document.createElement("p"); desc.className = "desc"; desc.textContent = p.desc;
+      const tags = document.createElement("div"); tags.className = "tags";
+      (p.tags || []).forEach((t) => { const s = document.createElement("span"); s.className = "tag"; s.textContent = t; tags.append(s); });
+      b.append(h, meta, price, desc, tags);
+      b.onclick = () => selectPlan(p, b);
+      list.append(b);
+    });
+    $("planSection").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function selectPlan(p, el) {
+    state.plan = p;
+    document.querySelectorAll(".plan").forEach((x) => x.classList.toggle("selected", x === el));
+    $("st3").classList.add("on");
+    $("formSection").hidden = false;
+    const max = D.openDays[state.date];
+    fillSelect($("adults"), 1, Math.min(max * 4, 12), 2, "名");
+    fillSelect($("roomsSel"), 1, max, 1, "室");
+    updateSummary();
+    $("formSection").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function fillSelect(sel, from, to, def, unit) {
+    sel.replaceChildren();
+    for (let i = from; i <= to; i++) {
+      const o = document.createElement("option");
+      o.value = i; o.textContent = i + unit; o.selected = i === Math.min(def, to);
+      sel.append(o);
+    }
+  }
+
+  function updateSummary() {
+    const p = state.plan;
+    if (!p) return;
+    const adults = Number($("adults").value);
+    const box = $("summary");
+    const dl = document.createElement("dl");
+    const add = (k, v, cls) => {
+      const dt = document.createElement("dt"); dt.textContent = k;
+      const dd = document.createElement("dd"); dd.textContent = v; if (cls) dd.className = cls;
+      dl.append(dt, dd);
+    };
+    add("ご宿泊日", `${label(state.date)}　1泊`);
+    add("プラン", p.name);
+    add("人数", `大人 ${adults} 名・${$("roomsSel").value} 室`);
+    add("合計（目安）", p.price ? `${yen(p.price * adults)}〜` : "宿からご案内します", "total");
+    box.replaceChildren(dl);
+  }
+
+  $("adults").addEventListener("change", updateSummary);
+  $("roomsSel").addEventListener("change", updateSummary);
+
+  const form = $("form");
+  const check = () => { $("submitBtn").disabled = !(form.checkValidity() && $("consent").checked); };
+  form.addEventListener("input", check);
+  form.addEventListener("change", check);
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!form.checkValidity() || !$("consent").checked) return;
+    const fd = new FormData(form);
+    const payload = {
+      date: state.date,
+      plan: state.plan.name,
+      adults: fd.get("adults"),
+      rooms: fd.get("rooms"),
+      name: fd.get("name"),
+      tel: fd.get("tel"),
+      email: fd.get("email"),
+      arrival: fd.get("arrival"),
+      notes: fd.get("notes"),
+    };
+    const btn = $("submitBtn");
+    btn.disabled = true;
+    btn.textContent = "送信しています…";
+    try {
+      if (D.formEndpoint) {
+        const r = await fetch(D.formEndpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (!r.ok) throw new Error(r.status);
+      }
+      form.reset();
+      $("planSection").hidden = true;
+      $("formSection").hidden = true;
+      $("doneSection").hidden = false;
+      $("doneText").textContent = `${label(payload.date)}「${payload.plan}」で承りました。${payload.email} あてにご連絡します。`;
+      $("doneSection").scrollIntoView({ behavior: "smooth" });
+    } catch {
+      btn.disabled = false;
+      btn.textContent = "この内容で申し込む";
+      alert(`送信できませんでした。お手数ですが、お電話（${D.inn.tel}）でご予約ください。`);
+    }
+  });
+
+  renderDays();
+})();
+</script>
+</body>
+</html>
