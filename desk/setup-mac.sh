@@ -28,6 +28,15 @@ fi
 [[ -n "$GIT" ]] || { echo "git が見つかりません。xcode-select --install を実行してください。"; exit 1; }
 mkdir -p "$AGENTS" "$LOGS" "$DESK/data"
 
+# macOS blocks background jobs from reading Documents / Desktop / Downloads / iCloud Drive
+case "$REPO/" in
+  "$HOME/Documents/"*|"$HOME/Desktop/"*|"$HOME/Downloads/"*|"$HOME/Library/Mobile Documents/"*)
+    echo "このフォルダ（$REPO）は macOS の保護フォルダの中なので、自動起動したサーバーが読めません。"
+    echo "ホーム直下などに移してから、もう一度実行してください。例："
+    echo "  mv \"$REPO\" ~/TatsukiDesk && bash ~/TatsukiDesk/desk/setup-mac.sh"
+    exit 1;;
+esac
+
 # stop our own jobs first, then make sure nothing else holds the port (the old Desk server)
 unload com.tatsuki.desk.server; unload com.tatsuki.desk.pull
 if lsof -nP -iTCP:"$PORT" -sTCP:LISTEN >/dev/null 2>&1; then
