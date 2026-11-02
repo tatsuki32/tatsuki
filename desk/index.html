@@ -162,7 +162,7 @@ select{background:var(--surface);color:var(--ink);border:1px solid var(--line);b
 .pop .hint{font-size:12.5px;color:var(--muted);margin:0}
 @media (max-width:760px){.aibtn{right:max(66px,calc(env(safe-area-inset-right,0px) + 66px))}.rail{padding-right:128px}}
 
-/* deadlines: personal deadline = real due date minus 2 days, counted down every second */
+/* deadlines: counted down every second to the real due date */
 .dl{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:12.5px;font-weight:500;padding:2px 9px;border-radius:999px;background:var(--surface-2);color:var(--ink-2);border:1px solid var(--line);white-space:nowrap}
 .dl.warn{color:var(--accent);background:var(--accent-soft);border-color:transparent}
 .dl.hot,.dl.over{color:var(--red);background:var(--red-soft);border-color:transparent}
@@ -188,7 +188,10 @@ select{background:var(--surface);color:var(--ink);border:1px solid var(--line);b
 .nav .count.hot{color:var(--red);background:var(--red-soft);border-color:transparent}
 .pop input[type=datetime-local]{width:100%;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:inherit;font-size:16px}
 .pop input[type=datetime-local]:focus{outline:none;border-color:var(--accent)}
-@media (max-width:560px){.drow{grid-template-columns:24px minmax(0,1fr)}.drow .dl{grid-column:2;justify-self:start}}
+.dacts{display:flex;align-items:center;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.dacts .btn{padding:4px 10px;font-size:12.5px}
+.dsub{padding:8px 16px;border-top:1px solid var(--line);font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+@media (max-width:560px){.drow{grid-template-columns:24px minmax(0,1fr)}.drow .dl,.drow .dacts{grid-column:2;justify-self:start}}
 
 /* tasks: three columns on a laptop, one column with tabs on a phone; archive and dropped fold away below */
 .tt{border:0;background:none;padding:0;text-align:left;font-weight:600;font-size:14px;line-height:1.4;cursor:pointer;overflow-wrap:anywhere;color:var(--ink)}
@@ -312,8 +315,8 @@ function saveTasksLocal(){try{localStorage.setItem("desk-tasks",JSON.stringify(S
 
 /* ---------- deadlines ---------- */
 /* Real due date: manual fix > dueAt from the morning mail check > received/created + 3 days.
-   Personal deadline = real due date - 48h, shown as a per-second countdown. */
-const HOUR=36e5, DAY=864e5, LEAD=2*DAY, DEFAULT_DUE=3*DAY, HCMC=7*HOUR;
+   Countdowns run to the real due date; colour warns 2 days (gold) and 1 day (red) ahead. */
+const HOUR=36e5, DAY=864e5, LEAD=0, DEFAULT_DUE=3*DAY, HCMC=7*HOUR;
 const MON={Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
 const toMs=v=>v==null||v===""?null:typeof v==="number"?v:(t=>isNaN(t)?null:t)(Date.parse(v));
 function parseReceived(str,dayId){ // "Oct 28, 5:06 AM" written in Ho Chi Minh City time
@@ -348,9 +351,9 @@ function dlText(ms){
   const a=Math.abs(ms), d=Math.floor(a/DAY), h=Math.floor(a%DAY/HOUR), m=Math.floor(a%HOUR/6e4), s=Math.floor(a%6e4/1e3);
   return (ms<0?"超過 ":"")+(d?d+"日 ":"")+pad(h)+":"+pad(m)+":"+pad(s);
 }
-const dlClass=ms=>ms<0?"over":ms<HOUR?"hot":ms<DAY?"warn":"";
+const dlClass=ms=>ms<0?"over":ms<DAY?"hot":ms<2*DAY?"warn":"";
 const fmtDue=ms=>new Date(ms).toLocaleString("ja-JP",{month:"numeric",day:"numeric",weekday:"short",hour:"2-digit",minute:"2-digit"});
-function dlChip(x){const left=x.deadline-Date.now();return `<span class="dl ${dlClass(left)}" data-dl="${x.deadline}" title="自分用締切 ${esc(fmtDue(x.deadline))}">${dlText(left)}</span>`}
+function dlChip(x){const left=x.deadline-Date.now();return `<span class="dl ${dlClass(left)}" data-dl="${x.deadline}" title="期日 ${esc(fmtDue(x.deadline))}">${dlText(left)}</span>`}
 const dueLine=x=>`期日 ${esc(fmtDue(x.due))} · <button class="duebtn" data-due="${esc(x.uid)}" aria-label="期日を変更">${esc(x.src)}</button>`;
 function tick(){const now=Date.now();document.querySelectorAll("[data-dl]").forEach(el=>{const left=+el.dataset.dl-now;el.textContent=dlText(left);el.className="dl "+dlClass(left)});
   document.querySelectorAll("[data-until]").forEach(el=>{const left=+el.dataset.until-now;if(left<=0&&!el.dataset.done){el.dataset.done="1";setTimeout(render,500)}el.textContent=untilText(left)})}
@@ -359,7 +362,7 @@ function deadlinePanel(){
   const list=S.dl, n=list.length, shown=S.dlAll?list:list.slice(0,5);
   const row=x=>`<div class="drow"><span class="e" aria-hidden="true">${x.kind==="mail"?"✉️":"📝"}</span><div style="min-width:0"><a class="t" href="#${x.kind==="mail"?"mail":"inbox"}" ${x.day?`data-goday="${esc(x.day)}"`:""}>${esc(x.title)}</a><div class="due">${esc(x.sub)} · ${dueLine(x)}</div></div>${dlChip(x)}</div>`;
   return `<section class="card dpanel" aria-label="締切">
-    <div class="dhead"><h2>締切</h2><span class="badge ${n?"":"zero"}" aria-label="未処理 ${n} 件">${n}</span><span class="sub">本当の期日の2日前まで</span><button class="btn" id="soundBtn" ${actx?"hidden":""}>🔈 音をオン</button></div>
+    <div class="dhead"><h2>締切</h2><span class="badge ${n?"":"zero"}" aria-label="未処理 ${n} 件">${n}</span><span class="sub">本当の期日まで</span><button class="btn" id="soundBtn" ${actx?"hidden":""}>🔈 音をオン</button></div>
     ${n?`<div>${shown.map(row).join("")}</div>${n>5?`<button class="dmore" id="dlMore">${S.dlAll?"上位5件だけ表示":"すべて表示（"+n+"件）"}</button>`:""}`:`<div class="empty"><b>確認が必要なものはありません</b>対応が必要なメールがここに締切順で並びます。</div>`}
   </section>`;
 }
@@ -417,7 +420,7 @@ function openDue(uid){
     <p class="hint" id="duePreview"></p>
     <div class="row"><button class="btn primary" id="dueSave">保存</button>${x.manual!=null?`<button class="btn" id="dueAuto">自動の期日に戻す</button>`:""}<button class="btn" id="dueCancel">キャンセル</button></div>
   </div></div>`;
-  const inp=$("#dueInput"), pv=()=>{const t=new Date(inp.value).getTime();$("#duePreview").textContent=isNaN(t)?"日時を入れてください":"自分用締切は "+fmtDue(t-LEAD)+" になります"};
+  const inp=$("#dueInput"), pv=()=>{const t=new Date(inp.value).getTime();$("#duePreview").textContent=isNaN(t)?"日時を入れてください":"期日は "+fmtDue(t)+" になります"};
   pv();inp.oninput=pv;inp.focus();
   const close=()=>{$("#modal").innerHTML=""};
   const save=async ms=>{try{await store.setDue(x,ms);close();toast(ms==null?"自動の期日に戻しました":"期日を "+fmtDue(ms)+" にしました")}catch(e){toast("保存できませんでした。もう一度お試しください")}};
@@ -434,7 +437,7 @@ const toLocalInput=ms=>{const d=new Date(ms);return `${d.getFullYear()}-${pad(d.
 /* ---------- tasks ---------- */
 /* One board for everything to do. Stored tasks live in "tasks" (Mac: data/tasks.json).
    Mail that needs action appears by itself and is only stored once you move it, under the same id everywhere ("t"+dueDocId).
-   A task's due date is the real one; like mail, its countdown runs to 2 days before. */
+   A task's due date is the real one; like mail, its countdown runs to it. */
 const TSTATUS=[["notyet","Not yet"],["doing","進行中"],["done","Done"],["archived","アーカイブ"],["dropped","やめた"]];
 const TCOLS=["notyet","doing","done"], TOPEN=new Set(["notyet","doing"]);
 const TSRC={manual:["✍️","手入力"],memo:["📝","メモから"],mail:["✉️","メールから"],calendar:["📅","カレンダーから"],gtasks:["☑️","Googleタスク"],claude:["🤖","Claude"]};
@@ -502,14 +505,18 @@ function tasks(){
   ${shelf.length?`<details class="card shelf"><summary>🗃️ アーカイブ・やめた <span class="count">${shelf.length}</span></summary><div class="list2">${shelf.map(taskCard).join("")}</div></details>`:""}
   ${S.local&&!LOCALAPI?'<p class="sub">This copy was opened as a file, so tasks stay in this browser. Run “Start Desk” to keep them on this Mac.</p>':""}`;
 }
-/* Home: what is in progress, plus tasks whose own deadline is within a day. Mail not yet started stays in the 締切 panel. */
+/* Home: what is in progress, tasks due within a day, then the top 3 Not yet (mail included) with a one-tap start. */
 function todayPanel(){
   const soon=Date.now()+DAY;
   const list=S.board.filter(t=>t.status==="doing"||(t.status==="notyet"&&t.source!=="mail"&&t.deadline!=null&&t.deadline<soon)).sort(byDeadline);
-  const row=t=>`<div class="drow"><span class="e" aria-hidden="true">${(TSRC[t.source]||TSRC.manual)[0]}</span><div style="min-width:0"><button class="tt" data-topen="${esc(t.id)}">${esc(t.title)}</button><div class="due">${tLabel(t.status)}${t.due!=null?" · 期日 "+esc(fmtDue(t.due)):""}</div></div>${t.deadline!=null?dlChip(t):""}</div>`;
+  const top=new Set(list.slice(0,5).map(t=>t.id));
+  const notyet=S.board.filter(t=>t.status==="notyet"&&!top.has(t.id)).sort(byDeadline), ny=notyet.slice(0,3), rest=notyet.length-ny.length;
+  const nAll=S.board.filter(t=>t.status==="notyet").length;
+  const row=(t,start)=>`<div class="drow"><span class="e" aria-hidden="true">${(TSRC[t.source]||TSRC.manual)[0]}</span><div style="min-width:0"><button class="tt" data-topen="${esc(t.id)}">${esc(t.title)}</button><div class="due">${t.mail?esc(t.mail.sub)+" · ":""}${tLabel(t.status)}${t.due!=null?" · 期日 "+esc(fmtDue(t.due)):""}</div></div><div class="dacts">${t.deadline!=null?dlChip(t):""}${start?`<button class="btn" data-tstart="${esc(t.id)}" aria-label="着手する">▶ 着手</button>`:""}</div></div>`;
   return `<section class="card dpanel" aria-label="今日やること">
-    <div class="dhead"><h2>今日やること</h2><span class="badge ${list.length?"":"zero"}">${list.length}</span><span class="sub">進行中と、24時間以内に締切が来るタスク</span><a class="btn" href="#tasks">ボードを開く</a></div>
-    ${list.length?`<div>${list.slice(0,5).map(row).join("")}</div>${list.length>5?`<a class="dmore" href="#tasks" style="text-align:center;text-decoration:none">ほか ${list.length-5} 件をボードで見る</a>`:""}`:`<div class="empty"><b>進行中のタスクはありません</b>Tasks でカードを「進行中」に動かすとここに出ます。</div>`}
+    <div class="dhead"><h2>今日やること</h2><span class="badge ${list.length?"":"zero"}">${list.length}</span><span class="sub">進行中と、24時間以内に期日が来るタスク${nAll?` · Not yet ${nAll}件`:""}</span><a class="btn" href="#tasks">ボードを開く</a></div>
+    ${list.length?`<div>${list.slice(0,5).map(t=>row(t,false)).join("")}</div>${list.length>5?`<a class="dmore" href="#tasks" style="text-align:center;text-decoration:none">ほか ${list.length-5} 件をボードで見る</a>`:""}`:`<div class="empty"><b>進行中のタスクはありません</b>${ny.length?"下の Not yet から「▶ 着手」で始められます。":"Tasks でカードを「進行中」に動かすとここに出ます。"}</div>`}
+    ${ny.length?`<div class="dsub">Not yet</div><div>${ny.map(t=>row(t,true)).join("")}</div><button class="dmore" data-gonotyet>${rest?`Not yet ほか ${rest}件 →`:"Tasks を開く →"}</button>`:""}
   </section>`;
 }
 function openTask(id){
@@ -731,6 +738,8 @@ function wire(){
   // tasks: open, change status from the menu, drag between columns, phone column tabs
   $("#newTask")&&($("#newTask").onclick=()=>openTask(null));
   document.querySelectorAll("[data-topen]").forEach(b=>b.onclick=()=>openTask(b.dataset.topen));
+  document.querySelectorAll("[data-tstart]").forEach(b=>b.onclick=()=>setTaskStatus(b.dataset.tstart,"doing"));
+  document.querySelectorAll("[data-gonotyet]").forEach(b=>b.onclick=()=>{S.taskCol="notyet";location.hash="tasks"});
   document.querySelectorAll("[data-tstatus]").forEach(s=>s.onchange=()=>setTaskStatus(s.dataset.tstatus,s.value));
   document.querySelectorAll("[data-tcol]").forEach(b=>b.onclick=()=>{S.taskCol=b.dataset.tcol;render()});
   document.querySelectorAll("[data-task]").forEach(c=>{
