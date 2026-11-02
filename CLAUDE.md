@@ -19,6 +19,7 @@ claude.ai のチャットで直接編集しない。変更は必ずここで行�
   `http://localhost:4747` で配信し、`desk/data/*.js`（`window.TOOLS` 等）をページに差し込む。
   API: `GET /api/memos|dues|tasks`、`POST /api/memos`、`PATCH /api/memos/<id>`、`PUT /api/dues/<id>`、`PUT /api/tasks/<id>`。
   データは `desk/data/*.json`（`.gitignore` 済み。個人データは絶対にコミットしない）。
+- Mac の置き場所は `~/TatsukiDesk`（Documents などの保護フォルダは自動起動から読めないので不可）。
 - Mac の導入: `bash desk/setup-mac.sh`（サーバー常駐＋5分ごとの `git pull origin main`）。
   旧版 `~/Documents/ClaudeTools` は使わない（初回だけ memos/dues/tasks を取り込む）。
 - 同期: `desk/sync/HOURLY_SYNC.md` を Mac の Claude スケジュールタスクで毎時実行。

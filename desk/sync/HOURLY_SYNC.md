@@ -1,6 +1,6 @@
 # Tatsuki's Desk 毎時同期（Mac の Claude スケジュールタスク用）
 
-この手順は、Mac の Claude デスクトップアプリのスケジュールタスクで、このリポジトリのフォルダを開いて毎時実行する。
+この手順は、Mac の Claude デスクトップアプリのスケジュールタスクで、このリポジトリのフォルダ（`~/TatsukiDesk`）を開いて毎時実行する。
 目的：Mac 版とオンライン版の Desk を、**データもコードも**同じ状態に保つ。
 
 - オンライン版: https://claude.ai/artifact/EkyjR8X6XJdundGEXE9XgP
