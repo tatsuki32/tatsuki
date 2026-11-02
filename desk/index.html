@@ -190,7 +190,6 @@ select{background:var(--surface);color:var(--ink);border:1px solid var(--line);b
 .pop input[type=datetime-local]:focus{outline:none;border-color:var(--accent)}
 .dacts{display:flex;align-items:center;gap:8px;justify-content:flex-end;flex-wrap:wrap}
 .dacts .btn{padding:4px 10px;font-size:12.5px}
-.dsub{padding:8px 16px;border-top:1px solid var(--line);font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
 @media (max-width:560px){.drow{grid-template-columns:24px minmax(0,1fr)}.drow .dl,.drow .dacts{grid-column:2;justify-self:start}}
 
 /* tasks: three columns on a laptop, one column with tabs on a phone; archive and dropped fold away below */
@@ -505,18 +504,15 @@ function tasks(){
   ${shelf.length?`<details class="card shelf"><summary>🗃️ アーカイブ・やめた <span class="count">${shelf.length}</span></summary><div class="list2">${shelf.map(taskCard).join("")}</div></details>`:""}
   ${S.local&&!LOCALAPI?'<p class="sub">This copy was opened as a file, so tasks stay in this browser. Run “Start Desk” to keep them on this Mac.</p>':""}`;
 }
-/* Home: what is in progress, tasks due within a day, then the top 3 Not yet (mail included) with a one-tap start. */
+/* Home: one to-do list = everything in progress, then everything Not yet (mail included), each by nearest due date. */
 function todayPanel(){
-  const soon=Date.now()+DAY;
-  const list=S.board.filter(t=>t.status==="doing"||(t.status==="notyet"&&t.source!=="mail"&&t.deadline!=null&&t.deadline<soon)).sort(byDeadline);
-  const top=new Set(list.slice(0,5).map(t=>t.id));
-  const notyet=S.board.filter(t=>t.status==="notyet"&&!top.has(t.id)).sort(byDeadline), ny=notyet.slice(0,3), rest=notyet.length-ny.length;
-  const nAll=S.board.filter(t=>t.status==="notyet").length;
-  const row=(t,start)=>`<div class="drow"><span class="e" aria-hidden="true">${(TSRC[t.source]||TSRC.manual)[0]}</span><div style="min-width:0"><button class="tt" data-topen="${esc(t.id)}">${esc(t.title)}</button><div class="due">${t.mail?esc(t.mail.sub)+" · ":""}${tLabel(t.status)}${t.due!=null?" · 期日 "+esc(fmtDue(t.due)):""}</div></div><div class="dacts">${t.deadline!=null?dlChip(t):""}${start?`<button class="btn" data-tstart="${esc(t.id)}" aria-label="着手する">▶ 着手</button>`:""}</div></div>`;
+  const MAX=8;
+  const doing=S.board.filter(t=>t.status==="doing").sort(byDeadline), notyet=S.board.filter(t=>t.status==="notyet").sort(byDeadline);
+  const list=[...doing,...notyet], n=list.length, rest=n-Math.min(n,MAX);
+  const row=t=>`<div class="drow"><span class="e" aria-hidden="true">${(TSRC[t.source]||TSRC.manual)[0]}</span><div style="min-width:0"><button class="tt" data-topen="${esc(t.id)}">${esc(t.title)}</button><div class="due">${t.mail?esc(t.mail.sub)+" · ":""}${tLabel(t.status)}${t.due!=null?" · 期日 "+esc(fmtDue(t.due)):""}</div></div><div class="dacts">${t.deadline!=null?dlChip(t):""}${t.status==="notyet"?`<button class="btn" data-tstart="${esc(t.id)}" aria-label="着手する">▶ 着手</button>`:`<span class="pill live">進行中</span>`}</div></div>`;
   return `<section class="card dpanel" aria-label="今日やること">
-    <div class="dhead"><h2>今日やること</h2><span class="badge ${list.length?"":"zero"}">${list.length}</span><span class="sub">進行中と、24時間以内に期日が来るタスク${nAll?` · Not yet ${nAll}件`:""}</span><a class="btn" href="#tasks">ボードを開く</a></div>
-    ${list.length?`<div>${list.slice(0,5).map(t=>row(t,false)).join("")}</div>${list.length>5?`<a class="dmore" href="#tasks" style="text-align:center;text-decoration:none">ほか ${list.length-5} 件をボードで見る</a>`:""}`:`<div class="empty"><b>進行中のタスクはありません</b>${ny.length?"下の Not yet から「▶ 着手」で始められます。":"Tasks でカードを「進行中」に動かすとここに出ます。"}</div>`}
-    ${ny.length?`<div class="dsub">Not yet</div><div>${ny.map(t=>row(t,true)).join("")}</div><button class="dmore" data-gonotyet>${rest?`Not yet ほか ${rest}件 →`:"Tasks を開く →"}</button>`:""}
+    <div class="dhead"><h2>今日やること</h2><span class="badge ${n?"":"zero"}" aria-label="やること ${n} 件">${n}</span><span class="sub">進行中と Not yet · 進行中 ${doing.length}件 / Not yet ${notyet.length}件</span><a class="btn" href="#tasks">ボードを開く</a></div>
+    ${n?`<div>${list.slice(0,MAX).map(row).join("")}</div>${rest?`<button class="dmore" data-gonotyet>ほか ${rest}件 →</button>`:""}`:`<div class="empty"><b>やることはありません</b>T キーか「＋ 新しいタスク」で追加できます。</div>`}
   </section>`;
 }
 function openTask(id){
