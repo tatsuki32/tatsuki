@@ -1,0 +1,847 @@
+<title>Tatsuki's Desk</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: quiet black workspace. Left rail for navigation (top pills on phones), one focused content column, a fixed note button top-right that opens a popup. */
+:root{
+  --bg:#0a0a0b; --rail:#0f0f11; --surface:#141417; --surface-2:#1b1b1f; --line:#26262b; --line-2:#33333a;
+  --ink:#ededee; --ink-2:#b9b9bf; --muted:#7c7c85;
+  --accent:#e4b768; --accent-ink:#1a1408; --accent-soft:rgba(228,183,104,.12);
+  --red:#f07a6a; --red-soft:rgba(240,122,106,.12); --green:#7fcf9a; --green-soft:rgba(127,207,154,.12); --blue:#8fb4ff; --blue-soft:rgba(143,180,255,.12);
+  --display:"Inter Tight",-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif;
+  --body:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI","Helvetica Neue",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{background:var(--bg)}
+body{margin:0;color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+.app{display:grid;grid-template-columns:232px minmax(0,1fr);min-height:100vh}
+/* rail */
+.rail{background:var(--rail);border-right:1px solid var(--line);padding:18px 12px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:18px;padding-left:max(12px,env(safe-area-inset-left,0px))}
+.brand{display:flex;align-items:center;gap:10px;padding:4px 8px}
+.brand .mark{width:28px;height:28px;border-radius:8px;background:var(--surface-2);border:1px solid var(--line-2);display:grid;place-items:center;font-size:16px}
+.brand b{font-family:var(--display);font-weight:600;letter-spacing:-.01em}
+.nav{display:grid;gap:2px}
+.nav a{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;text-decoration:none;color:var(--ink-2);font-weight:500}
+.nav a:hover{background:var(--surface)}
+.nav a[aria-current="page"]{background:var(--surface-2);color:var(--ink)}
+.nav .e{width:22px;text-align:center;font-size:17px}
+.nav .count{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--muted);background:var(--surface);border:1px solid var(--line);padding:0 6px;border-radius:999px}
+.rail .foot{margin-top:auto;font-size:12px;color:var(--muted);padding:0 8px}
+kbd{font-family:var(--mono);font-size:11px;border:1px solid var(--line-2);border-bottom-width:2px;border-radius:5px;padding:0 5px;color:var(--ink-2);background:var(--surface)}
+/* main */
+main{min-width:0;padding-block:28px 80px;padding-left:max(28px,env(safe-area-inset-left,0px));padding-right:max(28px,env(safe-area-inset-right,0px))}
+.wrap{max-width:980px;margin:0 auto;display:grid;gap:22px}
+.head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-right:230px} /* clears the fixed Claude + Note buttons */
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+h1{font-family:var(--display);font-weight:600;font-size:clamp(26px,3.4vw,34px);letter-spacing:-.02em;margin:0;line-height:1.15;text-wrap:balance}
+h2{font-family:var(--display);font-weight:600;font-size:15px;letter-spacing:-.005em;margin:0}
+.sub{color:var(--muted);font-size:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px}
+.section-title{display:flex;align-items:center;gap:8px;margin:4px 2px 10px;color:var(--ink-2);font-size:13px;font-weight:600}
+.section-title .e{font-size:15px}
+/* fixed note button */
+.notebtn{position:fixed;z-index:30;top:calc(14px + env(safe-area-inset-top,0px));right:max(16px,calc(env(safe-area-inset-right,0px) + 16px));display:flex;align-items:center;gap:8px;padding:9px 14px;border-radius:999px;border:1px solid var(--line-2);background:rgba(20,20,23,.92);backdrop-filter:blur(10px);cursor:pointer;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+.notebtn:hover{border-color:var(--accent)}
+.notebtn .e{font-size:16px}
+/* search + tiles */
+.search{display:flex;align-items:center;gap:10px;padding:11px 14px}
+.search input{flex:1;min-width:0;background:transparent;border:0;outline:none;color:var(--ink);font-size:16px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.tile{display:grid;grid-template-columns:44px minmax(0,1fr);gap:4px 12px;align-items:start;padding:14px;border-radius:12px;background:var(--surface);border:1px solid var(--line);text-decoration:none;cursor:pointer;text-align:left;transition:border-color .15s,background .15s}
+.tile:hover{border-color:var(--line-2);background:var(--surface-2)}
+.tile .ico{grid-row:span 2;width:44px;height:44px;border-radius:11px;background:var(--surface-2);border:1px solid var(--line);display:grid;place-items:center;font-size:23px}
+.tile .t{font-weight:600;font-size:14.5px;line-height:1.35;min-width:0}
+.tile .d{font-size:12.5px;color:var(--muted);line-height:1.45;min-width:0;overflow-wrap:anywhere}
+.tile .meta{grid-column:2;display:flex;gap:6px;flex-wrap:wrap;margin-top:2px}
+.pill{font-size:11.5px;font-weight:600;padding:1px 8px;border-radius:999px;background:var(--surface-2);color:var(--ink-2);border:1px solid var(--line)}
+.pill.live{color:var(--green);background:var(--green-soft);border-color:transparent}
+.pill.red{color:var(--red);background:var(--red-soft);border-color:transparent}
+.pill.amber{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+.pill.blue{color:var(--blue);background:var(--blue-soft);border-color:transparent}
+/* today strip */
+.today{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.today a{display:grid;gap:6px;padding:16px;text-decoration:none}
+.today .k{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);font-weight:600}
+.today .k .e{font-size:16px}
+.today .v{font-family:var(--display);font-weight:600;font-size:16px;line-height:1.35;text-wrap:balance}
+.today .n{font-family:var(--display);font-size:28px;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+@media (max-width:820px){.today{grid-template-columns:minmax(0,1fr)}}
+/* notes strip */
+.notes-here{display:grid;gap:8px}
+.note{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:start;padding:12px 14px;border-radius:12px;background:#17150f;border:1px solid #3a3221}
+.note p{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+.note .when{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:4px}
+.note.done p{color:var(--muted);text-decoration:line-through}
+.note .acts{display:flex;gap:4px}
+.ibtn{border:1px solid transparent;background:transparent;border-radius:8px;padding:4px 7px;cursor:pointer;font-size:14px;color:var(--ink-2)}
+.ibtn:hover{background:var(--surface-2);border-color:var(--line)}
+/* world */
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;font-size:13px;font-weight:600;color:var(--ink-2);cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--ink);color:#0b0b0c;border-color:var(--ink)}
+.world{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:16px;align-items:start}
+@media (max-width:980px){.world{grid-template-columns:minmax(0,1fr)}}
+.lead{padding:20px}
+.lead h2{font-size:20px;line-height:1.35;margin:6px 0 8px;text-wrap:balance}
+.lead p{margin:0;color:var(--ink-2);max-width:68ch}
+.stories{display:grid}
+.story{display:grid;grid-template-columns:40px minmax(0,1fr);gap:4px 14px;padding:16px 18px;border-top:1px solid var(--line)}
+.story:first-child{border-top:0}
+.story .e{font-size:22px;line-height:1.3}
+.story h3{margin:0;font-size:16px;font-weight:600;line-height:1.45;text-wrap:balance}
+.story p{margin:4px 0 0;color:var(--ink-2);max-width:70ch}
+.lens{margin-top:10px;padding:10px 12px;border-radius:10px;background:var(--surface-2);font-size:13.5px;color:var(--ink-2)}
+.lens b{color:var(--ink);font-weight:600}
+.srcs{margin-top:10px;display:flex;flex-wrap:wrap;gap:6px}
+.srcs a{font-size:12px;font-weight:600;color:var(--ink-2);text-decoration:none;padding:3px 9px;border-radius:999px;border:1px solid var(--line)}
+.srcs a:hover{border-color:var(--line-2);color:var(--ink)}
+.side{display:grid;gap:12px}
+.side .card{padding:14px 16px}
+.list{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:12px}
+.list .o{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--muted)}
+.list a{text-decoration:none;font-weight:600;font-size:13.5px;line-height:1.45;display:block}
+.list a:hover{color:var(--accent)}
+.watch li{display:grid;grid-template-columns:64px minmax(0,1fr);gap:8px;font-size:13.5px}
+.watch time{font-family:var(--mono);font-size:12px;color:var(--accent);font-variant-numeric:tabular-nums}
+/* mail */
+.mail{padding:16px 18px;display:grid;gap:8px}
+.mail .top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.mail h3{margin:0;font-size:15.5px;line-height:1.45;overflow-wrap:anywhere}
+.mail p{margin:0;color:var(--ink-2)}
+.todo{padding:10px 12px;border-radius:10px;background:var(--red-soft);color:#f5c4bc;font-size:14px}
+details.draft{border:1px solid var(--line);border-radius:10px;overflow:hidden}
+details.draft summary{cursor:pointer;list-style:none;padding:9px 12px;background:var(--surface-2);font-size:13px;font-weight:600;display:flex;justify-content:space-between;gap:8px}
+details.draft summary::-webkit-details-marker{display:none}
+.draft .meta{font-family:var(--mono);font-size:11.5px;color:var(--muted);padding:10px 12px 0;overflow-wrap:anywhere}
+.draft pre{margin:0;padding:8px 12px 12px;font-family:var(--body);font-size:14px;white-space:pre-wrap;overflow-wrap:anywhere}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{border:1px solid var(--line-2);background:var(--surface-2);border-radius:9px;padding:8px 13px;font-weight:600;font-size:13.5px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{border-color:var(--ink-2)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn:disabled{opacity:.5;cursor:default}
+.msg{font-size:13px;color:var(--ink-2)}
+.msg.err{color:var(--red)} .msg.ok{color:var(--green)}
+.done-card{opacity:.6}
+.empty{padding:28px 20px;color:var(--muted);text-align:left}
+.empty b{display:block;color:var(--ink);font-family:var(--display);font-size:17px;margin-bottom:4px}
+select{background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:4px 8px;font:inherit;font-size:13px}
+/* modal */
+.scrim{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.55);backdrop-filter:blur(3px);display:flex;align-items:flex-start;justify-content:flex-end;padding:calc(64px + env(safe-area-inset-top,0px)) max(16px,calc(env(safe-area-inset-right,0px) + 16px)) 16px max(16px,env(safe-area-inset-left,0px))}
+.pop{width:min(440px,100%);background:var(--surface);border:1px solid var(--line-2);border-radius:16px;box-shadow:0 24px 60px rgba(0,0,0,.5);padding:16px;display:grid;gap:12px}
+.pop .top{display:flex;justify-content:space-between;align-items:center}
+.pop textarea{width:100%;min-height:140px;resize:vertical;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:12px;font:inherit;font-size:16px;line-height:1.6}
+.pop textarea:focus{outline:none;border-color:var(--accent)}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.seg button{padding:11px 10px;border-radius:11px;border:1px solid var(--line-2);background:var(--surface-2);cursor:pointer;font-weight:600;text-align:left;display:grid;gap:2px}
+.seg button small{font-weight:500;color:var(--muted);font-size:12px}
+.seg button:hover{border-color:var(--accent)}
+.toast{position:fixed;z-index:50;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:#0b0b0c;font-weight:600;padding:9px 16px;border-radius:999px;font-size:14px}
+/* phone */
+@media (max-width:760px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  .rail{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line);padding:12px max(16px,env(safe-area-inset-left,0px)) 10px;flex-direction:row;align-items:center;gap:8px;overflow-x:auto}
+  .rail .brand b,.rail .foot{display:none}
+  .nav{display:flex;gap:4px}
+  .nav a{padding:7px 10px;white-space:nowrap}
+  .nav .label{font-size:13px}
+  main{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-top:20px}
+  .head{padding-right:0}
+  .rail{padding-right:76px}
+  .notebtn .label,.notebtn kbd{display:none}
+  .notebtn{top:calc(10px + env(safe-area-inset-top,0px));padding:10px 12px}
+}
+@media (prefers-reduced-motion:no-preference){.tile,.notebtn{transition:border-color .15s,background .15s}}
+.aibtn{right:max(118px,calc(env(safe-area-inset-right,0px) + 118px))}
+.aibtn:hover{border-color:var(--blue)}
+.pop .hint{font-size:12.5px;color:var(--muted);margin:0}
+@media (max-width:760px){.aibtn{right:max(66px,calc(env(safe-area-inset-right,0px) + 66px))}.rail{padding-right:128px}}
+
+/* deadlines: counted down every second to the real due date */
+.dl{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:12.5px;font-weight:500;padding:2px 9px;border-radius:999px;background:var(--surface-2);color:var(--ink-2);border:1px solid var(--line);white-space:nowrap}
+.dl.warn{color:var(--accent);background:var(--accent-soft);border-color:transparent}
+.dl.hot,.dl.over{color:var(--red);background:var(--red-soft);border-color:transparent}
+.dl.over{font-weight:600}
+.badge{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 7px;border-radius:999px;background:var(--red);color:#1a0806;font-family:var(--mono);font-size:12px;font-weight:600;font-variant-numeric:tabular-nums}
+.badge.zero{background:var(--surface-2);color:var(--muted);border:1px solid var(--line)}
+.dpanel{overflow:hidden}
+.dhead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:14px 16px;border-bottom:1px solid var(--line)}
+.dhead .sub{font-size:12.5px}
+.dhead .btn{margin-left:auto;padding:5px 11px;font-size:12.5px}
+.drow{display:grid;grid-template-columns:24px minmax(0,1fr) auto;gap:2px 12px;align-items:center;padding:11px 16px;border-top:1px solid var(--line)}
+.drow:first-child{border-top:0}
+.drow .e{font-size:16px;text-align:center}
+.drow a.t{text-decoration:none;font-weight:600;font-size:14px;line-height:1.4;overflow-wrap:anywhere}
+.drow a.t:hover{color:var(--accent)}
+.due{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.duebtn{border:0;background:transparent;color:var(--ink-2);font-size:12px;cursor:pointer;padding:0;text-decoration:underline dotted;text-underline-offset:3px}
+.duebtn:hover{color:var(--accent)}
+.dmore{display:block;width:100%;border:0;border-top:1px solid var(--line);background:transparent;padding:10px;color:var(--ink-2);font-weight:600;font-size:13px;cursor:pointer}
+.dmore:hover{background:var(--surface-2)}
+.dlbox{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px}
+.mail .top .dl{margin-left:auto}
+.nav .count.hot{color:var(--red);background:var(--red-soft);border-color:transparent}
+.pop input[type=datetime-local]{width:100%;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:inherit;font-size:16px}
+.pop input[type=datetime-local]:focus{outline:none;border-color:var(--accent)}
+.dacts{display:flex;align-items:center;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.dacts .btn{padding:4px 10px;font-size:12.5px}
+.dsub{padding:8px 16px;border-top:1px solid var(--line);font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+@media (max-width:560px){.drow{grid-template-columns:24px minmax(0,1fr)}.drow .dl,.drow .dacts{grid-column:2;justify-self:start}}
+
+/* tasks: three columns on a laptop, one column with tabs on a phone; archive and dropped fold away below */
+.tt{border:0;background:none;padding:0;text-align:left;font-weight:600;font-size:14px;line-height:1.4;cursor:pointer;overflow-wrap:anywhere;color:var(--ink)}
+.tt:hover{color:var(--accent)}
+.board{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:start}
+.col{background:var(--rail);border:1px solid var(--line);border-radius:14px;padding:10px;display:grid;gap:8px;align-content:start;min-height:140px;transition:border-color .15s,background .15s}
+.col.over{border-color:var(--accent);background:var(--accent-soft)}
+.col>h2{display:flex;align-items:center;gap:8px;padding:4px 6px 2px}
+.col>h2 .count,.shelf summary .count{font-family:var(--mono);font-size:11px;font-weight:500;color:var(--muted);background:var(--surface);border:1px solid var(--line);padding:0 6px;border-radius:999px}
+.col .hint{margin:2px 6px 6px;font-size:12.5px;color:var(--muted)}
+.task{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:grid;gap:6px;cursor:grab}
+.task:hover{border-color:var(--line-2)}
+.task.dragging{opacity:.4}
+.task.closed .tt{color:var(--muted)}
+.task .tm{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12px;color:var(--muted);min-width:0}
+.task .tm .from{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:14em}
+.task select{margin-left:auto;font-size:12px;padding:2px 6px}
+.colTabs{display:none}
+.shelf{padding:0;overflow:hidden}
+.shelf summary{cursor:pointer;list-style:none;padding:12px 16px;font-weight:600;font-size:13.5px;color:var(--ink-2);display:flex;align-items:center;gap:8px}
+.shelf summary::-webkit-details-marker{display:none}
+.shelf .list2{display:grid;gap:8px;padding:0 12px 12px}
+.pop input[type=text],.pop select{width:100%;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:inherit;font-size:16px}
+.pop input[type=text]:focus,.pop select:focus{outline:none;border-color:var(--accent)}
+.pop .tnote{min-height:80px}
+@media (max-width:760px){.board{grid-template-columns:minmax(0,1fr)}.colTabs{display:flex}.col:not(.show){display:none}.task{cursor:default}}
+.task .tm a{color:var(--ink-2);text-decoration:none}
+.task .tm a:hover{color:var(--accent)}
+
+/* calendar: one block per day, a time column then the title; Home shows what is left today with a countdown to the next one */
+.days{display:grid;gap:12px}
+.day{overflow:hidden}
+.day>h2{padding:12px 16px;border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:baseline}
+.day>h2 .sub{font-size:12.5px;font-weight:500}
+.day.is-today>h2{color:var(--accent)}
+.ev{display:grid;grid-template-columns:104px minmax(0,1fr) auto;gap:2px 12px;align-items:start;padding:10px 16px;border-top:1px solid var(--line);text-decoration:none}
+.day>h2+.ev,.dhead+.ev{border-top:0}
+.ev:hover{background:var(--surface-2)}
+.ev time{font-family:var(--mono);font-size:12.5px;color:var(--ink-2);font-variant-numeric:tabular-nums;padding-top:1px;white-space:nowrap}
+.ev .t{font-weight:600;font-size:14px;line-height:1.4;overflow-wrap:anywhere}
+.ev .loc{grid-column:2;font-size:12px;color:var(--muted);overflow-wrap:anywhere}
+.ev.past{opacity:.5}
+.ev.now time{color:var(--accent)}
+.until{font-family:var(--mono);font-size:12.5px;color:var(--accent);background:var(--accent-soft);padding:2px 9px;border-radius:999px;white-space:nowrap;font-variant-numeric:tabular-nums}
+@media (max-width:560px){.ev{grid-template-columns:76px minmax(0,1fr)}.ev>.pill,.ev>.until{grid-column:2;justify-self:start}}
+
+/* claude log: four boxes, what got done / better / still open / went wrong */
+.logs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
+.logs .card{padding:14px 16px}
+.logs h2{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+.logs h2 .count{font-family:var(--mono);font-size:11px;font-weight:500;color:var(--muted);background:var(--surface-2);border:1px solid var(--line);padding:0 6px;border-radius:999px}
+.logs ul{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+.logs li b{font-weight:600;font-size:14px;line-height:1.45;display:block;overflow-wrap:anywhere}
+.logs li span{font-size:13px;color:var(--ink-2);display:block;overflow-wrap:anywhere}
+.logs li a{font-size:12.5px;color:var(--ink-2)}
+.logs .failed{border-color:rgba(240,122,106,.35)}
+@media (max-width:820px){.logs{grid-template-columns:minmax(0,1fr)}}
+</style>
+
+<div class="app">
+  <aside class="rail">
+    <div class="brand"><span class="mark">🧭</span><b>Tatsuki's Desk</b></div>
+    <nav class="nav" id="nav" aria-label="Sections"></nav>
+    <div class="foot">Press <kbd>N</kbd> for a note, <kbd>T</kbd> for a task, <kbd>C</kbd> to ask Claude, <kbd>/</kbd> to search.</div>
+  </aside>
+  <main><div class="wrap" id="view"></div></main>
+</div>
+<button class="notebtn aibtn" id="aiBtn" aria-label="Copy a Desk feature request for Claude Code"><span class="e">🤖</span><span class="label">Claude</span><kbd>C</kbd></button>
+<button class="notebtn" id="noteBtn" aria-label="Write a note"><span class="e">📝</span><span class="label">Note</span><kbd>N</kbd></button>
+<div id="modal"></div>
+<div id="toastHost"></div>
+
+<script>
+const VIEWS=[{id:"home",e:"🏠",label:"Home"},{id:"tasks",e:"🗂️",label:"Tasks"},{id:"calendar",e:"📅",label:"Calendar"},{id:"news",e:"🌍",label:"World Desk"},{id:"mail",e:"✉️",label:"Morning Mail"},{id:"inbox",e:"📥",label:"Inbox"},{id:"log",e:"🤖",label:"Claude Log"}];
+const GROUPS=[["Daily","☀️"],["Work","💼"],["Study","🎓"],["Folders","🗂️"],["Other","✨"]];
+const REG={"Middle East":"🕌","Europe & Russia":"🏰","Asia-Pacific":"🌏","Americas":"🗽","Africa":"🌍","Global":"🌐"};
+const PRI={"Action needed":"red","Reply drafted":"amber","FYI":""};
+const PRIO={"Action needed":0,"Reply drafted":1,"FYI":2};
+const S={tools:[],editions:[],days:[],memos:[],ed:null,day:null,region:"All",q:"",confirm:null,busy:null,notes:{},local:false,dues:{},dl:[],dlMap:{},dlAll:false,quietUntil:0,tasks:[],board:[],taskCol:"notyet",cal:null,gtasks:null,reports:[],logDay:null};
+let db=null;
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const okUrl=u=>/^(https:\/\/|file:\/\/|#)/.test(u||"");
+const viewId=()=>{const h=(location.hash||"").slice(1);return VIEWS.some(v=>v.id===h)?h:"home"};
+const viewLabel=id=>(VIEWS.find(v=>v.id===id)||{}).label||id;
+const ago=ms=>{const d=(Date.now()-ms)/6e4;if(d<1)return"just now";if(d<60)return Math.round(d)+"m ago";if(d<1440)return Math.round(d/60)+"h ago";return new Date(ms).toLocaleDateString("en-US",{month:"short",day:"numeric"})};
+function toast(t){const el=document.createElement("div");el.className="toast";el.textContent=t;$("#toastHost").replaceChildren(el);setTimeout(()=>el.remove(),2200)}
+
+/* ---------- store: claude db online, browser storage on the PC ---------- */
+/* Notes are never hard-deleted: deleted:true + updatedAt lets the hourly sync merge the Mac and the cloud safely. */
+const LOCALAPI=/^https?:$/.test(location.protocol)&&/^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+async function api(method,path,body){const r=await fetch(path,{method,headers:{"Content-Type":"application/json"},body:body?JSON.stringify(body):undefined});if(!r.ok)throw new Error(r.status);return r.json()}
+async function loadApiMemos(){try{
+  const [memos,dues,tasks]=await Promise.all([api("GET","/api/memos"),api("GET","/api/dues"),api("GET","/api/tasks")]);
+  S.memos=memos.filter(m=>!m.deleted);S.dues=duesById(dues);S.tasks=tasks.filter(t=>!t.deleted);render()}catch(e){toast("Can't reach the desk server. Is it running?")}}
+const duesById=list=>Object.fromEntries(list.filter(v=>v&&v.uid).map(v=>[v.uid,v]));
+const store={
+  async setDue(x,ms){
+    if(x.kind==="memo") return store.patchMemo(x.id,{dueManual:ms});
+    const rec={uid:x.uid,at:ms,updatedAt:Date.now()};
+    if(db){await db.collection("dues").doc(dueDocId(x.uid)).set(rec)}
+    else if(LOCALAPI){await api("PUT","/api/dues/"+dueDocId(x.uid),rec);await loadApiMemos()}
+    else {S.dues={...S.dues,[x.uid]:rec};saveDuesLocal();render()} },
+  async addMemo(m){ S.quietUntil=Date.now()+5000; m={...m,updatedAt:Date.now(),deleted:false};
+    if(db){await db.collection("memos").add(m)}
+    else if(LOCALAPI){await api("POST","/api/memos",m);await loadApiMemos()}
+    else {const id="m"+Date.now();S.memos=[{id,...m},...S.memos];saveLocal();render()} },
+  async patchMemo(id,p){ p={...p,updatedAt:Date.now()};
+    if(db){await db.collection("memos").doc(id).update(p)}
+    else if(LOCALAPI){await api("PATCH","/api/memos/"+encodeURIComponent(id),p);await loadApiMemos()}
+    else {S.memos=S.memos.map(m=>m.id===id?{...m,...p}:m);saveLocal();render()} },
+  async delMemo(id){ if(db||LOCALAPI) return store.patchMemo(id,{deleted:true}); S.memos=S.memos.filter(m=>m.id!==id);saveLocal();render() },
+  async putTask(t){ const rec={...taskRecord(t),updatedAt:Date.now()};
+    if(db){await db.collection("tasks").doc(rec.id).set(rec)}
+    else if(LOCALAPI){await api("PUT","/api/tasks/"+encodeURIComponent(rec.id),rec);await loadApiMemos()}
+    else {S.tasks=[...S.tasks.filter(x=>x.id!==rec.id),rec].filter(x=>!x.deleted);saveTasksLocal();render()} },
+  async setMailStatus(key,status){ if(!db){toast("Status is saved in the online version");return} const ref=db.collection("days").doc(S.day);const s=await ref.get();if(!s.exists)return;const items=(s.data().items||[]).map(x=>x.key===key?{...x,status}:x);await ref.update({items}) }
+};
+function saveLocal(){try{localStorage.setItem("desk-memos",JSON.stringify(S.memos))}catch(e){}}
+function saveTasksLocal(){try{localStorage.setItem("desk-tasks",JSON.stringify(S.tasks))}catch(e){}}
+
+/* ---------- deadlines ---------- */
+/* Real due date: manual fix > dueAt from the morning mail check > received/created + 3 days.
+   Countdowns run to the real due date; colour warns 2 days (gold) and 1 day (red) ahead. */
+const HOUR=36e5, DAY=864e5, LEAD=0, DEFAULT_DUE=3*DAY, HCMC=7*HOUR;
+const MON={Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+const toMs=v=>v==null||v===""?null:typeof v==="number"?v:(t=>isNaN(t)?null:t)(Date.parse(v));
+function parseReceived(str,dayId){ // "Oct 28, 5:06 AM" written in Ho Chi Minh City time
+  const end=Date.parse((dayId||"")+"T23:59:59+07:00");
+  const m=/([A-Z][a-z]{2})\s+(\d{1,2})(?:,\s*(\d{1,2}):(\d{2})\s*(AM|PM))?/.exec(str||"");
+  if(!m||!(m[1] in MON)) return isNaN(end)?Date.now():end-DAY+1000;
+  let y=+(dayId||"").slice(0,4)||new Date().getFullYear();
+  const h=m[3]?(+m[3]%12)+(m[5]==="PM"?12:0):0, mi=m[4]?+m[4]:0;
+  let t=Date.UTC(y,MON[m[1]],+m[2],h,mi)-HCMC;
+  if(!isNaN(end)&&t>end+DAY) t=Date.UTC(y-1,MON[m[1]],+m[2],h,mi)-HCMC; // a December mail checked in January
+  return t;
+}
+const mailUid=(i,dayId)=>"mail:"+(i.gmail_url||(dayId+"/"+i.key));
+const NEEDS=new Set(["Action needed","Reply drafted"]);
+function deadlines(){
+  const byUid=new Map(), closed=new Set();
+  S.days.forEach(d=>(d.data?.items||[]).forEach(i=>{ // newest day first
+    if(!NEEDS.has(i.priority)) return;
+    const uid=mailUid(i,d.id);
+    if((i.status||"pending")!=="pending"){closed.add(uid);return}
+    if(byUid.has(uid)) return;
+    byUid.set(uid,{uid,kind:"mail",title:i.subject||"(no subject)",sub:i.from||"",day:d.id,key:i.key,
+      base:toMs(i.receivedAt)??parseReceived(i.received,d.id),auto:toMs(i.dueAt),manual:toMs(S.dues[uid]?.at)});
+  }));
+  const list=[...byUid.values()].filter(x=>!closed.has(x.uid));
+  // Notes (Inbox or pinned) never become deadlines: only mail that needs action does.
+  list.forEach(x=>{x.due=x.manual??x.auto??(x.base+DEFAULT_DUE);x.src=x.manual!=null?"手動":x.auto!=null?"メール記載":(x.kind==="mail"?"受信":"作成")+"から3日";x.deadline=x.due-LEAD});
+  return list.sort((a,b)=>a.deadline-b.deadline);
+}
+const pad=n=>String(n).padStart(2,"0");
+function dlText(ms){
+  const a=Math.abs(ms), d=Math.floor(a/DAY), h=Math.floor(a%DAY/HOUR), m=Math.floor(a%HOUR/6e4), s=Math.floor(a%6e4/1e3);
+  return (ms<0?"超過 ":"")+(d?d+"日 ":"")+pad(h)+":"+pad(m)+":"+pad(s);
+}
+const dlClass=ms=>ms<0?"over":ms<DAY?"hot":ms<2*DAY?"warn":"";
+const fmtDue=ms=>new Date(ms).toLocaleString("ja-JP",{month:"numeric",day:"numeric",weekday:"short",hour:"2-digit",minute:"2-digit"});
+function dlChip(x){const left=x.deadline-Date.now();return `<span class="dl ${dlClass(left)}" data-dl="${x.deadline}" title="期日 ${esc(fmtDue(x.deadline))}">${dlText(left)}</span>`}
+const dueLine=x=>`期日 ${esc(fmtDue(x.due))} · <button class="duebtn" data-due="${esc(x.uid)}" aria-label="期日を変更">${esc(x.src)}</button>`;
+function tick(){const now=Date.now();document.querySelectorAll("[data-dl]").forEach(el=>{const left=+el.dataset.dl-now;el.textContent=dlText(left);el.className="dl "+dlClass(left)});
+  document.querySelectorAll("[data-until]").forEach(el=>{const left=+el.dataset.until-now;if(left<=0&&!el.dataset.done){el.dataset.done="1";setTimeout(render,500)}el.textContent=untilText(left)})}
+setInterval(tick,1000);
+function deadlinePanel(){
+  const list=S.dl, n=list.length, shown=S.dlAll?list:list.slice(0,5);
+  const row=x=>`<div class="drow"><span class="e" aria-hidden="true">${x.kind==="mail"?"✉️":"📝"}</span><div style="min-width:0"><a class="t" href="#${x.kind==="mail"?"mail":"inbox"}" ${x.day?`data-goday="${esc(x.day)}"`:""}>${esc(x.title)}</a><div class="due">${esc(x.sub)} · ${dueLine(x)}</div></div>${dlChip(x)}</div>`;
+  return `<section class="card dpanel" aria-label="締切">
+    <div class="dhead"><h2>締切</h2><span class="badge ${n?"":"zero"}" aria-label="未処理 ${n} 件">${n}</span><span class="sub">本当の期日まで</span><button class="btn" id="soundBtn" ${actx?"hidden":""}>🔈 音をオン</button></div>
+    ${n?`<div>${shown.map(row).join("")}</div>${n>5?`<button class="dmore" id="dlMore">${S.dlAll?"上位5件だけ表示":"すべて表示（"+n+"件）"}</button>`:""}`:`<div class="empty"><b>確認が必要なものはありません</b>対応が必要なメールがここに締切順で並びます。</div>`}
+  </section>`;
+}
+/* badges: Home panel, rail counts, tab title, favicon, home-screen icon */
+let lastBadge=-1;
+function updateBadges(){
+  const n=S.dl.length;
+  document.title=(n?`(${n}) `:"")+"Tatsuki's Desk";
+  if(n===lastBadge) return; lastBadge=n;
+  try{if(navigator.setAppBadge){n?navigator.setAppBadge(n):navigator.clearAppBadge()}}catch(e){}
+  try{
+    const c=document.createElement("canvas");c.width=c.height=64;const g=c.getContext("2d");
+    g.fillStyle="#1b1b1f";g.beginPath();g.roundRect?g.roundRect(4,4,56,56,14):g.rect(4,4,56,56);g.fill();
+    g.font="36px sans-serif";g.textAlign="center";g.textBaseline="middle";g.fillText("🧭",32,34);
+    if(n){g.fillStyle="#f07a6a";g.beginPath();g.arc(46,18,17,0,7);g.fill();g.fillStyle="#1a0806";g.font="bold 22px sans-serif";g.fillText(n>99?"99":String(n),46,19)}
+    let l=document.querySelector("link[rel~=icon]");if(!l){l=document.createElement("link");l.rel="icon";document.head.appendChild(l)}l.href=c.toDataURL();
+  }catch(e){}
+}
+/* sound: a short chime when something new needs attention. Browsers only allow audio after a tap. */
+let actx=null, chimeOwed=false, lastChime=0;
+function unlockAudio(){
+  if(actx) return;
+  try{actx=new (window.AudioContext||window.webkitAudioContext)();if(actx.state==="suspended")actx.resume()}catch(e){actx=null;return}
+  const b=$("#soundBtn");if(b)b.hidden=true;
+  if(chimeOwed){chimeOwed=false;setTimeout(chime,60)}
+}
+["pointerdown","keydown","touchstart"].forEach(t=>document.addEventListener(t,unlockAudio,{capture:true,passive:true}));
+function chime(){
+  if(!actx||actx.state!=="running"){chimeOwed=true;return}
+  if(Date.now()-lastChime<3000) return; lastChime=Date.now();
+  const t0=actx.currentTime;
+  [[880,0],[1318.5,.14]].forEach(([f,d])=>{const o=actx.createOscillator(),v=actx.createGain();o.type="sine";o.frequency.value=f;
+    v.gain.setValueAtTime(0,t0+d);v.gain.linearRampToValueAtTime(.22,t0+d+.015);v.gain.exponentialRampToValueAtTime(.0001,t0+d+.9);
+    o.connect(v).connect(actx.destination);o.start(t0+d);o.stop(t0+d+.95)});
+}
+let seen=null;
+try{const v=JSON.parse(localStorage.getItem("desk-seen")||"null");if(Array.isArray(v))seen=new Set(v)}catch(e){}
+if(!seen){seen=new Set();S.quietUntil=Date.now()+6000} // first visit: learn what is already there without ringing
+function checkNew(){
+  if(!S.loaded) return;
+  const fresh=S.dl.filter(x=>!seen.has(x.uid));
+  if(!fresh.length) return;
+  fresh.forEach(x=>seen.add(x.uid));
+  try{localStorage.setItem("desk-seen",JSON.stringify([...seen].slice(-800)))}catch(e){}
+  if(Date.now()>S.quietUntil) chime();
+}
+/* editing the real due date */
+function openDue(uid){
+  const x=S.dlMap[uid]; if(!x||$("#modal").firstChild) return;
+  $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop" role="dialog" aria-modal="true" aria-label="期日を変更">
+    <div class="top"><h2>⏱ 期日を変更</h2><button class="ibtn" id="xDue" aria-label="閉じる">✕</button></div>
+    <p class="hint" style="overflow-wrap:anywhere">${esc(x.title)}</p>
+    <label class="sub" for="dueInput">本当の期日</label>
+    <input type="datetime-local" id="dueInput" value="${toLocalInput(x.due)}">
+    <p class="hint" id="duePreview"></p>
+    <div class="row"><button class="btn primary" id="dueSave">保存</button>${x.manual!=null?`<button class="btn" id="dueAuto">自動の期日に戻す</button>`:""}<button class="btn" id="dueCancel">キャンセル</button></div>
+  </div></div>`;
+  const inp=$("#dueInput"), pv=()=>{const t=new Date(inp.value).getTime();$("#duePreview").textContent=isNaN(t)?"日時を入れてください":"期日は "+fmtDue(t)+" になります"};
+  pv();inp.oninput=pv;inp.focus();
+  const close=()=>{$("#modal").innerHTML=""};
+  const save=async ms=>{try{await store.setDue(x,ms);close();toast(ms==null?"自動の期日に戻しました":"期日を "+fmtDue(ms)+" にしました")}catch(e){toast("保存できませんでした。もう一度お試しください")}};
+  $("#dueSave").onclick=()=>{const t=new Date(inp.value).getTime();if(isNaN(t)){inp.focus();return}save(t)};
+  $("#dueAuto")&&($("#dueAuto").onclick=()=>save(null));
+  $("#dueCancel").onclick=close;$("#xDue").onclick=close;
+  $("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};
+  inp.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();$("#dueSave").click()}if(e.key==="Escape")close()};
+}
+function saveDuesLocal(){try{localStorage.setItem("desk-dues",JSON.stringify(S.dues))}catch(e){}}
+const dueDocId=uid=>{let h=5381;for(const c of uid)h=(h*33^c.charCodeAt(0))>>>0;return "d"+h.toString(36)+uid.length};
+const toLocalInput=ms=>{const d=new Date(ms);return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`};
+
+/* ---------- tasks ---------- */
+/* One board for everything to do. Stored tasks live in "tasks" (Mac: data/tasks.json).
+   Mail that needs action appears by itself and is only stored once you move it, under the same id everywhere ("t"+dueDocId).
+   A task's due date is the real one; like mail, its countdown runs to it. */
+const TSTATUS=[["notyet","Not yet"],["doing","進行中"],["done","Done"],["archived","アーカイブ"],["dropped","やめた"]];
+const TCOLS=["notyet","doing","done"], TOPEN=new Set(["notyet","doing"]);
+const TSRC={manual:["✍️","手入力"],memo:["📝","メモから"],mail:["✉️","メールから"],calendar:["📅","カレンダーから"],gtasks:["☑️","Googleタスク"],claude:["🤖","Claude"]};
+const LINKED=new Set(["mail","calendar","gtasks","claude"]); // these come from elsewhere: their title and due date live at the source
+const tLabel=k=>(TSTATUS.find(s=>s[0]===k)||[k,k])[1];
+const mailTaskId=uid=>"t"+dueDocId(uid);
+const newTaskId=()=>"t"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const taskRecord=t=>({id:t.id,title:t.title,status:t.status||"notyet",source:t.source||"manual",sourceRef:t.sourceRef||"",due:LINKED.has(t.source)?null:(t.due??null),note:t.note||"",createdAt:t.createdAt||Date.now(),deleted:!!t.deleted});
+const byDeadline=(a,b)=>(a.deadline??Infinity)-(b.deadline??Infinity)||(b.createdAt||0)-(a.createdAt||0);
+const withDeadline=t=>({...t,deadline:t.due!=null?t.due-LEAD:null});
+/* Calendar events whose title starts with a mark become tasks: "TODO 書類を送る", "【やる】…", "☑ …" */
+const MARK=/^\s*(?:TODO|【やる】|☑️?)\s*[:：]?\s*/i;
+function linkedTasks(){
+  const out=[];
+  calEvents().forEach(e=>{const m=MARK.exec(e.title);if(m)out.push({id:"tc"+e.id,title:e.title.slice(m[0].length)||e.title,source:"calendar",sourceRef:e.id,
+    due:e.allDay?e.endMs-6e4:e.startMs,url:e.url,createdAt:e.startMs})});
+  (S.gtasks?.tasks||[]).forEach(g=>{if(!g.id||!g.title)return;out.push({id:"tg"+g.id,title:g.title,note:g.notes||"",source:"gtasks",sourceRef:g.id,
+    due:g.due?Date.parse(g.due.slice(0,10)+"T23:59:00"):null,gdone:g.status==="completed",url:"https://tasks.google.com/",createdAt:Date.parse(g.updated)||0})});
+  // what Claude left pending in the latest daily report; the report keeps the same key while an item stays open
+  const r=S.reports[0];
+  (r?.pending||[]).forEach(p=>{if(!p.key||!p.text)return;out.push({id:"tr"+String(p.key).replace(/[^\w-]/g,"_").slice(0,80),title:p.text,note:p.detail||"",source:"claude",sourceRef:p.key,
+    due:null,url:okUrl(p.link)?p.link:"#log",createdAt:Date.parse(r.date+"T07:00:00")||0})});
+  return out;
+}
+function boardTasks(mails){
+  const byUid=Object.fromEntries(mails.map(x=>[x.uid,x])), linked=Object.fromEntries(linkedTasks().map(x=>[x.id,x]));
+  const out=S.tasks.filter(t=>!t.deleted).map(t=>{
+    const x=t.source==="mail"?byUid[t.sourceRef]:null, l=linked[t.id];
+    if(x) return {...t,mail:x,due:x.due,deadline:x.deadline};
+    // completed in Google Tasks wins over an open status on the desk
+    if(l) return withDeadline({...l,...t,due:l.due,url:l.url,gdone:l.gdone,status:l.gdone&&TOPEN.has(t.status)?"done":t.status});
+    return withDeadline(t);
+  });
+  const stored=new Set(out.map(t=>t.id));
+  mails.forEach(x=>{const id=mailTaskId(x.uid);if(!stored.has(id))out.push({id,title:x.title,status:"notyet",source:"mail",sourceRef:x.uid,mail:x,due:x.due,deadline:x.deadline,createdAt:x.base})});
+  Object.values(linked).forEach(l=>{if(!stored.has(l.id))out.push(withDeadline({...l,status:l.gdone?"done":"notyet"}))});
+  return out;
+}
+const findTask=id=>S.board.find(t=>t.id===id);
+async function setTaskStatus(id,status){const t=findTask(id);if(!t||t.status===status)return;
+  try{await store.putTask({...t,status});toast(`🗂️ ${tLabel(status)} にしました`)}catch(e){toast("保存できませんでした。もう一度お試しください")}}
+async function memoToTask(m){
+  const first=m.text.split("\n")[0].trim(), title=first.length>120?first.slice(0,119)+"…":first;
+  try{await store.putTask({id:newTaskId(),title,note:m.text===title?"":m.text,status:"notyet",source:"memo",sourceRef:m.id,createdAt:Date.now()});
+    await store.patchMemo(m.id,{done:true});toast("🗂️ タスクにしました")}catch(e){toast("保存できませんでした。もう一度お試しください")}
+}
+function taskCard(t){
+  const [ic,src]=TSRC[t.source]||TSRC.manual, open=TOPEN.has(t.status);
+  return `<article class="task ${open?"":"closed"}" draggable="true" data-task="${esc(t.id)}">
+    <button class="tt" data-topen="${esc(t.id)}">${esc(t.title)}</button>
+    <div class="tm">${t.url&&okUrl(t.url)?`<a href="${esc(t.url)}" target="_blank" rel="noopener" title="${src}で開く" aria-label="${src}で開く">${ic}</a>`:`<span title="${src}" aria-label="${src}">${ic}</span>`}${t.mail?`<span class="from">${esc(t.mail.sub)}</span>`:t.due!=null?`<span>期日 ${esc(fmtDue(t.due))}</span>`:""}${open&&t.deadline!=null?dlChip(t):""}
+      <select data-tstatus="${esc(t.id)}" aria-label="ステータス">${TSTATUS.map(([k,l])=>`<option value="${k}" ${k===t.status?"selected":""}>${l}</option>`).join("")}</select></div>
+  </article>`;
+}
+function tasks(){
+  const col=k=>S.board.filter(t=>t.status===k).sort(k==="done"?(a,b)=>(b.updatedAt||0)-(a.updatedAt||0):byDeadline);
+  const shelf=S.board.filter(t=>t.status==="archived"||t.status==="dropped").sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+  const hint={notyet:"新しいタスクと対応が必要なメール",doing:"ここにドラッグして着手",done:"終わったらここへ"};
+  return `
+  <header class="head"><div><p class="eyebrow">Tasks</p><h1>やること</h1></div><button class="btn primary" id="newTask">＋ 新しいタスク <kbd>T</kbd></button></header>
+  ${notesHere("tasks")}
+  <div class="chips colTabs" role="group" aria-label="表示する列">${TCOLS.map(k=>`<button class="chip" data-tcol="${k}" aria-pressed="${S.taskCol===k}">${tLabel(k)} ${col(k).length}</button>`).join("")}</div>
+  <div class="board">${TCOLS.map(k=>{const items=col(k);return `<section class="col ${S.taskCol===k?"show":""}" data-col="${k}" aria-label="${tLabel(k)}">
+    <h2>${tLabel(k)}<span class="count">${items.length}</span></h2>${items.map(taskCard).join("")||`<p class="hint">${hint[k]}</p>`}</section>`}).join("")}</div>
+  ${shelf.length?`<details class="card shelf"><summary>🗃️ アーカイブ・やめた <span class="count">${shelf.length}</span></summary><div class="list2">${shelf.map(taskCard).join("")}</div></details>`:""}
+  ${S.local&&!LOCALAPI?'<p class="sub">This copy was opened as a file, so tasks stay in this browser. Run “Start Desk” to keep them on this Mac.</p>':""}`;
+}
+/* Home: what is in progress, tasks due within a day, then the top 3 Not yet (mail included) with a one-tap start. */
+function todayPanel(){
+  const soon=Date.now()+DAY;
+  const list=S.board.filter(t=>t.status==="doing"||(t.status==="notyet"&&t.source!=="mail"&&t.deadline!=null&&t.deadline<soon)).sort(byDeadline);
+  const top=new Set(list.slice(0,5).map(t=>t.id));
+  const notyet=S.board.filter(t=>t.status==="notyet"&&!top.has(t.id)).sort(byDeadline), ny=notyet.slice(0,3), rest=notyet.length-ny.length;
+  const nAll=S.board.filter(t=>t.status==="notyet").length;
+  const row=(t,start)=>`<div class="drow"><span class="e" aria-hidden="true">${(TSRC[t.source]||TSRC.manual)[0]}</span><div style="min-width:0"><button class="tt" data-topen="${esc(t.id)}">${esc(t.title)}</button><div class="due">${t.mail?esc(t.mail.sub)+" · ":""}${tLabel(t.status)}${t.due!=null?" · 期日 "+esc(fmtDue(t.due)):""}</div></div><div class="dacts">${t.deadline!=null?dlChip(t):""}${start?`<button class="btn" data-tstart="${esc(t.id)}" aria-label="着手する">▶ 着手</button>`:""}</div></div>`;
+  return `<section class="card dpanel" aria-label="今日やること">
+    <div class="dhead"><h2>今日やること</h2><span class="badge ${list.length?"":"zero"}">${list.length}</span><span class="sub">進行中と、24時間以内に期日が来るタスク${nAll?` · Not yet ${nAll}件`:""}</span><a class="btn" href="#tasks">ボードを開く</a></div>
+    ${list.length?`<div>${list.slice(0,5).map(t=>row(t,false)).join("")}</div>${list.length>5?`<a class="dmore" href="#tasks" style="text-align:center;text-decoration:none">ほか ${list.length-5} 件をボードで見る</a>`:""}`:`<div class="empty"><b>進行中のタスクはありません</b>${ny.length?"下の Not yet から「▶ 着手」で始められます。":"Tasks でカードを「進行中」に動かすとここに出ます。"}</div>`}
+    ${ny.length?`<div class="dsub">Not yet</div><div>${ny.map(t=>row(t,true)).join("")}</div><button class="dmore" data-gonotyet>${rest?`Not yet ほか ${rest}件 →`:"Tasks を開く →"}</button>`:""}
+  </section>`;
+}
+function openTask(id){
+  if($("#modal").firstChild) return;
+  const t=id?findTask(id):null, isMail=t?.source==="mail", isLinked=LINKED.has(t?.source);
+  $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop" role="dialog" aria-modal="true" aria-label="${t?"タスクを編集":"新しいタスク"}">
+    <div class="top"><h2>🗂️ ${t?"タスク":"新しいタスク"}</h2><button class="ibtn" id="xTask" aria-label="閉じる">✕</button></div>
+    <label class="sub" for="tTitle">タイトル</label><input type="text" id="tTitle" value="${esc(t?.title||"")}" placeholder="例：FWOに書類を送る" autocomplete="off">
+    ${isMail?`<p class="hint">✉️ ${esc(t.mail?.sub||"メールから")}${t.due!=null?" · 期日 "+esc(fmtDue(t.due))+"（締切パネルで変更）":""} · <a href="#mail">メールを見る</a></p>`
+      :isLinked?`<p class="hint">${TSRC[t.source][0]} ${TSRC[t.source][1]}${t.due!=null?" · 期日 "+esc(fmtDue(t.due)):""} · 期日とタイトルは元の場所で変更${okUrl(t.url)?` · <a href="${esc(t.url)}" target="_blank" rel="noopener">開く ↗</a>`:""}${t.source==="gtasks"?"<br>Done にすると、次の更新で Google タスク側も完了になります。":""}</p>`
+      :`<label class="sub" for="tDue">期日（任意）</label><input type="datetime-local" id="tDue" value="${t?.due!=null?toLocalInput(t.due):""}">`}
+    <label class="sub" for="tStatus">ステータス</label><select id="tStatus">${TSTATUS.map(([k,l])=>`<option value="${k}" ${k===(t?.status||"notyet")?"selected":""}>${l}</option>`).join("")}</select>
+    <label class="sub" for="tNote">メモ</label><textarea id="tNote" class="tnote" placeholder="必要なら詳細を">${esc(t?.note||"")}</textarea>
+    <div class="row"><button class="btn primary" id="tSave">保存 <kbd>⌘/Ctrl + Enter</kbd></button><button class="btn" id="tCancel">キャンセル</button>${t&&!isLinked?`<button class="btn" id="tDel" style="margin-left:auto;color:var(--red)">🗑️ 削除</button>`:""}</div>
+  </div></div>`;
+  const ti=$("#tTitle");ti.focus();ti.setSelectionRange(ti.value.length,ti.value.length);
+  const close=()=>{$("#modal").innerHTML=""};
+  const save=async()=>{const title=ti.value.trim();if(!title){ti.focus();toast("タイトルを入れてください");return}
+    const dueIn=$("#tDue"), due=dueIn&&dueIn.value?new Date(dueIn.value).getTime():null;
+    const base=t||{id:newTaskId(),source:"manual",createdAt:Date.now()};
+    try{await store.putTask({...base,title,due:isNaN(due)?null:due,status:$("#tStatus").value,note:$("#tNote").value.trim()});close();toast(t?"🗂️ 保存しました":"🗂️ タスクを追加しました")}
+    catch(e){toast("保存できませんでした。入力はそのまま残っています")}};
+  $("#tSave").onclick=save;$("#tCancel").onclick=close;$("#xTask").onclick=close;
+  $("#tDel")&&($("#tDel").onclick=async e=>{const b=e.currentTarget;if(!b.dataset.sure){b.dataset.sure="1";b.textContent="本当に削除？";return}
+    try{await store.putTask({...t,deleted:true});close();toast("🗑️ 削除しました")}catch(err){toast("削除できませんでした")}});
+  $("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};
+  $("#scrim").onkeydown=e=>{if(e.key==="Enter"&&(e.metaKey||e.ctrlKey||e.target===ti)){e.preventDefault();save()} if(e.key==="Escape")close()};
+}
+
+/* ---------- calendar ---------- */
+/* Claude's hourly task writes the next 7 days of the main Google Calendar (title, time, place, link only).
+   All-day events come as dates: read them as local days, end exclusive. */
+const startOfDay=ms=>{const d=new Date(ms);d.setHours(0,0,0,0);return d.getTime()};
+const dayStart=(base,i)=>{const d=new Date(base);d.setDate(d.getDate()+i);return d.getTime()};
+const fmtTime=ms=>new Date(ms).toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"});
+function calEvents(){
+  const ms=(v,allDay)=>allDay?Date.parse(String(v).slice(0,10)+"T00:00:00"):Date.parse(v);
+  return (S.cal?.events||[]).map(e=>({...e,startMs:ms(e.start,e.allDay),endMs:ms(e.end,e.allDay)}))
+    .filter(e=>!isNaN(e.startMs)&&!isNaN(e.endMs)).sort((a,b)=>(b.allDay-a.allDay)||a.startMs-b.startMs);
+}
+function untilText(ms){const a=Math.max(0,ms),h=Math.floor(a/HOUR),m=Math.floor(a%HOUR/6e4),s=Math.floor(a%6e4/1e3);return "あと "+(h?h+":"+pad(m):m)+":"+pad(s)}
+const untilChip=ms=>`<span class="until" data-until="${ms}">${untilText(ms-Date.now())}</span>`;
+function evRow(e,ds){
+  const now=Date.now(), de=dayStart(ds,1);
+  const time=e.allDay?"終日":(e.startMs<ds?"〜":fmtTime(e.startMs)+"–")+(e.endMs>de?"":fmtTime(e.endMs));
+  const state=!e.allDay&&e.endMs<=now?"past":!e.allDay&&e.startMs<=now?"now":"";
+  const tail=MARK.test(e.title)?`<span class="pill amber">🗂️ タスク</span>`:state==="now"?`<span class="pill live">進行中</span>`:"";
+  const inner=`<time>${esc(time)}</time><span class="t">${esc(e.title)}</span>${tail}${e.location?`<span class="loc">📍 ${esc(e.location)}</span>`:""}`;
+  return okUrl(e.url)?`<a class="ev ${state}" href="${esc(e.url)}" target="_blank" rel="noopener">${inner}</a>`:`<div class="ev ${state}">${inner}</div>`;
+}
+function todayEvents(){
+  const now=Date.now(), d0=startOfDay(now), d1=dayStart(d0,1);
+  if(!S.cal) return "";
+  const list=calEvents().filter(e=>e.endMs>now&&e.startMs<d1), next=list.find(e=>!e.allDay&&e.startMs>now);
+  return `<section class="card dpanel" aria-label="今日の予定">
+    <div class="dhead"><h2>今日の予定</h2><span class="badge ${list.length?"":"zero"}">${list.length}</span><span class="sub">${next?`次は ${esc(fmtTime(next.startMs))} ${esc(next.title)}`:"このあと時間の決まった予定はありません"}</span>${next?untilChip(next.startMs):""}<a class="btn" href="#calendar">7日間を見る</a></div>
+    ${list.length?list.slice(0,6).map(e=>evRow(e,d0)).join(""):`<div class="empty"><b>今日の残りの予定はありません</b>明日以降は Calendar で見られます。</div>`}
+  </section>`;
+}
+function calendar(){
+  const head=`<header class="head"><div><p class="eyebrow">Calendar${S.cal?.generated_at?" · 更新 "+esc(S.cal.generated_at):""}</p><h1>これから7日間</h1></div><a class="btn" href="https://calendar.google.com/" target="_blank" rel="noopener">Googleカレンダー ↗</a></header>`;
+  if(!S.cal) return head+`<div class="card empty"><b>予定がまだ届いていません</b>Claude が1時間ごとに Google カレンダーから読み込みます。</div>`;
+  const d0=startOfDay(Date.now()), evs=calEvents();
+  const days=[0,1,2,3,4,5,6].map(i=>{const ds=dayStart(d0,i), de=dayStart(d0,i+1), list=evs.filter(e=>e.startMs<de&&e.endMs>ds);
+    const label=new Date(ds).toLocaleDateString("ja-JP",{month:"numeric",day:"numeric",weekday:"short"});
+    return `<section class="card day ${i===0?"is-today":""}"><h2>${esc(label)}<span class="sub">${i===0?"今日":i===1?"明日":""}${list.length?" · "+list.length+"件":""}</span></h2>${list.map(e=>evRow(e,ds)).join("")||`<div class="ev"><time>—</time><span class="t" style="color:var(--muted);font-weight:500">予定なし</span></div>`}</section>`});
+  return head+notesHere("calendar")+`<p class="sub" style="margin:0">タイトルを「TODO」「【やる】」「☑」で始めた予定は、自動で Tasks に入ります。</p><div class="days">${days.join("")}</div>`;
+}
+
+/* ---------- claude log ---------- */
+/* Claude's morning task writes one report per day: what it did, what got better, what is still open, what failed. */
+const LOGBOX=[["done","✅","やったこと"],["improved","📈","改善されたこと"],["pending","⏳","ペンディング"],["failed","⚠️","うまくいかなかったこと"]];
+function log(){
+  const r=S.reports.find(x=>x.id===S.logDay)||S.reports[0];
+  const head=`<header class="head"><div><p class="eyebrow">Claude Log${r?" · "+esc(r.date):""}</p><h1>Claudeの作業記録</h1></div>${S.reports.length>1?`<label class="sub">Day <select id="logDay">${S.reports.map(x=>`<option value="${esc(x.id)}" ${x.id===r?.id?"selected":""}>${esc(x.date)}</option>`).join("")}</select></label>`:""}</header>`;
+  if(!r) return head+`<div class="card empty"><b>まだレポートがありません</b>毎朝 7:30 ごろ、前日に Claude がやったことをまとめてここに届きます。</div>`;
+  const item=(x,k)=>`<li><b>${esc(x.text)}</b>${x.detail?`<span>${esc(x.detail)}</span>`:""}${okUrl(x.link)&&x.link!=="#log"?`<a href="${esc(x.link)}" target="_blank" rel="noopener">開く ↗</a>`:""}${k==="pending"&&x.key&&r===S.reports[0]?` <a href="#tasks">🗂️ Tasks にあり</a>`:""}</li>`;
+  return head+notesHere("log")+`
+  <section class="card lead"><p class="eyebrow">${esc(r.date)} のまとめ${r.generated_at?" · 作成 "+esc(r.generated_at):""}</p><h2>${esc(r.summary||"")}</h2>${r.sources?`<p>${[["sessions","セッション"],["runs","定期タスク"],["commits","コミット"]].filter(([k])=>r.sources[k]!=null).map(([k,l])=>l+" "+r.sources[k]+"件").join(" · ")}</p>`:""}</section>
+  <div class="logs">${LOGBOX.map(([k,e,l])=>{const xs=r[k]||[];return `<section class="card ${k==="failed"&&xs.length?"failed":""}"><h2>${e} ${l}<span class="count">${xs.length}</span></h2>${xs.length?`<ul>${xs.map(x=>item(x,k)).join("")}</ul>`:`<p class="sub" style="margin:0">なし</p>`}</section>`}).join("")}</div>`;
+}
+
+/* ---------- nav ---------- */
+function renderNav(){
+  const open=S.memos.filter(m=>!m.done&&m.place==="inbox").length, mailN=S.dl.filter(x=>x.kind==="mail").length, taskN=S.board.filter(t=>t.status==="doing").length;
+  $("#nav").innerHTML=VIEWS.map(v=>`<a href="#${v.id}" ${viewId()===v.id?'aria-current="page"':''}><span class="e">${v.e}</span><span class="label">${v.label}</span>${v.id==="inbox"&&open?`<span class="count">${open}</span>`:""}${v.id==="mail"&&mailN?`<span class="count hot">${mailN}</span>`:""}${v.id==="tasks"&&taskN?`<span class="count" title="進行中">${taskN}</span>`:""}${v.id==="log"&&S.reports[0]?.pending?.length?`<span class="count" title="ペンディング">${S.reports[0].pending.length}</span>`:""}</a>`).join("");
+}
+
+/* ---------- notes shown on a page ---------- */
+function notesHere(place){
+  const list=S.memos.filter(m=>m.place===place&&!m.done);
+  if(!list.length) return "";
+  return `<section><div class="section-title"><span class="e">📌</span>Notes on this page</div><div class="notes-here">${list.map(noteCard).join("")}</div></section>`;
+}
+function noteCard(m){
+  return `<div class="note ${m.done?"done":""}"><div><p>${esc(m.text)}</p><div class="when">${m.place==="inbox"?"📥 Inbox":"📌 "+esc(m.placeLabel||viewLabel(m.place))} · ${ago(m.createdAt||0)}</div>${(x=>x?`<div class="dlbox">${dlChip(x)}<span class="due">${dueLine(x)}</span></div>`:"")(S.dlMap["memo:"+m.id])}</div>
+  <div class="acts">${m.done?"":`<button class="ibtn" data-memo="totask" data-id="${esc(m.id)}" title="タスクにする" aria-label="タスクにする">🗂️</button>`}<button class="ibtn" data-memo="done" data-id="${esc(m.id)}" title="${m.done?"Mark as open":"Mark as done"}" aria-label="${m.done?"Mark as open":"Mark as done"}">${m.done?"↩️":"✅"}</button>${m.place!=="inbox"?`<button class="ibtn" data-memo="toinbox" data-id="${esc(m.id)}" title="Move to Inbox" aria-label="Move to Inbox">📥</button>`:""}<button class="ibtn" data-memo="del" data-id="${esc(m.id)}" title="Delete" aria-label="Delete">🗑️</button></div></div>`;
+}
+
+/* ---------- views ---------- */
+function home(){
+  const d=new Date();const h=d.getHours();const greet=h<12?"Good morning":h<18?"Good afternoon":"Good evening";
+  const ed=S.editions[0]?.data, day=S.days[0]?.data;
+  const act=day?(day.items||[]).filter(i=>i.priority==="Action needed"&&(i.status||"pending")==="pending").length:0;
+  const inbox=S.memos.filter(m=>!m.done&&m.place==="inbox").length;
+  const q=S.q.toLowerCase();
+  const tools=S.tools.filter(t=>!q||[t.name,t.desc,t.group,(t.tags||[]).join(" "),t.path].join(" ").toLowerCase().includes(q));
+  const groups=GROUPS.filter(([g])=>tools.some(t=>t.group===g));
+  return `
+  <header class="head"><div><p class="eyebrow">${d.toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"})}</p><h1>${greet}, Tatsuki.</h1></div></header>
+  <div class="today">
+    <a class="card" href="#news"><span class="k"><span class="e">🌍</span>World today</span><span class="v">${esc(ed?.headline||"The first brief arrives tomorrow morning.")}</span></a>
+    <a class="card" href="#mail"><span class="k"><span class="e">✉️</span>Mail needing action</span><span class="n">${act}</span><span class="sub">${day?esc((day.items||[]).length+" emails checked"):"No check yet"}</span></a>
+    <a class="card" href="#inbox"><span class="k"><span class="e">📥</span>Notes in your Inbox</span><span class="n">${inbox}</span><span class="sub">Press N to add one</span></a>
+  </div>
+  ${todayEvents()}
+  ${todayPanel()}
+  ${deadlinePanel()}
+  ${notesHere("home")}
+  <label class="card search"><span>🔎</span><input id="q" type="search" placeholder="Search tools and folders" value="${esc(S.q)}" aria-label="Search tools and folders" autocomplete="off"><kbd>/</kbd></label>
+  ${groups.length?groups.map(([g,e])=>`<section><div class="section-title"><span class="e">${e}</span>${g}</div><div class="tiles">${tools.filter(t=>t.group===g).sort((a,b)=>(a.order??99)-(b.order??99)).map(tile).join("")}</div></section>`).join(""):`<div class="card empty"><b>${S.tools.length?"No matches":"Loading your tools"}</b>${S.tools.length?"Try another word.":"Your tools and folders will appear here."}</div>`}`;
+}
+function tile(t){
+  const href=S.local&&t.local?t.local:(t.url||t.local||"");
+  const ext=/^https?:/.test(href);
+  const meta=`<span class="meta">${t.schedule?`<span class="pill live">⏱ ${esc(t.schedule)}</span>`:""}${(t.tags||[]).slice(0,2).map(x=>`<span class="pill">${esc(x)}</span>`).join("")}</span>`;
+  const inner=`<span class="ico">${esc(t.emoji||"🧩")}</span><span class="t">${esc(t.name)}</span><span class="d">${esc(t.desc)}${t.path?`<br><span style="font-family:var(--mono);font-size:11.5px">${esc(t.path)}</span>`:""}</span>${meta}`;
+  return okUrl(href)?`<a class="tile" href="${esc(href)}"${ext?' target="_blank" rel="noopener"':""}>${inner}</a>`:`<div class="tile">${inner}</div>`;
+}
+function news(){
+  const e=S.editions.find(x=>x.id===S.ed)||S.editions[0];
+  if(!e) return `<header class="head"><div><p class="eyebrow">World Desk</p><h1>Today's world</h1></div></header><div class="card empty"><b>No brief yet</b>A new brief arrives every morning at 7:17 (Ho Chi Minh City time).</div>`;
+  const d=e.data, stories=d.stories||[];
+  const regions=["All",...Object.keys(REG).filter(r=>stories.some(s=>s.region===r))];
+  const shown=stories.filter(s=>S.region==="All"||s.region===S.region);
+  return `
+  <header class="head"><div><p class="eyebrow">World Desk · ${esc(e.id)}</p><h1>Today's world</h1></div>
+  <label class="sub">Edition <select id="ed">${S.editions.map(x=>`<option value="${esc(x.id)}" ${x.id===e.id?"selected":""}>${esc(x.id)}</option>`).join("")}</select></label></header>
+  ${notesHere("news")}
+  <section class="card lead"><p class="eyebrow">The big picture</p><h2>${esc(d.headline)}</h2><p>${esc(d.lead)}</p></section>
+  <div class="chips" role="group" aria-label="Filter by region">${regions.map(r=>`<button class="chip" data-region="${esc(r)}" aria-pressed="${r===S.region}">${r==="All"?"🧭":REG[r]} ${esc(r)}</button>`).join("")}</div>
+  <div class="world">
+    <section class="card stories">${shown.map(s=>`<article class="story"><span class="e">${REG[s.region]||"🌐"}</span><div style="min-width:0"><h3>${esc(s.title)}</h3><p>${esc(s.summary)}</p>${s.lens?`<div class="lens"><b>How views differ.</b> ${esc(s.lens)}</div>`:""}<div class="srcs">${(s.sources||[]).map(x=>`<a href="${esc(okUrl(x.url)?x.url:"#")}" target="_blank" rel="noopener">${esc(x.name)} ↗</a>`).join("")}</div></div></article>`).join("")||`<div class="empty">No stories for this region.</div>`}</section>
+    <aside class="side">
+      <section class="card"><h2>🏛️ Think tanks</h2><ul class="list">${(d.thinktank||[]).map(t=>`<li><span class="o">${esc(t.org)} · ${esc(t.date||"")}</span><a href="${esc(okUrl(t.url)?t.url:"#")}" target="_blank" rel="noopener">${esc(t.title)}</a></li>`).join("")||'<li class="sub">Nothing new.</li>'}</ul></section>
+      <section class="card"><h2>🗓️ Coming up</h2><ul class="list watch">${(d.watch||[]).map(w=>`<li><time>${esc(w.date)}</time><span>${esc(w.label)}</span></li>`).join("")||'<li class="sub">Nothing scheduled.</li>'}</ul></section>
+    </aside>
+  </div>`;
+}
+function mail(){
+  const e=S.days.find(x=>x.id===S.day)||S.days[0];
+  if(!e) return `<header class="head"><div><p class="eyebrow">Morning Mail</p><h1>Your inbox, sorted</h1></div></header><div class="card empty"><b>No check yet</b>Your mail is checked every morning at 7:22 (Ho Chi Minh City time).</div>`;
+  S.day=e.id;
+  const items=(e.data.items||[]).slice().sort((a,b)=>(PRIO[a.priority]??3)-(PRIO[b.priority]??3));
+  const c=k=>items.filter(i=>i.priority===k).length;
+  return `
+  <header class="head"><div><p class="eyebrow">Morning Mail · ${esc(e.id)}</p><h1>Your inbox, sorted</h1></div>
+  <label class="sub">Day <select id="day">${S.days.map(x=>`<option value="${esc(x.id)}" ${x.id===e.id?"selected":""}>${esc(x.id)}</option>`).join("")}</select></label></header>
+  ${notesHere("mail")}
+  <section class="card lead"><div class="row"><span class="pill red">🔴 Action needed ${c("Action needed")}</span><span class="pill amber">✍️ Reply drafted ${c("Reply drafted")}</span><span class="pill">👀 FYI ${c("FYI")}</span></div><p style="margin-top:10px">${esc(e.data.summary)}</p></section>
+  <div style="display:grid;gap:10px">${items.map(i=>mailCard(i,e.id)).join("")}</div>`;
+}
+function mailCard(i,dayId){
+  const dx=S.dlMap[mailUid(i,dayId)];
+  const st=i.status||"pending", dr=i.draft, key=esc(i.key), n=S.notes[i.key];
+  let ops="";
+  if(dr){
+    if(st==="sent") ops=`<span class="msg ok">✅ Sent</span>`;
+    else if(st==="skipped") ops=`<span class="msg">Skipped</span><button class="btn" data-act="undo" data-key="${key}">↩️ Undo</button>`;
+    else if(S.confirm===i.key) ops=`<span class="msg">Send to ${esc((dr.to||[]).join(", "))}?</span><button class="btn primary" data-act="send" data-key="${key}" ${S.busy?"disabled":""}>📤 Send now</button><button class="btn" data-act="cancel" data-key="${key}">Cancel</button>`;
+    else ops=S.local?`${okUrl(dr.view_url)?`<a class="btn" href="${esc(dr.view_url)}" target="_blank" rel="noopener">✏️ Open draft in Gmail</a>`:""}`:`<button class="btn primary" data-act="ask" data-key="${key}">📤 Send…</button><button class="btn" data-act="skip" data-key="${key}">🙅 Don't send</button>${okUrl(dr.view_url)?`<a class="btn" href="${esc(dr.view_url)}" target="_blank" rel="noopener">✏️ Edit in Gmail</a>`:""}`;
+  } else if(okUrl(i.gmail_url)) ops=`<a class="btn" href="${esc(i.gmail_url)}" target="_blank" rel="noopener">↗ Open in Gmail</a>`;
+  const icon=i.priority==="Action needed"?"🔴":i.priority==="Reply drafted"?"✍️":"👀";
+  return `<article class="card mail ${dr&&st!=="pending"?"done-card":""}">
+    <div class="top"><span class="pill ${PRI[i.priority]||""}">${icon} ${esc(i.priority)}</span><span>${esc(i.from)}</span><span>· ${esc(i.received||"")}</span>${dx?dlChip(dx):""}</div>
+    <h3>${esc(i.subject)}</h3><p>${esc(i.summary)}</p>
+    ${dx?`<div class="due">${dueLine(dx)}</div>`:""}
+    ${i.action?`<div class="todo">👉 ${esc(i.action)}</div>`:""}
+    ${dr?`<details class="draft" ${st==="pending"?"open":""}><summary><span>✍️ Draft reply</span><span class="sub">Saved in Gmail drafts</span></summary><div class="meta">To: ${esc((dr.to||[]).join(", "))}<br>Subject: ${esc(dr.subject)}</div><pre>${esc(dr.body)}</pre></details>`:""}
+    <div class="row">${ops}</div>${n?`<p class="msg ${n.ok?"ok":"err"}">${esc(n.text)}</p>`:""}</article>`;
+}
+function inbox(){
+  const f=S.inboxFilter||"open";
+  const list=S.memos.filter(m=>f==="all"?true:f==="done"?m.done:!m.done).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  return `
+  <header class="head"><div><p class="eyebrow">Inbox</p><h1>Your notes</h1></div></header>
+  <div class="chips" role="group" aria-label="Filter notes">${[["open","📝 Open"],["done","✅ Done"],["all","🗃️ All"]].map(([k,l])=>`<button class="chip" data-filter="${k}" aria-pressed="${k===f}">${l}</button>`).join("")}</div>
+  ${list.length?`<div class="notes-here">${list.map(noteCard).join("")}</div>`:`<div class="card empty"><b>Nothing here</b>Press N or the 📝 Note button to capture a thought. It lands here, or stays on the page you were on.</div>`}
+  ${S.local?(LOCALAPI?'<p class="sub">🔄 Notes and due dates on this Mac sync with the online desk every hour.</p>':'<p class="sub">This copy was opened as a file, so notes stay in this browser. Run “Start Desk” to sync them with the online desk.</p>'):""}`;
+}
+function render(){
+  const mails=deadlines();S.board=boardTasks(mails);S.dlMap=Object.fromEntries(mails.map(x=>[x.uid,x]));
+  const closed=new Set(S.board.filter(t=>t.source==="mail"&&!TOPEN.has(t.status)).map(t=>t.sourceRef));
+  S.dl=mails.filter(x=>!closed.has(x.uid)); // a mail task moved to Done / archive / dropped leaves the 締切 panel
+  updateBadges();checkNew();
+  renderNav();
+  const v=viewId();
+  $("#view").innerHTML=v==="tasks"?tasks():v==="calendar"?calendar():v==="news"?news():v==="mail"?mail():v==="inbox"?inbox():v==="log"?log():home();
+  wire();
+}
+function wire(){
+  const q=$("#q"); if(q){q.oninput=()=>{S.q=q.value;const pos=q.selectionStart;render();const n=$("#q");n.focus();n.setSelectionRange(pos,pos)}}
+  $("#ed")&&($("#ed").onchange=e=>{S.ed=e.target.value;S.region="All";render()});
+  $("#day")&&($("#day").onchange=e=>{S.day=e.target.value;S.confirm=null;render()});
+  $("#logDay")&&($("#logDay").onchange=e=>{S.logDay=e.target.value;render()});
+  document.querySelectorAll("[data-region]").forEach(b=>b.onclick=()=>{S.region=b.dataset.region;render()});
+  document.querySelectorAll("[data-filter]").forEach(b=>b.onclick=()=>{S.inboxFilter=b.dataset.filter;render()});
+  document.querySelectorAll("[data-memo]").forEach(b=>b.onclick=async()=>{const m=S.memos.find(x=>x.id===b.dataset.id);if(!m)return;try{
+    if(b.dataset.memo==="totask") return memoToTask(m);
+    if(b.dataset.memo==="done") await store.patchMemo(m.id,{done:!m.done});
+    if(b.dataset.memo==="toinbox"){await store.patchMemo(m.id,{place:"inbox"});toast("📥 Moved to Inbox")}
+    if(b.dataset.memo==="del"){ if(b.dataset.sure){await store.delMemo(m.id);toast("🗑️ Deleted")} else {b.dataset.sure="1";b.textContent="Delete?";b.style.color="var(--red)";setTimeout(()=>{if(b.isConnected){delete b.dataset.sure;b.textContent="🗑️";b.style.color=""}},3000)} }
+  }catch(e){toast("Couldn't save. Try again in a moment.")}});
+  document.querySelectorAll("[data-due]").forEach(b=>b.onclick=e=>{e.preventDefault();openDue(b.dataset.due)});
+  document.querySelectorAll("[data-goday]").forEach(a=>a.onclick=()=>{S.day=a.dataset.goday});
+  $("#dlMore")&&($("#dlMore").onclick=()=>{S.dlAll=!S.dlAll;render()});
+  $("#soundBtn")&&($("#soundBtn").onclick=()=>{unlockAudio();setTimeout(()=>{lastChime=0;chime()},80);toast("🔈 新着のときに音が鳴ります")});
+  document.querySelectorAll("[data-act]").forEach(b=>b.onclick=()=>mailAct(b.dataset.act,b.dataset.key));
+  // tasks: open, change status from the menu, drag between columns, phone column tabs
+  $("#newTask")&&($("#newTask").onclick=()=>openTask(null));
+  document.querySelectorAll("[data-topen]").forEach(b=>b.onclick=()=>openTask(b.dataset.topen));
+  document.querySelectorAll("[data-tstart]").forEach(b=>b.onclick=()=>setTaskStatus(b.dataset.tstart,"doing"));
+  document.querySelectorAll("[data-gonotyet]").forEach(b=>b.onclick=()=>{S.taskCol="notyet";location.hash="tasks"});
+  document.querySelectorAll("[data-tstatus]").forEach(s=>s.onchange=()=>setTaskStatus(s.dataset.tstatus,s.value));
+  document.querySelectorAll("[data-tcol]").forEach(b=>b.onclick=()=>{S.taskCol=b.dataset.tcol;render()});
+  document.querySelectorAll("[data-task]").forEach(c=>{
+    c.ondragstart=e=>{e.dataTransfer.setData("text/plain",c.dataset.task);e.dataTransfer.effectAllowed="move";c.classList.add("dragging")};
+    c.ondragend=()=>c.classList.remove("dragging")});
+  document.querySelectorAll("[data-col]").forEach(col=>{
+    col.ondragover=e=>{e.preventDefault();col.classList.add("over")};
+    col.ondragleave=e=>{if(!col.contains(e.relatedTarget))col.classList.remove("over")};
+    col.ondrop=e=>{e.preventDefault();col.classList.remove("over");setTaskStatus(e.dataTransfer.getData("text/plain"),col.dataset.col)}});
+}
+async function mailAct(a,key){
+  const item=((S.days.find(x=>x.id===S.day)||{}).data?.items||[]).find(x=>x.key===key); if(!item) return;
+  delete S.notes[key];
+  if(a==="ask"){S.confirm=key;return render()}
+  if(a==="cancel"){S.confirm=null;return render()}
+  if(a==="skip"||a==="undo"){try{await store.setMailStatus(key,a==="skip"?"skipped":"pending")}catch(e){S.notes[key]={text:"Couldn't save. Reload the page and try again."};render()}return}
+  if(a==="send"){
+    const mcp=await claude.use("mcp");
+    if(!mcp){S.notes[key]={text:"Sending isn't available here. Open the draft in Gmail and send it from there."};S.confirm=null;return render()}
+    S.busy=key;render();
+    try{await mcp.callTool("Gmail","send_message",{draftId:item.draft.id});S.notes[key]={ok:true,text:"Sent."};try{await store.setMailStatus(key,"sent")}catch(e){}}
+    catch(e){const m={needs_reauth:"Gmail needs to be reconnected. Go to claude.ai Settings › Connectors.",server_not_connected:"Gmail isn't connected. Add it in claude.ai Settings › Connectors.",not_in_manifest:"This page isn't allowed to send with Gmail. Turn it on in the page's Permissions menu.",approval_required:"Sending needs your approval. Open this page in claude.ai to approve it.",tool_error:"Gmail didn't accept it. Check whether the draft was already sent or deleted.",server_unavailable:"Gmail didn't answer. It may have been sent, so check your Sent folder before trying again.",upstream_error:"Gmail didn't answer. It may have been sent, so check your Sent folder before trying again."}[e&&e.code]||"Couldn't send. Open the draft in Gmail and send it from there.";S.notes[key]={text:m}}
+    S.busy=null;S.confirm=null;render();
+  }
+}
+
+/* ---------- note popup ---------- */
+function openNote(){
+  if($("#modal").firstChild) return;
+  const place=viewId();
+  let draft="";try{draft=localStorage.getItem("desk-draft")||""}catch(e){}
+  $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop" role="dialog" aria-modal="true" aria-label="Write a note">
+    <div class="top"><h2>📝 Quick note</h2><button class="ibtn" id="xNote" aria-label="Close">✕</button></div>
+    <textarea id="noteText" placeholder="Get it out of your head…">${esc(draft)}</textarea>
+    <div class="seg"><button id="toInbox">📥 Send to Inbox<small>⌘/Ctrl + Enter</small></button><button id="keepHere">📌 Keep on ${esc(viewLabel(place))}<small>Shows on this page</small></button></div>
+  </div></div>`;
+  const ta=$("#noteText");ta.focus();ta.setSelectionRange(ta.value.length,ta.value.length);
+  ta.oninput=()=>{try{localStorage.setItem("desk-draft",ta.value)}catch(e){}};
+  const close=()=>{$("#modal").innerHTML="";$("#noteBtn").focus()};
+  const save=async where=>{const text=ta.value.trim();if(!text){ta.focus();return}
+    try{await store.addMemo({text,place:where,placeLabel:where==="inbox"?"Inbox":viewLabel(where),createdAt:Date.now(),done:false});try{localStorage.removeItem("desk-draft")}catch(e){}close();toast(where==="inbox"?"📥 Sent to Inbox":"📌 Kept on "+viewLabel(where))}
+    catch(e){toast("Couldn't save. Your text is still in the box.")}};
+  $("#toInbox").onclick=()=>save("inbox");$("#keepHere").onclick=()=>save(place);$("#xNote").onclick=close;
+  $("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};
+  ta.onkeydown=e=>{if(e.key==="Enter"&&(e.metaKey||e.ctrlKey)){e.preventDefault();save("inbox")} if(e.key==="Escape")close()};
+}
+$("#noteBtn").onclick=openNote;
+
+/* ---------- ask Claude: turn an idea into a /desk-feature prompt for Claude Code ---------- */
+/* The desk's source of truth is desk/index.html in the GitHub repo, so changes always start there (Claude Code on the web or the Mac). */
+const DESK_DIR="tatsuki32/tatsuki の desk/";
+const deskPrompt=idea=>`/desk-feature\n\n追加・変更したい機能：\n${idea}\n\n対象：Tatsuki's Desk（正本は GitHub ${DESK_DIR}index.html。CLAUDE.md を読んでから作業）\nまず質問で要件を固めて、要件定義書を作ってから、承認後に実装してください。`;
+function openAsk(){
+  if($("#modal").firstChild) return;
+  let draft="";try{draft=localStorage.getItem("desk-ai-draft")||""}catch(e){}
+  $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop" role="dialog" aria-modal="true" aria-label="Ask Claude Code">
+    <div class="top"><h2>🤖 Deskに機能を追加</h2><button class="ibtn" id="xAsk" aria-label="Close">✕</button></div>
+    <p class="hint">やりたいことを書いてコピーし、Claude Code で <b>${esc(DESK_DIR)}</b>（リポジトリ tatsuki32/tatsuki）を開いたセッションに貼り付けてください。</p>
+    <textarea id="askText" placeholder="例：週ごとの振り返りページがほしい">${esc(draft)}</textarea>
+    <button class="btn primary" id="askCopy" style="justify-content:center">📋 Claude Code用にコピー <kbd>⌘/Ctrl + Enter</kbd></button>
+  </div></div>`;
+  const ta=$("#askText");ta.focus();
+  ta.oninput=()=>{try{localStorage.setItem("desk-ai-draft",ta.value)}catch(e){}};
+  const close=()=>{$("#modal").innerHTML="";$("#aiBtn").focus()};
+  const go=async()=>{const t=ta.value.trim();if(!t){ta.focus();toast("やりたいことを書いてください");return}
+    try{await navigator.clipboard.writeText(deskPrompt(t))}catch(e){toast("コピーできませんでした");return}
+    try{localStorage.removeItem("desk-ai-draft")}catch(e){}close();toast("📋 コピーしました。Claude Code に貼り付けてください")};
+  $("#askCopy").onclick=go;$("#xAsk").onclick=close;
+  $("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};
+  ta.onkeydown=e=>{if(e.key==="Enter"&&(e.metaKey||e.ctrlKey)){e.preventDefault();go()} if(e.key==="Escape")close()};
+}
+$("#aiBtn").onclick=openAsk;
+document.addEventListener("keydown",e=>{const t=e.target.tagName;if(t==="INPUT"||t==="TEXTAREA"||t==="SELECT")return;
+  if(e.key==="n"||e.key==="N"){e.preventDefault();openNote()}
+  if(e.key==="c"||e.key==="C"){if(e.metaKey||e.ctrlKey)return;e.preventDefault();openAsk()}
+  if(e.key==="t"||e.key==="T"){if(e.metaKey||e.ctrlKey)return;e.preventDefault();openTask(null)}
+  if(e.key==="/"){const q=$("#q");if(q){e.preventDefault();q.focus()}else{location.hash="home";setTimeout(()=>$("#q")?.focus(),0);e.preventDefault()}}});
+window.addEventListener("hashchange",()=>{S.confirm=null;render();window.scrollTo(0,0)});
+
+/* ---------- boot ---------- */
+render();
+(async()=>{
+  if(Array.isArray(window.TOOLS)){ // PC version
+    try{S.dues=JSON.parse(localStorage.getItem("desk-dues")||"{}")||{}}catch(e){S.dues={}}
+    S.loaded=true;S.local=true;S.tools=window.TOOLS;S.editions=window.WORLD||[];S.days=window.MAIL||[];S.cal=window.CAL||null;S.gtasks=window.GTASKS||null;S.reports=window.REPORTS||[];
+    if(LOCALAPI){await loadApiMemos();setInterval(loadApiMemos,30000);window.addEventListener("focus",loadApiMemos);return}
+    try{S.memos=JSON.parse(localStorage.getItem("desk-memos")||"[]")}catch(e){S.memos=[]}
+    try{S.tasks=JSON.parse(localStorage.getItem("desk-tasks")||"[]")}catch(e){S.tasks=[]}
+    return render();
+  }
+  db=window.claude?await claude.use("db"):null;
+  if(!db){$("#view").insertAdjacentHTML("afterbegin",'<div class="card empty"><b>Sign in to load your desk</b>Open this page in claude.ai to see your tools, news and mail.</div>');return}
+  const sub=(col,fn,q)=> (q||db.collection(col)).onSnapshot(s=>{fn(s.docs.filter(d=>d.exists));render()},()=>toast("Lost connection. Reload to reconnect."));
+  sub("tools",d=>S.tools=d.map(x=>({id:x.id,...x.data()})));
+  sub("memos",d=>S.memos=d.map(x=>({id:x.id,...x.data()})).filter(m=>!m.deleted));
+  sub("tasks",d=>S.tasks=d.map(x=>({id:x.id,...x.data()})).filter(t=>!t.deleted));
+  sub("calendar",d=>S.cal=d.find(x=>x.id==="upcoming")?.data()||null);
+  sub("gtasks",d=>S.gtasks=d.find(x=>x.id==="current")?.data()||null);
+  sub("reports",d=>S.reports=d.map(x=>({id:x.id,...x.data()})),db.collection("reports").orderBy("date","desc").limit(30));
+  sub("editions",d=>S.editions=d.map(x=>({id:x.id,data:x.data()})),db.collection("editions").orderBy("date","desc").limit(60));
+  sub("days",d=>{S.days=d.map(x=>({id:x.id,data:x.data()}));S.loaded=true},db.collection("days").orderBy("date","desc").limit(30));
+  db.collection("dues").onSnapshot(s=>{S.dues=duesById(s.docs.filter(d=>d.exists).map(d=>d.data()));render()},()=>{});
+})();
+</script>
+
