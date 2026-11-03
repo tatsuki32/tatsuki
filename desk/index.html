@@ -24,6 +24,7 @@ body{margin:0;color:var(--ink);font-family:var(--font);font-size:var(--t2);line-
 a{color:inherit}
 button{font:inherit;color:inherit}
 b,strong{font-weight:700}
+p,li{text-wrap:pretty}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
 kbd{font-family:var(--font);font-size:var(--t1);border:1px solid var(--line-2);border-radius:5px;padding:0 5px;color:var(--muted);background:transparent}
 
@@ -351,6 +352,21 @@ h1 .inedit{font-size:var(--t4);font-weight:700}
 .seg button{padding:12px;border-radius:var(--r);border:1px solid var(--line-2);background:transparent;cursor:pointer;font-weight:700;text-align:left;display:grid;gap:2px}
 .seg button small{font-weight:400;color:var(--muted);font-size:var(--t1)}
 .seg button:hover{border-color:var(--accent)}
+/* 次は？: the pick repeats the today's-three card (gold edge); the rest is separated by space and one line */
+.nextpop{width:min(500px,100%)}
+.nsec{display:grid;gap:var(--s2);padding-top:var(--s3);border-top:1px solid var(--line)}
+.nsec h3{margin:0;font-size:var(--t1);color:var(--muted);font-weight:400}
+.nsec.pick{padding:var(--s3);border:1px solid rgba(226,184,102,.32);border-radius:var(--r)}
+.nsec .hint{font-size:var(--t1)}
+.tt.big{font-size:var(--t4);line-height:1.4}
+.nline{display:grid;grid-template-columns:96px minmax(0,1fr);gap:var(--s2);align-items:baseline;font-size:var(--t2)}
+.nline span{font-size:var(--t1);color:var(--muted)}
+.nline b{overflow-wrap:anywhere}
+.nsec .nlab{font-size:var(--t1);color:var(--muted);font-weight:400;margin-top:var(--s2)}
+.tline{list-style:none;margin:0;padding:0;display:grid;gap:var(--s1);max-height:260px;overflow-y:auto}
+.tline li{display:grid;grid-template-columns:44px 64px minmax(0,1fr);gap:var(--s2);font-size:var(--t1);align-items:baseline}
+.tline time{color:var(--ink-2)}
+.tline span:last-child{overflow-wrap:anywhere;color:var(--ink-2)}
 .sheet .nav{gap:0}
 .sheet .nav a{min-height:44px}
 .sheet .railbtn{min-height:44px}
@@ -364,7 +380,7 @@ h1 .inedit{font-size:var(--t4);font-weight:700}
   .brand{padding:0}.brand b{display:none}
   .qbox{flex:1;height:40px}
   .qbox input{font-size:var(--t3)}
-  .qbox kbd,.rail .nav,.rail .foot .hint,#aiBtn{display:none}
+  .qbox kbd,.rail .nav,.rail .foot .hint,#aiBtn,#nextBtn{display:none}
   .rail .foot{margin:0;display:block}
   #noteBtn{position:fixed;z-index:30;right:max(var(--s3),env(safe-area-inset-right,0px));bottom:calc(var(--tabbar) + var(--s3) + env(safe-area-inset-bottom,0px));width:52px;height:52px;border-radius:50%;padding:0;justify-content:center;background:var(--surface-2);border:2px solid var(--accent);box-shadow:0 8px 24px rgba(0,0,0,.45)}
   #noteBtn .e{width:auto;font-size:22px}
@@ -391,6 +407,7 @@ h1 .inedit{font-size:var(--t4);font-weight:700}
     <label class="qbox"><span class="e" aria-hidden="true">🔎</span><input id="q" type="search" placeholder="検索" aria-label="すべてを検索（ノート・メモ・タスク・ニュース・メール）" autocomplete="off"><kbd>/</kbd></label>
     <nav class="nav" id="nav" aria-label="メニュー"></nav>
     <div class="foot">
+      <button class="railbtn" id="nextBtn" aria-label="何していたかと、次にやること"><span class="e">🧭</span><span class="label">次は？</span><kbd>G</kbd></button>
       <button class="railbtn" id="noteBtn" aria-label="メモを書く"><span class="e">📝</span><span class="label">メモ</span><kbd>N</kbd></button>
       <button class="railbtn" id="aiBtn" aria-label="Claude Code への機能追加の依頼をコピー"><span class="e">🤖</span><span class="label">Claude に頼む</span><kbd>C</kbd></button>
       <p class="hint"><kbd>T</kbd> タスクを足す</p>
@@ -418,7 +435,7 @@ const GROUPJA=Object.fromEntries(GROUPS.map(g=>[g[0],g[2]]));
 const REG={"Middle East":"🕌","Europe & Russia":"🏰","Asia-Pacific":"🌏","Americas":"🗽","Africa":"🌍","Global":"🌐"};
 const PRI={"Action needed":"red","Reply drafted":"amber","FYI":""};
 const PRIO={"Action needed":0,"Reply drafted":1,"FYI":2};
-const S={tools:[],editions:[],days:[],memos:[],ed:null,day:null,region:"All",q:"",confirm:null,busy:null,notes:{},local:false,dues:{},dl:[],dlMap:{},dlAll:false,quietUntil:0,tasks:[],board:[],taskCol:"notyet",cal:null,gtasks:null,reports:[],logDay:null,prompts:{},watch:[],watchId:null,focus:null,wnotes:[],noteId:null,habits:[]};
+const S={tools:[],editions:[],days:[],memos:[],ed:null,day:null,region:"All",q:"",confirm:null,busy:null,notes:{},local:false,dues:{},dl:[],dlMap:{},dlAll:false,quietUntil:0,tasks:[],board:[],taskCol:"notyet",cal:null,gtasks:null,reports:[],logDay:null,prompts:{},watch:[],watchId:null,focus:null,wnotes:[],noteId:null,habits:[],memory:null,nextSkip:0};
 let db=null;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -672,23 +689,86 @@ function tasks(){
 /* Same order as /morning-kickoff: due today → overdue → in progress → the rest; before 12:00 (HCMC) focused work first, after it admin. */
 const ADMIN=/返信|連絡|申請|手続|支払|予約|提出|確認|メール|電話/;
 const taskKind=t=>t.source==="mail"||ADMIN.test(t.title||"")?"admin":"focus";
-function topList(){
+/* the shared order: due today → overdue → in progress → fits the time of day; with under 30 minutes to the next event, quick (admin) ones first */
+function nextEvent(){const now=Date.now();return calEvents().filter(e=>!e.allDay&&e.startMs>now&&e.startMs<now+DAY).sort((a,b)=>a.startMs-b.startMs)[0]||null}
+function rankedTasks(){
   const now=Date.now(), end=Date.parse(hcmcDate()+"T23:59:59+07:00"), mode=new Date(now+HCMC).getUTCHours()<12?"focus":"admin";
-  const rank=t=>[t.deadline!=null&&t.deadline>=now&&t.deadline<=end?0:t.deadline!=null&&t.deadline<now?1:2,t.status==="doing"?0:1,taskKind(t)===mode?0:1,t.deadline??Infinity];
+  const ne=nextEvent(), short=!!ne&&ne.startMs-now<30*6e4;
+  const rank=t=>[t.deadline!=null&&t.deadline>=now&&t.deadline<=end?0:t.deadline!=null&&t.deadline<now?1:2,t.status==="doing"?0:1,short?(taskKind(t)==="admin"?0:1):0,taskKind(t)===mode?0:1,t.deadline??Infinity];
   const cmp=(a,b)=>{const x=rank(a),y=rank(b);for(let i=0;i<x.length;i++)if(x[i]!==y[i])return x[i]-y[i];return 0};
-  return S.board.filter(t=>TOPEN.has(t.status)&&t.source!=="daily").sort(cmp).slice(0,3);
+  return {list:S.board.filter(t=>TOPEN.has(t.status)&&t.source!=="daily").sort(cmp),now,end,mode,ne,short};
 }
+const whyText=(t,r)=>t.deadline!=null&&t.deadline>=r.now&&t.deadline<=r.end?"今日が締切":t.deadline!=null&&t.deadline<r.now?"今日片づけると楽になる":t.status==="doing"?"進行中のつづき":r.short&&taskKind(t)==="admin"?"次の予定まで短いので、すぐ終わるもの":taskKind(t)===r.mode?(r.mode==="focus"?"集中の時間（12時まで）に向いている":"事務の時間に向いている"):"次に近いもの";
+const mailUrl=t=>{const u=(t.mail?.uid||"").slice(5);return /^https:\/\/mail\.google\.com\//.test(u)?u:""};
+const topList=()=>rankedTasks().list.slice(0,3);
 function topThree(){
-  const now=Date.now(), end=Date.parse(hcmcDate()+"T23:59:59+07:00"), mode=new Date(now+HCMC).getUTCHours()<12?"focus":"admin";
-  const list=topList();
+  const r=rankedTasks(), list=r.list.slice(0,3);
   const slot=freeSlot(30);
-  const why=t=>t.deadline!=null&&t.deadline>=now&&t.deadline<=end?"今日が締切":t.deadline!=null&&t.deadline<now?"今日片づけると楽":t.status==="doing"?"進行中":taskKind(t)===mode?(mode==="focus"?"集中の時間に":"事務の時間に"):"";
-  const mailUrl=t=>{const u=(t.mail?.uid||"").slice(5);return /^https:\/\/mail\.google\.com\//.test(u)?u:""};
+  const why=t=>whyText(t,r);
   const row=(t,i)=>`<div class="t3row ${i?"":"first"}"><span class="t3n">${i+1}</span><div style="min-width:0"><button class="tt" data-topen="${esc(t.id)}">${esc(t.title)}</button><div class="due">${esc(why(t))}${t.deadline!=null?` · ${dlChip(t)}`:""}</div>
     <div class="t3acts">${t.status==="notyet"?`<button class="btn ${i?"sm":"primary"}" data-t3="doing" data-id="${esc(t.id)}">始める</button>`:""}${mailUrl(t)?`<a class="btn ${i?"sm":""}" href="${esc(mailUrl(t))}" target="_blank" rel="noopener">返信する</a>`:""}${slot&&!i?`<a class="btn" href="${esc(calLink(t.title,slot))}" target="_blank" rel="noopener" title="${esc(fmtDue(slot))} から30分">予定を確保</a>`:""}<button class="btn ${i?"sm":""}" data-t3="done" data-id="${esc(t.id)}">完了</button></div></div></div>`;
   return `<section class="card t3" aria-label="今日の3つ">${list.length?list.map(row).join(""):`<div class="empty"><b>今日の3つはありません</b>のんびりどうぞ。T キーでタスクを足せます。</div>`}</section>`;
 }
 const t3Mode=()=>new Date(Date.now()+HCMC).getUTCHours()<12?"集中の時間（12時まで）":"事務の時間";
+/* ---------- 🧭 次は？: what I was doing (memory/ + the desk) and the one thing to do next ---------- */
+/* plain words for the popup: no code, file names, PR numbers or brackets; about 40 characters */
+const plainMem=x=>String(x||"").replace(/`[^`]*`/g,"").replace(/[（(][^）)]*[）)]/g,"").replace(/\S+\/\S+|#\d+/g,"").replace(/\s+/g," ").trim().slice(0,40);
+const short=t=>{t=String(t||"").replace(/^作りたい機能[①-⑳]?（\d+）/,"");return t.length>24?t.slice(0,23)+"…":t};
+/* one timeline, newest first: Claude's commits (from memory/ → log) and what changed on the desk (tasks, notes, memos, habits) */
+const hm=ms=>new Date(ms+HCMC).toISOString().slice(11,16);
+const minsAgo=ms=>{const m=Math.round((Date.now()-ms)/6e4);return m<1?"たった今":m<60?m+"分前":Math.floor(m/60)+"時間"+(m%60?m%60+"分":"")+"前"};
+function timeline(){
+  const out=(S.memory?.log||[]).map(x=>({at:x.at,k:x.kind==="merge"?"🚚":"🤖",t:x.text}));
+  S.tasks.filter(t=>!t.deleted&&t.updatedAt).forEach(t=>out.push({at:t.updatedAt,k:"🗂️",t:`タスク「${short(t.title)}」→ ${tLabel(t.status)}`}));
+  noteList().filter(n=>n.updatedAt).forEach(n=>out.push({at:n.updatedAt,k:"📒",t:`ノート「${short(n.title)}」を更新`}));
+  S.memos.filter(m=>m.updatedAt||m.createdAt).forEach(m=>out.push({at:m.updatedAt||m.createdAt,k:"📝",t:`メモ「${short((m.text||"").split("\n")[0])}」${m.done?"を完了":""}`}));
+  habitList().filter(h=>h.updatedAt).forEach(h=>out.push({at:h.updatedAt,k:"🌱",t:`習慣「${short(h.name)}」を記録`}));
+  return out.filter(x=>x.at&&x.at<=Date.now()+6e4).sort((a,b)=>b.at-a.at).slice(0,40);
+}
+const memLines=(xs,n)=>(xs||[]).slice(0,n).map(x=>`<li>${esc(String(x).replace(/`/g,""))}</li>`).join("");
+function recentTouch(){
+  const xs=[...S.tasks.filter(t=>!t.deleted).map(t=>({k:"🗂️",t:t.title,at:t.updatedAt||0})),...noteList().map(n=>({k:"📒",t:n.title,at:n.updatedAt||0})),...S.memos.map(m=>({k:"📝",t:(m.text||"").split("\n")[0].slice(0,60),at:m.updatedAt||m.createdAt||0}))];
+  return xs.filter(x=>x.t).sort((a,b)=>b.at-a.at).slice(0,3);
+}
+function openNext(){
+  if($("#modal").firstChild) return;
+  const m=S.memory, ses=m?.sessions?.[0], sec=ses?.sections||{}, r=rankedTasks(), cands=r.list, pick=cands.length?cands[S.nextSkip%cands.length]:null;
+  const doing=S.board.filter(t=>t.status==="doing").slice(0,3), touch=recentTouch();
+  const ne=r.ne, left=ne?ne.startMs-r.now:null;
+  const nextLine=ne?`次の予定「${esc(ne.title)}」まで ${left<HOUR?Math.round(left/6e4)+"分":Math.floor(left/HOUR)+"時間"+Math.floor(left%HOUR/6e4)+"分"}`:"このあとの予定はありません";
+  $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop nextpop" role="dialog" aria-modal="true" aria-label="何していたかと、次にやること">
+    <div class="top"><h2>🧭 次は？</h2><button class="ibtn" id="xNext" aria-label="閉じる">✕</button></div>
+    <section class="nsec pick"><h3>👉 次はこれ</h3>
+      ${pick?`<button class="tt big" data-topen="${esc(pick.id)}">${esc(pick.title)}</button>
+        <p class="hint">理由：${esc(whyText(pick,r))}${pick.deadline!=null?` · 期日 ${esc(fmtDue(pick.deadline))}`:""}</p>
+        <p class="hint">⏱ ${nextLine}${r.short?"（短いので、すぐ終わる部分だけ）":""}</p>
+        <p class="hint" id="nextStep"></p>
+        <div class="row">${pick.status==="notyet"?`<button class="btn primary" data-nx="doing">始める</button>`:""}${mailUrl(pick)?`<a class="btn" href="${esc(mailUrl(pick))}" target="_blank" rel="noopener">返信する</a>`:""}<button class="btn" data-nx="done">完了</button>${cands.length>1?`<button class="btn" data-nx="skip">別の候補（${S.nextSkip%cands.length+1}/${cands.length}）</button>`:""}${S.sampleOk?`<button class="btn" data-nx="ai">最初の一歩を聞く</button>`:""}</div>`
+        :`<p class="hint">今は急ぐものがありません。${(sec["次の一手"]||[])[0]?"前回決めた次の一手から始めるのがおすすめです。":"のんびりどうぞ。"}</p>`}
+    </section>
+    <section class="nsec"><h3>📍 何していたか</h3>
+      ${(()=>{const hk=(sec["ひとこと"]||[]),pickL=k=>hk.filter(x=>x.startsWith(k)).map(x=>x.replace(/^[^：:]+[：:]\s*/,""));
+        const now=pickL("いま")[0]||plainMem((sec["やったこと"]||[]).slice(-1)[0]), nx=pickL("次")[0]||plainMem((sec["次の一手"]||[])[0]), wait=pickL("待ち");
+        return ses?`<div class="nline"><span>📍 いま</span><b>${esc(now||"記録なし")}</b></div><div class="nline"><span>⏭ 次</span><b>${esc(nx||"記録なし")}</b></div>${wait.map(w=>`<div class="nline wait"><span>🙋 あなた待ち</span><b>${esc(w)}</b></div>`).join("")}<p class="hint">Claude の記録 · ${esc(ago(m.updatedAt||ses.updatedAt||0))}</p>`
+          :`<p class="hint">Claude の作業記録はまだ届いていません。${S.local?"":"Mac の毎時同期で届きます。"}</p>`})()}
+      ${(()=>{const tl=timeline(),hr=tl.filter(x=>x.at>=Date.now()-HOUR),list=hr.length?hr:tl.slice(0,5);
+        return list.length?`<b class="nlab">🕘 ${hr.length?"この1時間にやったこと（"+hr.length+"件）":"この1時間は作業なし。最後の作業"}</b><ol class="tline">${list.map(x=>`<li><time>${esc(hm(x.at))}</time><span class="sub">${esc(minsAgo(x.at))}</span><span>${x.k} ${esc(x.t)}</span></li>`).join("")}</ol>`:""})()}
+      ${doing.length?`<p class="hint">🗂️ 進行中 ${doing.length}件（<button class="tt" data-topen="${esc(doing[0].id)}">${esc(short(doing[0].title))}</button>${doing.length>1?" ほか":""}）</p>`:""}
+    </section>
+  </div></div>`;
+  const close=()=>{$("#modal").innerHTML="";$("#nextBtn").focus()};
+  $("#xNext").onclick=close;$("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};
+  $("#scrim").onkeydown=e=>{if(e.key==="Escape")close()};
+  document.querySelectorAll(".nextpop [data-topen]").forEach(b=>b.onclick=()=>{close();openTask(b.dataset.topen)});
+  document.querySelectorAll("[data-nx]").forEach(b=>b.onclick=async()=>{const a=b.dataset.nx;
+    if(a==="skip"){S.nextSkip++;close();return openNext()}
+    if(a==="ai"){b.disabled=true;$("#nextStep").textContent="🤖 考えています…";
+      try{const sample=await claude.use("sample");const res=await sample.json(`次のタスクに取りかかる「最初の5分でやる一歩」を、具体的な動作1つで、日本語40字以内で提案してください。JSON で {"step":"…"} だけを返してください。\nタスク：${pick.title}\nメモ：${String(pick.note||"").slice(0,300)}\n状況：${whyText(pick,r)}。${nextLine}`,{modelTier:"quick"});
+        $("#nextStep").textContent="⏱ まず5分："+String(res?.step||"").slice(0,80)}catch(e){$("#nextStep").textContent="聞けませんでした。もう一度お試しください"}finally{b.disabled=false}return}
+    await setTaskStatus(pick.id,a);close()});
+  $("#xNext").focus();
+}
+
 /* the next free stretch of `min` minutes today (on the half hour, until 22:00 HCMC), avoiding timed events */
 function freeSlot(min){
   const step=30*6e4, len=min*6e4, stop=Date.parse(hcmcDate()+"T22:00:00+07:00");
@@ -1221,12 +1301,14 @@ function openMore(){
   $("#modal").innerHTML=`<div class="scrim bottom" id="scrim"><div class="pop sheet" role="dialog" aria-modal="true" aria-label="その他の画面">
     <div class="top"><h2>画面を選ぶ</h2><button class="ibtn" id="xMore" aria-label="閉じる">✕</button></div>
     <nav class="nav">${navHtml()}</nav>
+    <button class="railbtn" id="moreNext"><span class="e">🧭</span>次は？（何してた？）</button>
     <button class="railbtn" id="moreAsk"><span class="e">🤖</span>Claude に頼む</button>
   </div></div>`;
   const close=()=>{$("#modal").innerHTML=""};
   $("#xMore").onclick=close;$("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};
   $("#modal").querySelectorAll(".nav a").forEach(a=>a.addEventListener("click",close));
   $("#moreAsk").onclick=()=>{close();openAsk()};
+  $("#moreNext").onclick=()=>{close();S.nextSkip=0;openNext()};
 }
 
 /* ---------- notes shown on a page ---------- */
@@ -1247,7 +1329,7 @@ function home(){
   const tools=S.tools.filter(t=>!t.deleted), daily=tools.filter(t=>t.group==="Daily").sort((a,b)=>(a.order??99)-(b.order??99));
   const top=topThreeIds();
   return `
-  <header class="head"><div><p class="eyebrow">${d.toLocaleDateString("ja-JP",{month:"long",day:"numeric",weekday:"long"})} · ${greet} · ${t3Mode()}</p><h1>今日の3つ</h1></div></header>
+  <header class="head"><div><p class="eyebrow">${d.toLocaleDateString("ja-JP",{month:"long",day:"numeric",weekday:"long"})} · ${greet} · ${t3Mode()}</p><h1>今日の3つ</h1></div><button class="btn" data-opennext>次は？</button></header>
   ${topThree()}
   <div class="duo">${todayEvents()}${habitStrip()||`<section class="card"><div class="dhead"><h2><span class="e">🌱</span>今日の習慣</h2><a class="more" href="#habits">足す →</a></div><div class="empty">続けたいことを「習慣」で足せます。</div></section>`}</div>
   ${todayPanel(top)}
@@ -1401,6 +1483,7 @@ function wire(){
   $("#logDay")&&($("#logDay").onchange=e=>{S.logDay=e.target.value;render()});
   document.querySelectorAll("[data-region]").forEach(b=>b.onclick=()=>{S.region=b.dataset.region;render()});
   document.querySelectorAll("[data-filter]").forEach(b=>b.onclick=()=>{S.inboxFilter=b.dataset.filter;render()});
+  document.querySelectorAll("[data-opennext]").forEach(b=>b.onclick=()=>{S.nextSkip=0;openNext()});
   document.querySelectorAll("[data-t3]").forEach(b=>b.onclick=()=>setTaskStatus(b.dataset.id,b.dataset.t3));
   document.querySelectorAll("[data-habit]").forEach(b=>b.onclick=()=>toggleHabit(b.dataset.habit,b.dataset.day));
   document.querySelectorAll("[data-hedit]").forEach(b=>b.onclick=()=>newHabit(S.habits.find(x=>x.id===b.dataset.hedit)));
@@ -1500,10 +1583,12 @@ function openAsk(){
   ta.onkeydown=e=>{if(e.key==="Enter"&&(e.metaKey||e.ctrlKey)){e.preventDefault();go()} if(e.key==="Escape")close()};
 }
 $("#aiBtn").onclick=openAsk;
+$("#nextBtn").onclick=()=>{S.nextSkip=0;openNext()};
 document.addEventListener("keydown",e=>{const t=e.target.tagName;if(t==="INPUT"||t==="TEXTAREA"||t==="SELECT")return;
   if(e.key==="n"||e.key==="N"){e.preventDefault();openNote()}
   if(e.key==="c"||e.key==="C"){if(e.metaKey||e.ctrlKey)return;e.preventDefault();openAsk()}
   if(e.key==="t"||e.key==="T"){if(e.metaKey||e.ctrlKey)return;e.preventDefault();openTask(null)}
+  if(e.key==="g"||e.key==="G"){if(e.metaKey||e.ctrlKey)return;e.preventDefault();S.nextSkip=0;openNext()}
   if(e.key==="/"){e.preventDefault();$("#q").focus()}});
 window.addEventListener("hashchange",()=>{S.confirm=null;hideSelMenu();if(location.hash==="#notes"&&!S.noteKeep)S.noteId=null;S.noteKeep=false;const f=S.focus!=null;if(!f)window.scrollTo(0,0);render()});
 
@@ -1512,7 +1597,7 @@ render();
 (async()=>{
   if(Array.isArray(window.TOOLS)){ // PC version
     try{S.dues=JSON.parse(localStorage.getItem("desk-dues")||"{}")||{}}catch(e){S.dues={}}
-    S.loaded=true;S.local=true;S.tools=window.TOOLS;S.editions=window.WORLD||[];S.days=window.MAIL||[];S.cal=window.CAL||null;S.gtasks=window.GTASKS||null;S.reports=window.REPORTS||[];S.watch=window.WATCH||[];
+    S.loaded=true;S.local=true;S.tools=window.TOOLS;S.editions=window.WORLD||[];S.days=window.MAIL||[];S.cal=window.CAL||null;S.gtasks=window.GTASKS||null;S.reports=window.REPORTS||[];S.watch=window.WATCH||[];S.memory=window.MEMORY||null;
     if(LOCALAPI){await loadApiMemos();setInterval(loadApiMemos,30000);window.addEventListener("focus",loadApiMemos);return}
     try{S.memos=JSON.parse(localStorage.getItem("desk-memos")||"[]")}catch(e){S.memos=[]}
     try{S.tasks=JSON.parse(localStorage.getItem("desk-tasks")||"[]")}catch(e){S.tasks=[]}
@@ -1528,6 +1613,7 @@ render();
   sub("memos",d=>S.memos=d.map(x=>({id:x.id,...x.data()})).filter(m=>!m.deleted));
   sub("tasks",d=>S.tasks=d.map(x=>({id:x.id,...x.data()})).filter(t=>!t.deleted));
   sub("notes",d=>S.wnotes=d.map(x=>({id:x.id,...x.data()})).filter(n=>!n.deleted));
+  sub("memory",d=>S.memory=d.find(x=>x.id==="current")?.data()||null);
   sub("habits",d=>S.habits=d.map(x=>({id:x.id,...x.data()})).filter(h=>!h.deleted));
   claude.use("sample").then(x=>{S.sampleOk=!!x;render()});
   sub("prompts",d=>S.prompts=promptsById(d.map(x=>({id:x.id,...x.data()}))));

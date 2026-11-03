@@ -10,11 +10,11 @@ claude.ai のチャットで直接編集しない。変更は必ずここで行�
 
 ### 構成
 
-- 単一HTML（外部ライブラリなし、Google Fonts のみ）。黒基調・金色アクセント。
+- 単一HTML（外部ライブラリ・Webフォントなし。端末の日本語ゴシック）。黒基調・金色アクセント。
 - ビュー（メニューは4つのまとまり）: 今日＝Home（焦点は「今日の3つ」）/ Tasks / Calendar / 習慣、届いたもの＝Morning Mail / Inbox、読む＝World Desk / マイナー国、書く・振り返る＝ノート / Claude Log / ツール。
   iPhone は下にタブ（ホーム・タスク・カレンダー・ノート・その他）、メモは右下の丸ボタン。検索はどの画面でも `/`。
 - データはページに埋め込まない。オンライン版は Artifact DB（`window.claude` の `db`）から読む:
-  `tools`, `memos`, `tasks`, `dues`, `prompts`（毎日の求人チェックの Claude プロンプト。経歴入りなのでリポジトリに入れない）, `notes`（Scrapbox 風のノート。[言葉] でつながる）, `habits`（罰を与えない習慣。doc ごとに `done` に日付の配列）, `calendar`(doc `upcoming`), `gtasks`(doc `current`),
+  `tools`, `memos`, `tasks`, `dues`, `prompts`（毎日の求人チェックの Claude プロンプト。経歴入りなのでリポジトリに入れない）, `notes`（Scrapbox 風のノート。[言葉] でつながる）, `habits`（罰を与えない習慣。doc ごとに `done` に日付の配列）, `memory`(doc `current`。memory/ の要約で「🧭 次は？」が読む。毎時同期で Mac から載せる), `calendar`(doc `upcoming`), `gtasks`(doc `current`),
   `reports`, `editions`, `days`, `watch`（マイナー国ウォッチの号。doc id は日付、本文はマークダウン）
 - Mac版も同じ `desk/index.html` を使う。`desk/server.py`（Python標準ライブラリのみ）が
   `http://localhost:4747` で配信し、`desk/data/*.js`（`window.TOOLS` 等）をページに差し込む。
@@ -30,6 +30,7 @@ claude.ai のチャットで直接編集しない。変更は必ずここで行�
 - メール送信（Gmail `send_message`）はオンライン版のみ、送信前の確認を必ず残す。
 - Claude Code のコマンド（`.claude/commands/`）：`/morning-kickoff`・`/begin`（Mac 用）、`/recap`（文脈要約。標準の `/resume` と別）、`/rsd`、`/sync`・`/learn`・`/knowledge`。毎回守るルールは `.claude/rules/`。
 - コミット前フック `.githooks/pre-commit`（`core.hooksPath`。SessionStart と setup-mac.sh で有効化）。実名などの禁止語は `tools/banned-words.local.txt`（git に入れない）。公開前チェック：`npm run validate-writing <file>`。
+- Desk の「🧭 次は？」（右上・G キー）：何していたか（memory/ ＋進行中・最近さわったもの）と、次の1つ（今日の3つと同じ順番、次の予定まで30分未満なら短いもの）。Mac 版は `server.py` が memory/ を毎回読んで `window.MEMORY` に入れる。
 - `/morning-kickoff` は Mac 用。`desk/kickoff.py` が `desk/data/` と memory/ から今日の候補を出す（読むだけ。`start <id>` だけが localhost:4747 にタスクの状態を書く）。
 
 ### 公開手順（Claude Code から）
@@ -57,6 +58,8 @@ claude.ai のチャットで直接編集しない。変更は必ずここで行�
 
 - 「何してたっけ？」「続き」と言われたら：下の STATE と `memory/episodic/sessions/` の新しい3件を読み、現状・直前の決定・次の一手を5行以内で答える。根拠のファイル名を添える。
 - 作業の区切り（コミットするとき・セッションを終えるとき）に、`memory/episodic/sessions/YYYY-MM-DD-話題.md`（1セッション1ファイル）を書き、必要なら `memory/STATE.md` を更新して一緒にコミットする。STATE は40行まで。
+- セッション記録の先頭には「## ひとこと」（いま・次・待ち を各20字くらい、専門用語なし）を書く。Desk の「🧭 次は？」はここだけを出す。
+- コミットの1行目は Desk の「🕘 この1時間にやったこと」にそのまま出る。日本語で、何をしたか分かる言葉で書く（60字まで）。
 - 同じことを2回調べたら `memory/semantic/patterns/` に知識として残す。
 - **このリポジトリは公開。** memory/ には技術的な中身だけを書く。メール本文・予定・メモの本文・健康のこと・経歴・実名・メールアドレス・URLの秘密部分・キーは書かない。
 - 書き忘れは Stop フック（`.claude/hooks/remind-memory.sh`）が1セッション1回だけ知らせる。

@@ -1,18 +1,19 @@
 # 今の状態（STATE）
 
-最終更新：2026-11-03（ブランチ `claude/peaceful-galileo-etb77g`）
+最終更新：2026-11-03（ブランチ `claude/peaceful-galileo-etb77g`、main を取り込み済み）
 
 ## 進行中の作業
 - 作りたい機能リスト（全11件）を順番に作っている。Desk のタスク「作りたい機能①〜⑪」で進み具合を見る。
   - ① CLAUDE.md＋memory/（外付けメモリ）… 完了
   - ②〜⑪ もすべて最小版を実装（2026-11-03）。Mac での本番確認はマージ後。使ってみて直す段階。
   - ③ は標準の /resume とぶつかるので `/recap`。⑦ ペルソナは仮の設定（Tatsuki が決めたら /sync）。
-- ブランチ `claude/vigilant-babbage-033h8w` が main に未マージ（URL変更ボタン、Scrapbox風リンク、memory/）。Mac に届くのはマージ後。
+- 全部 main にマージ済み（tatsuki32/tatsuki#9、2026-11-03）。Mac で実際に動かして直す段階。
 
-- Desk の UI/UX 作り替え（ノンデザイナーズ・デザインブック準拠）：要件定義の承認待ち。index.html は未変更。
+- Desk の UI/UX 作り替え（ノンデザイナーズ・デザインブック準拠）：実装済み・オンライン版に公開。ブランチ `claude/peaceful-galileo-etb77g` は main に未マージ（Mac に届くのはマージ後）。
 
 ## 決定済みの事項
-- UI/UX を作るときは毎回、本を全文読んでから（`.claude/rules/design-ui.md`）。本の後半 p.137〜 は Drive から読めていない。
+- UI/UX を作るときは毎回、本を全文読んでから（`.claude/rules/design-ui.md`）。Drive の文字変換は p.136 まで。後半は Tatsuki のまとめで補っている。
+- Desk の見た目：文字 12/14/16/20/28px・太さ 400/700・余白 4/8/16/24/40px。金は今いる場所・焦点・主ボタン・外部リンクだけ。ボタンに絵文字を付けない。
 - 機能追加は `/desk-feature` の流れ（質問 → 要件定義 → 承認 → 実装）。質問はすべて日本語で聞く。
 - Claude Code 用の機能（コマンド・ルール・フック）はこのリポジトリに置く（`.claude/`、`memory/`）。
 - Desk のリンクの色は Scrapbox 式：青＝つながっている（中身のあるノートがある or 2か所以上で使用）、赤＝孤立。外部リンクは金色。
