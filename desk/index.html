@@ -59,6 +59,15 @@ h2{font-family:var(--display);font-weight:600;font-size:14px;letter-spacing:-.00
 .nsec{display:grid;gap:6px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--bg)}
 .nsec h3{margin:0;font-size:13.5px}
 .nsec ul{margin:0;padding-left:18px;display:grid;gap:3px;font-size:13px;color:var(--ink-2)}
+.nline{display:grid;grid-template-columns:96px minmax(0,1fr);gap:8px;align-items:baseline;font-size:14px}
+.nline span{font-size:12px;color:var(--muted);font-weight:600}
+.nline b{font-weight:600;overflow-wrap:anywhere}
+.nline.wait b{color:var(--accent)}
+.tline{list-style:none;margin:0;padding:0;display:grid;gap:4px;max-height:260px;overflow-y:auto}
+.tline li{display:grid;grid-template-columns:42px 62px minmax(0,1fr);gap:6px;font-size:12.5px;align-items:baseline}
+.tline time{font-family:var(--mono);color:var(--accent);font-variant-numeric:tabular-nums}
+.tline .sub{font-size:11.5px}
+.tline span:last-child{overflow-wrap:anywhere;color:var(--ink-2)}
 .nsec .nlab{font-size:12px;color:var(--muted);font-weight:600;margin-top:4px}
 .nsec.pick{border-color:var(--accent);background:var(--accent-soft)}
 .tt.big{font-size:16px}
@@ -660,6 +669,20 @@ function topThree(){
     ${list.length?list.map(row).join(""):`<div class="empty"><b>今日の3つはありません</b>のんびりどうぞ。T キーでタスクを足せます。</div>`}</section>`;
 }
 /* ---------- 🧭 次は？: what I was doing (memory/ + the desk) and the one thing to do next ---------- */
+/* plain words for the popup: no code, file names, PR numbers or brackets; about 40 characters */
+const plainMem=x=>String(x||"").replace(/`[^`]*`/g,"").replace(/[（(][^）)]*[）)]/g,"").replace(/\S+\/\S+|#\d+/g,"").replace(/\s+/g," ").trim().slice(0,40);
+const short=t=>{t=String(t||"").replace(/^作りたい機能[①-⑳]?（\d+）/,"");return t.length>24?t.slice(0,23)+"…":t};
+/* one timeline, newest first: Claude's commits (from memory/ → log) and what changed on the desk (tasks, notes, memos, habits) */
+const hm=ms=>new Date(ms+HCMC).toISOString().slice(11,16);
+const minsAgo=ms=>{const m=Math.round((Date.now()-ms)/6e4);return m<1?"たった今":m<60?m+"分前":Math.floor(m/60)+"時間"+(m%60?m%60+"分":"")+"前"};
+function timeline(){
+  const out=(S.memory?.log||[]).map(x=>({at:x.at,k:x.kind==="merge"?"🚚":"🤖",t:x.text}));
+  S.tasks.filter(t=>!t.deleted&&t.updatedAt).forEach(t=>out.push({at:t.updatedAt,k:"🗂️",t:`タスク「${short(t.title)}」→ ${tLabel(t.status)}`}));
+  noteList().filter(n=>n.updatedAt).forEach(n=>out.push({at:n.updatedAt,k:"📒",t:`ノート「${short(n.title)}」を更新`}));
+  S.memos.filter(m=>m.updatedAt||m.createdAt).forEach(m=>out.push({at:m.updatedAt||m.createdAt,k:"📝",t:`メモ「${short((m.text||"").split("\n")[0])}」${m.done?"を完了":""}`}));
+  habitList().filter(h=>h.updatedAt).forEach(h=>out.push({at:h.updatedAt,k:"🌱",t:`習慣「${short(h.name)}」を記録`}));
+  return out.filter(x=>x.at&&x.at<=Date.now()+6e4).sort((a,b)=>b.at-a.at).slice(0,40);
+}
 const memLines=(xs,n)=>(xs||[]).slice(0,n).map(x=>`<li>${esc(String(x).replace(/`/g,""))}</li>`).join("");
 function recentTouch(){
   const xs=[...S.tasks.filter(t=>!t.deleted).map(t=>({k:"🗂️",t:t.title,at:t.updatedAt||0})),...noteList().map(n=>({k:"📒",t:n.title,at:n.updatedAt||0})),...S.memos.map(m=>({k:"📝",t:(m.text||"").split("\n")[0].slice(0,60),at:m.updatedAt||m.createdAt||0}))];
@@ -682,11 +705,13 @@ function openNext(){
         :`<p class="hint">今は急ぐものがありません。${(sec["次の一手"]||[])[0]?"前回決めた次の一手から始めるのがおすすめです。":"のんびりどうぞ。"}</p>`}
     </section>
     <section class="nsec"><h3>📍 何していたか</h3>
-      ${ses?`<p class="hint">${esc(ses.title)}${m.updatedAt?` · 記録 ${esc(ago(m.updatedAt))}`:""}</p>
-        ${(sec["中断した場所"]||[]).length?`<b class="nlab">⏸ 止まっている所</b><ul>${memLines(sec["中断した場所"],2)}</ul>`:""}
-        ${(sec["次の一手"]||[]).length?`<b class="nlab">👉 前回決めた次の一手</b><ul>${memLines(sec["次の一手"],2)}</ul>`:""}`:`<p class="hint">Claude の作業記録（memory/）はまだ届いていません。${S.local?"":"Mac の毎時同期で届きます。"}</p>`}
-      ${doing.length?`<b class="nlab">🗂️ 進行中のタスク</b><ul>${doing.map(t=>`<li><button class="tt" data-topen="${esc(t.id)}">${esc(t.title)}</button></li>`).join("")}</ul>`:""}
-      ${touch.length?`<b class="nlab">🕘 最近さわったもの</b><ul>${touch.map(x=>`<li>${x.k} ${esc(x.t)} <span class="sub">${esc(ago(x.at))}</span></li>`).join("")}</ul>`:""}
+      ${(()=>{const hk=(sec["ひとこと"]||[]),pickL=k=>hk.filter(x=>x.startsWith(k)).map(x=>x.replace(/^[^：:]+[：:]\s*/,""));
+        const now=pickL("いま")[0]||plainMem((sec["やったこと"]||[]).slice(-1)[0]), nx=pickL("次")[0]||plainMem((sec["次の一手"]||[])[0]), wait=pickL("待ち");
+        return ses?`<div class="nline"><span>📍 いま</span><b>${esc(now||"記録なし")}</b></div><div class="nline"><span>⏭ 次</span><b>${esc(nx||"記録なし")}</b></div>${wait.map(w=>`<div class="nline wait"><span>🙋 あなた待ち</span><b>${esc(w)}</b></div>`).join("")}<p class="hint">Claude の記録 · ${esc(ago(m.updatedAt||ses.updatedAt||0))}</p>`
+          :`<p class="hint">Claude の作業記録はまだ届いていません。${S.local?"":"Mac の毎時同期で届きます。"}</p>`})()}
+      ${(()=>{const tl=timeline(),hr=tl.filter(x=>x.at>=Date.now()-HOUR),list=hr.length?hr:tl.slice(0,5);
+        return list.length?`<b class="nlab">🕘 ${hr.length?"この1時間にやったこと（"+hr.length+"件）":"この1時間は作業なし。最後の作業"}</b><ol class="tline">${list.map(x=>`<li><time>${esc(hm(x.at))}</time><span class="sub">${esc(minsAgo(x.at))}</span><span>${x.k} ${esc(x.t)}</span></li>`).join("")}</ol>`:""})()}
+      ${doing.length?`<p class="hint">🗂️ 進行中 ${doing.length}件（<button class="tt" data-topen="${esc(doing[0].id)}">${esc(short(doing[0].title))}</button>${doing.length>1?" ほか":""}）</p>`:""}
     </section>
   </div></div>`;
   const close=()=>{$("#modal").innerHTML="";$("#nextBtn").focus()};

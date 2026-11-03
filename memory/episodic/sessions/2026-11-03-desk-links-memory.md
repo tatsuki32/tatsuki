@@ -1,4 +1,10 @@
-# 2026-11-03 Desk：ツールのURL変更・Scrapbox風リンク・外付けメモリ（claude/vigilant-babbage-033h8w）
+# 2026-11-03 Desk に新機能をまとめて追加
+
+## ひとこと
+- いま：Desk と Claude の新機能を全部入れ終わった
+- 次：Mac で実際に使ってみて、使いにくい所を直す
+- 待ち：リポジトリを非公開にする（GitHub の設定）
+- 待ち：VINEPRO Board の説明と、Mac で使う番号を教えてもらう
 
 ## やったこと
 - Home のツールタイルに ✏️「URLを変更」を追加（`urlEditable:true` のツールだけ、オンライン版だけ）。Mac で動く自作ツールを「VINEPRO Board」として `tools` に登録。

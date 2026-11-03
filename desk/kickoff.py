@@ -14,6 +14,7 @@ import glob
 import json
 import os
 import re
+import subprocess
 import sys
 import time
 import urllib.request
@@ -179,9 +180,20 @@ def memory_doc():
         title = next((l[2:].strip() for l in text.splitlines() if l.startswith("# ")), os.path.basename(p))
         sessions.append({"file": os.path.relpath(p, REPO), "title": title, "sections": sections(text),
                          "updatedAt": int(os.path.getmtime(p) * 1000)})
+    log = []
+    try:  # Claude's (and anyone's) commits in the last 24 hours, newest first: when and what, in plain words
+        out = subprocess.run(["git", "-C", REPO, "log", "--since=24 hours ago", "--pretty=%ct%x09%s", "-n", "60"],
+                             capture_output=True, text=True, timeout=5).stdout
+        for line in out.splitlines():
+            ts, _, subj = line.partition("\t")
+            m = re.match(r"Merge pull request #(\d+)", subj)
+            text = f"変更を main に取り込んだ（Mac に届く）" if m else re.sub(r"`[^`]*`", "", subj).strip()
+            log.append({"at": int(ts) * 1000, "text": text[:80], "kind": "merge" if m else "commit"})
+    except (OSError, subprocess.SubprocessError, ValueError):
+        pass
     paths = [os.path.join(mem, "STATE.md")] + files[:1]
     stamp = max([int(os.path.getmtime(p) * 1000) for p in paths if os.path.exists(p)] or [0])
-    return {"state": sections(state_text), "sessions": sessions, "updatedAt": stamp}
+    return {"state": sections(state_text), "sessions": sessions, "log": log, "updatedAt": stamp}
 
 
 def kind_of(t):
