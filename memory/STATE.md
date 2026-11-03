@@ -10,7 +10,7 @@
 - 全部 main にマージ済み（tatsuki32/tatsuki#9、2026-11-03）。Mac で実際に動かして直す段階。
 
 - Desk の UI/UX 作り替え：main にマージ済み（tatsuki32/tatsuki#12）。
-- Desk 全体の文字リンク（Scrapbox 式）：実装済み。ブランチ `claude/youthful-euler-rdiqyd`、main は未マージ。iPhone 実機の長押しは未確認。
+- Desk 全体の文字リンク（Scrapbox 式）：実装済み。ブランチ `claude/youthful-euler-rdiqyd`、main は未マージ。オンライン版は `claude/keen-cerf-6t81q1`（Claude コマンド一覧、未マージ）と合わせて公開済み。iPhone 実機の長押しは未確認。
 
 ## 決定済みの事項
 - UI/UX を作るときは毎回、本を全文読んでから（`.claude/rules/design-ui.md`）。Drive の文字変換は p.136 まで。後半は Tatsuki のまとめで補っている。
