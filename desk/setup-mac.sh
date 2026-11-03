@@ -21,7 +21,7 @@ unload() { launchctl bootout "gui/$UID_/$1" 2>/dev/null || true; rm -f "$AGENTS/
 
 if [[ "${1:-}" == "--uninstall" ]]; then
   unload com.tatsuki.desk.server; unload com.tatsuki.desk.pull
-  echo "Removed the Desk background jobs. Your data in $DESK/data is untouched."; exit 0
+  echo "Desk の常駐ジョブを削除しました。$DESK/data のデータはそのまま残っています。"; exit 0
 fi
 
 [[ -n "$PY" ]] || { echo "python3 が見つかりません。ターミナルで xcode-select --install を実行してから、もう一度どうぞ。"; exit 1; }
@@ -51,9 +51,9 @@ OLD="$HOME/Documents/ClaudeTools/data"
 for c in memos dues tasks; do
   if [[ -f "$OLD/$c.json" && ! -f "$DESK/data/$c.json" ]]; then
     if "$PY" -c "import json,sys; v=json.load(open(sys.argv[1])); sys.exit(0 if isinstance(v,list) and all(isinstance(x,dict) and x.get('id') for x in v) else 1)" "$OLD/$c.json"; then
-      cp "$OLD/$c.json" "$DESK/data/$c.json"; echo "Copied old $c.json"
+      cp "$OLD/$c.json" "$DESK/data/$c.json"; echo "旧版の $c.json を取り込みました"
     else
-      echo "Skipped old $c.json (different format; the hourly sync will fill it from the online desk)"
+      echo "旧版の $c.json は形式が違うので取り込みませんでした（毎時の同期でオンライン版から入ります）"
     fi
   fi
 done
@@ -94,7 +94,7 @@ for _ in 1 2 3 4 5 6 7 8 9 10; do
   curl -fsS "http://localhost:$PORT/health" >/dev/null 2>&1 && break; sleep 0.5
 done
 if curl -fsS "http://localhost:$PORT/health" >/dev/null 2>&1; then
-  echo "✅ Desk is running: http://localhost:$PORT"
+  echo "✅ Desk が起動しました: http://localhost:$PORT"
   open "http://localhost:$PORT" 2>/dev/null || true
 else
   echo "サーバーが起動しませんでした。ログ: $LOGS/tatsuki-desk.log"; exit 1
