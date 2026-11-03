@@ -1,0 +1,8 @@
+{
+  "name": "tatsuki-tools",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "validate-writing": "node tools/validate-writing.mjs"
+  }
+}

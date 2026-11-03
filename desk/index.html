@@ -54,6 +54,28 @@ h2{font-family:var(--display);font-weight:600;font-size:14px;letter-spacing:-.00
 .search input{flex:1;min-width:0;background:transparent;border:0;outline:none;color:var(--ink);font-size:14px}
 .tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
 .tile{display:grid;grid-template-columns:32px minmax(0,1fr);gap:2px 10px;align-items:start;padding:9px 10px;border-radius:10px;background:var(--surface);border:1px solid var(--line);text-decoration:none;cursor:pointer;text-align:left;transition:border-color .15s,background .15s}
+/* today's three + habits */
+.t3row{display:grid;grid-template-columns:22px minmax(0,1fr);gap:4px 10px;padding:10px 12px;border-top:1px solid var(--line)}
+.t3row:first-of-type{border-top:0}
+.t3n{font-family:var(--mono);font-size:12px;color:var(--accent);padding-top:2px}
+.t3row .tt{font-size:14px}
+.t3acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.t3acts .btn{padding:4px 10px;font-size:12.5px}
+.hchips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 12px}
+.hchip{border:1px solid var(--line-2);background:var(--surface-2);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer;color:var(--ink-2)}
+.hchip.on{background:var(--green-soft);border-color:transparent;color:var(--green)}
+.habits{display:grid;gap:10px}
+.habit{padding:12px 14px;display:grid;gap:10px}
+.hhead{display:grid;grid-template-columns:32px minmax(0,1fr) auto;gap:10px;align-items:center}
+.hhead .ico{width:32px;height:32px;border-radius:8px;background:var(--surface-2);border:1px solid var(--line);display:grid;place-items:center;font-size:17px}
+.hdays{display:grid;grid-template-columns:repeat(14,minmax(0,1fr));gap:4px}
+.hday{aspect-ratio:1;min-width:0;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--muted);font-family:var(--mono);font-size:10.5px;cursor:pointer;padding:0}
+.hday.on{background:var(--green-soft);border-color:transparent;color:var(--green);font-weight:600}
+.habit .row{justify-content:flex-end;gap:2px}
+.tilewrap{position:relative;display:grid;min-width:0}
+.tilewrap .tile{padding-right:44px}
+.tilewrap .tedit{position:absolute;top:4px;right:4px;min-width:36px;min-height:36px;display:grid;place-items:center}
+.tilewrap .tedit:hover{border-color:var(--line-2);background:var(--surface-2)}
 .tile:hover{border-color:var(--line-2);background:var(--surface-2)}
 .tile .ico{grid-row:span 2;width:32px;height:32px;border-radius:8px;background:var(--surface-2);border:1px solid var(--line);display:grid;place-items:center;font-size:17px}
 .tile .t{font-weight:600;font-size:13px;line-height:1.35;min-width:0;text-decoration:none}
@@ -259,10 +281,14 @@ select{background:var(--surface);color:var(--ink);border:1px solid var(--line);b
 .rrow:hover{background:var(--surface-2)}
 .rrow .snip{display:block;font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rrow .snip b{color:var(--accent);font-weight:600}
-.wl{color:var(--accent);text-decoration:none;border-bottom:1px dotted currentColor}
-.wl.new{color:var(--muted)}
+/* links, coloured like Scrapbox: blue = connected (the note has content, or the word is linked in 2+ places), red = alone; outside links gold with ↗ */
+.wl{color:var(--blue);text-decoration:none;border-bottom:1px dotted currentColor}
+.wl.lone{color:var(--red)}
 .wl:hover{color:var(--ink)}
-a.ext{color:var(--blue);text-decoration:none}
+a.ext{color:var(--accent);text-decoration:none}
+.hop{padding:12px 14px;display:grid;gap:12px}
+.hop .grp{display:grid;gap:6px}
+.hop .grp>h3{margin:0;font-size:12.5px;font-weight:600;color:var(--ink-2)}
 .wiki{padding:14px 16px;line-height:1.7;overflow-wrap:anywhere}
 .wiki h3{font-size:15px;margin:10px 0 2px}.wiki .li{padding-left:14px;position:relative}.wiki .li::before{content:"・";position:absolute;left:0;color:var(--muted)}
 .wiki .gap{height:8px}.wiki>:first-child{margin-top:0}
@@ -338,7 +364,7 @@ h1 .inedit{font-size:20px;font-weight:600}
 <div id="toastHost"></div>
 
 <script>
-const VIEWS=[{id:"home",e:"🏠",label:"ホーム"},{id:"tasks",e:"🗂️",label:"タスク"},{id:"notes",e:"📒",label:"ノート"},{id:"calendar",e:"📅",label:"カレンダー"},{id:"news",e:"🌍",label:"世界ニュース"},{id:"watch",e:"🗺️",label:"マイナー国"},{id:"mail",e:"✉️",label:"朝のメール"},{id:"inbox",e:"📥",label:"受信箱"},{id:"log",e:"🤖",label:"Claudeの記録"}];
+const VIEWS=[{id:"home",e:"🏠",label:"ホーム"},{id:"tasks",e:"🗂️",label:"タスク"},{id:"notes",e:"📒",label:"ノート"},{id:"calendar",e:"📅",label:"カレンダー"},{id:"news",e:"🌍",label:"世界ニュース"},{id:"watch",e:"🗺️",label:"マイナー国"},{id:"mail",e:"✉️",label:"朝のメール"},{id:"inbox",e:"📥",label:"受信箱"},{id:"habits",e:"🌱",label:"習慣"},{id:"log",e:"🤖",label:"Claudeの記録"}];
 /* Stored values (group, region, priority, status) stay in English so sync and older data keep working; only the labels shown are Japanese. */
 const GROUPS=[["Daily","☀️","毎日"],["Work","💼","仕事"],["Study","🎓","学習"],["Folders","🗂️","フォルダ"],["Other","✨","その他"]];
 const REGJA={"Middle East":"中東","Europe & Russia":"欧州・ロシア","Asia-Pacific":"アジア太平洋","Americas":"南北アメリカ","Africa":"アフリカ","Global":"世界全体","All":"すべて"};
@@ -347,7 +373,7 @@ const GROUPJA=Object.fromEntries(GROUPS.map(g=>[g[0],g[2]]));
 const REG={"Middle East":"🕌","Europe & Russia":"🏰","Asia-Pacific":"🌏","Americas":"🗽","Africa":"🌍","Global":"🌐"};
 const PRI={"Action needed":"red","Reply drafted":"amber","FYI":""};
 const PRIO={"Action needed":0,"Reply drafted":1,"FYI":2};
-const S={tools:[],editions:[],days:[],memos:[],ed:null,day:null,region:"All",q:"",confirm:null,busy:null,notes:{},local:false,dues:{},dl:[],dlMap:{},dlAll:false,quietUntil:0,tasks:[],board:[],taskCol:"notyet",cal:null,gtasks:null,reports:[],logDay:null,prompts:{},watch:[],watchId:null,focus:null,wnotes:[],noteId:null};
+const S={tools:[],editions:[],days:[],memos:[],ed:null,day:null,region:"All",q:"",confirm:null,busy:null,notes:{},local:false,dues:{},dl:[],dlMap:{},dlAll:false,quietUntil:0,tasks:[],board:[],taskCol:"notyet",cal:null,gtasks:null,reports:[],logDay:null,prompts:{},watch:[],watchId:null,focus:null,wnotes:[],noteId:null,habits:[]};
 let db=null;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -362,8 +388,8 @@ function toast(t){const el=document.createElement("div");el.className="toast";el
 const LOCALAPI=/^https?:$/.test(location.protocol)&&/^(localhost|127\.0\.0\.1)$/.test(location.hostname);
 async function api(method,path,body){const r=await fetch(path,{method,headers:{"Content-Type":"application/json"},body:body?JSON.stringify(body):undefined});if(!r.ok)throw new Error(r.status);return r.json()}
 async function loadApiMemos(){try{
-  const [memos,dues,tasks,prompts,notes]=await Promise.all([api("GET","/api/memos"),api("GET","/api/dues"),api("GET","/api/tasks"),api("GET","/api/prompts").catch(()=>[]),api("GET","/api/notes").catch(()=>[])]);
-  S.memos=memos.filter(m=>!m.deleted);S.dues=duesById(dues);S.tasks=tasks.filter(t=>!t.deleted);S.prompts=promptsById(prompts);S.wnotes=notes.filter(n=>!n.deleted);render()}catch(e){toast("Desk サーバーにつながりません。起動していますか？")}}
+  const [memos,dues,tasks,prompts,notes,habits]=await Promise.all([api("GET","/api/memos"),api("GET","/api/dues"),api("GET","/api/tasks"),api("GET","/api/prompts").catch(()=>[]),api("GET","/api/notes").catch(()=>[]),api("GET","/api/habits").catch(()=>[])]);
+  S.habits=habits.filter(h=>!h.deleted);S.memos=memos.filter(m=>!m.deleted);S.dues=duesById(dues);S.tasks=tasks.filter(t=>!t.deleted);S.prompts=promptsById(prompts);S.wnotes=notes.filter(n=>!n.deleted);render()}catch(e){toast("Desk サーバーにつながりません。起動していますか？")}}
 const promptsById=list=>Object.fromEntries(list.filter(p=>p&&p.id&&!p.deleted).map(p=>[p.id,p]));
 const duesById=list=>Object.fromEntries(list.filter(v=>v&&v.uid).map(v=>[v.uid,v]));
 const store={
@@ -390,6 +416,10 @@ const store={
     if(db){await db.collection("notes").doc(n.id).set(rec)}
     else if(LOCALAPI){await api("PUT","/api/notes/"+encodeURIComponent(n.id),rec);await loadApiMemos()}
     else {S.wnotes=[...S.wnotes.filter(x=>x.id!==n.id),{id:n.id,...rec}];try{localStorage.setItem("desk-notes",JSON.stringify(S.wnotes))}catch(e){}render()} },
+  async putHabit(h){ const rec={name:h.name||"",emoji:h.emoji||"🌱",done:[...new Set(h.done||[])].sort(),createdAt:h.createdAt||Date.now(),updatedAt:Date.now(),deleted:!!h.deleted};
+    if(db){await db.collection("habits").doc(h.id).set(rec)}
+    else if(LOCALAPI){await api("PUT","/api/habits/"+encodeURIComponent(h.id),rec);await loadApiMemos()}
+    else {S.habits=[...S.habits.filter(x=>x.id!==h.id),{id:h.id,...rec}].filter(x=>!x.deleted);try{localStorage.setItem("desk-habits",JSON.stringify(S.habits))}catch(e){}render()} },
   async putPrompt(id,p){ const rec={title:p.title||"",body:p.body||"",updatedAt:Date.now(),deleted:false};
     if(db){await db.collection("prompts").doc(id).set(rec)}
     else if(LOCALAPI){await api("PUT","/api/prompts/"+encodeURIComponent(id),rec);await loadApiMemos()}
@@ -593,6 +623,70 @@ function tasks(){
   ${S.local&&!LOCALAPI?'<p class="sub">ファイルとして開いているので、タスクはこのブラウザにだけ保存されます。「Start Desk」を実行すると Mac に保存されます。</p>':""}`;
 }
 /* Home: one to-do list = everything in progress, then everything Not yet (mail included), each by nearest due date. */
+/* ---------- today's three: the first things to do, each with a one-tap action ---------- */
+/* Same order as /morning-kickoff: due today → overdue → in progress → the rest; before 12:00 (HCMC) focused work first, after it admin. */
+const ADMIN=/返信|連絡|申請|手続|支払|予約|提出|確認|メール|電話/;
+const taskKind=t=>t.source==="mail"||ADMIN.test(t.title||"")?"admin":"focus";
+function topThree(){
+  const now=Date.now(), end=Date.parse(hcmcDate()+"T23:59:59+07:00"), mode=new Date(now+HCMC).getUTCHours()<12?"focus":"admin";
+  const rank=t=>[t.deadline!=null&&t.deadline>=now&&t.deadline<=end?0:t.deadline!=null&&t.deadline<now?1:2,t.status==="doing"?0:1,taskKind(t)===mode?0:1,t.deadline??Infinity];
+  const cmp=(a,b)=>{const x=rank(a),y=rank(b);for(let i=0;i<x.length;i++)if(x[i]!==y[i])return x[i]-y[i];return 0};
+  const list=S.board.filter(t=>TOPEN.has(t.status)&&t.source!=="daily").sort(cmp).slice(0,3);
+  const slot=freeSlot(30);
+  const why=t=>t.deadline!=null&&t.deadline>=now&&t.deadline<=end?"今日が締切":t.deadline!=null&&t.deadline<now?"今日片づけると楽":t.status==="doing"?"進行中":taskKind(t)===mode?(mode==="focus"?"集中の時間に":"事務の時間に"):"";
+  const mailUrl=t=>{const u=(t.mail?.uid||"").slice(5);return /^https:\/\/mail\.google\.com\//.test(u)?u:""};
+  const row=(t,i)=>`<div class="t3row"><span class="t3n">${i+1}</span><div style="min-width:0"><button class="tt" data-topen="${esc(t.id)}">${esc(t.title)}</button><div class="due">${esc(why(t))}${t.deadline!=null?` · ${dlChip(t)}`:""}</div>
+    <div class="t3acts">${t.status==="notyet"?`<button class="btn" data-t3="doing" data-id="${esc(t.id)}">▶️ 始める</button>`:""}${mailUrl(t)?`<a class="btn" href="${esc(mailUrl(t))}" target="_blank" rel="noopener">✉️ 返信</a>`:""}${slot?`<a class="btn" href="${esc(calLink(t.title,slot))}" target="_blank" rel="noopener" title="${esc(fmtDue(slot))} から30分">📅 予定確保</a>`:""}<button class="btn" data-t3="done" data-id="${esc(t.id)}">✅ 完了</button></div></div></div>`;
+  return `<section class="card t3" aria-label="今日の3つ"><div class="dhead"><h2>☀️ 今日の3つ</h2><span class="sub">${mode==="focus"?"集中の時間（12時まで）":"事務の時間"} · ここから1つずつ</span></div>
+    ${list.length?list.map(row).join(""):`<div class="empty"><b>今日の3つはありません</b>のんびりどうぞ。T キーでタスクを足せます。</div>`}</section>`;
+}
+/* the next free stretch of `min` minutes today (on the half hour, until 22:00 HCMC), avoiding timed events */
+function freeSlot(min){
+  const step=30*6e4, len=min*6e4, stop=Date.parse(hcmcDate()+"T22:00:00+07:00");
+  const busy=calEvents().filter(e=>!e.allDay).map(e=>[e.startMs,e.endMs]);
+  let t=Math.ceil((Date.now()+5*6e4)/step)*step;
+  while(t+len<=stop){const hit=busy.find(([a,b])=>a<t+len&&b>t);if(!hit)return t;t=Math.ceil(hit[1]/step)*step}
+  return null;
+}
+const gcalTime=ms=>new Date(ms).toISOString().replace(/[-:]/g,"").replace(/\.\d{3}/,"");
+const calLink=(title,ms)=>"https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent(title)+"&dates="+gcalTime(ms)+"/"+gcalTime(ms+30*6e4);
+
+/* ---------- habits: counted, never punished. Missed days are simply not counted; nothing resets, nothing turns red. ---------- */
+const habitList=()=>S.habits.filter(h=>!h.deleted).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
+const dayOff=(d,n)=>new Date(Date.parse(d+"T12:00:00Z")+n*DAY).toISOString().slice(0,10);
+function habitStats(h){
+  const done=new Set(h.done||[]), today=hcmcDate(), wk=[...Array(7)].map((_,i)=>dayOff(today,-i));
+  const last=[...done].sort().pop();
+  return {total:done.size,week:wk.filter(d=>done.has(d)).length,today:done.has(today),last};
+}
+async function toggleHabit(id,day){
+  const h=S.habits.find(x=>x.id===id);if(!h)return;day=day||hcmcDate();
+  const done=new Set(h.done||[]);const on=!done.has(day);on?done.add(day):done.delete(day);
+  try{await store.putHabit({...h,done:[...done]});if(on)toast(["🌱 できました","🌱 1回ぶん増えました","🌱 いいですね"][Math.floor(Math.random()*3)])}catch(e){toast("保存できませんでした")}
+}
+function habitStrip(){
+  const list=habitList(); if(!list.length) return "";
+  return `<section class="card hstrip" aria-label="今日の習慣"><div class="dhead"><h2>🌱 今日の習慣</h2><span class="sub">できたら押すだけ</span><a class="btn" href="#habits">一覧</a></div>
+    <div class="hchips">${list.map(h=>{const st=habitStats(h);return `<button class="hchip ${st.today?"on":""}" data-habit="${esc(h.id)}" aria-pressed="${st.today}">${esc(h.emoji||"🌱")} ${esc(h.name)}${st.today?" ✓":""}</button>`}).join("")}</div></section>`;
+}
+function habitsView(){
+  const list=habitList(), today=hcmcDate(), days=[...Array(14)].map((_,i)=>dayOff(today,i-13));
+  const card=h=>{const st=habitStats(h),done=new Set(h.done||[]);
+    return `<article class="card habit"><div class="hhead"><span class="ico">${esc(h.emoji||"🌱")}</span><div style="min-width:0"><b>${esc(h.name)}</b><div class="sub">これまで ${st.total}回 · この7日で ${st.week}回${st.last&&!st.today?` · 前回 ${esc(st.last.slice(5).replace("-","/"))}`:""}</div></div>
+      <button class="btn ${st.today?"":"primary"}" data-habit="${esc(h.id)}">${st.today?"✓ 今日できた":"今日できた"}</button></div>
+      <div class="hdays" aria-label="この14日">${days.map(d=>`<button class="hday ${done.has(d)?"on":""}" data-habit="${esc(h.id)}" data-day="${d}" title="${esc(d)}${done.has(d)?" できた":""}" aria-label="${esc(d)} ${done.has(d)?"できた":"記録なし"}">${+d.slice(8)}</button>`).join("")}</div>
+      <div class="row"><button class="ibtn" data-hedit="${esc(h.id)}" aria-label="名前を変える">✏️</button><button class="ibtn" data-hdel="${esc(h.id)}" aria-label="やめる">🗑️</button></div></article>`};
+  return `<header class="head"><div><p class="eyebrow">習慣</p><h1>続けたいこと</h1></div><button class="btn primary" id="newHabit">＋ 習慣を足す</button></header>
+  <p class="sub" style="margin:0">できた日を数えます。できなかった日は数えないだけで、何もリセットされません。過去の日も押して記録できます。</p>
+  ${notesHere("habits")}
+  ${list.length?`<div class="habits">${list.map(card).join("")}</div>`:`<div class="card empty"><b>まだ習慣がありません</b>「＋ 習慣を足す」から。たとえば「5分歩く」「水を1杯」など、小さいもので十分です。</div>`}`;
+}
+async function newHabit(h){
+  const name=(prompt(h?"新しい名前":"習慣の名前（例：5分歩く）",h?.name||"")||"").trim().slice(0,40); if(!name) return;
+  const m=/^(\p{Extended_Pictographic}\uFE0F?)\s*(.*)$/u.exec(name);
+  const rec=h?{...h,name:m?m[2]||name:name,emoji:m?m[1]:h.emoji}:{id:"h"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),name:m?m[2]||name:name,emoji:m?m[1]:"🌱",done:[],createdAt:Date.now()};
+  try{await store.putHabit(rec)}catch(e){toast("保存できませんでした")}
+}
 function todayPanel(){
   const MAX=8;
   const doing=S.board.filter(t=>t.status==="doing").sort(byDeadline), notyet=S.board.filter(t=>t.status==="notyet").sort(byDeadline);
@@ -613,7 +707,7 @@ function openTask(id){
       :isLinked?`<p class="hint">${TSRC[t.source][0]} ${TSRC[t.source][1]}${t.due!=null?" · 期日 "+esc(fmtDue(t.due)):""} · 期日とタイトルは元の場所で変更${okUrl(t.url)?` · <a href="${esc(t.url)}" target="_blank" rel="noopener">開く ↗</a>`:""}${t.source==="gtasks"?"<br>「完了」にすると、次の更新で Google タスク側も完了になります。":""}</p>`
       :`<label class="sub" for="tDue">期日（任意）</label><input type="datetime-local" id="tDue" value="${t?.due!=null?toLocalInput(t.due):""}">`}
     <label class="sub" for="tStatus">ステータス</label><select id="tStatus">${TSTATUS.map(([k,l])=>`<option value="${k}" ${k===(t?.status||"notyet")?"selected":""}>${l}</option>`).join("")}</select>
-    <label class="sub" for="tNote">メモ</label><textarea id="tNote" class="tnote" placeholder="必要なら詳細を。[言葉] でノートにつながります">${esc(t?.note||"")}</textarea>${t&&linksIn(t.note).length?`<p class="hint">🔗 ${linksIn(t.note).map(x=>`<a class="wl" href="#notes" data-wiki="${esc(x)}">${esc(x)}</a>`).join(" ")}</p>`:""}
+    <label class="sub" for="tNote">メモ</label><textarea id="tNote" class="tnote" placeholder="必要なら詳細を。[言葉] でノートにつながります">${esc(t?.note||"")}</textarea>${t&&linksIn(t.note).length?`<p class="hint">🔗 ${linksIn(t.note).map(x=>wlink(x)).join(" ")}</p>`:""}
     <div class="row"><button class="btn primary" id="tSave">保存 <kbd>⌘/Ctrl + Enter</kbd></button><button class="btn" id="tCancel">キャンセル</button>${t&&!isLinked?`<button class="btn" id="tDel" style="margin-left:auto;color:var(--red)">🗑️ 削除</button>`:""}</div>
   </div></div>`;
   const ti=$("#tTitle");ti.focus();ti.setSelectionRange(ti.value.length,ti.value.length);
@@ -777,8 +871,7 @@ function wikiInline(raw){
     const m=/^\[([^\[\]\n]+)\]$/.exec(part); if(!m) return esc(part);
     const inner=m[1].trim();
     if(/^https:\/\//.test(inner)){const [,url,label]=/^(\S+)(?:\s+(.+))?$/.exec(inner);return `<a class="ext" href="${esc(url)}" target="_blank" rel="noopener">${esc(label||url)} ↗</a>`}
-    const n=noteByTitle(inner);
-    return `<a class="wl ${n?"":"new"}" href="#notes" data-wiki="${esc(inner)}">${esc(inner)}</a>`;
+    return wlink(inner);
   }).join("");
 }
 /* a whole body: "# heading", "- bullet", blank lines; everything else a line */
@@ -790,6 +883,45 @@ function wikiBlock(raw){
   }).join("");
 }
 const linksIn=raw=>[...String(raw||"").matchAll(/\[([^\[\]\n]+)\]/g)].map(m=>m[1].trim()).filter(t=>!/^https:\/\//.test(t));
+/* Where each [word] is used: one count per note, memo, task note, or news article (a note whose body cites that article's URL).
+   Recounted only when notes, memos or tasks change. */
+const SRC_LINE=/^\s*出典[：:]/;
+const hasContent=n=>String(n?.body||"").split("\n").some(l=>l.trim()&&!SRC_LINE.test(l));
+let LS=null;
+function linkStats(){
+  if(LS&&LS.n===S.wnotes&&LS.m===S.memos&&LS.t===S.tasks) return LS;
+  const count=new Map(), add=(raw,extra=[])=>new Set([...linksIn(raw),...extra].map(normTitle)).forEach(k=>count.set(k,(count.get(k)||0)+1));
+  noteList().forEach(n=>{add(n.body);
+    const urls=[...String(n.body||"").matchAll(/^\s*出典[：:]\s*\[(https:\/\/\S+)/gm)];if(urls.length)count.set(normTitle(n.title),(count.get(normTitle(n.title))||0)+urls.length)});
+  S.memos.forEach(m=>add(m.text));S.tasks.filter(t=>!t.deleted).forEach(t=>add(t.note));
+  return LS={n:S.wnotes,m:S.memos,t:S.tasks,count};
+}
+const linkUses=t=>linkStats().count.get(normTitle(t))||0;
+const linkLone=t=>!hasContent(noteByTitle(t))&&linkUses(t)<2;
+const wlink=t=>`<a class="wl${linkLone(t)?" lone":""}" href="#notes" data-wiki="${esc(t)}"${linkLone(t)?' title="まだどこにもつながっていません"':""}>${esc(t)}</a>`;
+/* news and Minor Countries: words linked from an article show as links inside it (first match per note, per article) */
+function linkSources(root){
+  root.querySelectorAll("[data-src]").forEach(el=>{
+    const url=el.dataset.src; if(!/^https:\/\//.test(url)) return;
+    const titles=noteList().filter(n=>n.title&&String(n.body||"").includes("["+url)).map(n=>n.title).sort((a,b)=>b.length-a.length);
+    titles.forEach(t=>{
+      const w=document.createTreeWalker(el,NodeFilter.SHOW_TEXT,{acceptNode:x=>x.parentElement.closest("a,button,select,textarea,.wl")?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT});
+      let x;while(x=w.nextNode()){const i=x.data.toLowerCase().indexOf(t.toLowerCase());if(i<0)continue;
+        const r=document.createRange();r.setStart(x,i);r.setEnd(x,i+t.length);
+        const tpl=document.createElement("template");tpl.innerHTML=wlink(t);const link=tpl.content.firstChild;link.textContent=x.data.slice(i,i+t.length);
+        r.deleteContents();r.insertNode(link);break}
+    });
+  });
+}
+/* 2-hop: for each [word] in this note, the other notes that also link it (and the word's own note) */
+function twoHop(n){
+  const me=normTitle(n.title), seen=new Set();
+  return [...new Set(linksIn(n.body).map(normTitle))].filter(k=>k&&k!==me).map(k=>{
+    const page=noteByTitle(k);
+    const others=noteList().filter(x=>x.id!==n.id&&x.id!==page?.id&&linksIn(x.body).some(y=>normTitle(y)===k));
+    return {word:page?.title||linksIn(n.body).find(y=>normTitle(y)===k),page,others};
+  }).filter(g=>g.others.length);
+}
 function backlinks(n){
   const t=normTitle(n.title), has=raw=>linksIn(raw).some(x=>normTitle(x)===t);
   return [...noteList().filter(x=>x.id!==n.id&&has(x.body)).map(x=>({kind:"note",id:x.id,title:x.title})),
@@ -810,7 +942,8 @@ function notesView(){
     return `<header class="head"><div><p class="eyebrow"><a href="#notes" data-notelist>📒 ノート</a> · 更新 ${esc(ago(n.updatedAt||n.createdAt||0))}</p><h1 class="ntitle" data-edit="notetitle:${esc(n.id)}">${esc(n.title)}</h1></div>
       <div class="row"><button class="btn" data-editnow="note:${esc(n.id)}">✏️ 編集</button><button class="btn" id="noteDel" style="color:var(--red)">🗑️</button></div></header>
     <article class="card wiki" data-edit="note:${esc(n.id)}">${n.body?wikiBlock(n.body):`<p class="sub">まだ何も書いていません。「✏️ 編集」か、ここを選んで書き始めてください。[言葉] で別のノートにつながります。</p>`}</article>
-    <section class="card backl"><h2>🔗 このノートにリンクしているもの <span class="count">${bl.length}</span></h2>${bl.length?`<ul>${bl.map(b=>`<li><button class="tt" data-blk="${b.kind}" data-id="${esc(b.id)}">${{note:"📒",memo:"📝",task:"🗂️"}[b.kind]} ${esc(b.title)}</button></li>`).join("")}</ul>`:`<p class="sub" style="margin:0">まだありません。ほかのノートやメモに [${esc(n.title)}] と書くとここに出ます。</p>`}</section>`;
+    <section class="card backl"><h2>🔗 このノートにリンクしているもの <span class="count">${bl.length}</span></h2>${bl.length?`<ul>${bl.map(b=>`<li><button class="tt" data-blk="${b.kind}" data-id="${esc(b.id)}">${{note:"📒",memo:"📝",task:"🗂️"}[b.kind]} ${esc(b.title)}</button></li>`).join("")}</ul>`:`<p class="sub" style="margin:0">まだありません。ほかのノートやメモに [${esc(n.title)}] と書くとここに出ます。</p>`}</section>
+    ${(h=>h.length?`<section class="card hop"><h2>🕸️ つながり <span class="sub">同じ言葉でつながるノート</span></h2>${h.map(g=>`<div class="grp"><h3>${wlink(g.word)} 経由</h3><div class="ngrid">${[g.page,...g.others].filter(Boolean).map(x=>`<button class="card ncard" data-nopen="${esc(x.id)}"><b>${esc(x.title)}</b><span>${esc(String(x.body||"").replace(/[\[\]#]/g,"").slice(0,90))}</span></button>`).join("")}</div></div>`).join("")}</section>`:"")(twoHop(n))}`;
   }
   const list=noteList().sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
   return `<header class="head"><div><p class="eyebrow">ノート</p><h1>ノート</h1></div><button class="btn primary" id="newNote">＋ 新しいノート</button></header>
@@ -856,7 +989,7 @@ function showSelMenu(){
   hideSelMenu();
   selMenu=document.createElement("div");selMenu.className="selmenu";selMenu.setAttribute("role","menu");
   const [kind,id]=(own?.dataset.edit||"").split(/:(.*)/s);
-  selMenu.innerHTML=own?`<button data-sel="edit">✏️ 編集</button>${kind!=="notetitle"?`<button data-sel="link">🔗 リンクにする</button>`:""}`:`<button data-sel="note">📒 ノートにする</button>`;
+  selMenu.innerHTML=own?`<button data-sel="edit">✏️ 編集</button>${kind!=="notetitle"?`<button data-sel="link">🔗 リンクにする</button>`:""}`:`<button data-sel="srclink">🔗 リンクにする</button>`;
   document.body.appendChild(selMenu);
   const w=selMenu.offsetWidth, x=Math.max(8,Math.min(innerWidth-w-8,r.left+r.width/2-w/2)), below=r.bottom+8+40<innerHeight;
   selMenu.style.left=x+"px";selMenu.style.top=(below?r.bottom+8:Math.max(8,r.top-48))+"px";
@@ -865,9 +998,13 @@ function showSelMenu(){
     if(a==="edit") return startEdit(own,txt);
     if(a==="link"){const raw=rawOf(kind,id);const i=findOutsideBrackets(raw,txt);if(i<0){toast("この文字はすでにリンクか、見つかりませんでした");return}
       try{await saveRaw(kind,id,raw.slice(0,i)+"["+txt+"]"+raw.slice(i+txt.length));toast("🔗 リンクにしました")}catch(err){toast("保存できませんでした")}}
-    if(a==="note"){const n0=noteByTitle(txt);if(n0)return openWiki(txt);
-      const from=src.dataset.src||"", label=src.dataset.srclabel||"元の記事";
-      try{const n={id:newNoteId(),title:txt.slice(0,80),body:from&&/^https:\/\//.test(from)?`出典：[${from} ${label}]\n`:"",createdAt:Date.now()};await store.putNote(n);S.noteId=n.id;S.noteKeep=true;location.hash="notes";toast("📒 ノートにしました")}catch(err){toast("ノートを作れませんでした")}}
+    if(a==="srclink"){ // stay on the article: the word turns into a link here, and its note keeps where it came from
+      const title=txt.replace(/[\[\]\n]/g," ").replace(/\s+/g," ").trim().slice(0,80); if(!title) return;
+      const from=src.dataset.src||"", label=(src.dataset.srclabel||"元の記事").replace(/[\[\]\n]/g," "), line=/^https:\/\//.test(from)?`出典：[${from} ${label}]`:"";
+      const n0=noteByTitle(title);
+      try{if(!n0) await store.putNote({id:newNoteId(),title,body:line?line+"\n":"",createdAt:Date.now()});
+        else if(line&&!String(n0.body||"").includes("["+from)) await store.putNote({...n0,body:String(n0.body||"").replace(/\s+$/,"")+(n0.body?"\n":"")+line+"\n"});
+        toast(line?"🔗 リンクにしました":"🔗 リンクにしました（この記事にはURLがないので、ノートだけ作りました）");render()}catch(err){toast("保存できませんでした")}}
   };
 }
 function findOutsideBrackets(raw,txt){
@@ -1042,6 +1179,8 @@ function home(){
   ${searchResults()}
   ${newsDigest()}
   <div class="glance"><a class="gchip ${act?"hot":""}" href="#mail">✉️ 要対応メール <b>${act}</b></a><a class="gchip" href="#inbox">📥 受信箱のメモ <b>${inbox}</b></a><button class="gchip" id="soundBtn" ${actx?"hidden":""}>🔈 通知音をオン</button></div>
+  ${topThree()}
+  ${habitStrip()}
   ${todayEvents()}
   ${todayPanel()}
   ${notesHere("home")}
@@ -1054,7 +1193,31 @@ function newsDigest(){
   return `<details class="card digest" ${S.digestOpen?"open":""} id="digest"><summary>📰 今日のニュースまとめ <span class="count">${st.length}本</span><span class="sub">${esc(e.data.headline||"")}</span></summary>
     <ol>${st.map((s,i)=>`<li><button class="tt" data-story="${i}" data-ed="${esc(e.id)}"><span aria-hidden="true">${REG[s.region]||"🌐"}</span> ${esc(s.title)}</button></li>`).join("")}</ol></details>`;
 }
+/* a tile whose URL changes (a Cloudflare quick tunnel) gets ✏️ to paste the new one; online only, the Mac opens t.local */
 function tile(t){
+  const html=tileBody(t);
+  return t.urlEditable&&db?`<div class="tilewrap">${html}<button class="ibtn tedit" data-turl="${esc(t.id)}" title="URLを変更" aria-label="${esc(t.name)} のURLを変更">✏️</button></div>`:html;
+}
+function openToolUrl(id){
+  const t=S.tools.find(x=>x.id===id); if(!t||!db||$("#modal").firstChild) return;
+  $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop" role="dialog" aria-modal="true" aria-label="URLを変更">
+    <div class="top"><h2>✏️ URLを変更</h2><button class="ibtn" id="xTurl" aria-label="閉じる">✕</button></div>
+    <p class="hint" style="overflow-wrap:anywhere">${esc(t.emoji||"🧩")} ${esc(t.name)}</p>
+    <label class="sub" for="turlInput">新しいURL</label>
+    <input type="text" id="turlInput" inputmode="url" autocomplete="off" spellcheck="false" value="${esc(t.url||"")}">
+    <p class="hint" id="turlErr" role="alert"></p>
+    <div class="row"><button class="btn primary" id="turlSave">保存</button><button class="btn" id="turlCancel">やめる</button></div>
+  </div></div>`;
+  const inp=$("#turlInput"), close=()=>{$("#modal").innerHTML=""};
+  inp.focus();inp.select();
+  $("#turlSave").onclick=async()=>{const u=inp.value.trim();
+    if(!/^https:\/\/[^\s"'<>]+$/.test(u)){$("#turlErr").textContent="URL の形が正しくありません（https:// で始まるURLを貼ってください）";inp.focus();return}
+    try{await db.collection("tools").doc(t.id).update({url:u,updatedAt:Date.now()});close();toast("URL を変更しました")}catch(e){$("#turlErr").textContent="保存できませんでした。もう一度お試しください"}};
+  $("#turlCancel").onclick=close;$("#xTurl").onclick=close;
+  $("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};
+  inp.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();$("#turlSave").click()}if(e.key==="Escape")close()};
+}
+function tileBody(t){
   const href=S.local&&t.local?t.local:(t.url||t.local||"");
   const ext=/^https?:/.test(href);
   const meta=`<span class="meta">${t.schedule?`<span class="pill live">⏱ ${esc(t.schedule)}</span>`:""}${(t.tags||[]).slice(0,2).map(x=>`<span class="pill">${esc(x)}</span>`).join("")}</span>`;
@@ -1134,7 +1297,8 @@ function render(){
   updateBadges();checkNew();
   renderNav();
   const v=viewId();
-  $("#view").innerHTML=v==="notes"?notesView():v==="watch"?watch():v==="tasks"?tasks():v==="calendar"?calendar():v==="news"?news():v==="mail"?mail():v==="inbox"?inbox():v==="log"?log():home();
+  $("#view").innerHTML=v==="notes"?notesView():v==="watch"?watch():v==="tasks"?tasks():v==="calendar"?calendar():v==="news"?news():v==="mail"?mail():v==="inbox"?inbox():v==="habits"?habitsView():v==="log"?log():home();
+  if(v==="news"||v==="watch") linkSources($("#view"));
   wire();
   if(v==="news"&&S.focus!=null){const el=document.getElementById("story-"+S.focus);S.focus=null;if(el){el.classList.add("flash");setTimeout(()=>el.scrollIntoView({block:"start"}),0)}}
 }
@@ -1159,6 +1323,12 @@ function wire(){
   $("#logDay")&&($("#logDay").onchange=e=>{S.logDay=e.target.value;render()});
   document.querySelectorAll("[data-region]").forEach(b=>b.onclick=()=>{S.region=b.dataset.region;render()});
   document.querySelectorAll("[data-filter]").forEach(b=>b.onclick=()=>{S.inboxFilter=b.dataset.filter;render()});
+  document.querySelectorAll("[data-t3]").forEach(b=>b.onclick=()=>setTaskStatus(b.dataset.id,b.dataset.t3));
+  document.querySelectorAll("[data-habit]").forEach(b=>b.onclick=()=>toggleHabit(b.dataset.habit,b.dataset.day));
+  document.querySelectorAll("[data-hedit]").forEach(b=>b.onclick=()=>newHabit(S.habits.find(x=>x.id===b.dataset.hedit)));
+  document.querySelectorAll("[data-hdel]").forEach(b=>b.onclick=async()=>{const h=S.habits.find(x=>x.id===b.dataset.hdel);if(h&&confirm("「"+h.name+"」をやめますか？記録は残りません。"))await store.putHabit({...h,deleted:true})});
+  $("#newHabit")&&($("#newHabit").onclick=()=>newHabit());
+  document.querySelectorAll("[data-turl]").forEach(b=>b.onclick=()=>openToolUrl(b.dataset.turl));
   document.querySelectorAll("[data-memo]").forEach(b=>b.onclick=async()=>{const m=S.memos.find(x=>x.id===b.dataset.id);if(!m)return;try{
     if(b.dataset.memo==="totask") return memoToTask(m);
     if(b.dataset.memo==="done") await store.patchMemo(m.id,{done:!m.done});
@@ -1267,6 +1437,7 @@ render();
     try{S.tasks=JSON.parse(localStorage.getItem("desk-tasks")||"[]")}catch(e){S.tasks=[]}
     try{S.prompts=JSON.parse(localStorage.getItem("desk-prompts")||"{}")||{}}catch(e){S.prompts={}}
     try{S.wnotes=JSON.parse(localStorage.getItem("desk-notes")||"[]")||[]}catch(e){S.wnotes=[]}
+    try{S.habits=JSON.parse(localStorage.getItem("desk-habits")||"[]")||[]}catch(e){S.habits=[]}
     return render();
   }
   db=window.claude?await claude.use("db"):null;
@@ -1276,6 +1447,7 @@ render();
   sub("memos",d=>S.memos=d.map(x=>({id:x.id,...x.data()})).filter(m=>!m.deleted));
   sub("tasks",d=>S.tasks=d.map(x=>({id:x.id,...x.data()})).filter(t=>!t.deleted));
   sub("notes",d=>S.wnotes=d.map(x=>({id:x.id,...x.data()})).filter(n=>!n.deleted));
+  sub("habits",d=>S.habits=d.map(x=>({id:x.id,...x.data()})).filter(h=>!h.deleted));
   claude.use("sample").then(x=>{S.sampleOk=!!x;render()});
   sub("prompts",d=>S.prompts=promptsById(d.map(x=>({id:x.id,...x.data()}))));
   sub("calendar",d=>S.cal=d.find(x=>x.id==="upcoming")?.data()||null);
