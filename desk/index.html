@@ -59,6 +59,10 @@ h2{font-family:var(--display);font-weight:600;font-size:14px;letter-spacing:-.00
 .nsec{display:grid;gap:6px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--bg)}
 .nsec h3{margin:0;font-size:13.5px}
 .nsec ul{margin:0;padding-left:18px;display:grid;gap:3px;font-size:13px;color:var(--ink-2)}
+.nline{display:grid;grid-template-columns:96px minmax(0,1fr);gap:8px;align-items:baseline;font-size:14px}
+.nline span{font-size:12px;color:var(--muted);font-weight:600}
+.nline b{font-weight:600;overflow-wrap:anywhere}
+.nline.wait b{color:var(--accent)}
 .nsec .nlab{font-size:12px;color:var(--muted);font-weight:600;margin-top:4px}
 .nsec.pick{border-color:var(--accent);background:var(--accent-soft)}
 .tt.big{font-size:16px}
@@ -660,6 +664,9 @@ function topThree(){
     ${list.length?list.map(row).join(""):`<div class="empty"><b>今日の3つはありません</b>のんびりどうぞ。T キーでタスクを足せます。</div>`}</section>`;
 }
 /* ---------- 🧭 次は？: what I was doing (memory/ + the desk) and the one thing to do next ---------- */
+/* plain words for the popup: no code, file names, PR numbers or brackets; about 40 characters */
+const plainMem=x=>String(x||"").replace(/`[^`]*`/g,"").replace(/[（(][^）)]*[）)]/g,"").replace(/\S+\/\S+|#\d+/g,"").replace(/\s+/g," ").trim().slice(0,40);
+const short=t=>{t=String(t||"").replace(/^作りたい機能[①-⑳]?（\d+）/,"");return t.length>24?t.slice(0,23)+"…":t};
 const memLines=(xs,n)=>(xs||[]).slice(0,n).map(x=>`<li>${esc(String(x).replace(/`/g,""))}</li>`).join("");
 function recentTouch(){
   const xs=[...S.tasks.filter(t=>!t.deleted).map(t=>({k:"🗂️",t:t.title,at:t.updatedAt||0})),...noteList().map(n=>({k:"📒",t:n.title,at:n.updatedAt||0})),...S.memos.map(m=>({k:"📝",t:(m.text||"").split("\n")[0].slice(0,60),at:m.updatedAt||m.createdAt||0}))];
@@ -682,11 +689,11 @@ function openNext(){
         :`<p class="hint">今は急ぐものがありません。${(sec["次の一手"]||[])[0]?"前回決めた次の一手から始めるのがおすすめです。":"のんびりどうぞ。"}</p>`}
     </section>
     <section class="nsec"><h3>📍 何していたか</h3>
-      ${ses?`<p class="hint">${esc(ses.title)}${m.updatedAt?` · 記録 ${esc(ago(m.updatedAt))}`:""}</p>
-        ${(sec["中断した場所"]||[]).length?`<b class="nlab">⏸ 止まっている所</b><ul>${memLines(sec["中断した場所"],2)}</ul>`:""}
-        ${(sec["次の一手"]||[]).length?`<b class="nlab">👉 前回決めた次の一手</b><ul>${memLines(sec["次の一手"],2)}</ul>`:""}`:`<p class="hint">Claude の作業記録（memory/）はまだ届いていません。${S.local?"":"Mac の毎時同期で届きます。"}</p>`}
-      ${doing.length?`<b class="nlab">🗂️ 進行中のタスク</b><ul>${doing.map(t=>`<li><button class="tt" data-topen="${esc(t.id)}">${esc(t.title)}</button></li>`).join("")}</ul>`:""}
-      ${touch.length?`<b class="nlab">🕘 最近さわったもの</b><ul>${touch.map(x=>`<li>${x.k} ${esc(x.t)} <span class="sub">${esc(ago(x.at))}</span></li>`).join("")}</ul>`:""}
+      ${(()=>{const hk=(sec["ひとこと"]||[]),pickL=k=>hk.filter(x=>x.startsWith(k)).map(x=>x.replace(/^[^：:]+[：:]\s*/,""));
+        const now=pickL("いま")[0]||plainMem((sec["やったこと"]||[]).slice(-1)[0]), nx=pickL("次")[0]||plainMem((sec["次の一手"]||[])[0]), wait=pickL("待ち");
+        return ses?`<div class="nline"><span>📍 いま</span><b>${esc(now||"記録なし")}</b></div><div class="nline"><span>⏭ 次</span><b>${esc(nx||"記録なし")}</b></div>${wait.map(w=>`<div class="nline wait"><span>🙋 あなた待ち</span><b>${esc(w)}</b></div>`).join("")}<p class="hint">Claude の記録 · ${esc(ago(m.updatedAt||ses.updatedAt||0))}</p>`
+          :`<p class="hint">Claude の作業記録はまだ届いていません。${S.local?"":"Mac の毎時同期で届きます。"}</p>`})()}
+      ${doing.length||touch.length?`<p class="hint">${doing.length?`🗂️ 進行中 ${doing.length}件（<button class="tt" data-topen="${esc(doing[0].id)}">${esc(short(doing[0].title))}</button>${doing.length>1?" ほか":""}）`:""}${doing.length&&touch.length?" · ":""}${touch.length?`🕘 最後にさわった：${esc(short(touch[0].t))}`:""}</p>`:""}
     </section>
   </div></div>`;
   const close=()=>{$("#modal").innerHTML="";$("#nextBtn").focus()};
