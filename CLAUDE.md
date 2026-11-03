@@ -26,6 +26,7 @@ claude.ai のチャットで直接編集しない。変更は必ずここで行�
   memos/dues/tasks/prompts/notes は双方向、それ以外はオンライン → Mac。`desk/index.html` が変わっていればオンライン版にも公開する。
 - 削除は `deleted:true` の論理削除。同期は `updatedAt` が新しい方を採用。
 - メール送信（Gmail `send_message`）はオンライン版のみ、送信前の確認を必ず残す。
+- `/morning-kickoff`（`.claude/commands/`）は Mac 用。`desk/kickoff.py` が `desk/data/` と memory/ から今日の候補を出す（読むだけ。`start <id>` だけが localhost:4747 にタスクの状態を書く）。
 
 ### 公開手順（Claude Code から）
 
