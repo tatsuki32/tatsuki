@@ -10,8 +10,9 @@ claude.ai のチャットで直接編集しない。変更は必ずここで行�
 
 ### 構成
 
-- 単一HTML（外部ライブラリなし、Google Fonts のみ）。黒基調・金色アクセント。
-- ビュー: Home（☀️ 今日の3つ・🌱 今日の習慣を含む）/ Tasks / ノート / Calendar / World Desk / マイナー国 / Morning Mail / Inbox / 習慣 / Claude Log
+- 単一HTML（外部ライブラリ・Webフォントなし。端末の日本語ゴシック）。黒基調・金色アクセント。
+- ビュー（メニューは4つのまとまり）: 今日＝Home（焦点は「今日の3つ」）/ Tasks / Calendar / 習慣、届いたもの＝Morning Mail / Inbox、読む＝World Desk / マイナー国、書く・振り返る＝ノート / Claude Log / ツール。
+  iPhone は下にタブ（ホーム・タスク・カレンダー・ノート・その他）、メモは右下の丸ボタン。検索はどの画面でも `/`。
 - データはページに埋め込まない。オンライン版は Artifact DB（`window.claude` の `db`）から読む:
   `tools`, `memos`, `tasks`, `dues`, `prompts`（毎日の求人チェックの Claude プロンプト。経歴入りなのでリポジトリに入れない）, `notes`（Scrapbox 風のノート。[言葉] でつながる）, `habits`（罰を与えない習慣。doc ごとに `done` に日付の配列）, `memory`(doc `current`。memory/ の要約で「🧭 次は？」が読む。毎時同期で Mac から載せる), `calendar`(doc `upcoming`), `gtasks`(doc `current`),
   `reports`, `editions`, `days`, `watch`（マイナー国ウォッチの号。doc id は日付、本文はマークダウン）
@@ -46,6 +47,7 @@ claude.ai のチャットで直接編集しない。変更は必ずここで行�
 
 - 個人データ（メール本文・予定・メモ）をリポジトリに入れない。
 - 機能追加は `/desk-feature` の流れ（質問 → 要件定義 → 承認 → 実装）で行う。
+- UI/UX を作る・変えるときは、毎回『ノンデザイナーズ・デザインブック』を全文読んでから（`.claude/rules/design-ui.md`、ルールは `memory/semantic/patterns/design-nondesigner.md`）。
 - iPhone 幅 375px で横スクロールが出ないこと。
 - 画面に出る文字はすべて日本語（固有名詞を除く）。データに保存する判定用の値（`priority` の `Action needed`、`region`、ツールの `group`、タスクの `status` など）は英語のままにして、表示だけ日本語にする（`PRIJA` / `REGJA` / `GROUPS`）。
   スケジュールタスク（World Desk morning brief / Morning Mail check）も日本語で書く。メールは `subject_ja`・`draft.body_ja` を足し、Gmail の下書き本体は相手の言語のまま。
