@@ -4,6 +4,7 @@
 
   python3 desk/kickoff.py                 候補を出す（読むだけ。何も書かない）
   python3 desk/kickoff.py start <task id> そのタスクを Desk で「進行中」にする（localhost:4747 経由）
+  python3 desk/kickoff.py add "<タイトル>"  新しいタスクを「進行中」で登録する（/begin 用）
 
 時刻はホーチミン時間（UTC+7）。12時より前は「集中」、以降は「事務」の時間帯。
 出力には予定やメールの件名が入るが、画面に出すだけでファイルには書かない（公開リポジトリのため）。
@@ -210,6 +211,26 @@ def candidates():
     }
 
 
+def put_task(task_id, rec):
+    req = urllib.request.Request(f"{API}/api/tasks/{task_id}", data=json.dumps(rec, ensure_ascii=False).encode(),
+                                 method="PUT", headers={"Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=5) as r:
+            r.read()
+    except OSError as e:
+        sys.exit(f"Desk サーバー（localhost:4747）につながりません：{e}")
+
+
+def add(title):
+    title = " ".join(title.split())[:120]
+    if not title:
+        sys.exit("タイトルが空です")
+    tid = "t" + format(now_ms(), "x") + os.urandom(2).hex()
+    put_task(tid, {"title": title, "status": "doing", "source": "manual", "sourceRef": "", "due": None, "note": "",
+                   "createdAt": now_ms(), "deleted": False, "updatedAt": now_ms()})
+    print(json.dumps({"ok": True, "id": tid, "title": title, "status": "doing"}, ensure_ascii=False))
+
+
 def start(task_id):
     c = candidates()
     t = next((x for x in c["tasks"] if x["id"] == task_id), None)
@@ -220,18 +241,14 @@ def start(task_id):
     rec = {"title": t["title"], "status": "doing", "source": t["source"], "sourceRef": t.get("sourceRef", old.get("sourceRef", "")),
            "due": None if t["source"] in ("mail", "gtasks", "calendar", "claude", "daily") else old.get("due"),
            "note": old.get("note", ""), "createdAt": old.get("createdAt", now_ms()), "deleted": False, "updatedAt": now_ms()}
-    req = urllib.request.Request(f"{API}/api/tasks/{task_id}", data=json.dumps(rec, ensure_ascii=False).encode(),
-                                 method="PUT", headers={"Content-Type": "application/json"})
-    try:
-        with urllib.request.urlopen(req, timeout=5) as r:
-            r.read()
-    except OSError as e:
-        sys.exit(f"Desk サーバー（localhost:4747）につながりません：{e}")
+    put_task(task_id, rec)
     print(json.dumps({"ok": True, "id": task_id, "title": t["title"], "status": "doing"}, ensure_ascii=False))
 
 
 if __name__ == "__main__":
     if len(sys.argv) >= 3 and sys.argv[1] == "start":
         start(sys.argv[2])
+    elif len(sys.argv) >= 3 and sys.argv[1] == "add":
+        add(" ".join(sys.argv[2:]))
     else:
         print(json.dumps(candidates(), ensure_ascii=False, indent=1))

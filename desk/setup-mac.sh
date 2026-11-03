@@ -89,6 +89,8 @@ PLIST
 
 launchctl bootstrap "gui/$UID_" "$AGENTS/com.tatsuki.desk.server.plist"
 launchctl bootstrap "gui/$UID_" "$AGENTS/com.tatsuki.desk.pull.plist"
+# 漏洩防止のコミット前フック（.githooks/pre-commit）を有効にする
+git -C "$REPO" config core.hooksPath .githooks
 
 for _ in 1 2 3 4 5 6 7 8 9 10; do
   curl -fsS "http://localhost:$PORT/health" >/dev/null 2>&1 && break; sleep 0.5

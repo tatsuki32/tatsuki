@@ -1,0 +1,42 @@
+#!/bin/sh
+# 漏洩防止のコミット前チェック。追加される行に、実名・個人メールアドレス・位置情報・APIキーらしき文字列があれば止める。
+# 実名などの禁止語は tools/banned-words.local.txt（git に入れない）に1行1語で書く。
+# 本当に問題ないときだけ：git commit --no-verify（Claude は使わない）
+added=$(git diff --cached -U0 --no-color --diff-filter=AM -- . ':(exclude).githooks/pre-commit' ':(exclude)tools/validate-writing.mjs' \
+  | grep '^+' | grep -v '^+++' | cut -c2-)
+[ -n "$added" ] || exit 0
+found=""
+hit() { found="${found}  ・$1: $(printf '%s' "$2" | head -c 80)\n"; }
+
+# 1. 個人メールアドレス（noreply・example・ダミーは許可）
+mails=$(printf '%s\n' "$added" | grep -oiE '[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}' \
+  | grep -viE '(noreply|no-reply|example\.(com|org|net)|@users\.noreply\.github\.com|^a@b|@anthropic\.com$|@localhost)' | sort -u)
+for m in $mails; do hit "メールアドレス" "$m"; done
+
+# 2. APIキー・トークンらしき文字列
+keys=$(printf '%s\n' "$added" | grep -oE '(sk-[A-Za-z0-9_-]{20,}|sk-ant-[A-Za-z0-9_-]{20,}|AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{35}|gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{30,}|xox[abpr]-[A-Za-z0-9-]{10,}|-----BEGIN [A-Z ]*PRIVATE KEY-----)' | sort -u)
+for k in $keys; do hit "キー・トークン" "$(printf '%s' "$k" | cut -c1-12)…"; done
+printf '%s\n' "$added" | grep -qiE '(api[_-]?key|secret|password|passwd|token)["'"'"' ]*[:=][ ]*["'"'"'][^"'"'"' ]{12,}' && hit "キーらしき代入" "api_key / secret / password = \"…\""
+
+# 3. 位置情報（緯度経度のペア、GPS の EXIF 風の表記）
+printf '%s\n' "$added" | grep -qE '(^|[^0-9.])-?[0-9]{1,2}\.[0-9]{4,},[ ]?-?[0-9]{1,3}\.[0-9]{4,}' && hit "位置情報" "緯度,経度 の数字"
+printf '%s\n' "$added" | grep -qiE '(GPSLatitude|GPSLongitude|"lat"[ ]*:[ ]*-?[0-9]|"lng"[ ]*:[ ]*-?[0-9])' && hit "位置情報" "GPS / lat / lng"
+
+# 4. トンネルなどの一時的な公開URL
+printf '%s\n' "$added" | grep -oE 'https?://[a-z0-9-]+\.(trycloudflare\.com|ngrok(-free)?\.(app|io|dev)|loca\.lt)' | sort -u | while read -r u; do echo "$u"; done > "${TMPDIR:-/tmp}/.pc-urls.$$"
+[ -s "${TMPDIR:-/tmp}/.pc-urls.$$" ] && hit "トンネルURL" "$(head -n1 "${TMPDIR:-/tmp}/.pc-urls.$$")"
+rm -f "${TMPDIR:-/tmp}/.pc-urls.$$"
+
+# 5. 実名など（ローカルの禁止語リスト）
+list="$(git rev-parse --show-toplevel)/tools/banned-words.local.txt"
+if [ -f "$list" ]; then
+  while IFS= read -r w; do
+    case "$w" in ''|\#*) continue;; esac
+    printf '%s\n' "$added" | grep -qiF -- "$w" && hit "禁止語（実名など）" "$w"
+  done < "$list"
+fi
+
+[ -z "$found" ] && exit 0
+printf '🚫 コミットを止めました。公開してはいけない情報が入っているかもしれません：\n%b' "$found" >&2
+printf '直してからもう一度コミットしてください（ファイル名は git diff --cached で確認）。\n' >&2
+exit 1

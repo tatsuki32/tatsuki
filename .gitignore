@@ -1,3 +1,5 @@
 desk/data/
 __pycache__/
 .DS_Store
+tools/banned-words.local.txt
+node_modules/
