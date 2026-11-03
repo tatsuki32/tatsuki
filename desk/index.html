@@ -1737,6 +1737,7 @@ function palMove(d){
 function openKeys(){
   $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop" role="dialog" aria-modal="true" aria-label="ショートカット一覧">
     <div class="top"><h2>⌨️ ショートカット</h2><button class="ibtn" id="xKeys" aria-label="閉じる">✕</button></div>
+    <p class="hint">入力欄の外で、そのままキーを押します（入力中は効きません）。iPhone では Home の「Claude に頼む」や検索欄の / を使ってください。</p>
     <div class="keys">${SHORTCUTS.map(([k,l])=>`<div><kbd>${esc(k)}</kbd><span>${esc(l)}</span></div>`).join("")}</div></div></div>`;
   const close=()=>{$("#modal").innerHTML=""};$("#xKeys").onclick=close;$("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};$("#xKeys").focus();
 }
