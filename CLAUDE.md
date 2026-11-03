@@ -11,10 +11,10 @@ claude.ai のチャットで直接編集しない。変更は必ずここで行�
 ### 構成
 
 - 単一HTML（外部ライブラリなし、Google Fonts のみ）。黒基調・金色アクセント。
-- ビュー: Home / Tasks / Calendar / World Desk / Morning Mail / Inbox / Claude Log
+- ビュー: Home / Tasks / Calendar / World Desk / マイナー国 / Morning Mail / Inbox / Claude Log
 - データはページに埋め込まない。オンライン版は Artifact DB（`window.claude` の `db`）から読む:
   `tools`, `memos`, `tasks`, `dues`, `prompts`（毎日の求人チェックの Claude プロンプト。経歴入りなのでリポジトリに入れない）, `calendar`(doc `upcoming`), `gtasks`(doc `current`),
-  `reports`, `editions`, `days`
+  `reports`, `editions`, `days`, `watch`（マイナー国ウォッチの号。doc id は日付、本文はマークダウン）
 - Mac版も同じ `desk/index.html` を使う。`desk/server.py`（Python標準ライブラリのみ）が
   `http://localhost:4747` で配信し、`desk/data/*.js`（`window.TOOLS` 等）をページに差し込む。
   API: `GET /api/memos|dues|tasks|prompts`、`POST /api/memos`、`PATCH /api/memos/<id>`、`PUT /api/dues/<id>`、`PUT /api/tasks/<id>`、`PUT /api/prompts/<id>`。

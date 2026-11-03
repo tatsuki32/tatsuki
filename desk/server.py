@@ -31,6 +31,7 @@ DATA_JS = [
     ("calendar.js", "CAL", "null"),
     ("gtasks.js", "GTASKS", "null"),
     ("reports.js", "REPORTS", "[]"),
+    ("watch.js", "WATCH", "[]"),
 ]
 LOCK = threading.Lock()
 

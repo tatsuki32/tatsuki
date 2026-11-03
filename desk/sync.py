@@ -12,7 +12,7 @@ collections into one JSON file, runs this script, and writes back what it prints
   python3 sync.py mark-published      -> remembers the current index.html as published
 
 REMOTE.json: {"memos": [{"id": ..., ...fields}], "dues": [...], "tasks": [...], "prompts": [...],
-              "tools": [...], "editions": [...], "days": [...], "reports": [...],
+              "tools": [...], "editions": [...], "days": [...], "reports": [...], "watch": [...],
               "calendar": [...], "gtasks": [...]}  (each doc = its id plus its fields)
 
 Rule for memos / dues / tasks / prompts: per id, the record with the larger updatedAt wins;
@@ -96,6 +96,8 @@ def cmd_merge(remote_path):
         write_js("mail.js", "MAIL", [{"id": d["id"], "data": strip(d)} for d in by_date_desc(remote["days"])[:30]])
     if "reports" in remote:
         write_js("reports.js", "REPORTS", by_date_desc(remote["reports"])[:30])
+    if "watch" in remote:
+        write_js("watch.js", "WATCH", [d for d in by_date_desc(remote["watch"])[:30] if not d.get("deleted")])
     if "calendar" in remote:
         write_js("calendar.js", "CAL", one(remote["calendar"], "upcoming"))
     if "gtasks" in remote:
