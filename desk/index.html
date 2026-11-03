@@ -1710,7 +1710,7 @@ function palItems(){
     {e:S.mute?"🔕":"🔔",name:S.mute?"通知音をオンにする":"通知音をオフにする",kw:"つうちおん おと sound mute 設定 せってい",run:()=>{S.mute=!S.mute;try{localStorage.setItem("desk-mute",S.mute?"1":"0")}catch(e){}toast(S.mute?"🔕 通知音をオフにしました":"🔔 通知音をオンにしました")}},
     {e:"⌨️",name:"ショートカット一覧",kw:"しょーとかっと keys shortcut 設定 せってい",run:()=>openKeys()},
   ].map(x=>({...x,g:"設定"}));
-  return [...act,...nav,...cc,...set];
+  return [...cc,...act,...nav,...set]; // Claude commands first: they are the ones to learn
 }
 function palMatch(q){
   const w=norm(q.trim().replace(/^[/／]/,"")).trim(), all=palItems();
