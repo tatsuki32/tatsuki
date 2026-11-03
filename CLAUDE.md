@@ -11,7 +11,8 @@ claude.ai のチャットで直接編集しない。変更は必ずここで行�
 ### 構成
 
 - 単一HTML（外部ライブラリなし、Google Fonts のみ）。黒基調・金色アクセント。
-- ビュー: Home（☀️ 今日の3つ・🌱 今日の習慣を含む）/ Tasks / ノート / Calendar / World Desk / マイナー国 / Morning Mail / Inbox / 習慣 / Claude Log
+- ビュー（メニューは4つのまとまり）: 今日＝Home（焦点は「今日の3つ」）/ Tasks / Calendar / 習慣、届いたもの＝Morning Mail / Inbox、読む＝World Desk / マイナー国、書く・振り返る＝ノート / Claude Log / ツール。
+  iPhone は下にタブ（ホーム・タスク・カレンダー・ノート・その他）、メモは右下の丸ボタン。検索はどの画面でも `/`。
 - データはページに埋め込まない。オンライン版は Artifact DB（`window.claude` の `db`）から読む:
   `tools`, `memos`, `tasks`, `dues`, `prompts`（毎日の求人チェックの Claude プロンプト。経歴入りなのでリポジトリに入れない）, `notes`（Scrapbox 風のノート。[言葉] でつながる）, `habits`（罰を与えない習慣。doc ごとに `done` に日付の配列）, `calendar`(doc `upcoming`), `gtasks`(doc `current`),
   `reports`, `editions`, `days`, `watch`（マイナー国ウォッチの号。doc id は日付、本文はマークダウン）

@@ -1,370 +1,415 @@
 <title>Tatsuki's Desk</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: quiet black workspace. Left rail for navigation (top pills on phones), one focused content column, a fixed note button top-right that opens a popup. */
+/* Design rules: memory/semantic/patterns/design-nondesigner.md (from "The Non-Designer's Design Book").
+   Proximity: space steps 4/8/16/24/40, inside < between items < between sections. Alignment: one left line, numbers on the right.
+   Repetition: one card, one heading, one status mark everywhere. Contrast: type 12/14/16/20/28, weight 400/700 only, one focal point per view.
+   Gold is warm and comes forward, so it marks only: where you are, the focal point, the primary button, outside links. */
 :root{
-  --bg:#0a0a0b; --rail:#0f0f11; --surface:#141417; --surface-2:#1b1b1f; --line:#26262b; --line-2:#33333a;
-  --ink:#ededee; --ink-2:#b9b9bf; --muted:#7c7c85;
-  --accent:#e4b768; --accent-ink:#1a1408; --accent-soft:rgba(228,183,104,.12);
-  --red:#f07a6a; --red-soft:rgba(240,122,106,.12); --green:#7fcf9a; --green-soft:rgba(127,207,154,.12); --blue:#8fb4ff; --blue-soft:rgba(143,180,255,.12);
-  --display:"Inter Tight",-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif;
-  --body:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI","Helvetica Neue",sans-serif;
-  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  --bg:#0b0b0c; --rail:#0f0f11; --surface:#151517; --surface-2:#1e1e21; --line:#2a2a2e; --line-2:#3c3c42;
+  --ink:#ececee; --ink-2:#b6b6bc; --muted:#8a8a93;
+  --accent:#e2b866; --accent-2:#9c7d45; --accent-soft:rgba(226,184,102,.10); --accent-ink:#1a1408;
+  --red:#f0806f; --red-soft:rgba(240,128,111,.12); --green:#82d09d; --green-soft:rgba(130,208,157,.12); --blue:#93b6ff; --blue-soft:rgba(147,182,255,.12);
+  --font:"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic UI","Meiryo",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:var(--font); --code:ui-monospace,Menlo,monospace;
+  --s1:4px; --s2:8px; --s3:16px; --s4:24px; --s5:40px;
+  --t1:12px; --t2:14px; --t3:16px; --t4:20px; --t5:28px;
+  --r:12px; --r-s:8px;
+  --tabbar:0px;
   color-scheme:dark;
 }
 *{box-sizing:border-box}
 html,body{background:var(--bg)}
-body{margin:0;color:var(--ink);font-family:var(--body);font-size:13.5px;line-height:1.55;-webkit-font-smoothing:antialiased}
+body{margin:0;color:var(--ink);font-family:var(--font);font-size:var(--t2);line-height:1.6;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
 a{color:inherit}
 button{font:inherit;color:inherit}
+b,strong{font-weight:700}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
-.app{display:grid;grid-template-columns:200px minmax(0,1fr);min-height:100vh}
-/* rail */
-.rail{background:var(--rail);border-right:1px solid var(--line);padding:18px 12px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:18px;padding-left:max(12px,env(safe-area-inset-left,0px))}
-.brand{display:flex;align-items:center;gap:10px;padding:4px 8px}
-.brand .mark{width:28px;height:28px;border-radius:8px;background:var(--surface-2);border:1px solid var(--line-2);display:grid;place-items:center;font-size:16px}
-.brand b{font-family:var(--display);font-weight:600;letter-spacing:-.01em}
+kbd{font-family:var(--font);font-size:var(--t1);border:1px solid var(--line-2);border-radius:5px;padding:0 5px;color:var(--muted);background:transparent}
+
+/* ---------- frame: rail (menu) + one content column ---------- */
+.app{display:grid;grid-template-columns:224px minmax(0,1fr);min-height:100vh}
+.rail{background:var(--rail);border-right:1px solid var(--line);padding:var(--s4) var(--s3);position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column;gap:var(--s4);padding-left:max(var(--s3),env(safe-area-inset-left,0px))}
+.brand{display:flex;align-items:center;gap:var(--s2);padding:0 var(--s2);text-decoration:none}
+.brand .mark{font-size:20px;line-height:1}
+.brand b{font-size:var(--t2)}
+.qbox{display:flex;align-items:center;gap:var(--s2);padding:0 var(--s2) 0 10px;height:36px;border:1px solid var(--line);border-radius:var(--r-s);background:var(--surface)}
+.qbox:focus-within{border-color:var(--line-2)}
+.qbox input{flex:1;min-width:0;height:100%;background:transparent;border:0;outline:none;color:var(--ink);font:inherit;font-size:var(--t2)}
+.qbox input::placeholder{color:var(--muted)}
+.qbox .e{color:var(--muted);font-size:var(--t1)}
 .nav{display:grid;gap:2px}
-.nav a{display:flex;align-items:center;gap:8px;padding:6px 9px;font-size:13px;border-radius:8px;text-decoration:none;color:var(--ink-2);font-weight:500}
-.nav a:hover{background:var(--surface)}
-.nav a[aria-current="page"]{background:var(--surface-2);color:var(--ink)}
-.nav .e{width:22px;text-align:center;font-size:17px}
-.nav .count{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--muted);background:var(--surface);border:1px solid var(--line);padding:0 6px;border-radius:999px}
-.rail .foot{margin-top:auto;font-size:12px;color:var(--muted);padding:0 8px}
-kbd{font-family:var(--mono);font-size:11px;border:1px solid var(--line-2);border-bottom-width:2px;border-radius:5px;padding:0 5px;color:var(--ink-2);background:var(--surface)}
-/* main */
-main{min-width:0;padding-block:20px 64px;padding-left:max(22px,env(safe-area-inset-left,0px));padding-right:max(22px,env(safe-area-inset-right,0px))}
-.wrap{max-width:980px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
-.head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-right:230px} /* clears the fixed Claude + Note buttons */
-.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
-h1{font-family:var(--display);font-weight:600;font-size:clamp(20px,2.4vw,24px);letter-spacing:-.02em;margin:0;line-height:1.15;text-wrap:balance}
-h2{font-family:var(--display);font-weight:600;font-size:14px;letter-spacing:-.005em;margin:0}
-.sub{color:var(--muted);font-size:12.5px}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:14px}
-.section-title{display:flex;align-items:center;gap:6px;margin:2px 2px 6px;color:var(--ink-2);font-size:12px;font-weight:600}
-.section-title .e{font-size:15px}
-/* fixed note button */
-.notebtn{position:fixed;z-index:30;top:calc(12px + env(safe-area-inset-top,0px));right:max(16px,calc(env(safe-area-inset-right,0px) + 16px));display:flex;align-items:center;gap:6px;padding:6px 11px;font-size:13px;border-radius:999px;border:1px solid var(--line-2);background:rgba(20,20,23,.92);backdrop-filter:blur(10px);cursor:pointer;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.35)}
-.notebtn:hover{border-color:var(--accent)}
-.notebtn .e{font-size:16px}
-/* search + tiles */
-.search{display:flex;align-items:center;gap:8px;padding:7px 12px}
-.search input{flex:1;min-width:0;background:transparent;border:0;outline:none;color:var(--ink);font-size:14px}
-.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
-.tile{display:grid;grid-template-columns:32px minmax(0,1fr);gap:2px 10px;align-items:start;padding:9px 10px;border-radius:10px;background:var(--surface);border:1px solid var(--line);text-decoration:none;cursor:pointer;text-align:left;transition:border-color .15s,background .15s}
-/* today's three + habits */
-.t3row{display:grid;grid-template-columns:22px minmax(0,1fr);gap:4px 10px;padding:10px 12px;border-top:1px solid var(--line)}
-.t3row:first-of-type{border-top:0}
-.t3n{font-family:var(--mono);font-size:12px;color:var(--accent);padding-top:2px}
-.t3row .tt{font-size:14px}
-.t3acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
-.t3acts .btn{padding:4px 10px;font-size:12.5px}
-.hchips{display:flex;flex-wrap:wrap;gap:6px;padding:10px 12px}
-.hchip{border:1px solid var(--line-2);background:var(--surface-2);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer;color:var(--ink-2)}
-.hchip.on{background:var(--green-soft);border-color:transparent;color:var(--green)}
-.habits{display:grid;gap:10px}
-.habit{padding:12px 14px;display:grid;gap:10px}
-.hhead{display:grid;grid-template-columns:32px minmax(0,1fr) auto;gap:10px;align-items:center}
-.hhead .ico{width:32px;height:32px;border-radius:8px;background:var(--surface-2);border:1px solid var(--line);display:grid;place-items:center;font-size:17px}
-.hdays{display:grid;grid-template-columns:repeat(14,minmax(0,1fr));gap:4px}
-.hday{aspect-ratio:1;min-width:0;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--muted);font-family:var(--mono);font-size:10.5px;cursor:pointer;padding:0}
-.hday.on{background:var(--green-soft);border-color:transparent;color:var(--green);font-weight:600}
-.habit .row{justify-content:flex-end;gap:2px}
-.tilewrap{position:relative;display:grid;min-width:0}
-.tilewrap .tile{padding-right:44px}
-.tilewrap .tedit{position:absolute;top:4px;right:4px;min-width:36px;min-height:36px;display:grid;place-items:center}
-.tilewrap .tedit:hover{border-color:var(--line-2);background:var(--surface-2)}
-.tile:hover{border-color:var(--line-2);background:var(--surface-2)}
-.tile .ico{grid-row:span 2;width:32px;height:32px;border-radius:8px;background:var(--surface-2);border:1px solid var(--line);display:grid;place-items:center;font-size:17px}
-.tile .t{font-weight:600;font-size:13px;line-height:1.35;min-width:0;text-decoration:none}
-.tile a.t:hover{color:var(--accent)}
-.tile .d{font-size:11.5px;color:var(--muted);line-height:1.4;min-width:0;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.tile .meta{grid-column:2;display:flex;gap:6px;flex-wrap:wrap;margin-top:2px}
-.pill{font-size:11.5px;font-weight:600;padding:1px 8px;border-radius:999px;background:var(--surface-2);color:var(--ink-2);border:1px solid var(--line)}
-.pill.live{color:var(--green);background:var(--green-soft);border-color:transparent}
-.pill.red{color:var(--red);background:var(--red-soft);border-color:transparent}
-.pill.amber{color:var(--accent);background:var(--accent-soft);border-color:transparent}
-.pill.blue{color:var(--blue);background:var(--blue-soft);border-color:transparent}
-/* today strip */
-.today{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-.today a{display:grid;gap:6px;padding:16px;text-decoration:none}
-.today .k{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);font-weight:600}
-.today .k .e{font-size:16px}
-.today .v{font-family:var(--display);font-weight:600;font-size:16px;line-height:1.35;text-wrap:balance}
-.today .n{font-family:var(--display);font-size:28px;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
-@media (max-width:820px){.today{grid-template-columns:minmax(0,1fr)}}
-/* notes strip */
-.notes-here{display:grid;gap:8px}
-.note{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:start;padding:12px 14px;border-radius:12px;background:#17150f;border:1px solid #3a3221}
-.note p{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
-.note .when{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:4px}
-.note.done p{color:var(--muted);text-decoration:line-through}
-.note .acts{display:flex;gap:4px}
-.ibtn{border:1px solid transparent;background:transparent;border-radius:8px;padding:4px 7px;cursor:pointer;font-size:14px;color:var(--ink-2)}
-.ibtn:hover{background:var(--surface-2);border-color:var(--line)}
-/* world */
-.chips{display:flex;flex-wrap:wrap;gap:6px}
-.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;font-size:13px;font-weight:600;color:var(--ink-2);cursor:pointer}
-.chip[aria-pressed="true"]{background:var(--ink);color:#0b0b0c;border-color:var(--ink)}
-.world{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:16px;align-items:start}
-@media (max-width:980px){.world{grid-template-columns:minmax(0,1fr)}}
-.lead{padding:14px 16px}
-.lead h2{font-size:16.5px;line-height:1.4;margin:4px 0 6px;text-wrap:balance}
-.lead p{margin:0;color:var(--ink-2);max-width:68ch}
-.stories{display:grid}
-.story{display:grid;grid-template-columns:28px minmax(0,1fr);gap:2px 10px;padding:12px 14px;border-top:1px solid var(--line)}
-.story:first-child{border-top:0}
-.story .e{font-size:17px;line-height:1.3}
-.story h3{margin:0;font-size:14px;font-weight:600;line-height:1.45;text-wrap:balance}
-.story p{margin:4px 0 0;color:var(--ink-2);max-width:70ch}
-.lens{margin-top:10px;padding:10px 12px;border-radius:10px;background:var(--surface-2);font-size:13.5px;color:var(--ink-2)}
-.lens b{color:var(--ink);font-weight:600}
-.srcs{margin-top:10px;display:flex;flex-wrap:wrap;gap:6px}
-.srcs a{font-size:12px;font-weight:600;color:var(--ink-2);text-decoration:none;padding:3px 9px;border-radius:999px;border:1px solid var(--line)}
-.srcs a:hover{border-color:var(--line-2);color:var(--ink)}
-.side{display:grid;gap:12px}
-.side .card{padding:14px 16px}
-.list{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:12px}
-.list .o{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--muted)}
-.list a{text-decoration:none;font-weight:600;font-size:13.5px;line-height:1.45;display:block}
-.list a:hover{color:var(--accent)}
-.watch li{display:grid;grid-template-columns:64px minmax(0,1fr);gap:8px;font-size:13.5px}
-.watch time{font-family:var(--mono);font-size:12px;color:var(--accent);font-variant-numeric:tabular-nums}
-/* mail */
-.mail{padding:12px 14px;display:grid;gap:6px}
-.mail .top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
-.mail h3{margin:0;font-size:14px;line-height:1.45;overflow-wrap:anywhere}
-.mail p{margin:0;color:var(--ink-2)}
-.todo{padding:10px 12px;border-radius:10px;background:var(--red-soft);color:#f5c4bc;font-size:14px}
-details.draft{border:1px solid var(--line);border-radius:10px;overflow:hidden}
-details.draft summary{cursor:pointer;list-style:none;padding:9px 12px;background:var(--surface-2);font-size:13px;font-weight:600;display:flex;justify-content:space-between;gap:8px}
-details.draft summary::-webkit-details-marker{display:none}
-.sent-as{border-top:1px solid var(--line)}
-.sent-as summary{cursor:pointer;padding:8px 12px;font-size:12.5px;color:var(--muted)}
-.sent-as pre{color:var(--ink-2)}
-.draft .meta{font-family:var(--mono);font-size:11.5px;color:var(--muted);padding:10px 12px 0;overflow-wrap:anywhere}
-.draft pre{margin:0;padding:8px 12px 12px;font-family:var(--body);font-size:14px;white-space:pre-wrap;overflow-wrap:anywhere}
-.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-.btn{border:1px solid var(--line-2);background:var(--surface-2);border-radius:8px;padding:6px 11px;font-weight:600;font-size:12.5px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
-.btn:hover{border-color:var(--ink-2)}
-.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.nav .gh{margin:var(--s4) var(--s2) var(--s1);font-size:var(--t1);color:var(--muted)}
+.nav .gh:first-child{margin-top:0}
+.nav a{display:flex;align-items:center;gap:10px;padding:6px var(--s2);font-size:var(--t2);border-radius:var(--r-s);text-decoration:none;color:var(--ink-2)}
+.nav a:hover{background:var(--surface);color:var(--ink)}
+.nav a[aria-current="page"]{background:var(--surface);color:var(--ink);font-weight:700;box-shadow:inset 3px 0 0 var(--accent)}
+.nav .e{width:20px;text-align:center;font-size:16px}
+.count{margin-left:auto;font-size:var(--t1);color:var(--muted);font-weight:400}
+.count.hot{color:var(--red);font-weight:700}
+.rail .foot{margin-top:auto;display:grid;gap:var(--s2)}
+.rail .foot .hint{font-size:var(--t1);color:var(--muted);padding:0 var(--s2);margin:var(--s1) 0 0}
+.railbtn{display:flex;align-items:center;gap:10px;width:100%;padding:8px var(--s2);border:1px solid var(--line);border-radius:var(--r-s);background:transparent;cursor:pointer;font-size:var(--t2);color:var(--ink-2);text-align:left}
+.railbtn:hover{border-color:var(--line-2);color:var(--ink)}
+.railbtn kbd{margin-left:auto}
+.railbtn .e{width:20px;text-align:center;font-size:16px}
+#tabs{display:none}
+main{min-width:0;padding:var(--s5) max(var(--s4),env(safe-area-inset-right,0px)) 80px max(var(--s4),env(safe-area-inset-left,0px))}
+.wrap{max-width:960px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr);gap:var(--s4)}
+
+/* ---------- one heading per view, one card, one section title (repetition) ---------- */
+.head{display:flex;align-items:flex-end;justify-content:space-between;gap:var(--s3);flex-wrap:wrap}
+.eyebrow{font-size:var(--t1);color:var(--muted);margin:0 0 var(--s1)}
+.eyebrow a{color:inherit;text-decoration:none}
+h1{font-size:var(--t5);font-weight:700;letter-spacing:.01em;margin:0;line-height:1.25;text-wrap:balance}
+h2{font-size:var(--t3);font-weight:700;margin:0;line-height:1.4}
+h3{font-weight:700}
+.sub{color:var(--muted);font-size:var(--t1);font-weight:400}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+.section-title{display:flex;align-items:center;gap:var(--s2);margin:0 0 var(--s2);color:var(--ink);font-size:var(--t2);font-weight:700}
+.section-title .e{font-size:16px}
+.section-title a{margin-left:auto;font-weight:400;font-size:var(--t1);color:var(--muted);text-decoration:none}
+.section-title a:hover{color:var(--ink)}
+/* a card's own header: title, a quiet note, one action at the right */
+.dhead{display:flex;align-items:baseline;gap:var(--s2);flex-wrap:wrap;padding:var(--s3) var(--s3) var(--s2)}
+.dhead h2 .e{margin-right:6px}
+.dhead .sub{flex:1 1 12em;min-width:0}
+.dhead .btn,.dhead .more{margin-left:auto}
+.more{font-size:var(--t1);color:var(--muted);text-decoration:none;white-space:nowrap}
+.more:hover{color:var(--ink)}
+.row{display:flex;flex-wrap:wrap;gap:var(--s2);align-items:center}
+.empty{padding:var(--s4) var(--s3);color:var(--muted);text-align:left}
+.empty b{display:block;color:var(--ink);font-size:var(--t3);margin-bottom:var(--s1)}
+
+/* ---------- buttons, marks, chips ---------- */
+.btn{border:1px solid var(--line-2);background:transparent;border-radius:var(--r-s);min-height:36px;padding:0 var(--s3);font-size:var(--t2);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;color:var(--ink);white-space:nowrap}
+.btn:hover{border-color:var(--ink-2);background:var(--surface-2)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700}
+.btn.primary:hover{background:#ecc67c}
 .btn:disabled{opacity:.5;cursor:default}
-.msg{font-size:13px;color:var(--ink-2)}
+.btn.sm{min-height:32px;padding:0 12px;font-size:var(--t1)}
+.btn kbd{border-color:currentColor;color:inherit;opacity:.7}
+.ibtn{border:1px solid transparent;background:transparent;border-radius:var(--r-s);min-width:36px;min-height:36px;padding:0 6px;cursor:pointer;font-size:15px;color:var(--ink-2)}
+.ibtn:hover{background:var(--surface-2);border-color:var(--line)}
+/* one status mark everywhere: neutral by default, green = in progress / done, red = needs action / overdue */
+.pill,.dl,.until,.badge{display:inline-flex;align-items:center;gap:4px;font-size:var(--t1);line-height:1.5;padding:1px var(--s2);border-radius:999px;background:var(--surface-2);color:var(--ink-2);border:1px solid transparent;white-space:nowrap;font-weight:400}
+.pill.live{color:var(--green);background:var(--green-soft)}
+.pill.red{color:var(--red);background:var(--red-soft)}
+.pill.amber{color:var(--ink);border-color:var(--line-2);background:transparent}
+.pill.blue{color:var(--blue);background:var(--blue-soft)}
+.dl.warn{color:var(--ink);font-weight:700}
+.dl.hot,.dl.over{color:var(--red);background:var(--red-soft)}
+.dl.over{font-weight:700}
+.until{color:var(--ink);font-weight:700}
+.badge{min-width:24px;justify-content:center}
+.badge.zero{color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:var(--s2)}
+.chip{border:1px solid var(--line);background:transparent;border-radius:999px;min-height:32px;padding:0 14px;font-size:var(--t2);color:var(--ink-2);cursor:pointer}
+.chip:hover{border-color:var(--line-2);color:var(--ink)}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink);font-weight:700}
+.gchip{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 12px;border-radius:999px;border:1px solid var(--line-2);background:transparent;font-size:var(--t1);color:var(--ink-2);text-decoration:none;cursor:pointer}
+.gchip:hover{color:var(--ink)}
+select{background:var(--surface);color:var(--ink);border:1px solid var(--line-2);border-radius:var(--r-s);min-height:32px;padding:0 var(--s2);font:inherit;font-size:var(--t1)}
+.msg{font-size:var(--t2);color:var(--ink-2)}
 .msg.err{color:var(--red)} .msg.ok{color:var(--green)}
 .done-card{opacity:.6}
-.empty{padding:28px 20px;color:var(--muted);text-align:left}
-.empty b{display:block;color:var(--ink);font-family:var(--display);font-size:17px;margin-bottom:4px}
-select{background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:4px 8px;font:inherit;font-size:13px}
-/* modal */
-.scrim{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.55);backdrop-filter:blur(3px);display:flex;align-items:flex-start;justify-content:flex-end;padding:calc(64px + env(safe-area-inset-top,0px)) max(16px,calc(env(safe-area-inset-right,0px) + 16px)) 16px max(16px,env(safe-area-inset-left,0px))}
-.pop{width:min(440px,100%);background:var(--surface);border:1px solid var(--line-2);border-radius:16px;box-shadow:0 24px 60px rgba(0,0,0,.5);padding:16px;display:grid;gap:12px}
-.pop .top{display:flex;justify-content:space-between;align-items:center}
-.pop textarea{width:100%;min-height:140px;resize:vertical;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:12px;font:inherit;font-size:16px;line-height:1.6}
-.pop textarea:focus{outline:none;border-color:var(--accent)}
-.seg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.seg button{padding:11px 10px;border-radius:11px;border:1px solid var(--line-2);background:var(--surface-2);cursor:pointer;font-weight:600;text-align:left;display:grid;gap:2px}
-.seg button small{font-weight:500;color:var(--muted);font-size:12px}
-.seg button:hover{border-color:var(--accent)}
-.toast{position:fixed;z-index:50;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:#0b0b0c;font-weight:600;padding:9px 16px;border-radius:999px;font-size:14px}
-/* phone */
-@media (max-width:760px){
-  .app{grid-template-columns:minmax(0,1fr)}
-  .rail{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line);padding:12px max(16px,env(safe-area-inset-left,0px)) 10px;flex-direction:row;align-items:center;gap:8px;overflow-x:auto}
-  .rail .brand b,.rail .foot{display:none}
-  .nav{display:flex;gap:4px}
-  .nav a{padding:7px 10px;white-space:nowrap}
-  .nav .label{font-size:13px}
-  main{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-top:20px}
-  .head{padding-right:0}
-  .rail{padding-right:76px}
-  .notebtn .label,.notebtn kbd{display:none}
-  .notebtn{top:calc(10px + env(safe-area-inset-top,0px));padding:10px 12px}
-}
-@media (prefers-reduced-motion:no-preference){.tile,.notebtn{transition:border-color .15s,background .15s}}
-.aibtn{right:max(118px,calc(env(safe-area-inset-right,0px) + 118px))}
-.aibtn:hover{border-color:var(--blue)}
-.pop .hint{font-size:12.5px;color:var(--muted);margin:0}
-@media (max-width:760px){.aibtn{right:max(66px,calc(env(safe-area-inset-right,0px) + 66px))}.rail{padding-right:128px}}
+.due{font-size:var(--t1);color:var(--muted)}
+.duebtn{border:0;background:transparent;color:var(--ink-2);font-size:var(--t1);cursor:pointer;padding:0;text-decoration:underline dotted;text-underline-offset:3px}
+.duebtn:hover{color:var(--ink)}
+.tt{border:0;background:none;padding:0;text-align:left;font-weight:700;font-size:var(--t2);line-height:1.5;cursor:pointer;overflow-wrap:anywhere;color:var(--ink)}
+.tt:hover{text-decoration:underline;text-underline-offset:3px}
 
-/* deadlines: counted down every second to the real due date */
-.dl{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:12.5px;font-weight:500;padding:2px 9px;border-radius:999px;background:var(--surface-2);color:var(--ink-2);border:1px solid var(--line);white-space:nowrap}
-.dl.warn{color:var(--accent);background:var(--accent-soft);border-color:transparent}
-.dl.hot,.dl.over{color:var(--red);background:var(--red-soft);border-color:transparent}
-.dl.over{font-weight:600}
-.badge{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 7px;border-radius:999px;background:var(--red);color:#1a0806;font-family:var(--mono);font-size:12px;font-weight:600;font-variant-numeric:tabular-nums}
-.badge.zero{background:var(--surface-2);color:var(--muted);border:1px solid var(--line)}
-.dpanel{overflow:hidden}
-.dhead{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:9px 12px;border-bottom:1px solid var(--line)}
-.dhead .sub{font-size:12.5px}
-.dhead .btn{margin-left:auto;padding:5px 11px;font-size:12.5px}
-.drow{display:grid;grid-template-columns:20px minmax(0,1fr) auto;gap:2px 10px;align-items:center;padding:7px 12px;border-top:1px solid var(--line)}
-.drow:first-child{border-top:0}
+/* ---------- home ---------- */
+/* the focal point: today's three. The first one is the biggest thing on the page. */
+.t3{border-color:rgba(226,184,102,.32)}
+.t3row{display:grid;grid-template-columns:28px minmax(0,1fr);gap:var(--s1) var(--s2);padding:var(--s3);border-top:1px solid var(--line)}
+.t3row:first-child{border-top:0}
+.t3n{font-size:var(--t3);font-weight:700;color:var(--muted);line-height:1.5}
+.t3row .tt{font-size:var(--t3)}
+.t3row.first{padding:var(--s4) var(--s3) var(--s3)}
+.t3row.first .t3n{font-size:var(--t4);color:var(--accent);line-height:1.4}
+.t3row.first .tt{font-size:var(--t4);line-height:1.4}
+.t3acts{display:flex;flex-wrap:wrap;gap:var(--s2);margin-top:var(--s2)}
+.duo{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s3);align-items:start}
+@media (max-width:900px){.duo{grid-template-columns:minmax(0,1fr)}}
+.hchips{display:flex;flex-wrap:wrap;gap:var(--s2);padding:0 var(--s3) var(--s3)}
+.hchip{border:1px solid var(--line-2);background:transparent;border-radius:999px;min-height:36px;padding:0 14px;font-size:var(--t2);cursor:pointer;color:var(--ink-2)}
+.hchip.on{background:var(--green-soft);border-color:transparent;color:var(--green);font-weight:700}
+/* rows inside a card: one line between rows, nothing around them */
+.drow{display:grid;grid-template-columns:20px minmax(0,1fr) auto;gap:2px 12px;align-items:center;padding:12px var(--s3);border-top:1px solid var(--line)}
+.dhead+div>.drow:first-child{border-top:0}
 .drow .e{font-size:14px;text-align:center}
-.drow a.t{text-decoration:none;font-weight:600;font-size:14px;line-height:1.4;overflow-wrap:anywhere}
-.drow a.t:hover{color:var(--accent)}
-.due{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
-.duebtn{border:0;background:transparent;color:var(--ink-2);font-size:12px;cursor:pointer;padding:0;text-decoration:underline dotted;text-underline-offset:3px}
-.duebtn:hover{color:var(--accent)}
-.dmore{display:block;width:100%;border:0;border-top:1px solid var(--line);background:transparent;padding:10px;color:var(--ink-2);font-weight:600;font-size:13px;cursor:pointer}
-.dmore:hover{background:var(--surface-2)}
-.dlbox{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px}
-.mail .top .dl{margin-left:auto}
-.nav .count.hot{color:var(--red);background:var(--red-soft);border-color:transparent}
-.pop input[type=datetime-local]{width:100%;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:inherit;font-size:16px}
-.pop input[type=datetime-local]:focus{outline:none;border-color:var(--accent)}
-.dacts{display:flex;align-items:center;gap:8px;justify-content:flex-end;flex-wrap:wrap}
-.dacts .btn{padding:4px 10px;font-size:12.5px}
+.dacts{display:flex;align-items:center;gap:var(--s2);justify-content:flex-end;flex-wrap:wrap}
+.dmore{display:block;width:100%;border:0;border-top:1px solid var(--line);background:transparent;padding:12px var(--s3);color:var(--ink-2);font-size:var(--t1);cursor:pointer;text-align:left;border-radius:0 0 var(--r) var(--r)}
+.dmore:hover{background:var(--surface-2);color:var(--ink)}
+.dlbox{display:flex;align-items:center;gap:var(--s2);flex-wrap:wrap;margin-top:6px}
 @media (max-width:560px){.drow{grid-template-columns:20px minmax(0,1fr)}.drow .dl,.drow .dacts{grid-column:2;justify-self:start}}
+.tsel{font-size:var(--t1)}
+.tsel.doing{border-color:var(--green);color:var(--green)}
+/* what came in: a list with the counts on one right-hand line */
+.irow{display:flex;align-items:center;gap:10px;min-height:48px;padding:0 var(--s3);border-top:1px solid var(--line);text-decoration:none;color:var(--ink);cursor:pointer;background:none;border-left:0;border-right:0;border-bottom:0;width:100%;font-size:var(--t2);text-align:left}
+.irow:first-child{border-top:0}
+.irow:hover{background:var(--surface-2)}
+.irow .e{width:20px;text-align:center}
+.irow .n{margin-left:auto;font-weight:700}
+.irow .n.hot{color:var(--red)}
+.irow .n.zero{color:var(--muted);font-weight:400}
+.irow .s{color:var(--muted);font-size:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1}
+.inflow{overflow:hidden}
+.digest{border-top:1px solid var(--line)}
+.digest summary{list-style:none}
+.digest summary::-webkit-details-marker{display:none}
+.digest summary.irow{border-top:0}
+.digest ol{margin:0;padding:0 var(--s3) var(--s3) 46px;display:grid;gap:6px}
+.digest li{color:var(--muted);font-size:var(--t1)}
+.digest .tt{font-weight:400}
+/* tools */
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:var(--s2)}
+.tile{display:grid;grid-template-columns:32px minmax(0,1fr);gap:2px 12px;align-items:start;padding:12px;border-radius:var(--r);background:var(--surface);border:1px solid var(--line);text-decoration:none;cursor:pointer;text-align:left}
+.tile:hover{border-color:var(--line-2);background:var(--surface-2)}
+.tile .ico{grid-row:span 2;width:32px;height:32px;border-radius:var(--r-s);background:var(--surface-2);display:grid;place-items:center;font-size:17px}
+.tile .t{font-weight:700;font-size:var(--t2);line-height:1.4;min-width:0;text-decoration:none}
+.tile a.t:hover{text-decoration:underline}
+.tile .d{font-size:var(--t1);color:var(--muted);line-height:1.5;min-width:0;overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tile .meta{grid-column:2;display:flex;gap:6px;flex-wrap:wrap;margin-top:var(--s1)}
+.tiles.mini{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}
+.tiles.mini .tile{grid-template-columns:24px minmax(0,1fr);padding:10px 12px;align-items:center}
+.tiles.mini .tile .ico{grid-row:auto;width:24px;height:24px;background:none;font-size:16px}
+.tiles.mini .tile .d,.tiles.mini .tile .meta{display:none}
+.tilewrap{position:relative;display:grid;min-width:0}
+.tilewrap .tile{padding-right:48px}
+.tilewrap .tedit{position:absolute;top:6px;right:6px}
+/* pinned memos: the same card as everything else */
+.notes-here{display:grid;gap:var(--s2)}
+.note{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:start;padding:12px var(--s3);border-radius:var(--r);background:var(--surface);border:1px solid var(--line)}
+.note p{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+.note .when{font-size:var(--t1);color:var(--muted);margin-top:var(--s1)}
+.note.done p{color:var(--muted);text-decoration:line-through}
+.note .acts{display:flex;gap:2px}
 
-/* tasks: three columns on a laptop, one column with tabs on a phone; archive and dropped fold away below */
-.tt{border:0;background:none;padding:0;text-align:left;font-weight:600;font-size:13px;line-height:1.4;cursor:pointer;overflow-wrap:anywhere;color:var(--ink)}
-.tt:hover{color:var(--accent)}
-.board{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:start}
-.col{background:var(--rail);border:1px solid var(--line);border-radius:14px;padding:10px;display:grid;gap:8px;align-content:start;min-height:140px;transition:border-color .15s,background .15s}
-.col.over{border-color:var(--accent);background:var(--accent-soft)}
-.col>h2{display:flex;align-items:center;gap:8px;padding:4px 6px 2px}
-.col>h2 .count,.shelf summary .count{font-family:var(--mono);font-size:11px;font-weight:500;color:var(--muted);background:var(--surface);border:1px solid var(--line);padding:0 6px;border-radius:999px}
-.col .hint{margin:2px 6px 6px;font-size:12.5px;color:var(--muted)}
-.task{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:grid;gap:6px;cursor:grab}
+/* ---------- reading views: news, minor countries, mail. Body 16px, about 40 Japanese characters a line. ---------- */
+.lead{padding:var(--s4) var(--s3)}
+.lead h2{font-size:var(--t4);line-height:1.45;margin:0 0 var(--s2);text-wrap:balance}
+.lead p{margin:0;color:var(--ink-2);font-size:var(--t3);line-height:1.75;max-width:40em}
+.lead p.eyebrow{margin:0 0 var(--s2);font-size:var(--t1);color:var(--muted);line-height:1.6}
+.world{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:var(--s4);align-items:start}
+@media (max-width:1040px){.world{grid-template-columns:minmax(0,1fr)}}
+.stories{display:grid}
+.story{display:grid;grid-template-columns:28px minmax(0,1fr);gap:2px 12px;padding:var(--s4) var(--s3);border-top:1px solid var(--line);scroll-margin-top:72px}
+.story:first-child{border-top:0}
+.story .e{font-size:18px;line-height:1.5}
+.story h3{margin:0;font-size:var(--t3);line-height:1.6;text-wrap:balance}
+.story p{margin:var(--s2) 0 0;color:var(--ink-2);font-size:var(--t3);line-height:1.75;max-width:40em}
+.story.flash{background:var(--accent-soft);transition:background 2s}
+.lens{margin-top:12px;padding-left:12px;border-left:2px solid var(--line-2);font-size:var(--t2);color:var(--ink-2);max-width:40em}
+.lens b{color:var(--ink)}
+.srcs{margin-top:12px;display:flex;flex-wrap:wrap;gap:var(--s2) var(--s3)}
+.srcs a,a.ext,.md a,.jobs a{color:var(--accent);text-decoration:none}
+.srcs a{font-size:var(--t1)}
+.srcs a:hover,a.ext:hover,.md a:hover{text-decoration:underline}
+.side{display:grid;gap:var(--s3)}
+.side .card{padding:var(--s3)}
+.list{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:var(--s3)}
+.list .o{font-size:var(--t1);color:var(--muted);display:block}
+.list a{text-decoration:none;font-weight:700;font-size:var(--t2);line-height:1.5;display:block}
+.list a:hover{text-decoration:underline}
+.watch li{display:grid;grid-template-columns:64px minmax(0,1fr);gap:var(--s2);font-size:var(--t2)}
+.watch time{font-size:var(--t1);color:var(--muted)}
+.md{padding:var(--s4) var(--s3);font-size:var(--t3);line-height:1.75}
+.md>*{max-width:40em}
+.md h2,.md h3{font-size:var(--t4);margin:var(--s5) 0 var(--s2);line-height:1.45;color:var(--ink)}
+.md>:first-child{margin-top:0}
+.md h4,.md h5{font-size:var(--t3);margin:var(--s4) 0 var(--s1);color:var(--ink)}
+.md p{margin:var(--s2) 0;color:var(--ink-2)}
+.md ul,.md ol{margin:var(--s2) 0;padding-left:1.5em;display:grid;gap:var(--s1);color:var(--ink-2)}
+.md b{color:var(--ink)}
+.md a{overflow-wrap:anywhere}
+.md hr{border:0;border-top:1px solid var(--line);margin:var(--s4) 0}
+.md blockquote{margin:var(--s2) 0;padding-left:12px;border-left:2px solid var(--line-2);color:var(--muted)}
+.md code{font-family:var(--code);font-size:var(--t1);background:var(--surface-2);padding:0 4px;border-radius:4px}
+.mail{padding:var(--s3);display:grid;gap:var(--s2)}
+.mail .top{display:flex;align-items:center;gap:var(--s2);flex-wrap:wrap;font-size:var(--t1);color:var(--muted)}
+.mail .top .dl{margin-left:auto}
+.mail h3{margin:var(--s1) 0 0;font-size:var(--t3);line-height:1.5;overflow-wrap:anywhere}
+.mail p{margin:0;color:var(--ink-2);font-size:var(--t3);line-height:1.75;max-width:40em}
+.todo{padding-left:12px;border-left:3px solid var(--red);color:var(--ink);font-size:var(--t2)}
+details.draft{border-top:1px solid var(--line);margin-top:var(--s2);padding-top:var(--s2)}
+details.draft summary{cursor:pointer;list-style:none;padding:var(--s2) 0;font-size:var(--t2);font-weight:700;display:flex;justify-content:space-between;gap:var(--s2)}
+details.draft summary::-webkit-details-marker{display:none}
+.draft .meta{font-size:var(--t1);color:var(--muted);overflow-wrap:anywhere}
+.draft pre{margin:0;padding:var(--s2) 0;font-family:var(--font);font-size:var(--t3);line-height:1.75;white-space:pre-wrap;overflow-wrap:anywhere;max-width:40em}
+details.draft .sent-as summary{cursor:pointer;display:block;padding:var(--s2) 0;font-size:var(--t1);font-weight:400;color:var(--muted)}
+.sent-as pre{color:var(--ink-2)}
+
+/* ---------- tasks: three columns, no box around a column (space separates them) ---------- */
+.board{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--s4);align-items:start}
+.col{border-radius:var(--r);display:grid;gap:var(--s2);align-content:start;min-height:140px;padding:var(--s1);margin:calc(-1 * var(--s1));transition:background .15s}
+.col.over{background:var(--accent-soft)}
+.col>h2{display:flex;align-items:baseline;gap:var(--s2);padding:0 var(--s1) var(--s1)}
+.col .hint{margin:0 var(--s1);font-size:var(--t1);color:var(--muted)}
+.task{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px;display:grid;gap:var(--s2);cursor:grab}
 .task:hover{border-color:var(--line-2)}
 .task.dragging{opacity:.4}
 .task.closed .tt{color:var(--muted)}
-.task .tm{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12px;color:var(--muted);min-width:0}
+.task .tm{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:var(--t1);color:var(--muted);min-width:0}
 .task .tm .from{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:14em}
-.task select{margin-left:auto;font-size:12px;padding:2px 6px}
+.task .tm a{color:var(--ink-2);text-decoration:none}
+.task select{margin-left:auto}
 .colTabs{display:none}
 .shelf{padding:0;overflow:hidden}
-.shelf summary{cursor:pointer;list-style:none;padding:12px 16px;font-weight:600;font-size:13.5px;color:var(--ink-2);display:flex;align-items:center;gap:8px}
+.shelf summary{cursor:pointer;list-style:none;padding:var(--s3);font-weight:700;font-size:var(--t2);display:flex;align-items:center;gap:var(--s2)}
 .shelf summary::-webkit-details-marker{display:none}
-.shelf .list2{display:grid;gap:8px;padding:0 12px 12px}
-.pop input[type=text],.pop select{width:100%;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:inherit;font-size:16px}
-.pop input[type=text]:focus,.pop select:focus{outline:none;border-color:var(--accent)}
-.pop .tnote{min-height:80px}
+.shelf .list2{display:grid;gap:var(--s2);padding:0 var(--s3) var(--s3)}
 @media (max-width:760px){.board{grid-template-columns:minmax(0,1fr)}.colTabs{display:flex}.col:not(.show){display:none}.task{cursor:default}}
-.task .tm a{color:var(--ink-2);text-decoration:none}
-/* daily job check: the Claude prompt block inside the task popup */
-.jobs{display:grid;gap:8px;padding:12px;border:1px solid var(--line-2);border-radius:12px;background:var(--bg)}
-.jobs h2{font-size:14px}
-.jobs a{color:var(--accent)}
+.jobs{display:grid;gap:var(--s2);padding:12px;border:1px solid var(--line-2);border-radius:var(--r);background:var(--bg)}
+.jobs h2{font-size:var(--t2)}
 .jobs .row .btn{flex:1 1 180px;justify-content:center}
-.pop .pbody{min-height:min(52vh,420px);font-size:14px;line-height:1.55}
-.pop{max-height:calc(100vh - 80px);overflow-y:auto}
-.task .tm a:hover{color:var(--accent)}
 
-/* home: a thin row of counts, the news fold, the status menu on each to-do */
-.glance{display:flex;flex-wrap:wrap;gap:6px}
-.gchip{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-size:12.5px;font-weight:600;color:var(--ink-2);text-decoration:none;cursor:pointer}
-.gchip b{font-family:var(--mono);color:var(--ink)}
-.gchip.hot{border-color:transparent;background:var(--red-soft);color:var(--red)}.gchip.hot b{color:var(--red)}
-.gchip:hover{border-color:var(--line-2)}
-.tsel{font-size:12px;padding:2px 6px}
-.tsel.doing{border-color:var(--green);color:var(--green)}
-.digest summary{cursor:pointer;list-style:none;padding:10px 12px;display:flex;align-items:baseline;gap:8px;font-weight:600;font-size:13.5px;min-width:0}
-.digest summary::-webkit-details-marker{display:none}
-.digest summary::before{content:"▸";color:var(--muted)}
-.digest[open] summary::before{content:"▾"}
-.digest summary .count{font-family:var(--mono);font-size:11px;color:var(--muted)}
-.digest summary .sub{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1}
-.digest ol{margin:0;padding:0 12px 10px 34px;display:grid;gap:5px}
-.digest li{color:var(--muted);font-size:12px}
-.digest .tt{font-weight:500}
-.story.flash{background:var(--accent-soft);transition:background 2s}
-.story{scroll-margin-top:72px}
-/* search results, notes, [links], the selection menu */
-.results{padding:4px 0 6px}
-.rhead{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 12px}
-.rgroup{border-top:1px solid var(--line);padding:6px 0 2px}
-.rgroup .section-title{margin:2px 12px 4px}.rgroup .count{font-family:var(--mono);font-size:11px;color:var(--muted)}
-.rrow{display:block;width:100%;text-align:left;border:0;background:none;padding:5px 12px;cursor:pointer;font-size:13px;color:var(--ink)}
+/* ---------- habits ---------- */
+.habits{display:grid;gap:var(--s3)}
+.habit{padding:var(--s3);display:grid;gap:12px}
+.hhead{display:grid;grid-template-columns:32px minmax(0,1fr) auto;gap:12px;align-items:center}
+.hhead .ico{width:32px;height:32px;border-radius:var(--r-s);background:var(--surface-2);display:grid;place-items:center;font-size:17px}
+.hdays{display:grid;grid-template-columns:repeat(14,minmax(0,1fr));gap:4px}
+.hday{aspect-ratio:1;min-width:0;border-radius:6px;border:1px solid var(--line);background:var(--bg);color:var(--muted);font-size:11px;cursor:pointer;padding:0}
+.hday.on{background:var(--green-soft);border-color:transparent;color:var(--green);font-weight:700}
+.habit .row{justify-content:flex-end;gap:2px}
+
+/* ---------- calendar ---------- */
+.days{display:grid;gap:var(--s3)}
+.day{overflow:hidden}
+.day>h2{padding:var(--s3) var(--s3) var(--s2);display:flex;gap:var(--s2);align-items:baseline}
+.day.is-today>h2{color:var(--accent)}
+.ev{display:grid;grid-template-columns:104px minmax(0,1fr) auto;gap:2px var(--s3);align-items:start;padding:12px var(--s3);border-top:1px solid var(--line);text-decoration:none}
+.day>h2+.ev,.dhead+.ev{border-top:0}
+a.ev:hover{background:var(--surface-2)}
+.ev time{font-size:var(--t1);color:var(--ink-2);padding-top:2px;white-space:nowrap}
+.ev .t{font-weight:700;font-size:var(--t2);line-height:1.5;overflow-wrap:anywhere}
+.ev .loc{grid-column:2;font-size:var(--t1);color:var(--muted);overflow-wrap:anywhere}
+.ev.past{opacity:.5}
+.ev.now time{color:var(--ink);font-weight:700}
+@media (max-width:560px){.ev{grid-template-columns:76px minmax(0,1fr)}.ev>.pill,.ev>.until{grid-column:2;justify-self:start}}
+
+/* ---------- claude log ---------- */
+.logs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s3);align-items:start}
+.logs .card{padding:var(--s3)}
+.logs h2{display:flex;gap:var(--s2);align-items:baseline;margin-bottom:12px}
+.logs ul{list-style:none;margin:0;padding:0;display:grid;gap:var(--s3)}
+.logs li b{font-size:var(--t2);line-height:1.5;display:block;overflow-wrap:anywhere}
+.logs li span{font-size:var(--t2);color:var(--ink-2);display:block;overflow-wrap:anywhere}
+.logs li a{font-size:var(--t1);color:var(--ink-2)}
+.logs .failed{border-color:rgba(240,128,111,.35)}
+@media (max-width:820px){.logs{grid-template-columns:minmax(0,1fr)}}
+
+/* ---------- search results, notes, [links], selection menu ---------- */
+.results{padding:var(--s1) 0 var(--s2)}
+.rhead{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s2);padding:12px var(--s3)}
+.rhead .btn{margin-left:auto}
+.rgroup{border-top:1px solid var(--line);padding:var(--s2) 0 var(--s1)}
+.rgroup .section-title{margin:var(--s1) var(--s3) var(--s1)}
+.rgroup .section-title .count{margin-left:0}
+.rrow{display:block;width:100%;text-align:left;border:0;background:none;padding:6px var(--s3);cursor:pointer;font-size:var(--t2);color:var(--ink)}
 .rrow:hover{background:var(--surface-2)}
-.rrow .snip{display:block;font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.rrow .snip b{color:var(--accent);font-weight:600}
-/* links, coloured like Scrapbox: blue = connected (the note has content, or the word is linked in 2+ places), red = alone; outside links gold with ↗ */
+.rrow .snip{display:block;font-size:var(--t1);color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rrow .snip b{color:var(--ink)}
 .wl{color:var(--blue);text-decoration:none;border-bottom:1px dotted currentColor}
 .wl.lone{color:var(--red)}
 .wl:hover{color:var(--ink)}
-a.ext{color:var(--accent);text-decoration:none}
-.hop{padding:12px 14px;display:grid;gap:12px}
-.hop .grp{display:grid;gap:6px}
-.hop .grp>h3{margin:0;font-size:12.5px;font-weight:600;color:var(--ink-2)}
-.wiki{padding:14px 16px;line-height:1.7;overflow-wrap:anywhere}
-.wiki h3{font-size:15px;margin:10px 0 2px}.wiki .li{padding-left:14px;position:relative}.wiki .li::before{content:"・";position:absolute;left:0;color:var(--muted)}
-.wiki .gap{height:8px}.wiki>:first-child{margin-top:0}
-.backl{padding:12px 14px}.backl ul{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:6px}
-.backl .count{font-family:var(--mono);font-size:11px;color:var(--muted)}
-.ngrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px}
-.ncard{display:grid;gap:4px;text-align:left;padding:10px 12px;cursor:pointer;color:var(--ink)}
+.hop{padding:var(--s3);display:grid;gap:var(--s3)}
+.hop .grp{display:grid;gap:var(--s2)}
+.hop .grp>h3{margin:0;font-size:var(--t1);color:var(--ink-2)}
+.wiki{padding:var(--s4) var(--s3);font-size:var(--t3);line-height:1.75;overflow-wrap:anywhere}
+.wiki>*{max-width:40em}
+.wiki h3{font-size:var(--t4);margin:var(--s4) 0 var(--s1)}
+.wiki .li{padding-left:1em;position:relative}.wiki .li::before{content:"・";position:absolute;left:0;color:var(--muted)}
+.wiki .gap{height:var(--s2)}.wiki>:first-child{margin-top:0}
+.backl{padding:var(--s3)}.backl ul{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:var(--s2)}
+.ngrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:var(--s2)}
+.ncard{display:grid;gap:var(--s1);text-align:left;padding:12px;cursor:pointer;color:var(--ink);align-content:start}
 .ncard:hover{border-color:var(--line-2)}
-.ncard span{font-size:12px;color:var(--muted);overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
+.ncard span{font-size:var(--t1);color:var(--muted);overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
 .ntitle{cursor:text}
-.eyebrow a{color:inherit;text-decoration:none}
 .selmenu{position:fixed;z-index:60;display:flex;gap:2px;padding:4px;border-radius:10px;background:var(--surface-2);border:1px solid var(--line-2);box-shadow:0 10px 30px rgba(0,0,0,.5)}
-.selmenu button{border:0;background:none;color:var(--ink);font-size:13px;font-weight:600;padding:6px 10px;border-radius:7px;cursor:pointer;white-space:nowrap}
+.selmenu button{border:0;background:none;color:var(--ink);font-size:var(--t2);padding:6px 10px;border-radius:7px;cursor:pointer;white-space:nowrap}
 .selmenu button:hover{background:var(--surface)}
 .selmenu.suggest{flex-direction:column;max-width:min(320px,calc(100vw - 16px))}
 .selmenu.suggest button{text-align:left;overflow:hidden;text-overflow:ellipsis}
-.inedit{width:100%;background:var(--bg);color:var(--ink);border:1px solid var(--accent);border-radius:8px;padding:8px 10px;font:inherit;font-size:14px;line-height:1.6;resize:vertical}
-h1 .inedit{font-size:20px;font-weight:600}
+.inedit{width:100%;background:var(--bg);color:var(--ink);border:1px solid var(--accent);border-radius:var(--r-s);padding:var(--s2) 10px;font:inherit;font-size:var(--t3);line-height:1.75;resize:vertical}
+h1 .inedit{font-size:var(--t4);font-weight:700}
 
-/* minor countries: an issue rendered from Markdown */
-.md{padding:16px 18px;max-width:78ch}
-.md h2,.md h3{font-family:var(--display);font-size:16px;margin:20px 0 6px;padding-bottom:4px;border-bottom:1px solid var(--line);color:var(--accent)}.md>:first-child{margin-top:0}
-.md h4,.md h5{font-size:13.5px;margin:12px 0 3px;color:var(--ink)}
-.md p{margin:4px 0;color:var(--ink-2)}
-.md ul,.md ol{margin:4px 0;padding-left:20px;display:grid;gap:3px;color:var(--ink-2)}
-.md b{color:var(--ink)}
-.md a{color:var(--accent);overflow-wrap:anywhere}
-.md hr{border:0;border-top:1px solid var(--line);margin:14px 0}
-.md blockquote{margin:6px 0;padding:6px 10px;border-left:3px solid var(--line-2);color:var(--muted)}
-.md code{font-family:var(--mono);font-size:12px;background:var(--surface-2);padding:0 4px;border-radius:4px}
+/* ---------- popups ---------- */
+.scrim{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.6);display:flex;align-items:flex-start;justify-content:center;padding:calc(64px + env(safe-area-inset-top,0px)) max(var(--s3),env(safe-area-inset-right,0px)) var(--s3) max(var(--s3),env(safe-area-inset-left,0px))}
+.pop{width:min(460px,100%);background:var(--surface);border:1px solid var(--line-2);border-radius:16px;box-shadow:0 24px 60px rgba(0,0,0,.5);padding:var(--s4) var(--s3) var(--s3);display:grid;gap:12px;max-height:calc(100vh - 80px);overflow-y:auto}
+.pop .top{display:flex;justify-content:space-between;align-items:center;margin-top:calc(-1 * var(--s2))}
+.pop .hint{font-size:var(--t1);color:var(--muted);margin:0}
+.pop textarea{width:100%;min-height:140px;resize:vertical;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:var(--r);padding:12px;font:inherit;font-size:var(--t3);line-height:1.6}
+.pop textarea:focus,.pop input:focus,.pop select:focus{outline:none;border-color:var(--accent)}
+.pop input[type=text],.pop input[type=datetime-local],.pop select{width:100%;min-height:44px;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:0 12px;font:inherit;font-size:var(--t3)}
+.pop .tnote{min-height:80px}
+.pop .pbody{min-height:min(52vh,420px);font-size:var(--t2);line-height:1.6}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:var(--s2)}
+.seg button{padding:12px;border-radius:var(--r);border:1px solid var(--line-2);background:transparent;cursor:pointer;font-weight:700;text-align:left;display:grid;gap:2px}
+.seg button small{font-weight:400;color:var(--muted);font-size:var(--t1)}
+.seg button:hover{border-color:var(--accent)}
+.sheet .nav{gap:0}
+.sheet .nav a{min-height:44px}
+.sheet .railbtn{min-height:44px}
+.toast{position:fixed;z-index:50;left:50%;bottom:calc(24px + var(--tabbar) + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);font-weight:700;padding:10px var(--s3);border-radius:999px;font-size:var(--t2);max-width:calc(100vw - 32px)}
 
-/* calendar: one block per day, a time column then the title; Home shows what is left today with a countdown to the next one */
-.days{display:grid;gap:12px}
-.day{overflow:hidden}
-.day>h2{padding:12px 16px;border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:baseline}
-.day>h2 .sub{font-size:12.5px;font-weight:500}
-.day.is-today>h2{color:var(--accent)}
-.ev{display:grid;grid-template-columns:104px minmax(0,1fr) auto;gap:2px 12px;align-items:start;padding:10px 16px;border-top:1px solid var(--line);text-decoration:none}
-.day>h2+.ev,.dhead+.ev{border-top:0}
-.ev:hover{background:var(--surface-2)}
-.ev time{font-family:var(--mono);font-size:12.5px;color:var(--ink-2);font-variant-numeric:tabular-nums;padding-top:1px;white-space:nowrap}
-.ev .t{font-weight:600;font-size:14px;line-height:1.4;overflow-wrap:anywhere}
-.ev .loc{grid-column:2;font-size:12px;color:var(--muted);overflow-wrap:anywhere}
-.ev.past{opacity:.5}
-.ev.now time{color:var(--accent)}
-.until{font-family:var(--mono);font-size:12.5px;color:var(--accent);background:var(--accent-soft);padding:2px 9px;border-radius:999px;white-space:nowrap;font-variant-numeric:tabular-nums}
-@media (max-width:560px){.ev{grid-template-columns:76px minmax(0,1fr)}.ev>.pill,.ev>.until{grid-column:2;justify-self:start}}
-
-/* claude log: four boxes, what got done / better / still open / went wrong */
-.logs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
-.logs .card{padding:14px 16px}
-.logs h2{display:flex;gap:8px;align-items:center;margin-bottom:10px}
-.logs h2 .count{font-family:var(--mono);font-size:11px;font-weight:500;color:var(--muted);background:var(--surface-2);border:1px solid var(--line);padding:0 6px;border-radius:999px}
-.logs ul{list-style:none;margin:0;padding:0;display:grid;gap:12px}
-.logs li b{font-weight:600;font-size:14px;line-height:1.45;display:block;overflow-wrap:anywhere}
-.logs li span{font-size:13px;color:var(--ink-2);display:block;overflow-wrap:anywhere}
-.logs li a{font-size:12.5px;color:var(--ink-2)}
-.logs .failed{border-color:rgba(240,122,106,.35)}
-@media (max-width:820px){.logs{grid-template-columns:minmax(0,1fr)}}
+/* ---------- phone: a top bar with search, tabs at the bottom, the memo button at the thumb ---------- */
+@media (max-width:760px){
+  :root{--tabbar:60px}
+  .app{grid-template-columns:minmax(0,1fr)}
+  .rail{position:sticky;top:0;z-index:20;height:auto;overflow:visible;border-right:0;border-bottom:1px solid var(--line);flex-direction:row;align-items:center;gap:12px;padding:calc(var(--s2) + env(safe-area-inset-top,0px)) max(var(--s3),env(safe-area-inset-right,0px)) var(--s2) max(var(--s3),env(safe-area-inset-left,0px))}
+  .brand{padding:0}.brand b{display:none}
+  .qbox{flex:1;height:40px}
+  .qbox input{font-size:var(--t3)}
+  .qbox kbd,.rail .nav,.rail .foot .hint,#aiBtn{display:none}
+  .rail .foot{margin:0;display:block}
+  #noteBtn{position:fixed;z-index:30;right:max(var(--s3),env(safe-area-inset-right,0px));bottom:calc(var(--tabbar) + var(--s3) + env(safe-area-inset-bottom,0px));width:52px;height:52px;border-radius:50%;padding:0;justify-content:center;background:var(--surface-2);border:2px solid var(--accent);box-shadow:0 8px 24px rgba(0,0,0,.45)}
+  #noteBtn .e{width:auto;font-size:22px}
+  #noteBtn .label,#noteBtn kbd{display:none}
+  #tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));position:fixed;z-index:25;left:0;right:0;bottom:0;height:calc(var(--tabbar) + env(safe-area-inset-bottom,0px));padding:0 env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);background:rgba(15,15,17,.96);border-top:1px solid var(--line);backdrop-filter:blur(10px)}
+  #tabs a,#tabs button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-decoration:none;color:var(--muted);font-size:var(--t1);background:none;border:0;cursor:pointer;position:relative;min-width:0}
+  #tabs .e{font-size:20px;line-height:1.2}
+  #tabs [aria-current="page"]{color:var(--ink);font-weight:700}
+  #tabs [aria-current="page"]::before{content:"";position:absolute;top:0;left:30%;right:30%;height:3px;border-radius:0 0 3px 3px;background:var(--accent)}
+  #tabs .dot{position:absolute;top:8px;left:calc(50% + 8px);min-width:16px;height:16px;padding:0 4px;border-radius:999px;background:var(--red);color:#1a0806;font-size:10px;font-weight:700;display:grid;place-items:center}
+  main{padding:var(--s4) max(var(--s3),env(safe-area-inset-right,0px)) calc(var(--tabbar) + 96px + env(safe-area-inset-bottom,0px)) max(var(--s3),env(safe-area-inset-left,0px))}
+  .wrap{gap:var(--s4)}
+  .scrim.bottom{align-items:flex-end;padding:var(--s3) 0 0}
+  .scrim.bottom .pop{width:100%;border-radius:16px 16px 0 0;padding-bottom:calc(var(--s3) + env(safe-area-inset-bottom,0px))}
+  .btn{min-height:40px}
+  .t3acts .btn{min-height:40px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
 </style>
 
 <div class="app">
   <aside class="rail">
-    <div class="brand"><span class="mark">🧭</span><b>Tatsuki's Desk</b></div>
+    <a class="brand" href="#home" aria-label="ホーム"><span class="mark">🧭</span><b>Tatsuki's Desk</b></a>
+    <label class="qbox"><span class="e" aria-hidden="true">🔎</span><input id="q" type="search" placeholder="検索" aria-label="すべてを検索（ノート・メモ・タスク・ニュース・メール）" autocomplete="off"><kbd>/</kbd></label>
     <nav class="nav" id="nav" aria-label="メニュー"></nav>
-    <div class="foot"><kbd>N</kbd> メモ、<kbd>T</kbd> タスク、<kbd>C</kbd> Claude に頼む、<kbd>/</kbd> 検索</div>
+    <div class="foot">
+      <button class="railbtn" id="noteBtn" aria-label="メモを書く"><span class="e">📝</span><span class="label">メモ</span><kbd>N</kbd></button>
+      <button class="railbtn" id="aiBtn" aria-label="Claude Code への機能追加の依頼をコピー"><span class="e">🤖</span><span class="label">Claude に頼む</span><kbd>C</kbd></button>
+      <p class="hint"><kbd>T</kbd> タスクを足す</p>
+    </div>
   </aside>
   <main><div class="wrap" id="view"></div></main>
 </div>
-<button class="notebtn aibtn" id="aiBtn" aria-label="Claude Code への機能追加の依頼をコピー"><span class="e">🤖</span><span class="label">Claude</span><kbd>C</kbd></button>
-<button class="notebtn" id="noteBtn" aria-label="メモを書く"><span class="e">📝</span><span class="label">メモ</span><kbd>N</kbd></button>
+<nav id="tabs" aria-label="よく使う画面"></nav>
 <div id="modal"></div>
 <div id="toastHost"></div>
 
 <script>
-const VIEWS=[{id:"home",e:"🏠",label:"ホーム"},{id:"tasks",e:"🗂️",label:"タスク"},{id:"notes",e:"📒",label:"ノート"},{id:"calendar",e:"📅",label:"カレンダー"},{id:"news",e:"🌍",label:"世界ニュース"},{id:"watch",e:"🗺️",label:"マイナー国"},{id:"mail",e:"✉️",label:"朝のメール"},{id:"inbox",e:"📥",label:"受信箱"},{id:"habits",e:"🌱",label:"習慣"},{id:"log",e:"🤖",label:"Claudeの記録"}];
+/* the menu in four groups (proximity): today / what came in / reading / writing and looking back */
+const NAVGROUPS=[["today","今日"],["in","届いたもの"],["read","読む"],["write","書く・振り返る"]];
+const VIEWS=[{id:"home",e:"🏠",label:"ホーム",g:"today"},{id:"tasks",e:"🗂️",label:"タスク",g:"today"},{id:"calendar",e:"📅",label:"カレンダー",g:"today"},{id:"habits",e:"🌱",label:"習慣",g:"today"},
+  {id:"mail",e:"✉️",label:"朝のメール",g:"in"},{id:"inbox",e:"📥",label:"受信箱",g:"in"},
+  {id:"news",e:"🌍",label:"世界ニュース",g:"read"},{id:"watch",e:"🗺️",label:"マイナー国",g:"read"},
+  {id:"notes",e:"📒",label:"ノート",g:"write"},{id:"log",e:"🤖",label:"Claudeの記録",g:"write"},{id:"tools",e:"🧰",label:"ツール",g:"write"}];
+const TABS=["home","tasks","calendar","notes"]; // phone tab bar; the rest is under その他
 /* Stored values (group, region, priority, status) stay in English so sync and older data keep working; only the labels shown are Japanese. */
 const GROUPS=[["Daily","☀️","毎日"],["Work","💼","仕事"],["Study","🎓","学習"],["Folders","🗂️","フォルダ"],["Other","✨","その他"]];
 const REGJA={"Middle East":"中東","Europe & Russia":"欧州・ロシア","Asia-Pacific":"アジア太平洋","Americas":"南北アメリカ","Africa":"アフリカ","Global":"世界全体","All":"すべて"};
@@ -614,7 +659,7 @@ function tasks(){
   const shelf=S.board.filter(t=>t.status==="archived"||t.status==="dropped").sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
   const hint={notyet:"新しいタスクと対応が必要なメール",doing:"ここにドラッグして着手",done:"終わったらここへ"};
   return `
-  <header class="head"><div><p class="eyebrow">タスク</p><h1>やること</h1></div><div class="row"><a class="btn" href="https://tasks.google.com/" target="_blank" rel="noopener">☑️ Googleタスク ↗</a><button class="btn primary" id="newTask">＋ 新しいタスク <kbd>T</kbd></button></div></header>
+  <header class="head"><div><p class="eyebrow">タスク</p><h1>やること</h1></div><div class="row"><a class="btn" href="https://tasks.google.com/" target="_blank" rel="noopener">Googleタスク ↗</a><button class="btn primary" id="newTask">＋ 新しいタスク <kbd>T</kbd></button></div></header>
   ${notesHere("tasks")}
   <div class="chips colTabs" role="group" aria-label="表示する列">${TCOLS.map(k=>`<button class="chip" data-tcol="${k}" aria-pressed="${S.taskCol===k}">${tLabel(k)} ${col(k).length}</button>`).join("")}</div>
   <div class="board">${TCOLS.map(k=>{const items=col(k);return `<section class="col ${S.taskCol===k?"show":""}" data-col="${k}" aria-label="${tLabel(k)}">
@@ -627,19 +672,23 @@ function tasks(){
 /* Same order as /morning-kickoff: due today → overdue → in progress → the rest; before 12:00 (HCMC) focused work first, after it admin. */
 const ADMIN=/返信|連絡|申請|手続|支払|予約|提出|確認|メール|電話/;
 const taskKind=t=>t.source==="mail"||ADMIN.test(t.title||"")?"admin":"focus";
-function topThree(){
+function topList(){
   const now=Date.now(), end=Date.parse(hcmcDate()+"T23:59:59+07:00"), mode=new Date(now+HCMC).getUTCHours()<12?"focus":"admin";
   const rank=t=>[t.deadline!=null&&t.deadline>=now&&t.deadline<=end?0:t.deadline!=null&&t.deadline<now?1:2,t.status==="doing"?0:1,taskKind(t)===mode?0:1,t.deadline??Infinity];
   const cmp=(a,b)=>{const x=rank(a),y=rank(b);for(let i=0;i<x.length;i++)if(x[i]!==y[i])return x[i]-y[i];return 0};
-  const list=S.board.filter(t=>TOPEN.has(t.status)&&t.source!=="daily").sort(cmp).slice(0,3);
+  return S.board.filter(t=>TOPEN.has(t.status)&&t.source!=="daily").sort(cmp).slice(0,3);
+}
+function topThree(){
+  const now=Date.now(), end=Date.parse(hcmcDate()+"T23:59:59+07:00"), mode=new Date(now+HCMC).getUTCHours()<12?"focus":"admin";
+  const list=topList();
   const slot=freeSlot(30);
   const why=t=>t.deadline!=null&&t.deadline>=now&&t.deadline<=end?"今日が締切":t.deadline!=null&&t.deadline<now?"今日片づけると楽":t.status==="doing"?"進行中":taskKind(t)===mode?(mode==="focus"?"集中の時間に":"事務の時間に"):"";
   const mailUrl=t=>{const u=(t.mail?.uid||"").slice(5);return /^https:\/\/mail\.google\.com\//.test(u)?u:""};
-  const row=(t,i)=>`<div class="t3row"><span class="t3n">${i+1}</span><div style="min-width:0"><button class="tt" data-topen="${esc(t.id)}">${esc(t.title)}</button><div class="due">${esc(why(t))}${t.deadline!=null?` · ${dlChip(t)}`:""}</div>
-    <div class="t3acts">${t.status==="notyet"?`<button class="btn" data-t3="doing" data-id="${esc(t.id)}">▶️ 始める</button>`:""}${mailUrl(t)?`<a class="btn" href="${esc(mailUrl(t))}" target="_blank" rel="noopener">✉️ 返信</a>`:""}${slot?`<a class="btn" href="${esc(calLink(t.title,slot))}" target="_blank" rel="noopener" title="${esc(fmtDue(slot))} から30分">📅 予定確保</a>`:""}<button class="btn" data-t3="done" data-id="${esc(t.id)}">✅ 完了</button></div></div></div>`;
-  return `<section class="card t3" aria-label="今日の3つ"><div class="dhead"><h2>☀️ 今日の3つ</h2><span class="sub">${mode==="focus"?"集中の時間（12時まで）":"事務の時間"} · ここから1つずつ</span></div>
-    ${list.length?list.map(row).join(""):`<div class="empty"><b>今日の3つはありません</b>のんびりどうぞ。T キーでタスクを足せます。</div>`}</section>`;
+  const row=(t,i)=>`<div class="t3row ${i?"":"first"}"><span class="t3n">${i+1}</span><div style="min-width:0"><button class="tt" data-topen="${esc(t.id)}">${esc(t.title)}</button><div class="due">${esc(why(t))}${t.deadline!=null?` · ${dlChip(t)}`:""}</div>
+    <div class="t3acts">${t.status==="notyet"?`<button class="btn ${i?"sm":"primary"}" data-t3="doing" data-id="${esc(t.id)}">始める</button>`:""}${mailUrl(t)?`<a class="btn ${i?"sm":""}" href="${esc(mailUrl(t))}" target="_blank" rel="noopener">返信する</a>`:""}${slot&&!i?`<a class="btn" href="${esc(calLink(t.title,slot))}" target="_blank" rel="noopener" title="${esc(fmtDue(slot))} から30分">予定を確保</a>`:""}<button class="btn ${i?"sm":""}" data-t3="done" data-id="${esc(t.id)}">完了</button></div></div></div>`;
+  return `<section class="card t3" aria-label="今日の3つ">${list.length?list.map(row).join(""):`<div class="empty"><b>今日の3つはありません</b>のんびりどうぞ。T キーでタスクを足せます。</div>`}</section>`;
 }
+const t3Mode=()=>new Date(Date.now()+HCMC).getUTCHours()<12?"集中の時間（12時まで）":"事務の時間";
 /* the next free stretch of `min` minutes today (on the half hour, until 22:00 HCMC), avoiding timed events */
 function freeSlot(min){
   const step=30*6e4, len=min*6e4, stop=Date.parse(hcmcDate()+"T22:00:00+07:00");
@@ -666,14 +715,14 @@ async function toggleHabit(id,day){
 }
 function habitStrip(){
   const list=habitList(); if(!list.length) return "";
-  return `<section class="card hstrip" aria-label="今日の習慣"><div class="dhead"><h2>🌱 今日の習慣</h2><span class="sub">できたら押すだけ</span><a class="btn" href="#habits">一覧</a></div>
+  return `<section class="card hstrip" aria-label="今日の習慣"><div class="dhead"><h2><span class="e">🌱</span>今日の習慣</h2><span class="sub">できたら押すだけ</span><a class="more" href="#habits">一覧 →</a></div>
     <div class="hchips">${list.map(h=>{const st=habitStats(h);return `<button class="hchip ${st.today?"on":""}" data-habit="${esc(h.id)}" aria-pressed="${st.today}">${esc(h.emoji||"🌱")} ${esc(h.name)}${st.today?" ✓":""}</button>`}).join("")}</div></section>`;
 }
 function habitsView(){
   const list=habitList(), today=hcmcDate(), days=[...Array(14)].map((_,i)=>dayOff(today,i-13));
   const card=h=>{const st=habitStats(h),done=new Set(h.done||[]);
     return `<article class="card habit"><div class="hhead"><span class="ico">${esc(h.emoji||"🌱")}</span><div style="min-width:0"><b>${esc(h.name)}</b><div class="sub">これまで ${st.total}回 · この7日で ${st.week}回${st.last&&!st.today?` · 前回 ${esc(st.last.slice(5).replace("-","/"))}`:""}</div></div>
-      <button class="btn ${st.today?"":"primary"}" data-habit="${esc(h.id)}">${st.today?"✓ 今日できた":"今日できた"}</button></div>
+      <button class="btn ${st.today?"":"primary"}" data-habit="${esc(h.id)}">${st.today?"今日できた ✓":"今日できた"}</button></div>
       <div class="hdays" aria-label="この14日">${days.map(d=>`<button class="hday ${done.has(d)?"on":""}" data-habit="${esc(h.id)}" data-day="${d}" title="${esc(d)}${done.has(d)?" できた":""}" aria-label="${esc(d)} ${done.has(d)?"できた":"記録なし"}">${+d.slice(8)}</button>`).join("")}</div>
       <div class="row"><button class="ibtn" data-hedit="${esc(h.id)}" aria-label="名前を変える">✏️</button><button class="ibtn" data-hdel="${esc(h.id)}" aria-label="やめる">🗑️</button></div></article>`};
   return `<header class="head"><div><p class="eyebrow">習慣</p><h1>続けたいこと</h1></div><button class="btn primary" id="newHabit">＋ 習慣を足す</button></header>
@@ -687,14 +736,14 @@ async function newHabit(h){
   const rec=h?{...h,name:m?m[2]||name:name,emoji:m?m[1]:h.emoji}:{id:"h"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),name:m?m[2]||name:name,emoji:m?m[1]:"🌱",done:[],createdAt:Date.now()};
   try{await store.putHabit(rec)}catch(e){toast("保存できませんでした")}
 }
-function todayPanel(){
-  const MAX=8;
-  const doing=S.board.filter(t=>t.status==="doing").sort(byDeadline), notyet=S.board.filter(t=>t.status==="notyet").sort(byDeadline);
+function todayPanel(skip){
+  const MAX=5, skipIds=new Set(skip||[]);
+  const doing=S.board.filter(t=>t.status==="doing"&&!skipIds.has(t.id)).sort(byDeadline), notyet=S.board.filter(t=>t.status==="notyet"&&!skipIds.has(t.id)).sort(byDeadline);
   const list=[...doing,...notyet], n=list.length, rest=n-Math.min(n,MAX);
   const row=t=>`<div class="drow"><span class="e" aria-hidden="true">${(TSRC[t.source]||TSRC.manual)[0]}</span><div style="min-width:0"><button class="tt" data-topen="${esc(t.id)}">${esc(t.title)}</button><div class="due">${t.mail?`${esc(t.mail.sub)} · ${dueLine(t.mail)}`:t.due!=null?"期日 "+esc(fmtDue(t.due)):""}</div></div><div class="dacts">${t.deadline!=null?dlChip(t):""}<select class="tsel ${t.status}" data-tstatus="${esc(t.id)}" aria-label="ステータス">${TSTATUS.map(([k,l])=>`<option value="${k}" ${k===t.status?"selected":""}>${l}</option>`).join("")}</select></div></div>`;
-  return `<section class="card dpanel" aria-label="今日やること">
-    <div class="dhead"><h2>今日やること</h2><span class="badge ${n?"":"zero"}" aria-label="やること ${n} 件">${n}</span><span class="sub">進行中 ${doing.length} · 未着手 ${notyet.length} · メールは「完了」にすると締切から消えます</span><a class="btn" href="#tasks">ボード</a></div>
-    ${n?`<div>${list.slice(0,MAX).map(row).join("")}</div>${rest?`<button class="dmore" data-gonotyet>ほか ${rest}件 →</button>`:""}`:`<div class="empty"><b>やることはありません</b>T キーか「＋ 新しいタスク」で追加できます。</div>`}
+  return `<section class="card dpanel" aria-label="ほかのやること">
+    <div class="dhead"><h2><span class="e">🗂️</span>ほかのやること</h2><span class="sub">進行中 ${doing.length} · 未着手 ${notyet.length}</span><a class="more" href="#tasks">ボード →</a></div>
+    ${n?`<div>${list.slice(0,MAX).map(row).join("")}</div>${rest?`<button class="dmore" data-gonotyet>ほか ${rest}件を見る →</button>`:""}`:`<div class="empty"><b>ほかにやることはありません</b>T キーでタスクを足せます。</div>`}
   </section>`;
 }
 function openTask(id){
@@ -708,7 +757,7 @@ function openTask(id){
       :`<label class="sub" for="tDue">期日（任意）</label><input type="datetime-local" id="tDue" value="${t?.due!=null?toLocalInput(t.due):""}">`}
     <label class="sub" for="tStatus">ステータス</label><select id="tStatus">${TSTATUS.map(([k,l])=>`<option value="${k}" ${k===(t?.status||"notyet")?"selected":""}>${l}</option>`).join("")}</select>
     <label class="sub" for="tNote">メモ</label><textarea id="tNote" class="tnote" placeholder="必要なら詳細を。[言葉] でノートにつながります">${esc(t?.note||"")}</textarea>${t&&linksIn(t.note).length?`<p class="hint">🔗 ${linksIn(t.note).map(x=>wlink(x)).join(" ")}</p>`:""}
-    <div class="row"><button class="btn primary" id="tSave">保存 <kbd>⌘/Ctrl + Enter</kbd></button><button class="btn" id="tCancel">キャンセル</button>${t&&!isLinked?`<button class="btn" id="tDel" style="margin-left:auto;color:var(--red)">🗑️ 削除</button>`:""}</div>
+    <div class="row"><button class="btn primary" id="tSave">保存 <kbd>⌘/Ctrl + Enter</kbd></button><button class="btn" id="tCancel">キャンセル</button>${t&&!isLinked?`<button class="btn" id="tDel" style="margin-left:auto;color:var(--red)">削除</button>`:""}</div>
   </div></div>`;
   const ti=$("#tTitle");ti.focus();ti.setSelectionRange(ti.value.length,ti.value.length);
   const close=()=>{$("#modal").innerHTML=""};
@@ -738,7 +787,7 @@ function jobsBlock(){
     <h2>🤖 Claudeプロンプト</h2>
     <p class="hint">新着を見る：${PROMPTS.map(([,l,u])=>`<a href="${u}" target="_blank" rel="noopener">${esc(l.replace("用",""))} ↗</a>`).join("　")}</p>
     <label class="sub" for="jUrl">求人のURL（任意）</label><input type="text" id="jUrl" inputmode="url" placeholder="https://..." autocomplete="off">
-    <div class="row">${PROMPTS.map(([id,l])=>`<button class="btn primary" data-pcopy="${id}" ${S.prompts[id]?.body?"":"disabled"}>📋 ${l}をコピー</button>`).join("")}</div>
+    <div class="row">${PROMPTS.map(([id,l])=>`<button class="btn primary" data-pcopy="${id}" ${S.prompts[id]?.body?"":"disabled"}>${l}をコピー</button>`).join("")}</div>
     <p class="hint">使い方：Chrome で求人ページを開く → Claude in Chrome を開く → 貼り付ける。出てきた文章を自分でフォームにコピペして送信。</p>
     <p class="hint"><button class="duebtn" id="pEdit">✏️ プロンプトを編集</button>${last?" · 最終保存 "+esc(fmtDue(last)):" · まだ保存されていません"}</p>
   </div>`;
@@ -748,7 +797,7 @@ function wireJobs(t){
   document.querySelectorAll("[data-pcopy]").forEach(b=>b.onclick=async()=>{
     const url=($("#jUrl").value||"").trim();
     if(url&&!/^https:\/\//.test(url)){toast("URL は https:// で始めてください");$("#jUrl").focus();return}
-    const txt=promptText(b.dataset.pcopy,url);if(!txt){toast("プロンプトがまだありません。「✏️ プロンプトを編集」で作れます");return}
+    const txt=promptText(b.dataset.pcopy,url);if(!txt){toast("プロンプトがまだありません。「プロンプトを編集」で作れます");return}
     try{await navigator.clipboard.writeText(txt)}catch(e){toast("コピーできませんでした");return}
     toast("📋 コピーしました。Chrome で求人ページを開き、Claude in Chrome に貼ってください")});
   $("#pEdit").onclick=()=>{$("#modal").innerHTML="";openPrompts(PROMPTS[0][0],t.id)};
@@ -793,17 +842,17 @@ function evRow(e,ds){
   const now=Date.now(), de=dayStart(ds,1);
   const time=e.allDay?"終日":(e.startMs<ds?"〜":fmtTime(e.startMs)+"–")+(e.endMs>de?"":fmtTime(e.endMs));
   const state=!e.allDay&&e.endMs<=now?"past":!e.allDay&&e.startMs<=now?"now":"";
-  const tail=MARK.test(e.title)?`<span class="pill amber">🗂️ タスク</span>`:state==="now"?`<span class="pill live">進行中</span>`:"";
+  const tail=MARK.test(e.title)?`<span class="pill amber">タスク</span>`:state==="now"?`<span class="pill live">進行中</span>`:"";
   const inner=`<time>${esc(time)}</time><span class="t">${esc(e.title)}</span>${tail}${e.location?`<span class="loc">📍 ${esc(e.location)}</span>`:""}`;
   return okUrl(e.url)?`<a class="ev ${state}" href="${esc(e.url)}" target="_blank" rel="noopener">${inner}</a>`:`<div class="ev ${state}">${inner}</div>`;
 }
 function todayEvents(){
   const now=Date.now(), d0=startOfDay(now), d1=dayStart(d0,1);
-  if(!S.cal) return "";
+  if(!S.cal) return `<section class="card dpanel" aria-label="次の予定"><div class="dhead"><h2><span class="e">📅</span>次の予定</h2></div><div class="empty">予定がまだ届いていません。</div></section>`;
   const list=calEvents().filter(e=>e.endMs>now&&e.startMs<d1), next=list.find(e=>!e.allDay&&e.startMs>now);
-  return `<section class="card dpanel" aria-label="今日の予定">
-    <div class="dhead"><h2>今日の予定</h2><span class="badge ${list.length?"":"zero"}">${list.length}</span><span class="sub">${next?`次は ${esc(fmtTime(next.startMs))} ${esc(next.title)}`:"このあと時間の決まった予定はありません"}</span>${next?untilChip(next.startMs):""}<a class="btn" href="#calendar">7日間を見る</a></div>
-    ${list.length?list.slice(0,6).map(e=>evRow(e,d0)).join(""):`<div class="empty"><b>今日の残りの予定はありません</b>明日以降は「カレンダー」で見られます。</div>`}
+  return `<section class="card dpanel" aria-label="次の予定">
+    <div class="dhead"><h2><span class="e">📅</span>次の予定</h2>${next?untilChip(next.startMs):`<span class="sub">このあと時間の決まった予定はありません</span>`}<a class="more" href="#calendar">7日間 →</a></div>
+    ${list.length?list.slice(0,3).map(e=>evRow(e,d0)).join(""):`<div class="empty">今日の残りの予定はありません。</div>`}
   </section>`;
 }
 function calendar(){
@@ -940,8 +989,8 @@ function notesView(){
   if(n){
     const bl=backlinks(n);
     return `<header class="head"><div><p class="eyebrow"><a href="#notes" data-notelist>📒 ノート</a> · 更新 ${esc(ago(n.updatedAt||n.createdAt||0))}</p><h1 class="ntitle" data-edit="notetitle:${esc(n.id)}">${esc(n.title)}</h1></div>
-      <div class="row"><button class="btn" data-editnow="note:${esc(n.id)}">✏️ 編集</button><button class="btn" id="noteDel" style="color:var(--red)">🗑️</button></div></header>
-    <article class="card wiki" data-edit="note:${esc(n.id)}">${n.body?wikiBlock(n.body):`<p class="sub">まだ何も書いていません。「✏️ 編集」か、ここを選んで書き始めてください。[言葉] で別のノートにつながります。</p>`}</article>
+      <div class="row"><button class="btn" data-editnow="note:${esc(n.id)}">編集</button><button class="btn" id="noteDel" style="color:var(--red)">削除</button></div></header>
+    <article class="card wiki" data-edit="note:${esc(n.id)}">${n.body?wikiBlock(n.body):`<p class="sub">まだ何も書いていません。「編集」か、ここを選んで書き始めてください。[言葉] で別のノートにつながります。</p>`}</article>
     <section class="card backl"><h2>🔗 このノートにリンクしているもの <span class="count">${bl.length}</span></h2>${bl.length?`<ul>${bl.map(b=>`<li><button class="tt" data-blk="${b.kind}" data-id="${esc(b.id)}">${{note:"📒",memo:"📝",task:"🗂️"}[b.kind]} ${esc(b.title)}</button></li>`).join("")}</ul>`:`<p class="sub" style="margin:0">まだありません。ほかのノートやメモに [${esc(n.title)}] と書くとここに出ます。</p>`}</section>
     ${(h=>h.length?`<section class="card hop"><h2>🕸️ つながり <span class="sub">同じ言葉でつながるノート</span></h2>${h.map(g=>`<div class="grp"><h3>${wlink(g.word)} 経由</h3><div class="ngrid">${[g.page,...g.others].filter(Boolean).map(x=>`<button class="card ncard" data-nopen="${esc(x.id)}"><b>${esc(x.title)}</b><span>${esc(String(x.body||"").replace(/[\[\]#]/g,"").slice(0,90))}</span></button>`).join("")}</div></div>`).join("")}</section>`:"")(twoHop(n))}`;
   }
@@ -1115,18 +1164,19 @@ function searchResults(){
   const q=S.q.trim(); if(!q) return "";
   const {hits,via}=runSearch(q);
   const kinds=Object.keys(SKIND).filter(k=>hits.some(h=>h.kind===k));
-  const aiState=S.aiBusy?`<span class="sub">🤖 関連する言葉を考えています…</span>`:S.sampleOk?`<button class="gchip" id="aiSearch">🤖 AIで広げて探す</button>`:"";
+  const aiState=S.aiBusy?`<span class="sub">関連する言葉を考えています…</span>`:S.sampleOk?`<button class="btn sm" id="aiSearch">AIで広げて探す</button>`:"";
   const aiWords=(S.aiExp||{})[norm(q)];
   return `<section class="card results" aria-label="検索結果">
-    <div class="rhead"><b>${hits.length}件</b>${via.length?`<span class="sub">「${via.map(esc).join("」「")}」でも探しました</span>`:""}${aiWords?`<span class="sub">🤖 ${aiWords.map(esc).join("・")}</span>`:""}${aiState}</div>
+    <div class="rhead"><b>「${esc(q)}」 ${hits.length}件</b>${via.length?`<span class="sub">「${via.map(esc).join("」「")}」でも探しました</span>`:""}${aiWords?`<span class="sub">🤖 ${aiWords.map(esc).join("・")}</span>`:""}${aiState}</div>
     ${kinds.map(k=>{const xs=hits.filter(h=>h.kind===k), all=S.qAll===k, shown=all?xs:xs.slice(0,5);
       return `<div class="rgroup"><div class="section-title"><span class="e">${SKIND[k][0]}</span>${SKIND[k][1]} <span class="count">${xs.length}</span></div>
       ${shown.map((h,i)=>`<button class="rrow" data-hit="${k}:${hits.indexOf(h)}"><b>${esc(h.title)}</b>${h.date?`<span class="sub"> · ${esc(h.date)}</span>`:""}<span class="snip">${snippet(h)}</span></button>`).join("")}
-      ${xs.length>5&&!all?`<button class="dmore" data-qall="${k}">もっと見る（${xs.length}件）</button>`:""}</div>`}).join("")||`<p class="sub" style="padding:4px 12px 10px;margin:0">見つかりませんでした。${S.sampleOk?"「🤖 AIで広げて探す」を試してください。":"別の言葉で試してください。"}</p>`}
+      ${xs.length>5&&!all?`<button class="dmore" data-qall="${k}">もっと見る（${xs.length}件）</button>`:""}</div>`}).join("")||`<p class="sub" style="padding:4px 12px 10px;margin:0">見つかりませんでした。${S.sampleOk?"「AIで広げて探す」を試してください。":"別の言葉で試してください。"}</p>`}
   </section>`;
 }
 function goHit(h){
   const g=h.go;
+  if(h.kind!=="tool"){S.q="";$("#q").value=""}
   if(h.kind==="tool"){if(okUrl(h.href)){if(/^https?:/.test(h.href))window.open(h.href,"_blank","noopener");else location.href=h.href}return}
   if(g.note){S.noteId=g.note;S.noteKeep=true;if(location.hash==="#notes")render();else location.hash="notes";return}
   if(g.memo){S.inboxFilter="all";location.hash="inbox";return}
@@ -1150,9 +1200,33 @@ async function aiSearch(){
 try{S.aiExp=JSON.parse(localStorage.getItem("desk-ai-exp")||"{}")||{}}catch(e){S.aiExp={}}
 
 /* ---------- nav ---------- */
-function renderNav(){
+function navCount(id){
   const open=S.memos.filter(m=>!m.done&&m.place==="inbox").length, mailN=S.dl.filter(x=>x.kind==="mail").length, taskN=S.board.filter(t=>t.status==="doing").length;
-  $("#nav").innerHTML=VIEWS.map(v=>`<a href="#${v.id}" ${viewId()===v.id?'aria-current="page"':''}><span class="e">${v.e}</span><span class="label">${v.label}</span>${v.id==="inbox"&&open?`<span class="count">${open}</span>`:""}${v.id==="mail"&&mailN?`<span class="count hot">${mailN}</span>`:""}${v.id==="tasks"&&taskN?`<span class="count" title="進行中">${taskN}</span>`:""}${v.id==="log"&&S.reports[0]?.pending?.length?`<span class="count" title="ペンディング">${S.reports[0].pending.length}</span>`:""}</a>`).join("");
+  return id==="inbox"&&open?`<span class="count">${open}</span>`:id==="mail"&&mailN?`<span class="count hot" title="要対応">${mailN}</span>`:id==="tasks"&&taskN?`<span class="count" title="進行中">${taskN}</span>`:id==="log"&&S.reports[0]?.pending?.length?`<span class="count" title="ペンディング">${S.reports[0].pending.length}</span>`:"";
+}
+function navHtml(){
+  const cur=viewId();
+  return NAVGROUPS.map(([g,l])=>`<div class="gh">${l}</div>`+VIEWS.filter(v=>v.g===g).map(v=>`<a href="#${v.id}" ${cur===v.id?'aria-current="page"':''}><span class="e">${v.e}</span><span class="label">${v.label}</span>${navCount(v.id)}</a>`).join("")).join("");
+}
+function renderNav(){
+  $("#nav").innerHTML=navHtml();
+  const cur=viewId(), more=!TABS.includes(cur), mailN=S.dl.filter(x=>x.kind==="mail").length;
+  $("#tabs").innerHTML=TABS.map(id=>{const v=VIEWS.find(x=>x.id===id);return `<a href="#${id}" ${cur===id?'aria-current="page"':''}><span class="e">${v.e}</span>${v.label}</a>`}).join("")
+    +`<button id="moreBtn" ${more?'aria-current="page"':''} aria-label="その他の画面"><span class="e">☰</span>その他${mailN?`<span class="dot">${mailN}</span>`:""}</button>`;
+  $("#moreBtn").onclick=openMore;
+}
+/* phone: every other view, in the same four groups as the rail */
+function openMore(){
+  if($("#modal").firstChild) return;
+  $("#modal").innerHTML=`<div class="scrim bottom" id="scrim"><div class="pop sheet" role="dialog" aria-modal="true" aria-label="その他の画面">
+    <div class="top"><h2>画面を選ぶ</h2><button class="ibtn" id="xMore" aria-label="閉じる">✕</button></div>
+    <nav class="nav">${navHtml()}</nav>
+    <button class="railbtn" id="moreAsk"><span class="e">🤖</span>Claude に頼む</button>
+  </div></div>`;
+  const close=()=>{$("#modal").innerHTML=""};
+  $("#xMore").onclick=close;$("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};
+  $("#modal").querySelectorAll(".nav a").forEach(a=>a.addEventListener("click",close));
+  $("#moreAsk").onclick=()=>{close();openAsk()};
 }
 
 /* ---------- notes shown on a page ---------- */
@@ -1167,31 +1241,38 @@ function noteCard(m){
 }
 
 /* ---------- views ---------- */
+/* Home: one focal point (today's three), then the day's context, then what came in, then the daily tools. */
 function home(){
   const d=new Date();const h=d.getHours();const greet=h<11?"おはようございます":h<18?"こんにちは":"こんばんは";
-  const act=S.dl.filter(x=>x.kind==="mail").length;
-  const inbox=S.memos.filter(m=>!m.done&&m.place==="inbox").length;
-  const tools=S.tools.filter(t=>!t.deleted);
-  const groups=GROUPS.filter(([g])=>tools.some(t=>t.group===g));
+  const tools=S.tools.filter(t=>!t.deleted), daily=tools.filter(t=>t.group==="Daily").sort((a,b)=>(a.order??99)-(b.order??99));
+  const top=topThreeIds();
   return `
-  <header class="head"><div><p class="eyebrow">${d.toLocaleDateString("ja-JP",{month:"long",day:"numeric",weekday:"long"})}</p><h1>${greet}、Tatsukiさん。</h1></div></header>
-  <label class="card search"><span>🔎</span><input id="q" type="search" placeholder="すべてを検索（ノート・メモ・タスク・ニュース・メール…）" value="${esc(S.q)}" aria-label="すべてを検索" autocomplete="off"><kbd>/</kbd></label>
-  ${searchResults()}
-  ${newsDigest()}
-  <div class="glance"><a class="gchip ${act?"hot":""}" href="#mail">✉️ 要対応メール <b>${act}</b></a><a class="gchip" href="#inbox">📥 受信箱のメモ <b>${inbox}</b></a><button class="gchip" id="soundBtn" ${actx?"hidden":""}>🔈 通知音をオン</button></div>
+  <header class="head"><div><p class="eyebrow">${d.toLocaleDateString("ja-JP",{month:"long",day:"numeric",weekday:"long"})} · ${greet} · ${t3Mode()}</p><h1>今日の3つ</h1></div></header>
   ${topThree()}
-  ${habitStrip()}
-  ${todayEvents()}
-  ${todayPanel()}
+  <div class="duo">${todayEvents()}${habitStrip()||`<section class="card"><div class="dhead"><h2><span class="e">🌱</span>今日の習慣</h2><a class="more" href="#habits">足す →</a></div><div class="empty">続けたいことを「習慣」で足せます。</div></section>`}</div>
+  ${todayPanel(top)}
+  ${inflow()}
   ${notesHere("home")}
-  ${groups.length?groups.map(([g,e,l])=>`<section><div class="section-title"><span class="e">${e}</span>${l}</div><div class="tiles">${tools.filter(t=>t.group===g).sort((a,b)=>(a.order??99)-(b.order??99)).map(tile).join("")}</div></section>`).join(""):`<div class="card empty"><b>ツールを読み込み中</b>ツールとフォルダがここに並びます。</div>`}`;
+  ${daily.length?`<section><div class="section-title"><span class="e">☀️</span>毎日のツール<a href="#tools">すべてのツール →</a></div><div class="tiles mini">${daily.map(tile).join("")}</div></section>`:`<p class="sub" style="margin:0"><a href="#tools" class="more">ツールを開く →</a></p>`}`;
 }
-/* Home: today's world-news stories in a fold; a click opens that story's summary on the news page, where the source links are */
-function newsDigest(){
-  const e=S.editions[0]; if(!e) return "";
-  const st=e.data.stories||[];
-  return `<details class="card digest" ${S.digestOpen?"open":""} id="digest"><summary>📰 今日のニュースまとめ <span class="count">${st.length}本</span><span class="sub">${esc(e.data.headline||"")}</span></summary>
-    <ol>${st.map((s,i)=>`<li><button class="tt" data-story="${i}" data-ed="${esc(e.id)}"><span aria-hidden="true">${REG[s.region]||"🌐"}</span> ${esc(s.title)}</button></li>`).join("")}</ol></details>`;
+const topThreeIds=()=>topList().map(t=>t.id);
+/* what came in: mail that needs action, inbox memos, today's news, each count on one right-hand line */
+function inflow(){
+  const act=S.dl.filter(x=>x.kind==="mail").length, inbox=S.memos.filter(m=>!m.done&&m.place==="inbox").length, e=S.editions[0], st=e?.data?.stories||[];
+  const n=(v,hot)=>`<span class="n ${v?hot?"hot":"":"zero"}">${v}</span>`;
+  return `<section aria-label="届いたもの"><div class="section-title"><span class="e">📬</span>届いたもの</div><div class="card inflow">
+    <a class="irow" href="#mail"><span class="e">✉️</span>要対応メール${n(act,true)}</a>
+    <a class="irow" href="#inbox"><span class="e">📥</span>受信箱のメモ${n(inbox)}</a>
+    ${e?`<details class="digest" ${S.digestOpen?"open":""} id="digest"><summary class="irow"><span class="e">📰</span>今日のニュース<span class="s">${esc(e.data.headline||"")}</span>${n(st.length)}</summary>
+      <ol>${st.map((x,i)=>`<li><button class="tt" data-story="${i}" data-ed="${esc(e.id)}">${esc(x.title)}</button></li>`).join("")}</ol></details>`:""}
+    ${actx?"":`<button class="irow" id="soundBtn"><span class="e">🔈</span>新着のときに音を鳴らす<span class="n zero">オフ</span></button>`}
+  </div></section>`;
+}
+function toolsView(){
+  const tools=S.tools.filter(t=>!t.deleted), groups=GROUPS.filter(([g])=>tools.some(t=>t.group===g));
+  return `<header class="head"><div><p class="eyebrow">ツール</p><h1>ツールとフォルダ</h1></div></header>
+  ${notesHere("tools")}
+  ${groups.length?groups.map(([g,e,l])=>`<section><div class="section-title"><span class="e">${e}</span>${l}</div><div class="tiles">${tools.filter(t=>t.group===g).sort((a,b)=>(a.order??99)-(b.order??99)).map(tile).join("")}</div></section>`).join(""):`<div class="card empty"><b>ツールを読み込み中</b>ツールとフォルダがここに並びます。</div>`}`;
 }
 /* a tile whose URL changes (a Cloudflare quick tunnel) gets ✏️ to paste the new one; online only, the Mac opens t.local */
 function tile(t){
@@ -1259,7 +1340,7 @@ function mail(){
   <header class="head"><div><p class="eyebrow">朝のメール · ${esc(e.id)}</p><h1>受信メールの仕分け</h1></div>
   <label class="sub">日付 <select id="day">${S.days.map(x=>`<option value="${esc(x.id)}" ${x.id===e.id?"selected":""}>${esc(x.id)}</option>`).join("")}</select></label></header>
   ${notesHere("mail")}
-  <section class="card lead"><div class="row"><span class="pill red">🔴 要対応 ${c("Action needed")}</span><span class="pill amber">✍️ 返信案あり ${c("Reply drafted")}</span><span class="pill">👀 参考 ${c("FYI")}</span></div><p style="margin-top:10px">${esc(e.data.summary)}</p></section>
+  <section class="card lead"><div class="row"><span class="pill red">要対応 ${c("Action needed")}</span><span class="pill amber">返信案あり ${c("Reply drafted")}</span><span class="pill">参考 ${c("FYI")}</span></div><p style="margin-top:10px">${esc(e.data.summary)}</p></section>
   <div style="display:grid;gap:10px">${items.map(i=>mailCard(i,e.id)).join("")}</div>`;
 }
 function mailCard(i,dayId){
@@ -1267,18 +1348,17 @@ function mailCard(i,dayId){
   const st=i.status||"pending", dr=i.draft, key=esc(i.key), n=S.notes[i.key];
   let ops="";
   if(dr){
-    if(st==="sent") ops=`<span class="msg ok">✅ 送信済み</span>`;
-    else if(st==="skipped") ops=`<span class="msg">送らないことにしました</span><button class="btn" data-act="undo" data-key="${key}">↩️ 元に戻す</button>`;
-    else if(S.confirm===i.key) ops=`<span class="msg">${esc((dr.to||[]).join(", "))} に送りますか？</span><button class="btn primary" data-act="send" data-key="${key}" ${S.busy?"disabled":""}>📤 送信する</button><button class="btn" data-act="cancel" data-key="${key}">キャンセル</button>`;
-    else ops=S.local?`${okUrl(dr.view_url)?`<a class="btn" href="${esc(dr.view_url)}" target="_blank" rel="noopener">✏️ Gmail で下書きを開く</a>`:""}`:`<button class="btn primary" data-act="ask" data-key="${key}">📤 送信…</button><button class="btn" data-act="skip" data-key="${key}">🙅 送らない</button>${okUrl(dr.view_url)?`<a class="btn" href="${esc(dr.view_url)}" target="_blank" rel="noopener">✏️ Gmail で編集</a>`:""}`;
-  } else if(okUrl(i.gmail_url)) ops=`<a class="btn" href="${esc(i.gmail_url)}" target="_blank" rel="noopener">↗ Gmail で開く</a>`;
-  const icon=i.priority==="Action needed"?"🔴":i.priority==="Reply drafted"?"✍️":"👀";
+    if(st==="sent") ops=`<span class="msg ok">送信済み</span>`;
+    else if(st==="skipped") ops=`<span class="msg">送らないことにしました</span><button class="btn" data-act="undo" data-key="${key}">元に戻す</button>`;
+    else if(S.confirm===i.key) ops=`<span class="msg">${esc((dr.to||[]).join(", "))} に送りますか？</span><button class="btn primary" data-act="send" data-key="${key}" ${S.busy?"disabled":""}>送信する</button><button class="btn" data-act="cancel" data-key="${key}">キャンセル</button>`;
+    else ops=S.local?`${okUrl(dr.view_url)?`<a class="btn" href="${esc(dr.view_url)}" target="_blank" rel="noopener">Gmail で下書きを開く ↗</a>`:""}`:`<button class="btn primary" data-act="ask" data-key="${key}">送信…</button><button class="btn" data-act="skip" data-key="${key}">送らない</button>${okUrl(dr.view_url)?`<a class="btn" href="${esc(dr.view_url)}" target="_blank" rel="noopener">Gmail で編集 ↗</a>`:""}`;
+  } else if(okUrl(i.gmail_url)) ops=`<a class="btn" href="${esc(i.gmail_url)}" target="_blank" rel="noopener">Gmail で開く ↗</a>`;
   return `<article class="card mail ${dr&&st!=="pending"?"done-card":""}">
-    <div class="top"><span class="pill ${PRI[i.priority]||""}">${icon} ${esc(PRIJA[i.priority]||i.priority)}</span><span>${esc(i.from)}</span><span>· ${esc(i.received||"")}</span>${dx?dlChip(dx):""}</div>
+    <div class="top"><span class="pill ${PRI[i.priority]||""}">${esc(PRIJA[i.priority]||i.priority)}</span><span>${esc(i.from)}</span><span>· ${esc(i.received||"")}</span>${dx?dlChip(dx):""}</div>
     <h3>${esc(i.subject_ja||i.subject)}</h3>${i.subject_ja&&i.subject&&i.subject_ja!==i.subject?`<div class="due">原文の件名：${esc(i.subject)}</div>`:""}<p>${esc(i.summary)}</p>
     ${dx?`<div class="due">${dueLine(dx)}</div>`:""}
-    ${i.action?`<div class="todo">👉 ${esc(i.action)}</div>`:""}
-    ${dr?`<details class="draft" ${st==="pending"?"open":""}><summary><span>✍️ 返信の下書き</span><span class="sub">Gmail の下書きに保存済み</span></summary><div class="meta">宛先：${esc((dr.to||[]).join(", "))}<br>件名：${esc(dr.subject)}</div>${dr.body_ja&&dr.body_ja!==dr.body?`<pre>${esc(dr.body_ja)}</pre><details class="sent-as"><summary>実際に送られる文面（原文）</summary><pre>${esc(dr.body)}</pre></details>`:`<pre>${esc(dr.body)}</pre>`}</details>`:""}
+    ${i.action?`<div class="todo">${esc(i.action)}</div>`:""}
+    ${dr?`<details class="draft" ${st==="pending"?"open":""}><summary><span>返信の下書き</span><span class="sub">Gmail の下書きに保存済み</span></summary><div class="meta">宛先：${esc((dr.to||[]).join(", "))}<br>件名：${esc(dr.subject)}</div>${dr.body_ja&&dr.body_ja!==dr.body?`<pre>${esc(dr.body_ja)}</pre><details class="sent-as"><summary>実際に送られる文面（原文）</summary><pre>${esc(dr.body)}</pre></details>`:`<pre>${esc(dr.body)}</pre>`}</details>`:""}
     <div class="row">${ops}</div>${n?`<p class="msg ${n.ok?"ok":"err"}">${esc(n.text)}</p>`:""}</article>`;
 }
 function inbox(){
@@ -1297,14 +1377,12 @@ function render(){
   updateBadges();checkNew();
   renderNav();
   const v=viewId();
-  $("#view").innerHTML=v==="notes"?notesView():v==="watch"?watch():v==="tasks"?tasks():v==="calendar"?calendar():v==="news"?news():v==="mail"?mail():v==="inbox"?inbox():v==="habits"?habitsView():v==="log"?log():home();
+  $("#view").innerHTML=searchResults()+(v==="notes"?notesView():v==="watch"?watch():v==="tasks"?tasks():v==="calendar"?calendar():v==="news"?news():v==="mail"?mail():v==="inbox"?inbox():v==="habits"?habitsView():v==="log"?log():v==="tools"?toolsView():home());
   if(v==="news"||v==="watch") linkSources($("#view"));
   wire();
   if(v==="news"&&S.focus!=null){const el=document.getElementById("story-"+S.focus);S.focus=null;if(el){el.classList.add("flash");setTimeout(()=>el.scrollIntoView({block:"start"}),0)}}
 }
 function wire(){
-  const q=$("#q"); if(q){const go=()=>{S.q=q.value;S.qAll=null;const pos=q.selectionStart;render();const n=$("#q");n.focus();n.setSelectionRange(pos,pos)};
-    q.oninput=e=>{if(!e.isComposing)go()};q.addEventListener("compositionend",go)}
   document.querySelectorAll("[data-hit]").forEach(b=>b.onclick=()=>{const [,i]=b.dataset.hit.split(":");const h=runSearch(S.q).hits[+i];if(h)goHit(h)});
   document.querySelectorAll("[data-qall]").forEach(b=>b.onclick=()=>{S.qAll=b.dataset.qall;render()});
   $("#aiSearch")&&($("#aiSearch").onclick=aiSearch);
@@ -1381,7 +1459,7 @@ function openNote(){
   $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop" role="dialog" aria-modal="true" aria-label="メモを書く">
     <div class="top"><h2>📝 クイックメモ</h2><button class="ibtn" id="xNote" aria-label="閉じる">✕</button></div>
     <textarea id="noteText" placeholder="頭の中にあることを書き出す…">${esc(draft)}</textarea>
-    <div class="seg"><button id="toInbox">📥 受信箱に送る<small>⌘/Ctrl + Enter</small></button><button id="keepHere">📌 「${esc(viewLabel(place))}」に残す<small>このページに表示されます</small></button></div>
+    <div class="seg"><button id="toInbox">受信箱に送る<small>⌘/Ctrl + Enter</small></button><button id="keepHere">「${esc(viewLabel(place))}」に残す<small>このページに表示されます</small></button></div>
   </div></div>`;
   const ta=$("#noteText");ta.focus();ta.setSelectionRange(ta.value.length,ta.value.length);
   ta.oninput=()=>{try{localStorage.setItem("desk-draft",ta.value)}catch(e){}};
@@ -1394,6 +1472,9 @@ function openNote(){
   ta.onkeydown=e=>{if(e.key==="Enter"&&(e.metaKey||e.ctrlKey)){e.preventDefault();save("inbox")} if(e.key==="Escape")close()};
 }
 $("#noteBtn").onclick=openNote;
+{const q=$("#q"),go=()=>{S.q=q.value;S.qAll=null;render();if(S.q.trim())window.scrollTo(0,0)};
+  q.oninput=e=>{if(!e.isComposing)go()};q.addEventListener("compositionend",go);
+  q.onkeydown=e=>{if(e.key==="Escape"){q.value="";go();q.blur()}}}
 
 /* ---------- ask Claude: turn an idea into a /desk-feature prompt for Claude Code ---------- */
 /* The desk's source of truth is desk/index.html in the GitHub repo, so changes always start there (Claude Code on the web or the Mac). */
@@ -1406,7 +1487,7 @@ function openAsk(){
     <div class="top"><h2>🤖 Deskに機能を追加</h2><button class="ibtn" id="xAsk" aria-label="閉じる">✕</button></div>
     <p class="hint">やりたいことを書いてコピーし、Claude Code で <b>${esc(DESK_DIR)}</b>（リポジトリ tatsuki32/tatsuki）を開いたセッションに貼り付けてください。</p>
     <textarea id="askText" placeholder="例：週ごとの振り返りページがほしい">${esc(draft)}</textarea>
-    <button class="btn primary" id="askCopy" style="justify-content:center">📋 Claude Code用にコピー <kbd>⌘/Ctrl + Enter</kbd></button>
+    <button class="btn primary" id="askCopy" style="justify-content:center">Claude Code 用にコピー <kbd>⌘/Ctrl + Enter</kbd></button>
   </div></div>`;
   const ta=$("#askText");ta.focus();
   ta.oninput=()=>{try{localStorage.setItem("desk-ai-draft",ta.value)}catch(e){}};
@@ -1423,7 +1504,7 @@ document.addEventListener("keydown",e=>{const t=e.target.tagName;if(t==="INPUT"|
   if(e.key==="n"||e.key==="N"){e.preventDefault();openNote()}
   if(e.key==="c"||e.key==="C"){if(e.metaKey||e.ctrlKey)return;e.preventDefault();openAsk()}
   if(e.key==="t"||e.key==="T"){if(e.metaKey||e.ctrlKey)return;e.preventDefault();openTask(null)}
-  if(e.key==="/"){const q=$("#q");if(q){e.preventDefault();q.focus()}else{location.hash="home";setTimeout(()=>$("#q")?.focus(),0);e.preventDefault()}}});
+  if(e.key==="/"){e.preventDefault();$("#q").focus()}});
 window.addEventListener("hashchange",()=>{S.confirm=null;hideSelMenu();if(location.hash==="#notes"&&!S.noteKeep)S.noteId=null;S.noteKeep=false;const f=S.focus!=null;if(!f)window.scrollTo(0,0);render()});
 
 /* ---------- boot ---------- */
