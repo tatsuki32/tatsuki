@@ -7,6 +7,7 @@
 - 作りたい機能リスト11件を Desk のタスクに登録（ID `tfeat01`〜`tfeat11`、メモに [作りたい機能リスト]）。
 - memory/ と CLAUDE.md の「記憶の使い方」、Stop フック（記録の書き忘れ防止）を追加。
 - 残りの作りたい機能を一気に実装：/recap・/rsd・/begin・/sync・/learn・/knowledge、.claude/rules/（文体・プライバシー・ペルソナ）、.githooks/pre-commit（漏洩防止）、tools/validate-writing.mjs（npm run validate-writing）、Desk の「☀️ 今日の3つ」と「🌱 習慣」（新コレクション habits、双方向同期）。
+- Desk に「🧭 次は？」ボタン（右上・G キー）：何していたか（memory/ の止まった所・次の一手、進行中、最近さわったもの）と、次はこれ（理由・次の予定までの時間・始める/完了/別の/🤖 最初の一歩）。memory/ は Mac では server.py が直接、オンラインは DB の memory/current（毎時同期）。
 - /morning-kickoff：`desk/kickoff.py` が Mac の `desk/data/` と memory/ から候補を JSON で出し、コマンドが1つ選んで「まず5分」を提案。「始める」で `PUT /api/tasks/<id>`。
 
 ## 決めたこと

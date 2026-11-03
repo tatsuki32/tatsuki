@@ -33,6 +33,15 @@ git -C "$DESK/.." pull --ff-only origin main
 
 ルール：同じ id なら `updatedAt` が新しい方を採用。削除は `deleted:true` のレコードとして同期し、ドキュメント自体は消さない。
 
+## 2b. 作業の記録（memory/）をオンライン版に載せる（Desk の「🧭 次は？」用）
+
+```bash
+python3 "$DESK/kickoff.py" memory-doc > memory-doc.json
+```
+
+ArtifactData で `memory` コレクションの doc `current` に、`file_path: memory-doc.json` で `set` する（既存なら先に `get` して `if_version` を付ける）。終わったら `memory-doc.json` を消す。
+Mac 版の Desk はサーバーが毎回 memory/ を直接読むので、この手順は要らない。
+
 ## 3. コードをオンライン版に反映する
 
 ```bash

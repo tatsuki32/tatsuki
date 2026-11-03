@@ -82,6 +82,12 @@ def page():
                 parts.append(f.read().replace("</script", "<\\/script"))
         except FileNotFoundError:
             parts.append(f"window.{var}={default};")
+    try:  # what I was doing: read memory/ fresh on every page load (Desk's 🧭 button)
+        import kickoff
+        mem = json.dumps(kickoff.memory_doc(), ensure_ascii=False).replace("</", "<\\/")
+    except Exception:
+        mem = "null"
+    parts.append(f"window.MEMORY={mem};")
     inject = "<script>\n" + "\n".join(parts) + "\n</script>\n"
     i = html.find("<script>")
     return html[:i] + inject + html[i:] if i >= 0 else html + inject
