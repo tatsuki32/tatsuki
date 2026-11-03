@@ -13,17 +13,17 @@ claude.ai のチャットで直接編集しない。変更は必ずここで行�
 - 単一HTML（外部ライブラリなし、Google Fonts のみ）。黒基調・金色アクセント。
 - ビュー: Home / Tasks / Calendar / World Desk / Morning Mail / Inbox / Claude Log
 - データはページに埋め込まない。オンライン版は Artifact DB（`window.claude` の `db`）から読む:
-  `tools`, `memos`, `tasks`, `dues`, `calendar`(doc `upcoming`), `gtasks`(doc `current`),
+  `tools`, `memos`, `tasks`, `dues`, `prompts`（毎日の求人チェックの Claude プロンプト。経歴入りなのでリポジトリに入れない）, `calendar`(doc `upcoming`), `gtasks`(doc `current`),
   `reports`, `editions`, `days`
 - Mac版も同じ `desk/index.html` を使う。`desk/server.py`（Python標準ライブラリのみ）が
   `http://localhost:4747` で配信し、`desk/data/*.js`（`window.TOOLS` 等）をページに差し込む。
-  API: `GET /api/memos|dues|tasks`、`POST /api/memos`、`PATCH /api/memos/<id>`、`PUT /api/dues/<id>`、`PUT /api/tasks/<id>`。
+  API: `GET /api/memos|dues|tasks|prompts`、`POST /api/memos`、`PATCH /api/memos/<id>`、`PUT /api/dues/<id>`、`PUT /api/tasks/<id>`、`PUT /api/prompts/<id>`。
   データは `desk/data/*.json`（`.gitignore` 済み。個人データは絶対にコミットしない）。
 - Mac の置き場所は `~/TatsukiDesk`（Documents などの保護フォルダは自動起動から読めないので不可）。
 - Mac の導入: `bash desk/setup-mac.sh`（サーバー常駐＋5分ごとの `git pull origin main`）。
   旧版 `~/Documents/ClaudeTools` は使わない（初回だけ memos/dues/tasks を取り込む）。
 - 同期: `desk/sync/HOURLY_SYNC.md` を Mac の Claude スケジュールタスクで毎時実行。
-  memos/dues/tasks は双方向、それ以外はオンライン → Mac。`desk/index.html` が変わっていればオンライン版にも公開する。
+  memos/dues/tasks/prompts は双方向、それ以外はオンライン → Mac。`desk/index.html` が変わっていればオンライン版にも公開する。
 - 削除は `deleted:true` の論理削除。同期は `updatedAt` が新しい方を採用。
 - メール送信（Gmail `send_message`）はオンライン版のみ、送信前の確認を必ず残す。
 

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Tatsuki's Desk — Mac server.
 
-Serves desk/index.html at http://localhost:4747 and keeps memos, due dates and
-tasks in desk/data/*.json. Only the Python standard library is used.
+Serves desk/index.html at http://localhost:4747 and keeps memos, due dates,
+tasks and Claude prompts in desk/data/*.json. Only the Python standard library is used.
 
 - Listens on 127.0.0.1 only; requests whose Host is not localhost are refused.
 - index.html is read from disk on every request, so a `git pull` shows up on reload.
@@ -22,7 +22,7 @@ from urllib.parse import unquote, urlsplit
 ROOT = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(ROOT, "data")
 PORT = int(os.environ.get("DESK_PORT", "4747"))
-COLLECTIONS = ("memos", "dues", "tasks")
+COLLECTIONS = ("memos", "dues", "tasks", "prompts")
 # file in data/, global the page reads, value when the file is missing
 DATA_JS = [
     ("tools.js", "TOOLS", "[]"),
@@ -154,7 +154,7 @@ class Handler(BaseHTTPRequestHandler):
         if method == "POST" and col == "memos" and doc_id is None:
             doc_id = "m" + str(int(time.time() * 1000)) + secrets.token_hex(2)
             return self.send(200, upsert(col, doc_id, rec, merge=False))
-        if method == "PUT" and col in ("dues", "tasks") and doc_id:
+        if method == "PUT" and col in ("dues", "tasks", "prompts") and doc_id:
             return self.send(200, upsert(col, doc_id, rec, merge=False))
         if method == "PATCH" and col == "memos" and doc_id:
             out = upsert(col, doc_id, rec, merge=True)
