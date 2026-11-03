@@ -810,8 +810,25 @@ function habitsView(){
   ${notesHere("habits")}
   ${list.length?`<div class="habits">${list.map(card).join("")}</div>`:`<div class="card empty"><b>まだ習慣がありません</b>「＋ 習慣を足す」から。たとえば「5分歩く」「水を1杯」など、小さいもので十分です。</div>`}`;
 }
+/* claude.ai の Artifact では prompt()/confirm() が使えない（何も出ずに null が返る）ので、入力は画面内のダイアログで聞く */
+function askText(title,label,value,maxLen){
+  return new Promise(res=>{
+    if($("#modal").firstChild) return res(null);
+    $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop" role="dialog" aria-modal="true" aria-label="${esc(title)}">
+      <div class="top"><h2>${esc(title)}</h2><button class="ibtn" id="xAsk" aria-label="閉じる">✕</button></div>
+      <label class="sub" for="askInput">${esc(label)}</label>
+      <input type="text" id="askInput" autocomplete="off" maxlength="${maxLen||80}" value="${esc(value||"")}">
+      <div class="row"><button class="btn primary" id="askOk">決定</button><button class="btn" id="askCancel">やめる</button></div>
+    </div></div>`;
+    const inp=$("#askInput"), done=v=>{$("#modal").innerHTML="";res(v)};
+    inp.focus();inp.select();
+    $("#askOk").onclick=()=>done(inp.value);$("#askCancel").onclick=()=>done(null);$("#xAsk").onclick=()=>done(null);
+    $("#scrim").onclick=e=>{if(e.target.id==="scrim")done(null)};
+    inp.onkeydown=e=>{if(e.key==="Enter"&&!e.isComposing){e.preventDefault();done(inp.value)}if(e.key==="Escape")done(null)};
+  });
+}
 async function newHabit(h){
-  const name=(prompt(h?"新しい名前":"習慣の名前（例：5分歩く）",h?.name||"")||"").trim().slice(0,40); if(!name) return;
+  const name=((await askText(h?"✏️ 名前を変える":"🌱 習慣を足す",h?"新しい名前":"習慣の名前（例：5分歩く）",h?.name||"",40))||"").trim().slice(0,40); if(!name) return;
   const m=/^(\p{Extended_Pictographic}\uFE0F?)\s*(.*)$/u.exec(name);
   const rec=h?{...h,name:m?m[2]||name:name,emoji:m?m[1]:h.emoji}:{id:"h"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),name:m?m[2]||name:name,emoji:m?m[1]:"🌱",done:[],createdAt:Date.now()};
   try{await store.putHabit(rec)}catch(e){toast("保存できませんでした")}
@@ -1080,7 +1097,7 @@ function notesView(){
     :`<div class="card empty"><b>まだノートがありません</b>「＋ 新しいノート」か、メモに [言葉] と書いて押すと作れます。</div>`}`;
 }
 async function newNotePrompt(){
-  const t=(prompt("ノートのタイトル")||"").trim(); if(t) openWiki(t);
+  const t=((await askText("📒 新しいノート","ノートのタイトル","",80))||"").trim(); if(t) openWiki(t);
 }
 async function renameNote(n,title){
   title=title.trim().slice(0,80); if(!title||title===n.title) return;
@@ -1487,7 +1504,8 @@ function wire(){
   document.querySelectorAll("[data-t3]").forEach(b=>b.onclick=()=>setTaskStatus(b.dataset.id,b.dataset.t3));
   document.querySelectorAll("[data-habit]").forEach(b=>b.onclick=()=>toggleHabit(b.dataset.habit,b.dataset.day));
   document.querySelectorAll("[data-hedit]").forEach(b=>b.onclick=()=>newHabit(S.habits.find(x=>x.id===b.dataset.hedit)));
-  document.querySelectorAll("[data-hdel]").forEach(b=>b.onclick=async()=>{const h=S.habits.find(x=>x.id===b.dataset.hdel);if(h&&confirm("「"+h.name+"」をやめますか？記録は残りません。"))await store.putHabit({...h,deleted:true})});
+  document.querySelectorAll("[data-hdel]").forEach(b=>b.onclick=async()=>{if(!b.dataset.sure){b.dataset.sure="1";b.textContent="やめる？";b.setAttribute("aria-label","もう一度押すとやめます。記録は残りません");return}
+    const h=S.habits.find(x=>x.id===b.dataset.hdel);if(h)try{await store.putHabit({...h,deleted:true})}catch(e){toast("保存できませんでした")}});
   $("#newHabit")&&($("#newHabit").onclick=()=>newHabit());
   document.querySelectorAll("[data-turl]").forEach(b=>b.onclick=()=>openToolUrl(b.dataset.turl));
   document.querySelectorAll("[data-memo]").forEach(b=>b.onclick=async()=>{const m=S.memos.find(x=>x.id===b.dataset.id);if(!m)return;try{

@@ -7,3 +7,6 @@
 4. Artifact publish（`file_path: desk/index.html` と `url`）。`capabilities` は渡さない。
    - 「live version を見ていない」で拒否されたら、差分が自分の変更だけか確かめて同じ内容で再送する。
 5. DB の行（`tools`、`tasks` など）は ArtifactData で直接書く。既存の行の更新には `if_version` が必要。
+
+## Artifact で使えないもの
+- `prompt()` / `confirm()` / `alert()` は何も出ずに終わる。入力は `#modal` のダイアログ（`askText()`）、確認は2回押しにする。
