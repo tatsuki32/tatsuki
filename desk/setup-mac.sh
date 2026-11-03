@@ -21,6 +21,7 @@ unload() { launchctl bootout "gui/$UID_/$1" 2>/dev/null || true; rm -f "$AGENTS/
 
 if [[ "${1:-}" == "--uninstall" ]]; then
   unload com.tatsuki.desk.server; unload com.tatsuki.desk.pull
+  rm -f "$HOME/Desktop/Tatsuki's Desk.html"
   echo "Desk の常駐ジョブを削除しました。$DESK/data のデータはそのまま残っています。"; exit 0
 fi
 
@@ -93,6 +94,10 @@ launchctl bootstrap "gui/$UID_" "$AGENTS/com.tatsuki.desk.pull.plist"
 for _ in 1 2 3 4 5 6 7 8 9 10; do
   curl -fsS "http://localhost:$PORT/health" >/dev/null 2>&1 && break; sleep 0.5
 done
+# double-click launcher on the Desktop (opens the Mac desk, or offers the online one if the server is down)
+LAUNCHER="$HOME/Desktop/Tatsuki's Desk.html"
+sed "s/localhost:4747/localhost:$PORT/g" "$DESK/launcher.html" > "$LAUNCHER" && echo "デスクトップに「Tatsuki's Desk.html」を置きました（ダブルクリックで開けます）"
+
 if curl -fsS "http://localhost:$PORT/health" >/dev/null 2>&1; then
   echo "✅ Desk が起動しました: http://localhost:$PORT"
   open "http://localhost:$PORT" 2>/dev/null || true
