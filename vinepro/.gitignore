@@ -1,0 +1,6 @@
+data/
+var/
+*.db
+*.db-*
+__pycache__/
+dev/local.html

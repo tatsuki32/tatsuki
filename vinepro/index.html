@@ -1,0 +1,1154 @@
+<title>VINEPRO ボード</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Be+Vietnam+Pro:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: top bar (boards, language, people) / left tool rail / paper canvas or 100-day schedule / property sheet.
+   The canvas and schedule grid are drawn as paper in both themes on purpose; the app chrome follows the theme. */
+:root {
+  --chrome: #F3F4F1;
+  --chrome-2: #E6E8E3;
+  --rule: #CDD1CA;
+  --fg: #1C211E;
+  --muted: #5D665F;
+  --accent: #2B55C9;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #DCE4FA;
+  --danger: #B42A2A;
+  --paper: #FBFBF8;
+  --dot: #D9DCD4;
+  --f-ui: "Zen Kaku Gothic New", "Be Vietnam Pro", "Hiragino Sans", "Noto Sans JP", "Yu Gothic", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+:root[lang="vi"], :root[lang="en"] { --f-ui: "Be Vietnam Pro", "Zen Kaku Gothic New", "Segoe UI", "Noto Sans", sans-serif; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --chrome: #1A1D1B; --chrome-2: #252925; --rule: #3A403B; --fg: #E8ECE6; --muted: #A3ACA4;
+    --accent: #8EA9F2; --accent-ink: #10172B; --accent-soft: #24304F; --danger: #F08A8A;
+    --paper: #F4F4EF; --dot: #D4D7CF; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --chrome: #1A1D1B; --chrome-2: #252925; --rule: #3A403B; --fg: #E8ECE6; --muted: #A3ACA4;
+  --accent: #8EA9F2; --accent-ink: #10172B; --accent-soft: #24304F; --danger: #F08A8A;
+  --paper: #F4F4EF; --dot: #D4D7CF; color-scheme: dark;
+}
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body { background: var(--chrome); color: var(--fg); font-family: var(--f-ui); overflow: hidden; }
+button, input, textarea, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+#app { height: 100%; display: grid; grid-template-rows: auto 1fr; }
+.top {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding-block: 8px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  border-bottom: 1px solid var(--rule); background: var(--chrome);
+}
+.brand { font-weight: 700; letter-spacing: .02em; white-space: nowrap; }
+.brand small { font-family: var(--f-mono); font-size: 11px; color: var(--muted); margin-left: 6px; letter-spacing: .08em; }
+.tabs { display: flex; gap: 4px; flex: 1 1 auto; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.tab { border: 1px solid transparent; background: transparent; border-radius: 6px; padding: 5px 11px; white-space: nowrap; font-size: 13px; color: var(--muted); }
+.tab[aria-selected="true"] { background: var(--paper); color: #1C211E; border-color: var(--rule); font-weight: 700; }
+.tab.add { color: var(--accent); }
+.langs { display: flex; border: 1px solid var(--rule); border-radius: 7px; overflow: hidden; }
+.langs button { border: 0; background: transparent; padding: 4px 9px; font-size: 12px; font-family: var(--f-mono); letter-spacing: .04em; color: var(--muted); }
+.langs button[aria-pressed="true"] { background: var(--fg); color: var(--chrome); }
+.peers { display: flex; align-items: center; gap: 6px; }
+.peers img { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--chrome); outline: 2px solid var(--pc, transparent); }
+.status { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.status.warn { color: var(--danger); }
+
+.main { position: relative; min-height: 0; display: grid; grid-template-columns: auto 1fr; }
+.tools {
+  display: flex; flex-direction: column; gap: 4px; padding: 10px 8px; border-right: 1px solid var(--rule); background: var(--chrome);
+  padding-left: max(8px, env(safe-area-inset-left, 0px));
+}
+.tool { width: 44px; height: 44px; border-radius: 8px; border: 1px solid transparent; background: transparent; display: grid; place-items: center; position: relative; }
+.tool svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.tool:hover { background: var(--chrome-2); }
+.tool[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.tool kbd { position: absolute; right: 3px; bottom: 1px; font-family: var(--f-mono); font-size: 9px; opacity: .55; }
+.tools .sep { height: 1px; background: var(--rule); margin: 4px 6px; }
+.tool kbd { white-space: nowrap; }
+#panel h2 .close { margin-left: auto; border: 0; background: transparent; width: 28px; height: 28px; margin-top: -6px; margin-right: -6px; border-radius: 6px; font-size: 18px; line-height: 1; color: var(--fg); font-family: var(--f-ui); letter-spacing: 0; }
+#panel h2 .close:hover { background: var(--chrome-2); }
+#panel h2 { align-items: center; }
+#optbar { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 6; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; max-width: calc(100% - 32px); box-sizing: border-box; background: var(--chrome); border: 1px solid var(--rule); border-radius: 10px; padding: 7px 10px; font-size: 12px; box-shadow: 0 8px 24px -16px rgba(0,0,0,.4); }
+#optbar .grp { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+#optbar .lbl { color: var(--muted); }
+.seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 7px; overflow: hidden; flex-wrap: wrap; }
+.seg button { border: 0; border-right: 1px solid var(--rule); background: transparent; padding: 4px 9px; font-size: 12px; white-space: nowrap; }
+.seg button:last-child { border-right: 0; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.dot { width: 20px; height: 20px; border-radius: 50%; border: 1px solid rgba(0,0,0,.2); padding: 0; }
+.dot[aria-pressed="true"] { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.stage { position: relative; min-width: 0; min-height: 0; }
+#viewport {
+  position: absolute; inset: 0; overflow: hidden; touch-action: none; background-color: var(--paper);
+  background-image: radial-gradient(var(--dot) 1.1px, transparent 1.2px); cursor: default; user-select: none; -webkit-user-select: none;
+}
+#viewport.panning { cursor: grabbing; }
+#viewport.mode-pen, #viewport.mode-sticky, #viewport.mode-box, #viewport.mode-text { cursor: crosshair; }
+#viewport.mode-arrow { cursor: alias; }
+#world { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+.layer { position: absolute; left: 0; top: 0; }
+svg.layer { overflow: visible; width: 1px; height: 1px; }
+
+.it { position: absolute; box-sizing: border-box; border: 1px solid; border-radius: 7px; padding: 5px 7px 6px 8px; color: #1F2328; overflow: hidden; line-height: 1.35; white-space: pre-wrap; word-break: break-word; }
+.it .t { font-weight: 700; display: block; }
+.it .b { display: block; }
+.it .n { display: block; color: #57606A; }
+.it .m { display: inline-block; margin-top: 3px; padding: 0 6px; border-radius: 9px; background: #EEF1F4; color: #3D4650; font-family: var(--f-mono); font-size: 10.5px; line-height: 17px; }
+.it .m i { font-style: normal; font-family: var(--f-ui); color: #57606A; }
+.it.k-zone, .it.k-label, .it.k-cell, .it.k-sticky { border-radius: 0; }
+.it.k-header { display: flex; flex-direction: column; justify-content: center; text-align: center; padding: 3px 6px; }
+.it.k-text { border-color: transparent; background: transparent; padding: 0; overflow: visible; }
+.it.k-text.has-title { display: flex; align-items: center; }
+.it.k-sticky { box-shadow: 0 1px 2px rgba(60, 50, 0, .18), 0 6px 14px -8px rgba(60, 50, 0, .35); }
+.it.dash { border-style: dashed; border-width: 1.6px; }
+.it.sel { outline: 2px solid #2B55C9; outline-offset: 2px; }
+.it.src { outline: 2px dashed #2B55C9; outline-offset: 3px; }
+.it.align-center { text-align: center; }
+.it.pending .t::after { content: " …"; color: #8C959F; font-weight: 400; }
+.handle { position: absolute; right: -6px; bottom: -6px; width: 12px; height: 12px; background: #fff; border: 2px solid #2B55C9; border-radius: 3px; cursor: nwse-resize; }
+.edge-hit { stroke: transparent; stroke-width: 14; fill: none; pointer-events: stroke; cursor: pointer; }
+.edge-line { fill: none; stroke-width: 1.5; pointer-events: none; }
+.edge-line.sel { stroke-width: 3; }
+.edge-label rect { fill: #FFFFFF; }
+.edge-label text { font: 500 10.5px var(--f-ui); fill: #24292F; }
+.stroke-line { fill: none; stroke-linecap: round; stroke-linejoin: round; pointer-events: stroke; }
+.stroke-line.sel { filter: drop-shadow(0 0 2px #2B55C9); }
+#live { pointer-events: none; }
+.cursor { position: absolute; pointer-events: none; }
+.cursor svg { width: 16px; height: 16px; display: block; }
+.cursor span { display: inline-block; margin: 2px 0 0 12px; padding: 1px 7px; border-radius: 9px; font-size: 11px; color: #fff; white-space: nowrap; }
+.zoom { position: absolute; right: max(12px, env(safe-area-inset-right, 0px)); bottom: calc(12px + env(safe-area-inset-bottom, 0px)); display: flex; gap: 2px; background: var(--chrome); border: 1px solid var(--rule); border-radius: 8px; padding: 3px; }
+.zoom button { border: 0; background: transparent; min-width: 34px; height: 30px; border-radius: 5px; font-family: var(--f-mono); font-size: 12px; }
+.zoom button:hover { background: var(--chrome-2); }
+.banner { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); max-width: calc(100% - 32px); background: var(--chrome); border: 1px solid var(--rule); border-radius: 8px; padding: 8px 14px; font-size: 13px; text-align: center; z-index: 5; }
+.empty { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; color: #3F4741; padding: 16px; }
+.empty b { display: block; font-size: 17px; margin-bottom: 6px; }
+.empty button { margin-top: 12px; border: 0; background: #2B55C9; color: #fff; padding: 8px 16px; border-radius: 7px; }
+
+/* ---- 100-day schedule ---- */
+#gantt { position: absolute; inset: 0; overflow: auto; background: var(--paper); color: #1F2328; overscroll-behavior: contain; }
+.g-bar-top { position: sticky; left: 0; top: 0; z-index: 6; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 16px; background: var(--paper); border-bottom: 1px solid #DDE1DA; width: max-content; min-width: 100%; box-sizing: border-box; }
+.g-bar-top h2 { margin: 0; font-size: 15px; }
+.g-bar-top .sum { font-family: var(--f-mono); font-size: 12px; color: #57606A; }
+.g-bar-top button { border: 1px solid #C7CCC4; background: #fff; color: #1F2328; border-radius: 6px; padding: 5px 10px; font-size: 12.5px; }
+.g-bar-top button.primary { background: #2B55C9; border-color: #2B55C9; color: #fff; }
+.g-grid { position: relative; display: grid; }
+.g-corner, .g-name, .g-lane, .g-foot-name { position: sticky; left: 0; z-index: 3; background: var(--paper); border-right: 1px solid #DDE1DA; box-sizing: border-box; }
+.g-corner { z-index: 5; top: 49px; display: flex; align-items: end; padding: 0 10px 4px; font-size: 11px; color: #57606A; border-bottom: 1px solid #DDE1DA; }
+.g-head { position: sticky; top: 49px; z-index: 4; background: var(--paper); border-bottom: 1px solid #DDE1DA; }
+.g-month { position: absolute; top: 2px; font-size: 11px; font-weight: 700; color: #3D4650; white-space: nowrap; padding-left: 4px; border-left: 1px solid #C7CCC4; }
+.g-day { position: absolute; bottom: 2px; text-align: center; font-family: var(--f-mono); font-size: 10px; color: #57606A; line-height: 1.15; }
+.g-day.we { color: #A0562A; }
+.g-day.today { color: #fff; background: #2B55C9; border-radius: 4px; }
+.g-lane { display: flex; align-items: center; gap: 8px; padding: 0 10px; font-weight: 700; font-size: 12.5px; color: #fff; border-right: 0; }
+.g-lane-row { box-sizing: border-box; }
+.g-name { display: flex; flex-direction: column; justify-content: center; padding: 0 10px 0 16px; font-size: 12px; line-height: 1.3; cursor: pointer; border-bottom: 1px solid #ECEEE9; overflow: hidden; }
+.g-name .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.g-name .mt { font-family: var(--f-mono); font-size: 10px; color: #6A737D; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.g-name.sel { background: #E6ECFB; }
+.g-row { position: relative; border-bottom: 1px solid #ECEEE9; }
+.g-cols { position: absolute; inset: 0; pointer-events: none; }
+.g-bar { position: absolute; top: 7px; height: 22px; border-radius: 5px; box-sizing: border-box; padding: 0 6px; font-size: 10.5px; line-height: 22px; color: #fff; white-space: nowrap; overflow: hidden; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; }
+.g-bar.ms { border-radius: 50%; padding: 0; }
+.g-bar.sel { outline: 2px solid #1F2328; outline-offset: 1px; }
+.g-bar .rz { position: absolute; right: 0; top: 0; bottom: 0; width: 8px; cursor: ew-resize; }
+.g-foot-name { font-size: 11.5px; font-weight: 700; padding: 6px 10px; display: flex; flex-direction: column; justify-content: center; border-top: 2px solid #C7CCC4; }
+.g-foot-name small { font-weight: 400; color: #57606A; font-size: 10.5px; }
+.g-foot { position: relative; border-top: 2px solid #C7CCC4; }
+.g-load { position: absolute; bottom: 4px; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; }
+.g-load span { width: 70%; background: #7A5CC8; border-radius: 2px 2px 0 0; }
+.g-load b { font-family: var(--f-mono); font-size: 9px; font-weight: 500; color: #3D4650; }
+.g-load.hot span { background: #D03B3B; }
+
+#panel { position: absolute; right: max(12px, env(safe-area-inset-right, 0px)); top: 12px; width: 290px; max-height: calc(100% - 70px); overflow: auto; background: var(--chrome); border: 1px solid var(--rule); border-radius: 10px; padding: 14px; display: grid; gap: 12px; box-shadow: 0 10px 30px -18px rgba(0,0,0,.45); z-index: 8; }
+#panel h2 { margin: 0; font-size: 12px; letter-spacing: .1em; color: var(--muted); font-family: var(--f-mono); font-weight: 500; display: flex; justify-content: space-between; gap: 8px; }
+#panel h2 span { letter-spacing: 0; font-family: var(--f-ui); }
+.field { display: grid; gap: 4px; }
+.field label { font-size: 12px; color: var(--muted); }
+.field input, .field textarea, .field select { width: 100%; box-sizing: border-box; border: 1px solid var(--rule); border-radius: 6px; background: var(--chrome-2); padding: 6px 8px; font-size: 13px; }
+.field textarea { min-height: 90px; resize: vertical; line-height: 1.45; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.sw { display: flex; flex-wrap: wrap; gap: 6px; }
+.sw button { width: 24px; height: 24px; border-radius: 50%; border: 1px solid rgba(0,0,0,.2); padding: 0; }
+.sw button[aria-pressed="true"] { outline: 2px solid var(--accent); outline-offset: 2px; }
+.row { display: flex; flex-wrap: wrap; gap: 6px; }
+.btn { border: 1px solid var(--rule); background: var(--chrome-2); border-radius: 6px; padding: 6px 10px; font-size: 12.5px; }
+.btn[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); }
+.btn.danger { color: var(--danger); }
+.hint { font-size: 11.5px; color: var(--muted); line-height: 1.5; margin: 0; }
+.toast { position: absolute; left: 50%; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--fg); color: var(--chrome); padding: 8px 14px; border-radius: 8px; font-size: 13px; max-width: calc(100% - 32px); z-index: 9; }
+.rename { border: 1px solid var(--accent); border-radius: 6px; padding: 4px 8px; font-size: 13px; width: 160px; background: var(--paper); color: #1C211E; }
+
+@media (max-width: 640px) {
+  .main { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
+  .tools { grid-row: 2; flex-direction: row; overflow-x: auto; border-right: 0; border-top: 1px solid var(--rule); padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)); padding-right: max(8px, env(safe-area-inset-right, 0px)); }
+  .tools .sep { width: 1px; height: auto; margin: 6px 4px; }
+  #panel { left: max(8px, env(safe-area-inset-left, 0px)); right: max(8px, env(safe-area-inset-right, 0px)); top: auto; bottom: 8px; width: auto; max-height: 55%; }
+  .brand small { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div id="app">
+  <header class="top">
+    <div class="brand">VINEPRO <span id="brandWord">ボード</span><small>ACADEMY OPS</small></div>
+    <div class="tabs" id="tabs" role="tablist"></div>
+    <span class="status" id="status"></span>
+    <div class="langs" id="langs" role="group">
+      <button type="button" data-lang="ja">日本語</button><button type="button" data-lang="vi">Tiếng Việt</button><button type="button" data-lang="en">English</button>
+    </div>
+    <div class="peers" id="peers"></div>
+  </header>
+  <div class="main">
+    <nav class="tools" id="tools">
+      <button class="tool" data-tool="select" data-i="toolSelect"><svg viewBox="0 0 24 24"><path d="M5 3l14 8-6 2-2 6z"/></svg><kbd>V</kbd></button>
+      <button class="tool w" data-tool="sticky" data-i="toolSticky"><svg viewBox="0 0 24 24"><path d="M4 4h16v10l-6 6H4z"/><path d="M14 20v-6h6"/></svg><kbd>N</kbd></button>
+      <button class="tool w" data-tool="box" data-i="toolBox"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/></svg><kbd>B</kbd></button>
+      <button class="tool w" data-tool="text" data-i="toolText"><svg viewBox="0 0 24 24"><path d="M5 6h14M12 6v13"/></svg><kbd>T</kbd></button>
+      <button class="tool w" data-tool="arrow" data-i="toolArrow"><svg viewBox="0 0 24 24"><path d="M4 18h9a4 4 0 004-4V6"/><path d="M13 10l4-4 4 4"/></svg><kbd>A</kbd></button>
+      <button class="tool w" data-tool="pen" data-i="toolPen"><svg viewBox="0 0 24 24"><path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M14 6l3 3"/></svg><kbd>P</kbd></button>
+      <div class="sep"></div>
+      <button class="tool w2" id="undoBtn" data-i="undo"><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 010 10h-4"/></svg><kbd>⌘Z</kbd></button>
+      <button class="tool w2" id="redoBtn" data-i="redo"><svg viewBox="0 0 24 24"><path d="M15 14l5-5-5-5"/><path d="M20 9H9a5 5 0 000 10h4"/></svg><kbd>⇧⌘Z</kbd></button>
+      <button class="tool" id="fitBtn" data-i="fit"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><kbd>F</kbd></button>
+    </nav>
+    <div class="stage">
+      <div id="viewport" tabindex="0">
+        <div id="world">
+          <div class="layer" id="back"></div>
+          <svg class="layer" id="edgeSvg"><defs id="defs"></defs><g id="edges"></g></svg>
+          <div class="layer" id="front"></div>
+          <svg class="layer" id="inkSvg"><g id="strokes"></g><path id="live" class="stroke-line" fill="none"/></svg>
+          <div class="layer" id="cursors"></div>
+        </div>
+        <div class="empty" id="empty" hidden></div>
+        <div class="zoom" id="zoom">
+          <button id="zOut" type="button">−</button><button id="zPct" type="button">100%</button><button id="zIn" type="button">＋</button>
+        </div>
+      </div>
+      <div id="gantt" hidden></div>
+      <div id="optbar" hidden></div>
+      <div class="banner" id="banner" hidden></div>
+      <aside id="panel" hidden></aside>
+      <div class="toast" id="toast" hidden></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  "use strict";
+  // ================= i18n =================
+  const I = {
+    ja: {
+      optSticky: "付箋の色", optShape: "形", sh_box: "箱", sh_open: "⚠ 未決の箱", sh_header: "見出し", sh_zone: "帯（レーン）", sh_label: "帯の名前", sh_cell: "表のマス", optColor: "色", optSize: "大きさ", sz_s: "小", sz_m: "中", sz_l: "大", sz_xl: "特大", optLine: "線", solid: "実線", dashedL: "点線", optHead: "矢印", head_end: "→ 片方向", head_both: "↔ 両方向", head_none: "— なし", optWidth: "太さ", w_thin: "細", w_mid: "中", w_bold: "太", fKind: "種類", styleNormal: "通常の枠にする", styleOpen: "⚠ 未決にする（赤い点線）", dashBorder: "点線の枠", inkLbl: "文字の色", fsTitle: "見出しの文字（px）", fsBody: "本文の文字（px）", align: "揃え", alignL: "左", alignC: "中央",
+      undo: "元に戻す (⌘Z)", redo: "やり直す (⇧⌘Z)", undone: "元に戻しました", redone: "やり直しました", nothingUndo: "戻せる操作はありません", close: "閉じる（何もしない）",
+      board: "ボード", loading: "読み込み中…", autosave: "保存は自動です", readonly: "閲覧のみ", unreachable: "データにまだつながりません。通信を確認してください。",
+      loadFail: "データを読み込めませんでした", revoked: "表示を続けられません", signin: "ログインすると表示されます", nosave: "この表示では保存できません",
+      roBanner: "閲覧のみです。編集するには、ボードの持ち主に「編集者」として招待してもらってください。",
+      addBoard: "＋ ボード", newBoard: "新しいボード", noBoards: "まだボードがありません", noBoardsW: "最初のボードを作って、付箋や矢印で業務の流れを書き出しましょう。",
+      noBoardsR: "編集できる人がボードを作ると、ここに表示されます。", makeBoard: "ボードを作る", blank: "白紙のボード",
+      blankW: "左の道具から付箋（N）や箱（B）を選んで、置きたい場所をクリックします。", blankR: "まだ何も書かれていません。",
+      toolSelect: "選択・移動 (V)", toolSticky: "付箋 (N)", toolBox: "箱・見出し・帯 (B)", toolText: "文字 (T)", toolArrow: "矢印でつなぐ (A)", toolPen: "ペンで書く (P)", fit: "全体を表示 (F)",
+      arrowHint: "矢印: つなぎ元の箱 → つなぎ先の箱 の順にクリックします",
+      k_box: "箱", k_sticky: "付箋", k_text: "文字", k_zone: "帯", k_label: "帯の見出し", k_header: "見出し", k_cell: "表のマス",
+      fTitle: "見出し", fBody: "本文", fNote: "担当・メモ（小さく表示）", fMin: "作業時間の予測（分）", fMinNote: "時間の内訳", fill: "塗り", line: "枠線",
+      dash: "⚠ 未決（赤い点線）", lock: "固定（動かさない）", front: "前面へ", back: "背面へ", dup: "複製", del: "削除",
+      hintItem: "書いた言葉は、日本語・ベトナム語・英語に自動で翻訳されます。入力欄から離れると翻訳が始まります。",
+      edge: "矢印", fLabel: "ラベル", color: "色", dashed: "点線", both: "両向き", reverse: "向きを反転", stroke: "手書きの線",
+      saveFail: "保存に失敗しました。通信を確認してもう一度操作してください。", quota: "保存の上限に達しました。使わない付箋や線を消してください。",
+      roFail: "保存できませんでした。このボードは閲覧のみになっています。", translating: "翻訳中…", translated: "3言語に反映しました",
+      trFail: "翻訳できませんでした。入力した言語のまま表示しています。", trOff: "この表示では自動翻訳が使えません。入力した言語のまま表示します。",
+      you: "あなた", someone: "参加者", min: "分", day: "日", days: "日間",
+      gTitle: "100日スケジュール", gSum: (n, m) => `タスク ${n}件 ・ 合計 ${m}`, addTask: "＋ タスク", toToday: "今日へ", newTask: "新しいタスク",
+      task: "タスク", fLane: "レーン", fStart: "開始日", fDays: "日数", fOwner: "担当", fLink: "フロー図の箱", openLink: "フロー図で見る", none: "なし",
+      load: "1日の作業量", loadSub: "分（時間÷日数）", milestone: "節目", hintTask: "バーはドラッグで日付を、右端で日数を変えられます。",
+      hm: (m) => m >= 60 ? `${Math.floor(m / 60)}時間${m % 60 ? (m % 60) + "分" : ""}` : `${m}分`,
+      lanes: { customer: "顧客", acq: "集客", lp: "LP・申込フォーム", ops: "運営チーム", app: "受講生アプリ・教材", newbiz: "新規事業・仮説検証" },
+      wd: ["日", "月", "火", "水", "木", "金", "土"], mon: (m) => `${m}月`,
+    },
+    vi: {
+      optSticky: "Màu giấy note", optShape: "Hình", sh_box: "Hộp", sh_open: "⚠ Hộp chưa quyết", sh_header: "Tiêu đề", sh_zone: "Dải (làn)", sh_label: "Tên dải", sh_cell: "Ô bảng", optColor: "Màu", optSize: "Cỡ", sz_s: "Nhỏ", sz_m: "Vừa", sz_l: "Lớn", sz_xl: "Rất lớn", optLine: "Đường", solid: "Nét liền", dashedL: "Nét đứt", optHead: "Mũi tên", head_end: "→ Một chiều", head_both: "↔ Hai chiều", head_none: "— Không", optWidth: "Độ dày", w_thin: "Mảnh", w_mid: "Vừa", w_bold: "Dày", fKind: "Loại", styleNormal: "Viền thường", styleOpen: "⚠ Đánh dấu chưa quyết (đỏ nét đứt)", dashBorder: "Viền nét đứt", inkLbl: "Màu chữ", fsTitle: "Cỡ chữ tiêu đề (px)", fsBody: "Cỡ chữ nội dung (px)", align: "Căn lề", alignL: "Trái", alignC: "Giữa",
+      undo: "Hoàn tác (⌘Z)", redo: "Làm lại (⇧⌘Z)", undone: "Đã hoàn tác", redone: "Đã làm lại", nothingUndo: "Không còn thao tác để hoàn tác", close: "Đóng (không làm gì)",
+      board: "Bảng", loading: "Đang tải…", autosave: "Tự động lưu", readonly: "Chỉ xem", unreachable: "Chưa kết nối được dữ liệu. Hãy kiểm tra mạng.",
+      loadFail: "Không tải được dữ liệu", revoked: "Không thể tiếp tục hiển thị", signin: "Đăng nhập để xem", nosave: "Không lưu được ở chế độ này",
+      roBanner: "Bạn chỉ có quyền xem. Để chỉnh sửa, hãy nhờ chủ bảng mời bạn với quyền「Biên tập」.",
+      addBoard: "＋ Bảng", newBoard: "Bảng mới", noBoards: "Chưa có bảng nào", noBoardsW: "Tạo bảng đầu tiên và viết quy trình bằng giấy note, mũi tên.",
+      noBoardsR: "Khi người có quyền chỉnh sửa tạo bảng, bảng sẽ hiện ở đây.", makeBoard: "Tạo bảng", blank: "Bảng trống",
+      blankW: "Chọn giấy note (N) hoặc hộp (B) ở thanh bên trái rồi bấm vào chỗ muốn đặt.", blankR: "Chưa có nội dung.",
+      toolSelect: "Chọn・di chuyển (V)", toolSticky: "Giấy note (N)", toolBox: "Hộp・tiêu đề・dải (B)", toolText: "Chữ (T)", toolArrow: "Nối mũi tên (A)", toolPen: "Bút vẽ (P)", fit: "Xem toàn bộ (F)",
+      arrowHint: "Mũi tên: bấm hộp bắt đầu → hộp kết thúc",
+      k_box: "Hộp", k_sticky: "Giấy note", k_text: "Chữ", k_zone: "Dải", k_label: "Tên dải", k_header: "Tiêu đề", k_cell: "Ô bảng",
+      fTitle: "Tiêu đề", fBody: "Nội dung", fNote: "Phụ trách・ghi chú (chữ nhỏ)", fMin: "Thời gian dự kiến (phút)", fMinNote: "Cách tính thời gian", fill: "Màu nền", line: "Viền",
+      dash: "⚠ Chưa quyết (viền đỏ)", lock: "Khóa (không di chuyển)", front: "Lên trước", back: "Ra sau", dup: "Nhân bản", del: "Xóa",
+      hintItem: "Nội dung bạn viết sẽ tự dịch sang tiếng Nhật, Việt, Anh. Việc dịch bắt đầu khi bạn rời ô nhập.",
+      edge: "Mũi tên", fLabel: "Nhãn", color: "Màu", dashed: "Nét đứt", both: "Hai chiều", reverse: "Đảo chiều", stroke: "Nét vẽ tay",
+      saveFail: "Lưu thất bại. Hãy kiểm tra mạng rồi thử lại.", quota: "Đã đạt giới hạn lưu. Hãy xóa bớt giấy note hoặc nét vẽ.",
+      roFail: "Không lưu được. Bảng này đang ở chế độ chỉ xem.", translating: "Đang dịch…", translated: "Đã cập nhật 3 ngôn ngữ",
+      trFail: "Không dịch được. Đang hiển thị bằng ngôn ngữ đã nhập.", trOff: "Không dùng được dịch tự động ở chế độ này. Nội dung hiển thị bằng ngôn ngữ đã nhập.",
+      you: "bạn", someone: "Người tham gia", min: " phút", day: " ngày", days: " ngày",
+      gTitle: "Lịch 100 ngày", gSum: (n, m) => `${n} việc ・ tổng ${m}`, addTask: "＋ Việc", toToday: "Hôm nay", newTask: "Việc mới",
+      task: "Việc", fLane: "Làn", fStart: "Ngày bắt đầu", fDays: "Số ngày", fOwner: "Phụ trách", fLink: "Hộp trên sơ đồ", openLink: "Xem trên sơ đồ", none: "Không",
+      load: "Khối lượng mỗi ngày", loadSub: "phút (thời gian ÷ số ngày)", milestone: "Mốc", hintTask: "Kéo thanh để đổi ngày, kéo mép phải để đổi số ngày.",
+      hm: (m) => m >= 60 ? `${Math.floor(m / 60)} giờ${m % 60 ? " " + (m % 60) + " phút" : ""}` : `${m} phút`,
+      lanes: { customer: "Khách hàng", acq: "Thu hút học viên", lp: "LP・Form đăng ký", ops: "Đội vận hành", app: "App học viên・Tài liệu", newbiz: "Kinh doanh mới・Kiểm chứng giả thuyết" },
+      wd: ["CN", "T2", "T3", "T4", "T5", "T6", "T7"], mon: (m) => `Th${m}`,
+    },
+    en: {
+      optSticky: "Note color", optShape: "Shape", sh_box: "Box", sh_open: "⚠ Open box", sh_header: "Header", sh_zone: "Lane", sh_label: "Lane name", sh_cell: "Table cell", optColor: "Color", optSize: "Size", sz_s: "S", sz_m: "M", sz_l: "L", sz_xl: "XL", optLine: "Line", solid: "Solid", dashedL: "Dashed", optHead: "Arrowhead", head_end: "→ One way", head_both: "↔ Both ways", head_none: "— None", optWidth: "Width", w_thin: "Thin", w_mid: "Medium", w_bold: "Bold", fKind: "Type", styleNormal: "Normal border", styleOpen: "⚠ Mark as open (red dashed)", dashBorder: "Dashed border", inkLbl: "Text color", fsTitle: "Heading size (px)", fsBody: "Body size (px)", align: "Align", alignL: "Left", alignC: "Center",
+      undo: "Undo (⌘Z)", redo: "Redo (⇧⌘Z)", undone: "Undone", redone: "Redone", nothingUndo: "Nothing to undo", close: "Close (no change)",
+      board: "Board", loading: "Loading…", autosave: "Saves automatically", readonly: "View only", unreachable: "Can't reach the data yet. Check your connection.",
+      loadFail: "Couldn't load the data", revoked: "This view can't continue", signin: "Sign in to see the board", nosave: "Saving isn't available in this view",
+      roBanner: "You can only view this board. To edit, ask the owner to invite you as an Editor.",
+      addBoard: "＋ Board", newBoard: "New board", noBoards: "No boards yet", noBoardsW: "Create the first board and map the work with notes and arrows.",
+      noBoardsR: "Boards appear here once an editor creates one.", makeBoard: "Create board", blank: "Blank board",
+      blankW: "Pick a note (N) or box (B) on the left, then click where it should go.", blankR: "Nothing here yet.",
+      toolSelect: "Select & move (V)", toolSticky: "Sticky note (N)", toolBox: "Box, header, lane (B)", toolText: "Text (T)", toolArrow: "Connect with arrow (A)", toolPen: "Pen (P)", fit: "Fit to screen (F)",
+      arrowHint: "Arrow: click the start box, then the end box",
+      k_box: "Box", k_sticky: "Sticky note", k_text: "Text", k_zone: "Lane", k_label: "Lane label", k_header: "Header", k_cell: "Table cell",
+      fTitle: "Heading", fBody: "Body", fNote: "Owner / note (small)", fMin: "Estimated time (min)", fMinNote: "How the time adds up", fill: "Fill", line: "Border",
+      dash: "⚠ Open (red dashed)", lock: "Lock in place", front: "Bring forward", back: "Send back", dup: "Duplicate", del: "Delete",
+      hintItem: "Whatever you type is translated into Japanese, Vietnamese and English. Translation starts when you leave the field.",
+      edge: "Arrow", fLabel: "Label", color: "Color", dashed: "Dashed", both: "Both ways", reverse: "Reverse", stroke: "Pen stroke",
+      saveFail: "Couldn't save. Check your connection and try again.", quota: "Storage limit reached. Delete notes or strokes you don't need.",
+      roFail: "Couldn't save. This board is view-only for you.", translating: "Translating…", translated: "Updated in 3 languages",
+      trFail: "Couldn't translate. Showing the text in the language it was typed.", trOff: "Auto-translation isn't available in this view. Text shows in the language it was typed.",
+      you: "you", someone: "Someone", min: " min", day: " day", days: " days",
+      gTitle: "100-day schedule", gSum: (n, m) => `${n} tasks ・ ${m} total`, addTask: "＋ Task", toToday: "Today", newTask: "New task",
+      task: "Task", fLane: "Lane", fStart: "Start date", fDays: "Days", fOwner: "Owner", fLink: "Box on the flow", openLink: "Show on the flow", none: "None",
+      load: "Daily workload", loadSub: "min (time ÷ days)", milestone: "Milestone", hintTask: "Drag a bar to move it; drag its right edge to change the length.",
+      hm: (m) => m >= 60 ? `${Math.floor(m / 60)}h${m % 60 ? " " + (m % 60) + "m" : ""}` : `${m} min`,
+      lanes: { customer: "Customers", acq: "Acquisition", lp: "LP & application form", ops: "Operations team", app: "Student app & materials", newbiz: "New business & hypothesis testing" },
+      wd: ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"], mon: (m) => ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][m],
+    },
+  };
+  const LANGS = ["ja", "vi", "en"];
+  const LANE_ORDER = ["customer", "acq", "lp", "ops", "app", "newbiz"];
+  const LANE_COLOR = { customer: "#C98418", acq: "#3F6FC4", lp: "#2F8A4E", ops: "#6E4FC0", app: "#24808C", newbiz: "#A88412" };
+
+  // ================= palette (paper) =================
+  const P = {
+    "white": "#FFFFFF", "none": "transparent", "ink": "#24292F", "muted": "#57606A", "line": "#D0D7DE",
+    "orange": "#E8A33D", "orange-bg": "#FFF4E5", "blue": "#4A7BD0", "blue-bg": "#EAF2FF", "green": "#3E9A5B", "green-bg": "#EFF8F1",
+    "purple": "#7A5CC8", "purple-bg": "#F4F0FF", "teal": "#2E8C99", "teal-bg": "#EEF7F8", "red": "#D03B3B", "red-bg": "#FDECEC",
+    "yellow": "#C9A227", "yellow-bg": "#FFFBEA", "sticky": "#FFF3B0", "gray": "#8C959F", "gray-bg": "#F6F8FA",
+    "pink-sticky": "#FFD9E2", "blue-sticky": "#D6E8FF", "green-sticky": "#D8F3DC",
+  };
+  const FILLS = ["white", "sticky", "pink-sticky", "blue-sticky", "green-sticky", "orange-bg", "blue-bg", "green-bg", "purple-bg", "teal-bg", "yellow-bg", "red-bg", "gray-bg", "orange", "blue", "green", "purple", "teal", "yellow", "red", "gray", "ink", "none"];
+  const LINES = ["gray", "line", "ink", "orange", "blue", "green", "purple", "teal", "yellow", "red", "none"];
+  const TEXTINKS = ["ink", "muted", "white", "red", "blue", "green"];
+  const LANECOLORS = ["ink", "orange", "blue", "green", "purple", "teal", "yellow", "red", "gray"];
+  const STICKIES = ["sticky", "pink-sticky", "blue-sticky", "green-sticky", "white"];
+  const KINDS = ["box", "sticky", "text", "header", "zone", "label", "cell"];
+  const bgOf = (c) => (P[c + "-bg"] ? c + "-bg" : "gray-bg");
+  const INKS = ["ink", "red", "blue", "green", "orange", "purple"];
+  const BACK = new Set(["zone", "label", "header", "cell"]);
+  const $ = (id) => document.getElementById(id);
+  const vp = $("viewport"), world = $("world"), gantt = $("gantt");
+
+  // ================= state =================
+  const S = {
+    boards: new Map(), items: new Map(), edges: new Map(), strokes: new Map(), tasks: new Map(),
+    board: null, tool: "select", sel: null, view: { x: 40, y: 40, s: 0.7 }, fitted: new Set(),
+    canWrite: true, me: null, loaded: {}, arrowFrom: null, peers: [], profiles: {}, lang: "ja", pending: new Set(),
+  };
+  try { const v = JSON.parse(localStorage.getItem("vb-view") || "null"); if (v && v.board) S.board = v.board; if (v && LANGS.includes(v.lang)) S.lang = v.lang; } catch (e) {}
+  if (!S.lang || S.lang === "ja") { try { if (!localStorage.getItem("vb-view")) { const n = (navigator.language || "ja").slice(0, 2); if (LANGS.includes(n)) S.lang = n; } } catch (e) {} }
+  let db = null, room = null, user = null, sample = null, sampleOk = true;
+  S.opt = { sticky: "sticky", shape: "box", color: "blue", text: "l", edash: false, ehead: "end", ecolor: "gray", pen: "red", penw: 3 };
+  try { Object.assign(S.opt, JSON.parse(localStorage.getItem("vb-opt") || "{}")); } catch (e) {}
+  function setOpt(k, v) { S.opt[k] = v; try { localStorage.setItem("vb-opt", JSON.stringify(S.opt)); } catch (e) {} renderOptBar(); }
+  const t = (k) => (I[S.lang] && I[S.lang][k]) ?? I.ja[k];
+
+  // ================= helpers =================
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const svgEl = (tag, attrs) => { const e = document.createElementNS("http://www.w3.org/2000/svg", tag); for (const k in attrs) e.setAttribute(k, attrs[k]); return e; };
+  let toastT = 0;
+  function toast(msg) { const x = $("toast"); x.textContent = msg; x.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => (x.hidden = true), 3200); }
+  let statusKey = "loading", statusWarn = false;
+  function status(key, warn) { statusKey = key; statusWarn = !!warn; $("status").textContent = t(key); $("status").classList.toggle("warn", statusWarn); }
+  // text in the viewer's language, falling back to what was typed
+  function tx(o, f) { if (!o) return ""; const tr = o.tr && o.tr[S.lang]; const v = tr && tr[f]; return (v != null && v !== "") || (tr && v === "" && o[f] === "") ? v : (o[f] || ""); }
+  const curBoard = () => S.boards.get(S.board);
+  const isGantt = () => { const b = curBoard(); return !!(b && b.kind === "gantt"); };
+
+  // ================= writes =================
+  const inflight = new Set(), queued = new Map();
+  function deepMerge(a, b) { const o = Object.assign({}, a); for (const k in b) o[k] = (b[k] && typeof b[k] === "object" && !Array.isArray(b[k]) && o[k] && typeof o[k] === "object") ? deepMerge(o[k], b[k]) : b[k]; return o; }
+  // ---- undo / redo: every write remembers the document as it was just before ----
+  const shadow = new Map();             // "col/id" -> last known full document (without id)
+  const undoStack = [], redoStack = [];
+  let replaying = false, noRecord = false;
+  const clone = (o) => o == null ? null : JSON.parse(JSON.stringify(o));
+  const mapByCol = (col) => ({ boards: S.boards, items: S.items, edges: S.edges, strokes: S.strokes, tasks: S.tasks })[col];
+  function recordStep(col, id, key, mode) {
+    const before = shadow.has(key) ? clone(shadow.get(key)) : null;
+    const now = Date.now(); const last = undoStack[undoStack.length - 1];
+    const sameTick = last && now - last.t < 80;
+    const typingRun = last && mode === "update" && last.entries.length === 1 && last.entries[0].key === key && now - last.t < 1500;
+    if (last && (sameTick || typingRun)) { if (!last.entries.some((e) => e.key === key)) last.entries.push({ col, id, key, before }); last.t = now; }
+    else { undoStack.push({ t: now, entries: [{ col, id, key, before }] }); if (undoStack.length > 200) undoStack.shift(); }
+    redoStack.length = 0;
+  }
+  function save(col, id, data, mode) {
+    const key = col + "/" + id;
+    if (!replaying && !noRecord) recordStep(col, id, key, mode);
+    if (mode === "delete") shadow.delete(key);
+    else shadow.set(key, clone(mode === "set" ? data : deepMerge(shadow.get(key) || {}, data)));
+    const prev = queued.get(key);
+    if (mode === "update" && prev && prev.mode !== "delete") prev.data = deepMerge(prev.data, data);
+    else queued.set(key, { col, id, data, mode });
+    if (!inflight.has(key)) flush(key);
+  }
+  async function flush(key) {
+    const job = queued.get(key); if (!job) return;
+    queued.delete(key); inflight.add(key);
+    try {
+      if (!db) throw { code: "unavailable" };
+      const ref = db.collection(job.col).doc(job.id);
+      if (job.mode === "delete") await ref.delete(); else if (job.mode === "set") await ref.set(job.data); else await ref.update(job.data);
+    } catch (e) {
+      if (e && e.code === "invalid_argument") { S.canWrite = false; applyWriteMode(); toast(t("roFail")); }
+      else if (e && e.code === "quota_exceeded") toast(t("quota"));
+      else toast(t("saveFail"));
+    }
+    inflight.delete(key); if (queued.has(key)) flush(key);
+  }
+  const colOf = (sel) => ({ item: "items", edge: "edges", stroke: "strokes", task: "tasks", board: "boards" })[sel.type];
+  const mapOf = (type) => ({ item: S.items, edge: S.edges, stroke: S.strokes, task: S.tasks, board: S.boards })[type];
+  function patch(sel, data, quiet) { if (!S.canWrite) return; data.by = S.me; data.at = Date.now(); noRecord = !!quiet; save(colOf(sel), sel.id, data, "update"); noRecord = false; schedule(); }
+  function applyStep(step, toStack) {
+    const back = { t: 0, entries: [] };
+    replaying = true;
+    for (const e of [...step.entries].reverse()) {
+      back.entries.push({ col: e.col, id: e.id, key: e.key, before: shadow.has(e.key) ? clone(shadow.get(e.key)) : null });
+      const map = mapByCol(e.col);
+      if (e.before == null) { map.delete(e.id); save(e.col, e.id, null, "delete"); }
+      else { map.set(e.id, Object.assign({ id: e.id }, clone(e.before))); save(e.col, e.id, clone(e.before), "set"); }
+    }
+    replaying = false;
+    back.entries.reverse(); toStack.push(back);
+    // move to the board where the change happened so it is visible
+    const first = step.entries.find((e) => e.before && e.before.board) || back.entries.find((e) => e.before && e.before.board);
+    if (first && first.before.board !== S.board && S.boards.has(first.before.board)) switchBoard(first.before.board);
+    if (S.sel && !mapOf(S.sel.type).has(S.sel.id)) S.sel = null;
+    $("panel").dataset.sig = ""; renderPanel(); schedule();
+  }
+  function undo() { if (!S.canWrite) return; const s = undoStack.pop(); if (!s) { toast(t("nothingUndo")); return; } applyStep(s, redoStack); toast(t("undone")); }
+  function redo() { if (!S.canWrite) return; const s = redoStack.pop(); if (!s) return; applyStep(s, undoStack); undoStack[undoStack.length - 1].t = 0; toast(t("redone")); }
+  function closePanel() { S.sel = null; S.arrowFrom = null; renderPanel(); schedule(); }
+
+  // ================= translation =================
+  // A text edit is stored in the language it was typed; other languages are cleared, then filled by Claude.
+  const dirty = new Map(); // key -> {type,id,fields:Set}
+  function editText(sel, obj, f, value) {
+    obj[f] = value; obj.tr = obj.tr || {};
+    for (const l of LANGS) { obj.tr[l] = Object.assign({}, obj.tr[l]); obj.tr[l][f] = l === S.lang ? value : null; }
+    const trp = {}; for (const l of LANGS) trp[l] = { [f]: l === S.lang ? value : null };
+    patch(sel, { [f]: value, src: S.lang, tr: trp });
+    const k = sel.type + "/" + sel.id; const d = dirty.get(k) || { type: sel.type, id: sel.id, fields: new Set() }; d.fields.add(f); dirty.set(k, d);
+  }
+  async function commitText(sel) {
+    const k = sel.type + "/" + sel.id; const d = dirty.get(k); if (!d) return; dirty.delete(k);
+    const obj = mapOf(sel.type).get(sel.id); if (!obj || !S.canWrite) return;
+    const fields = {}; for (const f of d.fields) fields[f] = obj[f] || "";
+    if (!Object.values(fields).some((v) => v.trim())) { const tr = {}; for (const l of LANGS) tr[l] = Object.assign({}, fields); patch(sel, { tr }, true); return; }
+    if (!sample || !sampleOk) { if (!sampleOk) return; toast(t("trOff")); sampleOk = false; return; }
+    S.pending.add(k); schedule(); status("translating");
+    const prompt = [
+      "You translate short labels on a shared whiteboard for a video-creator school in Ho Chi Minh City. The team works in Japanese, Vietnamese and English.",
+      "Detect whether the fields below are written in Japanese (ja), Vietnamese (vi) or English (en), then give every field in all three languages.",
+      "Keep each one short and natural for a work board. Keep numbers, ₫ amounts, dates, URLs, symbols such as ⚠ ⏱ ① → and the line breaks exactly where they are.",
+      "Names: たっちゃん = Tacchan, 浦さん = anh Ura (vi) / Ura (en), Vyさん = Vy. VINECK, VINEPRO, LP, KPI, Zalo, Meta stay as they are.",
+      'Reply with only JSON in this shape: {"src":"ja","ja":{<same keys>},"vi":{<same keys>},"en":{<same keys>}}',
+      "Fields: " + JSON.stringify(fields),
+    ].join("\n");
+    try {
+      const r = await sample.json(prompt, { modelTier: "quick" });
+      const cur = mapOf(sel.type).get(sel.id);
+      const tr = {}; let ok = true;
+      for (const l of LANGS) { if (!r || typeof r[l] !== "object") { ok = false; break; } tr[l] = {}; for (const f in fields) tr[l][f] = typeof r[l][f] === "string" ? r[l][f] : fields[f]; }
+      if (!ok) throw { code: "invalid_json" };
+      // only apply if the text was not changed again meanwhile
+      if (cur && Object.keys(fields).every((f) => (cur[f] || "") === fields[f])) {
+        const src = LANGS.includes(r.src) ? r.src : S.lang; cur.src = src;
+        for (const l of LANGS) cur.tr[l] = Object.assign({}, cur.tr[l], tr[l]);
+        patch(sel, { src, tr }, true);
+      }
+      status(S.canWrite ? "autosave" : "readonly");
+    } catch (e) {
+      status(S.canWrite ? "autosave" : "readonly");
+      if (e && (e.code === "not_granted" || e.code === "sampling_disabled" || e.code === "not_declared" || e.code === "capability_disabled" || e.code === "capability_removed")) { sampleOk = false; toast(t("trOff")); }
+      else if (e && e.code !== "cancelled") toast(t("trFail"));
+    } finally { S.pending.delete(k); schedule(); }
+  }
+
+  // ================= language =================
+  function applyLang() {
+    document.documentElement.lang = S.lang;
+    document.querySelectorAll("#langs button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.lang === S.lang)));
+    document.querySelectorAll("[data-i]").forEach((b) => { b.title = t(b.dataset.i); b.setAttribute("aria-label", t(b.dataset.i)); });
+    $("brandWord").textContent = t("board"); $("tabs").dataset.sig = ""; $("panel").dataset.sig = "";
+    status(statusKey, statusWarn); applyWriteMode(true); renderPanel(); renderOptBar(); schedule(); saveViewSoon();
+  }
+  document.querySelectorAll("#langs button").forEach((b) => b.addEventListener("click", () => { S.lang = b.dataset.lang; applyLang(); }));
+
+  // ================= canvas view =================
+  function applyView() {
+    world.style.transform = `translate(${S.view.x}px, ${S.view.y}px) scale(${S.view.s})`;
+    const g = 22 * S.view.s; vp.style.backgroundSize = `${g}px ${g}px`; vp.style.backgroundPosition = `${S.view.x}px ${S.view.y}px`;
+    $("zPct").textContent = Math.round(S.view.s * 100) + "%";
+  }
+  let viewT = 0;
+  function saveViewSoon() { clearTimeout(viewT); viewT = setTimeout(() => { try { localStorage.setItem("vb-view", JSON.stringify({ board: S.board, lang: S.lang })); } catch (e) {} }, 400); }
+  function toWorld(cx, cy) { const r = vp.getBoundingClientRect(); return { x: (cx - r.left - S.view.x) / S.view.s, y: (cy - r.top - S.view.y) / S.view.s }; }
+  function zoomAt(cx, cy, f) {
+    const r = vp.getBoundingClientRect(); const px = cx - r.left, py = cy - r.top;
+    const ns = Math.min(3, Math.max(0.15, S.view.s * f)); const k = ns / S.view.s;
+    S.view.x = px - (px - S.view.x) * k; S.view.y = py - (py - S.view.y) * k; S.view.s = ns; applyView();
+  }
+  function fit() {
+    if (isGantt()) { scrollToToday(); return; }
+    const its = boardItems(); if (!its.length) { S.view = { x: 40, y: 40, s: 1 }; applyView(); return; }
+    let x1 = 1e9, y1 = 1e9, x2 = -1e9, y2 = -1e9;
+    for (const it of its) { const h = realH(it); x1 = Math.min(x1, it.x); y1 = Math.min(y1, it.y); x2 = Math.max(x2, it.x + it.w); y2 = Math.max(y2, it.y + h); }
+    const r = vp.getBoundingClientRect(); const pad = 32;
+    const s = Math.min(1.4, Math.max(0.15, Math.min((r.width - pad * 2) / (x2 - x1), (r.height - pad * 2) / (y2 - y1))));
+    S.view = { s, x: (r.width - (x2 - x1) * s) / 2 - x1 * s, y: (r.height - (y2 - y1) * s) / 2 - y1 * s }; applyView();
+  }
+  const boardItems = () => [...S.items.values()].filter((i) => i.board === S.board);
+  const nodes = new Map();
+  function realH(it) { const n = nodes.get(it.id); return n ? Math.max(it.h, n.offsetHeight) : it.h; }
+
+  // ================= render =================
+  let raf = 0;
+  function schedule() { if (!raf) raf = requestAnimationFrame(() => { raf = 0; render(); }); }
+  function render() {
+    renderTabs();
+    const g = isGantt();
+    vp.hidden = g; gantt.hidden = !g;
+    document.querySelectorAll(".tool[data-tool]").forEach((b) => (b.hidden = g || (b.classList.contains("w") && !S.canWrite)));
+    document.querySelectorAll(".tool.w2").forEach((b) => (b.hidden = !S.canWrite));
+    if (g) { $("optbar").hidden = true; renderGantt(); return; }
+    if ($("optbar").hidden && S.tool !== "select" && S.canWrite) renderOptBar();
+    renderItems(); renderEdges(); renderStrokes(); renderCursors(); renderEmpty();
+  }
+  function renderTabs() {
+    const tabs = $("tabs"); const list = [...S.boards.values()].sort((a, b) => (a.order || 0) - (b.order || 0));
+    if (S.loaded.boards && (!S.board || !S.boards.has(S.board))) S.board = list[0] ? list[0].id : null;
+    const sig = list.map((b) => b.id + ":" + tx(b, "name")).join("|") + "#" + S.board + S.canWrite + S.lang;
+    if (tabs.dataset.sig === sig) return; tabs.dataset.sig = sig; tabs.textContent = "";
+    for (const b of list) {
+      const x = el("button", "tab", tx(b, "name") || "—"); x.setAttribute("role", "tab"); x.setAttribute("aria-selected", String(b.id === S.board));
+      x.addEventListener("click", () => switchBoard(b.id));
+      x.addEventListener("dblclick", () => { if (S.canWrite) renameBoard(b, x); });
+      tabs.append(x);
+    }
+    if (S.canWrite && db) { const a = el("button", "tab add", t("addBoard")); a.addEventListener("click", addBoard); tabs.append(a); }
+  }
+  function switchBoard(id) {
+    if (S.board === id) return; S.board = id; S.sel = null; S.arrowFrom = null; renderPanel(); schedule();
+    requestAnimationFrame(() => { if (!S.fitted.has(id)) { S.fitted.add(id); if (isGantt()) scrollToToday(); else fit(); } });
+    saveViewSoon(); presenceSoon();
+  }
+  function renameBoard(b, x) {
+    const inp = el("input", "rename"); inp.type = "text"; inp.value = tx(b, "name"); inp.id = "rename-" + b.id; x.replaceWith(inp); inp.focus(); inp.select();
+    let done = false;
+    const finish = (ok) => {
+      if (done) return; done = true;
+      const v = inp.value.trim();
+      if (ok && v && v !== tx(b, "name")) { const sel = { type: "board", id: b.id }; editText(sel, b, "name", v); commitText(sel); }
+      $("tabs").dataset.sig = ""; schedule();
+    };
+    inp.addEventListener("keydown", (e) => { if (e.key === "Enter") finish(true); if (e.key === "Escape") finish(false); });
+    inp.addEventListener("blur", () => finish(true));
+  }
+  function addBoard() {
+    const id = "b" + uid(); const order = Math.max(0, ...[...S.boards.values()].map((b) => b.order || 0)) + 1;
+    const name = t("newBoard"); const tr = {}; for (const l of LANGS) tr[l] = { name: I[l].newBoard };
+    const b = { name, src: S.lang, tr, order }; S.boards.set(id, Object.assign({ id }, b)); save("boards", id, b, "set");
+    S.fitted.add(id); S.view = { x: 60, y: 60, s: 1 }; applyView(); switchBoard(id);
+  }
+
+  function renderItems() {
+    const its = boardItems(); const keep = new Set();
+    its.sort((a, b) => (a.z || 0) - (b.z || 0));
+    for (const it of its) {
+      keep.add(it.id);
+      let n = nodes.get(it.id);
+      const parent = BACK.has(it.kind) ? $("back") : $("front");
+      if (!n) { n = el("div"); n.dataset.id = it.id; n.append(el("span", "t"), el("span", "b"), el("span", "n"), el("span", "m")); nodes.set(it.id, n); }
+      parent.append(n);
+      const selected = S.sel && S.sel.type === "item" && S.sel.id === it.id;
+      const pend = S.pending.has("item/" + it.id);
+      n.className = `it k-${it.kind}${it.dash ? " dash" : ""}${selected ? " sel" : ""}${S.arrowFrom === it.id ? " src" : ""}${it.align === "center" ? " align-center" : ""}${it.title && it.kind === "text" && !it.body ? " has-title" : ""}${pend ? " pending" : ""}`;
+      Object.assign(n.style, {
+        left: it.x + "px", top: it.y + "px", width: it.w + "px", minHeight: it.h + "px", height: BACK.has(it.kind) ? it.h + "px" : "auto",
+        background: P[it.fill] || P.white, borderColor: P[it.line] || "transparent", color: P[it.ink] || P.ink,
+      });
+      const [ti, b, nn, m] = n.children;
+      const T = tx(it, "title"), B = tx(it, "body"), N = tx(it, "note");
+      ti.textContent = T; ti.hidden = !T; ti.style.fontSize = (it.tfs || 13) + "px";
+      b.textContent = B; b.hidden = !B; b.style.fontSize = (it.fs || 12) + "px";
+      nn.textContent = N; nn.hidden = !N; nn.style.fontSize = ((it.fs || 12) - 0.5) + "px";
+      nn.style.color = (it.kind === "header" || it.kind === "label") ? "inherit" : "";
+      const mins = Number(it.min) || 0;
+      m.hidden = !mins; m.textContent = "";
+      if (mins) { m.append("⏱ " + t("hm")(mins)); const mn = tx(it, "minNote"); if (mn) m.append(" ", el("i", null, "· " + mn)); }
+      let h = n.querySelector(".handle");
+      if (selected && S.canWrite && !it.locked) { if (!h) { h = el("div", "handle"); h.dataset.handle = "1"; n.append(h); } } else if (h) h.remove();
+    }
+    for (const [id, n] of nodes) if (!keep.has(id)) { n.remove(); nodes.delete(id); }
+  }
+  function boxOf(id) { const it = S.items.get(id); if (!it) return null; const n = nodes.get(id); return { x: it.x, y: it.y, w: it.w, h: n ? Math.max(it.h, n.offsetHeight) : it.h }; }
+  function route(e, a, b) {
+    const acx = a.x + a.w / 2, acy = a.y + a.h / 2, bcx = b.x + b.w / 2, bcy = b.y + b.h / 2;
+    if (e.mode === "gr" || e.mode === "gl") {
+      if (e.mode === "gr") { const gx = a.x + a.w + 11; return [[a.x + a.w, acy], [gx, acy], [gx, b.y + 22], [b.x + b.w, b.y + 22]]; }
+      const gx = a.x - 11; return [[a.x, a.y + 22], [gx, a.y + 22], [gx, b.y + 22], [b.x, b.y + 22]];
+    }
+    const sameCol = Math.abs(acx - bcx) < 5; const overlapX = a.x < b.x + b.w && b.x < a.x + a.w;
+    if (sameCol && e.ox) { const ox = e.ox; return bcy > acy ? [[acx + ox, a.y + a.h], [acx + ox, b.y]] : [[acx + ox, a.y], [acx + ox, b.y + b.h]]; }
+    if (e.mode === "v" || sameCol || overlapX) {
+      const p1 = bcy > acy ? [acx, a.y + a.h] : [acx, a.y]; const p2 = bcy > acy ? [bcx, b.y] : [bcx, b.y + b.h];
+      if (Math.abs(p1[0] - p2[0]) < 1) return [p1, p2];
+      const my = (p1[1] + p2[1]) / 2; return [p1, [p1[0], my], [p2[0], my], p2];
+    }
+    const p1 = bcx > acx ? [a.x + a.w, acy] : [a.x, acy]; const p2 = bcx > acx ? [b.x, bcy] : [b.x + b.w, bcy];
+    if (Math.abs(p1[1] - p2[1]) < 1) return [p1, p2];
+    const mx = (p1[0] + p2[0]) / 2; return [p1, [mx, p1[1]], [mx, p2[1]], p2];
+  }
+  function ensureMarker(color) {
+    const id = "m-" + color; if (document.getElementById(id)) return id;
+    const m = svgEl("marker", { id, viewBox: "0 0 10 10", refX: "9", refY: "5", markerWidth: "7", markerHeight: "7", orient: "auto-start-reverse" });
+    m.append(svgEl("path", { d: "M0,0 L10,5 L0,10 z", fill: P[color] || P.gray })); $("defs").append(m); return id;
+  }
+  function renderEdges() {
+    const g = $("edges"); g.textContent = "";
+    for (const e of S.edges.values()) {
+      if (e.board !== S.board) continue;
+      const a = boxOf(e.from), b = boxOf(e.to); if (!a || !b) continue;
+      const pts = route(e, a, b); const d = "M" + pts.map((p) => p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" L");
+      const color = e.color || "gray"; const mk = ensureMarker(color);
+      const selected = S.sel && S.sel.type === "edge" && S.sel.id === e.id;
+      const line = svgEl("path", { d, class: "edge-line" + (selected ? " sel" : ""), stroke: P[color] || P.gray });
+      if (!e.nohead) line.setAttribute("marker-end", `url(#${mk})`);
+      if (e.both && !e.nohead) line.setAttribute("marker-start", `url(#${mk})`);
+      if (e.dash) line.setAttribute("stroke-dasharray", "5 3");
+      const hit = svgEl("path", { d, class: "edge-hit" }); hit.dataset.edge = e.id; g.append(line, hit);
+      const label = tx(e, "label");
+      if (label) {
+        let best = 0, bl = -1;
+        for (let i = 0; i < pts.length - 1; i++) { const l = Math.abs(pts[i][0] - pts[i + 1][0]) + Math.abs(pts[i][1] - pts[i + 1][1]); if (l > bl) { bl = l; best = i; } }
+        const lx = (pts[best][0] + pts[best + 1][0]) / 2, ly = (pts[best][1] + pts[best + 1][1]) / 2;
+        const lg = svgEl("g", { class: "edge-label" }); const tt = svgEl("text", { x: lx, y: ly + 3.5, "text-anchor": "middle" }); tt.textContent = label;
+        const w = [...label].reduce((s, c) => s + (c.charCodeAt(0) > 255 ? 10.5 : 6.2), 0) + 8;
+        lg.append(svgEl("rect", { x: lx - w / 2, y: ly - 8, width: w, height: 16, rx: 3 }), tt); lg.dataset.edge = e.id; g.append(lg);
+      }
+    }
+  }
+  const strokePath = (pts) => "M" + pts.map((p) => p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" L");
+  function renderStrokes() {
+    const g = $("strokes"); g.textContent = "";
+    for (const s of S.strokes.values()) {
+      if (s.board !== S.board || !Array.isArray(s.pts) || s.pts.length < 2) continue;
+      const selected = S.sel && S.sel.type === "stroke" && S.sel.id === s.id;
+      const p = svgEl("path", { d: strokePath(s.pts), class: "stroke-line" + (selected ? " sel" : ""), stroke: P[s.color] || P.red, "stroke-width": s.width || 3 });
+      p.dataset.stroke = s.id; g.append(p);
+    }
+  }
+  function renderEmpty() {
+    const box = $("empty"); const ready = S.loaded.boards && S.loaded.items;
+    if (!ready) { box.hidden = true; return; }
+    if (!S.boards.size) {
+      box.hidden = false; box.textContent = ""; box.style.pointerEvents = "";
+      const d = el("div"); d.append(el("b", null, t("noBoards")), el("span", null, S.canWrite ? t("noBoardsW") : t("noBoardsR")));
+      if (S.canWrite && db) { const btn = el("button", null, t("makeBoard")); btn.addEventListener("click", addBoard); d.append(btn); }
+      box.append(d);
+    } else if (!boardItems().length && ![...S.strokes.values()].some((s) => s.board === S.board)) {
+      box.hidden = false; box.textContent = ""; box.style.pointerEvents = "none";
+      const d = el("div"); d.append(el("b", null, t("blank")), el("span", null, S.canWrite ? t("blankW") : t("blankR"))); box.append(d);
+    } else box.hidden = true;
+  }
+
+  // ================= 100-day schedule =================
+  const DAYW = 30, ROWH = 36, LANEH = 28, NAMEW = 250, HEADH = 40, FOOTH = 70;
+  function ganttStart() { const b = curBoard(); const [y, m, d] = String((b && b.start) || "2026-11-03").split("-").map(Number); return new Date(y, m - 1, d); }
+  function ganttDays() { const b = curBoard(); return Math.min(366, Math.max(7, Number(b && b.days) || 100)); }
+  function dayDate(i) { const d = ganttStart(); d.setDate(d.getDate() + i); return d; }
+  function todayIdx() { const a = ganttStart(); const n = new Date(); n.setHours(0, 0, 0, 0); return Math.round((n - a) / 86400000); }
+  const isoOf = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  function boardTasks() { return [...S.tasks.values()].filter((x) => x.board === S.board); }
+  let gDrag = null;
+  function renderGantt() {
+    if (gDrag) { updateDraggedBar(); return; }
+    const scrollL = gantt.scrollLeft, scrollT = gantt.scrollTop;
+    gantt.textContent = "";
+    const D = ganttDays(); const W = DAYW * D; const ti = todayIdx(); const tasks = boardTasks();
+    const total = tasks.reduce((s, x) => s + (Number(x.min) || 0), 0);
+    const top = el("div", "g-bar-top");
+    top.append(el("h2", null, tx(curBoard(), "name") || t("gTitle")), el("span", "sum", t("gSum")(tasks.length, t("hm")(total))));
+    const today = el("button", null, t("toToday")); today.type = "button"; today.addEventListener("click", scrollToToday); top.append(today);
+    if (S.canWrite) { const add = el("button", "primary", t("addTask")); add.type = "button"; add.addEventListener("click", () => addTask()); top.append(add); }
+    gantt.append(top);
+    const grid = el("div", "g-grid"); grid.style.gridTemplateColumns = `${NAMEW}px ${W}px`; grid.style.width = NAMEW + W + "px";
+    // header
+    const corner = el("div", "g-corner", t("task")); corner.style.height = HEADH + "px";
+    const head = el("div", "g-head"); head.style.height = HEADH + "px"; head.style.position = "sticky";
+    let lastM = -1;
+    for (let i = 0; i < D; i++) {
+      const d = dayDate(i);
+      if (d.getMonth() !== lastM) { lastM = d.getMonth(); const mm = el("div", "g-month", t("mon")(d.getMonth() + 1) + (i === 0 || d.getMonth() === 0 ? " " + d.getFullYear() : "")); mm.style.left = i * DAYW + "px"; head.append(mm); }
+      const dd = el("div", "g-day" + (d.getDay() % 6 === 0 ? " we" : "") + (i === ti ? " today" : ""));
+      dd.style.left = i * DAYW + "px"; dd.style.width = DAYW + "px"; dd.append(String(d.getDate()), el("br"), I[S.lang].wd[d.getDay()]); head.append(dd);
+    }
+    grid.append(corner, head);
+    const colsBg = (h) => {
+      const c = el("div", "g-cols"); const parts = [];
+      for (let i = 0; i < D; i++) { const d = dayDate(i); if (d.getDay() % 6 === 0) parts.push(`linear-gradient(#F3EEE6, #F3EEE6) ${i * DAYW}px 0 / ${DAYW}px 100% no-repeat`); }
+      if (ti >= 0 && ti < D) parts.push(`linear-gradient(rgba(43,85,201,.10), rgba(43,85,201,.10)) ${ti * DAYW}px 0 / ${DAYW}px 100% no-repeat`);
+      parts.push(`repeating-linear-gradient(90deg, transparent 0 ${DAYW - 1}px, #EEF0EB ${DAYW - 1}px ${DAYW}px)`);
+      c.style.background = parts.join(","); return c;
+    };
+    // lanes
+    const byLane = new Map(LANE_ORDER.map((l) => [l, []]));
+    for (const x of tasks) { if (!byLane.has(x.lane)) byLane.set(x.lane, []); byLane.get(x.lane).push(x); }
+    for (const [lane, list] of byLane) {
+      list.sort((a, b) => (a.start - b.start) || ((a.order || 0) - (b.order || 0)));
+      const color = LANE_COLOR[lane] || "#57606A";
+      const ln = el("div", "g-lane", (I[S.lang].lanes[lane] || lane)); ln.style.height = LANEH + "px"; ln.style.background = color;
+      const lsum = list.reduce((s, x) => s + (Number(x.min) || 0), 0); if (lsum) ln.append(el("span", null, "· " + t("hm")(lsum)));
+      const lr = el("div", "g-lane-row"); lr.style.height = LANEH + "px"; lr.style.background = color + "22";
+      grid.append(ln, lr);
+      for (const x of list) {
+        const selected = S.sel && S.sel.type === "task" && S.sel.id === x.id;
+        const nm = el("div", "g-name" + (selected ? " sel" : "")); nm.style.height = ROWH + "px"; nm.dataset.task = x.id;
+        nm.append(el("span", "nm", tx(x, "title") + (S.pending.has("task/" + x.id) ? " …" : "")));
+        const meta = [`${x.days}${x.days > 1 ? t("days") : t("day")}`]; if (Number(x.min)) meta.push("⏱ " + t("hm")(Number(x.min))); if (x.owner) meta.push(x.owner);
+        nm.append(el("span", "mt", meta.join(" · ")));
+        nm.addEventListener("click", () => { S.sel = { type: "task", id: x.id }; renderPanel(); schedule(); });
+        const row = el("div", "g-row"); row.style.height = ROWH + "px"; row.append(colsBg());
+        const bar = el("div", "g-bar" + (selected ? " sel" : "") + (x.days === 1 && !Number(x.min) ? " ms" : ""));
+        bar.dataset.task = x.id; bar.style.background = color; placeBar(bar, x);
+        if (!(x.days === 1 && !Number(x.min))) bar.textContent = tx(x, "title");
+        if (S.canWrite) { const rz = el("span", "rz"); rz.dataset.rz = "1"; bar.append(rz); }
+        row.append(bar); grid.append(nm, row);
+      }
+    }
+    // daily load
+    const load = new Array(D).fill(0);
+    for (const x of tasks) { const m = Number(x.min) || 0; if (!m) continue; const per = m / Math.max(1, x.days); for (let i = x.start; i < x.start + x.days; i++) if (i >= 0 && i < D) load[i] += per; }
+    const maxL = Math.max(60, ...load);
+    const fn = el("div", "g-foot-name"); fn.style.height = FOOTH + "px"; fn.append(t("load"), el("small", null, t("loadSub")));
+    const ft = el("div", "g-foot"); ft.style.height = FOOTH + "px"; ft.append(colsBg());
+    for (let i = 0; i < D; i++) {
+      if (!load[i]) continue;
+      const c = el("div", "g-load" + (load[i] > 240 ? " hot" : "")); c.style.left = i * DAYW + "px"; c.style.width = DAYW + "px"; c.style.height = FOOTH - 8 + "px";
+      const bar = el("span"); bar.style.height = Math.max(2, Math.round((FOOTH - 24) * load[i] / maxL)) + "px";
+      c.append(el("b", null, String(Math.round(load[i]))), bar); c.title = `${isoOf(dayDate(i))} · ${t("hm")(Math.round(load[i]))}`; ft.append(c);
+    }
+    grid.append(fn, ft);
+    gantt.append(grid);
+    gantt.scrollLeft = scrollL; gantt.scrollTop = scrollT;
+  }
+  function placeBar(bar, x) { bar.style.left = x.start * DAYW + 2 + "px"; bar.style.width = Math.max(1, x.days) * DAYW - 4 + "px"; if (x.days === 1 && !Number(x.min)) { bar.style.width = "18px"; bar.style.left = x.start * DAYW + 6 + "px"; bar.style.top = "9px"; bar.style.height = "18px"; } }
+  function updateDraggedBar() { const x = S.tasks.get(gDrag.id); const bar = gantt.querySelector(`.g-bar[data-task="${gDrag.id}"]`); if (x && bar) placeBar(bar, x); }
+  function scrollToToday() { const ti = Math.max(0, Math.min(ganttDays() - 1, todayIdx())); gantt.scrollLeft = Math.max(0, ti * DAYW - 60); }
+  gantt.addEventListener("pointerdown", (ev) => {
+    const bar = ev.target.closest(".g-bar"); if (!bar) return;
+    const x = S.tasks.get(bar.dataset.task); if (!x) return;
+    S.sel = { type: "task", id: x.id }; renderPanel();
+    if (!S.canWrite) { schedule(); return; }
+    gDrag = { id: x.id, sx: ev.clientX, s0: x.start, d0: x.days, resize: !!ev.target.dataset.rz, moved: false };
+    bar.setPointerCapture(ev.pointerId); ev.preventDefault();
+  });
+  gantt.addEventListener("pointermove", (ev) => {
+    if (!gDrag) return; const x = S.tasks.get(gDrag.id); if (!x) return;
+    const dd = Math.round((ev.clientX - gDrag.sx) / DAYW); const D = ganttDays();
+    if (gDrag.resize) x.days = Math.max(1, Math.min(D - x.start, gDrag.d0 + dd));
+    else x.start = Math.max(0, Math.min(D - x.days, gDrag.s0 + dd));
+    if (x.start !== gDrag.s0 || x.days !== gDrag.d0) gDrag.moved = true;
+    updateDraggedBar();
+  });
+  const endG = () => {
+    if (!gDrag) return; const g = gDrag; gDrag = null; const x = S.tasks.get(g.id);
+    if (x && g.moved) patch({ type: "task", id: g.id }, { start: x.start, days: x.days });
+    renderPanel(); schedule();
+  };
+  gantt.addEventListener("pointerup", endG); gantt.addEventListener("pointercancel", endG);
+  function addTask(lane) {
+    const id = "t" + uid(); const ti = Math.max(0, Math.min(ganttDays() - 1, todayIdx()));
+    const tr = {}; for (const l of LANGS) tr[l] = { title: I[l].newTask };
+    const x = { board: S.board, lane: lane || "ops", title: t("newTask"), src: S.lang, tr, start: ti, days: 1, min: 30, owner: "", item: "", order: Date.now(), by: S.me, at: Date.now() };
+    S.tasks.set(id, Object.assign({ id }, x)); save("tasks", id, x, "set");
+    S.sel = { type: "task", id }; focusTitleNext = true; renderPanel(); schedule();
+  }
+
+  // ================= panel =================
+  let focusTitleNext = false;
+  function renderPanel() {
+    const pn = $("panel"); const sel = S.sel;
+    if (!sel) { pn.hidden = true; pn.dataset.sig = ""; return; }
+    const obj = mapOf(sel.type).get(sel.id);
+    if (!obj) { S.sel = null; pn.hidden = true; return; }
+    const sig = sel.type + sel.id + S.canWrite + S.lang;
+    if (pn.dataset.sig === sig && pn.contains(document.activeElement)) { syncPanel(obj); return; }
+    pn.dataset.sig = sig; pn.textContent = ""; pn.hidden = false;
+    const ro = !S.canWrite;
+    const textField = (label, key, multi) => {
+      const f = el("div", "field"); const id = `f-${key}`; const lb = el("label", null, label); lb.htmlFor = id;
+      const inp = multi ? el("textarea") : el("input"); if (!multi) inp.type = "text"; inp.id = id; inp.value = tx(obj, key); inp.disabled = ro;
+      inp.addEventListener("input", () => editText(sel, obj, key, inp.value));
+      inp.addEventListener("change", () => commitText(sel));
+      f.append(lb, inp); pn.append(f); return inp;
+    };
+    const numField = (label, key, parent, min) => {
+      const f = el("div", "field"); const id = `f-${key}`; const lb = el("label", null, label); lb.htmlFor = id;
+      const inp = el("input"); inp.type = "number"; inp.min = String(min ?? 0); inp.step = "1"; inp.id = id; inp.value = obj[key] ?? ""; inp.disabled = ro;
+      inp.addEventListener("change", () => { const v = Math.max(min ?? 0, Math.round(Number(inp.value) || 0)); obj[key] = v; patch(sel, { [key]: v }); });
+      f.append(lb, inp); (parent || pn).append(f); return inp;
+    };
+    const swatches = (label, key, list) => {
+      const f = el("div", "field"); f.append(el("label", null, label)); const row = el("div", "sw");
+      for (const c of list) {
+        const b = el("button"); b.type = "button"; b.dataset.key = key; b.dataset.val = c; b.title = c; b.setAttribute("aria-label", label + " " + c);
+        b.style.background = c === "none" ? "linear-gradient(135deg, #fff 45%, #D03B3B 46% 54%, #fff 55%)" : P[c]; b.disabled = ro;
+        b.addEventListener("click", () => { obj[key] = c; patch(sel, { [key]: c }); syncPanel(obj); });
+        row.append(b);
+      }
+      f.append(row); pn.append(f);
+    };
+    const toggle = (row, label, key) => {
+      const b = el("button", "btn", label); b.type = "button"; b.dataset.toggle = key; b.disabled = ro;
+      b.addEventListener("click", () => { obj[key] = !obj[key]; patch(sel, { [key]: obj[key] }); syncPanel(obj); }); row.append(b);
+    };
+    const btn = (row, label, fn, cls) => { const b = el("button", "btn" + (cls ? " " + cls : ""), label); b.type = "button"; b.disabled = ro; b.addEventListener("click", fn); row.append(b); return b; };
+    const head = (txt) => { const h = el("h2", null, txt); const lang = el("span", null, { ja: "日本語で表示中", vi: "Đang xem: tiếng Việt", en: "Showing: English" }[S.lang]); const x = el("button", "close", "×"); x.type = "button"; x.title = t("close"); x.setAttribute("aria-label", t("close")); x.addEventListener("click", closePanel); h.append(lang, x); pn.append(h); };
+    let first = null;
+    if (sel.type === "item") {
+      head(t("k_" + obj.kind) || t("k_box"));
+      first = textField(t("fTitle"), "title"); textField(t("fBody"), "body", true); textField(t("fNote"), "note");
+      const two = el("div", "two"); numField(t("fMin"), "min", two); pn.append(two);
+      textField(t("fMinNote"), "minNote");
+      const kf = el("div", "field"); const kl = el("label", null, t("fKind")); kl.htmlFor = "f-kind"; const ks = el("select"); ks.id = "f-kind"; ks.disabled = ro;
+      for (const k of KINDS) { const o = el("option", null, t("k_" + k)); o.value = k; ks.append(o); } ks.value = obj.kind;
+      ks.addEventListener("change", () => { obj.kind = ks.value; patch(sel, { kind: ks.value }); $("panel").dataset.sig = ""; renderPanel(); }); kf.append(kl, ks); pn.append(kf);
+      const st = el("div", "row");
+      btn(st, t("styleNormal"), () => { obj.dash = false; if (obj.line === "red") obj.line = "gray"; patch(sel, { dash: false, line: obj.line }); syncPanel(obj); });
+      btn(st, t("styleOpen"), () => { obj.dash = true; obj.line = "red"; patch(sel, { dash: true, line: "red" }); syncPanel(obj); });
+      pn.append(st);
+      swatches(t("fill"), "fill", FILLS); swatches(t("line"), "line", LINES); swatches(t("inkLbl"), "ink", TEXTINKS);
+      const fz = el("div", "two");
+      for (const [key, lab] of [["tfs", t("fsTitle")], ["fs", t("fsBody")]]) {
+        const f = el("div", "field"); const id = "f-" + key; const lb = el("label", null, lab); lb.htmlFor = id;
+        const inp = el("input"); inp.type = "number"; inp.min = "8"; inp.max = "60"; inp.step = "0.5"; inp.id = id; inp.value = obj[key] ?? ""; inp.disabled = ro;
+        inp.addEventListener("change", () => { const v = Math.max(8, Math.min(60, Number(inp.value) || 12)); obj[key] = v; patch(sel, { [key]: v }); });
+        f.append(lb, inp); fz.append(f);
+      }
+      pn.append(fz);
+      const al = el("div", "field"); al.append(el("label", null, t("align"))); const sg = el("div", "seg");
+      for (const [v, lab] of [["left", t("alignL")], ["center", t("alignC")]]) { const b = el("button", null, lab); b.type = "button"; b.disabled = ro; b.dataset.alignv = v; b.addEventListener("click", () => { obj.align = v; patch(sel, { align: v }); syncPanel(obj); }); sg.append(b); }
+      al.append(sg); pn.append(al);
+      const r = el("div", "row"); toggle(r, t("dashBorder"), "dash"); toggle(r, t("lock"), "locked"); pn.append(r);
+      const r2 = el("div", "row");
+      btn(r2, t("front"), () => { const z = Math.max(0, ...boardItems().map((i) => i.z || 0)) + 1; obj.z = z; patch(sel, { z }); });
+      btn(r2, t("back"), () => { const z = Math.min(0, ...boardItems().map((i) => i.z || 0)) - 1; obj.z = z; patch(sel, { z }); });
+      btn(r2, t("dup"), () => duplicate(obj)); btn(r2, t("del"), deleteSel, "danger"); pn.append(r2);
+      pn.append(el("p", "hint", t("hintItem")));
+    } else if (sel.type === "edge") {
+      head(t("edge")); first = textField(t("fLabel"), "label");
+      swatches(t("color"), "color", LINES.filter((c) => c !== "none"));
+      const lf = el("div", "field"); lf.append(el("label", null, t("optLine"))); const sg1 = el("div", "seg");
+      for (const [v, lab] of [[false, t("solid")], [true, t("dashedL")]]) { const b = el("button", null, lab); b.type = "button"; b.disabled = ro; b.dataset.edash = String(v); b.addEventListener("click", () => { obj.dash = v; patch(sel, { dash: v }); syncPanel(obj); }); sg1.append(b); }
+      lf.append(sg1); pn.append(lf);
+      const hf = el("div", "field"); hf.append(el("label", null, t("optHead"))); const sg2 = el("div", "seg");
+      for (const [v, lab] of [["end", t("head_end")], ["both", t("head_both")], ["none", t("head_none")]]) { const b = el("button", null, lab); b.type = "button"; b.disabled = ro; b.dataset.ehead = v; b.addEventListener("click", () => { obj.both = v === "both"; obj.nohead = v === "none"; patch(sel, { both: obj.both, nohead: obj.nohead }); syncPanel(obj); }); sg2.append(b); }
+      hf.append(sg2); pn.append(hf);
+      const r2 = el("div", "row");
+      btn(r2, t("reverse"), () => { const f = obj.from; obj.from = obj.to; obj.to = f; obj.mode = "auto"; obj.ox = 0; patch(sel, { from: obj.from, to: obj.to, mode: "auto", ox: 0 }); });
+      btn(r2, t("del"), deleteSel, "danger"); pn.append(r2);
+    } else if (sel.type === "task") {
+      head(t("task")); first = textField(t("fTitle"), "title");
+      const lf = el("div", "field"); const ls = el("select"); ls.id = "f-lane"; ls.disabled = ro; const ll = el("label", null, t("fLane")); ll.htmlFor = "f-lane";
+      for (const l of LANE_ORDER) { const o = el("option", null, I[S.lang].lanes[l]); o.value = l; ls.append(o); } ls.value = obj.lane;
+      ls.addEventListener("change", () => { obj.lane = ls.value; patch(sel, { lane: ls.value }); }); lf.append(ll, ls); pn.append(lf);
+      const two = el("div", "two");
+      const sf = el("div", "field"); const sl = el("label", null, t("fStart")); sl.htmlFor = "f-start"; const si = el("input"); si.type = "date"; si.id = "f-start"; si.disabled = ro;
+      si.value = isoOf(dayDate(obj.start)); si.min = isoOf(dayDate(0)); si.max = isoOf(dayDate(ganttDays() - 1));
+      si.addEventListener("change", () => { const [y, m, d] = si.value.split("-").map(Number); if (!y) return; const i = Math.round((new Date(y, m - 1, d) - ganttStart()) / 86400000); obj.start = Math.max(0, Math.min(ganttDays() - 1, i)); obj.days = Math.min(obj.days, ganttDays() - obj.start); patch(sel, { start: obj.start, days: obj.days }); });
+      sf.append(sl, si); two.append(sf); numField(t("fDays"), "days", two, 1); pn.append(two);
+      const two2 = el("div", "two"); numField(t("fMin"), "min", two2);
+      const of = el("div", "field"); const ol = el("label", null, t("fOwner")); ol.htmlFor = "f-owner"; const oi = el("input"); oi.type = "text"; oi.id = "f-owner"; oi.value = obj.owner || ""; oi.disabled = ro;
+      oi.addEventListener("change", () => { obj.owner = oi.value.trim(); patch(sel, { owner: obj.owner }); }); of.append(ol, oi); two2.append(of); pn.append(two2);
+      const it = obj.item && S.items.get(obj.item);
+      if (it) {
+        const lk = el("div", "field"); lk.append(el("label", null, t("fLink")));
+        const r = el("div", "row"); const go = el("button", "btn", "↗ " + (tx(it, "title") || t("openLink"))); go.type = "button";
+        go.addEventListener("click", () => { switchBoard(it.board); S.sel = { type: "item", id: it.id }; renderPanel(); requestAnimationFrame(() => centerOn(it)); });
+        r.append(go); lk.append(r); pn.append(lk);
+      }
+      const r2 = el("div", "row"); btn(r2, t("del"), deleteSel, "danger"); pn.append(r2);
+      pn.append(el("p", "hint", t("hintTask")));
+    } else {
+      head(t("stroke")); swatches(t("color"), "color", INKS);
+      const r2 = el("div", "row"); btn(r2, t("del"), deleteSel, "danger"); pn.append(r2);
+    }
+    syncPanel(obj);
+    if (focusTitleNext && first) { focusTitleNext = false; setTimeout(() => { first.focus(); first.select(); }, 0); }
+  }
+  function syncPanel(obj) {
+    const pn = $("panel");
+    pn.querySelectorAll(".sw button").forEach((b) => b.setAttribute("aria-pressed", String(obj[b.dataset.key] === b.dataset.val)));
+    pn.querySelectorAll("[data-toggle]").forEach((b) => b.setAttribute("aria-pressed", String(!!obj[b.dataset.toggle])));
+    pn.querySelectorAll("[data-alignv]").forEach((b) => b.setAttribute("aria-pressed", String((obj.align || "left") === b.dataset.alignv)));
+    pn.querySelectorAll("[data-edash]").forEach((b) => b.setAttribute("aria-pressed", String(!!obj.dash === (b.dataset.edash === "true"))));
+    pn.querySelectorAll("[data-ehead]").forEach((b) => b.setAttribute("aria-pressed", String((obj.nohead ? "none" : obj.both ? "both" : "end") === b.dataset.ehead)));
+  }
+  function centerOn(it) { const r = vp.getBoundingClientRect(); S.view.s = Math.max(S.view.s, 0.9); S.view.x = r.width / 2 - (it.x + it.w / 2) * S.view.s; S.view.y = r.height / 2 - (it.y + 40) * S.view.s; applyView(); schedule(); }
+
+  // ================= create / delete =================
+  function blankTr(fields) { const tr = {}; for (const l of LANGS) tr[l] = Object.assign({}, fields); return tr; }
+  function createItem(tool, x, y) {
+    const id = "i" + uid(); const o = S.opt; const c = o.color;
+    let kind = tool, base, topLeft = false;
+    if (tool === "sticky") base = { w: 180, h: 120, fill: o.sticky, line: o.sticky === "white" ? "gray" : "yellow", fs: 13, tfs: 14 };
+    else if (tool === "text") { const sz = { s: [13, 12], m: [16, 13], l: [20, 14], xl: [28, 16] }[o.text] || [20, 14]; base = { w: Math.round(sz[0] * 16), h: sz[0] + 10, fill: "none", line: "none", fs: sz[1], tfs: sz[0] }; }
+    else {
+      const sh = o.shape; kind = { box: "box", open: "box", header: "header", zone: "zone", label: "label", cell: "cell" }[sh] || "box";
+      base = {
+        box: { w: 206, h: 64, fill: "white", line: c === "ink" ? "gray" : c, fs: 11, tfs: 12.5 },
+        open: { w: 206, h: 64, fill: "white", line: "red", dash: true, fs: 11, tfs: 12.5 },
+        header: { w: 230, h: 42, fill: c, line: c, ink: "white", align: "center", fs: 10, tfs: 12 },
+        zone: { w: 1400, h: 200, fill: bgOf(c), line: c === "ink" ? "gray" : c, fs: 10, tfs: 13 },
+        label: { w: 144, h: 200, fill: c, line: c, ink: "white", fs: 9.5, tfs: 13 },
+        cell: { w: 200, h: 56, fill: "white", line: "line", fs: 11.5, tfs: 13 },
+      }[sh] || { w: 206, h: 64, fill: "white", line: "gray", fs: 11, tfs: 12.5 };
+      topLeft = ["zone", "label", "cell"].includes(sh);
+    }
+    const z = BACK.has(kind) ? Math.min(0, ...boardItems().map((i) => i.z || 0)) - 1 : Math.max(0, ...boardItems().map((i) => i.z || 0)) + 1;
+    const it = Object.assign({ board: S.board, kind, x: Math.round(topLeft ? x : x - base.w / 2), y: Math.round(topLeft ? y : y - 20), title: "", body: "", note: "", minNote: "", min: 0, src: S.lang, tr: blankTr({ title: "", body: "", note: "", minNote: "" }), ink: "ink", dash: false, align: "left", locked: false, z, by: S.me, at: Date.now() }, base);
+    S.items.set(id, Object.assign({ id }, it)); save("items", id, it, "set");
+    S.sel = { type: "item", id }; focusTitleNext = true; setTool("select"); renderPanel(); schedule();
+  }
+  function duplicate(obj) {
+    const id = "i" + uid(); const copy = JSON.parse(JSON.stringify(obj)); delete copy.id; copy.x += 24; copy.y += 24; copy.locked = false;
+    copy.z = Math.max(0, ...boardItems().map((i) => i.z || 0)) + 1; copy.by = S.me; copy.at = Date.now();
+    S.items.set(id, Object.assign({ id }, copy)); save("items", id, copy, "set"); S.sel = { type: "item", id }; renderPanel(); schedule();
+  }
+  function createEdge(from, to) {
+    const id = "e" + uid(); const o = S.opt; const e = { board: S.board, from, to, label: "", src: S.lang, tr: blankTr({ label: "" }), dash: !!o.edash, color: o.ecolor || "gray", both: o.ehead === "both", nohead: o.ehead === "none", mode: "auto", ox: 0, by: S.me, at: Date.now() };
+    S.edges.set(id, Object.assign({ id }, e)); save("edges", id, e, "set"); schedule();
+  }
+  function deleteSel() {
+    const sel = S.sel; if (!sel || !S.canWrite) return;
+    mapOf(sel.type).delete(sel.id); save(colOf(sel), sel.id, null, "delete");
+    if (sel.type === "item") for (const e of [...S.edges.values()]) if (e.from === sel.id || e.to === sel.id) { S.edges.delete(e.id); save("edges", e.id, null, "delete"); }
+    S.sel = null; renderPanel(); schedule();
+  }
+
+  // ================= tool options bar =================
+  function renderOptBar() {
+    const bar = $("optbar"); bar.textContent = "";
+    const tl = S.tool; if (tl === "select" || !S.canWrite) { bar.hidden = true; return; }
+    bar.hidden = false;
+    const grp = (label) => { const g = el("div", "grp"); if (label) g.append(el("span", "lbl", label)); bar.append(g); return g; };
+    const seg = (g, list, cur, key) => { const sg = el("div", "seg"); for (const [v, lab] of list) { const b = el("button", null, lab); b.type = "button"; b.setAttribute("aria-pressed", String(cur === v)); b.addEventListener("click", () => setOpt(key, v)); sg.append(b); } g.append(sg); };
+    const dots = (g, list, cur, key) => { for (const c of list) { const b = el("button", "dot"); b.type = "button"; b.style.background = P[c]; b.title = c; b.setAttribute("aria-label", c); b.setAttribute("aria-pressed", String(cur === c)); b.addEventListener("click", () => setOpt(key, c)); g.append(b); } };
+    if (tl === "sticky") dots(grp(t("optSticky")), STICKIES, S.opt.sticky, "sticky");
+    if (tl === "box") {
+      seg(grp(t("optShape")), [["box", t("sh_box")], ["open", t("sh_open")], ["header", t("sh_header")], ["zone", t("sh_zone")], ["label", t("sh_label")], ["cell", t("sh_cell")]], S.opt.shape, "shape");
+      if (["box", "header", "zone", "label"].includes(S.opt.shape)) dots(grp(t("optColor")), LANECOLORS, S.opt.color, "color");
+    }
+    if (tl === "text") seg(grp(t("optSize")), [["s", t("sz_s")], ["m", t("sz_m")], ["l", t("sz_l")], ["xl", t("sz_xl")]], S.opt.text, "text");
+    if (tl === "arrow") {
+      seg(grp(t("optLine")), [[false, t("solid")], [true, t("dashedL")]], !!S.opt.edash, "edash");
+      seg(grp(t("optHead")), [["end", t("head_end")], ["both", t("head_both")], ["none", t("head_none")]], S.opt.ehead, "ehead");
+      dots(grp(t("optColor")), LINES.filter((c) => c !== "none" && c !== "line"), S.opt.ecolor, "ecolor");
+    }
+    if (tl === "pen") {
+      dots(grp(t("optColor")), INKS, S.opt.pen, "pen");
+      seg(grp(t("optWidth")), [[2, t("w_thin")], [3, t("w_mid")], [6, t("w_bold")]], S.opt.penw, "penw");
+    }
+  }
+
+  // ================= tools & keys =================
+  function setTool(x) {
+    if (!S.canWrite && x !== "select") x = "select";
+    S.tool = x; S.arrowFrom = null;
+    document.querySelectorAll(".tool[data-tool]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.tool === x)));
+    vp.className = "mode-" + x; schedule(); renderOptBar();
+    if (x === "arrow") toast(t("arrowHint"));
+  }
+  document.querySelectorAll(".tool[data-tool]").forEach((b) => b.addEventListener("click", () => setTool(b.dataset.tool)));
+  $("fitBtn").addEventListener("click", fit);
+  $("undoBtn").addEventListener("click", undo); $("redoBtn").addEventListener("click", redo);
+  const zc = (f) => { const r = vp.getBoundingClientRect(); zoomAt(r.left + r.width / 2, r.top + r.height / 2, f); };
+  $("zIn").addEventListener("click", () => zc(1.2)); $("zOut").addEventListener("click", () => zc(1 / 1.2)); $("zPct").addEventListener("click", () => zc(1 / S.view.s));
+  function applyWriteMode(quiet) {
+    const bn = $("banner");
+    if (!S.canWrite) { bn.hidden = false; bn.textContent = t("roBanner"); if (!quiet) setTool("select"); } else bn.hidden = true;
+    $("tabs").dataset.sig = ""; if (!quiet) renderPanel(); schedule();
+  }
+
+  // ================= canvas pointer =================
+  const ptrs = new Map(); let act = null; let penColor = "red", spaceDown = false;
+  vp.addEventListener("pointerdown", (ev) => {
+    if (ev.target.closest(".zoom, #optbar")) return;
+    vp.focus({ preventScroll: true });
+    ptrs.set(ev.pointerId, { x: ev.clientX, y: ev.clientY }); vp.setPointerCapture(ev.pointerId);
+    if (ptrs.size === 2) { const [p1, p2] = [...ptrs.values()]; act = { type: "pinch", d: Math.hypot(p1.x - p2.x, p1.y - p2.y), view: Object.assign({}, S.view), cx: (p1.x + p2.x) / 2, cy: (p1.y + p2.y) / 2 }; $("live").setAttribute("d", ""); return; }
+    const w = toWorld(ev.clientX, ev.clientY);
+    const itemEl = ev.target.closest(".it"); const id = itemEl && itemEl.dataset.id;
+    const eh = ev.target.closest("[data-edge]"); const edgeId = eh && eh.dataset.edge;
+    const strokeId = ev.target.dataset && ev.target.dataset.stroke;
+    if (ev.button === 1 || spaceDown) { act = { type: "pan", sx: ev.clientX, sy: ev.clientY, vx: S.view.x, vy: S.view.y }; vp.classList.add("panning"); return; }
+    const tl = S.tool;
+    if (tl === "pen") { act = { type: "pen", pts: [[w.x, w.y]] }; return; }
+    if (tl === "sticky" || tl === "box" || tl === "text") { createItem(tl, w.x, w.y); act = null; return; }
+    if (tl === "arrow") { if (id) { if (!S.arrowFrom) S.arrowFrom = id; else if (S.arrowFrom !== id) { createEdge(S.arrowFrom, id); S.arrowFrom = null; } } else S.arrowFrom = null; schedule(); act = null; return; }
+    if (ev.target.dataset.handle && id) { const it = S.items.get(id); act = { type: "resize", id, sx: w.x, sy: w.y, w0: it.w, h0: realH(it) }; return; }
+    if (id) {
+      const it = S.items.get(id);
+      if (it.locked || !S.canWrite) { act = { type: "pan", sx: ev.clientX, sy: ev.clientY, vx: S.view.x, vy: S.view.y, click: { type: "item", id } }; return; }
+      S.sel = { type: "item", id }; renderPanel(); schedule(); act = { type: "drag", id, sx: w.x, sy: w.y, x0: it.x, y0: it.y, moved: false }; return;
+    }
+    if (edgeId) { S.sel = { type: "edge", id: edgeId }; renderPanel(); schedule(); act = null; return; }
+    if (strokeId) { S.sel = { type: "stroke", id: strokeId }; renderPanel(); schedule(); act = null; return; }
+    act = { type: "pan", sx: ev.clientX, sy: ev.clientY, vx: S.view.x, vy: S.view.y, click: null };
+  });
+  vp.addEventListener("pointermove", (ev) => {
+    if (ptrs.has(ev.pointerId)) ptrs.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+    const w = toWorld(ev.clientX, ev.clientY);
+    if (room && ev.pointerType === "mouse") room.presence({ cursor: { x: Math.round(w.x), y: Math.round(w.y), board: S.board } }).catch(() => {});
+    if (!act) return;
+    if (act.type === "pinch" && ptrs.size >= 2) {
+      const [p1, p2] = [...ptrs.values()]; const d = Math.hypot(p1.x - p2.x, p1.y - p2.y);
+      const r = vp.getBoundingClientRect(); const cx = (p1.x + p2.x) / 2 - r.left, cy = (p1.y + p2.y) / 2 - r.top;
+      const ns = Math.min(3, Math.max(0.15, act.view.s * d / act.d)); const k = ns / act.view.s; const ocx = act.cx - r.left, ocy = act.cy - r.top;
+      S.view = { s: ns, x: cx - (ocx - act.view.x) * k, y: cy - (ocy - act.view.y) * k }; applyView(); return;
+    }
+    if (act.type === "pan") { const dx = ev.clientX - act.sx, dy = ev.clientY - act.sy; if (Math.abs(dx) + Math.abs(dy) > 3) { act.moved = true; vp.classList.add("panning"); } S.view.x = act.vx + dx; S.view.y = act.vy + dy; applyView(); return; }
+    if (act.type === "drag") {
+      const it = S.items.get(act.id); if (!it) { act = null; return; }
+      const nx = Math.round(act.x0 + w.x - act.sx), ny = Math.round(act.y0 + w.y - act.sy);
+      if (!act.moved && Math.abs(nx - act.x0) + Math.abs(ny - act.y0) < 3) return;
+      act.moved = true; it.x = nx; it.y = ny;
+      for (const e of S.edges.values()) if ((e.from === it.id || e.to === it.id) && (e.mode !== "auto" || e.ox)) { e.mode = "auto"; e.ox = 0; act.reset = act.reset || new Set(); act.reset.add(e.id); }
+      schedule(); return;
+    }
+    if (act.type === "resize") { const it = S.items.get(act.id); if (!it) { act = null; return; } it.w = Math.max(60, Math.round(act.w0 + w.x - act.sx)); it.h = Math.max(24, Math.round(act.h0 + w.y - act.sy)); act.moved = true; schedule(); return; }
+    if (act.type === "pen") {
+      const last = act.pts[act.pts.length - 1]; if (Math.hypot(w.x - last[0], w.y - last[1]) > 2 / S.view.s) act.pts.push([w.x, w.y]);
+      const live = $("live"); live.setAttribute("d", strokePath(act.pts)); live.setAttribute("stroke", P[S.opt.pen] || P.red); live.setAttribute("stroke-width", S.opt.penw || 3);
+    }
+  });
+  function endPointer(ev) {
+    ptrs.delete(ev.pointerId); if (!act) return; const a = act;
+    if (a.type === "pinch") { if (ptrs.size < 2) act = null; return; }
+    act = null; vp.classList.remove("panning");
+    if (a.type === "pan" && !a.moved) { S.sel = a.click || null; S.arrowFrom = null; renderPanel(); schedule(); }
+    if (a.type === "drag" && a.moved) { const it = S.items.get(a.id); patch({ type: "item", id: a.id }, { x: it.x, y: it.y }); if (a.reset) for (const eid of a.reset) save("edges", eid, { mode: "auto", ox: 0 }, "update"); }
+    if (a.type === "resize" && a.moved) { const it = S.items.get(a.id); patch({ type: "item", id: a.id }, { w: it.w, h: it.h }); }
+    if (a.type === "pen") {
+      $("live").setAttribute("d", "");
+      if (a.pts.length > 1 && S.canWrite) {
+        const pts = simplify(a.pts).map((p) => [Math.round(p[0] * 10) / 10, Math.round(p[1] * 10) / 10]).slice(0, 1500);
+        const id = "s" + uid(); const s = { board: S.board, pts, color: S.opt.pen || "red", width: S.opt.penw || 3, by: S.me, at: Date.now() };
+        S.strokes.set(id, Object.assign({ id }, s)); save("strokes", id, s, "set"); schedule();
+      }
+    }
+  }
+  vp.addEventListener("pointerup", endPointer); vp.addEventListener("pointercancel", endPointer);
+  vp.addEventListener("pointerleave", () => { if (room) room.presence({ cursor: null }).catch(() => {}); });
+  vp.addEventListener("dblclick", (ev) => { const itemEl = ev.target.closest(".it"); if (!itemEl) return; S.sel = { type: "item", id: itemEl.dataset.id }; focusTitleNext = true; $("panel").dataset.sig = ""; renderPanel(); schedule(); });
+  vp.addEventListener("wheel", (ev) => { ev.preventDefault(); if (ev.ctrlKey || ev.metaKey) zoomAt(ev.clientX, ev.clientY, Math.exp(-ev.deltaY * 0.01)); else { S.view.x -= ev.deltaX; S.view.y -= ev.deltaY; applyView(); } }, { passive: false });
+  function simplify(pts) {
+    if (pts.length < 3) return pts; const out = [pts[0]];
+    for (let i = 1; i < pts.length - 1; i++) { const a = out[out.length - 1], b = pts[i], c = pts[i + 1]; const area = Math.abs((b[0] - a[0]) * (c[1] - a[1]) - (c[0] - a[0]) * (b[1] - a[1])); if (area > 2 || Math.hypot(b[0] - a[0], b[1] - a[1]) > 40) out.push(b); }
+    out.push(pts[pts.length - 1]); return out;
+  }
+  document.addEventListener("keydown", (ev) => {
+    const typing = ev.target.closest && ev.target.closest("input, textarea, select");
+    if (typing) { if (ev.key === "Escape") ev.target.blur(); return; }
+    if (ev.key === " ") { spaceDown = true; return; }
+    if ((ev.metaKey || ev.ctrlKey) && (ev.key === "z" || ev.key === "Z")) { ev.preventDefault(); if (ev.shiftKey) redo(); else undo(); return; }
+    if ((ev.metaKey || ev.ctrlKey) && (ev.key === "y" || ev.key === "Y")) { ev.preventDefault(); redo(); return; }
+    if (ev.metaKey || ev.ctrlKey) return;
+    const k = ev.key.toLowerCase();
+    const map = { v: "select", n: "sticky", b: "box", t: "text", a: "arrow", p: "pen" };
+    if (map[k] && !isGantt()) { setTool(map[k]); ev.preventDefault(); return; }
+    if (k === "f") { fit(); return; }
+    if (ev.key === "Escape") { if (!isGantt()) setTool("select"); closePanel(); }
+    if ((ev.key === "Delete" || ev.key === "Backspace") && S.sel) { ev.preventDefault(); deleteSel(); }
+  });
+  document.addEventListener("keyup", (ev) => { if (ev.key === " ") spaceDown = false; });
+
+  // ================= presence =================
+  let presT = 0;
+  function presenceSoon() { clearTimeout(presT); presT = setTimeout(() => { if (room) room.presence({ board: S.board }).catch(() => {}); }, 200); }
+  async function renderPeerList() {
+    const box = $("peers"); box.textContent = "";
+    const ids = [...new Set(S.peers.filter((p) => p.kind === "viewer" && p.by).map((p) => p.by))];
+    if (!user || !ids.length) return;
+    const ps = await user.profiles(ids); S.profiles = Object.assign(S.profiles, ps);
+    for (const id of ids) { const p = ps[id]; const img = el("img"); img.src = p.avatarUrl; img.alt = p.name || t("someone"); img.title = (p.name || t("someone")) + (p.isMe ? ` (${t("you")})` : ""); img.style.setProperty("--pc", p.color); box.append(img); }
+    renderCursors();
+  }
+  function renderCursors() {
+    const box = $("cursors"); box.textContent = "";
+    for (const p of S.peers) {
+      if (p.isMe || p.kind !== "viewer") continue;
+      const c = p.presence && p.presence.cursor; if (!c || c.board !== S.board || typeof c.x !== "number") continue;
+      const prof = (p.by && S.profiles[p.by]) || null; const color = (prof && prof.color) || "#2B55C9";
+      const d = el("div", "cursor"); d.style.left = c.x + "px"; d.style.top = c.y + "px"; d.style.transform = `scale(${1 / S.view.s})`; d.style.transformOrigin = "0 0";
+      const s = svgEl("svg", { viewBox: "0 0 16 16" }); s.append(svgEl("path", { d: "M1 1l5 14 2-6 6-2z", fill: color, stroke: "#fff", "stroke-width": "1" }));
+      const name = el("span", null, (prof && prof.name) || t("someone")); name.style.background = color; d.append(s, name); box.append(d);
+    }
+  }
+
+  // ================= boot =================
+  applyView(); setTool("select"); applyLang(); status("loading");
+  const loadTimer = setTimeout(() => { if (!S.loaded.items) status("unreachable", true); }, 10000);
+  function listen(col, map) {
+    db.collection(col).onSnapshot((snap) => {
+      for (const ch of snap.docChanges()) {
+        const d = ch.doc;
+        const skey = col + "/" + d.id;
+        if (ch.type === "removed") { map.delete(d.id); if (!queued.has(skey) && !inflight.has(skey)) shadow.delete(skey); continue; }
+        if (!queued.has(skey) && !inflight.has(skey)) shadow.set(skey, clone(d.data()));
+        const data = Object.assign({ id: d.id }, JSON.parse(JSON.stringify(d.data())));
+        if (act && act.id === d.id && (act.type === "drag" || act.type === "resize")) { const cur = map.get(d.id); if (cur) Object.assign(data, { x: cur.x, y: cur.y, w: cur.w, h: cur.h }); }
+        if (gDrag && gDrag.id === d.id) { const cur = map.get(d.id); if (cur) Object.assign(data, { start: cur.start, days: cur.days }); }
+        map.set(d.id, data);
+      }
+      const first = !S.loaded[col]; S.loaded[col] = true;
+      if (col === "items" && !snap.metadata.fromCache) { clearTimeout(loadTimer); status(S.canWrite ? "autosave" : "readonly"); }
+      if (S.sel && !mapOf(S.sel.type).has(S.sel.id)) S.sel = null;
+      $("tabs").dataset.sig = ""; renderPanel(); schedule();
+      if (first && (col === "items" || col === "boards")) requestAnimationFrame(() => requestAnimationFrame(() => {
+        if (S.board && S.loaded.items && S.loaded.boards && !S.fitted.has(S.board)) { S.fitted.add(S.board); if (isGantt()) scrollToToday(); else fit(); }
+      }));
+    }, (e) => { clearTimeout(loadTimer); status(e.code === "revoked" ? "revoked" : "loadFail", true); });
+  }
+  (async () => {
+    if (!window.claude || !window.claude.use) { S.canWrite = false; status("nosave", true); applyWriteMode(); return; }
+    const [d, u, r, s] = await Promise.all([claude.use("db"), claude.use("user"), claude.use("room"), claude.use("sample")]);
+    db = d; user = u; room = r; sample = s;
+    if (user) { S.me = await user.id(); const cw = await user.can("data.write"); if (cw === false) S.canWrite = false; }
+    if (!db) { S.canWrite = false; status("signin", true); applyWriteMode(); return; }
+    applyWriteMode();
+    listen("boards", S.boards); listen("items", S.items); listen("edges", S.edges); listen("strokes", S.strokes); listen("tasks", S.tasks);
+    if (room) { room.onPeers((ch) => { S.peers = [...ch.peers]; if (ch.joined.length || ch.left.length) renderPeerList(); else renderCursors(); }); presenceSoon(); }
+  })();
+  window.addEventListener("resize", () => schedule());
+})();
+</script>

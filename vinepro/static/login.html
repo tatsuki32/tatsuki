@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>VINEPRO ボード — ログイン</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;700&family=Be+Vietnam+Pro:wght@400;700&display=swap">
+<style>
+:root{--bg:#F3F4F1;--card:#FBFBF8;--rule:#CDD1CA;--fg:#1C211E;--muted:#5D665F;--accent:#2B55C9;--accent-ink:#fff;--danger:#B42A2A;
+  --f:"Zen Kaku Gothic New","Be Vietnam Pro","Hiragino Sans","Noto Sans JP",sans-serif}
+@media (prefers-color-scheme:dark){:root{--bg:#1A1D1B;--card:#252925;--rule:#3A403B;--fg:#E8ECE6;--muted:#A3ACA4;--accent:#8EA9F2;--accent-ink:#10172B;--danger:#F08A8A;color-scheme:dark}}
+:root[lang="vi"],:root[lang="en"]{--f:"Be Vietnam Pro","Zen Kaku Gothic New",sans-serif}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:grid;place-items:center;background:var(--bg);color:var(--fg);font:15px/1.5 var(--f);padding:16px}
+main{width:min(380px,100%)}
+.brand{font-weight:700;letter-spacing:.04em;font-size:20px;margin:0 0 4px}
+.brand small{display:block;font-size:11px;color:var(--muted);letter-spacing:.12em;font-weight:400}
+form{background:var(--card);border:1px solid var(--rule);border-radius:14px;padding:22px;display:flex;flex-direction:column;gap:14px;margin-top:16px}
+label{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--muted)}
+input{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--rule);border-radius:9px;padding:10px 12px;width:100%}
+input:focus{outline:2px solid var(--accent);outline-offset:1px}
+button{font:inherit;font-weight:700;border:0;border-radius:9px;padding:11px;background:var(--accent);color:var(--accent-ink);cursor:pointer}
+button:disabled{opacity:.6}
+.msg{color:var(--danger);font-size:13px;min-height:1.2em;margin:0}
+.langs{display:flex;gap:6px;justify-content:center;margin-top:14px}
+.langs button{background:none;color:var(--muted);font-weight:400;font-size:12px;padding:4px 8px;border:1px solid transparent}
+.langs button[aria-pressed="true"]{border-color:var(--rule);color:var(--fg)}
+.note{font-size:12px;color:var(--muted);text-align:center;margin:12px 0 0}
+</style>
+</head>
+<body>
+<main>
+  <p class="brand">VINEPRO <span data-t="board"></span><small>ACADEMY OPS</small></p>
+  <form id="f">
+    <label><span data-t="email"></span><input id="email" type="email" autocomplete="username" required></label>
+    <label><span data-t="password"></span><input id="pw" type="password" autocomplete="current-password" required></label>
+    <p class="msg" id="msg" role="alert"></p>
+    <button id="go" data-t="login"></button>
+  </form>
+  <p class="note" data-t="note"></p>
+  <div class="langs"><button data-lang="ja">日本語</button><button data-lang="vi">Tiếng Việt</button><button data-lang="en">English</button></div>
+</main>
+<script>
+const T = {
+  ja: { board: "ボード", email: "メールアドレス", password: "パスワード", login: "ログイン", bad_login: "メールアドレスかパスワードが違います", disabled: "このアカウントは停止されています。管理者に連絡してください", too_many: "失敗が続いたので15分お待ちください", net: "サーバーにつながりません", note: "アカウントは管理者が発行します" },
+  vi: { board: "Bảng", email: "Email", password: "Mật khẩu", login: "Đăng nhập", bad_login: "Email hoặc mật khẩu không đúng", disabled: "Tài khoản này đã bị tạm dừng. Hãy liên hệ quản trị viên", too_many: "Sai quá nhiều lần, vui lòng đợi 15 phút", net: "Không kết nối được máy chủ", note: "Tài khoản do quản trị viên cấp" },
+  en: { board: "Board", email: "Email", password: "Password", login: "Sign in", bad_login: "Wrong email or password", disabled: "This account is suspended. Please contact the admin", too_many: "Too many attempts. Please wait 15 minutes", net: "Can't reach the server", note: "Accounts are issued by the admin" },
+};
+let lang = "ja";
+try { const v = JSON.parse(localStorage.getItem("vb-view") || "null"); if (v && T[v.lang]) lang = v.lang; else { const n = (navigator.language || "ja").slice(0, 2); if (T[n]) lang = n; } } catch (e) {}
+function apply() {
+  document.documentElement.lang = lang;
+  document.querySelectorAll("[data-t]").forEach((e) => (e.textContent = T[lang][e.dataset.t]));
+  document.querySelectorAll(".langs button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.lang === lang)));
+}
+document.querySelectorAll(".langs button").forEach((b) => b.addEventListener("click", () => {
+  lang = b.dataset.lang; apply();
+  try { const v = JSON.parse(localStorage.getItem("vb-view") || "{}") || {}; v.lang = lang; localStorage.setItem("vb-view", JSON.stringify(v)); } catch (e) {}
+}));
+apply();
+const next = new URLSearchParams(location.search).get("next");
+const dest = next && /^\/[a-z]*$/.test(next) ? next : "/";
+document.getElementById("f").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const msg = document.getElementById("msg"), go = document.getElementById("go");
+  msg.textContent = ""; go.disabled = true;
+  try {
+    const r = await fetch("/api/login", { method: "POST", headers: { "Content-Type": "application/json", "X-VB": "1" }, body: JSON.stringify({ email: document.getElementById("email").value, password: document.getElementById("pw").value }) });
+    if (r.ok) { location.href = dest; return; }
+    const j = await r.json().catch(() => ({}));
+    msg.textContent = T[lang][j.error] || T[lang].bad_login;
+  } catch (err) { msg.textContent = T[lang].net; }
+  go.disabled = false;
+});
+document.getElementById("email").focus();
+</script>
+</body>
+</html>

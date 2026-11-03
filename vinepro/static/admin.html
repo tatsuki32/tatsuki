@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>VINEPRO ボード — 管理</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Be+Vietnam+Pro:wght@400;500;700&display=swap">
+<style>
+:root{--bg:#F3F4F1;--card:#FBFBF8;--card-2:#E6E8E3;--rule:#CDD1CA;--fg:#1C211E;--muted:#5D665F;--accent:#2B55C9;--accent-ink:#fff;--accent-soft:#DCE4FA;--danger:#B42A2A;--ok:#15803D;
+  --f:"Zen Kaku Gothic New","Be Vietnam Pro","Hiragino Sans","Noto Sans JP",sans-serif}
+@media (prefers-color-scheme:dark){:root{--bg:#1A1D1B;--card:#222623;--card-2:#2C312D;--rule:#3A403B;--fg:#E8ECE6;--muted:#A3ACA4;--accent:#8EA9F2;--accent-ink:#10172B;--accent-soft:#24304F;--danger:#F08A8A;--ok:#6BD48F;color-scheme:dark}}
+:root[lang="vi"],:root[lang="en"]{--f:"Be Vietnam Pro","Zen Kaku Gothic New",sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.55 var(--f)}
+header{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--rule);padding:10px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+header a.back{color:var(--accent);text-decoration:none;font-weight:700;white-space:nowrap}
+header .brand{font-weight:700;letter-spacing:.04em}
+nav{display:flex;gap:4px;flex-wrap:wrap}
+nav button{font:inherit;border:1px solid transparent;background:none;color:var(--muted);padding:5px 10px;border-radius:8px;cursor:pointer}
+nav button[aria-selected="true"]{background:var(--card);border-color:var(--rule);color:var(--fg);font-weight:700}
+.langs{margin-left:auto;display:flex;gap:2px}
+.langs button{font:inherit;font-size:12px;background:none;border:1px solid transparent;color:var(--muted);border-radius:6px;padding:2px 6px;cursor:pointer}
+.langs button[aria-pressed="true"]{border-color:var(--rule);color:var(--fg)}
+main{max-width:920px;margin:0 auto;padding:16px}
+h2{font-size:16px;margin:8px 0 12px}
+.card{background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:14px;margin-bottom:10px}
+.add{display:grid;grid-template-columns:1fr 1.3fr auto auto;gap:8px;align-items:end}
+.add label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);min-width:0}
+input,select{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--rule);border-radius:8px;padding:7px 9px;min-width:0;width:100%}
+button.b{font:inherit;font-size:13px;border:1px solid var(--rule);background:var(--card-2);color:var(--fg);border-radius:8px;padding:6px 11px;cursor:pointer;white-space:nowrap}
+button.b.pri{background:var(--accent);color:var(--accent-ink);border-color:transparent;font-weight:700}
+button.b.danger{color:var(--danger)}
+button.b:disabled{opacity:.5;cursor:default}
+.user{display:grid;grid-template-columns:auto 1fr auto;gap:4px 12px;align-items:center}
+.dot{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:700;position:relative}
+.dot i{position:absolute;right:-2px;bottom:-2px;width:12px;height:12px;border-radius:50%;border:2px solid var(--card);background:#9AA19B}
+.dot i.on{background:var(--ok)}
+.who b{font-size:15px}
+.who .em{color:var(--muted);font-size:12px;overflow-wrap:anywhere}
+.meta{grid-column:2/4;display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--muted)}
+.meta .on{color:var(--ok);font-weight:700}
+.badge{font-size:11px;padding:2px 8px;border-radius:10px;background:var(--accent-soft);color:var(--fg);white-space:nowrap}
+.badge.off{background:var(--card-2);color:var(--danger)}
+.ctrl{grid-column:2/4;display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.ctrl select{width:auto}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.filters select{width:auto;max-width:100%}
+.h{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;padding:10px 12px;border-bottom:1px solid var(--rule)}
+.h:last-child{border-bottom:0}
+.h .t{font-size:12px;color:var(--muted);white-space:nowrap;grid-row:span 2;min-width:74px}
+.h .t small{display:block}
+.h .line{min-width:0;overflow-wrap:anywhere}
+.h .line .u{font-weight:700}
+.h .act{display:inline-block;font-size:11px;padding:0 6px;border-radius:6px;background:var(--card-2);margin:0 4px}
+.h .act.create{background:#DDF3E3;color:#14532D}.h .act.delete{background:#FBE1E1;color:#7F1D1D}.h .act.revert,.h .act.import{background:#FDF0D5;color:#713F12}
+.h .sub{font-size:12px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.h .sub button{font-size:12px;padding:2px 8px}
+.h.reverted .line{text-decoration:line-through;opacity:.6}
+.diff{grid-column:1/3;font-size:12px;background:var(--bg);border-radius:8px;padding:8px 10px;margin-top:6px;display:grid;grid-template-columns:auto 1fr;gap:4px 10px}
+.diff .k{color:var(--muted)}
+.diff del{color:var(--danger)}
+.diff ins{color:var(--ok);text-decoration:none}
+.list{background:var(--card);border:1px solid var(--rule);border-radius:12px;overflow:hidden}
+.more{display:block;margin:12px auto}
+.empty{color:var(--muted);padding:16px;text-align:center}
+.lg{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;padding:8px 12px;border-bottom:1px solid var(--rule);font-size:13px}
+.lg .ua{grid-column:2;color:var(--muted);font-size:11px;overflow-wrap:anywhere}
+.dlg{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.4);display:grid;place-items:center;padding:16px}
+.dlg .card{width:min(440px,100%);margin:0}
+.dlg pre{white-space:pre-wrap;background:var(--bg);border-radius:8px;padding:10px;font-size:13px;user-select:all;overflow-wrap:anywhere}
+.dlg .row{display:flex;gap:8px;justify-content:flex-end;margin-top:10px}
+.note{font-size:12px;color:var(--muted)}
+#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:8px;font-size:13px;display:none;z-index:30}
+@media (max-width:640px){.add{grid-template-columns:1fr 1fr}.add .b{grid-column:span 2}.user{grid-template-columns:auto 1fr}.user .badge{grid-column:2;justify-self:start}.meta,.ctrl{grid-column:1/3}.langs{margin-left:0}}
+</style>
+</head>
+<body>
+<header>
+  <a class="back" href="/" data-t="back"></a>
+  <span class="brand">VINEPRO</span>
+  <nav id="tabs" role="tablist"></nav>
+  <div class="langs" id="langs"><button data-lang="ja">日本語</button><button data-lang="vi">Tiếng Việt</button><button data-lang="en">English</button></div>
+</header>
+<main id="main"></main>
+<div id="toast" role="status"></div>
+<script>
+"use strict";
+const T = {
+  ja: {
+    back: "← ボードへ", members: "メンバー", history: "編集履歴", logins: "ログイン記録", data: "データ",
+    add: "メンバーを追加", name: "名前", email: "メールアドレス", role: "権限", create: "追加する",
+    owner: "管理者", editor: "編集できる", viewer: "見るだけ", suspended: "停止中",
+    online: "オンライン中", seen: "最終アクセス", lastLogin: "最終ログイン", never: "まだなし", edits: "編集",
+    suspend: "停止する", resume: "再開する", reset: "パスワード再発行", kick: "強制ログアウト", del: "削除",
+    confirmSuspend: "{n} さんを停止しますか？ すぐにログアウトされ、ログインできなくなります。", confirmDel: "{n} さんのアカウントを削除しますか？（編集履歴は残ります）",
+    confirmReset: "{n} さんのパスワードを作り直しますか？ 今のパスワードは使えなくなります。", confirmKick: "{n} さんの全端末をログアウトさせますか？",
+    issued: "ログイン情報", issuedNote: "このパスワードは今だけ表示されます。本人に伝えてください（ログイン後に右上のメニューから変更できます）。",
+    copy: "コピー", close: "閉じる", copied: "コピーしました", saved: "保存しました",
+    msgTpl: "VINEPRO ボードのアカウントです。\nURL: {url}\nメール: {email}\nパスワード: {pw}\nログイン後、右上のメニューからパスワードを変更してください。",
+    allUsers: "全員", allBoards: "全ボード", more: "もっと見る", noHistory: "まだ履歴はありません",
+    create_: "追加", update_: "変更", delete_: "削除", revert_: "元に戻した", import_: "データ読み込み",
+    revert: "この変更を元に戻す", reverted: "元に戻し済み", confirmRevert: "この変更の前の状態に戻しますか？", details: "詳細", hide: "閉じる",
+    k_box: "箱", k_sticky: "付箋", k_text: "文字", k_header: "見出し", k_zone: "帯", k_label: "帯の名前", k_cell: "表のマス",
+    c_items: "要素", c_edges: "矢印", c_tasks: "スケジュールのバー", c_strokes: "ペンの線", c_boards: "ボード",
+    f_pos: "位置", f_size: "大きさ", f_text: "文字", f_tr: "翻訳", f_color: "色", f_date: "日程", f_owner: "担当", f_min: "作業時間", f_lock: "固定", f_order: "順番", f_board: "ボード", f_line: "線",
+    secAgo: "たった今", minAgo: "{n}分前", hrAgo: "{n}時間前", dayAgo: "{n}日前",
+    when: "日時", who: "人", ip: "IP",
+    exportT: "バックアップを書き出す", exportN: "ボードの全データを JSON で保存します（claude.ai 版の data/all.json と同じ形）。",
+    importT: "データを読み込む", importN: "JSON ファイルの内容でボードを丸ごと置き換えます。先にバックアップを書き出してください。",
+    confirmImport: "今のボードの中身を、このファイルの内容で置き換えます。よろしいですか？", imported: "{n}件を読み込みました",
+    forbidden: "この画面は管理者だけが使えます", err: "エラー: ",
+    e_email_taken: "そのメールアドレスはもう登録されています", e_bad_email: "メールアドレスの形式が違います",
+  },
+  vi: {
+    back: "← Về bảng", members: "Thành viên", history: "Lịch sử chỉnh sửa", logins: "Lịch sử đăng nhập", data: "Dữ liệu",
+    add: "Thêm thành viên", name: "Tên", email: "Email", role: "Quyền", create: "Thêm",
+    owner: "Quản trị", editor: "Được chỉnh sửa", viewer: "Chỉ xem", suspended: "Đã tạm dừng",
+    online: "Đang online", seen: "Truy cập gần nhất", lastLogin: "Đăng nhập gần nhất", never: "Chưa có", edits: "Chỉnh sửa",
+    suspend: "Tạm dừng", resume: "Mở lại", reset: "Cấp lại mật khẩu", kick: "Buộc đăng xuất", del: "Xoá",
+    confirmSuspend: "Tạm dừng {n}? Người này sẽ bị đăng xuất ngay và không đăng nhập được.", confirmDel: "Xoá tài khoản của {n}? (Lịch sử chỉnh sửa vẫn giữ lại)",
+    confirmReset: "Tạo lại mật khẩu cho {n}? Mật khẩu hiện tại sẽ không dùng được nữa.", confirmKick: "Đăng xuất {n} trên mọi thiết bị?",
+    issued: "Thông tin đăng nhập", issuedNote: "Mật khẩu chỉ hiện lần này. Hãy gửi cho người đó (sau khi đăng nhập có thể đổi ở menu góc phải trên).",
+    copy: "Sao chép", close: "Đóng", copied: "Đã sao chép", saved: "Đã lưu",
+    msgTpl: "Tài khoản VINEPRO Board của bạn.\nURL: {url}\nEmail: {email}\nMật khẩu: {pw}\nSau khi đăng nhập, hãy đổi mật khẩu ở menu góc phải trên.",
+    allUsers: "Tất cả", allBoards: "Tất cả bảng", more: "Xem thêm", noHistory: "Chưa có lịch sử",
+    create_: "Thêm", update_: "Sửa", delete_: "Xoá", revert_: "Đã hoàn tác", import_: "Nhập dữ liệu",
+    revert: "Hoàn tác thay đổi này", reverted: "Đã hoàn tác", confirmRevert: "Quay lại trạng thái trước thay đổi này?", details: "Chi tiết", hide: "Đóng",
+    k_box: "Hộp", k_sticky: "Giấy note", k_text: "Chữ", k_header: "Tiêu đề", k_zone: "Dải", k_label: "Tên dải", k_cell: "Ô bảng",
+    c_items: "Phần tử", c_edges: "Mũi tên", c_tasks: "Thanh lịch trình", c_strokes: "Nét bút", c_boards: "Bảng",
+    f_pos: "vị trí", f_size: "kích thước", f_text: "chữ", f_tr: "bản dịch", f_color: "màu", f_date: "lịch", f_owner: "người phụ trách", f_min: "thời gian", f_lock: "khoá", f_order: "thứ tự", f_board: "bảng", f_line: "đường",
+    secAgo: "vừa xong", minAgo: "{n} phút trước", hrAgo: "{n} giờ trước", dayAgo: "{n} ngày trước",
+    when: "Thời gian", who: "Người", ip: "IP",
+    exportT: "Xuất bản sao lưu", exportN: "Lưu toàn bộ dữ liệu bảng thành JSON.",
+    importT: "Nhập dữ liệu", importN: "Thay toàn bộ bảng bằng nội dung file JSON. Hãy xuất bản sao lưu trước.",
+    confirmImport: "Thay toàn bộ nội dung bảng bằng file này?", imported: "Đã nhập {n} mục",
+    forbidden: "Chỉ quản trị viên dùng được màn hình này", err: "Lỗi: ",
+    e_email_taken: "Email này đã được đăng ký", e_bad_email: "Email không hợp lệ",
+  },
+  en: {
+    back: "← Board", members: "Members", history: "Edit history", logins: "Sign-ins", data: "Data",
+    add: "Add a member", name: "Name", email: "Email", role: "Access", create: "Add",
+    owner: "Admin", editor: "Can edit", viewer: "View only", suspended: "Suspended",
+    online: "Online now", seen: "Last active", lastLogin: "Last sign-in", never: "Never", edits: "Edits",
+    suspend: "Suspend", resume: "Restore", reset: "New password", kick: "Sign out everywhere", del: "Delete",
+    confirmSuspend: "Suspend {n}? They are signed out now and can't sign in.", confirmDel: "Delete {n}'s account? (Their edit history stays)",
+    confirmReset: "Make a new password for {n}? The current one stops working.", confirmKick: "Sign {n} out on every device?",
+    issued: "Sign-in details", issuedNote: "This password is shown only now. Send it to them (they can change it from the top-right menu).",
+    copy: "Copy", close: "Close", copied: "Copied", saved: "Saved",
+    msgTpl: "Your VINEPRO Board account.\nURL: {url}\nEmail: {email}\nPassword: {pw}\nAfter signing in, change your password from the top-right menu.",
+    allUsers: "Everyone", allBoards: "All boards", more: "Load more", noHistory: "No history yet",
+    create_: "Added", update_: "Edited", delete_: "Deleted", revert_: "Reverted", import_: "Data import",
+    revert: "Undo this change", reverted: "Undone", confirmRevert: "Go back to the state before this change?", details: "Details", hide: "Hide",
+    k_box: "Box", k_sticky: "Sticky", k_text: "Text", k_header: "Heading", k_zone: "Band", k_label: "Band name", k_cell: "Table cell",
+    c_items: "Item", c_edges: "Arrow", c_tasks: "Schedule bar", c_strokes: "Pen line", c_boards: "Board",
+    f_pos: "position", f_size: "size", f_text: "text", f_tr: "translation", f_color: "color", f_date: "dates", f_owner: "owner", f_min: "time", f_lock: "lock", f_order: "order", f_board: "board", f_line: "line",
+    secAgo: "just now", minAgo: "{n} min ago", hrAgo: "{n} h ago", dayAgo: "{n} d ago",
+    when: "When", who: "Who", ip: "IP",
+    exportT: "Download a backup", exportN: "Saves all board data as JSON.",
+    importT: "Import data", importN: "Replaces the whole board with a JSON file. Download a backup first.",
+    confirmImport: "Replace everything on the board with this file?", imported: "Imported {n} records",
+    forbidden: "Only the admin can use this page", err: "Error: ",
+    e_email_taken: "That email is already registered", e_bad_email: "That email doesn't look right",
+  },
+};
+let lang = "ja";
+try { const v = JSON.parse(localStorage.getItem("vb-view") || "null"); if (v && T[v.lang]) lang = v.lang; else { const n = (navigator.language || "ja").slice(0, 2); if (T[n]) lang = n; } } catch (e) {}
+const t = (k, vars) => { let s = (T[lang] && T[lang][k]) ?? T.ja[k] ?? k; for (const v in vars || {}) s = s.replace("{" + v + "}", vars[v]); return s; };
+const $ = (id) => document.getElementById(id);
+function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+function toast(s) { const b = $("toast"); b.textContent = s; b.style.display = "block"; clearTimeout(toast.t); toast.t = setTimeout(() => (b.style.display = "none"), 2200); }
+async function api(method, path, body) {
+  const r = await fetch(path, { method, headers: { "Content-Type": "application/json", "X-VB": "1" }, body: body === undefined ? undefined : JSON.stringify(body) });
+  if (r.status === 401) { location.href = "/login?next=/admin"; throw new Error("unauthenticated"); }
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) { const e = new Error(j.error || r.status); e.code = j.error; throw e; }
+  return j;
+}
+const errText = (e) => T[lang]["e_" + e.code] || t("err") + (e.code || e.message);
+const fmt = (ts) => { if (!ts) return t("never"); const d = new Date(ts * 1000); return d.toLocaleString(lang === "vi" ? "vi-VN" : lang === "en" ? "en-GB" : "ja-JP", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }); };
+const ago = (ts) => { if (!ts) return t("never"); const s = Date.now() / 1000 - ts; if (s < 60) return t("secAgo"); if (s < 3600) return t("minAgo", { n: Math.floor(s / 60) }); if (s < 86400) return t("hrAgo", { n: Math.floor(s / 3600) }); return t("dayAgo", { n: Math.floor(s / 86400) }); };
+
+let me = null, boards = {}, profiles = {}, tab = "history";
+const TABS = () => me && me.isOwner ? ["members", "history", "logins", "data"] : ["history"];
+
+function renderShell() {
+  document.documentElement.lang = lang;
+  document.querySelectorAll("[data-t]").forEach((e) => (e.textContent = t(e.dataset.t)));
+  document.querySelectorAll("#langs button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.lang === lang)));
+  const nav = $("tabs"); nav.textContent = "";
+  for (const k of TABS()) { const b = el("button", null, t(k)); b.setAttribute("role", "tab"); b.setAttribute("aria-selected", String(k === tab)); b.onclick = () => { location.hash = k; }; nav.append(b); }
+}
+document.querySelectorAll("#langs button").forEach((b) => b.addEventListener("click", () => {
+  lang = b.dataset.lang;
+  try { const v = JSON.parse(localStorage.getItem("vb-view") || "{}") || {}; v.lang = lang; localStorage.setItem("vb-view", JSON.stringify(v)); } catch (e) {}
+  route();
+}));
+
+// ---------- members ----------
+let membersTimer = 0;
+async function renderMembers() {
+  const main = $("main");
+  const r = await api("GET", "/api/admin/users");
+  if (tab !== "members") return;
+  main.textContent = "";
+  const addCard = el("form", "card");
+  addCard.append(el("h2", null, t("add")));
+  const grid = el("div", "add");
+  const f = (labelK, input) => { const l = el("label"); l.append(el("span", null, t(labelK)), input); grid.append(l); return input; };
+  const nm = f("name", Object.assign(el("input"), { required: true, maxLength: 40 }));
+  const em = f("email", Object.assign(el("input"), { type: "email", required: true }));
+  const rl = f("role", el("select"));
+  for (const k of ["editor", "viewer"]) rl.append(Object.assign(el("option", null, t(k)), { value: k }));
+  const go = el("button", "b pri", t("create")); grid.append(go);
+  addCard.append(grid);
+  addCard.onsubmit = async (e) => {
+    e.preventDefault(); go.disabled = true;
+    try { const res = await api("POST", "/api/admin/users", { name: nm.value, email: em.value, role: rl.value }); issued(em.value.trim().toLowerCase(), res.password); renderMembers(); }
+    catch (err) { alert(errText(err)); }
+    go.disabled = false;
+  };
+  main.append(addCard);
+  for (const u of r.users) main.append(userCard(u));
+  clearTimeout(membersTimer); membersTimer = setTimeout(() => { if (tab === "members" && !document.querySelector(".dlg") && !document.activeElement.closest?.("form")) renderMembers().catch(() => {}); }, 10000);
+}
+function userCard(u) {
+  const c = el("div", "card user");
+  const dot = el("div", "dot", (u.name || "?").charAt(0).toUpperCase()); dot.style.background = u.color;
+  const i = el("i", u.online ? "on" : ""); dot.append(i);
+  const who = el("div", "who"); who.append(el("b", null, u.name), el("div", "em", u.email));
+  const badge = el("span", "badge" + (u.disabled ? " off" : ""), u.disabled ? t("suspended") : t(u.role));
+  c.append(dot, who, badge);
+  const meta = el("div", "meta");
+  meta.append(u.online ? el("span", "on", "● " + t("online")) : el("span", null, `${t("seen")}: ${ago(u.lastSeenAt)}`));
+  meta.append(el("span", null, `${t("lastLogin")}: ${fmt(u.lastLoginAt)}`), el("span", null, `${t("edits")}: ${u.edits}`));
+  c.append(meta);
+  if (u.role !== "owner") {
+    const ctrl = el("div", "ctrl");
+    const sel = el("select"); for (const k of ["editor", "viewer"]) sel.append(Object.assign(el("option", null, t(k)), { value: k, selected: u.role === k }));
+    sel.disabled = u.disabled;
+    sel.onchange = async () => { try { await api("PATCH", "/api/admin/users/" + u.id, { role: sel.value }); toast(t("saved")); renderMembers(); } catch (e) { alert(errText(e)); } };
+    const btn = (k, cls, fn) => { const b = el("button", "b" + (cls ? " " + cls : ""), t(k)); b.type = "button"; b.onclick = fn; ctrl.append(b); return b; };
+    ctrl.append(sel);
+    btn(u.disabled ? "resume" : "suspend", u.disabled ? "" : "danger", async () => {
+      if (!u.disabled && !confirm(t("confirmSuspend", { n: u.name }))) return;
+      try { await api("PATCH", "/api/admin/users/" + u.id, { disabled: !u.disabled }); renderMembers(); } catch (e) { alert(errText(e)); }
+    });
+    btn("reset", "", async () => {
+      if (!confirm(t("confirmReset", { n: u.name }))) return;
+      try { const r = await api("POST", "/api/admin/users/" + u.id + "/password", {}); issued(u.email, r.password); renderMembers(); } catch (e) { alert(errText(e)); }
+    });
+    const k = btn("kick", "", async () => {
+      if (!confirm(t("confirmKick", { n: u.name }))) return;
+      try { await api("POST", "/api/admin/users/" + u.id + "/logout", {}); toast(t("saved")); renderMembers(); } catch (e) { alert(errText(e)); }
+    });
+    k.disabled = !u.sessions && !u.online;
+    btn("del", "danger", async () => {
+      if (!confirm(t("confirmDel", { n: u.name }))) return;
+      try { await api("DELETE", "/api/admin/users/" + u.id); renderMembers(); } catch (e) { alert(errText(e)); }
+    });
+    c.append(ctrl);
+  }
+  return c;
+}
+function issued(email, pw) {
+  const msg = t("msgTpl", { url: location.origin + "/", email, pw });
+  const d = el("div", "dlg"); const c = el("div", "card");
+  c.append(el("h2", null, t("issued")), el("p", "note", t("issuedNote")), el("pre", null, msg));
+  const row = el("div", "row");
+  const cp = el("button", "b", t("copy")); cp.onclick = async () => { try { await navigator.clipboard.writeText(msg); toast(t("copied")); } catch (e) {} };
+  const cl = el("button", "b pri", t("close")); cl.onclick = () => d.remove();
+  row.append(cp, cl); c.append(row); d.append(c); document.body.append(d);
+}
+
+// ---------- history ----------
+const FIELD_GROUP = { x: "f_pos", y: "f_pos", ox: "f_line", mode: "f_line", w: "f_size", h: "f_size", fs: "f_size", tfs: "f_size",
+  title: "f_text", body: "f_text", note: "f_text", minNote: "f_text", name: "f_text", label: "f_text", align: "f_text",
+  tr: "f_tr", src: "f_tr", fill: "f_color", line: "f_color", ink: "f_color", color: "f_color", dash: "f_line", both: "f_line", nohead: "f_line", width: "f_line", pts: "f_line",
+  start: "f_date", days: "f_date", owner: "f_owner", min: "f_min", locked: "f_lock", order: "f_order", z: "f_order", board: "f_board", lane: "f_board", from: "f_line", to: "f_line" };
+const histFilter = { user: "", board: "" };
+let histRows = [], histDone = false;
+async function renderHistory(reset) {
+  const main = $("main");
+  if (reset) { histRows = []; histDone = false; }
+  const qs = new URLSearchParams({ limit: "80" });
+  if (histFilter.user) qs.set("user", histFilter.user);
+  if (histFilter.board) qs.set("board", histFilter.board);
+  if (histRows.length) qs.set("before", histRows[histRows.length - 1].id);
+  const r = await api("GET", "/api/history?" + qs);
+  if (tab !== "history") return;
+  histRows = histRows.concat(r.history); if (r.history.length < 80) histDone = true;
+  main.textContent = "";
+  const fl = el("div", "filters");
+  const us = el("select"); us.append(Object.assign(el("option", null, t("allUsers")), { value: "" }));
+  for (const p of Object.values(profiles)) us.append(Object.assign(el("option", null, p.name), { value: p.id, selected: histFilter.user === p.id }));
+  us.onchange = () => { histFilter.user = us.value; renderHistory(true); };
+  const bs = el("select"); bs.append(Object.assign(el("option", null, t("allBoards")), { value: "" }));
+  for (const b of Object.values(boards).sort((a, b) => (a.order || 0) - (b.order || 0))) bs.append(Object.assign(el("option", null, boardName(b.id)), { value: b.id, selected: histFilter.board === b.id }));
+  bs.onchange = () => { histFilter.board = bs.value; renderHistory(true); };
+  fl.append(us, bs); main.append(fl);
+  const list = el("div", "list");
+  if (!histRows.length) list.append(el("div", "empty", t("noHistory")));
+  for (const h of histRows) list.append(histRow(h));
+  main.append(list);
+  if (!histDone) { const m = el("button", "b more", t("more")); m.onclick = () => renderHistory(false); main.append(m); }
+}
+function boardName(id) { const b = boards[id]; if (!b) return ""; return (b.tr && b.tr[lang] && b.tr[lang].name) || b.name || id; }
+function histRow(h) {
+  const row = el("div", "h" + (h.reverted_by ? " reverted" : ""));
+  const tm = el("div", "t", ago(h.last_at)); tm.append(el("small", null, fmt(h.at))); row.append(tm);
+  const line = el("div", "line");
+  const u = el("span", "u", (profiles[h.user_id] && profiles[h.user_id].name) || h.user_name);
+  const what = h.col === "items" && h.kind ? t("k_" + h.kind) : t("c_" + h.col);
+  line.append(u, el("span", "act " + h.action, t(h.action + "_")));
+  if (h.action === "import") line.append(document.createTextNode(t("imported", { n: h.label })));
+  else line.append(document.createTextNode(what + (h.label ? "「" + h.label + "」" : "")));
+  row.append(line);
+  const sub = el("div", "sub");
+  if (h.board && h.col !== "boards") sub.append(el("span", null, "▸ " + boardName(h.board)));
+  const groups = [...new Set((h.fields || []).map((f) => FIELD_GROUP[f] ? t(FIELD_GROUP[f]) : f))];
+  if (h.action === "update" && groups.length) sub.append(el("span", null, groups.join("・")));
+  if (h.action !== "import") {
+    const det = el("button", "b", t("details"));
+    det.onclick = async () => {
+      const open = row.querySelector(".diff"); if (open) { open.remove(); det.textContent = t("details"); return; }
+      const d = await api("GET", "/api/history/" + h.id); row.append(diffView(d)); det.textContent = t("hide");
+    };
+    sub.append(det);
+  }
+  if (me.isOwner && h.action !== "import") {
+    if (h.reverted_by) sub.append(el("span", null, "↺ " + t("reverted")));
+    else {
+      const rb = el("button", "b", t("revert"));
+      rb.onclick = async () => { if (!confirm(t("confirmRevert"))) return; try { await api("POST", "/api/history/" + h.id + "/revert", {}); toast(t("saved")); renderHistory(true); } catch (e) { alert(errText(e)); } };
+      sub.append(rb);
+    }
+  }
+  row.append(sub);
+  return row;
+}
+function show(v) { if (v == null) return "—"; if (typeof v === "string") return v; const s = JSON.stringify(v); return s.length > 140 ? s.slice(0, 140) + "…" : s; }
+function textOf(d, f) { if (!d) return null; const tr = d.tr && d.tr[lang]; return (tr && tr[f]) ?? d[f]; }
+function diffView(d) {
+  const box = el("div", "diff");
+  const keys = (d.fields || []).filter((k) => k !== "tr" && k !== "src");
+  const textKeys = ["title", "body", "note", "minNote", "name", "label"];
+  if ((d.fields || []).includes("tr")) for (const k of textKeys) if (!keys.includes(k) && (textOf(d.before, k) || textOf(d.after, k)) && textOf(d.before, k) !== textOf(d.after, k)) keys.push(k);
+  if (!keys.length && (d.action === "create" || d.action === "delete")) for (const k of textKeys) if (textOf(d.after || d.before, k)) keys.push(k);
+  for (const k of keys) {
+    const kk = el("span", "k", FIELD_GROUP[k] ? `${t(FIELD_GROUP[k])} (${k})` : k);
+    const v = el("span");
+    const raw = (d.fields || []).includes(k); // the field itself changed: show it as typed
+    const b = textKeys.includes(k) && !raw ? textOf(d.before, k) : d.before && d.before[k];
+    const a = textKeys.includes(k) && !raw ? textOf(d.after, k) : d.after && d.after[k];
+    if (d.before) { const del = el("del", null, show(b)); v.append(del, document.createTextNode(" → ")); }
+    v.append(el("ins", null, d.after ? show(a) : "—"));
+    box.append(kk, v);
+  }
+  if (!keys.length) box.append(el("span", "k", "—"), el("span"));
+  return box;
+}
+
+// ---------- logins ----------
+async function renderLogins() {
+  const r = await api("GET", "/api/admin/logins"); if (tab !== "logins") return;
+  const main = $("main"); main.textContent = "";
+  const list = el("div", "list");
+  if (!r.logins.length) list.append(el("div", "empty", "—"));
+  for (const l of r.logins) {
+    const row = el("div", "lg");
+    row.append(el("span", null, fmt(l.at)), el("span", null, `${l.name || "?"} (${l.email || "-"}) · ${l.ip || ""}`), el("span", "ua", l.ua || ""));
+    list.append(row);
+  }
+  main.append(list);
+}
+
+// ---------- data ----------
+function renderData() {
+  const main = $("main"); main.textContent = "";
+  const a = el("div", "card"); a.append(el("h2", null, t("exportT")), el("p", "note", t("exportN")));
+  const ex = el("button", "b pri", t("exportT")); ex.onclick = () => (location.href = "/api/admin/export"); a.append(ex);
+  const b = el("div", "card"); b.append(el("h2", null, t("importT")), el("p", "note", t("importN")));
+  const file = Object.assign(el("input"), { type: "file", accept: ".json,application/json" });
+  file.onchange = async () => {
+    const f = file.files[0]; if (!f) return;
+    if (!confirm(t("confirmImport"))) { file.value = ""; return; }
+    try { const data = JSON.parse(await f.text()); const r = await api("POST", "/api/admin/import", data); toast(t("imported", { n: r.count })); }
+    catch (e) { alert(errText(e)); }
+    file.value = "";
+  };
+  b.append(file);
+  main.append(a, b);
+}
+
+// ---------- routing ----------
+async function route() {
+  const h = location.hash.slice(1);
+  tab = TABS().includes(h) ? h : (me.isOwner && !h ? "members" : "history");
+  renderShell();
+  const main = $("main");
+  try {
+    if (tab === "members") await renderMembers();
+    else if (tab === "history") await renderHistory(true);
+    else if (tab === "logins") await renderLogins();
+    else renderData();
+  } catch (e) { main.textContent = ""; main.append(el("div", "empty", errText(e))); }
+}
+window.addEventListener("hashchange", route);
+(async () => {
+  me = await api("GET", "/api/me");
+  [profiles] = await Promise.all([api("GET", "/api/profiles"), api("GET", "/api/db/boards").then((r) => { for (const d of r.docs) boards[d.id] = Object.assign({ id: d.id }, d.data); })]);
+  route();
+})();
+</script>
+</body>
+</html>

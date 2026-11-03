@@ -44,3 +44,7 @@ claude.ai のチャットで直接編集しない。変更は必ずここで行�
 - iPhone 幅 375px で横スクロールが出ないこと。
 - 画面に出る文字はすべて日本語（固有名詞を除く）。データに保存する判定用の値（`priority` の `Action needed`、`region`、ツールの `group`、タスクの `status` など）は英語のままにして、表示だけ日本語にする（`PRIJA` / `REGJA` / `GROUPS`）。
   スケジュールタスク（World Desk morning brief / Morning Mail check）も日本語で書く。メールは `subject_ja`・`draft.body_ja` を足し、Gmail の下書き本体は相手の言語のまま。
+
+## VINEPRO ボード（`vinepro/`）
+
+Desk とは別のプロジェクト。スタッフがメール＋パスワードで使う共同編集ボード。作業するときは `vinepro/CLAUDE.md` を読む。`vinepro/data/`・`vinepro/var/` は社内データなのでコミットしない。
