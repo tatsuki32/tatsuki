@@ -334,6 +334,10 @@ a.ev:hover{background:var(--surface-2)}
 .wl{color:var(--blue);text-decoration:none;border-bottom:1px dotted currentColor}
 .wl.lone{color:var(--red)}
 .wl:hover{color:var(--ink)}
+/* every word on the page can be selected (buttons and links too) and auto-linked */
+button,a,label,summary{-webkit-user-select:text;user-select:text}
+a,button{-webkit-user-drag:none}
+button .awl,.nav .awl,#tabs .awl{border-bottom:0}
 .hop{padding:var(--s3);display:grid;gap:var(--s3)}
 .hop .grp{display:grid;gap:var(--s2)}
 .hop .grp>h3{margin:0;font-size:var(--t1);color:var(--ink-2)}
@@ -492,7 +496,7 @@ const store={
     if(db){await db.collection("tasks").doc(rec.id).set(rec)}
     else if(LOCALAPI){await api("PUT","/api/tasks/"+encodeURIComponent(rec.id),rec);await loadApiMemos()}
     else {S.tasks=[...S.tasks.filter(x=>x.id!==rec.id),rec].filter(x=>!x.deleted);saveTasksLocal();render()} },
-  async putNote(n){ const rec={title:n.title||"",body:n.body||"",createdAt:n.createdAt||Date.now(),updatedAt:Date.now(),deleted:!!n.deleted};
+  async putNote(n){ const rec={title:n.title||"",body:n.body||"",createdAt:n.createdAt||Date.now(),updatedAt:Date.now(),deleted:!!n.deleted,...(n.noAuto?{noAuto:true}:{})};
     if(db){await db.collection("notes").doc(n.id).set(rec)}
     else if(LOCALAPI){await api("PUT","/api/notes/"+encodeURIComponent(n.id),rec);await loadApiMemos()}
     else {S.wnotes=[...S.wnotes.filter(x=>x.id!==n.id),{id:n.id,...rec}];try{localStorage.setItem("desk-notes",JSON.stringify(S.wnotes))}catch(e){}render()} },
@@ -1059,10 +1063,10 @@ function linkStats(){
   noteList().forEach(n=>{add(n.body);
     const urls=[...String(n.body||"").matchAll(/^\s*出典[：:]\s*\[(https:\/\/\S+)/gm)];if(urls.length)count.set(normTitle(n.title),(count.get(normTitle(n.title))||0)+urls.length)});
   S.memos.forEach(m=>add(m.text));S.tasks.filter(t=>!t.deleted).forEach(t=>add(t.note));
-  return LS={n:S.wnotes,m:S.memos,t:S.tasks,count};
+  return LS={n:S.wnotes,m:S.memos,t:S.tasks,count,byT:new Map(noteList().map(n=>[normTitle(n.title),n]))};
 }
 const linkUses=t=>linkStats().count.get(normTitle(t))||0;
-const linkLone=t=>!hasContent(noteByTitle(t))&&linkUses(t)<2;
+const linkLone=t=>!hasContent(linkStats().byT.get(normTitle(t)))&&linkUses(t)<2;
 const wlink=t=>`<a class="wl${linkLone(t)?" lone":""}" href="#notes" data-wiki="${esc(t)}"${linkLone(t)?' title="まだどこにもつながっていません"':""}>${esc(t)}</a>`;
 /* news and Minor Countries: words linked from an article show as links inside it (first match per note, per article) */
 function linkSources(root){
@@ -1078,6 +1082,73 @@ function linkSources(root){
     });
   });
 }
+/* auto-links: a note's title becomes a link wherever it shows on the page (task names, mail, calendar, buttons, menus…).
+   Only the page is changed, never the data. Titles of 1 character, and notes switched off (noAuto), are left alone.
+   Latin words match whole words only ("AI" is not found inside "MAIL"); case and full/half width don't matter. */
+const AUTO_SKIP="script,style,textarea,input,select,option,svg,.wl,.ext,.selmenu,.inedit,#toastHost,.ntitle,.ncard,[contenteditable],[data-noauto]";
+let AL={key:null,re:null};
+function autoRe(){
+  const titles=[...new Set(noteList().filter(n=>!n.noAuto).map(n=>String(n.title||"").normalize("NFKC").trim()).filter(t=>[...t].length>=2))].sort((a,b)=>b.length-a.length);
+  const key=titles.map(t=>t+(linkLone(t)?"0":"1")).join("\n");
+  if(AL.key===key) return AL;
+  const ch=c=>{const k=c.charCodeAt(0),e=c.replace(/[.*+?^${}()|[\]\\\/-]/g,"\\$&");return k>0x20&&k<0x7f&&c!==" "?`[${e}${String.fromCharCode(k+0xFEE0)}]`:/\s/.test(c)?"[\\s\\u3000]+":e};
+  const W="A-Za-z0-9Ａ-Ｚａ-ｚ０-９";
+  const alt=titles.map(t=>(/^[A-Za-z0-9]/.test(t)?`(?<![${W}])`:"")+[...t].map(ch).join("")+(/[A-Za-z0-9]$/.test(t)?`(?![${W}])`:""));
+  let re=null; // older Safari has no lookbehind: fall back to plain matching rather than break the page
+  if(alt.length){try{re=new RegExp(alt.join("|"),"giu")}catch(e){re=new RegExp(alt.map(a=>a.replace(/^\(\?<!\[[^\]]*\]\)/,"")).join("|"),"giu")}}
+  return AL={key,re};
+}
+function titleFor(found){const k=normTitle(found);return noteList().find(n=>normTitle(n.title)===k)?.title||found}
+function autoLinkIn(root){
+  const {re}=AL; if(!re||!root) return;
+  const els=root.nodeType===3?[root]:[];
+  if(root.nodeType===1){if(root.closest(AUTO_SKIP))return;
+    const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{acceptNode:x=>!x.data.trim()||x.parentElement?.closest(AUTO_SKIP)?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT});
+    let x;while(x=w.nextNode())els.push(x)}
+  else if(root.nodeType===3&&root.parentElement?.closest(AUTO_SKIP)) return;
+  for(const x of els){
+    re.lastIndex=0; if(!re.test(x.data)) continue; re.lastIndex=0;
+    const frag=document.createDocumentFragment(); let last=0,m;
+    const inBtn=!!x.parentElement?.closest("a,button,label,summary,.nav,#tabs");
+    while(m=re.exec(x.data)){
+      if(m.index>last) frag.append(x.data.slice(last,m.index));
+      const t=titleFor(m[0]), lone=linkLone(t), el=document.createElement(inBtn?"span":"a");
+      el.className="wl awl"+(lone?" lone":""); el.dataset.wiki=t; el.textContent=m[0];
+      if(!inBtn) el.href="#notes"; if(lone) el.title="まだどこにもつながっていません";
+      frag.append(el); last=m.index+m[0].length;
+    }
+    if(last<x.data.length) frag.append(x.data.slice(last));
+    x.replaceWith(frag);
+  }
+}
+function unAutoLink(){document.querySelectorAll(".awl").forEach(a=>a.replaceWith(document.createTextNode(a.textContent)));document.body.normalize()}
+let alObs=null, alQueue=new Set(), alTick=0;
+const alQueueAdd=recs=>{for(const r of recs){if(r.type==="characterData")alQueue.add(r.target);else r.addedNodes.forEach(n=>alQueue.add(n))}};
+function autoLinkRun(){
+  alTick=0; const prev=AL.key; autoRe();
+  alQueueAdd(alObs.takeRecords()); alObs.disconnect();
+  try{
+    if(prev!==AL.key){unAutoLink();autoLinkIn(document.body)}
+    else alQueue.forEach(n=>{if(n.isConnected)autoLinkIn(n)});
+  }finally{alQueue.clear();alObs.takeRecords();alObs.observe(document.body,{childList:true,subtree:true,characterData:true})}
+}
+function autoLinkStart(){
+  alObs=new MutationObserver(recs=>{alQueueAdd(recs);if(!alTick) alTick=requestAnimationFrame(autoLinkRun)});
+  alQueue.add(document.body); autoLinkRun();
+}
+/* task cards can be dragged; starting on the title selects its words instead (drag the card by its lower part) */
+document.addEventListener("pointerdown",e=>{
+  const d=e.target.closest?.('[draggable="true"]'); if(!d||e.pointerType!=="mouse"||!e.target.closest("button,a")||e.target===d) return;
+  d.draggable=false; const back=()=>{d.draggable=true;removeEventListener("pointerup",back,true)}; addEventListener("pointerup",back,true);
+},true);
+/* a click on a link inside a button opens the note instead; menus and tabs still switch screens.
+   A click that ends a drag-selection never presses the button underneath. */
+document.addEventListener("click",e=>{
+  const s=window.getSelection(), t=e.target.closest?.("button,a,[data-hit],[role=button],.card[data-open]");
+  if(s&&!s.isCollapsed&&s.toString().trim()&&t&&s.anchorNode&&t.contains(s.anchorNode)){e.preventDefault();e.stopPropagation();return}
+  const w=e.target.closest?.(".awl"); if(!w||w.closest(".nav,#tabs,[data-notelist]")) return;
+  e.preventDefault();e.stopPropagation();hideSelMenu();if($("#modal").firstChild)$("#modal").innerHTML="";openWiki(w.dataset.wiki);
+},true);
 /* 2-hop: for each [word] in this note, the other notes that also link it (and the word's own note) */
 function twoHop(n){
   const me=normTitle(n.title), seen=new Set();
@@ -1105,7 +1176,7 @@ function notesView(){
   if(n){
     const bl=backlinks(n);
     return `<header class="head"><div><p class="eyebrow"><a href="#notes" data-notelist>📒 ノート</a> · 更新 ${esc(ago(n.updatedAt||n.createdAt||0))}</p><h1 class="ntitle" data-edit="notetitle:${esc(n.id)}">${esc(n.title)}</h1></div>
-      <div class="row"><button class="btn" data-editnow="note:${esc(n.id)}">編集</button><button class="btn" id="noteDel" style="color:var(--red)">削除</button></div></header>
+      <div class="row"><button class="btn" id="noteAuto" aria-pressed="${!n.noAuto}" title="${n.noAuto?"[ ] で囲んだ所だけリンクになります":"Desk のどこに出てきても、この言葉はリンクになります"}">自動リンク：${n.noAuto?"オフ":"オン"}</button><button class="btn" data-editnow="note:${esc(n.id)}">編集</button><button class="btn" id="noteDel" style="color:var(--red)">削除</button></div></header>
     <article class="card wiki" data-edit="note:${esc(n.id)}">${n.body?wikiBlock(n.body):`<p class="sub">まだ何も書いていません。「編集」か、ここを選んで書き始めてください。[言葉] で別のノートにつながります。</p>`}</article>
     <section class="card backl"><h2>🔗 このノートにリンクしているもの <span class="count">${bl.length}</span></h2>${bl.length?`<ul>${bl.map(b=>`<li><button class="tt" data-blk="${b.kind}" data-id="${esc(b.id)}">${{note:"📒",memo:"📝",task:"🗂️"}[b.kind]} ${esc(b.title)}</button></li>`).join("")}</ul>`:`<p class="sub" style="margin:0">まだありません。ほかのノートやメモに [${esc(n.title)}] と書くとここに出ます。</p>`}</section>
     ${(h=>h.length?`<section class="card hop"><h2>🕸️ つながり <span class="sub">同じ言葉でつながるノート</span></h2>${h.map(g=>`<div class="grp"><h3>${wlink(g.word)} 経由</h3><div class="ngrid">${[g.page,...g.others].filter(Boolean).map(x=>`<button class="card ncard" data-nopen="${esc(x.id)}"><b>${esc(x.title)}</b><span>${esc(String(x.body||"").replace(/[\[\]#]/g,"").slice(0,90))}</span></button>`).join("")}</div></div>`).join("")}</section>`:"")(twoHop(n))}`;
@@ -1148,19 +1219,28 @@ function showSelMenu(){
   const s=window.getSelection(); const txt=s&&!s.isCollapsed?s.toString().trim():"";
   if(!txt||txt.length>200||txt.includes("\n")&&txt.length>80) return hideSelMenu();
   const node=s.anchorNode&&(s.anchorNode.nodeType===1?s.anchorNode:s.anchorNode.parentElement);
-  const own=node?.closest("[data-edit]"), src=node?.closest("[data-src]");
-  if(!own&&!src) return hideSelMenu();
+  if(!node||node.closest("input,textarea,select,.selmenu,[contenteditable]")||/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName||"")) return hideSelMenu();
+  const own=node.closest("[data-edit]"), src=node.closest("[data-src]"), word=txt.replace(/[\[\]\n]/g," ").replace(/\s+/g," ").trim().slice(0,80), has=!!noteByTitle(word);
   const r=s.getRangeAt(0).getBoundingClientRect();
   hideSelMenu();
   selMenu=document.createElement("div");selMenu.className="selmenu";selMenu.setAttribute("role","menu");
   const [kind,id]=(own?.dataset.edit||"").split(/:(.*)/s);
-  selMenu.innerHTML=own?`<button data-sel="edit">✏️ 編集</button>${kind!=="notetitle"?`<button data-sel="link">🔗 リンクにする</button>`:""}`:`<button data-sel="srclink">🔗 リンクにする</button>`;
+  const linkBtn=has&&!own?`<button data-sel="open">ノートを開く</button>`:`<button data-sel="${own?"link":src?"srclink":"anylink"}">リンクにする</button>`;
+  selMenu.innerHTML=own?`<button data-sel="edit">編集</button>${kind!=="notetitle"?linkBtn:""}`:linkBtn;
   document.body.appendChild(selMenu);
-  const w=selMenu.offsetWidth, x=Math.max(8,Math.min(innerWidth-w-8,r.left+r.width/2-w/2)), below=r.bottom+8+40<innerHeight;
+  const tabs=$("#tabs"), floor=innerHeight-(tabs&&tabs.offsetParent?tabs.offsetHeight:0)-8; // phones: under the selection (the system menu sits above it), clear of the bottom tabs
+  const w=selMenu.offsetWidth, x=Math.max(8,Math.min(innerWidth-w-8,r.left+r.width/2-w/2)), below=r.bottom+8+selMenu.offsetHeight<floor;
   selMenu.style.left=x+"px";selMenu.style.top=(below?r.bottom+8:Math.max(8,r.top-48))+"px";
   selMenu.onmousedown=e=>e.preventDefault();
   selMenu.onclick=async e=>{const a=e.target.closest("[data-sel]")?.dataset.sel;if(!a)return;hideSelMenu();
     if(a==="edit") return startEdit(own,txt);
+    if(a==="open") return openWiki(word);
+    if(a==="anylink"){ // text that isn't Desk's own (tasks, mail, calendar, buttons…): only the note is made; the word then links itself everywhere
+      if(!word) return; const n0=noteByTitle(word);
+      try{if(!n0) await store.putNote({id:newNoteId(),title:word,body:"",createdAt:Date.now()});
+        window.getSelection()?.removeAllRanges();
+        toast([...word].length<2?"🔗 ノートを作りました（1文字の言葉は自動ではリンクになりません。[ ] で囲むとリンクになります）":"🔗 リンクにしました");render()}catch(err){toast("保存できませんでした")}
+      return}
     if(a==="link"){const raw=rawOf(kind,id);const i=findOutsideBrackets(raw,txt);if(i<0){toast("この文字はすでにリンクか、見つかりませんでした");return}
       try{await saveRaw(kind,id,raw.slice(0,i)+"["+txt+"]"+raw.slice(i+txt.length));toast("🔗 リンクにしました")}catch(err){toast("保存できませんでした")}}
     if(a==="srclink"){ // stay on the article: the word turns into a link here, and its note keeps where it came from
@@ -1514,6 +1594,8 @@ function wire(){
   document.querySelectorAll("[data-editnow]").forEach(b=>b.onclick=()=>startEdit(document.querySelector(`[data-edit="${b.dataset.editnow}"]`)));
   document.querySelectorAll("[data-blk]").forEach(b=>b.onclick=()=>{const k=b.dataset.blk,id=b.dataset.id;if(k==="note"){S.noteId=id;render()}else if(k==="task")openTask(id);else{S.inboxFilter="all";location.hash="inbox"}});
   $("#newNote")&&($("#newNote").onclick=newNotePrompt);
+  $("#noteAuto")&&($("#noteAuto").onclick=async()=>{const n=noteList().find(x=>x.id===S.noteId);if(!n)return;
+    try{await store.putNote({...n,noAuto:!n.noAuto});toast(n.noAuto?"🔗 自動リンクをオンにしました":"自動リンクをオフにしました（[ ] で囲んだ所はリンクのまま）")}catch(err){toast("保存できませんでした")}});
   $("#noteDel")&&($("#noteDel").onclick=async e=>{const b=e.currentTarget;if(!b.dataset.sure){b.dataset.sure="1";b.textContent="本当に削除？";return}
     const n=noteList().find(x=>x.id===S.noteId);if(!n)return;try{await store.putNote({...n,deleted:true});S.noteId=null;toast("🗑️ 削除しました")}catch(err){toast("削除できませんでした")}});
   if(S.noteEditNew&&viewId()==="notes"){S.noteEditNew=false;setTimeout(()=>startEdit(document.querySelector(".wiki[data-edit]")),0)}
@@ -1745,6 +1827,7 @@ window.addEventListener("hashchange",()=>{S.confirm=null;hideSelMenu();if(locati
 
 /* ---------- boot ---------- */
 render();
+autoLinkStart();
 (async()=>{
   if(Array.isArray(window.TOOLS)){ // PC version
     try{S.dues=JSON.parse(localStorage.getItem("desk-dues")||"{}")||{}}catch(e){S.dues={}}
