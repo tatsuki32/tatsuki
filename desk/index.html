@@ -54,6 +54,10 @@ h2{font-family:var(--display);font-weight:600;font-size:14px;letter-spacing:-.00
 .search input{flex:1;min-width:0;background:transparent;border:0;outline:none;color:var(--ink);font-size:14px}
 .tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
 .tile{display:grid;grid-template-columns:32px minmax(0,1fr);gap:2px 10px;align-items:start;padding:9px 10px;border-radius:10px;background:var(--surface);border:1px solid var(--line);text-decoration:none;cursor:pointer;text-align:left;transition:border-color .15s,background .15s}
+.tilewrap{position:relative;display:grid;min-width:0}
+.tilewrap .tile{padding-right:44px}
+.tilewrap .tedit{position:absolute;top:4px;right:4px;min-width:36px;min-height:36px;display:grid;place-items:center}
+.tilewrap .tedit:hover{border-color:var(--line-2);background:var(--surface-2)}
 .tile:hover{border-color:var(--line-2);background:var(--surface-2)}
 .tile .ico{grid-row:span 2;width:32px;height:32px;border-radius:8px;background:var(--surface-2);border:1px solid var(--line);display:grid;place-items:center;font-size:17px}
 .tile .t{font-weight:600;font-size:13px;line-height:1.35;min-width:0;text-decoration:none}
@@ -1054,7 +1058,31 @@ function newsDigest(){
   return `<details class="card digest" ${S.digestOpen?"open":""} id="digest"><summary>📰 今日のニュースまとめ <span class="count">${st.length}本</span><span class="sub">${esc(e.data.headline||"")}</span></summary>
     <ol>${st.map((s,i)=>`<li><button class="tt" data-story="${i}" data-ed="${esc(e.id)}"><span aria-hidden="true">${REG[s.region]||"🌐"}</span> ${esc(s.title)}</button></li>`).join("")}</ol></details>`;
 }
+/* a tile whose URL changes (a Cloudflare quick tunnel) gets ✏️ to paste the new one; online only, the Mac opens t.local */
 function tile(t){
+  const html=tileBody(t);
+  return t.urlEditable&&db?`<div class="tilewrap">${html}<button class="ibtn tedit" data-turl="${esc(t.id)}" title="URLを変更" aria-label="${esc(t.name)} のURLを変更">✏️</button></div>`:html;
+}
+function openToolUrl(id){
+  const t=S.tools.find(x=>x.id===id); if(!t||!db||$("#modal").firstChild) return;
+  $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop" role="dialog" aria-modal="true" aria-label="URLを変更">
+    <div class="top"><h2>✏️ URLを変更</h2><button class="ibtn" id="xTurl" aria-label="閉じる">✕</button></div>
+    <p class="hint" style="overflow-wrap:anywhere">${esc(t.emoji||"🧩")} ${esc(t.name)}</p>
+    <label class="sub" for="turlInput">新しいURL</label>
+    <input type="text" id="turlInput" inputmode="url" autocomplete="off" spellcheck="false" value="${esc(t.url||"")}">
+    <p class="hint" id="turlErr" role="alert"></p>
+    <div class="row"><button class="btn primary" id="turlSave">保存</button><button class="btn" id="turlCancel">やめる</button></div>
+  </div></div>`;
+  const inp=$("#turlInput"), close=()=>{$("#modal").innerHTML=""};
+  inp.focus();inp.select();
+  $("#turlSave").onclick=async()=>{const u=inp.value.trim();
+    if(!/^https:\/\/[^\s"'<>]+$/.test(u)){$("#turlErr").textContent="URL の形が正しくありません（https:// で始まるURLを貼ってください）";inp.focus();return}
+    try{await db.collection("tools").doc(t.id).update({url:u,updatedAt:Date.now()});close();toast("URL を変更しました")}catch(e){$("#turlErr").textContent="保存できませんでした。もう一度お試しください"}};
+  $("#turlCancel").onclick=close;$("#xTurl").onclick=close;
+  $("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};
+  inp.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();$("#turlSave").click()}if(e.key==="Escape")close()};
+}
+function tileBody(t){
   const href=S.local&&t.local?t.local:(t.url||t.local||"");
   const ext=/^https?:/.test(href);
   const meta=`<span class="meta">${t.schedule?`<span class="pill live">⏱ ${esc(t.schedule)}</span>`:""}${(t.tags||[]).slice(0,2).map(x=>`<span class="pill">${esc(x)}</span>`).join("")}</span>`;
@@ -1159,6 +1187,7 @@ function wire(){
   $("#logDay")&&($("#logDay").onchange=e=>{S.logDay=e.target.value;render()});
   document.querySelectorAll("[data-region]").forEach(b=>b.onclick=()=>{S.region=b.dataset.region;render()});
   document.querySelectorAll("[data-filter]").forEach(b=>b.onclick=()=>{S.inboxFilter=b.dataset.filter;render()});
+  document.querySelectorAll("[data-turl]").forEach(b=>b.onclick=()=>openToolUrl(b.dataset.turl));
   document.querySelectorAll("[data-memo]").forEach(b=>b.onclick=async()=>{const m=S.memos.find(x=>x.id===b.dataset.id);if(!m)return;try{
     if(b.dataset.memo==="totask") return memoToTask(m);
     if(b.dataset.memo==="done") await store.patchMemo(m.id,{done:!m.done});
