@@ -3,6 +3,7 @@
 
 Serves desk/index.html at http://localhost:4747 and keeps memos, due dates,
 tasks and Claude prompts in desk/data/*.json. Only the Python standard library is used.
+POST /api/claude opens Terminal with a Claude Code command (Desk's ⌨️ buttons, macOS only).
 
 - Listens on 127.0.0.1 only; requests whose Host is not localhost are refused.
 - index.html is read from disk on every request, so a `git pull` shows up on reload.
@@ -13,6 +14,9 @@ tasks and Claude prompts in desk/data/*.json. Only the Python standard library i
 import json
 import os
 import secrets
+import shlex
+import subprocess
+import sys
 import tempfile
 import threading
 import time
@@ -34,6 +38,10 @@ DATA_JS = [
     ("watch.js", "WATCH", "[]"),
 ]
 LOCK = threading.Lock()
+REPO = os.path.dirname(ROOT)
+# Desk's ⌨️ buttons may start only these Claude Code commands (POST /api/claude)
+CLAUDE_CMDS = ("/morning-kickoff", "/begin", "/recap", "/rsd", "/learn", "/sync", "/knowledge", "/desk-feature")
+CLAUDE_ARG_MAX = 6000
 
 
 def path_of(col):
@@ -91,6 +99,33 @@ def page():
     inject = "<script>\n" + "\n".join(parts) + "\n</script>\n"
     i = html.find("<script>")
     return html[:i] + inject + html[i:] if i >= 0 else html + inject
+
+
+def open_claude(cmd, arg):
+    """Open Terminal and start `claude "<cmd> <arg>"` in the repo (macOS only).
+
+    The text never goes into a shell line: it is written to a private temp file that the
+    .command script reads and deletes before starting claude, so quotes or `$` in a pasted
+    message cannot run anything.
+    """
+    text = cmd + ("" if not arg else ("" if arg.startswith("\n") else " ") + arg)
+    d = tempfile.mkdtemp(prefix="desk-claude-")  # 0700
+    msg = os.path.join(d, "prompt.txt")
+    script = os.path.join(d, "start.command")
+    with open(msg, "w", encoding="utf-8") as f:
+        f.write(text)
+    with open(script, "w", encoding="utf-8") as f:
+        f.write(
+            "#!/bin/bash\n"
+            'export PATH="$HOME/.local/bin:$HOME/.claude/local:/opt/homebrew/bin:/usr/local/bin:$PATH"\n'
+            f"cd {shlex.quote(REPO)} || exit 1\n"
+            f'P="$(cat {shlex.quote(msg)})"\n'
+            f"rm -rf {shlex.quote(d)}\n"
+            'if ! command -v claude >/dev/null; then echo "claude が見つかりません（Claude Code を入れてください）"; read -r; exit 1; fi\n'
+            'exec claude "$P"\n'
+        )
+    os.chmod(script, 0o700)
+    subprocess.run(["open", "-a", "Terminal", script], check=True, timeout=10)
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -156,6 +191,8 @@ class Handler(BaseHTTPRequestHandler):
             rec = self.body()
         except (ValueError, json.JSONDecodeError):
             return self.send(400, {"error": "bad json"})
+        if method == "POST" and urlsplit(self.path).path == "/api/claude":
+            return self.claude(rec)
         rec.pop("id", None)
         rec.setdefault("updatedAt", int(time.time() * 1000))
         if method == "POST" and col == "memos" and doc_id is None:
@@ -167,6 +204,22 @@ class Handler(BaseHTTPRequestHandler):
             out = upsert(col, doc_id, rec, merge=True)
             return self.send(200, out) if out else self.send(404, {"error": "no such memo"})
         self.send(405, {"error": "method not allowed"})
+
+    def claude(self, rec):
+        # a page on another site cannot get here: allowed() checks Host/Origin, and a JSON body
+        # from another origin needs a CORS preflight this server never answers
+        if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+            return self.send(415, {"error": "json only"})
+        cmd, arg = rec.get("cmd"), rec.get("arg") or ""
+        if cmd not in CLAUDE_CMDS or not isinstance(arg, str) or len(arg) > CLAUDE_ARG_MAX:
+            return self.send(400, {"error": "unknown command"})
+        if sys.platform != "darwin":
+            return self.send(501, {"error": "mac only"})
+        try:
+            open_claude(cmd, arg)
+        except (OSError, subprocess.SubprocessError):
+            return self.send(500, {"error": "could not open Terminal"})
+        return self.send(200, {"ok": True})
 
     def do_POST(self):
         self.write("POST")
