@@ -11,11 +11,11 @@ collections into one JSON file, runs this script, and writes back what it prints
                                          (index.html differs from the last publish)
   python3 sync.py mark-published      -> remembers the current index.html as published
 
-REMOTE.json: {"memos": [{"id": ..., ...fields}], "dues": [...], "tasks": [...], "prompts": [...],
+REMOTE.json: {"memos": [{"id": ..., ...fields}], "dues": [...], "tasks": [...], "prompts": [...], "notes": [...],
               "tools": [...], "editions": [...], "days": [...], "reports": [...], "watch": [...],
               "calendar": [...], "gtasks": [...]}  (each doc = its id plus its fields)
 
-Rule for memos / dues / tasks / prompts: per id, the record with the larger updatedAt wins;
+Rule for memos / dues / tasks / prompts / notes: per id, the record with the larger updatedAt wins;
 a missing updatedAt counts as 0; nothing is removed (deleted:true is a record too).
 Everything else flows online -> Mac only.
 """
@@ -29,7 +29,7 @@ DATA = os.path.join(ROOT, "data")
 sys.path.insert(0, ROOT)
 from server import LOCK, load, save  # noqa: E402
 
-TWO_WAY = ("memos", "dues", "tasks", "prompts")
+TWO_WAY = ("memos", "dues", "tasks", "prompts", "notes")
 
 
 def ts(x):
