@@ -17,9 +17,9 @@
 - リポジトリは非公開にする（Tatsuki が GitHub の設定で切り替える）。
 
 ## 中断した場所
-- ブランチは push 済み。プルリクエストを作って main へのマージ待ち。
+- tatsuki32/tatsuki#9 を main にマージ済み。Tatsuki の作業待ち：リポジトリを非公開に切り替え（その後 Mac で gh auth login / gh auth setup-git）、setup-mac.sh の再実行（フック有効化）。
 - VINEPRO Board の localhost のポート番号と説明文は未定（Tatsuki に確認中）。
 
 ## 次の一手
-- PR をマージしてもらい、Mac で /morning-kickoff と pre-commit フックを実際に動かして直す。
+- Mac で /morning-kickoff と pre-commit フックを実際に動かして直す。
 - ペルソナ（.claude/rules/persona.md）の中身を Tatsuki と決める。
