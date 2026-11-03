@@ -37,7 +37,7 @@ kbd{font-family:var(--mono);font-size:11px;border:1px solid var(--line-2);border
 /* main */
 main{min-width:0;padding-block:20px 64px;padding-left:max(22px,env(safe-area-inset-left,0px));padding-right:max(22px,env(safe-area-inset-right,0px))}
 .wrap{max-width:980px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
-.head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-right:230px} /* clears the fixed Claude + Note buttons */
+.head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-right:360px} /* clears the fixed 次は？ + Claude + Note buttons */
 .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
 h1{font-family:var(--display);font-weight:600;font-size:clamp(20px,2.4vw,24px);letter-spacing:-.02em;margin:0;line-height:1.15;text-wrap:balance}
 h2{font-family:var(--display);font-weight:600;font-size:14px;letter-spacing:-.005em;margin:0}
@@ -54,6 +54,14 @@ h2{font-family:var(--display);font-weight:600;font-size:14px;letter-spacing:-.00
 .search input{flex:1;min-width:0;background:transparent;border:0;outline:none;color:var(--ink);font-size:14px}
 .tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
 .tile{display:grid;grid-template-columns:32px minmax(0,1fr);gap:2px 10px;align-items:start;padding:9px 10px;border-radius:10px;background:var(--surface);border:1px solid var(--line);text-decoration:none;cursor:pointer;text-align:left;transition:border-color .15s,background .15s}
+/* 🧭 next */
+.nextpop{width:min(480px,100%)}
+.nsec{display:grid;gap:6px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--bg)}
+.nsec h3{margin:0;font-size:13.5px}
+.nsec ul{margin:0;padding-left:18px;display:grid;gap:3px;font-size:13px;color:var(--ink-2)}
+.nsec .nlab{font-size:12px;color:var(--muted);font-weight:600;margin-top:4px}
+.nsec.pick{border-color:var(--accent);background:var(--accent-soft)}
+.tt.big{font-size:16px}
 /* today's three + habits */
 .t3row{display:grid;grid-template-columns:22px minmax(0,1fr);gap:4px 10px;padding:10px 12px;border-top:1px solid var(--line)}
 .t3row:first-of-type{border-top:0}
@@ -184,9 +192,11 @@ select{background:var(--surface);color:var(--ink);border:1px solid var(--line);b
 }
 @media (prefers-reduced-motion:no-preference){.tile,.notebtn{transition:border-color .15s,background .15s}}
 .aibtn{right:max(118px,calc(env(safe-area-inset-right,0px) + 118px))}
+.nextbtn{right:max(240px,calc(env(safe-area-inset-right,0px) + 240px));border-color:var(--accent);color:var(--accent)}
+.nextbtn:hover{background:var(--accent-soft)}
 .aibtn:hover{border-color:var(--blue)}
 .pop .hint{font-size:12.5px;color:var(--muted);margin:0}
-@media (max-width:760px){.aibtn{right:max(66px,calc(env(safe-area-inset-right,0px) + 66px))}.rail{padding-right:128px}}
+@media (max-width:760px){.aibtn{right:max(66px,calc(env(safe-area-inset-right,0px) + 66px))}.nextbtn{right:max(116px,calc(env(safe-area-inset-right,0px) + 116px))}.rail{padding-right:178px}}
 
 /* deadlines: counted down every second to the real due date */
 .dl{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:12.5px;font-weight:500;padding:2px 9px;border-radius:999px;background:var(--surface-2);color:var(--ink-2);border:1px solid var(--line);white-space:nowrap}
@@ -354,10 +364,11 @@ h1 .inedit{font-size:20px;font-weight:600}
   <aside class="rail">
     <div class="brand"><span class="mark">🧭</span><b>Tatsuki's Desk</b></div>
     <nav class="nav" id="nav" aria-label="メニュー"></nav>
-    <div class="foot"><kbd>N</kbd> メモ、<kbd>T</kbd> タスク、<kbd>C</kbd> Claude に頼む、<kbd>/</kbd> 検索</div>
+    <div class="foot"><kbd>G</kbd> 次は？、<kbd>N</kbd> メモ、<kbd>T</kbd> タスク、<kbd>C</kbd> Claude に頼む、<kbd>/</kbd> 検索</div>
   </aside>
   <main><div class="wrap" id="view"></div></main>
 </div>
+<button class="notebtn nextbtn" id="nextBtn" aria-label="何していたかと、次にやること"><span class="e">🧭</span><span class="label">次は？</span><kbd>G</kbd></button>
 <button class="notebtn aibtn" id="aiBtn" aria-label="Claude Code への機能追加の依頼をコピー"><span class="e">🤖</span><span class="label">Claude</span><kbd>C</kbd></button>
 <button class="notebtn" id="noteBtn" aria-label="メモを書く"><span class="e">📝</span><span class="label">メモ</span><kbd>N</kbd></button>
 <div id="modal"></div>
@@ -373,7 +384,7 @@ const GROUPJA=Object.fromEntries(GROUPS.map(g=>[g[0],g[2]]));
 const REG={"Middle East":"🕌","Europe & Russia":"🏰","Asia-Pacific":"🌏","Americas":"🗽","Africa":"🌍","Global":"🌐"};
 const PRI={"Action needed":"red","Reply drafted":"amber","FYI":""};
 const PRIO={"Action needed":0,"Reply drafted":1,"FYI":2};
-const S={tools:[],editions:[],days:[],memos:[],ed:null,day:null,region:"All",q:"",confirm:null,busy:null,notes:{},local:false,dues:{},dl:[],dlMap:{},dlAll:false,quietUntil:0,tasks:[],board:[],taskCol:"notyet",cal:null,gtasks:null,reports:[],logDay:null,prompts:{},watch:[],watchId:null,focus:null,wnotes:[],noteId:null,habits:[]};
+const S={tools:[],editions:[],days:[],memos:[],ed:null,day:null,region:"All",q:"",confirm:null,busy:null,notes:{},local:false,dues:{},dl:[],dlMap:{},dlAll:false,quietUntil:0,tasks:[],board:[],taskCol:"notyet",cal:null,gtasks:null,reports:[],logDay:null,prompts:{},watch:[],watchId:null,focus:null,wnotes:[],noteId:null,habits:[],memory:null,nextSkip:0};
 let db=null;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -627,19 +638,70 @@ function tasks(){
 /* Same order as /morning-kickoff: due today → overdue → in progress → the rest; before 12:00 (HCMC) focused work first, after it admin. */
 const ADMIN=/返信|連絡|申請|手続|支払|予約|提出|確認|メール|電話/;
 const taskKind=t=>t.source==="mail"||ADMIN.test(t.title||"")?"admin":"focus";
-function topThree(){
+/* the shared order: due today → overdue → in progress → fits the time of day; with under 30 minutes to the next event, quick (admin) ones first */
+function nextEvent(){const now=Date.now();return calEvents().filter(e=>!e.allDay&&e.startMs>now&&e.startMs<now+DAY).sort((a,b)=>a.startMs-b.startMs)[0]||null}
+function rankedTasks(){
   const now=Date.now(), end=Date.parse(hcmcDate()+"T23:59:59+07:00"), mode=new Date(now+HCMC).getUTCHours()<12?"focus":"admin";
-  const rank=t=>[t.deadline!=null&&t.deadline>=now&&t.deadline<=end?0:t.deadline!=null&&t.deadline<now?1:2,t.status==="doing"?0:1,taskKind(t)===mode?0:1,t.deadline??Infinity];
+  const ne=nextEvent(), short=!!ne&&ne.startMs-now<30*6e4;
+  const rank=t=>[t.deadline!=null&&t.deadline>=now&&t.deadline<=end?0:t.deadline!=null&&t.deadline<now?1:2,t.status==="doing"?0:1,short?(taskKind(t)==="admin"?0:1):0,taskKind(t)===mode?0:1,t.deadline??Infinity];
   const cmp=(a,b)=>{const x=rank(a),y=rank(b);for(let i=0;i<x.length;i++)if(x[i]!==y[i])return x[i]-y[i];return 0};
-  const list=S.board.filter(t=>TOPEN.has(t.status)&&t.source!=="daily").sort(cmp).slice(0,3);
+  return {list:S.board.filter(t=>TOPEN.has(t.status)&&t.source!=="daily").sort(cmp),now,end,mode,ne,short};
+}
+const whyText=(t,r)=>t.deadline!=null&&t.deadline>=r.now&&t.deadline<=r.end?"今日が締切":t.deadline!=null&&t.deadline<r.now?"今日片づけると楽になる":t.status==="doing"?"進行中のつづき":r.short&&taskKind(t)==="admin"?"次の予定まで短いので、すぐ終わるもの":taskKind(t)===r.mode?(r.mode==="focus"?"集中の時間（12時まで）に向いている":"事務の時間に向いている"):"次に近いもの";
+const mailUrl=t=>{const u=(t.mail?.uid||"").slice(5);return /^https:\/\/mail\.google\.com\//.test(u)?u:""};
+function topThree(){
+  const r=rankedTasks(), now=r.now, end=r.end, mode=r.mode;
+  const list=r.list.slice(0,3);
   const slot=freeSlot(30);
-  const why=t=>t.deadline!=null&&t.deadline>=now&&t.deadline<=end?"今日が締切":t.deadline!=null&&t.deadline<now?"今日片づけると楽":t.status==="doing"?"進行中":taskKind(t)===mode?(mode==="focus"?"集中の時間に":"事務の時間に"):"";
-  const mailUrl=t=>{const u=(t.mail?.uid||"").slice(5);return /^https:\/\/mail\.google\.com\//.test(u)?u:""};
+  const why=t=>whyText(t,r);
   const row=(t,i)=>`<div class="t3row"><span class="t3n">${i+1}</span><div style="min-width:0"><button class="tt" data-topen="${esc(t.id)}">${esc(t.title)}</button><div class="due">${esc(why(t))}${t.deadline!=null?` · ${dlChip(t)}`:""}</div>
     <div class="t3acts">${t.status==="notyet"?`<button class="btn" data-t3="doing" data-id="${esc(t.id)}">▶️ 始める</button>`:""}${mailUrl(t)?`<a class="btn" href="${esc(mailUrl(t))}" target="_blank" rel="noopener">✉️ 返信</a>`:""}${slot?`<a class="btn" href="${esc(calLink(t.title,slot))}" target="_blank" rel="noopener" title="${esc(fmtDue(slot))} から30分">📅 予定確保</a>`:""}<button class="btn" data-t3="done" data-id="${esc(t.id)}">✅ 完了</button></div></div></div>`;
-  return `<section class="card t3" aria-label="今日の3つ"><div class="dhead"><h2>☀️ 今日の3つ</h2><span class="sub">${mode==="focus"?"集中の時間（12時まで）":"事務の時間"} · ここから1つずつ</span></div>
+  return `<section class="card t3" aria-label="今日の3つ"><div class="dhead"><h2>☀️ 今日の3つ</h2><span class="sub">${mode==="focus"?"集中の時間（12時まで）":"事務の時間"} · ここから1つずつ</span><button class="btn" data-opennext>🧭 何してた？</button></div>
     ${list.length?list.map(row).join(""):`<div class="empty"><b>今日の3つはありません</b>のんびりどうぞ。T キーでタスクを足せます。</div>`}</section>`;
 }
+/* ---------- 🧭 次は？: what I was doing (memory/ + the desk) and the one thing to do next ---------- */
+const memLines=(xs,n)=>(xs||[]).slice(0,n).map(x=>`<li>${esc(String(x).replace(/`/g,""))}</li>`).join("");
+function recentTouch(){
+  const xs=[...S.tasks.filter(t=>!t.deleted).map(t=>({k:"🗂️",t:t.title,at:t.updatedAt||0})),...noteList().map(n=>({k:"📒",t:n.title,at:n.updatedAt||0})),...S.memos.map(m=>({k:"📝",t:(m.text||"").split("\n")[0].slice(0,60),at:m.updatedAt||m.createdAt||0}))];
+  return xs.filter(x=>x.t).sort((a,b)=>b.at-a.at).slice(0,3);
+}
+function openNext(){
+  if($("#modal").firstChild) return;
+  const m=S.memory, ses=m?.sessions?.[0], sec=ses?.sections||{}, r=rankedTasks(), cands=r.list, pick=cands.length?cands[S.nextSkip%cands.length]:null;
+  const doing=S.board.filter(t=>t.status==="doing").slice(0,3), touch=recentTouch();
+  const ne=r.ne, left=ne?ne.startMs-r.now:null;
+  const nextLine=ne?`次の予定「${esc(ne.title)}」まで ${left<HOUR?Math.round(left/6e4)+"分":Math.floor(left/HOUR)+"時間"+Math.round(left%HOUR/6e4)+"分"}`:"このあとの予定はありません";
+  $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop nextpop" role="dialog" aria-modal="true" aria-label="何していたかと、次にやること">
+    <div class="top"><h2>🧭 次は？</h2><button class="ibtn" id="xNext" aria-label="閉じる">✕</button></div>
+    <section class="nsec pick"><h3>👉 次はこれ</h3>
+      ${pick?`<button class="tt big" data-topen="${esc(pick.id)}">${esc(pick.title)}</button>
+        <p class="hint">理由：${esc(whyText(pick,r))}${pick.deadline!=null?` · 期日 ${esc(fmtDue(pick.deadline))}`:""}</p>
+        <p class="hint">⏱ ${nextLine}${r.short?"（短いので、すぐ終わる部分だけ）":""}</p>
+        <p class="hint" id="nextStep"></p>
+        <div class="row">${pick.status==="notyet"?`<button class="btn primary" data-nx="doing">▶️ 始める</button>`:""}${mailUrl(pick)?`<a class="btn" href="${esc(mailUrl(pick))}" target="_blank" rel="noopener">✉️ 返信</a>`:""}<button class="btn" data-nx="done">✅ 完了</button>${cands.length>1?`<button class="btn" data-nx="skip">↪ 別の（${S.nextSkip%cands.length+1}/${cands.length}）</button>`:""}${S.sampleOk?`<button class="btn" data-nx="ai">🤖 最初の一歩を聞く</button>`:""}</div>`
+        :`<p class="hint">今は急ぐものがありません。${(sec["次の一手"]||[])[0]?"前回決めた次の一手から始めるのがおすすめです。":"のんびりどうぞ。"}</p>`}
+    </section>
+    <section class="nsec"><h3>📍 何していたか</h3>
+      ${ses?`<p class="hint">${esc(ses.title)}${m.updatedAt?` · 記録 ${esc(ago(m.updatedAt))}`:""}</p>
+        ${(sec["中断した場所"]||[]).length?`<b class="nlab">⏸ 止まっている所</b><ul>${memLines(sec["中断した場所"],2)}</ul>`:""}
+        ${(sec["次の一手"]||[]).length?`<b class="nlab">👉 前回決めた次の一手</b><ul>${memLines(sec["次の一手"],2)}</ul>`:""}`:`<p class="hint">Claude の作業記録（memory/）はまだ届いていません。${S.local?"":"Mac の毎時同期で届きます。"}</p>`}
+      ${doing.length?`<b class="nlab">🗂️ 進行中のタスク</b><ul>${doing.map(t=>`<li><button class="tt" data-topen="${esc(t.id)}">${esc(t.title)}</button></li>`).join("")}</ul>`:""}
+      ${touch.length?`<b class="nlab">🕘 最近さわったもの</b><ul>${touch.map(x=>`<li>${x.k} ${esc(x.t)} <span class="sub">${esc(ago(x.at))}</span></li>`).join("")}</ul>`:""}
+    </section>
+  </div></div>`;
+  const close=()=>{$("#modal").innerHTML="";$("#nextBtn").focus()};
+  $("#xNext").onclick=close;$("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};
+  $("#scrim").onkeydown=e=>{if(e.key==="Escape")close()};
+  document.querySelectorAll(".nextpop [data-topen]").forEach(b=>b.onclick=()=>{close();openTask(b.dataset.topen)});
+  document.querySelectorAll("[data-nx]").forEach(b=>b.onclick=async()=>{const a=b.dataset.nx;
+    if(a==="skip"){S.nextSkip++;close();return openNext()}
+    if(a==="ai"){b.disabled=true;$("#nextStep").textContent="🤖 考えています…";
+      try{const sample=await claude.use("sample");const res=await sample.json(`次のタスクに取りかかる「最初の5分でやる一歩」を、具体的な動作1つで、日本語40字以内で提案してください。JSON で {"step":"…"} だけを返してください。\nタスク：${pick.title}\nメモ：${String(pick.note||"").slice(0,300)}\n状況：${whyText(pick,r)}。${nextLine}`,{modelTier:"quick"});
+        $("#nextStep").textContent="⏱ まず5分："+String(res?.step||"").slice(0,80)}catch(e){$("#nextStep").textContent="聞けませんでした。もう一度お試しください"}finally{b.disabled=false}return}
+    await setTaskStatus(pick.id,a);close()});
+  $("#xNext").focus();
+}
+
 /* the next free stretch of `min` minutes today (on the half hour, until 22:00 HCMC), avoiding timed events */
 function freeSlot(min){
   const step=30*6e4, len=min*6e4, stop=Date.parse(hcmcDate()+"T22:00:00+07:00");
@@ -1323,6 +1385,7 @@ function wire(){
   $("#logDay")&&($("#logDay").onchange=e=>{S.logDay=e.target.value;render()});
   document.querySelectorAll("[data-region]").forEach(b=>b.onclick=()=>{S.region=b.dataset.region;render()});
   document.querySelectorAll("[data-filter]").forEach(b=>b.onclick=()=>{S.inboxFilter=b.dataset.filter;render()});
+  document.querySelectorAll("[data-opennext]").forEach(b=>b.onclick=()=>{S.nextSkip=0;openNext()});
   document.querySelectorAll("[data-t3]").forEach(b=>b.onclick=()=>setTaskStatus(b.dataset.id,b.dataset.t3));
   document.querySelectorAll("[data-habit]").forEach(b=>b.onclick=()=>toggleHabit(b.dataset.habit,b.dataset.day));
   document.querySelectorAll("[data-hedit]").forEach(b=>b.onclick=()=>newHabit(S.habits.find(x=>x.id===b.dataset.hedit)));
@@ -1419,10 +1482,12 @@ function openAsk(){
   ta.onkeydown=e=>{if(e.key==="Enter"&&(e.metaKey||e.ctrlKey)){e.preventDefault();go()} if(e.key==="Escape")close()};
 }
 $("#aiBtn").onclick=openAsk;
+$("#nextBtn").onclick=()=>{S.nextSkip=0;openNext()};
 document.addEventListener("keydown",e=>{const t=e.target.tagName;if(t==="INPUT"||t==="TEXTAREA"||t==="SELECT")return;
   if(e.key==="n"||e.key==="N"){e.preventDefault();openNote()}
   if(e.key==="c"||e.key==="C"){if(e.metaKey||e.ctrlKey)return;e.preventDefault();openAsk()}
   if(e.key==="t"||e.key==="T"){if(e.metaKey||e.ctrlKey)return;e.preventDefault();openTask(null)}
+  if(e.key==="g"||e.key==="G"){if(e.metaKey||e.ctrlKey)return;e.preventDefault();S.nextSkip=0;openNext()}
   if(e.key==="/"){const q=$("#q");if(q){e.preventDefault();q.focus()}else{location.hash="home";setTimeout(()=>$("#q")?.focus(),0);e.preventDefault()}}});
 window.addEventListener("hashchange",()=>{S.confirm=null;hideSelMenu();if(location.hash==="#notes"&&!S.noteKeep)S.noteId=null;S.noteKeep=false;const f=S.focus!=null;if(!f)window.scrollTo(0,0);render()});
 
@@ -1431,7 +1496,7 @@ render();
 (async()=>{
   if(Array.isArray(window.TOOLS)){ // PC version
     try{S.dues=JSON.parse(localStorage.getItem("desk-dues")||"{}")||{}}catch(e){S.dues={}}
-    S.loaded=true;S.local=true;S.tools=window.TOOLS;S.editions=window.WORLD||[];S.days=window.MAIL||[];S.cal=window.CAL||null;S.gtasks=window.GTASKS||null;S.reports=window.REPORTS||[];S.watch=window.WATCH||[];
+    S.loaded=true;S.local=true;S.tools=window.TOOLS;S.editions=window.WORLD||[];S.days=window.MAIL||[];S.cal=window.CAL||null;S.gtasks=window.GTASKS||null;S.reports=window.REPORTS||[];S.watch=window.WATCH||[];S.memory=window.MEMORY||null;
     if(LOCALAPI){await loadApiMemos();setInterval(loadApiMemos,30000);window.addEventListener("focus",loadApiMemos);return}
     try{S.memos=JSON.parse(localStorage.getItem("desk-memos")||"[]")}catch(e){S.memos=[]}
     try{S.tasks=JSON.parse(localStorage.getItem("desk-tasks")||"[]")}catch(e){S.tasks=[]}
@@ -1447,6 +1512,7 @@ render();
   sub("memos",d=>S.memos=d.map(x=>({id:x.id,...x.data()})).filter(m=>!m.deleted));
   sub("tasks",d=>S.tasks=d.map(x=>({id:x.id,...x.data()})).filter(t=>!t.deleted));
   sub("notes",d=>S.wnotes=d.map(x=>({id:x.id,...x.data()})).filter(n=>!n.deleted));
+  sub("memory",d=>S.memory=d.find(x=>x.id==="current")?.data()||null);
   sub("habits",d=>S.habits=d.map(x=>({id:x.id,...x.data()})).filter(h=>!h.deleted));
   claude.use("sample").then(x=>{S.sampleOk=!!x;render()});
   sub("prompts",d=>S.prompts=promptsById(d.map(x=>({id:x.id,...x.data()}))));

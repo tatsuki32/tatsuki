@@ -13,7 +13,7 @@ claude.ai のチャットで直接編集しない。変更は必ずここで行�
 - 単一HTML（外部ライブラリなし、Google Fonts のみ）。黒基調・金色アクセント。
 - ビュー: Home（☀️ 今日の3つ・🌱 今日の習慣を含む）/ Tasks / ノート / Calendar / World Desk / マイナー国 / Morning Mail / Inbox / 習慣 / Claude Log
 - データはページに埋め込まない。オンライン版は Artifact DB（`window.claude` の `db`）から読む:
-  `tools`, `memos`, `tasks`, `dues`, `prompts`（毎日の求人チェックの Claude プロンプト。経歴入りなのでリポジトリに入れない）, `notes`（Scrapbox 風のノート。[言葉] でつながる）, `habits`（罰を与えない習慣。doc ごとに `done` に日付の配列）, `calendar`(doc `upcoming`), `gtasks`(doc `current`),
+  `tools`, `memos`, `tasks`, `dues`, `prompts`（毎日の求人チェックの Claude プロンプト。経歴入りなのでリポジトリに入れない）, `notes`（Scrapbox 風のノート。[言葉] でつながる）, `habits`（罰を与えない習慣。doc ごとに `done` に日付の配列）, `memory`(doc `current`。memory/ の要約で「🧭 次は？」が読む。毎時同期で Mac から載せる), `calendar`(doc `upcoming`), `gtasks`(doc `current`),
   `reports`, `editions`, `days`, `watch`（マイナー国ウォッチの号。doc id は日付、本文はマークダウン）
 - Mac版も同じ `desk/index.html` を使う。`desk/server.py`（Python標準ライブラリのみ）が
   `http://localhost:4747` で配信し、`desk/data/*.js`（`window.TOOLS` 等）をページに差し込む。
@@ -29,6 +29,7 @@ claude.ai のチャットで直接編集しない。変更は必ずここで行�
 - メール送信（Gmail `send_message`）はオンライン版のみ、送信前の確認を必ず残す。
 - Claude Code のコマンド（`.claude/commands/`）：`/morning-kickoff`・`/begin`（Mac 用）、`/recap`（文脈要約。標準の `/resume` と別）、`/rsd`、`/sync`・`/learn`・`/knowledge`。毎回守るルールは `.claude/rules/`。
 - コミット前フック `.githooks/pre-commit`（`core.hooksPath`。SessionStart と setup-mac.sh で有効化）。実名などの禁止語は `tools/banned-words.local.txt`（git に入れない）。公開前チェック：`npm run validate-writing <file>`。
+- Desk の「🧭 次は？」（右上・G キー）：何していたか（memory/ ＋進行中・最近さわったもの）と、次の1つ（今日の3つと同じ順番、次の予定まで30分未満なら短いもの）。Mac 版は `server.py` が memory/ を毎回読んで `window.MEMORY` に入れる。
 - `/morning-kickoff` は Mac 用。`desk/kickoff.py` が `desk/data/` と memory/ から今日の候補を出す（読むだけ。`start <id>` だけが localhost:4747 にタスクの状態を書く）。
 
 ### 公開手順（Claude Code から）

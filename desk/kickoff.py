@@ -5,6 +5,7 @@
   python3 desk/kickoff.py                 候補を出す（読むだけ。何も書かない）
   python3 desk/kickoff.py start <task id> そのタスクを Desk で「進行中」にする（localhost:4747 経由）
   python3 desk/kickoff.py add "<タイトル>"  新しいタスクを「進行中」で登録する（/begin 用）
+  python3 desk/kickoff.py memory-doc       memory/ の要約を JSON で出す（Desk の「🧭 次は？」用。毎時同期で DB の memory/current に置く）
 
 時刻はホーチミン時間（UTC+7）。12時より前は「集中」、以降は「事務」の時間帯。
 出力には予定やメールの件名が入るが、画面に出すだけでファイルには書かない（公開リポジトリのため）。
@@ -152,6 +153,37 @@ def next_steps():
     return steps
 
 
+def memory_doc():
+    """memory/STATE.md と新しいセッション記録を、Desk の「何していたか」で使う形にまとめる（技術的な中身だけ）"""
+    mem = os.path.join(REPO, "memory")
+    def sections(text):
+        out, cur = {}, None
+        for line in text.splitlines():
+            m = re.match(r"^##\s+(.+?)\s*$", line)
+            if m:
+                cur = m.group(1)
+                out[cur] = []
+            elif cur and re.match(r"^\s{0,1}[-・*]\s+", line):
+                out[cur].append(re.sub(r"^\s*[-・*]\s+", "", line).strip())
+        return out
+    try:
+        with open(os.path.join(mem, "STATE.md"), encoding="utf-8") as f:
+            state_text = f.read()
+    except FileNotFoundError:
+        state_text = ""
+    files = sorted(glob.glob(os.path.join(mem, "episodic", "sessions", "*.md")), reverse=True)
+    sessions = []
+    for p in files[:3]:
+        with open(p, encoding="utf-8") as f:
+            text = f.read()
+        title = next((l[2:].strip() for l in text.splitlines() if l.startswith("# ")), os.path.basename(p))
+        sessions.append({"file": os.path.relpath(p, REPO), "title": title, "sections": sections(text),
+                         "updatedAt": int(os.path.getmtime(p) * 1000)})
+    paths = [os.path.join(mem, "STATE.md")] + files[:1]
+    stamp = max([int(os.path.getmtime(p) * 1000) for p in paths if os.path.exists(p)] or [0])
+    return {"state": sections(state_text), "sessions": sessions, "updatedAt": stamp}
+
+
 def kind_of(t):
     """MVP の見分け方：メール由来・手続き系の言葉は事務、それ以外は集中"""
     if t.get("source") == "mail":
@@ -248,6 +280,8 @@ def start(task_id):
 if __name__ == "__main__":
     if len(sys.argv) >= 3 and sys.argv[1] == "start":
         start(sys.argv[2])
+    elif len(sys.argv) >= 2 and sys.argv[1] == "memory-doc":
+        print(json.dumps(memory_doc(), ensure_ascii=False, indent=1))
     elif len(sys.argv) >= 3 and sys.argv[1] == "add":
         add(" ".join(sys.argv[2:]))
     else:
