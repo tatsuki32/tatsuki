@@ -263,10 +263,14 @@ select{background:var(--surface);color:var(--ink);border:1px solid var(--line);b
 .rrow:hover{background:var(--surface-2)}
 .rrow .snip{display:block;font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rrow .snip b{color:var(--accent);font-weight:600}
-.wl{color:var(--accent);text-decoration:none;border-bottom:1px dotted currentColor}
-.wl.new{color:var(--muted)}
+/* links, coloured like Scrapbox: blue = connected (the note has content, or the word is linked in 2+ places), red = alone; outside links gold with ↗ */
+.wl{color:var(--blue);text-decoration:none;border-bottom:1px dotted currentColor}
+.wl.lone{color:var(--red)}
 .wl:hover{color:var(--ink)}
-a.ext{color:var(--blue);text-decoration:none}
+a.ext{color:var(--accent);text-decoration:none}
+.hop{padding:12px 14px;display:grid;gap:12px}
+.hop .grp{display:grid;gap:6px}
+.hop .grp>h3{margin:0;font-size:12.5px;font-weight:600;color:var(--ink-2)}
 .wiki{padding:14px 16px;line-height:1.7;overflow-wrap:anywhere}
 .wiki h3{font-size:15px;margin:10px 0 2px}.wiki .li{padding-left:14px;position:relative}.wiki .li::before{content:"・";position:absolute;left:0;color:var(--muted)}
 .wiki .gap{height:8px}.wiki>:first-child{margin-top:0}
@@ -617,7 +621,7 @@ function openTask(id){
       :isLinked?`<p class="hint">${TSRC[t.source][0]} ${TSRC[t.source][1]}${t.due!=null?" · 期日 "+esc(fmtDue(t.due)):""} · 期日とタイトルは元の場所で変更${okUrl(t.url)?` · <a href="${esc(t.url)}" target="_blank" rel="noopener">開く ↗</a>`:""}${t.source==="gtasks"?"<br>「完了」にすると、次の更新で Google タスク側も完了になります。":""}</p>`
       :`<label class="sub" for="tDue">期日（任意）</label><input type="datetime-local" id="tDue" value="${t?.due!=null?toLocalInput(t.due):""}">`}
     <label class="sub" for="tStatus">ステータス</label><select id="tStatus">${TSTATUS.map(([k,l])=>`<option value="${k}" ${k===(t?.status||"notyet")?"selected":""}>${l}</option>`).join("")}</select>
-    <label class="sub" for="tNote">メモ</label><textarea id="tNote" class="tnote" placeholder="必要なら詳細を。[言葉] でノートにつながります">${esc(t?.note||"")}</textarea>${t&&linksIn(t.note).length?`<p class="hint">🔗 ${linksIn(t.note).map(x=>`<a class="wl" href="#notes" data-wiki="${esc(x)}">${esc(x)}</a>`).join(" ")}</p>`:""}
+    <label class="sub" for="tNote">メモ</label><textarea id="tNote" class="tnote" placeholder="必要なら詳細を。[言葉] でノートにつながります">${esc(t?.note||"")}</textarea>${t&&linksIn(t.note).length?`<p class="hint">🔗 ${linksIn(t.note).map(x=>wlink(x)).join(" ")}</p>`:""}
     <div class="row"><button class="btn primary" id="tSave">保存 <kbd>⌘/Ctrl + Enter</kbd></button><button class="btn" id="tCancel">キャンセル</button>${t&&!isLinked?`<button class="btn" id="tDel" style="margin-left:auto;color:var(--red)">🗑️ 削除</button>`:""}</div>
   </div></div>`;
   const ti=$("#tTitle");ti.focus();ti.setSelectionRange(ti.value.length,ti.value.length);
@@ -781,8 +785,7 @@ function wikiInline(raw){
     const m=/^\[([^\[\]\n]+)\]$/.exec(part); if(!m) return esc(part);
     const inner=m[1].trim();
     if(/^https:\/\//.test(inner)){const [,url,label]=/^(\S+)(?:\s+(.+))?$/.exec(inner);return `<a class="ext" href="${esc(url)}" target="_blank" rel="noopener">${esc(label||url)} ↗</a>`}
-    const n=noteByTitle(inner);
-    return `<a class="wl ${n?"":"new"}" href="#notes" data-wiki="${esc(inner)}">${esc(inner)}</a>`;
+    return wlink(inner);
   }).join("");
 }
 /* a whole body: "# heading", "- bullet", blank lines; everything else a line */
@@ -794,6 +797,45 @@ function wikiBlock(raw){
   }).join("");
 }
 const linksIn=raw=>[...String(raw||"").matchAll(/\[([^\[\]\n]+)\]/g)].map(m=>m[1].trim()).filter(t=>!/^https:\/\//.test(t));
+/* Where each [word] is used: one count per note, memo, task note, or news article (a note whose body cites that article's URL).
+   Recounted only when notes, memos or tasks change. */
+const SRC_LINE=/^\s*出典[：:]/;
+const hasContent=n=>String(n?.body||"").split("\n").some(l=>l.trim()&&!SRC_LINE.test(l));
+let LS=null;
+function linkStats(){
+  if(LS&&LS.n===S.wnotes&&LS.m===S.memos&&LS.t===S.tasks) return LS;
+  const count=new Map(), add=(raw,extra=[])=>new Set([...linksIn(raw),...extra].map(normTitle)).forEach(k=>count.set(k,(count.get(k)||0)+1));
+  noteList().forEach(n=>{add(n.body);
+    const urls=[...String(n.body||"").matchAll(/^\s*出典[：:]\s*\[(https:\/\/\S+)/gm)];if(urls.length)count.set(normTitle(n.title),(count.get(normTitle(n.title))||0)+urls.length)});
+  S.memos.forEach(m=>add(m.text));S.tasks.filter(t=>!t.deleted).forEach(t=>add(t.note));
+  return LS={n:S.wnotes,m:S.memos,t:S.tasks,count};
+}
+const linkUses=t=>linkStats().count.get(normTitle(t))||0;
+const linkLone=t=>!hasContent(noteByTitle(t))&&linkUses(t)<2;
+const wlink=t=>`<a class="wl${linkLone(t)?" lone":""}" href="#notes" data-wiki="${esc(t)}"${linkLone(t)?' title="まだどこにもつながっていません"':""}>${esc(t)}</a>`;
+/* news and Minor Countries: words linked from an article show as links inside it (first match per note, per article) */
+function linkSources(root){
+  root.querySelectorAll("[data-src]").forEach(el=>{
+    const url=el.dataset.src; if(!/^https:\/\//.test(url)) return;
+    const titles=noteList().filter(n=>n.title&&String(n.body||"").includes("["+url)).map(n=>n.title).sort((a,b)=>b.length-a.length);
+    titles.forEach(t=>{
+      const w=document.createTreeWalker(el,NodeFilter.SHOW_TEXT,{acceptNode:x=>x.parentElement.closest("a,button,select,textarea,.wl")?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT});
+      let x;while(x=w.nextNode()){const i=x.data.toLowerCase().indexOf(t.toLowerCase());if(i<0)continue;
+        const r=document.createRange();r.setStart(x,i);r.setEnd(x,i+t.length);
+        const tpl=document.createElement("template");tpl.innerHTML=wlink(t);const link=tpl.content.firstChild;link.textContent=x.data.slice(i,i+t.length);
+        r.deleteContents();r.insertNode(link);break}
+    });
+  });
+}
+/* 2-hop: for each [word] in this note, the other notes that also link it (and the word's own note) */
+function twoHop(n){
+  const me=normTitle(n.title), seen=new Set();
+  return [...new Set(linksIn(n.body).map(normTitle))].filter(k=>k&&k!==me).map(k=>{
+    const page=noteByTitle(k);
+    const others=noteList().filter(x=>x.id!==n.id&&x.id!==page?.id&&linksIn(x.body).some(y=>normTitle(y)===k));
+    return {word:page?.title||linksIn(n.body).find(y=>normTitle(y)===k),page,others};
+  }).filter(g=>g.others.length);
+}
 function backlinks(n){
   const t=normTitle(n.title), has=raw=>linksIn(raw).some(x=>normTitle(x)===t);
   return [...noteList().filter(x=>x.id!==n.id&&has(x.body)).map(x=>({kind:"note",id:x.id,title:x.title})),
@@ -814,7 +856,8 @@ function notesView(){
     return `<header class="head"><div><p class="eyebrow"><a href="#notes" data-notelist>📒 ノート</a> · 更新 ${esc(ago(n.updatedAt||n.createdAt||0))}</p><h1 class="ntitle" data-edit="notetitle:${esc(n.id)}">${esc(n.title)}</h1></div>
       <div class="row"><button class="btn" data-editnow="note:${esc(n.id)}">✏️ 編集</button><button class="btn" id="noteDel" style="color:var(--red)">🗑️</button></div></header>
     <article class="card wiki" data-edit="note:${esc(n.id)}">${n.body?wikiBlock(n.body):`<p class="sub">まだ何も書いていません。「✏️ 編集」か、ここを選んで書き始めてください。[言葉] で別のノートにつながります。</p>`}</article>
-    <section class="card backl"><h2>🔗 このノートにリンクしているもの <span class="count">${bl.length}</span></h2>${bl.length?`<ul>${bl.map(b=>`<li><button class="tt" data-blk="${b.kind}" data-id="${esc(b.id)}">${{note:"📒",memo:"📝",task:"🗂️"}[b.kind]} ${esc(b.title)}</button></li>`).join("")}</ul>`:`<p class="sub" style="margin:0">まだありません。ほかのノートやメモに [${esc(n.title)}] と書くとここに出ます。</p>`}</section>`;
+    <section class="card backl"><h2>🔗 このノートにリンクしているもの <span class="count">${bl.length}</span></h2>${bl.length?`<ul>${bl.map(b=>`<li><button class="tt" data-blk="${b.kind}" data-id="${esc(b.id)}">${{note:"📒",memo:"📝",task:"🗂️"}[b.kind]} ${esc(b.title)}</button></li>`).join("")}</ul>`:`<p class="sub" style="margin:0">まだありません。ほかのノートやメモに [${esc(n.title)}] と書くとここに出ます。</p>`}</section>
+    ${(h=>h.length?`<section class="card hop"><h2>🕸️ つながり <span class="sub">同じ言葉でつながるノート</span></h2>${h.map(g=>`<div class="grp"><h3>${wlink(g.word)} 経由</h3><div class="ngrid">${[g.page,...g.others].filter(Boolean).map(x=>`<button class="card ncard" data-nopen="${esc(x.id)}"><b>${esc(x.title)}</b><span>${esc(String(x.body||"").replace(/[\[\]#]/g,"").slice(0,90))}</span></button>`).join("")}</div></div>`).join("")}</section>`:"")(twoHop(n))}`;
   }
   const list=noteList().sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
   return `<header class="head"><div><p class="eyebrow">ノート</p><h1>ノート</h1></div><button class="btn primary" id="newNote">＋ 新しいノート</button></header>
@@ -860,7 +903,7 @@ function showSelMenu(){
   hideSelMenu();
   selMenu=document.createElement("div");selMenu.className="selmenu";selMenu.setAttribute("role","menu");
   const [kind,id]=(own?.dataset.edit||"").split(/:(.*)/s);
-  selMenu.innerHTML=own?`<button data-sel="edit">✏️ 編集</button>${kind!=="notetitle"?`<button data-sel="link">🔗 リンクにする</button>`:""}`:`<button data-sel="note">📒 ノートにする</button>`;
+  selMenu.innerHTML=own?`<button data-sel="edit">✏️ 編集</button>${kind!=="notetitle"?`<button data-sel="link">🔗 リンクにする</button>`:""}`:`<button data-sel="srclink">🔗 リンクにする</button>`;
   document.body.appendChild(selMenu);
   const w=selMenu.offsetWidth, x=Math.max(8,Math.min(innerWidth-w-8,r.left+r.width/2-w/2)), below=r.bottom+8+40<innerHeight;
   selMenu.style.left=x+"px";selMenu.style.top=(below?r.bottom+8:Math.max(8,r.top-48))+"px";
@@ -869,9 +912,13 @@ function showSelMenu(){
     if(a==="edit") return startEdit(own,txt);
     if(a==="link"){const raw=rawOf(kind,id);const i=findOutsideBrackets(raw,txt);if(i<0){toast("この文字はすでにリンクか、見つかりませんでした");return}
       try{await saveRaw(kind,id,raw.slice(0,i)+"["+txt+"]"+raw.slice(i+txt.length));toast("🔗 リンクにしました")}catch(err){toast("保存できませんでした")}}
-    if(a==="note"){const n0=noteByTitle(txt);if(n0)return openWiki(txt);
-      const from=src.dataset.src||"", label=src.dataset.srclabel||"元の記事";
-      try{const n={id:newNoteId(),title:txt.slice(0,80),body:from&&/^https:\/\//.test(from)?`出典：[${from} ${label}]\n`:"",createdAt:Date.now()};await store.putNote(n);S.noteId=n.id;S.noteKeep=true;location.hash="notes";toast("📒 ノートにしました")}catch(err){toast("ノートを作れませんでした")}}
+    if(a==="srclink"){ // stay on the article: the word turns into a link here, and its note keeps where it came from
+      const title=txt.replace(/[\[\]\n]/g," ").replace(/\s+/g," ").trim().slice(0,80); if(!title) return;
+      const from=src.dataset.src||"", label=(src.dataset.srclabel||"元の記事").replace(/[\[\]\n]/g," "), line=/^https:\/\//.test(from)?`出典：[${from} ${label}]`:"";
+      const n0=noteByTitle(title);
+      try{if(!n0) await store.putNote({id:newNoteId(),title,body:line?line+"\n":"",createdAt:Date.now()});
+        else if(line&&!String(n0.body||"").includes("["+from)) await store.putNote({...n0,body:String(n0.body||"").replace(/\s+$/,"")+(n0.body?"\n":"")+line+"\n"});
+        toast(line?"🔗 リンクにしました":"🔗 リンクにしました（この記事にはURLがないので、ノートだけ作りました）");render()}catch(err){toast("保存できませんでした")}}
   };
 }
 function findOutsideBrackets(raw,txt){
@@ -1163,6 +1210,7 @@ function render(){
   renderNav();
   const v=viewId();
   $("#view").innerHTML=v==="notes"?notesView():v==="watch"?watch():v==="tasks"?tasks():v==="calendar"?calendar():v==="news"?news():v==="mail"?mail():v==="inbox"?inbox():v==="log"?log():home();
+  if(v==="news"||v==="watch") linkSources($("#view"));
   wire();
   if(v==="news"&&S.focus!=null){const el=document.getElementById("story-"+S.focus);S.focus=null;if(el){el.classList.add("flash");setTimeout(()=>el.scrollIntoView({block:"start"}),0)}}
 }
