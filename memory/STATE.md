@@ -9,7 +9,8 @@
   - ③ は標準の /resume とぶつかるので `/recap`。⑦ ペルソナは仮の設定（Tatsuki が決めたら /sync）。
 - 全部 main にマージ済み（tatsuki32/tatsuki#9、2026-11-03）。Mac で実際に動かして直す段階。
 
-- Desk の UI/UX 作り替え（ノンデザイナーズ・デザインブック準拠）：実装済み・オンライン版に公開。ブランチ `claude/peaceful-galileo-etb77g` は main に未マージ（Mac に届くのはマージ後）。
+- Desk の UI/UX 作り替え（ノンデザイナーズ・デザインブック準拠）：main にマージ済み（tatsuki32/tatsuki#12）。
+- コマンドを忘れる対策：Desk の「🤖 Claude に頼む」カードと、検索欄の `/` コマンド一覧（ブランチ `claude/keen-cerf-6t81q1`）。Mac の Terminal 起動はマージ後に確認。
 
 ## 決定済みの事項
 - UI/UX を作るときは毎回、本を全文読んでから（`.claude/rules/design-ui.md`）。Drive の文字変換は p.136 まで。後半は Tatsuki のまとめで補っている。

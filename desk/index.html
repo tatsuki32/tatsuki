@@ -311,6 +311,25 @@ a.ev:hover{background:var(--surface-2)}
 .rgroup .section-title .count{margin-left:0}
 .rrow{display:block;width:100%;text-align:left;border:0;background:none;padding:6px var(--s3);cursor:pointer;font-size:var(--t2);color:var(--ink)}
 .rrow:hover{background:var(--surface-2)}
+.palrow{display:flex;justify-content:space-between;align-items:center;gap:var(--s2);min-width:0}
+.palrow>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.palrow.sel{background:var(--surface-2);box-shadow:inset 3px 0 0 var(--accent)}
+.palrow code,.cccmd{font-family:var(--code);font-size:var(--t1);color:var(--muted);font-weight:400}
+.cc{padding-bottom:var(--s3)}
+.ccbig{display:grid;gap:var(--s1);width:calc(100% - 2 * var(--s3));margin:0 var(--s3) var(--s3);text-align:left;cursor:pointer;border:1px solid var(--line-2);background:transparent;color:var(--ink);border-radius:var(--r);padding:var(--s3)}
+.ccbig:hover{background:var(--surface-2)}
+.ccbig .ccname{font-size:var(--t3);font-weight:700}.ccbig code{font-family:var(--code);font-size:var(--t1);color:var(--muted)}
+.cchint{font-size:var(--t1);color:var(--muted);line-height:1.5;text-wrap:pretty}
+.ccgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:var(--s2);padding:0 var(--s3)}
+.pop .ccgrid{padding:0}
+.ccbtn{display:grid;gap:var(--s1);align-content:start;min-width:0;text-align:left;cursor:pointer;border:1px solid transparent;background:var(--surface-2);color:var(--ink);border-radius:var(--r-s);padding:var(--s2) var(--s3)}
+.ccbtn:hover{border-color:var(--line-2)}
+.ccbtn .ccname{font-size:var(--t2);font-weight:700}.ccbtn code{display:none}
+.ccmac{font-size:var(--t1);border:1px solid var(--line-2);border-radius:4px;padding:0 4px;color:var(--muted);font-weight:400}
+.ccfield{display:grid;gap:var(--s1)}
+@media (hover:none){#ccGo kbd{display:none}}
+.keys{display:grid;gap:var(--s2)}.keys>div{display:flex;gap:12px;align-items:center}
+@media (max-width:420px){.ccgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .rrow .snip{display:block;font-size:var(--t1);color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rrow .snip b{color:var(--ink)}
 .wl{color:var(--blue);text-decoration:none;border-bottom:1px dotted currentColor}
@@ -409,8 +428,8 @@ h1 .inedit{font-size:var(--t4);font-weight:700}
     <div class="foot">
       <button class="railbtn" id="nextBtn" aria-label="何していたかと、次にやること"><span class="e">🧭</span><span class="label">次は？</span><kbd>G</kbd></button>
       <button class="railbtn" id="noteBtn" aria-label="メモを書く"><span class="e">📝</span><span class="label">メモ</span><kbd>N</kbd></button>
-      <button class="railbtn" id="aiBtn" aria-label="Claude Code への機能追加の依頼をコピー"><span class="e">🤖</span><span class="label">Claude に頼む</span><kbd>C</kbd></button>
-      <p class="hint"><kbd>T</kbd> タスクを足す</p>
+      <button class="railbtn" id="aiBtn" aria-label="Claude に頼む（コマンド一覧）"><span class="e">🤖</span><span class="label">Claude に頼む</span><kbd>C</kbd></button>
+      <p class="hint"><kbd>T</kbd> タスクを足す · <kbd>/</kbd><kbd>/</kbd> コマンド</p>
     </div>
   </aside>
   <main><div class="wrap" id="view"></div></main>
@@ -564,6 +583,7 @@ function unlockAudio(){
 }
 ["pointerdown","keydown","touchstart"].forEach(t=>document.addEventListener(t,unlockAudio,{capture:true,passive:true}));
 function chime(){
+  if(S.mute) return;
   if(!actx||actx.state!=="running"){chimeOwed=true;return}
   if(Date.now()-lastChime<3000) return; lastChime=Date.now();
   const t0=actx.currentTime;
@@ -1258,7 +1278,7 @@ function snippet(it){
   return (a?"…":"")+esc(src.slice(a,i))+"<b>"+esc(src.slice(i,i+w.length))+"</b>"+esc(src.slice(i+w.length,b))+(b<src.length?"…":"");
 }
 function searchResults(){
-  const q=S.q.trim(); if(!q) return "";
+  const q=S.q.trim(); if(!q) return ""; if(isPal(q)) return palette();
   const {hits,via}=runSearch(q);
   const kinds=Object.keys(SKIND).filter(k=>hits.some(h=>h.kind===k));
   const aiState=S.aiBusy?`<span class="sub">関連する言葉を考えています…</span>`:S.sampleOk?`<button class="btn sm" id="aiSearch">AIで広げて探す</button>`:"";
@@ -1349,6 +1369,7 @@ function home(){
   <header class="head"><div><p class="eyebrow">${d.toLocaleDateString("ja-JP",{month:"long",day:"numeric",weekday:"long"})} · ${greet} · ${t3Mode()}</p><h1>今日の3つ</h1></div><button class="btn" data-opennext>次は？</button></header>
   ${topThree()}
   <div class="duo">${todayEvents()}${habitStrip()||`<section class="card"><div class="dhead"><h2><span class="e">🌱</span>今日の習慣</h2><a class="more" href="#habits">足す →</a></div><div class="empty">続けたいことを「習慣」で足せます。</div></section>`}</div>
+  ${ccCard()}
   ${todayPanel(top)}
   ${inflow()}
   ${notesHere("home")}
@@ -1482,6 +1503,8 @@ function render(){
   if(v==="news"&&S.focus!=null){const el=document.getElementById("story-"+S.focus);S.focus=null;if(el){el.classList.add("flash");setTimeout(()=>el.scrollIntoView({block:"start"}),0)}}
 }
 function wire(){
+  document.querySelectorAll("[data-pal]").forEach(b=>b.onclick=()=>palRun(+b.dataset.pal));
+  document.querySelectorAll("#view [data-cc]").forEach(b=>b.onclick=()=>openCC(b.dataset.cc));
   document.querySelectorAll("[data-hit]").forEach(b=>b.onclick=()=>{const [,i]=b.dataset.hit.split(":");const h=runSearch(S.q).hits[+i];if(h)goHit(h)});
   document.querySelectorAll("[data-qall]").forEach(b=>b.onclick=()=>{S.qAll=b.dataset.qall;render()});
   $("#aiSearch")&&($("#aiSearch").onclick=aiSearch);
@@ -1574,32 +1597,150 @@ function openNote(){
 }
 $("#noteBtn").onclick=openNote;
 {const q=$("#q"),go=()=>{S.q=q.value;S.qAll=null;render();if(S.q.trim())window.scrollTo(0,0)};
-  q.oninput=e=>{if(!e.isComposing)go()};q.addEventListener("compositionend",go);
-  q.onkeydown=e=>{if(e.key==="Escape"){q.value="";go();q.blur()}}}
+  q.oninput=e=>{if(!e.isComposing){if(isPal(q.value)&&!isPal(S.q))S.palSel=0;go()}};q.addEventListener("compositionend",go);
+  q.onkeydown=e=>{if(e.isComposing)return;
+    if(isPal(q.value)){ // "/" commands: ↑↓ to choose, Enter to run
+      if(e.key==="ArrowDown"){e.preventDefault();return palMove(1)} if(e.key==="ArrowUp"){e.preventDefault();return palMove(-1)}
+      if(e.key==="Enter"){e.preventDefault();return palRun(S.palSel||0)}}
+    if(e.key==="Escape"){q.value="";go();q.blur()}}}
 
-/* ---------- ask Claude: turn an idea into a /desk-feature prompt for Claude Code ---------- */
-/* The desk's source of truth is desk/index.html in the GitHub repo, so changes always start there (Claude Code on the web or the Mac). */
+/* ---------- ⌨️ Claude commands: one button sends a Claude Code command (until it becomes a habit) ---------- */
+/* Mac (localhost): server.py opens Terminal and starts `claude "<command>"` in the repo.
+   Online / iPhone: copy the command and open Claude Code in a new tab. Words typed here are never stored. */
 const DESK_DIR="tatsuki32/tatsuki の desk/";
-const deskPrompt=idea=>`/desk-feature\n\n追加・変更したい機能：\n${idea}\n\n対象：Tatsuki's Desk（正本は GitHub ${DESK_DIR}index.html。CLAUDE.md を読んでから作業）\nまず質問で要件を固めて、要件定義書を作ってから、承認後に実装してください。`;
-function openAsk(){
-  if($("#modal").firstChild) return;
-  let draft="";try{draft=localStorage.getItem("desk-ai-draft")||""}catch(e){}
-  $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop" role="dialog" aria-modal="true" aria-label="Claude Code に頼む">
-    <div class="top"><h2>🤖 Deskに機能を追加</h2><button class="ibtn" id="xAsk" aria-label="閉じる">✕</button></div>
-    <p class="hint">やりたいことを書いてコピーし、Claude Code で <b>${esc(DESK_DIR)}</b>（リポジトリ tatsuki32/tatsuki）を開いたセッションに貼り付けてください。</p>
-    <textarea id="askText" placeholder="例：週ごとの振り返りページがほしい">${esc(draft)}</textarea>
-    <button class="btn primary" id="askCopy" style="justify-content:center">Claude Code 用にコピー <kbd>⌘/Ctrl + Enter</kbd></button>
-  </div></div>`;
-  const ta=$("#askText");ta.focus();
-  ta.oninput=()=>{try{localStorage.setItem("desk-ai-draft",ta.value)}catch(e){}};
-  const close=()=>{$("#modal").innerHTML="";$("#aiBtn").focus()};
-  const go=async()=>{const t=ta.value.trim();if(!t){ta.focus();toast("やりたいことを書いてください");return}
-    try{await navigator.clipboard.writeText(deskPrompt(t))}catch(e){toast("コピーできませんでした");return}
-    try{localStorage.removeItem("desk-ai-draft")}catch(e){}close();toast("📋 コピーしました。Claude Code に貼り付けてください")};
-  $("#askCopy").onclick=go;$("#xAsk").onclick=close;
-  $("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};
-  ta.onkeydown=e=>{if(e.key==="Enter"&&(e.metaKey||e.ctrlKey)){e.preventDefault();go()} if(e.key==="Escape")close()};
+const deskArg=idea=>`\n\n追加・変更したい機能：\n${idea}\n\n対象：Tatsuki's Desk（正本は GitHub ${DESK_DIR}index.html。CLAUDE.md を読んでから作業）\nまず質問で要件を固めて、要件定義書を作ってから、承認後に実装してください。`;
+const CC=[
+  {id:"kickoff",e:"☀️",name:"朝の着手",cmd:"/morning-kickoff",hint:"今日の最初の1つを決める",mac:true,kw:"あさ morning kickoff"},
+  {id:"begin",e:"🚀",name:"始める",cmd:"/begin",hint:"タスク・ブランチ・issue をまとめて用意",mac:true,ask:"やること",ph:"例：履歴書を直す",kw:"はじめる start begin"},
+  {id:"recap",e:"📍",name:"何してたっけ",cmd:"/recap",hint:"現状と次の一手",kw:"なにしてた recap resume"},
+  {id:"save",e:"💾",name:"今日を残す",cmd:"/recap",arg:"保存",hint:"作業を記録して終わる",kw:"のこす ほぞん save recap"},
+  {id:"rsd",e:"🫖",name:"一呼吸",cmd:"/rsd",hint:"きついメッセージを落ち着いて読む",ask:"つらかったメッセージ",ph:"そのまま貼ってください",note:"どこにも保存しません。",kw:"ひとこきゅう rsd"},
+  {id:"learn",e:"📈",name:"反応を記録",cmd:"/learn",hint:"投稿の反応を残す（「振り返り」で傾向）",ask:"どの投稿の、どんな反応か",ph:"例：X 11/2 習慣の話 いいね20",kw:"はんのう learn"},
+  {id:"sync",e:"🔄",name:"方針を更新",cmd:"/sync",hint:"決めたことをファイルに反映",ask:"変わった方針",ph:"例：習慣は朝にまとめて記録する",kw:"ほうしん sync"},
+  {id:"knowledge",e:"📚",name:"知識を読む",cmd:"/knowledge",hint:"ためた知識から必要なもの",ask:"話題（空なら一覧）",ph:"例：artifact",kw:"ちしき knowledge"},
+  {id:"feature",e:"🛠️",name:"Desk に機能を追加",cmd:"/desk-feature",hint:"質問 → 要件定義 → 実装",ask:"やりたいこと",ph:"例：週ごとの振り返りページがほしい",draft:"desk-ai-draft",wrap:deskArg,kw:"きのう ついか feature desk"},
+];
+const ccText=(c,arg)=>{arg=(arg??c.arg??"").trim();const a=arg&&c.wrap?c.wrap(arg):arg;return a?c.cmd+(a.startsWith("\n")?"":" ")+a:c.cmd};
+/* the recommended one by Ho Chi Minh time: morning → kickoff (Mac) / recap (online), afternoon → recap, evening → save */
+const ccPick=()=>{const h=new Date(Date.now()+HCMC).getUTCHours();return h<12?(LOCALAPI?"kickoff":"recap"):h<18?"recap":"save"};
+const CCHABIT={id:"claude-cmd",name:"Claude コマンドを使う",emoji:"⌨️"};
+async function ccHabit(){
+  const today=hcmcDate(), h=S.habits.find(x=>x.id===CCHABIT.id);
+  let made=false;try{made=localStorage.getItem("desk-cc-habit")==="1"}catch(e){}
+  if(!h&&made) return; // removed from 🌱 習慣 on purpose: stop recording
+  if(h&&(h.done||[]).includes(today)) return;
+  try{await store.putHabit(h?{...h,done:[...(h.done||[]),today]}:{...CCHABIT,done:[today],createdAt:Date.now()});localStorage.setItem("desk-cc-habit","1")}catch(e){}
 }
+function ccManual(text){ // clipboard refused: show the text to copy by hand
+  $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop" role="dialog" aria-modal="true" aria-label="コピーして貼り付け">
+    <div class="top"><h2>📋 これをコピー</h2><button class="ibtn" id="xMan" aria-label="閉じる">✕</button></div>
+    <p class="hint">自動でコピーできませんでした。全部選んでコピーし、Claude Code に貼り付けてください。</p>
+    <textarea id="manText" readonly>${esc(text)}</textarea>
+    <a class="btn primary" href="https://claude.ai/code" target="_blank" rel="noopener" style="justify-content:center">Claude Code を開く</a></div></div>`;
+  const ta=$("#manText");ta.focus();ta.select();
+  const close=()=>{$("#modal").innerHTML=""};$("#xMan").onclick=close;$("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};
+}
+async function ccSend(c,arg){
+  const text=ccText(c,arg);
+  ccHabit();
+  if(LOCALAPI){
+    try{const a=text.slice(c.cmd.length).replace(/^ /,"");await api("POST","/api/claude",{cmd:c.cmd,arg:a});toast("⌨️ Terminal で開きました");return}
+    catch(e){/* server too old or not a Mac: fall back to copying */}
+  }
+  const p=navigator.clipboard?navigator.clipboard.writeText(text):Promise.reject();
+  if(!LOCALAPI) window.open("https://claude.ai/code","_blank","noopener");
+  try{await p;toast(LOCALAPI?"📋 コピーしました。Terminal の claude に貼り付けてください":"📋 コピーしました。Claude Code に貼り付けてください")}catch(e){ccManual(text)}
+}
+function openCC(id){
+  const c=CC.find(x=>x.id===id); if(!c) return;
+  if(!c.ask){$("#modal").innerHTML="";return ccSend(c)}
+  let draft="";if(c.draft)try{draft=localStorage.getItem(c.draft)||""}catch(e){}
+  const go=LOCALAPI?"Terminal で開く":"コピーして Claude Code を開く";
+  $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop" role="dialog" aria-modal="true" aria-label="${esc(c.name)}">
+    <div class="top"><h2>${esc(c.name)} <code class="cccmd">${esc(c.cmd)}</code></h2><button class="ibtn" id="xCC" aria-label="閉じる">✕</button></div>
+    <p class="hint">${esc(c.hint)}。${c.note?"<b>"+esc(c.note)+"</b>":""}${c.mac&&!LOCALAPI?"Mac で使うコマンドです。":""}空のまま渡すと、Claude が聞き返します。</p>
+    <div class="ccfield"><label class="sub" for="ccText">${esc(c.ask)}</label>
+    <textarea id="ccText" placeholder="${esc(c.ph||"")}">${esc(draft)}</textarea></div>
+    <button class="btn primary" id="ccGo" style="justify-content:center">${go} <kbd>⌘/Ctrl + Enter</kbd></button>
+  </div></div>`;
+  const ta=$("#ccText");ta.focus();
+  if(c.draft) ta.oninput=()=>{try{localStorage.setItem(c.draft,ta.value)}catch(e){}};
+  const close=()=>{$("#modal").innerHTML=""};
+  const send=()=>{const v=ta.value;if(c.draft)try{localStorage.removeItem(c.draft)}catch(e){}close();ccSend(c,v)};
+  $("#ccGo").onclick=send;$("#xCC").onclick=close;
+  $("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};
+  ta.onkeydown=e=>{if(e.key==="Enter"&&(e.metaKey||e.ctrlKey)){e.preventDefault();send()} if(e.key==="Escape")close()};
+}
+const ccBtn=c=>`<button class="ccbtn" data-cc="${c.id}"><span class="ccname">${esc(c.name)}${c.mac&&!LOCALAPI?' <span class="ccmac">Mac</span>':""}</span><code>${esc(c.cmd)}${c.arg?" "+esc(c.arg):""}</code><span class="cchint">${esc(c.hint)}</span></button>`;
+function ccCard(){
+  const p=CC.find(c=>c.id===ccPick());
+  return `<section class="card cc" aria-label="Claude に頼む"><div class="dhead"><h2><span class="e">🤖</span>Claude に頼む</h2><span class="sub">${LOCALAPI?"押すと Terminal で始まります":"押すとコピーして Claude Code を開きます"}</span></div>
+    <button class="ccbig" data-cc="${p.id}"><span class="ccname">${esc(p.name)}</span><code>${esc(p.cmd)}${p.arg?" "+esc(p.arg):""}</code><span class="cchint">いまのおすすめ · ${esc(p.hint)}</span></button>
+    <div class="ccgrid">${CC.filter(c=>c.id!==p.id).map(ccBtn).join("")}</div></section>`;
+}
+function openAsk(){ // 🤖 button / C key: the same list as the Home card
+  if($("#modal").firstChild) return;
+  $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop" role="dialog" aria-modal="true" aria-label="Claude に頼む">
+    <div class="top"><h2>🤖 Claude に頼む</h2><button class="ibtn" id="xAsk" aria-label="閉じる">✕</button></div>
+    <p class="hint">${LOCALAPI?"押すと Terminal で claude が始まります。":"押すとコピーして Claude Code を開きます。貼り付けて送ってください。"}</p>
+    <div class="ccgrid">${CC.map(ccBtn).join("")}</div></div></div>`;
+  const close=()=>{$("#modal").innerHTML="";$("#aiBtn").focus()};
+  $("#xAsk").onclick=close;$("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};
+  document.querySelectorAll("#modal [data-cc]").forEach(b=>b.onclick=()=>openCC(b.dataset.cc));
+  $("#modal [data-cc]").focus();
+  $("#scrim").onkeydown=e=>{if(e.key==="Escape")close()};
+}
+
+/* ---------- "/" in the search box: a command list like Notion. Every way in (keys, Home card, 🤖) calls the same functions. ---------- */
+const SHORTCUTS=[["G","🧭 次は？"],["N","📝 メモ"],["T","☑️ タスクを足す"],["C","⌨️ Claude に頼む"],["/","🔎 検索"],["/ /","⚡ コマンド一覧（検索欄で / を打つ）"]];
+const isPal=q=>/^[/／]/.test(q.trim());
+function palItems(){
+  const act=[
+    {e:"🧭",name:"次は？",key:"G",kw:"つぎ next",run:()=>{S.nextSkip=0;openNext()}},
+    {e:"📝",name:"メモ",key:"N",kw:"めも memo note",run:()=>openNote()},
+    {e:"☑️",name:"タスクを足す",key:"T",kw:"たすく task",run:()=>openTask(null)},
+    {e:"⌨️",name:"Claude に頼む",key:"C",kw:"くろーど claude",run:()=>openAsk()},
+    {e:"🔎",name:"検索",key:"/",kw:"けんさく search",run:()=>setTimeout(()=>$("#q")?.focus(),0)},
+    {e:"🌱",name:"習慣を足す",kw:"しゅうかん habit",run:()=>newHabit()},
+    {e:"📒",name:"新しいノート",kw:"のーと note",run:()=>newNotePrompt()},
+  ].map(x=>({...x,g:"Desk の操作"}));
+  const nav=VIEWS.map(v=>({g:"移動",e:v.e,name:v.label+"へ",kw:v.id,run:()=>{location.hash=v.id}}));
+  const cc=CC.map(c=>({g:"Claude コマンド",e:c.e,name:c.name,sub:c.cmd+(c.arg?" "+c.arg:""),kw:c.cmd+" "+c.kw,run:()=>openCC(c.id)}));
+  const set=[
+    {e:S.mute?"🔕":"🔔",name:S.mute?"通知音をオンにする":"通知音をオフにする",kw:"つうちおん おと sound mute 設定 せってい",run:()=>{S.mute=!S.mute;try{localStorage.setItem("desk-mute",S.mute?"1":"0")}catch(e){}toast(S.mute?"🔕 通知音をオフにしました":"🔔 通知音をオンにしました")}},
+    {e:"⌨️",name:"ショートカット一覧",kw:"しょーとかっと keys shortcut 設定 せってい",run:()=>openKeys()},
+  ].map(x=>({...x,g:"設定"}));
+  return [...act,...nav,...cc,...set];
+}
+function palMatch(q){
+  const w=norm(q.trim().replace(/^[/／]/,"")).trim(), all=palItems();
+  if(!w) return all;
+  const hit=x=>(x.key&&norm(x.key)===w)||[x.name,x.sub,x.kw,x.g].some(s=>s&&norm(s).includes(w));
+  return all.filter(hit).sort((a,b)=>((b.key&&norm(b.key)===w)?1:0)-((a.key&&norm(a.key)===w)?1:0));
+}
+function palette(){
+  const xs=palMatch(S.q); S.palSel=Math.min(S.palSel||0,Math.max(0,xs.length-1));
+  const groups=[...new Set(xs.map(x=>x.g))];
+  return `<section class="card results pal" aria-label="コマンド"><div class="rhead"><b>コマンド</b><span class="sub">↑↓ で選んで Enter · Esc で戻る</span></div>
+    ${groups.map(g=>`<div class="rgroup"><div class="section-title">${esc(g)}</div>${xs.map((x,i)=>x.g!==g?"":`<button class="rrow palrow ${i===S.palSel?"sel":""}" data-pal="${i}"><span>${esc(x.name)}${x.sub?` <code>${esc(x.sub)}</code>`:""}</span>${x.key?`<kbd>${esc(x.key)}</kbd>`:""}</button>`).join("")}</div>`).join("")||`<p class="sub" style="padding:4px 12px 10px;margin:0">合うコマンドがありません。</p>`}
+  </section>`;
+}
+function palRun(i){
+  const x=palMatch(S.q)[i]; if(!x) return;
+  S.q="";S.palSel=0;$("#q").value="";$("#q").blur();render();x.run();
+}
+function palMove(d){
+  const rows=[...document.querySelectorAll("[data-pal]")]; if(!rows.length) return;
+  S.palSel=(S.palSel+d+rows.length)%rows.length;
+  rows.forEach((r,i)=>r.classList.toggle("sel",i===S.palSel));rows[S.palSel].scrollIntoView({block:"nearest"});
+}
+function openKeys(){
+  $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop" role="dialog" aria-modal="true" aria-label="ショートカット一覧">
+    <div class="top"><h2>⌨️ ショートカット</h2><button class="ibtn" id="xKeys" aria-label="閉じる">✕</button></div>
+    <div class="keys">${SHORTCUTS.map(([k,l])=>`<div><kbd>${esc(k)}</kbd><span>${esc(l)}</span></div>`).join("")}</div></div></div>`;
+  const close=()=>{$("#modal").innerHTML=""};$("#xKeys").onclick=close;$("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};$("#xKeys").focus();
+}
+try{S.mute=localStorage.getItem("desk-mute")==="1"}catch(e){S.mute=false}
 $("#aiBtn").onclick=openAsk;
 $("#nextBtn").onclick=()=>{S.nextSkip=0;openNext()};
 document.addEventListener("keydown",e=>{const t=e.target.tagName;if(t==="INPUT"||t==="TEXTAREA"||t==="SELECT")return;
