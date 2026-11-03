@@ -21,6 +21,7 @@ claude.ai のチャットで直接編集しない。変更は必ずここで行�
   データは `desk/data/*.json`（`.gitignore` 済み。個人データは絶対にコミットしない）。
 - Mac の置き場所は `~/TatsukiDesk`（Documents などの保護フォルダは自動起動から読めないので不可）。
 - Mac の導入: `bash desk/setup-mac.sh`（サーバー常駐＋5分ごとの `git pull origin main`）。
+  ローカルから開く入口は `desk/launcher.html`（setup がデスクトップに `Tatsuki's Desk.html` としてコピー）。サーバーが動いていれば localhost:4747 へ飛び、止まっていればオンライン版を選べる。
   旧版 `~/Documents/ClaudeTools` は使わない（初回だけ memos/dues/tasks を取り込む）。
 - 同期: `desk/sync/HOURLY_SYNC.md` を Mac の Claude スケジュールタスクで毎時実行。
   memos/dues/tasks/prompts/notes は双方向、それ以外はオンライン → Mac。`desk/index.html` が変わっていればオンライン版にも公開する。
