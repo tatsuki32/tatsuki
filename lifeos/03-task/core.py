@@ -157,7 +157,7 @@ def done(words=""):
 def _git(*args):
     try:
         r = subprocess.run(["git", "-C", paths.REPO, *args], capture_output=True, text=True, timeout=5)
-        return r.stdout.strip() if r.returncode == 0 else ""
+        return r.stdout.rstrip() if r.returncode == 0 else ""  # status --short starts with a meaningful space
     except (OSError, subprocess.SubprocessError):
         return ""
 

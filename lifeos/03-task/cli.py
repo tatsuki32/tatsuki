@@ -36,6 +36,9 @@ def main(argv=None):
     except (ValueError, tasks.TaskStoreError) as e:
         print(f"できませんでした：{e}")
         return 1
+    except OSError as e:  # the task may already be in: do not invite a blind retry that would add it twice
+        print(f"途中で書き込めませんでした（{e.strerror}）。もう一度実行する前に Desk のタスクを見てください")
+        return 1
 
 
 def run(a):

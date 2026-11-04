@@ -145,6 +145,29 @@ class TestSave(Base):
         r = logs.read("work")[-1]
         self.assertEqual((r["kind"], r["did"], r["next"], r["task"]), ("save", "途中まで", "続きを書く", "資料"))
 
+    def test_changed_files_keep_their_names(self):
+        repo = os.path.join(self.tmp, "repo")
+        os.makedirs(repo)
+        git = ["git", "-C", repo, "-c", "user.name=t", "-c", "user.email=t@example.com"]
+        path = os.path.join(repo, "alpha.txt")
+        with open(path, "w") as f:
+            f.write("1")
+        subprocess.run([*git, "init"], capture_output=True, check=True)
+        subprocess.run([*git, "add", "."], capture_output=True, check=True)
+        subprocess.run([*git, "commit", "-m", "x"], capture_output=True, check=True)
+        with open(path, "w") as f:
+            f.write("2")
+        old = paths.REPO
+        paths.REPO = repo
+        self.addCleanup(setattr, paths, "REPO", old)
+        self.assertEqual(self.core.save("x", "y")["changed"], ["alpha.txt"])
+
+    def test_next_step_may_start_with_a_dash(self):
+        cli = load_tool("03-task", "cli")
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(cli.main(["save", "途中", "--next=-続き"]), 0)
+        self.assertEqual(logs.read("work")[-1]["next"], "-続き")
+
     def test_cli_saved(self):
         cli = load_tool("03-task", "cli")
         out = io.StringIO()
