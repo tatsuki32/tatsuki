@@ -4,38 +4,29 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Tatsuki's Desk</title>
-<!-- ダブルクリックで Desk を開くランチャー。Mac のサーバー（localhost:4747）が動いていればそちらへ、
-     止まっていればオンライン版を選べる。setup-mac.sh がデスクトップにコピーを置く。 -->
+<!-- ブラウザで開くときの入口。普段は「Tatsuki's Desk.app」を使う。サーバーが動いていれば localhost:4747 へ飛ぶ。 -->
 <style>
-  :root { --bg:#0b0b0c; --panel:#151517; --line:#2a2a2e; --text:#ece8df; --muted:#9a958a; --gold:#d4af37; }
+  :root { --bg:#0d0d0d; --text:#ece8df; --muted:#9a958a; --gold:#d4af37; }
   * { box-sizing:border-box; }
-  body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:16px;
-         background:var(--bg); color:var(--text); font-family:-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif; }
-  .card { width:100%; max-width:420px; background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:28px 22px; text-align:center; }
-  h1 { margin:0 0 6px; font-size:20px; color:var(--gold); letter-spacing:.04em; }
-  p { margin:8px 0; color:var(--muted); font-size:14px; line-height:1.7; }
-  .btns { display:flex; flex-direction:column; gap:10px; margin-top:18px; }
-  a.btn, button.btn { display:block; padding:12px; border-radius:10px; border:1px solid var(--gold); background:transparent;
-         color:var(--gold); font-size:15px; text-decoration:none; cursor:pointer; font-family:inherit; }
-  a.btn.primary { background:var(--gold); color:#111; }
-  code { color:var(--text); background:#000; padding:1px 6px; border-radius:4px; font-size:12px; }
+  body { margin:0; min-height:100vh; display:flex; align-items:center; padding:40px 16px;
+         background:var(--bg); color:var(--text); font:14px/1.6 -apple-system,"Hiragino Sans","Noto Sans JP",sans-serif; }
+  main { width:100%; max-width:40em; margin:0 auto; }
+  h1 { margin:0 0 8px; font-size:20px; font-weight:700; }
+  p { margin:0 0 24px; color:var(--muted); }
+  code { color:var(--text); }
+  button { padding:8px 16px; border:0; border-radius:8px; background:var(--gold); color:#111; font:700 14px inherit; cursor:pointer; }
   [hidden] { display:none !important; }
 </style>
 </head>
 <body>
-<div class="card">
-  <h1>Tatsuki's Desk</h1>
-  <p id="checking">Mac 版を開いています…</p>
+<main>
+  <p id="checking">Desk を開いています…</p>
   <div id="down" hidden>
-    <p>Mac 版のサーバー（localhost:4747）が動いていません。</p>
-    <p><code>desk/Start Desk.command</code> をダブルクリックするか、<br><code>bash desk/setup-mac.sh</code> で常駐させてください。</p>
-    <div class="btns">
-      <button class="btn" id="retry" type="button">もう一度試す</button>
-      <a class="btn primary" href="https://claude.ai/artifact/EkyjR8X6XJdundGEXE9XgP">オンライン版を開く</a>
-      <a class="btn" href="http://localhost:4747">それでも Mac 版を開く</a>
-    </div>
+    <h1>Desk のサーバーが動いていません</h1>
+    <p>「Tatsuki's Desk.app」を開くと、自動で起動します。直らないときは、ターミナルで <code>bash ~/TatsukiDesk/desk/setup-mac.sh</code> を実行してください。</p>
+    <button id="retry" type="button">もう一度試す</button>
   </div>
-</div>
+</main>
 <script>
   var LOCAL = "http://localhost:4747";
   function check() {

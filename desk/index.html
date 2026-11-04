@@ -990,6 +990,7 @@ const MAILERR={needs_reauth:"Gmail の再接続が必要です。claude.ai の �
 function mailItem(t){const m=t?.mail;if(!m)return null;return ((S.days.find(d=>d.id===m.day)||{}).data?.items||[]).find(i=>i.key===m.key)||null}
 function mailOps(t,i){
   const dr=i?.draft, gm=okUrl(i?.gmail_url)?i.gmail_url:mailUrl(t), done=TOPEN.has(t.status)?`<button class="btn" id="mDone">返信済みにする</button>`:"";
+  if(dr&&LOCALAPI&&TOPEN.has(t.status)) return `<button class="btn primary" id="mClaude">Claude に送信を頼む</button><button class="btn" id="mSkip">送らない</button>${okUrl(dr.view_url)?`<a class="btn" href="${esc(dr.view_url)}" target="_blank" rel="noopener">Gmail で編集 ↗</a>`:""}${done}`;
   if(dr&&!S.local&&TOPEN.has(t.status)) return `<button class="btn primary" id="mAsk">送信…</button><button class="btn" id="mSkip">送らない</button>${okUrl(dr.view_url)?`<a class="btn" href="${esc(dr.view_url)}" target="_blank" rel="noopener">Gmail で編集 ↗</a>`:""}${done}`;
   const link=dr&&okUrl(dr.view_url)?`<a class="btn" href="${esc(dr.view_url)}" target="_blank" rel="noopener">Gmail で下書きを開く ↗</a>`:gm?`<a class="btn" href="${esc(gm)}" target="_blank" rel="noopener">Gmail で開く ↗</a>`:"";
   return link+done;
@@ -1016,6 +1017,10 @@ function wireMail(t,close){
   const wire=()=>{
     $("#mDone")&&($("#mDone").onclick=()=>finish("done","sent","✨ 返信済み。できたことに入れました"));
     $("#mSkip")&&($("#mSkip").onclick=()=>finish("dropped","skipped","送らないことにしました（タスクは「やめた」へ）"));
+    $("#mClaude")&&($("#mClaude").onclick=async e=>{const b=e.currentTarget;b.disabled=true;
+      try{await api("POST","/api/claude",{cmd:"/mail-send",arg:`${t.mail.day} ${t.mail.key}`});say("Terminal で Claude が始まります。送信が済んだら「返信済みにする」を押してください。")}
+      catch(err){say("Claude を起動できませんでした。Gmail で下書きを開いて送ってください。")}
+      b.disabled=false});
     $("#mAsk")&&($("#mAsk").onclick=()=>{
       ops.innerHTML=`<span class="msg">${esc((i.draft.to||[]).join(", "))} に送りますか？</span><button class="btn primary" id="mSend">送信する</button><button class="btn" id="mCancel">キャンセル</button>`;
       $("#mCancel").onclick=()=>{ops.innerHTML=mailOps(t,i);wire()};
@@ -1645,10 +1650,10 @@ function toolsView(){
 /* a tile whose URL changes (a Cloudflare quick tunnel) gets ✏️ to paste the new one; online only, the Mac opens t.local */
 function tile(t){
   const html=tileBody(t);
-  return t.urlEditable&&db?`<div class="tilewrap">${html}<button class="ibtn tedit" data-turl="${esc(t.id)}" title="URLを変更" aria-label="${esc(t.name)} のURLを変更">✏️</button></div>`:html;
+  return t.urlEditable&&(db||LOCALAPI)?`<div class="tilewrap">${html}<button class="ibtn tedit" data-turl="${esc(t.id)}" title="URLを変更" aria-label="${esc(t.name)} のURLを変更">✏️</button></div>`:html;
 }
 function openToolUrl(id){
-  const t=S.tools.find(x=>x.id===id); if(!t||!db||$("#modal").firstChild) return;
+  const t=S.tools.find(x=>x.id===id); if(!t||(!db&&!LOCALAPI)||$("#modal").firstChild) return;
   $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop" role="dialog" aria-modal="true" aria-label="URLを変更">
     <div class="top"><h2>✏️ URLを変更</h2><button class="ibtn" id="xTurl" aria-label="閉じる">✕</button></div>
     <p class="hint" style="overflow-wrap:anywhere">${esc(t.emoji||"🧩")} ${esc(t.name)}</p>
@@ -1661,7 +1666,7 @@ function openToolUrl(id){
   inp.focus();inp.select();
   $("#turlSave").onclick=async()=>{const u=inp.value.trim();
     if(!/^https:\/\/[^\s"'<>]+$/.test(u)){$("#turlErr").textContent="URL の形が正しくありません（https:// で始まるURLを貼ってください）";inp.focus();return}
-    try{await db.collection("tools").doc(t.id).update({url:u,updatedAt:Date.now()});close();toast("URL を変更しました")}catch(e){$("#turlErr").textContent="保存できませんでした。もう一度お試しください"}};
+    try{if(db)await db.collection("tools").doc(t.id).update({url:u,updatedAt:Date.now()});else{await api("PUT","/api/tools/"+encodeURIComponent(t.id),{url:u});t.url=u;render()}close();toast("URL を変更しました")}catch(e){$("#turlErr").textContent="保存できませんでした。もう一度お試しください"}};
   $("#turlCancel").onclick=close;$("#xTurl").onclick=close;
   $("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};
   inp.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();$("#turlSave").click()}if(e.key==="Escape")close()};
@@ -1738,7 +1743,7 @@ function inbox(){
   <header class="head"><div><p class="eyebrow">受信箱</p><h1>メモ</h1></div></header>
   <div class="chips" role="group" aria-label="メモを絞り込む">${[["open","📝 未完了"],["done","✅ 完了"],["all","🗃️ すべて"]].map(([k,l])=>`<button class="chip" data-filter="${k}" aria-pressed="${k===f}">${l}</button>`).join("")}</div>
   ${list.length?`<div class="notes-here">${list.map(noteCard).join("")}</div>`:`<div class="card empty"><b>メモはありません</b>N キーか「📝 メモ」ボタンで思いついたことを書けます。ここに届くか、開いていたページに残ります。</div>`}
-  ${S.local?(LOCALAPI?'<p class="sub">🔄 この Mac のメモと期日は、1時間ごとにオンライン版と同期します。</p>':'<p class="sub">ファイルとして開いているので、メモはこのブラウザにだけ保存されます。「Start Desk」を実行するとオンライン版と同期します。</p>'):""}`;
+  ${S.local&&!LOCALAPI?'<p class="sub">ファイルとして開いているので、メモはこのブラウザにだけ保存されます。</p>':""}`;
 }
 function render(){
   const mails=deadlines();S.board=boardTasks(mails);S.dlMap=Object.fromEntries(mails.map(x=>[x.uid,x]));
@@ -1861,7 +1866,7 @@ function losTool(t){
 }
 function lifeosView(){
   const all=(S.lifeos||window.LIFEOS||[]).filter(t=>!t.deleted).sort((a,b)=>String(a.no).localeCompare(String(b.no)));
-  if(!all.length) return `<header class="head"><div><p class="eyebrow">Life OS</p><h1>ツール</h1></div></header><div class="card empty"><b>まだ届いていません</b>オンライン版には毎時の同期で届きます。</div>`;
+  if(!all.length) return `<header class="head"><div><p class="eyebrow">Life OS</p><h1>ツール</h1></div></header><div class="card empty"><b>まだありません</b>Life OS のツールを作ると、ここに出ます。</div>`;
   const n=k=>all.filter(t=>t.status===k).length, f=S.losF&&n(S.losF)?S.losF:"all", list=f==="all"?all:all.filter(t=>t.status===f);
   const chip=(k,l,c)=>`<button class="chip" data-losf="${k}" aria-pressed="${f===k}">${l} ${c}</button>`;
   return `<header class="head"><div><p class="eyebrow">Life OS</p><h1>動いている ${n("working")} / ${all.length}</h1><p class="sub" style="margin:var(--s1) 0 0">作りかけ ${n("building")} / 3</p></div></header>
@@ -2038,7 +2043,7 @@ function ccManual(text){ // clipboard refused: show the text to copy by hand
     <div class="top"><h2>📋 これをコピー</h2><button class="ibtn" id="xMan" aria-label="閉じる">✕</button></div>
     <p class="hint">自動でコピーできませんでした。全部選んでコピーし、Claude Code に貼り付けてください。</p>
     <textarea id="manText" readonly>${esc(text)}</textarea>
-    <a class="btn primary" href="https://claude.ai/code" target="_blank" rel="noopener" style="justify-content:center">Claude Code を開く</a></div></div>`;
+    ${LOCALAPI?"":`<a class="btn primary" href="https://claude.ai/code" target="_blank" rel="noopener" style="justify-content:center">Claude Code を開く</a>`}</div></div>`;
   const ta=$("#manText");ta.focus();ta.select();
   const close=()=>{$("#modal").innerHTML=""};$("#xMan").onclick=close;$("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};
 }

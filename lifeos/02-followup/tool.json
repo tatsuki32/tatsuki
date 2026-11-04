@@ -35,7 +35,7 @@
     {
       "what": "予定と「こちらが返すもの」の元データ",
       "why": "Mac に calendar.js と mail.js が見当たりません。届くまで一覧には「まだ届いていません」と出ます。",
-      "needs": "Mac の毎時同期が動いているか確かめる（desk/sync/HOURLY_SYNC.md）"
+      "needs": "Mac の定期タスクが動いているか確かめる（desk/sync/SCHEDULED_TASKS.md）"
     },
     {
       "what": "読む DM の範囲",

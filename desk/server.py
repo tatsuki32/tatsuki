@@ -41,11 +41,22 @@ DATA_JS = [
     ("reports.js", "REPORTS", "[]"),
     ("watch.js", "WATCH", "[]"),
 ]
+# what the scheduled tasks and the tools view write: one file per doc in data/docs/<collection>/, joined into the page's
+# data/*.js. collection -> (file, global, newest docs kept in the page; the docs stay on disk)
+FEEDS = {
+    "tools": ("tools.js", "TOOLS", None),
+    "editions": ("world.js", "WORLD", 60),
+    "days": ("mail.js", "MAIL", 30),
+    "reports": ("reports.js", "REPORTS", 30),
+    "watch": ("watch.js", "WATCH", 30),
+    "calendar": ("calendar.js", "CAL", "upcoming"),
+    "gtasks": ("gtasks.js", "GTASKS", "current"),
+}
 LOCK = threading.Lock()
 MEMOLINK_LOCK = threading.Lock()
 REPO = os.path.dirname(ROOT)
 # Desk's ⌨️ buttons may start only these Claude Code commands (POST /api/claude)
-CLAUDE_CMDS = ("/morning-kickoff", "/begin", "/recap", "/rsd", "/learn", "/sync", "/knowledge", "/desk-feature", "/followup", "/newtool", "/kickoff", "/where", "/lowenergy")
+CLAUDE_CMDS = ("/morning-kickoff", "/begin", "/recap", "/rsd", "/learn", "/sync", "/knowledge", "/desk-feature", "/followup", "/newtool", "/kickoff", "/where", "/lowenergy", "/mail-send")
 CLAUDE_ARG_MAX = 6000
 FOCUS_URL = "http://127.0.0.1:47800"
 # no proxy: while websites are blocked the system proxy points at FocusBlock itself
@@ -71,6 +82,84 @@ def save(col, items):
     with os.fdopen(fd, "w", encoding="utf-8") as f:
         json.dump(items, f, ensure_ascii=False, indent=1)
     os.replace(tmp, path_of(col))
+
+
+def safe_doc_id(doc_id):
+    return bool(doc_id) and doc_id[0] != "." and "/" not in doc_id and "\\" not in doc_id
+
+
+def doc_path(col, doc_id):
+    return os.path.join(DATA, "docs", col, doc_id + ".json")
+
+
+def write_atomic(path, text):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    fd, tmp = tempfile.mkstemp(dir=os.path.dirname(path), prefix=".doc", suffix=".tmp")
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
+        f.write(text)
+    os.replace(tmp, path)
+
+
+def put_doc(col, doc_id, rec):
+    if col not in FEEDS or not safe_doc_id(doc_id):
+        raise ValueError("bad doc")
+    rec = {k: v for k, v in rec.items() if k != "id"}
+    write_atomic(doc_path(col, doc_id), json.dumps(rec, ensure_ascii=False, indent=1))
+
+
+def feed_docs(col):
+    d = os.path.join(DATA, "docs", col)
+    out = []
+    for name in sorted(os.listdir(d)) if os.path.isdir(d) else []:
+        if not name.endswith(".json") or name.startswith("."):
+            continue
+        try:
+            with open(os.path.join(d, name), encoding="utf-8") as f:
+                out.append({"id": name[:-5], **json.load(f)})
+        except (OSError, ValueError):
+            continue  # one broken doc must not hide the rest
+    return out
+
+
+def by_date_desc(docs, key="date"):
+    return sorted(docs, key=lambda d: str(d.get(key) or d.get("id") or ""), reverse=True)
+
+
+def rebuild_feed(col):
+    """Rewrites the page's data/*.js from the docs on disk."""
+    name, var, keep = FEEDS[col]
+    docs = feed_docs(col)
+    strip = lambda d: {k: v for k, v in d.items() if k != "id"}
+    if col == "tools":
+        value = [d for d in docs if not d.get("deleted")]
+    elif isinstance(keep, str):
+        value = next((strip(d) for d in docs if d["id"] == keep), None)
+    elif col in ("editions", "days"):
+        value = [{"id": d["id"], "data": strip(d)} for d in by_date_desc(docs)[:keep]]
+    elif col == "watch":
+        value = [d for d in by_date_desc(docs)[:keep] if not d.get("deleted")]
+    else:
+        value = by_date_desc(docs)[:keep]
+    text = json.dumps(value, ensure_ascii=False).replace("</", "<\\/")
+    write_atomic(os.path.join(DATA, name), f"window.{var}={text};\n")
+
+
+def set_tool_url(tool_id, url):
+    """PUT /api/tools/<id>: only a tool marked urlEditable, and only its url."""
+    if not safe_doc_id(tool_id) or not isinstance(url, str) or not url.startswith("https://"):
+        return None
+    with LOCK:
+        try:
+            with open(doc_path("tools", tool_id), encoding="utf-8") as f:
+                rec = json.load(f)
+        except (OSError, ValueError):
+            return None
+        if not rec.get("urlEditable"):
+            return None
+        rec.update(url=url, updatedAt=int(time.time() * 1000))
+        put_doc("tools", tool_id, rec)
+        rebuild_feed("tools")
+    return {"id": tool_id, **rec}
 
 
 def upsert(col, doc_id, rec, merge):
@@ -326,12 +415,15 @@ class Handler(BaseHTTPRequestHandler):
             if not (self.headers.get("Content-Type") or "").startswith("application/json"):
                 return self.send(415, {"error": "json only"})
             return self.send(*followup_answer(parts[3], rec))
+        if method == "PUT" and len(parts) == 4 and parts[1:3] == ["api", "tools"]:
+            out = set_tool_url(unquote(parts[3]), rec.get("url"))
+            return self.send(200, out) if out else self.send(400, {"error": "bad tool"})
         rec.pop("id", None)
         rec.setdefault("updatedAt", int(time.time() * 1000))
         if method == "POST" and col == "memos" and doc_id is None:
             doc_id = "m" + str(int(time.time() * 1000)) + secrets.token_hex(2)
             return self.send(200, upsert(col, doc_id, rec, merge=False))
-        if method == "PUT" and col in ("dues", "tasks", "prompts", "notes", "habits", "lifemap", "wins") and doc_id:
+        if method == "PUT" and col in ("memos", "dues", "tasks", "prompts", "notes", "habits", "lifemap", "wins") and doc_id:
             return self.send(200, upsert(col, doc_id, rec, merge=False))
         if method == "PATCH" and col == "memos" and doc_id:
             out = upsert(col, doc_id, rec, merge=True)
