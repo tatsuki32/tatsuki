@@ -44,7 +44,7 @@ DATA_JS = [
 LOCK = threading.Lock()
 REPO = os.path.dirname(ROOT)
 # Desk's ⌨️ buttons may start only these Claude Code commands (POST /api/claude)
-CLAUDE_CMDS = ("/morning-kickoff", "/begin", "/recap", "/rsd", "/learn", "/sync", "/knowledge", "/desk-feature", "/followup")
+CLAUDE_CMDS = ("/morning-kickoff", "/begin", "/recap", "/rsd", "/learn", "/sync", "/knowledge", "/desk-feature", "/followup", "/newtool")
 CLAUDE_ARG_MAX = 6000
 FOCUS_URL = "http://127.0.0.1:47800"
 # no proxy: while websites are blocked the system proxy points at FocusBlock itself
