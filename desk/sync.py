@@ -11,7 +11,7 @@ collections into one JSON file, runs this script, and writes back what it prints
                                          (index.html differs from the last publish)
   python3 sync.py mark-published      -> remembers the current index.html as published
 
-REMOTE.json: {"memos": [{"id": ..., ...fields}], "dues": [...], "tasks": [...], "prompts": [...], "notes": [...], "habits": [...],
+REMOTE.json: {"memos": [{"id": ..., ...fields}], "dues": [...], "tasks": [...], "prompts": [...], "notes": [...], "habits": [...], "wins": [...],
               "tools": [...], "editions": [...], "days": [...], "reports": [...], "watch": [...],
               "calendar": [...], "gtasks": [...], "lifeos": [...]}  (each doc = its id plus its fields)
 
@@ -31,7 +31,7 @@ DATA = os.path.join(ROOT, "data")
 sys.path.insert(0, ROOT)
 from server import LOCK, followup_core, lifeos_tools, load, save  # noqa: E402
 
-TWO_WAY = ("memos", "dues", "tasks", "prompts", "notes", "habits")
+TWO_WAY = ("memos", "dues", "tasks", "prompts", "notes", "habits", "wins")
 
 
 def ts(x):

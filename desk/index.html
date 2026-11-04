@@ -276,6 +276,33 @@ details.draft .sent-as summary{cursor:pointer;display:block;padding:var(--s2) 0;
 .hday.on{background:var(--green-soft);border-color:transparent;color:var(--green);font-weight:700}
 .habit .row{justify-content:flex-end;gap:2px}
 
+/* ---------- できたこと: the numbers first (contrast), then one card per day (repetition of the day card) ---------- */
+.wstats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:var(--s3) 0}
+.wst{display:grid;gap:var(--s1);padding:0 var(--s3);border-left:1px solid var(--line)}
+.wst:first-child{border-left:0}
+.wn{font-size:var(--t5);font-weight:700;line-height:1.2;color:var(--ink)}
+.wst.focus .wn{color:var(--accent)}
+.wadd{display:flex;gap:var(--s2)}
+.wadd input{flex:1;min-width:0;min-height:44px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:var(--r-s);padding:0 12px;font:inherit;font-size:var(--t3)}
+.wadd input:focus{outline:none;border-color:var(--accent)}
+.wadd .btn{min-height:44px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.wdays{display:grid;gap:var(--s3)}
+.wday .dhead .count{margin-left:auto}
+.wt{font-weight:700;font-size:var(--t2);line-height:1.5;overflow-wrap:anywhere}
+.wdays+.btn{justify-self:start}
+@media (max-width:560px){.drow.wrow{grid-template-columns:20px minmax(0,1fr) auto}.drow.wrow .dacts{grid-column:3;justify-self:end}}
+/* the mail inside a task */
+.mailbox{display:grid;gap:var(--s2);padding:12px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.mailbox p{margin:0}
+.msum{color:var(--ink-2);font-size:var(--t3);line-height:1.75}
+.mailbox details.draft{margin-top:0}
+/* a finished event can be ticked */
+.evwrap{display:flex;align-items:center;gap:var(--s2);border-top:1px solid var(--line);padding-right:var(--s3)}
+.evwrap>.ev{flex:1;min-width:0;border-top:0}
+.day>h2+.evwrap{border-top:0}
+.evdone{white-space:nowrap}
+
 /* ---------- calendar ---------- */
 .days{display:grid;gap:var(--s3)}
 .day{overflow:hidden}
@@ -490,12 +517,12 @@ h1 .inedit{font-size:var(--t4);font-weight:700}
 /* the menu in four groups (proximity): today / what came in / reading / writing and looking back */
 const NAVGROUPS=[["today","今日"],["in","届いたもの"],["read","読む"],["write","書く・振り返る"]];
 const VIEWS=[{id:"home",e:"🏠",label:"ホーム",g:"today"},{id:"tasks",e:"🗂️",label:"タスク",g:"today"},{id:"calendar",e:"📅",label:"カレンダー",g:"today"},{id:"habits",e:"🌱",label:"習慣",g:"today"},
-  {id:"mail",e:"✉️",label:"朝のメール",g:"in"},{id:"inbox",e:"📥",label:"受信箱",g:"in"},
+  {id:"wins",e:"✨",label:"できたこと",g:"in"},{id:"inbox",e:"📥",label:"受信箱",g:"in"},
   {id:"news",e:"🌍",label:"世界ニュース",g:"read"},{id:"watch",e:"🗺️",label:"マイナー国",g:"read"},
   {id:"notes",e:"📒",label:"ノート",g:"write"},{id:"log",e:"🤖",label:"Claudeの記録",g:"write"},{id:"tools",e:"🧰",label:"ツール",g:"write"}];
 const TABS=["home","tasks","calendar","notes"]; // phone tab bar; the rest is under その他
 VIEWS.push({id:"lifeos",e:"🧩",label:"Life OS",g:"write"});
-VIEWS.splice(VIEWS.findIndex(v=>v.id==="mail")+1,0,{id:"followups",e:"⏳",label:"返信待ち",g:"in"});
+VIEWS.splice(VIEWS.findIndex(v=>v.id==="wins")+1,0,{id:"followups",e:"⏳",label:"返信待ち",g:"in"});
 /* Stored values (group, region, priority, status) stay in English so sync and older data keep working; only the labels shown are Japanese. */
 const GROUPS=[["Daily","☀️","毎日"],["Work","💼","仕事"],["Study","🎓","学習"],["Folders","🗂️","フォルダ"],["Other","✨","その他"]];
 const REGJA={"Middle East":"中東","Europe & Russia":"欧州・ロシア","Asia-Pacific":"アジア太平洋","Americas":"南北アメリカ","Africa":"アフリカ","Global":"世界全体","All":"すべて"};
@@ -504,12 +531,12 @@ const GROUPJA=Object.fromEntries(GROUPS.map(g=>[g[0],g[2]]));
 const REG={"Middle East":"🕌","Europe & Russia":"🏰","Asia-Pacific":"🌏","Americas":"🗽","Africa":"🌍","Global":"🌐"};
 const PRI={"Action needed":"red","Reply drafted":"amber","FYI":""};
 const PRIO={"Action needed":0,"Reply drafted":1,"FYI":2};
-const S={tools:[],editions:[],days:[],memos:[],ed:null,day:null,region:"All",q:"",confirm:null,busy:null,notes:{},local:false,dues:{},dl:[],dlMap:{},dlAll:false,quietUntil:0,tasks:[],board:[],taskCol:"notyet",cal:null,gtasks:null,reports:[],logDay:null,prompts:{},watch:[],watchId:null,focus:null,wnotes:[],noteId:null,habits:[],memory:null,nextSkip:0};
+const S={tools:[],editions:[],days:[],memos:[],ed:null,day:null,region:"All",q:"",confirm:null,busy:null,notes:{},local:false,dues:{},dl:[],dlMap:{},dlAll:false,quietUntil:0,tasks:[],board:[],taskCol:"notyet",cal:null,gtasks:null,reports:[],logDay:null,prompts:{},watch:[],watchId:null,focus:null,wnotes:[],noteId:null,habits:[],memory:null,nextSkip:0,wins:[],winsDays:14};
 let db=null;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const okUrl=u=>/^(https:\/\/|file:\/\/|#)/.test(u||"");
-const viewId=()=>{const h=(location.hash||"").slice(1);return VIEWS.some(v=>v.id===h)?h:"home"};
+const viewId=()=>{const h=(location.hash||"").slice(1);if(h==="mail")return "tasks";return VIEWS.some(v=>v.id===h)?h:"home"}; // 朝のメール moved into the tasks
 const viewLabel=id=>(VIEWS.find(v=>v.id===id)||{}).label||id;
 const ago=ms=>{const d=(Date.now()-ms)/6e4;if(d<1)return"たった今";if(d<60)return Math.round(d)+"分前";if(d<1440)return Math.round(d/60)+"時間前";return new Date(ms).toLocaleDateString("ja-JP",{month:"long",day:"numeric"})};
 function toast(t){const el=document.createElement("div");el.className="toast";el.textContent=t;$("#toastHost").replaceChildren(el);setTimeout(()=>el.remove(),2200)}
@@ -520,8 +547,8 @@ const LOCALAPI=/^https?:$/.test(location.protocol)&&/^(localhost|127\.0\.0\.1)$/
 if(LOCALAPI) VIEWS.splice(4,0,{id:"focus",e:"🎯",label:"集中",g:"today"}); // blocks apps on this Mac, so the Mac version only
 async function api(method,path,body){const r=await fetch(path,{method,headers:{"Content-Type":"application/json"},body:body?JSON.stringify(body):undefined});if(!r.ok)throw new Error(r.status);return r.json()}
 async function loadApiMemos(){try{
-  const [memos,dues,tasks,prompts,notes,habits]=await Promise.all([api("GET","/api/memos"),api("GET","/api/dues"),api("GET","/api/tasks"),api("GET","/api/prompts").catch(()=>[]),api("GET","/api/notes").catch(()=>[]),api("GET","/api/habits").catch(()=>[])]);
-  S.habits=habits.filter(h=>!h.deleted);S.memos=memos.filter(m=>!m.deleted);S.dues=duesById(dues);S.tasks=tasks.filter(t=>!t.deleted);S.prompts=promptsById(prompts);S.wnotes=notes.filter(n=>!n.deleted);render()}catch(e){toast("Desk サーバーにつながりません。起動していますか？")}}
+  const [memos,dues,tasks,prompts,notes,habits,wins]=await Promise.all([api("GET","/api/memos"),api("GET","/api/dues"),api("GET","/api/tasks"),api("GET","/api/prompts").catch(()=>[]),api("GET","/api/notes").catch(()=>[]),api("GET","/api/habits").catch(()=>[]),api("GET","/api/wins").catch(()=>[])]);
+  S.habits=habits.filter(h=>!h.deleted);S.wins=wins.filter(w=>!w.deleted);S.memos=memos.filter(m=>!m.deleted);S.dues=duesById(dues);S.tasks=tasks.filter(t=>!t.deleted);S.prompts=promptsById(prompts);S.wnotes=notes.filter(n=>!n.deleted);render()}catch(e){toast("Desk サーバーにつながりません。起動していますか？")}}
 const promptsById=list=>Object.fromEntries(list.filter(p=>p&&p.id&&!p.deleted).map(p=>[p.id,p]));
 const duesById=list=>Object.fromEntries(list.filter(v=>v&&v.uid).map(v=>[v.uid,v]));
 const store={
@@ -556,7 +583,11 @@ const store={
     if(db){await db.collection("prompts").doc(id).set(rec)}
     else if(LOCALAPI){await api("PUT","/api/prompts/"+encodeURIComponent(id),rec);await loadApiMemos()}
     else {S.prompts={...S.prompts,[id]:{id,...rec}};try{localStorage.setItem("desk-prompts",JSON.stringify(S.prompts))}catch(e){}render()} },
-  async setMailStatus(key,status){ if(!db){toast("状態はオンライン版で保存されます");return} const ref=db.collection("days").doc(S.day);const s=await ref.get();if(!s.exists)return;const items=(s.data().items||[]).map(x=>x.key===key?{...x,status}:x);await ref.update({items}) }
+  async putWin(w){ const rec={kind:w.kind||"self",title:w.title||"",sub:w.sub||"",date:w.date||hcmcDate(),at:w.at||Date.now(),ref:w.ref||"",createdAt:w.createdAt||Date.now(),updatedAt:Date.now(),deleted:!!w.deleted};
+    if(db){await db.collection("wins").doc(w.id).set(rec)}
+    else if(LOCALAPI){await api("PUT","/api/wins/"+encodeURIComponent(w.id),rec);await loadApiMemos()}
+    else {S.wins=[...S.wins.filter(x=>x.id!==w.id),{id:w.id,...rec}].filter(x=>!x.deleted);try{localStorage.setItem("desk-wins",JSON.stringify(S.wins))}catch(e){}render()} },
+  async setMailStatus(key,status,day){ if(!db)return; const ref=db.collection("days").doc(day||S.day);const s=await ref.get();if(!s.exists)return;const items=(s.data().items||[]).map(x=>x.key===key?{...x,status}:x);await ref.update({items}) }
 };
 function saveLocal(){try{localStorage.setItem("desk-memos",JSON.stringify(S.memos))}catch(e){}}
 function saveTasksLocal(){try{localStorage.setItem("desk-tasks",JSON.stringify(S.tasks))}catch(e){}}
@@ -589,7 +620,7 @@ function deadlines(){
     const uid=mailUid(i,d.id);
     if((i.status||"pending")!=="pending"){closed.add(uid);return}
     if(byUid.has(uid)) return;
-    byUid.set(uid,{uid,kind:"mail",title:i.subject_ja||i.subject||"（件名なし）",sub:i.from||"",day:d.id,key:i.key,
+    byUid.set(uid,{uid,kind:"mail",title:i.subject_ja||i.subject||"（件名なし）",sub:i.from||"",sum:i.summary||"",day:d.id,key:i.key,
       base:toMs(i.receivedAt)??parseReceived(i.received,d.id),auto:toMs(i.dueAt),manual:toMs(S.dues[uid]?.at)});
   }));
   const list=[...byUid.values()].filter(x=>!closed.has(x.uid));
@@ -728,7 +759,30 @@ function boardTasks(mails){
 const findTask=id=>S.board.find(t=>t.id===id);
 const hcmcDate=()=>new Date(Date.now()+HCMC).toISOString().slice(0,10);
 async function setTaskStatus(id,status){const t=findTask(id);if(!t||t.status===status)return;
-  try{await store.putTask({...t,status});toast(`🗂️ ${tLabel(status)} にしました`)}catch(e){toast("保存できませんでした。もう一度お試しください")}}
+  try{await store.putTask({...t,status});await taskWin(t,status);toast(status==="done"?"✨ 完了。できたことに入れました":`🗂️ ${tLabel(status)} にしました`)}catch(e){toast("保存できませんでした。もう一度お試しください")}}
+/* ---------- できたこと: everything done, kept for good (tasks, replies, events you ticked, Claude's work, what you wrote) ---------- */
+/* A finished task is stored once as "task-<id>"; moving it back to not-yet / doing removes it. Old finished tasks count from their last change. */
+const winId=s=>String(s).replace(/[^\w-]/g,"_").slice(0,140);
+const hcmcDay=ms=>new Date(ms+HCMC).toISOString().slice(0,10);
+async function taskWin(t,status){
+  const id=winId("task-"+t.id), had=S.wins.find(w=>w.id===id), was=t.status||"notyet";
+  if(status==="done"&&!had) return store.putWin({id,kind:t.source==="mail"?"mail":"task",title:t.title,sub:t.mail?.sub||"",ref:t.id});
+  if(TOPEN.has(status)&&had) return store.putWin({...had,deleted:true});
+  if(was==="done"&&!TOPEN.has(status)&&!had){const at=t.updatedAt||t.createdAt||Date.now();return store.putWin({id,kind:t.source==="mail"?"mail":"task",title:t.title,sub:t.mail?.sub||"",ref:t.id,at,date:hcmcDay(at)})}
+}
+const WKIND={task:["🗂️","タスク"],mail:["✉️","メール返信"],event:["📅","予定"],claude:["🤖","Claudeと"],self:["✍️","自分で"]};
+function winList(){
+  const out=new Map();
+  S.wins.filter(w=>!w.deleted&&w.date).forEach(w=>out.set(w.id,w));
+  S.board.filter(t=>t.status==="done").forEach(t=>{const id=winId("task-"+t.id), at=t.updatedAt||t.createdAt;if(out.has(id)||!at)return;
+    out.set(id,{id,kind:t.source==="mail"?"mail":"task",title:t.title,sub:t.mail?.sub||"",at,date:hcmcDay(at)})});
+  S.reports.forEach(r=>(r.done||[]).forEach((x,i)=>{const d=String(r.date||"").slice(0,10);if(!x?.text||!/^\d{4}-\d\d-\d\d$/.test(d))return;
+    out.set("claude-"+r.id+"-"+i,{id:"claude-"+r.id+"-"+i,kind:"claude",title:x.text,date:d,at:Date.parse(d+"T23:00:00+07:00")})}));
+  return [...out.values()];
+}
+const winsToday=()=>{const d=hcmcDate();return winList().filter(w=>w.date===d)};
+const evWinId=e=>winId("event-"+e.id);
+async function eventWin(e){try{await store.putWin({id:evWinId(e),kind:"event",title:e.title,ref:String(e.id),at:e.endMs,date:hcmcDay(e.startMs)});toast("✨ できたことに入れました")}catch(err){toast("保存できませんでした")}}
 async function memoToTask(m){
   const first=m.text.split("\n")[0].trim(), title=first.length>120?first.slice(0,119)+"…":first;
   try{await store.putTask({id:newTaskId(),title,note:m.text===title?"":m.text,status:"notyet",source:"memo",sourceRef:m.id,createdAt:Date.now()});
@@ -914,13 +968,58 @@ function todayPanel(skip){
     ${n?`<div>${list.slice(0,MAX).map(row).join("")}</div>${rest?`<button class="dmore" data-gonotyet>ほか ${rest}件を見る →</button>`:""}`:`<div class="empty"><b>ほかにやることはありません</b>T キーでタスクを足せます。</div>`}
   </section>`;
 }
+/* ---------- a mail task: summary, what to do, the reply draft, send (online, after a confirm) ---------- */
+/* Sending from here marks the task done and adds it to できたこと. Replied in Gmail yourself? Press 「返信済みにする」. */
+const MAILERR={needs_reauth:"Gmail の再接続が必要です。claude.ai の 設定 › コネクタ から接続し直してください。",server_not_connected:"Gmail が接続されていません。claude.ai の 設定 › コネクタ で追加してください。",not_in_manifest:"このページには Gmail で送信する許可がありません。ページの「権限」メニューでオンにしてください。",approval_required:"送信には承認が必要です。claude.ai でこのページを開いて承認してください。",tool_error:"Gmail が受け付けませんでした。下書きがすでに送信・削除されていないか確認してください。",server_unavailable:"Gmail から応答がありません。送信済みの可能性があるので、送信済みフォルダを確認してから再度お試しください。",upstream_error:"Gmail から応答がありません。送信済みの可能性があるので、送信済みフォルダを確認してから再度お試しください。"};
+function mailItem(t){const m=t?.mail;if(!m)return null;return ((S.days.find(d=>d.id===m.day)||{}).data?.items||[]).find(i=>i.key===m.key)||null}
+function mailOps(t,i){
+  const dr=i?.draft, gm=okUrl(i?.gmail_url)?i.gmail_url:mailUrl(t), done=TOPEN.has(t.status)?`<button class="btn" id="mDone">返信済みにする</button>`:"";
+  if(dr&&!S.local&&TOPEN.has(t.status)) return `<button class="btn primary" id="mAsk">送信…</button><button class="btn" id="mSkip">送らない</button>${okUrl(dr.view_url)?`<a class="btn" href="${esc(dr.view_url)}" target="_blank" rel="noopener">Gmail で編集 ↗</a>`:""}${done}`;
+  const link=dr&&okUrl(dr.view_url)?`<a class="btn" href="${esc(dr.view_url)}" target="_blank" rel="noopener">Gmail で下書きを開く ↗</a>`:gm?`<a class="btn" href="${esc(gm)}" target="_blank" rel="noopener">Gmail で開く ↗</a>`:"";
+  return link+done;
+}
+function mailBlock(t){
+  const i=mailItem(t), dr=i?.draft;
+  if(!i) return `<p class="hint">✉️ ${esc(t.mail?.sub||"メールから")}${t.due!=null?" · 期日 "+esc(fmtDue(t.due)):""}</p>`;
+  return `<div class="mailbox">
+    <p class="due">${esc(i.from||"")}${i.received?" · "+esc(i.received):""}${t.due!=null?" · 期日 "+esc(fmtDue(t.due))+"（締切パネルで変更）":""}</p>
+    ${i.subject_ja&&i.subject&&i.subject_ja!==i.subject?`<p class="due">原文の件名：${esc(i.subject)}</p>`:""}
+    ${i.summary?`<p class="msum">${esc(i.summary)}</p>`:""}
+    ${i.action?`<div class="todo">${esc(i.action)}</div>`:""}
+    ${dr?`<details class="draft"><summary><span>返信の下書き</span><span class="sub">Gmail の下書きに保存済み</span></summary><div class="meta">宛先：${esc((dr.to||[]).join(", "))}<br>件名：${esc(dr.subject)}</div>${dr.body_ja&&dr.body_ja!==dr.body?`<pre>${esc(dr.body_ja)}</pre><details class="sent-as"><summary>実際に送られる文面（原文）</summary><pre>${esc(dr.body)}</pre></details>`:`<pre>${esc(dr.body)}</pre>`}</details>`:""}
+    <div class="row" id="mOps">${mailOps(t,i)}</div><p class="msg" id="mMsg" hidden></p>
+  </div>`;
+}
+function wireMail(t,close){
+  if(t?.source!=="mail") return;
+  const i=mailItem(t), ops=$("#mOps"), msg=$("#mMsg"); if(!ops) return;
+  const say=(text,ok)=>{msg.hidden=false;msg.textContent=text;msg.className="msg "+(ok?"ok":"err")};
+  const finish=async(status,mailStatus,toastText)=>{
+    try{if(mailStatus&&i)await store.setMailStatus(i.key,mailStatus,t.mail.day)}catch(e){}
+    try{await store.putTask({...t,status});await taskWin(t,status);close();toast(toastText)}catch(e){say("保存できませんでした。もう一度お試しください。")}};
+  const wire=()=>{
+    $("#mDone")&&($("#mDone").onclick=()=>finish("done","sent","✨ 返信済み。できたことに入れました"));
+    $("#mSkip")&&($("#mSkip").onclick=()=>finish("dropped","skipped","送らないことにしました（タスクは「やめた」へ）"));
+    $("#mAsk")&&($("#mAsk").onclick=()=>{
+      ops.innerHTML=`<span class="msg">${esc((i.draft.to||[]).join(", "))} に送りますか？</span><button class="btn primary" id="mSend">送信する</button><button class="btn" id="mCancel">キャンセル</button>`;
+      $("#mCancel").onclick=()=>{ops.innerHTML=mailOps(t,i);wire()};
+      $("#mSend").onclick=async e=>{const b=e.currentTarget;b.disabled=true;b.textContent="送信中…";
+        const mcp=await claude.use("mcp");
+        if(!mcp){say("ここからは送信できません。Gmail で下書きを開いて送り、「返信済みにする」を押してください。");ops.innerHTML=mailOps(t,i);return wire()}
+        try{await mcp.callTool("Gmail","send_message",{draftId:i.draft.id})}
+        catch(err){say(MAILERR[err&&err.code]||"送信できませんでした。Gmail で下書きを開いて送ってください。");ops.innerHTML=mailOps(t,i);return wire()}
+        finish("done","sent","✉️ 送信しました。できたことに入れました")};
+    });
+  };
+  wire();
+}
 function openTask(id){
   if($("#modal").firstChild) return;
   const t=id?findTask(id):null, isMail=t?.source==="mail", isLinked=LINKED.has(t?.source);
   $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop" role="dialog" aria-modal="true" aria-label="${t?"タスクを編集":"新しいタスク"}">
     <div class="top"><h2>🗂️ ${t?"タスク":"新しいタスク"}</h2><button class="ibtn" id="xTask" aria-label="閉じる">✕</button></div>
     <label class="sub" for="tTitle">タイトル</label><input type="text" id="tTitle" value="${esc(t?.title||"")}" placeholder="例：FWOに書類を送る" autocomplete="off">
-    ${t?.source==="daily"&&t.sourceRef==="jobs"?jobsBlock():isMail?`<p class="hint">✉️ ${esc(t.mail?.sub||"メールから")}${t.due!=null?" · 期日 "+esc(fmtDue(t.due))+"（締切パネルで変更）":""} · <a href="#mail">メールを見る</a></p>`
+    ${t?.source==="daily"&&t.sourceRef==="jobs"?jobsBlock():isMail?mailBlock(t)
       :isLinked?`<p class="hint">${TSRC[t.source][0]} ${TSRC[t.source][1]}${t.due!=null?" · 期日 "+esc(fmtDue(t.due)):""} · 期日とタイトルは元の場所で変更${okUrl(t.url)?` · <a href="${esc(t.url)}" target="_blank" rel="noopener">開く ↗</a>`:""}${t.source==="gtasks"?"<br>「完了」にすると、次の更新で Google タスク側も完了になります。":""}</p>`
       :`<label class="sub" for="tDue">期日（任意）</label><input type="datetime-local" id="tDue" value="${t?.due!=null?toLocalInput(t.due):""}">`}
     <label class="sub" for="tStatus">ステータス</label><select id="tStatus">${TSTATUS.map(([k,l])=>`<option value="${k}" ${k===(t?.status||"notyet")?"selected":""}>${l}</option>`).join("")}</select>
@@ -929,11 +1028,12 @@ function openTask(id){
   </div></div>`;
   const ti=$("#tTitle");ti.focus();ti.setSelectionRange(ti.value.length,ti.value.length);
   const close=()=>{$("#modal").innerHTML=""};
-  wireJobs(t);
+  wireJobs(t);wireMail(t,close);
   const save=async()=>{const title=ti.value.trim();if(!title){ti.focus();toast("タイトルを入れてください");return}
     const dueIn=$("#tDue"), due=dueIn&&dueIn.value?new Date(dueIn.value).getTime():null;
     const base=t||{id:newTaskId(),source:"manual",createdAt:Date.now()};
-    try{await store.putTask({...base,title,due:isNaN(due)?null:due,status:$("#tStatus").value,note:$("#tNote").value.trim()});close();toast(t?"🗂️ 保存しました":"🗂️ タスクを追加しました")}
+    const st=$("#tStatus").value;
+    try{await store.putTask({...base,title,due:isNaN(due)?null:due,status:st,note:$("#tNote").value.trim()});await taskWin({...base,title},st);close();toast(st==="done"&&base.status!=="done"?"✨ 完了。できたことに入れました":t?"🗂️ 保存しました":"🗂️ タスクを追加しました")}
     catch(e){toast("保存できませんでした。入力はそのまま残っています")}};
   $("#tSave").onclick=save;$("#tCancel").onclick=close;$("#xTask").onclick=close;
   $("#tDel")&&($("#tDel").onclick=async e=>{const b=e.currentTarget;if(!b.dataset.sure){b.dataset.sure="1";b.textContent="本当に削除？";return}
@@ -1006,13 +1106,15 @@ function calEvents(){
 }
 function untilText(ms){const a=Math.max(0,ms),h=Math.floor(a/HOUR),m=Math.floor(a%HOUR/6e4),s=Math.floor(a%6e4/1e3);return "あと "+(h?h+":"+pad(m):m)+":"+pad(s)}
 const untilChip=ms=>`<span class="until" data-until="${ms}">${untilText(ms-Date.now())}</span>`;
-function evRow(e,ds){
+function evRow(e,ds,win){
   const now=Date.now(), de=dayStart(ds,1);
   const time=e.allDay?"終日":(e.startMs<ds?"〜":fmtTime(e.startMs)+"–")+(e.endMs>de?"":fmtTime(e.endMs));
   const state=!e.allDay&&e.endMs<=now?"past":!e.allDay&&e.startMs<=now?"now":"";
   const tail=MARK.test(e.title)?`<span class="pill amber">タスク</span>`:state==="now"?`<span class="pill live">進行中</span>`:"";
   const inner=`<time>${esc(time)}</time><span class="t">${esc(e.title)}</span>${tail}${e.location?`<span class="loc">📍 ${esc(e.location)}</span>`:""}`;
-  return okUrl(e.url)?`<a class="ev ${state}" href="${esc(e.url)}" target="_blank" rel="noopener">${inner}</a>`:`<div class="ev ${state}">${inner}</div>`;
+  const row=okUrl(e.url)?`<a class="ev ${state}" href="${esc(e.url)}" target="_blank" rel="noopener">${inner}</a>`:`<div class="ev ${state}">${inner}</div>`;
+  if(!(win&&state==="past"&&!MARK.test(e.title))) return row;
+  return `<div class="evwrap">${row}${S.wins.some(w=>w.id===evWinId(e))?`<span class="sub evdone">✓ できた</span>`:`<button class="btn sm" data-winev="${esc(e.id)}">できた</button>`}</div>`;
 }
 function todayEvents(){
   const now=Date.now(), d0=startOfDay(now), d1=dayStart(d0,1);
@@ -1029,7 +1131,7 @@ function calendar(){
   const d0=startOfDay(Date.now()), evs=calEvents();
   const days=[0,1,2,3,4,5,6].map(i=>{const ds=dayStart(d0,i), de=dayStart(d0,i+1), list=evs.filter(e=>e.startMs<de&&e.endMs>ds);
     const label=new Date(ds).toLocaleDateString("ja-JP",{month:"numeric",day:"numeric",weekday:"short"});
-    return `<section class="card day ${i===0?"is-today":""}"><h2>${esc(label)}<span class="sub">${i===0?"今日":i===1?"明日":""}${list.length?" · "+list.length+"件":""}</span></h2>${list.map(e=>evRow(e,ds)).join("")||`<div class="ev"><time>—</time><span class="t" style="color:var(--muted);font-weight:500">予定なし</span></div>`}</section>`});
+    return `<section class="card day ${i===0?"is-today":""}"><h2>${esc(label)}<span class="sub">${i===0?"今日":i===1?"明日":""}${list.length?" · "+list.length+"件":""}</span></h2>${list.map(e=>evRow(e,ds,i===0)).join("")||`<div class="ev"><time>—</time><span class="t" style="color:var(--muted);font-weight:500">予定なし</span></div>`}</section>`});
   return head+notesHere("calendar")+`<p class="sub" style="margin:0">タイトルを「TODO」「【やる】」「☑」で始めた予定は、自動で「タスク」に入ります。</p><div class="days">${days.join("")}</div>`;
 }
 
@@ -1038,7 +1140,7 @@ function calendar(){
 const LOGBOX=[["done","✅","やったこと"],["improved","📈","改善されたこと"],["pending","⏳","ペンディング"],["failed","⚠️","うまくいかなかったこと"]];
 function log(){
   const r=S.reports.find(x=>x.id===S.logDay)||S.reports[0];
-  const head=`<header class="head"><div><p class="eyebrow">Claudeの記録${r?" · "+esc(r.date):""}</p><h1>Claudeの作業記録</h1></div>${S.reports.length>1?`<label class="sub">日付 <select id="logDay">${S.reports.map(x=>`<option value="${esc(x.id)}" ${x.id===r?.id?"selected":""}>${esc(x.date)}</option>`).join("")}</select></label>`:""}</header>`;
+  const head=`<header class="head"><div><p class="eyebrow">Claudeの記録${r?" · "+esc(r.date):""}</p><h1>Claudeの作業記録</h1></div>${S.reports.length>1?`<label class="sub">日付 <select id="logDay">${S.reports.slice(0,30).map(x=>`<option value="${esc(x.id)}" ${x.id===r?.id?"selected":""}>${esc(x.date)}</option>`).join("")}</select></label>`:""}</header>`;
   if(!r) return head+`<div class="card empty"><b>まだレポートがありません</b>毎朝 7:30 ごろ、前日に Claude がやったことをまとめてここに届きます。</div>`;
   const item=(x,k)=>`<li><b>${esc(x.text)}</b>${x.detail?`<span>${esc(x.detail)}</span>`:""}${okUrl(x.link)&&x.link!=="#log"?`<a href="${esc(x.link)}" target="_blank" rel="noopener">開く ↗</a>`:""}${k==="pending"&&x.key&&r===S.reports[0]?` <a href="#tasks">🗂️ タスクにあり</a>`:""}</li>`;
   return head+notesHere("log")+`
@@ -1372,14 +1474,14 @@ function searchIndex(){
   S.tools.filter(t=>!t.deleted).forEach(t=>add("tool",t.name,[t.desc,(t.tags||[]).join(" "),t.path,GROUPJA[t.group]].join(" "),{href:S.local&&t.local?t.local:(t.url||t.local||"")}));
   noteList().forEach(n=>add("note",n.title,n.body,{note:n.id},{at:n.updatedAt}));
   S.memos.forEach(m=>add("memo",m.text.split("\n")[0],m.text,{memo:m.id},{at:m.createdAt}));
-  S.board.forEach(t=>add("task",t.title,[t.note,t.mail?.sub].join(" "),{task:t.id},{at:t.createdAt}));
+  S.board.forEach(t=>add("task",t.title,[t.note,t.mail?.sub,t.mail?.sum].join(" "),{task:t.id},{at:t.createdAt}));
+  winList().forEach(w=>add("win",w.title,w.sub||"",{wins:1},{date:w.date}));
   S.editions.forEach(e=>(e.data.stories||[]).forEach((s,i)=>add("news",s.title,[s.summary,s.lens,REGJA[s.region],(s.sources||[]).map(x=>x.name).join(" ")].join(" "),{ed:e.id,story:i},{date:e.id})));
   S.watch.forEach(w=>add("watch",w.title||w.id,w.body,{watch:w.id},{date:w.date}));
-  S.days.forEach(d=>(d.data.items||[]).forEach(i=>add("mail",i.subject_ja||i.subject,[i.subject,i.from,i.summary,i.action].join(" "),{day:d.id},{date:d.id})));
   calEvents().forEach(e=>add("event",e.title,[e.location,e.description].join(" "),{cal:1},{at:e.startMs}));
   return out;
 }
-const SKIND={tool:["🧩","ツール"],note:["📒","ノート"],memo:["📝","メモ"],task:["🗂️","タスク"],news:["🌍","ニュース"],watch:["🗺️","マイナー国"],mail:["✉️","メール"],event:["📅","予定"]};
+const SKIND={tool:["🧩","ツール"],note:["📒","ノート"],memo:["📝","メモ"],task:["🗂️","タスク"],news:["🌍","ニュース"],watch:["🗺️","マイナー国"],mail:["✉️","メール"],event:["📅","予定"],win:["✨","できたこと"]};
 function runSearch(q){
   const terms=q.trim().split(/\s+/).filter(Boolean); if(!terms.length) return {hits:[],via:[]};
   const ai=(S.aiExp||{})[norm(q)]||[];
@@ -1427,7 +1529,7 @@ function goHit(h){
   if(g.task) return openTask(g.task);
   if(g.ed!=null){S.ed=g.ed;S.region="All";S.focus=g.story;if(location.hash==="#news")render();else location.hash="news";return}
   if(g.watch){S.watchId=g.watch;location.hash="watch";return}
-  if(g.day){S.day=g.day;location.hash="mail";return}
+  if(g.wins){location.hash="wins";return}
   if(g.cal){location.hash="calendar"}
 }
 async function aiSearch(){
@@ -1446,8 +1548,8 @@ try{S.aiExp=JSON.parse(localStorage.getItem("desk-ai-exp")||"{}")||{}}catch(e){S
 /* ---------- nav ---------- */
 function navCount(id){
   if(id==="focus"&&fbActive()) return `<span class="count" data-fleft="${fbEndMs()}">${fbLeft(fbEndMs()-Date.now())}</span>`;
-  const open=S.memos.filter(m=>!m.done&&m.place==="inbox").length, mailN=S.dl.filter(x=>x.kind==="mail").length, taskN=S.board.filter(t=>t.status==="doing").length;
-  return id==="inbox"&&open?`<span class="count">${open}</span>`:id==="mail"&&mailN?`<span class="count hot" title="要対応">${mailN}</span>`:id==="tasks"&&taskN?`<span class="count" title="進行中">${taskN}</span>`:id==="log"&&S.reports[0]?.pending?.length?`<span class="count" title="ペンディング">${S.reports[0].pending.length}</span>`:"";
+  const open=S.memos.filter(m=>!m.done&&m.place==="inbox").length, winsN=id==="wins"?winsToday().length:0, taskN=S.board.filter(t=>t.status==="doing").length;
+  return id==="inbox"&&open?`<span class="count">${open}</span>`:id==="wins"&&winsN?`<span class="count" title="今日">${winsN}</span>`:id==="tasks"&&taskN?`<span class="count" title="進行中">${taskN}</span>`:id==="log"&&S.reports[0]?.pending?.length?`<span class="count" title="ペンディング">${S.reports[0].pending.length}</span>`:"";
 }
 function navHtml(){
   const cur=viewId();
@@ -1455,9 +1557,9 @@ function navHtml(){
 }
 function renderNav(){
   $("#nav").innerHTML=navHtml();
-  const cur=viewId(), more=!TABS.includes(cur), mailN=S.dl.filter(x=>x.kind==="mail").length;
+  const cur=viewId(), more=!TABS.includes(cur);
   $("#tabs").innerHTML=TABS.map(id=>{const v=VIEWS.find(x=>x.id===id);return `<a href="#${id}" ${cur===id?'aria-current="page"':''}><span class="e">${v.e}</span>${v.label}</a>`}).join("")
-    +`<button id="moreBtn" ${more?'aria-current="page"':''} aria-label="その他の画面"><span class="e">☰</span>その他${mailN?`<span class="dot">${mailN}</span>`:""}</button>`;
+    +`<button id="moreBtn" ${more?'aria-current="page"':''} aria-label="その他の画面"><span class="e">☰</span>その他</button>`;
   $("#moreBtn").onclick=openMore;
 }
 /* phone: every other view, in the same four groups as the rail */
@@ -1500,6 +1602,7 @@ function home(){
   <div class="duo">${todayEvents()}${habitStrip()||`<section class="card"><div class="dhead"><h2><span class="e">🌱</span>今日の習慣</h2><a class="more" href="#habits">足す →</a></div><div class="empty">続けたいことを「習慣」で足せます。</div></section>`}</div>
   ${ccCard()}
   ${todayPanel(top)}
+  ${winsMini()}
   ${inflow()}
   ${notesHere("home")}
   ${daily.length?`<section><div class="section-title"><span class="e">☀️</span>毎日のツール<a href="#tools">すべてのツール →</a></div><div class="tiles mini">${daily.map(tile).join("")}</div></section>`:`<p class="sub" style="margin:0"><a href="#tools" class="more">ツールを開く →</a></p>`}`;
@@ -1510,7 +1613,7 @@ function inflow(){
   const act=S.dl.filter(x=>x.kind==="mail").length, inbox=S.memos.filter(m=>!m.done&&m.place==="inbox").length, e=S.editions[0], st=e?.data?.stories||[];
   const n=(v,hot)=>`<span class="n ${v?hot?"hot":"":"zero"}">${v}</span>`;
   return `<section aria-label="届いたもの"><div class="section-title"><span class="e">📬</span>届いたもの</div><div class="card inflow">
-    <a class="irow" href="#mail"><span class="e">✉️</span>要対応メール${n(act,true)}</a>
+    <a class="irow" href="#tasks" data-gonotyet><span class="e">✉️</span>返信するメール${n(act,true)}</a>
     <a class="irow" href="#inbox"><span class="e">📥</span>受信箱のメモ${n(inbox)}</a>
     ${e?`<details class="digest" ${S.digestOpen?"open":""} id="digest"><summary class="irow"><span class="e">📰</span>今日のニュース<span class="s">${esc(e.data.headline||"")}</span>${n(st.length)}</summary>
       <ol>${st.map((x,i)=>`<li><button class="tt" data-story="${i}" data-ed="${esc(e.id)}">${esc(x.title)}</button></li>`).join("")}</ol></details>`:""}
@@ -1579,37 +1682,39 @@ function news(){
     </aside>
   </div>`;
 }
-function mail(){
-  const e=S.days.find(x=>x.id===S.day)||S.days[0];
-  if(!e) return `<header class="head"><div><p class="eyebrow">朝のメール</p><h1>受信メールの仕分け</h1></div></header><div class="card empty"><b>まだ確認していません</b>毎朝 7:22（ホーチミン時間）にメールを確認します。</div>`;
-  S.day=e.id;
-  const items=(e.data.items||[]).slice().sort((a,b)=>(PRIO[a.priority]??3)-(PRIO[b.priority]??3));
-  const c=k=>items.filter(i=>i.priority===k).length;
-  return `
-  <header class="head"><div><p class="eyebrow">朝のメール · ${esc(e.id)}</p><h1>受信メールの仕分け</h1></div>
-  <label class="sub">日付 <select id="day">${S.days.map(x=>`<option value="${esc(x.id)}" ${x.id===e.id?"selected":""}>${esc(x.id)}</option>`).join("")}</select></label></header>
-  ${notesHere("mail")}
-  <section class="card lead"><div class="row"><span class="pill red">要対応 ${c("Action needed")}</span><span class="pill amber">返信案あり ${c("Reply drafted")}</span><span class="pill">参考 ${c("FYI")}</span></div><p style="margin-top:10px">${esc(e.data.summary)}</p></section>
-  <div style="display:grid;gap:10px">${items.map(i=>mailCard(i,e.id)).join("")}</div>`;
+/* ---------- できたこと ---------- */
+/* Counts and a list by day. A day with nothing is simply not shown: no red, no streaks, nothing that blames. */
+function winsView(){
+  const list=winList(), today=hcmcDate(), wk=new Set([...Array(7)].map((_,i)=>dayOff(today,-i)));
+  const nT=list.filter(w=>w.date===today).length, nW=list.filter(w=>wk.has(w.date)).length;
+  const byDay=new Map();list.forEach(w=>{if(!byDay.has(w.date))byDay.set(w.date,[]);byDay.get(w.date).push(w)});
+  const days=[...byDay.keys()].sort().reverse(), shown=days.slice(0,S.winsDays);
+  const now=Date.now(), d0=startOfDay(now);
+  const ended=calEvents().filter(e=>!e.allDay&&e.endMs<=now&&e.startMs>=d0&&!MARK.test(e.title)&&!S.wins.some(w=>w.id===evWinId(e)));
+  const dayLabel=d=>(d===today?"今日 · ":d===dayOff(today,-1)?"きのう · ":"")+new Date(d+"T12:00:00").toLocaleDateString("ja-JP",{month:"long",day:"numeric",weekday:"short"});
+  const tm=w=>w.kind==="claude"||!w.at?"":hm(w.at);
+  const row=w=>{const [e,l]=WKIND[w.kind]||WKIND.self;return `<div class="drow wrow"><span class="e" aria-hidden="true">${e}</span><div style="min-width:0"><span class="wt">${wikiInline(w.title)}</span><div class="due">${esc(l)}${w.sub?" · "+esc(w.sub):""}${tm(w)?" · "+tm(w):""}</div></div>${w.kind==="self"||w.kind==="event"?`<div class="dacts"><button class="ibtn" data-windel="${esc(w.id)}" aria-label="「${esc(w.title)}」を消す" title="消す">✕</button></div>`:""}</div>`};
+  return `<header class="head"><div><p class="eyebrow">できたこと</p><h1>やってきたこと</h1></div></header>
+  <section class="card wstats" aria-label="できたことの数">
+    <div class="wst focus"><span class="wn">${nT}</span><span class="sub">今日</span></div>
+    <div class="wst"><span class="wn">${nW}</span><span class="sub">この7日</span></div>
+    <div class="wst"><span class="wn">${list.length}</span><span class="sub">これまで</span></div>
+  </section>
+  <form class="wadd" id="winAdd" autocomplete="off"><label class="sr" for="winText">できたことを書く</label><input type="text" id="winText" maxlength="120" placeholder="できたことを書く（例：洗濯した、5分だけ机に向かった）"><button class="btn primary" type="submit">足す</button></form>
+  ${notesHere("wins")}
+  ${ended.length?`<section class="card dpanel" aria-label="終わった予定"><div class="dhead"><h2><span class="e">📅</span>終わった予定</h2><span class="sub">行ったものだけ「できた」を押す</span></div>${ended.map(e=>`<div class="drow wrow"><span class="e" aria-hidden="true">📅</span><div style="min-width:0"><span class="wt">${esc(e.title)}</span><div class="due">${fmtTime(e.startMs)}–${fmtTime(e.endMs)}</div></div><div class="dacts"><button class="btn sm" data-winev="${esc(e.id)}">できた</button></div></div>`).join("")}</section>`:""}
+  ${shown.length?`<div class="wdays">${shown.map(d=>{const xs=byDay.get(d).sort((a,b)=>(b.at||0)-(a.at||0));return `<section class="card wday"><div class="dhead"><h2>${esc(dayLabel(d))}</h2><span class="count">${xs.length}件</span></div><div>${xs.map(row).join("")}</div></section>`}).join("")}</div>
+    ${days.length>shown.length?`<button class="btn" id="winMore">前の日も見る（あと ${days.length-shown.length}日）</button>`:""}`
+  :`<div class="card empty"><b>ここに積み上がっていきます</b>タスクを完了にする・メールを返す・終わった予定に「できた」を押す・上の欄に書く。どれでも入ります。</div>`}`;
 }
-function mailCard(i,dayId){
-  const dx=S.dlMap[mailUid(i,dayId)];
-  const st=i.status||"pending", dr=i.draft, key=esc(i.key), n=S.notes[i.key];
-  let ops="";
-  if(dr){
-    if(st==="sent") ops=`<span class="msg ok">送信済み</span>`;
-    else if(st==="skipped") ops=`<span class="msg">送らないことにしました</span><button class="btn" data-act="undo" data-key="${key}">元に戻す</button>`;
-    else if(S.confirm===i.key) ops=`<span class="msg">${esc((dr.to||[]).join(", "))} に送りますか？</span><button class="btn primary" data-act="send" data-key="${key}" ${S.busy?"disabled":""}>送信する</button><button class="btn" data-act="cancel" data-key="${key}">キャンセル</button>`;
-    else ops=S.local?`${okUrl(dr.view_url)?`<a class="btn" href="${esc(dr.view_url)}" target="_blank" rel="noopener">Gmail で下書きを開く ↗</a>`:""}`:`<button class="btn primary" data-act="ask" data-key="${key}">送信…</button><button class="btn" data-act="skip" data-key="${key}">送らない</button>${okUrl(dr.view_url)?`<a class="btn" href="${esc(dr.view_url)}" target="_blank" rel="noopener">Gmail で編集 ↗</a>`:""}`;
-  } else if(okUrl(i.gmail_url)) ops=`<a class="btn" href="${esc(i.gmail_url)}" target="_blank" rel="noopener">Gmail で開く ↗</a>`;
-  return `<article class="card mail ${dr&&st!=="pending"?"done-card":""}">
-    <div class="top"><span class="pill ${PRI[i.priority]||""}">${esc(PRIJA[i.priority]||i.priority)}</span><span>${esc(i.from)}</span><span>· ${esc(i.received||"")}</span>${dx?dlChip(dx):""}</div>
-    <h3>${esc(i.subject_ja||i.subject)}</h3>${i.subject_ja&&i.subject&&i.subject_ja!==i.subject?`<div class="due">原文の件名：${esc(i.subject)}</div>`:""}<p>${esc(i.summary)}</p>
-    ${dx?`<div class="due">${dueLine(dx)}</div>`:""}
-    ${i.action?`<div class="todo">${esc(i.action)}</div>`:""}
-    ${dr?`<details class="draft" ${st==="pending"?"open":""}><summary><span>返信の下書き</span><span class="sub">Gmail の下書きに保存済み</span></summary><div class="meta">宛先：${esc((dr.to||[]).join(", "))}<br>件名：${esc(dr.subject)}</div>${dr.body_ja&&dr.body_ja!==dr.body?`<pre>${esc(dr.body_ja)}</pre><details class="sent-as"><summary>実際に送られる文面（原文）</summary><pre>${esc(dr.body)}</pre></details>`:`<pre>${esc(dr.body)}</pre>`}</details>`:""}
-    <div class="row">${ops}</div>${n?`<p class="msg ${n.ok?"ok":"err"}">${esc(n.text)}</p>`:""}</article>`;
+async function addWin(){
+  const inp=$("#winText"), title=(inp.value||"").trim().slice(0,120); if(!title){inp.focus();return}
+  try{await store.putWin({id:"self-"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),kind:"self",title});toast(["✨ 入れました","✨ ひとつ増えました","✨ いいですね"][Math.floor(Math.random()*3)])}catch(e){toast("保存できませんでした。入力はそのまま残っています");return}
+  setTimeout(()=>$("#winText")&&$("#winText").focus(),0);
 }
+/* Home: one quiet line, today's count and the latest thing */
+function winsMini(){const xs=winsToday().sort((a,b)=>(b.at||0)-(a.at||0));
+  return `<div class="card inflow"><a class="irow" href="#wins"><span class="e">✨</span>今日できたこと<span class="s">${xs[0]?esc(xs[0].title):"終わったら、ここに入ります"}</span><span class="n ${xs.length?"":"zero"}">${xs.length}</span></a></div>`}
 function inbox(){
   const f=S.inboxFilter||"open";
   const list=S.memos.filter(m=>f==="all"?true:f==="done"?m.done:!m.done).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
@@ -1628,7 +1733,7 @@ function render(){
   if(viewId()==="lifeos"){$("#view").innerHTML=searchResults()+lifeosView();wire();wireLifeos();return}
   if(viewId()==="followups"){fuLoad();$("#view").innerHTML=searchResults()+fuView();wire();wireFu();return}
   const v=viewId();
-  $("#view").innerHTML=searchResults()+(v==="focus"?focusView():v==="notes"?notesView():v==="watch"?watch():v==="tasks"?tasks():v==="calendar"?calendar():v==="news"?news():v==="mail"?mail():v==="inbox"?inbox():v==="habits"?habitsView():v==="log"?log():v==="tools"?toolsView():home());
+  $("#view").innerHTML=searchResults()+(v==="focus"?focusView():v==="notes"?notesView():v==="watch"?watch():v==="tasks"?tasks():v==="calendar"?calendar():v==="news"?news():v==="wins"?winsView():v==="inbox"?inbox():v==="habits"?habitsView():v==="log"?log():v==="tools"?toolsView():home());
   if(v==="news"||v==="watch") linkSources($("#view"));
   wire();
   if(v==="news"&&S.focus!=null){const el=document.getElementById("story-"+S.focus);S.focus=null;if(el){el.classList.add("flash");setTimeout(()=>el.scrollIntoView({block:"start"}),0)}}
@@ -1734,7 +1839,6 @@ function wire(){
     const n=noteList().find(x=>x.id===S.noteId);if(!n)return;try{await store.putNote({...n,deleted:true});S.noteId=null;toast("🗑️ 削除しました")}catch(err){toast("削除できませんでした")}});
   if(S.noteEditNew&&viewId()==="notes"){S.noteEditNew=false;setTimeout(()=>startEdit(document.querySelector(".wiki[data-edit]")),0)}
   $("#ed")&&($("#ed").onchange=e=>{S.ed=e.target.value;S.region="All";render()});
-  $("#day")&&($("#day").onchange=e=>{S.day=e.target.value;S.confirm=null;render()});
   $("#logDay")&&($("#logDay").onchange=e=>{S.logDay=e.target.value;render()});
   document.querySelectorAll("[data-region]").forEach(b=>b.onclick=()=>{S.region=b.dataset.region;render()});
   document.querySelectorAll("[data-filter]").forEach(b=>b.onclick=()=>{S.inboxFilter=b.dataset.filter;render()});
@@ -1745,6 +1849,11 @@ function wire(){
   document.querySelectorAll("[data-hdel]").forEach(b=>b.onclick=async()=>{if(!b.dataset.sure){b.dataset.sure="1";b.textContent="やめる？";b.setAttribute("aria-label","もう一度押すとやめます。記録は残りません");return}
     const h=S.habits.find(x=>x.id===b.dataset.hdel);if(h)try{await store.putHabit({...h,deleted:true})}catch(e){toast("保存できませんでした")}});
   $("#newHabit")&&($("#newHabit").onclick=()=>newHabit());
+  $("#winAdd")&&($("#winAdd").onsubmit=e=>{e.preventDefault();addWin()});
+  $("#winMore")&&($("#winMore").onclick=()=>{S.winsDays+=30;render()});
+  document.querySelectorAll("[data-winev]").forEach(b=>b.onclick=()=>{const e=calEvents().find(x=>String(x.id)===b.dataset.winev);if(e){b.disabled=true;eventWin(e)}});
+  document.querySelectorAll("[data-windel]").forEach(b=>b.onclick=async()=>{if(!b.dataset.sure){b.dataset.sure="1";b.textContent="消す？";return}
+    const w=S.wins.find(x=>x.id===b.dataset.windel);if(w)try{await store.putWin({...w,deleted:true})}catch(e){toast("保存できませんでした")}});
   document.querySelectorAll("[data-turl]").forEach(b=>b.onclick=()=>openToolUrl(b.dataset.turl));
   document.querySelectorAll("[data-memo]").forEach(b=>b.onclick=async()=>{const m=S.memos.find(x=>x.id===b.dataset.id);if(!m)return;try{
     if(b.dataset.memo==="totask") return memoToTask(m);
@@ -1755,7 +1864,6 @@ function wire(){
   document.querySelectorAll("[data-due]").forEach(b=>b.onclick=e=>{e.preventDefault();openDue(b.dataset.due)});
   document.querySelectorAll("[data-goday]").forEach(a=>a.onclick=()=>{S.day=a.dataset.goday});
   $("#soundBtn")&&($("#soundBtn").onclick=()=>{unlockAudio();setTimeout(()=>{lastChime=0;chime()},80);toast("🔈 新着のときに音が鳴ります")});
-  document.querySelectorAll("[data-act]").forEach(b=>b.onclick=()=>mailAct(b.dataset.act,b.dataset.key));
   // tasks: open, change status from the menu, drag between columns, phone column tabs
   $("#newTask")&&($("#newTask").onclick=()=>openTask(null));
   document.querySelectorAll("[data-topen]").forEach(b=>b.onclick=()=>openTask(b.dataset.topen));
@@ -1774,22 +1882,6 @@ function wire(){
     col.ondragleave=e=>{if(!col.contains(e.relatedTarget))col.classList.remove("over")};
     col.ondrop=e=>{e.preventDefault();col.classList.remove("over");setTaskStatus(e.dataTransfer.getData("text/plain"),col.dataset.col)}});
 }
-async function mailAct(a,key){
-  const item=((S.days.find(x=>x.id===S.day)||{}).data?.items||[]).find(x=>x.key===key); if(!item) return;
-  delete S.notes[key];
-  if(a==="ask"){S.confirm=key;return render()}
-  if(a==="cancel"){S.confirm=null;return render()}
-  if(a==="skip"||a==="undo"){try{await store.setMailStatus(key,a==="skip"?"skipped":"pending")}catch(e){S.notes[key]={text:"保存できませんでした。ページを再読み込みして、もう一度お試しください。"};render()}return}
-  if(a==="send"){
-    const mcp=await claude.use("mcp");
-    if(!mcp){S.notes[key]={text:"ここからは送信できません。Gmail で下書きを開いて送ってください。"};S.confirm=null;return render()}
-    S.busy=key;render();
-    try{await mcp.callTool("Gmail","send_message",{draftId:item.draft.id});S.notes[key]={ok:true,text:"送信しました。"};try{await store.setMailStatus(key,"sent")}catch(e){}}
-    catch(e){const m={needs_reauth:"Gmail の再接続が必要です。claude.ai の 設定 › コネクタ から接続し直してください。",server_not_connected:"Gmail が接続されていません。claude.ai の 設定 › コネクタ で追加してください。",not_in_manifest:"このページには Gmail で送信する許可がありません。ページの「権限」メニューでオンにしてください。",approval_required:"送信には承認が必要です。claude.ai でこのページを開いて承認してください。",tool_error:"Gmail が受け付けませんでした。下書きがすでに送信・削除されていないか確認してください。",server_unavailable:"Gmail から応答がありません。送信済みの可能性があるので、送信済みフォルダを確認してから再度お試しください。",upstream_error:"Gmail から応答がありません。送信済みの可能性があるので、送信済みフォルダを確認してから再度お試しください。"}[e&&e.code]||"送信できませんでした。Gmail で下書きを開いて送ってください。";S.notes[key]={text:m}}
-    S.busy=null;S.confirm=null;render();
-  }
-}
-
 /* ---------- note popup ---------- */
 function openNote(){
   if($("#modal").firstChild) return;
@@ -2059,6 +2151,7 @@ autoLinkStart();
     try{S.prompts=JSON.parse(localStorage.getItem("desk-prompts")||"{}")||{}}catch(e){S.prompts={}}
     try{S.wnotes=JSON.parse(localStorage.getItem("desk-notes")||"[]")||[]}catch(e){S.wnotes=[]}
     try{S.habits=JSON.parse(localStorage.getItem("desk-habits")||"[]")||[]}catch(e){S.habits=[]}
+    try{S.wins=JSON.parse(localStorage.getItem("desk-wins")||"[]")||[]}catch(e){S.wins=[]}
     return render();
   }
   db=window.claude?await claude.use("db"):null;
@@ -2070,12 +2163,13 @@ autoLinkStart();
   sub("notes",d=>S.wnotes=d.map(x=>({id:x.id,...x.data()})).filter(n=>!n.deleted));
   sub("memory",d=>S.memory=d.find(x=>x.id==="current")?.data()||null);
   sub("habits",d=>S.habits=d.map(x=>({id:x.id,...x.data()})).filter(h=>!h.deleted));
+  sub("wins",d=>S.wins=d.map(x=>({id:x.id,...x.data()})).filter(w=>!w.deleted));
   claude.use("sample").then(x=>{S.sampleOk=!!x;render()});
   sub("prompts",d=>S.prompts=promptsById(d.map(x=>({id:x.id,...x.data()}))));
   sub("calendar",d=>S.cal=d.find(x=>x.id==="upcoming")?.data()||null);
   sub("gtasks",d=>S.gtasks=d.find(x=>x.id==="current")?.data()||null);
   sub("watch",d=>S.watch=d.map(x=>({id:x.id,...x.data()})).filter(w=>!w.deleted),db.collection("watch").orderBy("date","desc").limit(30));
-  sub("reports",d=>S.reports=d.map(x=>({id:x.id,...x.data()})),db.collection("reports").orderBy("date","desc").limit(30));
+  sub("reports",d=>S.reports=d.map(x=>({id:x.id,...x.data()})),db.collection("reports").orderBy("date","desc").limit(400));
   sub("editions",d=>S.editions=d.map(x=>({id:x.id,data:x.data()})),db.collection("editions").orderBy("date","desc").limit(60));
   sub("days",d=>{S.days=d.map(x=>({id:x.id,data:x.data()}));S.loaded=true},db.collection("days").orderBy("date","desc").limit(30));
   sub("lifeos",d=>S.lifeos=d.map(x=>({id:x.id,...x.data()})));

@@ -11,21 +11,21 @@ claude.ai のチャットで直接編集しない。変更は必ずここで行�
 ### 構成
 
 - 単一HTML（外部ライブラリ・Webフォントなし。端末の日本語ゴシック）。黒基調・金色アクセント。
-- ビュー（メニューは4つのまとまり）: 今日＝Home（焦点は「今日の3つ」）/ Tasks / Calendar / 習慣、届いたもの＝Morning Mail / 返信待ち / Inbox、読む＝World Desk / マイナー国、書く・振り返る＝ノート / Claude Log / ツール。
+- ビュー（メニューは4つのまとまり）: 今日＝Home（焦点は「今日の3つ」）/ Tasks / Calendar / 習慣、届いたもの＝できたこと / 返信待ち / Inbox（朝のメールの画面はなくし、返信が要るメール＝要対応・返信案ありはタスクに入る。下書き・送信はタスクの詳細から）、読む＝World Desk / マイナー国、書く・振り返る＝ノート / Claude Log / ツール。
   iPhone は下にタブ（ホーム・タスク・カレンダー・ノート・その他）、メモは右下の丸ボタン。検索はどの画面でも `/`。
 - データはページに埋め込まない。オンライン版は Artifact DB（`window.claude` の `db`）から読む:
-  `tools`, `memos`, `tasks`, `dues`, `prompts`（毎日の求人チェックの Claude プロンプト。経歴入りなのでリポジトリに入れない）, `notes`（Scrapbox 風のノート。[言葉] でつながる。ノートのタイトルは Desk 全体で自動リンクになる。`noAuto:true` で止める）, `habits`（罰を与えない習慣。doc ごとに `done` に日付の配列）, `memory`(doc `current`。memory/ の要約で「🧭 次は？」が読む。毎時同期で Mac から載せる), `calendar`(doc `upcoming`), `gtasks`(doc `current`),
+  `tools`, `memos`, `tasks`, `dues`, `prompts`（毎日の求人チェックの Claude プロンプト。経歴入りなのでリポジトリに入れない）, `notes`（Scrapbox 風のノート。[言葉] でつながる。ノートのタイトルは Desk 全体で自動リンクになる。`noAuto:true` で止める）, `habits`（罰を与えない習慣。doc ごとに `done` に日付の配列）, `wins`（できたこと。完了したタスクは `task-<id>`、✓した予定は `event-<id>`、自分で書いたものは `self-…`。`kind`・`title`・`date`（ホーチミンの日付）。Claude の作業は `reports` の `done` から読む）, `memory`(doc `current`。memory/ の要約で「🧭 次は？」が読む。毎時同期で Mac から載せる), `calendar`(doc `upcoming`), `gtasks`(doc `current`),
   `reports`, `editions`, `days`, `watch`（マイナー国ウォッチの号。doc id は日付、本文はマークダウン）
 - Mac版も同じ `desk/index.html` を使う。`desk/server.py`（Python標準ライブラリのみ）が
   `http://localhost:4747` で配信し、`desk/data/*.js`（`window.TOOLS` 等）をページに差し込む。
-  API: `GET /api/memos|dues|tasks|prompts|notes|habits`、`POST /api/memos`、`PATCH /api/memos/<id>`、`PUT /api/dues/<id>`、`PUT /api/tasks/<id>`、`PUT /api/prompts/<id>`、`PUT /api/notes/<id>`、`PUT /api/habits/<id>`、`GET /api/followups`、`POST /api/followups/<番号>/answer`（Life OS 02。送信はしない）、`POST /api/claude`（`{cmd,arg}`。決めた10個のコマンドだけ。Terminal を開いて `claude "<コマンド>"` を始める。macOS のみ）、`GET /api/focus/state`・`POST /api/focus/start|stop`（FocusBlock への中継。パスワードは保存もログもしない）。
+  API: `GET /api/memos|dues|tasks|prompts|notes|habits|wins`、`POST /api/memos`、`PATCH /api/memos/<id>`、`PUT /api/dues/<id>`、`PUT /api/tasks/<id>`、`PUT /api/prompts/<id>`、`PUT /api/notes/<id>`、`PUT /api/habits/<id>`、`PUT /api/wins/<id>`、`GET /api/followups`、`POST /api/followups/<番号>/answer`（Life OS 02。送信はしない）、`POST /api/claude`（`{cmd,arg}`。決めた10個のコマンドだけ。Terminal を開いて `claude "<コマンド>"` を始める。macOS のみ）、`GET /api/focus/state`・`POST /api/focus/start|stop`（FocusBlock への中継。パスワードは保存もログもしない）。
   データは `desk/data/*.json`（`.gitignore` 済み。個人データは絶対にコミットしない）。
 - Mac の置き場所は `~/TatsukiDesk`（Documents などの保護フォルダは自動起動から読めないので不可）。
 - Mac の導入: `bash desk/setup-mac.sh`（サーバー常駐＋5分ごとの `git pull origin main`）。
   ローカルから開く入口は `desk/launcher.html`（setup がデスクトップに `Tatsuki's Desk.html` としてコピー）。サーバーが動いていれば localhost:4747 へ飛び、止まっていればオンライン版を選べる。
   旧版 `~/Documents/ClaudeTools` は使わない（初回だけ memos/dues/tasks を取り込む）。
 - 同期: `desk/sync/HOURLY_SYNC.md` を Mac の Claude スケジュールタスクで毎時実行。
-  memos/dues/tasks/prompts/notes/habits は双方向、それ以外はオンライン → Mac。`desk/index.html` が変わっていればオンライン版にも公開する。
+  memos/dues/tasks/prompts/notes/habits/wins は双方向、それ以外はオンライン → Mac。`desk/index.html` が変わっていればオンライン版にも公開する。
 - 削除は `deleted:true` の論理削除。同期は `updatedAt` が新しい方を採用。
 - メール送信（Gmail `send_message`）はオンライン版のみ、送信前の確認を必ず残す。
 - Claude Code のコマンド（`.claude/commands/`）：`/morning-kickoff`・`/begin`（Mac 用）、`/recap`（文脈要約。標準の `/resume` と別）、`/tsuzuki`（続きを3行で出す）・`/split`（15分以内に分けて Desk のタスクに足す）、`/rsd`、`/sync`・`/learn`・`/knowledge`。毎回守るルールは `.claude/rules/`。
