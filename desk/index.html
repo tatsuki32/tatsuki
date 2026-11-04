@@ -1922,6 +1922,7 @@ const deskArg=idea=>`\n\n追加・変更したい機能：\n${idea}\n\n対象：
 const CC=[
   {id:"kickoff",e:"☀️",name:"朝の着手",cmd:"/morning-kickoff",hint:"今日の最初の1つを決める",mac:true,kw:"あさ morning kickoff"},
   {id:"begin",e:"🚀",name:"始める",cmd:"/begin",hint:"タスク・ブランチ・issue をまとめて用意",mac:true,ask:"やること",ph:"例：履歴書を直す",kw:"はじめる start begin"},
+  {id:"firststep",e:"🪜",name:"初動を任せる",cmd:"/kickoff",hint:"止まった作業の最初の一歩を Claude がやる",mac:true,ask:"作業名",ph:"例：資料を送る",kw:"しょどう まるなげ とまっている kickoff"},
   {id:"recap",e:"📍",name:"何してたっけ",cmd:"/recap",hint:"現状と次の一手",kw:"なにしてた recap resume"},
   {id:"save",e:"💾",name:"今日を残す",cmd:"/recap",arg:"保存",hint:"作業を記録して終わる",kw:"のこす ほぞん save recap"},
   {id:"rsd",e:"🫖",name:"一呼吸",cmd:"/rsd",hint:"きついメッセージを落ち着いて読む",ask:"つらかったメッセージ",ph:"そのまま貼ってください",note:"どこにも保存しません。",kw:"ひとこきゅう rsd"},
