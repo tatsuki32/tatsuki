@@ -8,6 +8,7 @@ owner can set it. Once set, messages from every other chat are ignored.
 import fcntl
 import json
 import os
+import shutil
 import sys
 import tempfile
 import time
@@ -49,7 +50,13 @@ def handle_update(update, client, owner, routes=None):
             return
         with tempfile.TemporaryDirectory() as d:
             client.download(audio["file_id"], os.path.join(d, "voice"))
-            text = voice.transcribe(os.path.join(d, "voice"))
+            try:
+                text = voice.transcribe(os.path.join(d, "voice"))
+            except Exception as e:
+                logs.append("bot-errors", {"where": "transcribe", "error": type(e).__name__})
+                shutil.copy(os.path.join(d, "voice"), paths.data_path("inbox", "audio", str(update.get("update_id"))))
+                client.send_message(chat, "文字起こしに失敗しました。音声は inbox/audio/ に残しました。")
+                return
         ctx.is_voice = True
     else:
         text = msg.get("text") or msg.get("caption")
