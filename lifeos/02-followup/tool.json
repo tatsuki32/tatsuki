@@ -1,0 +1,55 @@
+{
+  "no": "02",
+  "name": "返信催促",
+  "oneline": "予定とメールから行動リストを作り、返信待ちを催促する（送信はしない）",
+  "status": "blocked",
+  "usage": [
+    "Desk のメニュー「返信待ち」で一覧を見て、「送る／保留／捨てる」を選ぶ（Mac と iPhone）",
+    "朝のブリーフィングに、今日の予定・こちらが返すもの・相手の返信待ちが入る",
+    "返信待ちが3日になると、催促の下書きを Gmail に作る。送信はしない",
+    "14日になると Telegram で聞く。「催促 送る 3」「催促 保留 3」「催促 捨てる 3」で答える",
+    "「催促 送る」は自分で送るタスクを作るだけで、メールは送らない",
+    "「催促 一覧」で返信待ちを番号つきで見られる",
+    "止めるときは python3 lifeos/02-followup/run.py stop"
+  ],
+  "howToCheck": [
+    "Desk のメニューで「返信待ち」を開く",
+    "ターミナルで python3 lifeos/02-followup/run.py demo と打つ",
+    "見本の一覧と問いが出ることを見る",
+    "Claude Code に「lifeos/02-followup/MORNING_RUN.md の手順で動かして」と頼む",
+    "Gmail の下書きに催促文があることを見る",
+    "Gmail の送信済みに、催促が増えていないことを見る",
+    "python3 lifeos/02-followup/run.py today と打ち、一覧が合っているか見る"
+  ],
+  "blockers": [
+    {
+      "what": "毎朝の実行",
+      "why": "Gmail を読むのと下書きを作るのは Claude が行います。毎朝動かす登録がまだで、実データでも試していません。",
+      "needs": "一度 Claude Code に MORNING_RUN.md の手順を実行してもらい、下書きを確かめる。よければ INTEGRATION.md の2番を毎朝のスケジュールタスクに登録する"
+    },
+    {
+      "what": "Telegram の接続",
+      "why": "ボットのトークンがまだなので、14日の問いは届かず outbox に残ります。",
+      "needs": "Telegram のボットを作り、トークンとチャット ID を secrets/telegram.json に入れる（01番・03番のタスクと同じ作業）"
+    },
+    {
+      "what": "予定と「こちらが返すもの」の元データ",
+      "why": "Mac に calendar.js と mail.js が見当たりません。届くまで一覧には「まだ届いていません」と出ます。",
+      "needs": "Mac の毎時同期が動いているか確かめる（desk/sync/HOURLY_SYNC.md）"
+    },
+    {
+      "what": "読む DM の範囲",
+      "why": "どの SNS を対象にするか決まっていません。今はメールと予定だけです。",
+      "needs": "対象の SNS を決める。決まったら connect.py の read_dms を差し替える"
+    },
+    {
+      "what": "本番の Desk に入っていない",
+      "why": "「返信待ち」画面は作りましたが、本番のフォルダが別の作業の途中なので、まだ入れていません。",
+      "needs": "feat/desk-focus の作業が片づいたら、統括に lifeos/base と lifeos/02-followup-desk を main へ入れるよう頼む"
+    }
+  ],
+  "commands": [
+    "/followup"
+  ],
+  "updated": "2026-11-04"
+}

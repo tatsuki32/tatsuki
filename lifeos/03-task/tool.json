@@ -1,0 +1,24 @@
+{
+  "no": "03",
+  "name": "一瞬メモ",
+  "oneline": "/task /next /done /save でタスクを出し入れする",
+  "status": "planned",
+  "usage": [
+    "/task 内容 で追加する。優先度と案件名は自動で付く",
+    "/next で次の1件、/done で完了、/save で今の作業状態を保存する",
+    "Telegram から「task: 内容」と送っても同じタスクに入る"
+  ],
+  "howToCheck": [
+    "/task 試し と打つ",
+    "5秒以内に Desk のタスクに出ることを見る",
+    "/done で完了に移ることを見る"
+  ],
+  "blockers": [],
+  "commands": [
+    "/task",
+    "/next",
+    "/done",
+    "/save"
+  ],
+  "updated": "2026-11-04"
+}

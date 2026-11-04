@@ -1,0 +1,22 @@
+{
+  "no": "15",
+  "name": "続き復元",
+  "oneline": "/tsuzuki で前回の続きを出し、/split で大きいタスクを分ける",
+  "status": "planned",
+  "usage": [
+    "/tsuzuki と打つと、前回どこまで・次の一手が3行で出る（標準の /resume とぶつかるので別の名前）",
+    "/split タスク名 で15分以内のステップに分けて Desk のタスクに足す",
+    "セッションの終わりに、やったことと次の一手が自動で記録される"
+  ],
+  "howToCheck": [
+    "何日か空けて /tsuzuki を打つ",
+    "次の一手が分かることを見る",
+    "/split の結果が Desk のタスクに出ることを見る"
+  ],
+  "blockers": [],
+  "commands": [
+    "/tsuzuki",
+    "/split"
+  ],
+  "updated": "2026-11-04"
+}

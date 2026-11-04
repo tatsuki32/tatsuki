@@ -14,10 +14,10 @@ git -C "$DESK/.." pull --ff-only origin main
 
 失敗したら（ローカルに未コミットの変更があるなど）、内容を報告して手順 2 に進む。勝手にリセットしない。
 
-## 2. データを同期する（memos / dues / tasks / prompts / notes / habits は双方向、それ以外はオンライン → Mac）
+## 2. データを同期する（memos / dues / tasks / prompts / notes / habits は双方向、lifeos は Mac → オンライン、それ以外はオンライン → Mac）
 
 1. ArtifactData でオンライン版の次のコレクションを全件読む（`list`、ページがあれば最後まで）:
-   `memos`, `dues`, `tasks`, `prompts`, `notes`, `habits`, `tools`, `calendar`, `gtasks`, `reports`, `watch`, `editions`, `days`
+   `memos`, `dues`, `tasks`, `prompts`, `notes`, `habits`, `lifeos`, `followups`, `tools`, `calendar`, `gtasks`, `reports`, `watch`, `editions`, `days`
    - `editions` と `days` は新しい順に 60 件 / 30 件あれば十分
 2. 読めたものだけを、スクラッチの一時ファイル `remote.json` に次の形で書く
    （読めなかったコレクションはキーごと省く。空配列にしない。空にすると Mac 側だけのデータが消えたように見えるため）:
@@ -32,6 +32,10 @@ git -C "$DESK/.." pull --ff-only origin main
 5. `remote.json` を消す（メール本文などを残さない）。
 
 ルール：同じ id なら `updatedAt` が新しい方を採用。削除は `deleted:true` のレコードとして同期し、ドキュメント自体は消さない。
+
+`followups`（Desk の「返信待ち」画面）は Mac が正本で、件名と相手のアドレスだけが載る。iPhone の答えは `answer` 欄で届き、`merge` が先に Mac へ反映してから、`write` で最新の状態を返す。`write` の内容をそのまま `set` する（`answer` は消えてよい）。メールの送信はしない。読めなかったときはキーごと省く。
+
+`lifeos`（Desk の「Life OS」画面。中身は `lifeos/*/tool.json`）は一方向：リポジトリが正本で、Mac に書き戻さない。違っているものだけが `write` に出るので、上の手順 4 で一緒に `set` する。オンラインにしかない id は `deleted:true` で出る。読めなかったときはキーごと省く（何も書かれない）。
 
 ## 2b. 作業の記録（memory/）をオンライン版に載せる（Desk の「🧭 次は？」用）
 

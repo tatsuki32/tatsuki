@@ -11,6 +11,7 @@ POST /api/claude opens Terminal with a Claude Code command (Desk's ⌨️ button
   Google tasks, Claude reports) lives in desk/data/*.js and is inlined into the page.
 - Nothing is ever hard-deleted: the page sends deleted:true, same as online.
 """
+import glob
 import json
 import os
 import secrets
@@ -40,7 +41,7 @@ DATA_JS = [
 LOCK = threading.Lock()
 REPO = os.path.dirname(ROOT)
 # Desk's ⌨️ buttons may start only these Claude Code commands (POST /api/claude)
-CLAUDE_CMDS = ("/morning-kickoff", "/begin", "/recap", "/rsd", "/learn", "/sync", "/knowledge", "/desk-feature")
+CLAUDE_CMDS = ("/morning-kickoff", "/begin", "/recap", "/rsd", "/learn", "/sync", "/knowledge", "/desk-feature", "/followup")
 CLAUDE_ARG_MAX = 6000
 
 
@@ -80,6 +81,44 @@ def upsert(col, doc_id, rec, merge):
         return next(x for x in items if x["id"] == doc_id)
 
 
+def lifeos_tools():
+    """Life OS: lifeos/*/tool.json, read fresh every time. A broken file shows up as a problem in the
+    list instead of taking the page down."""
+    out = []
+    for path in sorted(glob.glob(os.path.join(REPO, "lifeos", "[0-9][0-9]-*", "tool.json"))):
+        slug = os.path.basename(os.path.dirname(path))
+        try:
+            with open(path, encoding="utf-8") as f:
+                rec = json.load(f)
+            if not isinstance(rec, dict):
+                raise ValueError("object expected")
+        except (OSError, ValueError):
+            rec = {"no": slug[:2], "name": slug, "status": "blocked", "oneline": "tool.json を読めません",
+                   "blockers": [{"what": "tool.json", "why": "ファイルの形が壊れています。", "needs": "担当の作業で直す"}]}
+        out.append({**rec, "id": slug})
+    return out
+
+
+def followup_core():
+    """Life OS 02's rules, or None in a checkout without lifeos/."""
+    if REPO not in sys.path:
+        sys.path.insert(0, REPO)
+    try:
+        from lifeos.lib.tools import load_tool
+        return load_tool("02-followup", "core")
+    except (ImportError, OSError):
+        return None
+
+
+def followup_answer(no, rec):
+    """POST /api/followups/<no>/answer. Never sends mail: 送る only adds a Desk task."""
+    core = followup_core()
+    choice = rec.get("choice")
+    if core is None or choice not in core.CHOICES or not no.isdigit():
+        return 400, {"error": "bad answer"}
+    return 200, {"message": core.answer(int(no), choice), "view": core.desk_view()}
+
+
 def page():
     with open(os.path.join(ROOT, "index.html"), encoding="utf-8") as f:
         html = f.read()
@@ -96,6 +135,8 @@ def page():
     except Exception:
         mem = "null"
     parts.append(f"window.MEMORY={mem};")
+    los = json.dumps(lifeos_tools(), ensure_ascii=False).replace("</", "<\\/")
+    parts.append(f"window.LIFEOS={los};")
     inject = "<script>\n" + "\n".join(parts) + "\n</script>\n"
     i = html.find("<script>")
     return html[:i] + inject + html[i:] if i >= 0 else html + inject
@@ -181,6 +222,9 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(200, load(col))
         if path == "/health":
             return self.send(200, {"ok": True})
+        if path == "/api/followups":
+            core = followup_core()
+            return self.send(200, core.desk_view()) if core else self.send(404, {"error": "not found"})
         self.send(404, {"error": "not found"})
 
     def write(self, method):
@@ -193,6 +237,11 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(400, {"error": "bad json"})
         if method == "POST" and urlsplit(self.path).path == "/api/claude":
             return self.claude(rec)
+        parts = urlsplit(self.path).path.split("/")
+        if method == "POST" and len(parts) == 5 and parts[1:3] == ["api", "followups"] and parts[4] == "answer":
+            if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+                return self.send(415, {"error": "json only"})
+            return self.send(*followup_answer(parts[3], rec))
         rec.pop("id", None)
         rec.setdefault("updatedAt", int(time.time() * 1000))
         if method == "POST" and col == "memos" and doc_id is None:

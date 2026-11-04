@@ -53,6 +53,15 @@ claude.ai のチャットで直接編集しない。変更は必ずここで行�
 - 画面に出る文字はすべて日本語（固有名詞を除く）。データに保存する判定用の値（`priority` の `Action needed`、`region`、ツールの `group`、タスクの `status` など）は英語のままにして、表示だけ日本語にする（`PRIJA` / `REGJA` / `GROUPS`）。
   スケジュールタスク（World Desk morning brief / Morning Mail check）も日本語で書く。メールは `subject_ja`・`draft.body_ja` を足し、Gmail の下書き本体は相手の言語のまま。
 
+## Life OS（`lifeos/`）
+
+18個の小さなツールの置き場。各ツールの担当は `lifeos/README.md` だけ読めば作業できる。
+
+- `lifeos/NN-slug/tool.json` が各ツールの正本。Desk の「Life OS」画面に出る（Mac は `server.py` が毎回読んで `window.LIFEOS`、オンラインは DB の `lifeos`。毎時同期で Mac → オンラインの一方向）。
+- 共通部品は `lifeos/lib/`（データ置き場・Desk タスク・追記ログ・Markdown）。Telegram の受け口は `lifeos/bot/`（`NN-slug/handler.py` を自動で読む。試すのは `python3 lifeos/bot/cli.py "テキスト"`）。
+- 個人データは `desk/data/lifeos/`（`LIFEOS_DATA`）。タスクは Desk の `tasks` だけに置く。
+- テスト：`python3 -m unittest discover -s lifeos/tests -t .`
+
 ## 記憶の使い方（memory/）
 
 中断から60秒で戻れるように、作業の記憶をファイルに残す。詳しい書き方は `memory/README.md`。
