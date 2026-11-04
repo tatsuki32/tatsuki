@@ -20,7 +20,13 @@
     "23時を過ぎた日に /newtool を打ち、作らずに止まることを見る",
     "終わったら Claude に「試し一号から三号を消して」と頼む"
   ],
-  "blockers": [],
+  "blockers": [
+    {
+      "what": "GitHub への push",
+      "why": "この Mac に GitHub の認証がなく、main が GitHub に届きません。Mac の Desk では使えますが、iPhone から頼むと古い main で動きます。",
+      "needs": "Terminal で gh auth login を実行し、続けて git -C ~/TatsukiDesk push origin main を実行する"
+    }
+  ],
   "commands": [
     "/newtool"
   ],
