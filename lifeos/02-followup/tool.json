@@ -25,7 +25,7 @@
     {
       "what": "毎朝の実行",
       "why": "Gmail を読むのと下書きを作るのは Claude が行います。毎朝動かす登録がまだで、実データでも試していません。",
-      "needs": "一度 Claude Code に MORNING_RUN.md の手順を実行してもらい、下書きを確かめる。よければ INTEGRATION.md の2番を毎朝のスケジュールタスクに登録する"
+      "needs": "一度 Claude Code に MORNING_RUN.md の手順を実行してもらい、下書きを確かめる。よければ INTEGRATION.md のとおり毎朝のスケジュールタスクに登録する"
     },
     {
       "what": "Telegram の接続",
@@ -44,8 +44,8 @@
     },
     {
       "what": "本番の Desk に入っていない",
-      "why": "「返信待ち」画面は作りましたが、本番のフォルダが別の作業の途中なので、まだ入れていません。",
-      "needs": "feat/desk-focus の作業が片づいたら、統括に lifeos/base と lifeos/02-followup-desk を main へ入れるよう頼む"
+      "why": "main には入りましたが、まだ push していません。本番のフォルダも feat/desk-focus のままです。",
+      "needs": "push と、本番のフォルダを main にそろえることを決める"
     }
   ],
   "commands": [
