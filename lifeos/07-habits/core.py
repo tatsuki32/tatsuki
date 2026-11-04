@@ -14,7 +14,7 @@ from datetime import date, timedelta
 
 from lifeos.lib import paths, tasks
 
-# (from this many days, emoji, name, what to say on arrival). Same table as PLANTS in desk-plant.patch
+# (from this many days, emoji, name, what to say on arrival). Same table as PLANTS in desk/index.html
 STAGES = (
     (0, "🌰", "種", "種をまきました"),
     (10, "🌱", "芽", "芽が出ました"),

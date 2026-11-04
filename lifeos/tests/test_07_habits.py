@@ -51,12 +51,13 @@ class TestPlant(Base):
         self.assertEqual(self.core.status_line(12), "🌱 芽 · これまで 12回（花まであと18回）")
         self.assertEqual(self.core.status_line(120), "🌳 木 · これまで 120回")
 
-    def test_desk_patch_uses_the_same_table(self):
-        with open(os.path.join(HERE, "desk-plant.patch"), encoding="utf-8") as f:
+    def test_desk_uses_the_same_table_and_shows_it_on_the_card(self):
+        with open(os.path.join(paths.REPO, "desk", "index.html"), encoding="utf-8") as f:
             text = f.read()
         table = re.search(r"const PLANTS=\[(.*?)\];", text).group(1)
         rows = re.findall(r'\[(\d+),"(.+?)","(.+?)"\]', table)
         self.assertEqual(sorted((int(a), b, c) for a, b, c in rows), [s[:3] for s in self.core.STAGES])
+        self.assertIn('<div class="sub">${esc(plantLine(st.total))}</div>', text)
 
 
 class TestMatch(Base):

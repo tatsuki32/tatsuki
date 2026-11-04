@@ -1,16 +1,12 @@
 # 07 罰しない習慣：統括に頼む変更
 
-## 1. `desk/index.html`：習慣カードに植物を出す
+## 1. `desk/index.html`：習慣カードの植物
 
-マージのあとで、リポジトリのルートから当てます。
+本人の依頼で、このブランチの `desk/index.html` に直接入れました。マージすれば入るので、追加の作業はありません。
 
-```sh
-git apply lifeos/07-habits/desk-plant.patch
-```
+足したのは `PLANTS`・`plantLine` と、習慣カードの1行だけです。CSS は足していません。赤、責める文言、リセットは入りません。`PLANTS` は `core.py` の `STAGES` と同じ表です（テストで照合）。
 
-足すのは `PLANTS`・`plantLine` と、習慣カードの1行だけです。CSS は足しません。赤、責める文言、リセットは入りません。`PLANTS` は `core.py` の `STAGES` と同じ表です（テストで照合）。
-
-コピーの Desk に当て、375px で横スクロールが出ないことと、4段階の表示を確かめました。適用後は `desk/index.html` をオンライン版にも公開します（CLAUDE.md の公開手順）。
+Desk のコピーで、375px で横スクロールが出ないことと、4段階の表示を確かめました。main に入ったら `desk/index.html` をオンライン版にも公開します（CLAUDE.md の公開手順）。
 
 ## 2. 定期実行：週に1回の報告
 
