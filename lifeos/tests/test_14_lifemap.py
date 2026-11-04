@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from lifeos.bot import router
 from lifeos.lib import logs, md, paths, tasks
 from lifeos.lib.tools import load_tool
+from lifeos.tests.desk_import import server, sync
 from lifeos.tests.sandbox import SandboxCase
 
 core = load_tool("14-lifemap", "core")
@@ -246,6 +247,118 @@ class TestStop(SandboxCase):
         self.assertIn(v["status"], ("working", "blocked"))
         for b in v["blockers"]:
             self.assertEqual(set(b), {"what", "why", "needs"})
+
+
+def desk_answer(text):
+    """What the Desk page does: saves the answer on today's record."""
+    doc = next(d for d in core.desk_docs() if d["id"].startswith("q-"))
+    core._desk_put({**doc, "answer": text, "answeredAt": 1793800000000, "answeredVia": "desk"})
+    return doc
+
+
+class TestDesk(SandboxCase):
+    def test_the_question_reaches_the_desk(self):
+        ask()
+        d = core.desk_docs()[0]
+        self.assertEqual(d["id"], "q-2026-11-04")
+        self.assertEqual((d["area"], d["question"]), (core.load_state()["area"], core.load_state()["question"]))
+        self.assertNotIn("answer", d)
+
+    def test_a_question_that_failed_to_send_can_still_be_answered_on_the_desk(self):
+        ask(Sent(ok=False))
+        self.assertEqual(len(core.desk_docs()), 1)
+
+    def test_a_desk_answer_reaches_the_file_once(self):
+        ask()
+        doc = desk_answer("机で答えた")
+        core.tick(at("2026-11-04", "10:15"), Sent())
+        core.tick(at("2026-11-04", "10:30"), Sent())
+        text = md.read(core.area_file(doc["area"]))
+        self.assertEqual(text.count("机で答えた"), 1)
+        self.assertIn(doc["question"], text)
+
+    def test_a_desk_answer_closes_the_bot_window(self):
+        ask()
+        desk_answer("机で答えた")
+        self.assertIsNone(core.pending(now=at("2026-11-04", "10:30")))
+        self.assertIsNone(core.add_answer("あとから", at("2026-11-04", "10:31")))
+
+    def test_a_bot_answer_reaches_the_desk_and_is_not_written_again(self):
+        ask()
+        area = core.load_state()["area"]
+        core.add_answer("ボットで答えた", at("2026-11-04", "10:30"))
+        d = core.desk_docs()[0]
+        self.assertEqual((d["answer"], d["answeredVia"]), ("ボットで答えた", "telegram"))
+        core.tick(at("2026-11-04", "10:45"), Sent())
+        self.assertEqual(md.read(core.area_file(area)).count("ボットで答えた"), 1)
+
+    def test_two_answers_before_a_sync_both_stay_in_the_file(self):
+        ask()
+        area = core.load_state()["area"]
+        core.add_answer("ボットの答え", at("2026-11-04", "10:30"))
+        desk_answer("オンラインの答え")
+        core.tick(at("2026-11-04", "10:45"), Sent())
+        text = md.read(core.area_file(area))
+        self.assertIn("ボットの答え", text)
+        self.assertIn("オンラインの答え", text)
+
+    def test_pass_on_the_desk_writes_nothing_and_closes_the_bot_window(self):
+        ask()
+        area = core.load_state()["area"]
+        core._desk_put({**core.desk_docs()[0], "skipped": True})
+        core.tick(at("2026-11-04", "10:15"), Sent())
+        self.assertIsNone(md.read(core.area_file(area)))
+        self.assertIsNone(core.pending(now=at("2026-11-04", "10:30")))
+
+    def test_pass_on_the_bot_clears_the_desk(self):
+        s = ask_just_now()
+        handler.handle("パス", router.Ctx())
+        self.assertTrue(core.desk_docs()[0]["skipped"])
+        self.assertIsNone(md.read(core.area_file(s["area"])))
+
+    def test_pause_clears_todays_question_from_the_desk(self):
+        ask()
+        core.set_paused(True)
+        self.assertTrue(core.desk_docs()[0]["skipped"])
+
+    def test_answers_still_arrive_while_paused(self):
+        ask()
+        doc = desk_answer("止める前の答え")
+        core.set_paused(True)
+        core.tick(at("2026-11-04", "11:00"), Sent())
+        self.assertIn("止める前の答え", md.read(core.area_file(doc["area"])))
+
+    def test_each_day_has_its_own_record(self):
+        run_day("2026-11-04", Sent())
+        run_day("2026-11-05", Sent())
+        self.assertEqual(sorted(d["id"] for d in core.desk_docs()), ["q-2026-11-04", "q-2026-11-05"])
+
+    def test_the_monthly_insight_reaches_the_desk(self):
+        for day in ("2026-10-05", "2026-10-13"):
+            answer("work", day, "ストレス")
+            answer("money", day, "不安")
+        core.tick(at("2026-11-01", "09:00"), Sent(), random.Random(1))
+        d = next(x for x in core.desk_docs() if x["id"] == "insight-2026-10")
+        self.assertIn("ストレス", d["text"])
+
+    def test_a_broken_answer_time_does_not_lose_the_answer(self):
+        ask()
+        doc = core.desk_docs()[0]
+        core._desk_put({**doc, "answer": "時刻なし", "answeredAt": "?"})
+        core.tick(at("2026-11-04", "10:15"), Sent())
+        self.assertIn("時刻なし", md.read(core.area_file(doc["area"])))
+
+    def test_the_desk_knows_the_collection(self):
+        self.assertIn("lifemap", server.COLLECTIONS)
+        self.assertIn("lifemap", sync.TWO_WAY)
+
+    def test_the_page_has_no_counts_of_what_was_not_answered(self):
+        with open(os.path.join(paths.REPO, "desk", "index.html"), encoding="utf-8") as f:
+            html = f.read()
+        panel = html[html.index("function lifemapPanel"):html.index("function wireLifemap")]
+        self.assertIn("data-noauto", panel)  # answers stay out of the automatic links
+        for word in ("未回答", "連続", "催促"):
+            self.assertNotIn(word, panel)
 
 
 class TestInsight(SandboxCase):

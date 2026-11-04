@@ -27,7 +27,7 @@ from urllib.parse import unquote, urlsplit
 ROOT = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(ROOT, "data")
 PORT = int(os.environ.get("DESK_PORT", "4747"))
-COLLECTIONS = ("memos", "dues", "tasks", "prompts", "notes", "habits")
+COLLECTIONS = ("memos", "dues", "tasks", "prompts", "notes", "habits", "lifemap")
 # file in data/, global the page reads, value when the file is missing
 DATA_JS = [
     ("tools.js", "TOOLS", "[]"),
@@ -97,6 +97,21 @@ def lifeos_tools():
                    "blockers": [{"what": "tool.json", "why": "ファイルの形が壊れています。", "needs": "担当の作業で直す"}]}
         out.append({**rec, "id": slug})
     return out
+
+
+def lifemap_ticks():
+    """Life OS 14: the daily question. This server always runs, so no other scheduled job is needed.
+    A failure here never touches the Desk: the next round simply tries again."""
+    sys.path.insert(0, REPO)
+    while True:
+        try:
+            from lifeos.lib.tools import load_tool
+            core = load_tool("14-lifemap", "core")
+            core.tick()
+            wait = core.TICK_MINUTES * 60
+        except Exception:
+            wait = 900
+        time.sleep(wait)
 
 
 def page():
@@ -219,7 +234,7 @@ class Handler(BaseHTTPRequestHandler):
         if method == "POST" and col == "memos" and doc_id is None:
             doc_id = "m" + str(int(time.time() * 1000)) + secrets.token_hex(2)
             return self.send(200, upsert(col, doc_id, rec, merge=False))
-        if method == "PUT" and col in ("dues", "tasks", "prompts", "notes", "habits") and doc_id:
+        if method == "PUT" and col in ("dues", "tasks", "prompts", "notes", "habits", "lifemap") and doc_id:
             return self.send(200, upsert(col, doc_id, rec, merge=False))
         if method == "PATCH" and col == "memos" and doc_id:
             out = upsert(col, doc_id, rec, merge=True)
@@ -256,6 +271,7 @@ if __name__ == "__main__":
     os.makedirs(DATA, exist_ok=True)
     srv = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
     print(f"Tatsuki's Desk: http://localhost:{PORT}", flush=True)
+    threading.Thread(target=lifemap_ticks, daemon=True).start()
     try:
         srv.serve_forever()
     except KeyboardInterrupt:

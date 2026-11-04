@@ -440,6 +440,17 @@ h1 .inedit{font-size:var(--t4);font-weight:700}
 .lcmds{display:flex;flex-wrap:wrap;gap:var(--s2);margin:var(--s2) 0 0}
 .lcmds code{font-family:var(--code);font-size:var(--t1);color:var(--ink);background:var(--surface-2);border-radius:var(--r-s);padding:2px var(--s2)}
 .lbody>.sub{margin:0}
+.lm{display:grid;gap:var(--s4);margin-bottom:var(--s2)}
+.lmq{display:grid;gap:var(--s2)}
+.lmq h3{margin:0}
+.lmask{margin:0 0 var(--s1);font-size:var(--t4);font-weight:700;line-height:1.4;color:var(--ink);text-wrap:pretty}
+.lmq textarea{width:100%;box-sizing:border-box;min-height:96px;resize:vertical;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:var(--r-s);padding:var(--s2);font:inherit;font-size:var(--t3);line-height:1.6}
+.lmq textarea:focus{outline:none;border-color:var(--accent)}
+.lmacts{display:flex;gap:var(--s2)}
+.lmlist{display:grid;gap:var(--s3);margin-top:var(--s3)}
+.lmitem{display:grid;gap:var(--s1)}
+.lmmeta{font-size:var(--t1);color:var(--muted)}
+.lmitem p,.lmtext{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.6;color:var(--ink-2)}
 @media (max-width:560px){.lbody{padding-left:var(--s3)}.lmain{display:contents}.lone{grid-column:2/-1;grid-row:2}}
 </style>
 
@@ -1612,7 +1623,7 @@ function losTool(t){
   const open=(S.losOpen||{})[slug]??(t.status==="blocked"||t.status==="working");
   return `<details class="card los" data-los="${esc(slug)}" ${open?"open":""}>
     <summary><span class="lno">${esc(t.no)}</span><span class="lmain"><h2>${esc(t.name)}</h2><span class="lone">${esc(t.oneline)}</span></span><span class="pill ${cls}">${label}</span><span class="lcaret" aria-hidden="true">›</span></summary>
-    <div class="lbody">
+    <div class="lbody">${slug==="14-lifemap"?lifemapPanel(t):""}
       ${bl.length?`<section><h3>${t.status==="blocked"?"止まっている理由":"先に決めること"}</h3>${bl.map(b=>`<div class="lblock"><b>${esc(b.what)}</b><p>${esc(b.why)}</p>${b.needs?`<p>必要なこと：${esc(b.needs)}</p>`:""}</div>`).join("")}</section>`:""}
       ${usage.length||cmds.length?`<section><h3>使い方</h3>${usage.length?`<ul>${usage.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:""}${cmds.length?`<p class="lcmds">${cmds.map(c=>`<code>${esc(c)}</code>`).join("")}</p>`:""}</section>`:""}
       ${steps.length?`<section><h3>確かめ方</h3><ol>${steps.map(x=>`<li>${esc(x)}</li>`).join("")}</ol></section>`:""}
@@ -1631,7 +1642,45 @@ function lifeosView(){
 function wireLifeos(){
   document.querySelectorAll("[data-losf]").forEach(b=>b.onclick=()=>{S.losF=b.dataset.losf;render()});
   document.querySelectorAll("details[data-los]").forEach(d=>d.ontoggle=()=>{(S.losOpen=S.losOpen||{})[d.dataset.los]=d.open});
+  wireLifemap();
 }
+/* Life OS 14: today's question, past answers, monthly patterns. Nothing here counts what was not answered. */
+const LM_AREAS=[["work","仕事"],["money","お金"],["health","健康"],["people","人間関係"],["learning","学び"],["home","住まい・移動"]];
+const lmName=k=>(LM_AREAS.find(a=>a[0]===k)||[k,k])[1];
+const lmDocs=()=>(S.lifemap||[]).filter(d=>!d.deleted);
+const lmToday=()=>lmDocs().find(d=>d.day===hcmcDate()&&!d.answer&&!d.skipped);
+async function loadLifemap(){try{S.lifemap=await api("GET","/api/lifemap");if(viewId()==="lifeos")render()}catch(e){}} // an older server has no such route
+async function putLifemap(d){const {id,...rec}={...d,updatedAt:Date.now()};
+  if(db){await db.collection("lifemap").doc(id).set(rec)}
+  else if(LOCALAPI){await api("PUT","/api/lifemap/"+encodeURIComponent(id),rec);await loadLifemap()}
+  else throw new Error("offline")}
+function lifemapPanel(t){
+  const q=t.status==="stopped"?null:lmToday(), docs=lmDocs();
+  const answered=docs.filter(d=>d.answer&&String(d.id).startsWith("q-")).sort((a,b)=>String(b.day).localeCompare(String(a.day)));
+  const insights=docs.filter(d=>d.text&&d.month).sort((a,b)=>String(b.month).localeCompare(String(a.month)));
+  const areas=LM_AREAS.filter(a=>answered.some(d=>d.area===a[0])), pick=areas.some(a=>a[0]===S.lmArea)?S.lmArea:null;
+  if(!q&&!answered.length&&!insights.length) return "";
+  return `<div class="lm" data-noauto>
+    ${q?`<section class="lmq"><h3>${esc(lmName(q.area))}</h3><p class="lmask">${esc(q.question)}</p>
+      <textarea id="lmAns" rows="3" aria-label="答え">${esc(S.lmDraft||"")}</textarea>
+      <div class="lmacts"><button class="btn primary" id="lmSave">書く</button><button class="btn" id="lmPass">パス</button></div></section>`:""}
+    ${areas.length?`<section><h3>答えを読む</h3><div class="chips" role="group" aria-label="分野">${areas.map(a=>`<button class="chip" data-lmarea="${a[0]}" aria-pressed="${pick===a[0]}">${a[1]}</button>`).join("")}</div>
+      ${pick?`<div class="lmlist">${answered.filter(d=>d.area===pick).map(d=>`<div class="lmitem"><span class="lmmeta">${esc(d.day)} ・ ${esc(d.question)}</span><p>${esc(d.answer)}</p></div>`).join("")}</div>`:""}</section>`:""}
+    ${insights.length?`<section><h3>月の気づき</h3><div class="lmlist">${insights.map(d=>`<p class="lmtext">${esc(d.text)}</p>`).join("")}</div></section>`:""}
+  </div>`;
+}
+function wireLifemap(){
+  document.querySelectorAll("[data-lmarea]").forEach(b=>b.onclick=()=>{S.lmArea=S.lmArea===b.dataset.lmarea?null:b.dataset.lmarea;render()});
+  const ta=$("#lmAns");if(!ta)return;
+  ta.oninput=()=>{S.lmDraft=ta.value};
+  ta.onfocus=()=>{S.lmFocus=true};ta.onblur=()=>{S.lmFocus=false};
+  if(S.lmFocus){ta.focus();ta.setSelectionRange(ta.value.length,ta.value.length)} // a re-render must not interrupt typing
+  $("#lmSave").onclick=async()=>{const text=ta.value.trim(),d=lmToday();if(!text){ta.focus();return}if(!d)return;
+    try{await putLifemap({...d,answer:text,answeredAt:Date.now(),answeredVia:"desk"});S.lmDraft="";S.lmFocus=false;toast(lmName(d.area)+"に書きました");render()}catch(e){toast("保存できませんでした")}};
+  $("#lmPass").onclick=async()=>{const d=lmToday();if(!d)return;
+    try{await putLifemap({...d,skipped:true});S.lmDraft="";S.lmFocus=false;render()}catch(e){toast("保存できませんでした")}};
+}
+if(LOCALAPI)loadLifemap();
 function wire(){
   document.querySelectorAll("[data-pal]").forEach(b=>b.onclick=()=>palRun(+b.dataset.pal));
   document.querySelectorAll("#view [data-cc]").forEach(b=>b.onclick=()=>openCC(b.dataset.cc));
@@ -1909,6 +1958,7 @@ autoLinkStart();
   sub("editions",d=>S.editions=d.map(x=>({id:x.id,data:x.data()})),db.collection("editions").orderBy("date","desc").limit(60));
   sub("days",d=>{S.days=d.map(x=>({id:x.id,data:x.data()}));S.loaded=true},db.collection("days").orderBy("date","desc").limit(30));
   sub("lifeos",d=>S.lifeos=d.map(x=>({id:x.id,...x.data()})));
+  sub("lifemap",d=>S.lifemap=d.map(x=>({id:x.id,...x.data()})));
   db.collection("dues").onSnapshot(s=>{S.dues=duesById(s.docs.filter(d=>d.exists).map(d=>d.data()));render()},()=>{});
 })();
 </script>

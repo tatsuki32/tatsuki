@@ -5,19 +5,22 @@ At most one question a day: the question is recorded before it is sent, so a cra
 send loses that day's question instead of asking twice.
 """
 import fcntl
+import hashlib
 import json
 import os
 import random
 import re
 import tempfile
+import urllib.parse
 from contextlib import contextmanager
 from datetime import datetime, timedelta
 
 from lifeos.bot import telegram
-from lifeos.lib import logs, md, paths, tools
+from lifeos.lib import logs, md, paths, tasks, tools
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 LOG = "lifemap"
+COLLECTION = "lifemap"          # the Desk's collection: questions, answers and monthly insights
 START_HOUR, END_HOUR = 9, 21    # questions only in this window, never late at night
 TICK_MINUTES = 15               # how often the scheduler runs tick()
 ANSWER_HOURS = 2                # how long a plain message counts as the answer
@@ -129,6 +132,57 @@ def _save_state(state):
     os.replace(tmp, p)
 
 
+def _desk_file():
+    return os.path.join(paths.desk_data_dir(), COLLECTION + ".json")
+
+
+def desk_docs():
+    """The Desk's lifemap collection: through the server when it is up, else from its file."""
+    if tasks._server_up():
+        try:
+            return tasks._call("GET", "/api/" + COLLECTION)
+        except (OSError, ValueError):
+            pass
+    try:
+        with open(_desk_file(), encoding="utf-8") as f:
+            v = json.load(f)
+    except (OSError, ValueError):
+        return []
+    return [x for x in v if isinstance(x, dict) and x.get("id")] if isinstance(v, list) else []
+
+
+def _desk_put(doc):
+    rec = {**doc, "updatedAt": paths.now_ms()}
+    if tasks._server_up():
+        try:
+            body = {k: v for k, v in rec.items() if k != "id"}
+            tasks._call("PUT", f"/api/{COLLECTION}/" + urllib.parse.quote(doc["id"], safe=""), body)
+            return rec
+        except (OSError, ValueError):
+            pass  # an older server, or it went away: fall through to the file
+    os.makedirs(paths.desk_data_dir(), exist_ok=True)
+    with open(_desk_file() + ".lock", "w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        items = [x for x in desk_docs() if x["id"] != doc["id"]] + [rec]
+        fd, tmp = tempfile.mkstemp(dir=paths.desk_data_dir(), prefix=".lifemap", suffix=".tmp")
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump(items, f, ensure_ascii=False, indent=1)
+        os.replace(tmp, _desk_file())
+    return rec
+
+
+def _desk_doc(doc_id):
+    return next((d for d in desk_docs() if d["id"] == doc_id), None)
+
+
+def _question_id(day):
+    return "q-" + day
+
+
+def _closed(doc):
+    return bool(doc and (doc.get("answer") or doc.get("skipped") or doc.get("deleted")))
+
+
 def _stopped():
     return tools.info(HERE).get("status") == "stopped"
 
@@ -185,6 +239,8 @@ def _ask(state, now, send, rng):
     state.update(askedAt=now.isoformat(timespec="seconds"), area=area, question=question, open=False)
     _save_state(state)
     logs.append(LOG, {"kind": "ask", "day": day, "area": area, "question": question})
+    _desk_put({"id": _question_id(day), "day": day, "area": area, "question": question,
+               "askedAt": state["askedAt"], "deleted": False})
     text = format_question(area, question)
     sent = (send or telegram.notify)(text)
     # A question that never arrived must not swallow the next message. Without Telegram the
@@ -202,6 +258,7 @@ def tick(now=None, send=None, rng=None):
     if _stopped():
         return out
     with _locked():
+        import_desk_answers()
         state = load_state()
         if state.get("paused"):
             return out
@@ -233,6 +290,8 @@ def pending(state=None, now=None):
     asked = datetime.fromisoformat(state["askedAt"])
     if (now or paths.now()) - asked > timedelta(hours=ANSWER_HOURS):
         return None
+    if _closed(_desk_doc(_question_id(state["askedAt"][:10]))):  # answered on the Desk already
+        return None
     return {"area": state["area"], "question": state["question"]}
 
 
@@ -240,23 +299,59 @@ def area_file(area):
     return f"life/{area}.md"
 
 
+def _answer_key(doc_id, text):
+    return doc_id + ":" + hashlib.sha1(text.encode("utf-8")).hexdigest()[:12]
+
+
+def _write_answer(area, question, text, when, doc_id):
+    """Adds one answer to the area's file and remembers it, so the Desk's copy is not added again."""
+    rel = area_file(area)
+    if md.read(rel) is None:
+        md.save(rel, f"# {AREAS[area]}\n")
+    md.append(rel, f"\n## {when.strftime('%Y-%m-%d %H:%M')}\n> {question}\n\n{text.strip()}\n")
+    logs.append(LOG, {"kind": "answer", "day": when.strftime("%Y-%m-%d"), "area": area,
+                      "key": _answer_key(doc_id, text.strip())})
+
+
 def add_answer(text, now=None, is_voice=False):
-    """Appends the answer to the area's file and closes the question. Returns the area or None."""
+    """Appends a reply from the bot to the area's file and closes the question. Returns the area or None."""
     now = now or paths.now()
+    text = text.strip() + ("（音声）" if is_voice else "")
     with _locked():
         state = load_state()
         q = pending(state, now)
         if not q:
             return None
-        rel = area_file(q["area"])
-        if md.read(rel) is None:
-            md.save(rel, f"# {AREAS[q['area']]}\n")
-        suffix = "（音声）" if is_voice else ""
-        md.append(rel, f"\n## {now.strftime('%Y-%m-%d %H:%M')}\n> {q['question']}\n\n{text.strip()}{suffix}\n")
+        doc_id = _question_id(state["askedAt"][:10])
+        _write_answer(q["area"], q["question"], text, now, doc_id)
         state["open"] = False
         _save_state(state)
-    logs.append(LOG, {"kind": "answer", "day": now.strftime("%Y-%m-%d"), "area": q["area"]})
+        _desk_put({**(_desk_doc(doc_id) or {"id": doc_id, "day": doc_id[2:], "area": q["area"], "question": q["question"]}),
+                   "answer": text, "answeredAt": int(now.timestamp() * 1000), "answeredVia": "telegram"})
     return q["area"]
+
+
+def import_desk_answers():
+    """Copies answers written on the Desk (Mac or online) into the area files, each one once.
+
+    The key holds the text: if the bot and the online Desk both got an answer before a sync,
+    the sync keeps one on the Desk, and the file keeps both words.
+    """
+    done = {r.get("key") for r in logs.read(LOG) if r.get("kind") == "answer"}
+    added = 0
+    for d in desk_docs():
+        text = (d.get("answer") or "").strip()
+        if d.get("deleted") or not text or d.get("area") not in AREAS or not str(d["id"]).startswith("q-"):
+            continue
+        if _answer_key(d["id"], text) in done:
+            continue
+        try:
+            when = datetime.fromtimestamp(float(d["answeredAt"]) / 1000, paths.HCMC)
+        except (KeyError, TypeError, ValueError, OverflowError, OSError):
+            when = paths.now()
+        _write_answer(d["area"], d.get("question") or "", text, when, d["id"])
+        added += 1
+    return added
 
 
 def skip():
@@ -265,6 +360,14 @@ def skip():
         state = load_state()
         state["open"] = False
         _save_state(state)
+        _close_on_desk(state)
+
+
+def _close_on_desk(state):
+    if state.get("askedAt"):
+        doc = _desk_doc(_question_id(state["askedAt"][:10]))
+        if doc and not _closed(doc):
+            _desk_put({**doc, "skipped": True})
 
 
 def entries(month):
@@ -357,6 +460,7 @@ def _monthly(state, now, send):
     if not text:
         return None
     md.save(f"life/insights/{month}.md", f"# {month} の気づき\n\n{text}\n")
+    _desk_put({"id": "insight-" + month, "month": month, "text": text, "deleted": False})
     (send or telegram.notify)(text)
     return text
 
@@ -367,4 +471,5 @@ def set_paused(paused):
         state["paused"] = bool(paused)
         if paused:
             state["open"] = False
+            _close_on_desk(state)
         _save_state(state)
