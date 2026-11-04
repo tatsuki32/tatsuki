@@ -256,21 +256,23 @@ def _item(title, reason, c):
 
 
 def pick_first(c):
-    """Exactly one item, in the order of .claude/commands/morning-kickoff.md:
-    due today, the first "next step", in progress, the rest. Always returns something."""
+    """Exactly one item: due today, in progress, the rest, then the first "next step".
+
+    Unlike /morning-kickoff, a next step never beats a real task: session notes are often
+    developer notes, and this item is shown without anyone choosing. Always returns something."""
     todo = c.get("tasks") or []
     steps = [s.get("text", "") for s in c.get("nextSteps") or [] if s.get("text")]
     for t in todo:
         if t.get("dueToday"):
             return _item(t.get("title", ""), "今日が締切", c)
-    if steps:
-        return _item(steps[0], "前回の「次の一手」", c)
     for t in todo:
         if t.get("status") == "doing":
             return _item(t.get("title", ""), "進行中で、続きから入れる", c)
     if todo:
         reason = "今日片づけると楽になる" if todo[0].get("overdue") else "いま一番上にある"
         return _item(todo[0].get("title", ""), reason, c)
+    if steps:
+        return _item(steps[0], "前回の「次の一手」", c)
     return _item(EMPTY_ITEM, "いま開いているタスクがない", c)
 
 

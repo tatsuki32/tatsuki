@@ -220,9 +220,9 @@ class TestPickFirst(Base):
         due = {"title": "今日まで", "status": "notyet", "dueToday": True}
         step = [{"text": "前回の続き"}]
         self.assertEqual(core.pick_first({"tasks": [plain, doing, due], "nextSteps": step})["title"], "今日まで")
-        self.assertEqual(core.pick_first({"tasks": [plain, doing], "nextSteps": step})["title"], "前回の続き")
-        self.assertEqual(core.pick_first({"tasks": [plain, doing]})["title"], "進行中")
-        self.assertEqual(core.pick_first({"tasks": [plain]})["title"], "ふつう")
+        self.assertEqual(core.pick_first({"tasks": [plain, doing], "nextSteps": step})["title"], "進行中")
+        self.assertEqual(core.pick_first({"tasks": [plain], "nextSteps": step})["title"], "ふつう")
+        self.assertEqual(core.pick_first({"tasks": [], "nextSteps": step})["title"], "前回の続き")
 
     def test_always_exactly_one(self):
         self.assertEqual(core.pick_first({})["title"], core.EMPTY_ITEM)
