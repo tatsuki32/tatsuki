@@ -31,3 +31,8 @@ lifeos/02-followup/MORNING_RUN.md の手順を、そのとおりに実行して�
 ## 4. 確かめたあと
 
 実データで動いたら `tool.json` の `status` を `working` にし、解決した `blockers` を消します。
+
+## 5. main に入れる順番（本人の決定）
+
+`feat/desk-focus` の作業が片づくまで、main へ入れません。
+片づいたら `lifeos/base`、次に `lifeos/02-followup` の順に入れます。`desk/index.html` と `desk/server.py` はぶつかる可能性があるので、マージのときに確かめます。

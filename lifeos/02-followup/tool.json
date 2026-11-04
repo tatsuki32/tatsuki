@@ -39,6 +39,11 @@
       "what": "読む DM の範囲",
       "why": "どの SNS を対象にするか決まっていません。今はメールと予定だけです。",
       "needs": "対象の SNS を決める。決まったら connect.py の read_dms を差し替える"
+    },
+    {
+      "what": "本番の Desk に入っていない",
+      "why": "Life OS 画面がまだ main になく、本番のフォルダは別の作業の途中です。",
+      "needs": "feat/desk-focus の作業が片づいたら、統括に lifeos/base と 02 を main へ入れるよう頼む"
     }
   ],
   "commands": [],
