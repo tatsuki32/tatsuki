@@ -18,6 +18,7 @@ REMOTE.json: {"memos": [{"id": ..., ...fields}], "dues": [...], "tasks": [...], 
 Rule for memos / dues / tasks / prompts / notes / habits / lifemap: per id, the record with the larger updatedAt wins;
 a missing updatedAt counts as 0; nothing is removed (deleted:true is a record too).
 lifeos flows Mac -> online only: lifeos/*/tool.json in this repo is the source (Life OS view).
+followups flows Mac -> online too, except the answers left on its docs, which are applied here first.
 Everything else flows online -> Mac only.
 """
 import hashlib
@@ -28,7 +29,7 @@ import sys
 ROOT = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(ROOT, "data")
 sys.path.insert(0, ROOT)
-from server import LOCK, lifeos_tools, load, save  # noqa: E402
+from server import LOCK, followup_core, lifeos_tools, load, save  # noqa: E402
 
 TWO_WAY = ("memos", "dues", "tasks", "prompts", "notes", "habits", "lifemap")
 
@@ -64,6 +65,18 @@ def lifeos_push(remote):
     if local:  # an old checkout without lifeos/ must not hide what is online
         push += [{"id": i, "deleted": True} for i, d in online.items() if i not in local and not d.get("deleted")]
     return push
+
+
+def followups_push(remote):
+    """Life OS 02: answers from the phone go in, the current list goes out. A failure must not stop the sync."""
+    core = followup_core()
+    if core is None:
+        return []
+    try:
+        return core.sync_online(remote)
+    except Exception as e:
+        print("followups: " + type(e).__name__, file=sys.stderr)
+        return []
 
 
 def write_js(name, var, value):
@@ -102,6 +115,10 @@ def cmd_merge(remote_path):
         push = lifeos_push(remote["lifeos"])
         if push:
             write["lifeos"] = push
+    if "followups" in remote:
+        push = followups_push(remote["followups"])
+        if push:
+            write["followups"] = push
     strip = lambda d: {k: v for k, v in d.items() if k != "id"}
     if "tools" in remote:
         write_js("tools.js", "TOOLS", [d for d in remote["tools"] if not d.get("deleted")])
