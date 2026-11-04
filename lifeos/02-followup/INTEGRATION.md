@@ -4,10 +4,8 @@
 
 ## 残っていること
 
-1. origin へ push する。
-2. 本番フォルダ（`~/TatsukiDesk`）を main の内容にそろえる。今は `feat/desk-focus` にいて、そちらは main に入っていません。
-3. オンライン版へ公開する（CLAUDE.md の公開手順。`capabilities` は変えない）。毎時同期が `followups` を読むので、同期の手順と一緒に反映する。
-4. ツールボックスに登録する（register-tool-in-toolbox）。
+1. origin へ push する（GitHub のログイン待ち）。
+2. ツールボックスに登録する（register-tool-in-toolbox）。
 
 ## 毎朝のスケジュールタスク（本人の確認のあとで登録）
 

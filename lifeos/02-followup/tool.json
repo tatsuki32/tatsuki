@@ -43,9 +43,9 @@
       "needs": "対象の SNS を決める。決まったら connect.py の read_dms を差し替える"
     },
     {
-      "what": "本番の Desk に入っていない",
-      "why": "main には入りましたが、まだ push していません。本番のフォルダも feat/desk-focus のままです。",
-      "needs": "push と、本番のフォルダを main にそろえることを決める"
+      "what": "GitHub への push",
+      "why": "この Mac に GitHub のログインがないので、main を送れません。Mac の Desk には入っています。",
+      "needs": "ターミナルで gh auth login と gh auth setup-git を実行する"
     }
   ],
   "commands": [
