@@ -2,18 +2,30 @@
   "no": "03",
   "name": "一瞬メモ",
   "oneline": "/task /next /done /save でタスクを出し入れする",
-  "status": "planned",
+  "status": "working",
   "usage": [
-    "/task 内容 で追加する。優先度と案件名は自動で付く",
-    "/next で次の1件、/done で完了、/save で今の作業状態を保存する",
-    "Telegram から「task: 内容」と送っても同じタスクに入る"
+    "/task 内容 で追加する。優先度と案件名は自動で付く。!高 や #案件名 で指定もできる",
+    "/next で次の1件を出す。作業の状態は変えない",
+    "/done で /next の1件を完了にする。/done 題の一部 で選ぶこともできる",
+    "/save で、やったことと次の一手を保存する",
+    "Telegram から「task: 内容」と送っても同じタスクに入る（ボットの接続後）"
   ],
   "howToCheck": [
-    "/task 試し と打つ",
-    "5秒以内に Desk のタスクに出ることを見る",
-    "/done で完了に移ることを見る"
+    "Mac の Claude Code で /task 試し #テスト と打つ",
+    "Desk のタスク画面を開き直して「試し」が出ることを見る",
+    "/next と打ち、1件だけ出ることを見る",
+    "「試し」が出たら /done と打つ。別のものが出たら /done 試し と打つ",
+    "Desk のタスク画面で「試し」が完了に移ることを見る",
+    "/save と打ち、「保存しました」と出ることを見る",
+    "変更の履歴は python3 lifeos/03-task/cli.py history で見る"
   ],
-  "blockers": [],
+  "blockers": [
+    {
+      "what": "Telegram からの追加",
+      "why": "ボットのトークンがまだ無いので、本番の Telegram では試せていません。/task /next /done /save は使えます。",
+      "needs": "BotFather でボットを作り、トークンを secrets/telegram.json か環境変数に入れる。ボットを Mac とクラウドのどちらに置くかも決める。"
+    }
+  ],
   "commands": [
     "/task",
     "/next",

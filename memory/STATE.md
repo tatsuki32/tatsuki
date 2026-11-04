@@ -1,6 +1,6 @@
 # 今の状態（STATE）
 
-最終更新：2026-11-03（main）
+最終更新：2026-11-04（ブランチ `claude/serene-lamport-jzjfj5`）
 
 ## 進行中の作業
 - 作りたい機能リスト（全11件）を順番に作っている。Desk のタスク「作りたい機能①〜⑪」で進み具合を見る。
@@ -10,10 +10,13 @@
 - 全部 main にマージ済み（tatsuki32/tatsuki#9、2026-11-03）。Mac で実際に動かして直す段階。
 
 - Desk の UI/UX 作り替え：main にマージ済み（tatsuki32/tatsuki#12）。
+- 朝のメールをタスクに一本化＋「できたこと」画面（`wins`）：実装・オンライン版に公開。main に未マージ（Mac に届くのはマージ後）。
 - コマンドを忘れる対策：Desk の「🤖 Claude に頼む」カードと、検索欄の `/` コマンド一覧。main にマージ済み。Mac の Terminal 起動は未確認。
 - Desk 全体の文字リンク（Scrapbox 式）：main にマージ済み・オンライン版に公開済み。iPhone 実機の長押しは未確認。
 
-- Life OS（18個のツール）：土台を `lifeos/base` に作った。ツール別の作業はこれから。約束は `lifeos/README.md`。
+- Desk の「🎯 集中」と `focusblock/`：main に入れた。本物のブロックは本人の確認待ち。
+
+- Life OS（18個のツール）：土台と 01・02・11・12・13 を main に入れた。残りはブランチのまま。統括役は置かない。約束は `lifeos/README.md`。
 
 ## 決定済みの事項
 - UI/UX を作るときは毎回、本を全文読んでから（`.claude/rules/design-ui.md`）。Drive の文字変換は p.136 まで。後半は Tatsuki のまとめで補っている。

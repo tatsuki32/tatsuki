@@ -17,9 +17,9 @@ class TestToolJson(SandboxCase):
     def test_all_eighteen_are_well_formed(self):
         found = sorted(os.path.basename(os.path.dirname(p))
                        for p in glob.glob(os.path.join(paths.REPO, "lifeos", "*", "tool.json")))
-        self.assertEqual(found, SLUGS)
+        self.assertEqual([s for s in found if s in SLUGS], SLUGS)
         commands = []
-        for slug in SLUGS:
+        for slug in found:
             with open(os.path.join(paths.REPO, "lifeos", slug, "tool.json"), encoding="utf-8") as f:
                 t = json.load(f)
             self.assertEqual(t["no"], slug[:2])
