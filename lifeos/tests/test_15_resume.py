@@ -343,14 +343,13 @@ class TestHook(Base):
 
 
 class TestIntegration(SandboxCase):
-    def test_snippet_is_valid_and_never_exits_two(self):
-        with open(os.path.join(TOOL, "INTEGRATION.md"), encoding="utf-8") as f:
-            text = f.read()
-        snippet = json.loads(text.split("```json")[1].split("```")[0])
+    def test_registered_hooks_never_exit_two(self):
+        with open(os.path.join(paths.REPO, ".claude", "settings.json"), encoding="utf-8") as f:
+            hooks = json.load(f)["hooks"]
         for event in ("Stop", "SessionEnd"):
-            cmd = snippet["hooks"][event][0]["hooks"][0]["command"]
-            self.assertIn("15-resume/hook.py", cmd)
+            cmds = [h["command"] for group in hooks[event] for h in group["hooks"] if "15-resume/hook.py" in h["command"]]
+            self.assertEqual(len(cmds), 1, event)
             # a branch without the script must not block the session: exit 2 would
             env = {**os.environ, "CLAUDE_PROJECT_DIR": self.tmp}
-            r = subprocess.run(["sh", "-c", cmd], input="{}", capture_output=True, text=True, env=env)
+            r = subprocess.run(["sh", "-c", cmds[0]], input="{}", capture_output=True, text=True, env=env)
             self.assertEqual((r.returncode, r.stdout, r.stderr), (0, "", ""))
