@@ -15,6 +15,7 @@ POST /api/claude opens Terminal with a Claude Code command (Desk's ⌨️ button
 import glob
 import json
 import os
+import re
 import secrets
 import shlex
 import subprocess
@@ -25,7 +26,9 @@ import time
 import urllib.error
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from urllib.parse import unquote, urlsplit
+from urllib.parse import parse_qs, unquote, urlsplit
+
+import wise_sync
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(ROOT, "data")
@@ -230,6 +233,43 @@ def followup_answer(no, rec):
     return 200, {"message": core.answer(int(no), choice), "view": core.desk_view()}
 
 
+def subs_core():
+    """Life OS 18, or None in a checkout without lifeos/."""
+    if REPO not in sys.path:
+        sys.path.insert(0, REPO)
+    try:
+        from lifeos.lib.tools import load_tool
+        return load_tool("18-subs", "core")
+    except (ImportError, OSError):
+        return None
+
+
+def wise_view(month=None):
+    """GET /api/wise: a month of Wise activity, read from disk. Opening the page never calls Wise."""
+    if month is not None and not re.fullmatch(r"\d{4}-(0[1-9]|1[0-2])", month):
+        return 400, {"error": "bad month"}
+    view = wise_sync.summary(month)
+    core = subs_core()
+    known = {core.slug(core.view(v).get("name") or "") for v in core.load().values()} if core else set()
+    for r in view["recurring"]:
+        r["inSubs"] = bool(core) and core.slug(r["title"]) in known
+    return 200, view
+
+
+def wise_to_subs(rec):
+    """POST /api/wise/subs: puts a monthly-charge candidate on Life OS 18's list. The amount comes from the
+    statements, not the page. Nothing is cancelled: that stays with the person."""
+    core = subs_core()
+    hit = next((r for r in wise_sync.summary()["recurring"] if r["key"] == rec.get("key")), None)
+    if core is None or hit is None:
+        return 404, {"error": "no such candidate"}
+    try:
+        core.add_manual(hit["title"], hit["amount"], hit["currency"], "monthly")
+    except ValueError:
+        return 400, {"error": "cannot add"}
+    return wise_view(rec.get("month"))
+
+
 def memolink_core():
     """Life OS 11, or None in a checkout without lifeos/."""
     if REPO not in sys.path:
@@ -389,6 +429,8 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/followups":
             core = followup_core()
             return self.send(200, core.desk_view()) if core else self.send(404, {"error": "not found"})
+        if path == "/api/wise":
+            return self.send(*wise_view((parse_qs(urlsplit(self.path).query).get("month") or [None])[0]))
         if path == "/api/memolink":
             core = memolink_core()
             return self.send(200, core.desk_view()) if core else self.send(404, {"error": "not found"})
@@ -410,6 +452,10 @@ class Handler(BaseHTTPRequestHandler):
             if not (self.headers.get("Content-Type") or "").startswith("application/json"):
                 return self.send(415, {"error": "json only"})
             return self.send(*memolink_run())
+        if method == "POST" and urlsplit(self.path).path == "/api/wise/subs":
+            if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+                return self.send(415, {"error": "json only"})
+            return self.send(*wise_to_subs(rec))
         parts = urlsplit(self.path).path.split("/")
         if method == "POST" and len(parts) == 5 and parts[1:3] == ["api", "followups"] and parts[4] == "answer":
             if not (self.headers.get("Content-Type") or "").startswith("application/json"):

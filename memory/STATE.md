@@ -1,6 +1,6 @@
 # 今の状態（STATE）
 
-最終更新：2026-11-04（ブランチ `desk/local-first`）
+最終更新：2026-11-05（ブランチ `desk/local-first`）
 
 ## 進行中の作業
 - Desk の Mac 専用化：実装はブランチ `desk/local-first`。データは非公開リポジトリに15分ごとに保管中。クラウド定期タスクの停止は Mac 側の試運転のあと。
@@ -18,6 +18,8 @@
 - Desk の「🎯 集中」と `focusblock/`：main に入れた。本物のブロックは本人の確認待ち。
 
 - Life OS（18個のツール）：土台と 01・02・11・12・13 を main に入れた。残りはブランチのまま。統括役は置かない。約束は `lifeos/README.md`。
+
+- Wise の取り込みと「💰 お金」画面：実装済み（ブランチ `desk/local-first`）。キーチェーンは設定済み。`setup-mac.sh` の再実行待ち。
 
 ## 決定済みの事項
 - UI/UX を作るときは毎回、本を全文読んでから（`.claude/rules/design-ui.md`）。Drive の文字変換は p.136 まで。後半は Tatsuki のまとめで補っている。

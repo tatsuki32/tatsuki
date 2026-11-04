@@ -15,7 +15,7 @@ import time
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(ROOT, "data")
-IGNORE = "*.lock\n.*.tmp\n.published\n.DS_Store\n__pycache__/\n"
+IGNORE = "*.lock\n.*.tmp\n.published\n.DS_Store\n__pycache__/\nwise/\n"  # wise/: bank statements stay on this Mac, even out of the private copy
 BRANCH = "main"
 # things that must not leave this Mac even privately: keys and passwords in the clear
 SECRETS = re.compile(
@@ -67,12 +67,26 @@ def leaks(files):
     return hits
 
 
+def ensure_ignore():
+    """Adds whatever IGNORE lines the data folder's .gitignore lacks, and keeps the lines already there."""
+    os.makedirs(DATA, exist_ok=True)
+    path = os.path.join(DATA, ".gitignore")
+    try:
+        with open(path, encoding="utf-8") as f:
+            text = f.read()
+    except FileNotFoundError:
+        text = ""
+    missing = [line for line in IGNORE.splitlines() if line not in text.splitlines()]
+    if missing:
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(text + ("" if not text or text.endswith("\n") else "\n") + "\n".join(missing) + "\n")
+
+
 def init(url):
     os.makedirs(DATA, exist_ok=True)
     if not is_repo():
         git("init", "-q", "-b", BRANCH)
-    with open(os.path.join(DATA, ".gitignore"), "w", encoding="utf-8") as f:
-        f.write(IGNORE)
+    ensure_ignore()
     if git("remote", check=False).stdout.strip():
         git("remote", "set-url", "origin", url)
     else:
@@ -83,6 +97,7 @@ def init(url):
 def backup():
     if not is_repo():
         return log("not set up: run backup_data.py --init <private repository URL>")
+    ensure_ignore()
     files = changed_files()
     if files:
         hits = leaks(files)
