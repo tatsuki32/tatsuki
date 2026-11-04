@@ -278,6 +278,22 @@ class TestCli(SandboxCase):
             self.assertIn("止めています", run("show", "試し案件"))
 
 
+class TestDeskButtons(SandboxCase):
+    def test_server_allows_both_commands(self):
+        from lifeos.tests import desk_import
+        for c in ("/where", "/lowenergy"):
+            self.assertIn(c, desk_import.server.CLAUDE_CMDS)
+
+    def test_page_lists_both_and_lowenergy_asks_nothing(self):
+        with open(os.path.join(paths.REPO, "desk", "index.html"), encoding="utf-8") as f:
+            page = f.read()
+        where = re.search(r'\{id:"where".*\}', page).group(0)
+        low = re.search(r'\{id:"lowenergy".*\}', page).group(0)
+        self.assertIn('cmd:"/where"', where)
+        self.assertIn('cmd:"/lowenergy"', low)
+        self.assertNotIn("ask:", low)
+
+
 class TestToolJson(SandboxCase):
     def test_tool_json_has_no_gap(self):
         with open(os.path.join(paths.REPO, "lifeos", "16-where", "tool.json"), encoding="utf-8") as f:

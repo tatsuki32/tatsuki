@@ -6,7 +6,7 @@
 
 ## 使い方
 
-Claude Code で打ちます。
+Claude Code で打つか、Desk のホームの「Claude に頼む」にある「案件を思い出す」「元気がない日」を押します。
 
 ```
 /where 案件名
@@ -49,7 +49,7 @@ python3 lifeos/16-where/where.py show 案件名
 ## 止め方
 
 - `tool.json` の `status` を `stopped` にすると、`where.py` は何もしなくなります。
-- コマンドごと消すなら `.claude/commands/where.md` と `lowenergy.md` を消します。
+- コマンドごと消すなら `.claude/commands/where.md` と `lowenergy.md` を消します。Desk のボタンも消すなら `desk/index.html` の `CC` の2行と、`desk/server.py` の `CLAUDE_CMDS` の2語を消します。
 - ほかのツールはこのツールを使っていないので、止めても影響しません。
 
 ## データの置き場

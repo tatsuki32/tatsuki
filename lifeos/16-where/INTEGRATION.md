@@ -1,24 +1,17 @@
-# 16 案件復元：統括への依頼
+# 16 案件復元：統括への連絡
 
-なくても `/where` と `/lowenergy` は Claude Code で動きます。Desk のボタンから始めたいときだけ入れてください。
+本人の依頼で、Desk のボタンをこのブランチ（`lifeos/16-where`）に入れました。共有ファイルを3つ変えています。
 
-## 1. `desk/server.py`：許可するコマンドに足す
+| ファイル | 変更 |
+| --- | --- |
+| `desk/server.py` | `CLAUDE_CMDS` に `/where` と `/lowenergy` を足した |
+| `desk/index.html` | `const CC=[` の `recap` の次に2行足した |
+| `CLAUDE.md` | コマンドの数と一覧を直した |
 
-```python
-CLAUDE_CMDS = ("/morning-kickoff", "/begin", "/recap", "/rsd", "/learn", "/sync", "/knowledge", "/desk-feature", "/where", "/lowenergy")
-```
+ほかのブランチが同じ行を変えていると、マージで衝突します。その場合は両方の項目を残してください。
 
-## 2. `desk/index.html`：`const CC=[` の一覧の `recap` の次に足す
+`/lowenergy` には入力欄を付けていません。元気がない日に入力を求めないためです。案件を指定したいときは、Claude Code で `/lowenergy 案件名` と打ちます。
 
-```js
-  {id:"where",e:"🧩",name:"案件を思い出す",cmd:"/where",hint:"どこまで・残り・次の一手を5行で",mac:true,ask:"案件名（空なら候補を出す）",ph:"例：資料の直し",kw:"あんけん where"},
-  {id:"lowenergy",e:"🌙",name:"元気がない日",cmd:"/lowenergy",hint:"下書きに OK か直すで返すだけ",mac:true,ask:"案件名（空なら Claude が選ぶ）",ph:"空のままで大丈夫",kw:"げんきがない lowenergy"},
-```
+## オンライン版
 
-`mac:true` にするのは、どちらも Mac の `where.py` を動かすためです。
-
-## 3. `CLAUDE.md`：「決めた8つのコマンド」を「決めた10のコマンド」にする
-
-## 確かめていないこと
-
-この3つは適用していないので、ボタンからの起動は未確認です。適用後に Desk のボタンから1回試してください。
+`index.html` が変わるので、main に入ったあとの毎時同期でオンライン版にも公開されます。オンライン版では押すとコピーして Claude Code を開きます。`where.py` は Mac のリポジトリで動かすものなので、どちらのボタンにも「Mac」の印が出ます。
