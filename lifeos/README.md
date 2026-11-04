@@ -116,7 +116,7 @@ def handle(text, ctx):
 
 | PRIORITY | ツール | 受けるもの |
 | --- | --- | --- |
-| 10 | 03・08 | はっきりした合図（`task:`、`片付け`、`済`） |
+| 10 | 02・03・08 | はっきりした合図（`催促 送る 3`、`task:`、`片付け`、`済`） |
 | 20 | 14 | 問いかけへの答え（問いの直後だけ） |
 | 30 | 07 | 習慣の記録 |
 | 40 | 12 | 支出・締切 |
@@ -197,7 +197,7 @@ class TestTask(SandboxCase):
 
 `.claude/commands/` は名前ごとに持ち主を決めています。`tool.json` の `commands` が正本です。
 
-`/morning` 01 · `/task` `/next` `/done` `/save` 03 · `/lines` 05 · `/kickoff` 06 · `/newtool` 09 · `/tsuzuki` `/split` 15 · `/where` `/lowenergy` 16
+`/morning` 01 · `/followup` 02 · `/task` `/next` `/done` `/save` 03 · `/lines` 05 · `/kickoff` 06 · `/newtool` 09 · `/tsuzuki` `/split` 15 · `/where` `/lowenergy` 16 · `/subs` 18
 
 `/resume` は Claude Code の標準とぶつかるので、15番の `/tsuzuki` に置き換えました。既存の `/begin` `/knowledge` `/learn` `/morning-kickoff` `/recap` `/rsd` `/sync` は使いません。
 
