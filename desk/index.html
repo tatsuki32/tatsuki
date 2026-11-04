@@ -499,7 +499,8 @@ h1 .inedit{font-size:var(--t4);font-weight:700}
 .lmq textarea{width:100%;box-sizing:border-box;min-height:96px;resize:vertical;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:var(--r-s);padding:var(--s2);font:inherit;font-size:var(--t3);line-height:1.6}
 .lmq textarea:focus{outline:none;border-color:var(--accent)}
 .lmacts{display:flex;gap:var(--s2)}
-.lmlist{display:grid;gap:var(--s3);margin-top:var(--s3)}
+.lmlist{display:grid;gap:var(--s3)}
+.chips+.lmlist{margin-top:var(--s3)}
 .lmitem{display:grid;gap:var(--s1)}
 .lmmeta{font-size:var(--t1);color:var(--muted)}
 .lmitem p,.lmtext{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.6;color:var(--ink-2)}
@@ -924,6 +925,8 @@ function habitStats(h){
   const last=[...done].sort().pop();
   return {total:done.size,week:wk.filter(d=>done.has(d)).length,today:done.has(today),last};
 }
+const PLANTS=[[100,"🌳","木"],[30,"🌸","花"],[10,"🌱","芽"],[0,"🌰","種"]];
+function plantLine(n){const i=PLANTS.findIndex(p=>n>=p[0]),p=PLANTS[i],next=PLANTS[i-1];return `${p[1]} ${p[2]}${next?` · ${next[2]}まであと${next[0]-n}回`:""}`}
 async function toggleHabit(id,day){
   const h=S.habits.find(x=>x.id===id);if(!h)return;day=day||hcmcDate();
   const done=new Set(h.done||[]);const on=!done.has(day);on?done.add(day):done.delete(day);
@@ -939,6 +942,7 @@ function habitsView(){
   const card=h=>{const st=habitStats(h),done=new Set(h.done||[]);
     return `<article class="card habit"><div class="hhead"><span class="ico">${esc(h.emoji||"🌱")}</span><div style="min-width:0"><b>${esc(h.name)}</b><div class="sub">これまで ${st.total}回 · この7日で ${st.week}回${st.last&&!st.today?` · 前回 ${esc(st.last.slice(5).replace("-","/"))}`:""}</div></div>
       <button class="btn ${st.today?"":"primary"}" data-habit="${esc(h.id)}">${st.today?"今日できた ✓":"今日できた"}</button></div>
+      <div class="sub">${esc(plantLine(st.total))}</div>
       <div class="hdays" aria-label="この14日">${days.map(d=>`<button class="hday ${done.has(d)?"on":""}" data-habit="${esc(h.id)}" data-day="${d}" title="${esc(d)}${done.has(d)?" できた":""}" aria-label="${esc(d)} ${done.has(d)?"できた":"記録なし"}">${+d.slice(8)}</button>`).join("")}</div>
       <div class="row"><button class="ibtn" data-hedit="${esc(h.id)}" aria-label="名前を変える">✏️</button><button class="ibtn" data-hdel="${esc(h.id)}" aria-label="やめる">🗑️</button></div></article>`};
   return `<header class="head"><div><p class="eyebrow">習慣</p><h1>続けたいこと</h1></div><button class="btn primary" id="newHabit">＋ 習慣を足す</button></header>
@@ -1968,6 +1972,7 @@ const deskArg=idea=>`\n\n追加・変更したい機能：\n${idea}\n\n対象：
 const CC=[
   {id:"kickoff",e:"☀️",name:"朝の着手",cmd:"/morning-kickoff",hint:"今日の最初の1つを決める",mac:true,kw:"あさ morning kickoff"},
   {id:"begin",e:"🚀",name:"始める",cmd:"/begin",hint:"タスク・ブランチ・issue をまとめて用意",mac:true,ask:"やること",ph:"例：履歴書を直す",kw:"はじめる start begin"},
+  {id:"firststep",e:"🪜",name:"初動を任せる",cmd:"/kickoff",hint:"止まった作業の最初の一歩を Claude がやる",mac:true,ask:"作業名",ph:"例：資料を送る",kw:"しょどう まるなげ とまっている kickoff"},
   {id:"recap",e:"📍",name:"何してたっけ",cmd:"/recap",hint:"現状と次の一手",kw:"なにしてた recap resume"},
   {id:"save",e:"💾",name:"今日を残す",cmd:"/recap",arg:"保存",hint:"作業を記録して終わる",kw:"のこす ほぞん save recap"},
   {id:"rsd",e:"🫖",name:"一呼吸",cmd:"/rsd",hint:"きついメッセージを落ち着いて読む",ask:"つらかったメッセージ",ph:"そのまま貼ってください",note:"どこにも保存しません。",kw:"ひとこきゅう rsd"},
