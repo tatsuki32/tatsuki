@@ -18,7 +18,7 @@ claude.ai のチャットで直接編集しない。変更は必ずここで行�
   `reports`, `editions`, `days`, `watch`（マイナー国ウォッチの号。doc id は日付、本文はマークダウン）
 - Mac版も同じ `desk/index.html` を使う。`desk/server.py`（Python標準ライブラリのみ）が
   `http://localhost:4747` で配信し、`desk/data/*.js`（`window.TOOLS` 等）をページに差し込む。
-  API: `GET /api/memos|dues|tasks|prompts|notes|habits`、`POST /api/memos`、`PATCH /api/memos/<id>`、`PUT /api/dues/<id>`、`PUT /api/tasks/<id>`、`PUT /api/prompts/<id>`、`PUT /api/notes/<id>`、`PUT /api/habits/<id>`、`POST /api/claude`（`{cmd,arg}`。決めた8つのコマンドだけ。Terminal を開いて `claude "<コマンド>"` を始める。macOS のみ）。
+  API: `GET /api/memos|dues|tasks|prompts|notes|habits`、`POST /api/memos`、`PATCH /api/memos/<id>`、`PUT /api/dues/<id>`、`PUT /api/tasks/<id>`、`PUT /api/prompts/<id>`、`PUT /api/notes/<id>`、`PUT /api/habits/<id>`、`POST /api/claude`（`{cmd,arg}`。決めた9つのコマンドだけ。Terminal を開いて `claude "<コマンド>"` を始める。macOS のみ）。
   データは `desk/data/*.json`（`.gitignore` 済み。個人データは絶対にコミットしない）。
 - Mac の置き場所は `~/TatsukiDesk`（Documents などの保護フォルダは自動起動から読めないので不可）。
 - Mac の導入: `bash desk/setup-mac.sh`（サーバー常駐＋5分ごとの `git pull origin main`）。
