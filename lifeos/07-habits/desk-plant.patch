@@ -1,0 +1,21 @@
+diff --git a/desk/index.html b/desk/index.html
+index a56900c..2a86b80 100644
+--- a/desk/index.html
++++ b/desk/index.html
+@@ -832,6 +832,8 @@ function habitStats(h){
+   const last=[...done].sort().pop();
+   return {total:done.size,week:wk.filter(d=>done.has(d)).length,today:done.has(today),last};
+ }
++const PLANTS=[[100,"🌳","木"],[30,"🌸","花"],[10,"🌱","芽"],[0,"🌰","種"]];
++function plantLine(n){const i=PLANTS.findIndex(p=>n>=p[0]),p=PLANTS[i],next=PLANTS[i-1];return `${p[1]} ${p[2]}${next?` · ${next[2]}まであと${next[0]-n}回`:""}`}
+ async function toggleHabit(id,day){
+   const h=S.habits.find(x=>x.id===id);if(!h)return;day=day||hcmcDate();
+   const done=new Set(h.done||[]);const on=!done.has(day);on?done.add(day):done.delete(day);
+@@ -847,6 +849,7 @@ function habitsView(){
+   const card=h=>{const st=habitStats(h),done=new Set(h.done||[]);
+     return `<article class="card habit"><div class="hhead"><span class="ico">${esc(h.emoji||"🌱")}</span><div style="min-width:0"><b>${esc(h.name)}</b><div class="sub">これまで ${st.total}回 · この7日で ${st.week}回${st.last&&!st.today?` · 前回 ${esc(st.last.slice(5).replace("-","/"))}`:""}</div></div>
+       <button class="btn ${st.today?"":"primary"}" data-habit="${esc(h.id)}">${st.today?"今日できた ✓":"今日できた"}</button></div>
++      <div class="sub">${esc(plantLine(st.total))}</div>
+       <div class="hdays" aria-label="この14日">${days.map(d=>`<button class="hday ${done.has(d)?"on":""}" data-habit="${esc(h.id)}" data-day="${d}" title="${esc(d)}${done.has(d)?" できた":""}" aria-label="${esc(d)} ${done.has(d)?"できた":"記録なし"}">${+d.slice(8)}</button>`).join("")}</div>
+       <div class="row"><button class="ibtn" data-hedit="${esc(h.id)}" aria-label="名前を変える">✏️</button><button class="ibtn" data-hdel="${esc(h.id)}" aria-label="やめる">🗑️</button></div></article>`};
+   return `<header class="head"><div><p class="eyebrow">習慣</p><h1>続けたいこと</h1></div><button class="btn primary" id="newHabit">＋ 習慣を足す</button></header>
