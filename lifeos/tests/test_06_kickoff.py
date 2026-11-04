@@ -345,6 +345,14 @@ class TestCli(Base):
         self.assertEqual(self.run_cli("skip", "ない")[0], 1)
 
 
+class TestDeskButton(Base):
+    def test_server_allows_the_command_and_the_page_offers_it(self):
+        from lifeos.tests import desk_import
+        self.assertIn("/kickoff", desk_import.server.CLAUDE_CMDS)
+        with open(os.path.join(paths.REPO, "desk", "index.html"), encoding="utf-8") as f:
+            self.assertIn('cmd:"/kickoff"', f.read())
+
+
 class TestStopped(Base):
     def test_stopped_tool_proposes_and_runs_nothing(self):
         t = self.task("資料を送る", 12)
