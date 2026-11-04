@@ -12,7 +12,7 @@
   ],
   "howToCheck": [
     "Telegram がつながるまでは、ターミナルで試せます",
-    "cd ~/TatsukiDesk/.worktrees/08-tidy と打つ（main に入ったあとは cd ~/TatsukiDesk）",
+    "cd ~/TatsukiDesk と打つ",
     "python3 lifeos/bot/cli.py \"片付け\" と打ち、場所が1つ出ることを見る",
     "python3 lifeos/bot/cli.py \"済\" と打つ",
     "もう一度「片付け」を打ち、別の場所が出ることを見る",
