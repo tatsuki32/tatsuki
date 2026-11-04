@@ -1,0 +1,21 @@
+{
+  "no": "16",
+  "name": "案件復元",
+  "oneline": "止まった案件の進み具合を5行で戻す。元気がない日は反応するだけ",
+  "status": "planned",
+  "usage": [
+    "/where 案件名 と打つと、どこまで・残り・次の一手が5行で出る",
+    "/lowenergy で、Claude の下書きに「OK／直す」で反応するだけにできる"
+  ],
+  "howToCheck": [
+    "止まっている案件で /where を打つ",
+    "5分以内に再開できる状態になることを見る",
+    "/lowenergy で白紙から始めなくてよいことを見る"
+  ],
+  "blockers": [],
+  "commands": [
+    "/where",
+    "/lowenergy"
+  ],
+  "updated": "2026-11-04"
+}

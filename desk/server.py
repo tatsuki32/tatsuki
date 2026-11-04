@@ -11,6 +11,7 @@ POST /api/claude opens Terminal with a Claude Code command (Desk's ⌨️ button
   Google tasks, Claude reports) lives in desk/data/*.js and is inlined into the page.
 - Nothing is ever hard-deleted: the page sends deleted:true, same as online.
 """
+import glob
 import json
 import os
 import secrets
@@ -80,6 +81,24 @@ def upsert(col, doc_id, rec, merge):
         return next(x for x in items if x["id"] == doc_id)
 
 
+def lifeos_tools():
+    """Life OS: lifeos/*/tool.json, read fresh every time. A broken file shows up as a problem in the
+    list instead of taking the page down."""
+    out = []
+    for path in sorted(glob.glob(os.path.join(REPO, "lifeos", "[0-9][0-9]-*", "tool.json"))):
+        slug = os.path.basename(os.path.dirname(path))
+        try:
+            with open(path, encoding="utf-8") as f:
+                rec = json.load(f)
+            if not isinstance(rec, dict):
+                raise ValueError("object expected")
+        except (OSError, ValueError):
+            rec = {"no": slug[:2], "name": slug, "status": "blocked", "oneline": "tool.json を読めません",
+                   "blockers": [{"what": "tool.json", "why": "ファイルの形が壊れています。", "needs": "担当の作業で直す"}]}
+        out.append({**rec, "id": slug})
+    return out
+
+
 def page():
     with open(os.path.join(ROOT, "index.html"), encoding="utf-8") as f:
         html = f.read()
@@ -96,6 +115,8 @@ def page():
     except Exception:
         mem = "null"
     parts.append(f"window.MEMORY={mem};")
+    los = json.dumps(lifeos_tools(), ensure_ascii=False).replace("</", "<\\/")
+    parts.append(f"window.LIFEOS={los};")
     inject = "<script>\n" + "\n".join(parts) + "\n</script>\n"
     i = html.find("<script>")
     return html[:i] + inject + html[i:] if i >= 0 else html + inject

@@ -13,10 +13,11 @@ collections into one JSON file, runs this script, and writes back what it prints
 
 REMOTE.json: {"memos": [{"id": ..., ...fields}], "dues": [...], "tasks": [...], "prompts": [...], "notes": [...], "habits": [...],
               "tools": [...], "editions": [...], "days": [...], "reports": [...], "watch": [...],
-              "calendar": [...], "gtasks": [...]}  (each doc = its id plus its fields)
+              "calendar": [...], "gtasks": [...], "lifeos": [...]}  (each doc = its id plus its fields)
 
 Rule for memos / dues / tasks / prompts / notes: per id, the record with the larger updatedAt wins;
 a missing updatedAt counts as 0; nothing is removed (deleted:true is a record too).
+lifeos flows Mac -> online only: lifeos/*/tool.json in this repo is the source (Life OS view).
 Everything else flows online -> Mac only.
 """
 import hashlib
@@ -27,7 +28,7 @@ import sys
 ROOT = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(ROOT, "data")
 sys.path.insert(0, ROOT)
-from server import LOCK, load, save  # noqa: E402
+from server import LOCK, lifeos_tools, load, save  # noqa: E402
 
 TWO_WAY = ("memos", "dues", "tasks", "prompts", "notes", "habits")
 
@@ -53,6 +54,16 @@ def merge(local, remote):
         else:
             out.append(b)
     return out, push
+
+
+def lifeos_push(remote):
+    """Docs the online desk needs so its lifeos collection matches this repo (one way)."""
+    local = {d["id"]: d for d in lifeos_tools()}
+    online = {d["id"]: d for d in remote if isinstance(d, dict) and d.get("id")}
+    push = [d for i, d in local.items() if online.get(i) != d]
+    if local:  # an old checkout without lifeos/ must not hide what is online
+        push += [{"id": i, "deleted": True} for i, d in online.items() if i not in local and not d.get("deleted")]
+    return push
 
 
 def write_js(name, var, value):
@@ -87,6 +98,10 @@ def cmd_merge(remote_path):
             save(col, merged)
             if push:
                 write[col] = push
+    if "lifeos" in remote:
+        push = lifeos_push(remote["lifeos"])
+        if push:
+            write["lifeos"] = push
     strip = lambda d: {k: v for k, v in d.items() if k != "id"}
     if "tools" in remote:
         write_js("tools.js", "TOOLS", [d for d in remote["tools"] if not d.get("deleted")])
