@@ -377,3 +377,5 @@ class TestCommandLine(Base):
         entry = json.loads(block)
         self.assertEqual(entry["matcher"], "startup|clear")
         self.assertIn("autostart.py\" hook", entry["hooks"][0]["command"])
+        with open(os.path.join(paths.REPO, ".claude", "settings.json"), encoding="utf-8") as f:
+            self.assertIn(entry, json.load(f)["hooks"]["SessionStart"])

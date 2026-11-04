@@ -56,4 +56,4 @@ python3 lifeos/10-autostart/autostart.py defer-off   # 延期だけ止める（d
 
 ## フック
 
-フックは共有ファイルなので、ここでは入れていません。入れ方は `INTEGRATION.md` にあります。
+`.claude/settings.json` の SessionStart に入っています。動く範囲と注意は `INTEGRATION.md` にあります。

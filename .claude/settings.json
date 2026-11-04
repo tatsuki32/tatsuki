@@ -12,6 +12,16 @@
             "command": "git -C \"$CLAUDE_PROJECT_DIR\" config core.hooksPath .githooks"
           }
         ]
+      },
+      {
+        "matcher": "startup|clear",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/lifeos/10-autostart/autostart.py\" hook",
+            "timeout": 20
+          }
+        ]
       }
     ],
     "Stop": [
