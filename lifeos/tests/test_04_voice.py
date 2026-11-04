@@ -132,6 +132,7 @@ class TestFiling(SandboxCase):
         self.core().take("ランチ 3万ドン")
         r = logs.read("expenses")[0]
         self.assertEqual((r["amount"], r["currency"], r["source"]), (30000, "VND", "lifeos-04"))
+        self.assertEqual(r["item"], "ランチ 3万ドン")
         self.assertEqual(tasks.open_tasks(), [])
 
     def test_an_unsure_memo_says_so(self):
@@ -290,6 +291,16 @@ class TestBot(SandboxCase):
         client = FakeClient()
         run.handle_update(self.update(voice={"file_id": "f"}), client, 5)
         self.assertEqual(client.sent, [voice.NOT_CONNECTED])
+
+    def test_a_failed_transcription_keeps_the_audio_and_says_so(self):
+        def fail(path):
+            raise RuntimeError("x")
+        voice.set_transcriber(fail)
+        client = FakeClient()
+        run.handle_update(self.update(voice={"file_id": "f"}), client, 5)
+        self.assertIn("文字起こしに失敗", client.sent[0])
+        with open(paths.data_path("inbox", "audio", "1"), "rb") as f:
+            self.assertEqual(f.read(), b"audio")
 
     def test_another_chat_is_ignored(self):
         client = FakeClient()

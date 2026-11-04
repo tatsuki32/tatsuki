@@ -55,7 +55,7 @@ def _file_part(memo_id, n, part, is_voice):
         return "tasks:" + t["id"], extra
     if part.kind == "expense":
         found = sort.amount(part.text)
-        logs.append("expenses", {"text": part.text, "amount": found[0] if found else None,
+        logs.append("expenses", {"item": part.text, "text": part.text, "amount": found[0] if found else None,
                                  "currency": found[1] if found else None, "source": SOURCE, "memo": memo_id})
         return "logs/expenses.jsonl", ""
     rel = f"notes/{memo_id}-{n}-{part.kind}.md"
