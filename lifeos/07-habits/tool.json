@@ -1,23 +1,31 @@
 {
   "no": "07",
   "name": "罰しない習慣",
-  "oneline": "途切れてもリセットしない習慣記録。累計で植物が育つ",
-  "status": "planned",
+  "oneline": "できた日を数える習慣記録。累計で植物が育つ",
+  "status": "blocked",
   "usage": [
-    "Telegram で「読書30分」のように送ると記録される",
-    "累計で育つ（10回で芽、30回で花）",
-    "週に1回、育ち具合が届く"
+    "Telegram で「筋トレした」「読書30分」のように送ると、Desk の習慣に入る",
+    "累計で育つ（10回で芽、30回で花、100回で木）。Desk の習慣画面の各カードにも出る",
+    "週に1回、育ち具合が届く",
+    "止めるときは、この tool.json の status を stopped にする"
   ],
   "howToCheck": [
-    "Telegram で習慣を送る",
-    "記録の返事が来ることを見る",
-    "何日か空けても責める言葉が出ないことを見る"
+    "ターミナルで Desk のフォルダを開く",
+    "LIFEOS_DATA=/tmp/try07 python3 lifeos/bot/cli.py \"読書30分\" を実行する",
+    "記録しましたという返事と、植物の様子が出ることを見る",
+    "LIFEOS_DATA=/tmp/try07 python3 lifeos/07-habits/weekly.py --preview で週の文面を見る",
+    "何日か間を空けて Telegram で送っても、責める言葉が出ないことを見る（ボットの接続後）"
   ],
   "blockers": [
     {
       "what": "Telegram のボット",
-      "why": "受け口がまだつながっていません。",
-      "needs": "BotFather で作ったトークンを設定する"
+      "why": "トークンがないので、Telegram からの記録と週の報告が届きません。",
+      "needs": "BotFather でボットを作り、トークンとチャット ID を secrets/telegram.json に入れて、python3 lifeos/bot/run.py を起動する"
+    },
+    {
+      "what": "週1回の自動送信",
+      "why": "週の報告を自動で動かす定期実行は、まだ入れていません。",
+      "needs": "自動送信を入れてよいか Claude に伝える（手順は INTEGRATION.md）"
     }
   ],
   "commands": [],
