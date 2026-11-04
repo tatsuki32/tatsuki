@@ -11,14 +11,14 @@ claude.ai のチャットで直接編集しない。変更は必ずここで行�
 ### 構成
 
 - 単一HTML（外部ライブラリ・Webフォントなし。端末の日本語ゴシック）。黒基調・金色アクセント。
-- ビュー（メニューは4つのまとまり）: 今日＝Home（焦点は「今日の3つ」）/ Tasks / Calendar / 習慣、届いたもの＝Morning Mail / Inbox、読む＝World Desk / マイナー国、書く・振り返る＝ノート / Claude Log / ツール。
+- ビュー（メニューは4つのまとまり）: 今日＝Home（焦点は「今日の3つ」）/ Tasks / Calendar / 習慣、届いたもの＝Morning Mail / 返信待ち / Inbox、読む＝World Desk / マイナー国、書く・振り返る＝ノート / Claude Log / ツール。
   iPhone は下にタブ（ホーム・タスク・カレンダー・ノート・その他）、メモは右下の丸ボタン。検索はどの画面でも `/`。
 - データはページに埋め込まない。オンライン版は Artifact DB（`window.claude` の `db`）から読む:
   `tools`, `memos`, `tasks`, `dues`, `prompts`（毎日の求人チェックの Claude プロンプト。経歴入りなのでリポジトリに入れない）, `notes`（Scrapbox 風のノート。[言葉] でつながる。ノートのタイトルは Desk 全体で自動リンクになる。`noAuto:true` で止める）, `habits`（罰を与えない習慣。doc ごとに `done` に日付の配列）, `memory`(doc `current`。memory/ の要約で「🧭 次は？」が読む。毎時同期で Mac から載せる), `calendar`(doc `upcoming`), `gtasks`(doc `current`),
   `reports`, `editions`, `days`, `watch`（マイナー国ウォッチの号。doc id は日付、本文はマークダウン）
 - Mac版も同じ `desk/index.html` を使う。`desk/server.py`（Python標準ライブラリのみ）が
   `http://localhost:4747` で配信し、`desk/data/*.js`（`window.TOOLS` 等）をページに差し込む。
-  API: `GET /api/memos|dues|tasks|prompts|notes|habits`、`POST /api/memos`、`PATCH /api/memos/<id>`、`PUT /api/dues/<id>`、`PUT /api/tasks/<id>`、`PUT /api/prompts/<id>`、`PUT /api/notes/<id>`、`PUT /api/habits/<id>`、`POST /api/claude`（`{cmd,arg}`。決めた8つのコマンドだけ。Terminal を開いて `claude "<コマンド>"` を始める。macOS のみ）。
+  API: `GET /api/memos|dues|tasks|prompts|notes|habits`、`POST /api/memos`、`PATCH /api/memos/<id>`、`PUT /api/dues/<id>`、`PUT /api/tasks/<id>`、`PUT /api/prompts/<id>`、`PUT /api/notes/<id>`、`PUT /api/habits/<id>`、`GET /api/followups`、`POST /api/followups/<番号>/answer`（Life OS 02。送信はしない）、`POST /api/claude`（`{cmd,arg}`。決めた9つのコマンドだけ。Terminal を開いて `claude "<コマンド>"` を始める。macOS のみ）。
   データは `desk/data/*.json`（`.gitignore` 済み。個人データは絶対にコミットしない）。
 - Mac の置き場所は `~/TatsukiDesk`（Documents などの保護フォルダは自動起動から読めないので不可）。
 - Mac の導入: `bash desk/setup-mac.sh`（サーバー常駐＋5分ごとの `git pull origin main`）。
@@ -60,6 +60,7 @@ claude.ai のチャットで直接編集しない。変更は必ずここで行�
 - `lifeos/NN-slug/tool.json` が各ツールの正本。Desk の「Life OS」画面に出る（Mac は `server.py` が毎回読んで `window.LIFEOS`、オンラインは DB の `lifeos`。毎時同期で Mac → オンラインの一方向）。
 - 共通部品は `lifeos/lib/`（データ置き場・Desk タスク・追記ログ・Markdown）。Telegram の受け口は `lifeos/bot/`（`NN-slug/handler.py` を自動で読む。試すのは `python3 lifeos/bot/cli.py "テキスト"`）。
 - 個人データは `desk/data/lifeos/`（`LIFEOS_DATA`）。タスクは Desk の `tasks` だけに置く。
+- 返信待ち（02）：状態の正本は Mac の `desk/data/lifeos/tools/02-followup/state.json`。オンラインの DB `followups` は毎時同期の写しで、件名と相手のアドレスだけを載せる。iPhone の答えは `answer` 欄に置き、次の同期で Mac に反映する。Desk からメールは送らない。
 - テスト：`python3 -m unittest discover -s lifeos/tests -t .`
 
 ## 記憶の使い方（memory/）
