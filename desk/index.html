@@ -1624,7 +1624,7 @@ function lifeosView(){
   if(!all.length) return `<header class="head"><div><p class="eyebrow">Life OS</p><h1>ツール</h1></div></header><div class="card empty"><b>まだ届いていません</b>オンライン版には毎時の同期で届きます。</div>`;
   const n=k=>all.filter(t=>t.status===k).length, f=S.losF&&n(S.losF)?S.losF:"all", list=f==="all"?all:all.filter(t=>t.status===f);
   const chip=(k,l,c)=>`<button class="chip" data-losf="${k}" aria-pressed="${f===k}">${l} ${c}</button>`;
-  return `<header class="head"><div><p class="eyebrow">Life OS</p><h1>動いている ${n("working")} / ${all.length}</h1></div></header>
+  return `<header class="head"><div><p class="eyebrow">Life OS</p><h1>動いている ${n("working")} / ${all.length}</h1><p class="sub" style="margin:var(--s1) 0 0">作りかけ ${n("building")} / 3</p></div></header>
   <div class="chips" role="group" aria-label="状態で絞る">${chip("all","すべて",all.length)}${LOS.filter(s=>n(s[0])).map(s=>chip(s[0],s[1],n(s[0]))).join("")}</div>
   <div class="loses">${list.map(losTool).join("")}</div>`;
 }
@@ -1751,6 +1751,7 @@ const CC=[
   {id:"sync",e:"🔄",name:"方針を更新",cmd:"/sync",hint:"決めたことをファイルに反映",ask:"変わった方針",ph:"例：習慣は朝にまとめて記録する",kw:"ほうしん sync"},
   {id:"knowledge",e:"📚",name:"知識を読む",cmd:"/knowledge",hint:"ためた知識から必要なもの",ask:"話題（空なら一覧）",ph:"例：artifact",kw:"ちしき knowledge"},
   {id:"feature",e:"🛠️",name:"Desk に機能を追加",cmd:"/desk-feature",hint:"質問 → 要件定義 → 実装",ask:"やりたいこと",ph:"例：週ごとの振り返りページがほしい",draft:"desk-ai-draft",wrap:deskArg,kw:"きのう ついか feature desk"},
+  {id:"newtool",e:"🧰",name:"ツールを作る",cmd:"/newtool",hint:"説明書とコードの雛形を作り、Life OS の一覧に載せる",ask:"ツール名とやりたいこと",ph:"例：領収書箱 領収書を月ごとにまとめる",note:"公開リポジトリに入るので、実名や案件名は書きません。",kw:"つーる つくる こうぼう 工房 newtool tool"},
 ];
 const ccText=(c,arg)=>{arg=(arg??c.arg??"").trim();const a=arg&&c.wrap?c.wrap(arg):arg;return a?c.cmd+(a.startsWith("\n")?"":" ")+a:c.cmd};
 /* the recommended one by Ho Chi Minh time: morning → kickoff (Mac) / recap (online), afternoon → recap, evening → save */

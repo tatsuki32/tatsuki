@@ -12,6 +12,8 @@ Claude Code で次のように打ちます。
 /newtool ツール名 やりたいこと
 ```
 
+Desk からは「Claude に頼む」の「ツールを作る」で頼めます（Home のカード・C キー・検索欄で `/`）。iPhone はコピーして claude.ai/code に貼ります。
+
 `lifeos/NN-名前/` に README（目的・使い方・止め方）、`core.py`、`tool.json` ができます。テストの雛形は `lifeos/tests/` に入ります。
 `tool.json` ができた時点で、Desk の Life OS 画面に載ります。
 

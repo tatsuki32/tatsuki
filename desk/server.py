@@ -41,7 +41,7 @@ DATA_JS = [
 LOCK = threading.Lock()
 REPO = os.path.dirname(ROOT)
 # Desk's ⌨️ buttons may start only these Claude Code commands (POST /api/claude)
-CLAUDE_CMDS = ("/morning-kickoff", "/begin", "/recap", "/rsd", "/learn", "/sync", "/knowledge", "/desk-feature")
+CLAUDE_CMDS = ("/morning-kickoff", "/begin", "/recap", "/rsd", "/learn", "/sync", "/knowledge", "/desk-feature", "/newtool")
 CLAUDE_ARG_MAX = 6000
 
 

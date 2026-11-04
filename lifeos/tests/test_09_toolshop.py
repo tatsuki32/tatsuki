@@ -280,6 +280,14 @@ class TestRepositoryFiles(unittest.TestCase):
     def test_the_workshop_can_be_restarted_after_stopping(self):
         self.assertEqual(shop.todo_left(REAL_DIR), [])
 
+    def test_the_desk_can_start_the_command(self):
+        from lifeos.tests.desk_import import server
+        self.assertIn("/newtool", server.CLAUDE_CMDS)
+        with open(os.path.join(paths.REPO, "desk", "index.html"), encoding="utf-8") as f:
+            page = f.read()
+        self.assertIn('cmd:"/newtool"', page)
+        self.assertIn("作りかけ ${n(\"building\")} / 3", page)
+
     def test_the_command_runs_this_script(self):
         with open(os.path.join(paths.REPO, ".claude", "commands", "newtool.md"), encoding="utf-8") as f:
             self.assertIn("lifeos/09-toolshop/toolshop.py", f.read())
