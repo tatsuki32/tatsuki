@@ -421,6 +421,19 @@ h1 .inedit{font-size:var(--t4);font-weight:700}
   .t3acts .btn{min-height:40px}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+/* ---------- 返信待ち (Life OS 02): the questions first, then a quiet list ---------- */
+.fu{display:grid;gap:var(--s5)}
+.fu section{display:grid;gap:var(--s2)}
+.fucard{display:grid;gap:var(--s3);padding:var(--s3)}
+.fulist>div{display:grid;gap:var(--s2);padding:var(--s3)}
+.fulist>div+div{border-top:1px solid var(--line)}
+.futop{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--s3);align-items:baseline}
+.futop h3{font-size:var(--t3);font-weight:700;margin:0;overflow-wrap:anywhere}
+.fulist .futop h3{font-size:var(--t2)}
+.fuwho{color:var(--muted);font-size:var(--t1);overflow-wrap:anywhere;margin:0}
+.fudays{color:var(--muted);font-size:var(--t1);font-variant-numeric:tabular-nums;white-space:nowrap}
+.fumore summary{cursor:pointer;color:var(--muted);font-size:var(--t2);padding:var(--s2) 0;list-style:none}
+.fumore summary::-webkit-details-marker{display:none}
 /* ---------- Life OS: one row per tool, opened to read how to use and check it ---------- */
 .loses{display:grid;gap:var(--s2)}
 .los summary{display:grid;grid-template-columns:24px minmax(0,1fr) auto 16px;gap:var(--s2);align-items:baseline;padding:var(--s3);cursor:pointer;list-style:none}
@@ -470,6 +483,7 @@ const VIEWS=[{id:"home",e:"🏠",label:"ホーム",g:"today"},{id:"tasks",e:"�
   {id:"notes",e:"📒",label:"ノート",g:"write"},{id:"log",e:"🤖",label:"Claudeの記録",g:"write"},{id:"tools",e:"🧰",label:"ツール",g:"write"}];
 const TABS=["home","tasks","calendar","notes"]; // phone tab bar; the rest is under その他
 VIEWS.push({id:"lifeos",e:"🧩",label:"Life OS",g:"write"});
+VIEWS.splice(VIEWS.findIndex(v=>v.id==="mail")+1,0,{id:"followups",e:"⏳",label:"返信待ち",g:"in"});
 /* Stored values (group, region, priority, status) stay in English so sync and older data keep working; only the labels shown are Japanese. */
 const GROUPS=[["Daily","☀️","毎日"],["Work","💼","仕事"],["Study","🎓","学習"],["Folders","🗂️","フォルダ"],["Other","✨","その他"]];
 const REGJA={"Middle East":"中東","Europe & Russia":"欧州・ロシア","Asia-Pacific":"アジア太平洋","Americas":"南北アメリカ","Africa":"アフリカ","Global":"世界全体","All":"すべて"};
@@ -1597,11 +1611,64 @@ function render(){
   updateBadges();checkNew();
   renderNav();
   if(viewId()==="lifeos"){$("#view").innerHTML=searchResults()+lifeosView();wire();wireLifeos();return}
+  if(viewId()==="followups"){fuLoad();$("#view").innerHTML=searchResults()+fuView();wire();wireFu();return}
   const v=viewId();
   $("#view").innerHTML=searchResults()+(v==="notes"?notesView():v==="watch"?watch():v==="tasks"?tasks():v==="calendar"?calendar():v==="news"?news():v==="mail"?mail():v==="inbox"?inbox():v==="habits"?habitsView():v==="log"?log():v==="tools"?toolsView():home());
   if(v==="news"||v==="watch") linkSources($("#view"));
   wire();
   if(v==="news"&&S.focus!=null){const el=document.getElementById("story-"+S.focus);S.focus=null;if(el){el.classList.add("flash");setTimeout(()=>el.scrollIntoView({block:"start"}),0)}}
+}
+/* 返信待ち: Life OS 02. On the Mac the server holds the state; online the hourly sync copies it to db "followups"
+   and an answer waits on its doc until the next sync. This view has no way to send mail: 送る opens the Gmail draft. */
+const fuDay=ms=>new Date(ms+HCMC).toISOString().slice(0,10);
+const fuAge=i=>Math.round((Date.parse(fuDay(Date.now()))-Date.parse(fuDay(Date.parse(i.waitingAt))))/DAY);
+function fuData(){
+  if(db){const docs=(S.fuDocs||[]).filter(d=>!d.deleted),meta=docs.find(d=>d.id==="_meta");return meta?{enabled:meta.enabled!==false,lastRun:meta.lastRun,items:docs.filter(d=>d.id!=="_meta").sort((a,b)=>String(a.waitingAt).localeCompare(String(b.waitingAt)))}:null}
+  return S.fu||null;
+}
+async function fuLoad(force){
+  if(!LOCALAPI||S.fuBusy||(!force&&Date.now()-(S.fuAt||0)<20000))return;
+  S.fuBusy=true;S.fuAt=Date.now();
+  try{const v=await api("GET","/api/followups"),same=JSON.stringify(v)===JSON.stringify(S.fu);S.fu=v;S.fuErr=false;S.fuBusy=false;if(!same&&viewId()==="followups")render()}
+  catch(e){const was=S.fuErr;S.fuErr=true;S.fuBusy=false;if(!was&&viewId()==="followups")render()}
+}
+const fuDraftBtn=i=>i.hasDraft&&okUrl(i.draftUrl)?`<a class="btn sm" href="${esc(i.draftUrl)}" target="_blank" rel="noopener">Gmail で下書きを開く ↗</a>`:"";
+const fuBtn=(i,c,cls)=>`<button class="btn sm ${cls||""}" data-fu="${esc(c)}" data-fuid="${i.no}">${esc(c)}</button>`;
+function fuHead(i){return `<div class="futop"><h3>${esc(i.subject)}</h3><span class="fudays">${fuAge(i)}日</span></div><div class="fuwho">${esc((i.to||[]).join(", "))}</div>`}
+function fuActions(i,btns){
+  if(i.answer) return `<p class="msg">「${esc(i.answer)}」を受け取りました。次の同期で反映します。</p>`;
+  return `<div class="row">${btns}</div>`;
+}
+function fuView(){
+  const d=fuData();
+  const head=(sub,act)=>`<header class="head"><div><p class="eyebrow">${sub}</p><h1>返信待ち</h1></div>${act||""}</header>`;
+  if(!d) return head("Life OS")+`<div class="card empty"><b>${S.fuErr?"読み込めませんでした":db?"まだ届いていません":LOCALAPI?"読み込んでいます":"Desk のサーバーが必要です"}</b>${S.fuErr?"Desk のサーバーが動いているか確かめてください。":db?"毎時の同期のあとに出ます。":""}</div>`;
+  if(!d.enabled) return head("Life OS")+`<div class="card empty"><b>止めています</b>再開するときは python3 lifeos/02-followup/run.py start</div>`;
+  const live=d.items.filter(i=>i.state!=="held"&&i.state!=="dropped");
+  const asks=live.filter(i=>i.asking).slice(0,3),shown=new Set(asks.map(i=>i.no));
+  const rest=live.filter(i=>!shown.has(i.no)),quiet=d.items.filter(i=>i.state==="held"||i.state==="dropped");
+  const today=d.lastRun===fuDay(Date.now());
+  const note=d.lastRun?(today?"今朝のメールを確認しました":`最後の確認 ${esc(d.lastRun)}。今朝の確認はまだです`):"メールの確認はまだです";
+  const run=LOCALAPI&&!db?`<button class="btn" id="fuRun">メールを確認</button>`:"";
+  const ask=asks.length?`<section><h2 class="section-title">答えを待っています</h2>${asks.map(i=>`<article class="card fucard"><div>${fuHead(i)}</div>${fuActions(i,fuBtn(i,"送る","primary")+fuBtn(i,"保留")+fuBtn(i,"捨てる"))}</article>`).join("")}</section>`:"";
+  const row=i=>`<div><div>${fuHead(i)}</div>${fuActions(i,i.state==="send"?`<span class="msg">Gmail で確かめて、自分で送る番です</span>${fuDraftBtn(i)}`:(fuDraftBtn(i)+(i.asking?fuBtn(i,"送る")+fuBtn(i,"保留"):"")+fuBtn(i,"捨てる")))}</div>`;
+  const list=rest.length?`<section><h2 class="section-title">返信待ち ${rest.length}件</h2><div class="card fulist">${rest.map(row).join("")}</div></section>`:(asks.length?"":`<div class="card empty"><b>返信待ちはありません</b>メールの確認のあとに、ここへ出ます。</div>`);
+  const qrow=i=>`<div><div>${fuHead(i)}</div><p class="fuwho">${i.state==="held"?`保留中。${esc(i.holdUntil||"")} にまた聞きます`:"催促をやめました。下書きは Gmail に残っています"}</p>${fuActions(i,fuBtn(i,"戻す"))}</div>`;
+  const more=quiet.length?`<details class="fumore"><summary>保留・やめたもの ${quiet.length}件</summary><div class="card fulist">${quiet.map(qrow).join("")}</div></details>`:"";
+  return head(note,run)+`<div class="fu">${ask}${list}${more}</div><p class="sub">メールは Desk からは送られません。送るのは Gmail で本人が行います。</p>`;
+}
+function wireFu(){
+  document.querySelectorAll("[data-fu]").forEach(b=>b.onclick=async()=>{
+    const c=b.dataset.fu,no=+b.dataset.fuid,item=(fuData()?.items||[]).find(i=>i.no===no);
+    if(c==="送る"&&item&&okUrl(item.draftUrl)) window.open(item.draftUrl,"_blank","noopener");
+    b.disabled=true;
+    try{
+      if(db){await db.collection("followups").doc("f"+no).update({answer:c,answeredAt:Date.now()});toast(c==="送る"?"送信はしていません。Gmail で文面を確かめて送ってください":"次の同期で反映します")}
+      else{const r=await api("POST","/api/followups/"+no+"/answer",{choice:c});S.fu=r.view;toast(c==="送る"?"送信はしていません。Gmail で文面を確かめて送ってください":"変更しました");render()}
+    }catch(e){b.disabled=false;toast("保存できませんでした。もう一度試してください")}
+  });
+  const run=$("#fuRun");
+  if(run) run.onclick=async()=>{run.disabled=true;try{await api("POST","/api/claude",{cmd:"/followup",arg:""});toast("⌨️ Terminal で開きました")}catch(e){run.disabled=false;toast("Terminal を開けませんでした")}};
 }
 /* Life OS: one section per tool. The source is each tool's tool.json in lifeos/: window.LIFEOS on the Mac, db "lifeos" online. */
 const LOS=[["working","動いている","live"],["building","作っている","blue"],["blocked","止まっている","red"],["planned","予定",""],["stopped","止めた","amber"]];
@@ -1909,6 +1976,7 @@ autoLinkStart();
   sub("editions",d=>S.editions=d.map(x=>({id:x.id,data:x.data()})),db.collection("editions").orderBy("date","desc").limit(60));
   sub("days",d=>{S.days=d.map(x=>({id:x.id,data:x.data()}));S.loaded=true},db.collection("days").orderBy("date","desc").limit(30));
   sub("lifeos",d=>S.lifeos=d.map(x=>({id:x.id,...x.data()})));
+  sub("followups",d=>S.fuDocs=d.map(x=>({id:x.id,...x.data()})));
   db.collection("dues").onSnapshot(s=>{S.dues=duesById(s.docs.filter(d=>d.exists).map(d=>d.data()));render()},()=>{});
 })();
 </script>
