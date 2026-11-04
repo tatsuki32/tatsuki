@@ -11,11 +11,11 @@ collections into one JSON file, runs this script, and writes back what it prints
                                          (index.html differs from the last publish)
   python3 sync.py mark-published      -> remembers the current index.html as published
 
-REMOTE.json: {"memos": [{"id": ..., ...fields}], "dues": [...], "tasks": [...], "prompts": [...], "notes": [...], "habits": [...],
+REMOTE.json: {"memos": [{"id": ..., ...fields}], "dues": [...], "tasks": [...], "prompts": [...], "notes": [...], "habits": [...], "wins": [...],
               "tools": [...], "editions": [...], "days": [...], "reports": [...], "watch": [...],
               "calendar": [...], "gtasks": [...], "lifeos": [...], "lifemap": [...]}  (each doc = its id plus its fields)
 
-Rule for memos / dues / tasks / prompts / notes / habits / lifemap: per id, the record with the larger updatedAt wins;
+Rule for memos / dues / tasks / prompts / notes / habits / lifemap / wins: per id, the record with the larger updatedAt wins;
 a missing updatedAt counts as 0; nothing is removed (deleted:true is a record too).
 lifeos flows Mac -> online only: lifeos/*/tool.json in this repo is the source (Life OS view).
 followups flows Mac -> online too, except the answers left on its docs, which are applied here first.
@@ -31,7 +31,7 @@ DATA = os.path.join(ROOT, "data")
 sys.path.insert(0, ROOT)
 from server import LOCK, followup_core, lifeos_tools, load, save  # noqa: E402
 
-TWO_WAY = ("memos", "dues", "tasks", "prompts", "notes", "habits", "lifemap")
+TWO_WAY = ("memos", "dues", "tasks", "prompts", "notes", "habits", "lifemap", "wins")
 
 
 def ts(x):
