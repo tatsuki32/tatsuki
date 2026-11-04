@@ -197,7 +197,7 @@ class TestTask(SandboxCase):
 
 `.claude/commands/` は名前ごとに持ち主を決めています。`tool.json` の `commands` が正本です。
 
-`/morning` 01 · `/task` `/next` `/done` `/save` 03 · `/lines` 05 · `/kickoff` 06 · `/newtool` 09 · `/tsuzuki` `/split` 15 · `/where` `/lowenergy` 16
+`/morning` 01 · `/task` `/next` `/done` `/save` 03 · `/lines` 05 · `/kickoff` 06 · `/newtool` 09 · `/tsuzuki` `/split` 15 · `/where` `/lowenergy` 16 · `/subs` 18
 
 `/resume` は Claude Code の標準とぶつかるので、15番の `/tsuzuki` に置き換えました。既存の `/begin` `/knowledge` `/learn` `/morning-kickoff` `/recap` `/rsd` `/sync` は使いません。
 
