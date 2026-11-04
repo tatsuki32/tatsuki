@@ -266,6 +266,43 @@ def answer(no, choice, day=None):
         return f"送信はしていません。下書きを確かめて、自分で送ってください：{url}\nDesk のタスクにも入れました。"
 
 
+def _public(item, day, cfg):
+    """One follow-up as the Desk shows it. Never holds mail text."""
+    draft = item.get("draft") or {}
+    return {"id": f"f{item['no']}", "no": item["no"], "subject": item["subject"], "to": item["to"], "state": item["state"],
+            "waitingAt": item["waitingAt"], "hasDraft": bool(draft), "draftUrl": draft.get("viewUrl") or item.get("viewUrl") or "",
+            "holdUntil": item.get("holdUntil"),
+            "asking": item["state"] == "waiting" and bool(draft) and age_days(item, day) >= cfg["askDays"]}
+
+
+def desk_view(day=None):
+    """Everything the 返信待ち screen needs. Replied threads are left out."""
+    day = day or paths.today()
+    cfg = config()
+    s = read_state()
+    items = sorted((i for i in s["threads"].values() if i["state"] != "closed"), key=lambda i: i["waitingAt"])
+    return {"enabled": bool(cfg["enabled"]), "lastRun": s.get("lastRun"), "items": [_public(i, day, cfg) for i in items]}
+
+
+CHOICES = ("送る", "保留", "捨てる", "戻す")
+
+
+def sync_online(remote, day=None):
+    """Applies answers left online, then returns the docs the online desk must set. state.json stays the source."""
+    day = day or paths.today()
+    online = {d["id"]: d for d in remote if isinstance(d, dict) and d.get("id")}
+    answers = sorted((d for d in online.values() if d.get("answer") in CHOICES and isinstance(d.get("no"), int)),
+                     key=lambda d: d.get("answeredAt") or 0)
+    for d in answers:
+        answer(d["no"], d["answer"], day)
+    view = desk_view(day)
+    local = {d["id"]: d for d in view["items"]}
+    local["_meta"] = {"id": "_meta", "enabled": view["enabled"], "lastRun": view["lastRun"]}
+    push = [d for i, d in local.items() if online.get(i) != d]
+    push += [{"id": i, "deleted": True} for i, d in online.items() if i not in local and not d.get("deleted")]
+    return push
+
+
 def _short(titles, unit=3):
     head = " / ".join(titles[:unit])
     return head + (f"（ほか{len(titles) - unit}件）" if len(titles) > unit else "")

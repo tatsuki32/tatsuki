@@ -35,4 +35,14 @@ lifeos/02-followup/MORNING_RUN.md の手順を、そのとおりに実行して�
 ## 5. main に入れる順番（本人の決定）
 
 `feat/desk-focus` の作業が片づくまで、main へ入れません。
-片づいたら `lifeos/base`、次に `lifeos/02-followup` の順に入れます。`desk/index.html` と `desk/server.py` はぶつかる可能性があるので、マージのときに確かめます。
+片づいたら `lifeos/base`、次に `lifeos/02-followup-desk` の順に入れます（02 の本体も含みます）。
+`desk/index.html` と `desk/server.py` はぶつかる可能性があるので、マージのときに確かめます。
+
+## 6. Desk の「返信待ち」画面を入れたあと
+
+本人の承認（要件定義）を受けて、このブランチでは次の共有ファイルも変えています：`desk/index.html`、`desk/server.py`、`desk/sync.py`、`desk/sync/HOURLY_SYNC.md`、`.claude/commands/followup.md`。
+
+1. `CLAUDE.md` の構成に足す。ビューの「届いたもの」に「返信待ち」、API に `GET /api/followups` と `POST /api/followups/<番号>/answer`、DB に `followups`（Mac が正本。件名と相手のアドレスだけ。答えは `answer` 欄）。
+2. `lifeos/README.md` のコマンドの持ち主に `/followup` 02 を足す。
+3. オンライン版へ公開する（CLAUDE.md の公開手順。`capabilities` は変えない）。毎時同期が `followups` を読むようになるので、公開は同期の更新と一緒に行う。
+4. ツールボックスに登録する（register-tool-in-toolbox）。

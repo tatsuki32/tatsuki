@@ -4,6 +4,7 @@
   "oneline": "予定とメールから行動リストを作り、返信待ちを催促する（送信はしない）",
   "status": "blocked",
   "usage": [
+    "Desk のメニュー「返信待ち」で一覧を見て、「送る／保留／捨てる」を選ぶ（Mac と iPhone）",
     "朝のブリーフィングに、今日の予定・こちらが返すもの・相手の返信待ちが入る",
     "返信待ちが3日になると、催促の下書きを Gmail に作る。送信はしない",
     "14日になると Telegram で聞く。「催促 送る 3」「催促 保留 3」「催促 捨てる 3」で答える",
@@ -12,6 +13,7 @@
     "止めるときは python3 lifeos/02-followup/run.py stop"
   ],
   "howToCheck": [
+    "Desk のメニューで「返信待ち」を開く",
     "ターミナルで python3 lifeos/02-followup/run.py demo と打つ",
     "見本の一覧と問いが出ることを見る",
     "Claude Code に「lifeos/02-followup/MORNING_RUN.md の手順で動かして」と頼む",
@@ -42,10 +44,12 @@
     },
     {
       "what": "本番の Desk に入っていない",
-      "why": "Life OS 画面がまだ main になく、本番のフォルダは別の作業の途中です。",
-      "needs": "feat/desk-focus の作業が片づいたら、統括に lifeos/base と 02 を main へ入れるよう頼む"
+      "why": "「返信待ち」画面は作りましたが、本番のフォルダが別の作業の途中なので、まだ入れていません。",
+      "needs": "feat/desk-focus の作業が片づいたら、統括に lifeos/base と lifeos/02-followup-desk を main へ入れるよう頼む"
     }
   ],
-  "commands": [],
+  "commands": [
+    "/followup"
+  ],
   "updated": "2026-11-04"
 }

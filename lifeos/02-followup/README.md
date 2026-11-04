@@ -18,7 +18,9 @@
 Python から Gmail には入れないので、Gmail コネクタのある Claude が `MORNING_RUN.md` を実行します。
 ブリーフィングには `brief.py` から入ります。01番の変更は要りません。
 
-Telegram や `lifeos/bot/cli.py` で次のように答えます。
+Desk のメニュー「返信待ち」で、一覧を見て答えられます。「メールを確認」は Mac だけで、Terminal で `/followup` を始めます。iPhone の答えは次の毎時同期で反映します。
+
+Telegram や `lifeos/bot/cli.py` では次のように答えます。
 
 ```
 催促 送る 3     下書きを開いて自分で送るタスクを作る（送信はしない）
