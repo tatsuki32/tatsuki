@@ -1,0 +1,298 @@
+import json
+import os
+import shutil
+import time
+from datetime import datetime
+from unittest import mock
+
+from lifeos.bot import router, run, voice
+from lifeos.lib import logs, paths, tasks, tools
+from lifeos.lib.tools import load_tool
+from lifeos.tests.sandbox import SandboxCase
+
+NOW = datetime(2026, 11, 4, 10, 0, tzinfo=paths.HCMC)  # a Wednesday
+
+
+def kinds(text):
+    return [p.kind for p in load_tool("04-voice", "sort").split(text, NOW)]
+
+
+class TestSort(SandboxCase):
+    def test_each_kind(self):
+        for text, kind in [
+            ("資料を送らないと", "task"),
+            ("牛乳を買う", "task"),
+            ("明日までに請求書を出す", "task"),
+            ("明日の会議の資料を作る", "task"),
+            ("家賃5万円払わないと", "task"),
+            ("読書記録のアプリを作ったら面白いかも", "idea"),
+            ("いいアイデアを思いついた", "idea"),
+            ("今日は疲れた", "diary"),
+            ("散歩に行ってきた", "diary"),
+            ("ランチ 3万ドン", "expense"),
+            ("三千五百円のタクシーに乗った", "expense"),
+            ("明日15時に歯医者", "event"),
+            ("来週金曜 打ち合わせ", "event"),
+            ("3時間歩いた", "diary"),
+            ("2時間勉強する", "task"),
+            ("15時に歯医者に行った", "diary"),
+            ("明日15時に歯医者だ", "event"),
+            ("本を読んだ", "diary"),
+        ]:
+            self.assertEqual(kinds(text), [kind], text)
+
+    def test_a_prefix_decides_for_the_whole_message(self):
+        self.assertEqual(kinds("日記：明日は資料を送る。3000円使った"), ["diary"])
+        self.assertEqual(kinds("タスク 散歩に行ってきた"), ["task"])
+
+    def test_a_spoken_memo_splits_by_sentence(self):
+        self.assertEqual(kinds("今日は疲れた。資料を送らないと。明日15時に歯医者。"), ["diary", "task", "event"])
+
+    def test_two_tasks_stay_two_and_diary_sentences_join(self):
+        self.assertEqual(kinds("牛乳を買う。資料を送る"), ["task", "task"])
+        self.assertEqual(kinds("今日は疲れた。よく歩いた"), ["diary"])
+
+    def test_a_sentence_with_no_clue_joins_its_neighbour(self):
+        s = load_tool("04-voice", "sort")
+        self.assertEqual([p.text for p in s.split("資料を送る。例の件の", NOW)], ["資料を送る。例の件の"])
+        self.assertEqual([p.text for p in s.split("例の件の。資料を送る", NOW)], ["例の件の。資料を送る"])
+
+    def test_no_clue_at_all_is_marked_unsure(self):
+        p = load_tool("04-voice", "sort").split("りんご", NOW)
+        self.assertEqual((p[0].kind, p[0].unsure), ("idea", True))
+
+    def test_amounts(self):
+        s = load_tool("04-voice", "sort")
+        for text, want in [("3万ドン", (30000, "VND")), ("1,500円", (1500, "JPY")), ("三千五百円", (3500, "JPY")),
+                           ("一万五千円", (15000, "JPY")), ("2.5万ドン", (25000, "VND")), ("30kドン", (30000, "VND")),
+                           ("20ドル", (20, "USD")), ("$20", (20, "USD"))]:
+            self.assertEqual(s.amount(text), want, text)
+        self.assertIsNone(s.amount("3人で食べた"))
+
+    def test_when(self):
+        s = load_tool("04-voice", "sort")
+        for text, want, timed in [
+            ("明日15時", (2026, 11, 5, 15, 0), True),
+            ("明日", (2026, 11, 5, 23, 59), False),
+            ("あさって午後3時半", (2026, 11, 6, 15, 30), True),
+            ("十五時", (2026, 11, 4, 15, 0), True),
+            ("8時", (2026, 11, 5, 8, 0), True),          # already past today
+            ("金曜", (2026, 11, 6, 23, 59), False),
+            ("水曜", (2026, 11, 11, 23, 59), False),     # today is Wednesday
+            ("来週月曜", (2026, 11, 9, 23, 59), False),
+            ("1月5日", (2027, 1, 5, 23, 59), False),     # already past this year
+            ("12/24 19:00", (2026, 12, 24, 19, 0), True),
+            ("3日後", (2026, 11, 7, 23, 59), False),
+        ]:
+            at, t = s.when(text, NOW)
+            self.assertEqual((at.year, at.month, at.day, at.hour, at.minute), want, text)
+            self.assertEqual(t, timed, text)
+
+    def test_when_gives_nothing_for_the_past_or_nonsense(self):
+        s = load_tool("04-voice", "sort")
+        for text in ("昨日15時", "2月31日", "30時", "りんご"):
+            self.assertEqual(s.when(text, NOW), (None, False), text)
+
+
+class TestFiling(SandboxCase):
+    def core(self):
+        return load_tool("04-voice", "core")
+
+    def inbox(self):
+        d = paths.data_path("inbox", "x")
+        return [f for f in os.listdir(os.path.dirname(d))] if os.path.isdir(os.path.dirname(d)) else []
+
+    def test_a_task_goes_to_the_desk_and_leaves_the_inbox(self):
+        reply = self.core().take("明日までに資料を送る")
+        t = tasks.open_tasks()[0]
+        self.assertEqual((t["title"], t["source"], t["status"]), ("明日までに資料を送る", "lifeos-04", "notyet"))
+        self.assertIsNotNone(t["due"])
+        self.assertIn("タスク", reply)
+        self.assertEqual(self.inbox(), [])
+
+    def test_an_event_is_a_task_with_a_due_time(self):
+        reply = self.core().take("明日15時に歯医者")
+        t = tasks.open_tasks()[0]
+        at = datetime.fromtimestamp(t["due"] / 1000, paths.HCMC)
+        self.assertEqual((at.hour, at.minute), (15, 0))
+        self.assertIn("種類:予定", t["note"])
+        self.assertIn("15:00", reply)
+
+    def test_ideas_and_diary_become_notes(self):
+        self.core().take("思いついた、棚を作る")
+        self.core().take("今日は疲れた")
+        names = sorted(os.listdir(paths.data_path("notes", "x", mkdir=False).rsplit(os.sep, 1)[0]))
+        self.assertEqual(len(names), 2)
+        self.assertTrue(names[0].endswith("-idea.md") or names[1].endswith("-idea.md"))
+        self.assertTrue(names[0].endswith("-diary.md") or names[1].endswith("-diary.md"))
+        self.assertEqual(self.inbox(), [])
+        self.assertEqual(tasks.open_tasks(), [])
+
+    def test_an_expense_goes_to_the_log_with_its_amount(self):
+        self.core().take("ランチ 3万ドン")
+        r = logs.read("expenses")[0]
+        self.assertEqual((r["amount"], r["currency"], r["source"]), (30000, "VND", "lifeos-04"))
+        self.assertEqual(tasks.open_tasks(), [])
+
+    def test_an_unsure_memo_says_so(self):
+        self.assertIn("迷った", self.core().take("りんご"))
+
+    def test_a_long_reply_is_cut(self):
+        reply = self.core().take("。".join(f"資料{i}を送る" for i in range(9)))
+        self.assertIn("ほか3件", reply)
+        self.assertEqual(len(tasks.open_tasks()), 9)
+
+    def test_a_failed_store_keeps_the_memo_then_sweep_files_only_what_is_missing(self):
+        c = self.core()
+        real = tasks.add
+        calls = {"n": 0}
+
+        def flaky(*a, **k):
+            calls["n"] += 1
+            if calls["n"] == 2:
+                raise tasks.TaskStoreError("x")
+            return real(*a, **k)
+
+        with mock.patch.object(tasks, "add", flaky):
+            reply = c.take("資料を送る。牛乳を買う")
+        self.assertIn("未整理に残しました", reply)
+        self.assertEqual(len(self.inbox()), 1)
+        self.assertEqual(len(tasks.open_tasks()), 1)
+        self.assertEqual(c.sweep(), (1, 0))
+        self.assertEqual(self.inbox(), [])
+        self.assertEqual(sorted(t["title"] for t in tasks.open_tasks()), ["牛乳を買う", "資料を送る"])
+
+    def test_sweep_keeps_what_still_fails(self):
+        c = self.core()
+        with mock.patch.object(tasks, "add", side_effect=tasks.TaskStoreError("x")):
+            c.take("資料を送る")
+            self.assertEqual(c.sweep(), (0, 1))
+        self.assertEqual(len(self.inbox()), 1)
+        self.assertEqual(tasks.open_tasks(), [])
+
+
+class TestSummary(SandboxCase):
+    def core(self):
+        return load_tool("04-voice", "core")
+
+    def said(self, day, kind, text):
+        with open(paths.data_path("logs", "voice.jsonl"), "a", encoding="utf-8") as f:
+            f.write(json.dumps({"at": day + "T09:00:00+07:00", "memo": "m", "part": 0, "kind": kind, "text": text}, ensure_ascii=False) + "\n")
+
+    def test_nothing_said_gives_nothing(self):
+        self.assertEqual(self.core().summary("2026-11-04"), [])
+
+    def test_only_yesterday_counts(self):
+        self.said("2026-11-02", "task", "おととい")
+        self.said("2026-11-03", "task", "きのう")
+        self.said("2026-11-04", "task", "きょう")
+        out = self.core().summary("2026-11-04")
+        self.assertEqual(out, ["昨日しゃべったこと（1件）", "・タスク：きのう"])
+
+    def test_never_more_than_ten_lines_and_tasks_come_first(self):
+        for i in range(30):
+            self.said("2026-11-03", "diary", f"日記{i}\n改行あり" + "長い" * 50)
+        self.said("2026-11-03", "task", "大事なこと")
+        out = self.core().summary("2026-11-04")
+        self.assertEqual(len(out), 10)
+        self.assertEqual(out[1], "・タスク：大事なこと")
+        self.assertEqual(out[-1], "ほか23件")
+        for line in out:
+            self.assertNotIn("\n", line)
+            self.assertLessEqual(len(line), 45)
+
+    def test_ten_lines_exactly_are_not_cut(self):
+        for i in range(9):
+            self.said("2026-11-03", "idea", f"案{i}")
+        out = self.core().summary("2026-11-04")
+        self.assertEqual(len(out), 10)
+        self.assertNotIn("ほか", out[-1])
+
+    def test_expenses_become_one_line_with_totals(self):
+        self.said("2026-11-03", "expense", "ランチ 3万ドン")
+        self.said("2026-11-03", "expense", "コーヒー 5万ドン")
+        self.said("2026-11-03", "expense", "本 1500円")
+        out = self.core().summary("2026-11-04")
+        self.assertEqual(out[1], "・支出 3件（80,000ドン、1,500円）")
+
+    def test_leftovers_are_mentioned_within_the_limit(self):
+        c = self.core()
+        for i in range(30):
+            self.said("2026-11-03", "idea", f"案{i}")
+        with mock.patch.object(tasks, "add", side_effect=tasks.TaskStoreError("x")):
+            c.take("資料を送る")
+        out = c.summary("2026-11-04")
+        self.assertEqual(len(out), 10)
+        self.assertEqual(out[-1], "未整理 1件が残っています")
+
+    def test_the_brief_part_is_found(self):
+        self.said("2026-11-03", "idea", "案")
+        self.assertIn("04-voice", [slug for slug, _ in tools.brief_parts("2026-11-04")])
+
+
+class FakeClient:
+    def __init__(self):
+        self.sent = []
+
+    def send_message(self, chat, text):
+        self.sent.append(text)
+
+    def download(self, file_id, dest):
+        with open(dest, "wb") as f:
+            f.write(b"audio")
+
+
+class TestBot(SandboxCase):
+    def setUp(self):
+        super().setUp()
+        self.addCleanup(voice.set_transcriber, None)
+
+    def test_it_takes_what_is_left_and_not_commands(self):
+        h = load_tool("04-voice", "handler")
+        self.assertEqual(h.PRIORITY, 90)
+        self.assertTrue(h.match("なんでも"))
+        self.assertFalse(h.match("/start"))
+        self.assertFalse(h.match("   "))
+
+    def test_stopping_the_tool_stops_it(self):
+        self.assertIn("04-voice", [r.slug for r in router.discover().routes])
+        root = os.path.join(self.tmp, "tools")
+        shutil.copytree(os.path.join(paths.REPO, "lifeos", "04-voice"), os.path.join(root, "04-voice"))
+        with open(os.path.join(root, "04-voice", "tool.json"), "w", encoding="utf-8") as f:
+            json.dump({"status": "stopped"}, f)
+        self.assertEqual(router.discover(root).routes, [])
+        self.assertEqual(tools.brief_parts("2026-11-04", root), [])
+
+    def update(self, **msg):
+        return {"update_id": 1, "message": {"chat": {"id": 5}, **msg}}
+
+    def test_voice_to_sorted_reply_within_a_minute(self):
+        voice.set_transcriber(lambda path: "今日は疲れた。資料を送らないと。")
+        client = FakeClient()
+        h = load_tool("04-voice", "handler")
+        route = router.Route("04-voice", "04", "音声メモ整理", h.PRIORITY, h.match, h.handle)
+        start = time.monotonic()
+        run.handle_update(self.update(voice={"file_id": "f"}), client, 5, [route])
+        self.assertLess(time.monotonic() - start, 60)
+        self.assertEqual(len(client.sent), 1)
+        self.assertIn("日記", client.sent[0])
+        self.assertIn("タスク", client.sent[0])
+        self.assertTrue(logs.read("voice")[0]["voice"])
+        self.assertIn("音声メモ", tasks.open_tasks()[0]["note"])
+
+    def test_text_to_sorted_reply(self):
+        client = FakeClient()
+        run.handle_update(self.update(text="牛乳を買う"), client, 5)
+        self.assertIn("タスク", client.sent[0])
+        self.assertEqual(tasks.open_tasks()[0]["title"], "牛乳を買う")
+
+    def test_without_a_transcriber_it_says_so(self):
+        client = FakeClient()
+        run.handle_update(self.update(voice={"file_id": "f"}), client, 5)
+        self.assertEqual(client.sent, [voice.NOT_CONNECTED])
+
+    def test_another_chat_is_ignored(self):
+        client = FakeClient()
+        run.handle_update(self.update(text="牛乳を買う"), client, 999)
+        self.assertEqual(client.sent, [])
+        self.assertEqual(tasks.open_tasks(), [])
