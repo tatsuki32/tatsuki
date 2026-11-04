@@ -23,6 +23,7 @@ import sys
 import tempfile
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 
 import backup_data
@@ -148,6 +149,63 @@ def fetch(get, since=None):
     return out
 
 
+def recorded_usd(a):
+    """The USD amount Wise itself recorded, or None. What the balance paid wins over the shop's price."""
+    second, second_currency, _ = parse_amount(a.get("secondaryText"))
+    if second_currency == "USD":
+        return second
+    return a.get("value") if a.get("currency") == "USD" else None
+
+
+def fetch_rates(get, store):
+    """Wise's own rate at the moment of each movement with no USD on record, kept per row so each is asked for once.
+    Returns how many are still missing. Those stay out of the USD total and are shown apart, never guessed."""
+    rates = read_json("rates.json", {})
+    missing = failed_in_a_row = asked = 0
+    for a in store.values():
+        if not flow(a) or recorded_usd(a) is not None or a["id"] in rates:
+            continue
+        if failed_in_a_row >= 5:  # a refused token or no network: stop asking, the next pass tries again
+            missing += 1
+            continue
+        when = parse_iso(a["createdOn"]).astimezone(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S+0000")
+        try:
+            found = get("/v1/rates?" + urllib.parse.urlencode({"source": settled(a)[1], "target": "USD", "time": when}))
+            rates[a["id"]] = float(found[0]["rate"])
+            failed_in_a_row = 0
+        except (Stop, LookupError, TypeError, ValueError):
+            missing += 1
+            failed_in_a_row += 1
+        asked += 1
+        if asked % 50 == 0:
+            write_json("rates.json", rates)
+    write_json("rates.json", rates)
+    return missing
+
+
+def snapshot_balances(get, today=None):
+    """Today's balances with Wise's current USD rate, one entry a day. Part of the record, so a failure never stops a pass."""
+    today = today or (dt.datetime.now(dt.timezone.utc) + HCMC).date().isoformat()
+    snaps = read_json("balances.json", {})
+    rows = []
+    try:
+        for profile in get("/v2/profiles"):
+            for b in get(f"/v4/profiles/{profile['id']}/balances?types=STANDARD"):
+                value, currency = float(b["amount"]["value"]), b["amount"]["currency"]
+                if currency == "USD":
+                    usd = value
+                else:
+                    try:
+                        usd = value * float(get("/v1/rates?" + urllib.parse.urlencode({"source": currency, "target": "USD"}))[0]["rate"])
+                    except (Stop, LookupError, TypeError, ValueError):
+                        usd = None
+                rows.append({"currency": currency, "value": value, "usd": None if usd is None else round(usd, 2)})
+    except (Stop, LookupError, TypeError, ValueError):
+        return
+    snaps[today] = rows
+    write_json("balances.json", snaps)
+
+
 def run(get=None):
     """One pass. Returns the state it wrote; a failure keeps the statements as they were."""
     state = read_json("state.json", {})
@@ -170,11 +228,13 @@ def run(get=None):
             if a.get("id"):
                 store[a["id"]] = clean(a)
         write_json("activities.json", store)
+        missing = fetch_rates(get, store)
+        snapshot_balances(get)
     except Stop as e:
         state.update(ok=False, error=str(e))
         write_json("state.json", state)
         return state
-    state.update(ok=True, error="", lastSuccess=state["lastTry"], count=len(store), added=len(store) - before)
+    state.update(ok=True, error="", lastSuccess=state["lastTry"], count=len(store), added=len(store) - before, ratesMissing=missing)
     write_json("state.json", state)
     return state
 
@@ -184,11 +244,26 @@ def counted(a):
     return a.get("type") == "CARD_PAYMENT" and a.get("status") == "COMPLETED" and a.get("value") is not None
 
 
+def to_usd(a, rates):
+    """(USD to the cent, 'record' or 'rate'), or (None, None) with no rate yet. Rounding each row means a total always
+    equals the sum of the rows shown and exported."""
+    usd = recorded_usd(a)
+    if usd is not None:
+        return round(usd, 2), "record"
+    rate, value = rates.get(a.get("id")), settled(a)[0]
+    return (round(value * rate, 2), "rate") if rate and value is not None else (None, None)
+
+
 def settled(a):
-    """What left or reached the balance: (value, currency). The second amount is what the balance paid, fees included,
-    when the first is the shop's price. A payment split over several balances names no amounts, so the first one stands."""
-    value, currency, _ = parse_amount(a.get("secondaryText"))
-    return (value, currency) if value is not None else (a.get("value"), a.get("currency"))
+    """The amount the totals use: (value, currency). A yen amount wins, whichever of the two holds it, since yen is the
+    one total that must add up. Otherwise the second amount, what the balance paid, fees included; a payment split over
+    several balances names no amounts, so the first one stands. Nothing is ever converted with a rate."""
+    second, second_currency, _ = parse_amount(a.get("secondaryText"))
+    if second_currency == "JPY":
+        return second, "JPY"
+    if a.get("currency") == "JPY" or second is None:
+        return a.get("value"), a.get("currency")
+    return second, second_currency
 
 
 def flow(a):
@@ -227,31 +302,42 @@ def recurring(items, today):
     return sorted(out, key=lambda r: r["last"], reverse=True)
 
 
-def summary(month=None, today=None):
-    """The Desk's page and Claude read this. Every completed movement counts. Totals are per currency: without rates
-    they cannot be added together."""
+def summary(month=None, today=None, start=None, end=None):
+    """The Desk's page and Claude read this. Every completed movement counts, in USD: Wise's own USD amount when it has
+    one, otherwise converted at Wise's rate at that moment. "paid" keeps the currencies really paid in."""
     today = today or (dt.datetime.now(dt.timezone.utc) + HCMC).date().isoformat()
     month = month or today[:7]
+    within = (lambda d: start <= d <= end) if start else (lambda d: d[:7] == month)
+    rates = read_json("rates.json", {})
     items = [{**a, "date": local_date(a.get("createdOn"))} for a in read_json("activities.json", {}).values()]
-    totals = {}
-    shown = []
+    usd = {"in": 0, "out": 0, "net": 0, "count": 0, "recorded": 0, "converted": 0, "types": {}}
+    paid, unconverted, shown = {}, {}, []
     for a in items:
-        if a["date"][:7] != month:
+        if not a["date"] or not within(a["date"]):
             continue
         value, currency = settled(a)
-        a = {**a, "flow": flow(a), "settledValue": value, "settledCurrency": currency}
-        shown.append(a)
-        if a["flow"]:
-            t = totals.setdefault(currency, {"in": 0, "out": 0, "net": 0, "count": 0, "types": {}})
-            t[a["flow"]] = round(t[a["flow"]] + value, 2)
-            t["net"] = round(t["in"] - t["out"], 2)
-            t["count"] += 1
-            key = a["flow"] + ":" + str(a.get("type"))
-            t["types"][key] = round(t["types"].get(key, 0) + value, 2)
+        amount, source = to_usd(a, rates)
+        direction = flow(a)
+        shown.append({**a, "flow": direction, "settledValue": value, "settledCurrency": currency, "usd": amount, "usdSource": source})
+        if not direction:
+            continue
+        p = paid.setdefault(currency, {"in": 0, "out": 0, "count": 0})
+        p[direction] = round(p[direction] + value, 2)
+        p["count"] += 1
+        if amount is None:
+            unconverted[currency] = unconverted.get(currency, 0) + 1
+            continue
+        usd[direction] = round(usd[direction] + amount, 2)
+        usd["net"] = round(usd["in"] - usd["out"], 2)
+        usd["count"] += 1
+        usd["recorded" if source == "record" else "converted"] += 1
+        key = direction + ":" + str(a.get("type"))
+        usd["types"][key] = round(usd["types"].get(key, 0) + amount, 2)
     shown.sort(key=lambda a: str(a.get("createdOn")), reverse=True)
     months = sorted({a["date"][:7] for a in items if a["date"]} | {today[:7]}, reverse=True)
-    return {"month": month, "months": months, "totals": totals, "items": shown, "recurring": recurring(items, today),
-            "unread": sum(1 for a in items if a.get("value") is None), "state": read_json("state.json", {})}
+    return {"month": month, "months": months, "usd": usd, "paid": paid, "unconverted": unconverted, "items": shown,
+            "recurring": recurring(items, today), "unread": sum(1 for a in items if a.get("value") is None),
+            "state": read_json("state.json", {})}
 
 
 if __name__ == "__main__":

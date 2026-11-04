@@ -28,6 +28,7 @@ import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, unquote, urlsplit
 
+import wise_report
 import wise_sync
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -244,11 +245,19 @@ def subs_core():
         return None
 
 
-def wise_view(month=None):
-    """GET /api/wise: a month of Wise activity, read from disk. Opening the page never calls Wise."""
-    if month is not None and not re.fullmatch(r"\d{4}-(0[1-9]|1[0-2])", month):
-        return 400, {"error": "bad month"}
-    view = wise_sync.summary(month)
+def wise_query(path):
+    """The period a request asks for, as wise_report.view() takes it."""
+    q = parse_qs(urlsplit(path).query)
+    one = lambda k: (q.get(k) or [None])[0]
+    return {"period": one("period") or "month", "month": one("month"), "start": one("from"), "end": one("to")}
+
+
+def wise_view(period=None):
+    """GET /api/wise: one period of Wise activity, read from disk. Opening the page never calls Wise."""
+    try:
+        view = wise_report.view(**(period or {}))
+    except ValueError:
+        return 400, {"error": "bad period"}
     core = subs_core()
     known = {core.slug(core.view(v).get("name") or "") for v in core.load().values()} if core else set()
     for r in view["recurring"]:
@@ -267,7 +276,43 @@ def wise_to_subs(rec):
         core.add_manual(hit["title"], hit["amount"], hit["currency"], "monthly")
     except ValueError:
         return 400, {"error": "cannot add"}
-    return wise_view(rec.get("month"))
+    return 200, {"ok": True}
+
+
+def wise_number(v):
+    """A non-negative number, or None for an empty field. ValueError for anything else."""
+    if v is None or v == "":
+        return None
+    n = float(v)
+    if not 0 <= n < 1e13:
+        raise ValueError("bad number")
+    return n
+
+
+def wise_settings(parts, rec):
+    """PUT /api/wise/category, /limits and /recon/<month>: the person's own settings, kept with the statements."""
+    try:
+        if parts == ["category"]:
+            title, name = str(rec.get("title") or "").strip().lower(), rec.get("category")
+            if not title or len(title) > 300 or name not in wise_report.CATEGORIES:
+                return 400, {"error": "bad category"}
+            chosen = wise_sync.read_json("categories.json", {})
+            chosen[title] = name
+            wise_sync.write_json("categories.json", chosen)
+        elif parts == ["limits"]:
+            wise_sync.write_json("limits.json", {"week": wise_number(rec.get("week")), "month": wise_number(rec.get("month"))})
+        elif len(parts) == 2 and parts[0] == "recon" and re.fullmatch(r"\d{4}-(0[1-9]|1[0-2])", parts[1]):
+            currency = str(rec.get("currency") or "USD").upper()
+            if not re.fullmatch(r"[A-Z]{3}", currency):
+                return 400, {"error": "bad currency"}
+            saved = wise_sync.read_json("recon.json", {})
+            saved[parts[1]] = {"in": wise_number(rec.get("in")), "out": wise_number(rec.get("out")), "currency": currency}
+            wise_sync.write_json("recon.json", saved)
+        else:
+            return 404, {"error": "not found"}
+    except (TypeError, ValueError):
+        return 400, {"error": "bad number"}
+    return 200, {"ok": True}
 
 
 def memolink_core():
@@ -430,7 +475,9 @@ class Handler(BaseHTTPRequestHandler):
             core = followup_core()
             return self.send(200, core.desk_view()) if core else self.send(404, {"error": "not found"})
         if path == "/api/wise":
-            return self.send(*wise_view((parse_qs(urlsplit(self.path).query).get("month") or [None])[0]))
+            return self.send(*wise_view(wise_query(self.path)))
+        if path == "/api/wise/export":
+            return self.wise_export()
         if path == "/api/memolink":
             core = memolink_core()
             return self.send(200, core.desk_view()) if core else self.send(404, {"error": "not found"})
@@ -452,6 +499,10 @@ class Handler(BaseHTTPRequestHandler):
             if not (self.headers.get("Content-Type") or "").startswith("application/json"):
                 return self.send(415, {"error": "json only"})
             return self.send(*memolink_run())
+        if method == "PUT" and urlsplit(self.path).path.startswith("/api/wise/"):
+            if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+                return self.send(415, {"error": "json only"})
+            return self.send(*wise_settings(urlsplit(self.path).path.split("/")[3:], rec))
         if method == "POST" and urlsplit(self.path).path == "/api/wise/subs":
             if not (self.headers.get("Content-Type") or "").startswith("application/json"):
                 return self.send(415, {"error": "json only"})
@@ -475,6 +526,23 @@ class Handler(BaseHTTPRequestHandler):
             out = upsert(col, doc_id, rec, merge=True)
             return self.send(200, out) if out else self.send(404, {"error": "no such memo"})
         self.send(405, {"error": "method not allowed"})
+
+    def wise_export(self):
+        """A file the person asked for. Made fresh and not kept here."""
+        q = parse_qs(urlsplit(self.path).query)
+        try:
+            data, ctype, name = wise_report.export((q.get("format") or ["csv"])[0], (q.get("kind") or ["report"])[0], **wise_query(self.path))
+        except ValueError:
+            return self.send(400, {"error": "bad export"})
+        if data is None:
+            return self.send(503, "PDF を作れませんでした。xcode-select --install を実行してから、もう一度お試しください。", "text/plain; charset=utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", ctype)
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Content-Disposition", f'attachment; filename="{name}"')
+        self.end_headers()
+        self.wfile.write(data)
 
     def focus(self, action, rec):
         # same protection as claude(): Host/Origin checked, and JSON from another origin needs a preflight

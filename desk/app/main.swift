@@ -19,6 +19,7 @@ let noProxy: URLSession = {
 func isDesk(_ url: URL?) -> Bool {
     guard let u = url, u.scheme == "http" || u.scheme == "about" else { return false }
     if u.scheme == "about" { return true }
+    if u.path.hasPrefix("/api/wise/export") { return false } // a file to save: the default browser downloads it
     return (u.host == "localhost" || u.host == "127.0.0.1") && String(u.port ?? 80) == deskPort
 }
 

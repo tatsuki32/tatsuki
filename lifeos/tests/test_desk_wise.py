@@ -9,6 +9,7 @@ from lifeos.tests.desk_import import server  # noqa: F401  (puts desk/ on the im
 from lifeos.tests.sandbox import SandboxCase
 
 import backup_data  # noqa: E402
+import wise_report  # noqa: E402
 import wise_sync  # noqa: E402
 
 
@@ -19,12 +20,20 @@ def act(id_, when, title="<strong>Shop</strong>", amount="10.00 USD", type_="CAR
 
 class FakeWise:
     def __init__(self, pages):
-        self.pages, self.paths = pages, []
+        self.pages, self.paths, self.rate_paths = pages, [], []
 
     def __call__(self, path):
         self.paths.append(path)
         if path == "/v2/profiles":
             return [{"id": 1, "type": "PERSONAL"}]
+        if "/balances" in path:
+            return [{"amount": {"value": 100.0, "currency": "USD"}}, {"amount": {"value": 1000.0, "currency": "JPY"}}]
+        if path.startswith("/v1/rates"):
+            if "time=" in path:
+                self.rate_paths.append(path)
+            if "source=XXX" in path:
+                raise wise_sync.Stop("no rate")
+            return [{"rate": 0.5}]
         n = int(path.split("nextCursor=")[1]) if "nextCursor=" in path else 0
         return {"activities": self.pages[n], "cursor": str(n + 1) if n + 1 < len(self.pages) else None}
 
@@ -67,7 +76,7 @@ class Sync(Base):
         wise_sync.run(FakeWise([[act("a", old)]]))
         fake = FakeWise([[act("a", old)], [act("b", old)]])
         wise_sync.run(fake)
-        self.assertEqual(len(fake.paths), 2)  # profiles and one page
+        self.assertEqual(len([p for p in fake.paths if "/activities" in p]), 1)
 
     def test_a_refusal_stops_and_keeps_the_statements(self):
         wise_sync.run(FakeWise([[act("a", "2026-11-01T01:00:00Z")]]))
@@ -91,7 +100,7 @@ class Totals(Base):
         wise_sync.run(FakeWise([list(rows)]))
         return wise_sync.summary("2026-11", "2026-11-20")
 
-    def test_every_completed_movement_counts(self):
+    def test_every_completed_movement_counts_in_usd(self):
         s = self.put(
             act("a", "2026-11-02T01:00:00Z", amount="10.00 USD"),
             act("b", "2026-11-03T01:00:00Z", amount="5.00 USD", status="CANCELLED"),
@@ -101,34 +110,58 @@ class Totals(Base):
             act("f", "2026-11-07T01:00:00Z", amount="20.00 USD", type_="CASH_WITHDRAWAL"),
             act("g", "2026-11-08T01:00:00Z", amount="<positive>+ 500 JPY</positive>", type_="BALANCE_DEPOSIT"),
         )
-        usd = s["totals"]["USD"]
-        self.assertEqual((usd["in"], usd["out"], usd["net"], usd["count"]), (3.0, 130.0, -127.0, 4))
-        self.assertEqual(usd["types"], {"out:CARD_PAYMENT": 10.0, "out:TRANSFER": 100.0, "in:CARD_PAYMENT": 3.0, "out:CASH_WITHDRAWAL": 20.0})
-        self.assertEqual((s["totals"]["JPY"]["in"], s["totals"]["JPY"]["out"]), (500.0, 0))
+        u = s["usd"]
+        self.assertEqual((u["in"], u["out"], u["net"], u["count"]), (253.0, 130.0, 123.0, 5))
+        self.assertEqual((u["recorded"], u["converted"]), (4, 1))
+        self.assertEqual(u["types"], {"out:CARD_PAYMENT": 10.0, "out:TRANSFER": 100.0, "in:CARD_PAYMENT": 3.0, "out:CASH_WITHDRAWAL": 20.0, "in:BALANCE_DEPOSIT": 250.0})
         self.assertEqual(s["items"][0]["id"], "g")
         self.assertEqual(len(s["items"]), 7)
 
-    def test_the_total_uses_what_the_balance_paid(self):
-        s = self.put(act("a", "2026-11-02T01:00:00Z", amount="320,000 VND", second="1,900 JPY"))
-        self.assertEqual(list(s["totals"]), ["JPY"])
-        self.assertEqual(s["totals"]["JPY"]["out"], 1900.0)
+    def test_the_paid_currency_is_kept(self):
+        s = self.put(act("a", "2026-11-02T01:00:00Z", amount="1,000 JPY", second="389.00 PHP"), act("b", "2026-11-03T01:00:00Z", amount="500 JPY"))
+        self.assertEqual(s["paid"]["JPY"]["out"], 1500.0)
+        self.assertEqual(s["items"][1]["amountText"], "1,000 JPY")
+        self.assertEqual(s["items"][1]["secondaryText"], "389.00 PHP")
 
-    def test_a_fee_in_the_same_currency_counts(self):
-        s = self.put(act("a", "2026-11-02T01:00:00Z", amount="10,000 JPY", second="10,250 JPY", type_="CASH_WITHDRAWAL"))
-        self.assertEqual(s["totals"]["JPY"]["out"], 10250.0)
+    def test_a_recorded_usd_amount_is_used_without_a_rate(self):
+        fake = FakeWise([[act("a", "2026-11-02T01:00:00Z", amount="320,000 VND", second="12.34 USD")]])
+        wise_sync.run(fake)
+        self.assertEqual(fake.rate_paths, [])
+        s = wise_sync.summary("2026-11", "2026-11-20")
+        self.assertEqual((s["usd"]["out"], s["items"][0]["usdSource"]), (12.34, "record"))
 
-    def test_a_split_payment_falls_back_to_the_first_amount(self):
+    def test_the_rate_is_asked_for_the_moment_and_only_once(self):
+        fake = FakeWise([[act("a", "2026-11-02T01:30:15Z", amount="1,000 JPY")]])
+        wise_sync.run(fake)
+        wise_sync.run(fake)
+        self.assertEqual(len(fake.rate_paths), 1)
+        self.assertIn("source=JPY", fake.rate_paths[0])
+        self.assertIn("target=USD", fake.rate_paths[0])
+        self.assertIn("time=2026-11-02T01%3A30%3A15%2B0000", fake.rate_paths[0])
+
+    def test_the_total_equals_the_sum_of_the_rounded_rows(self):
+        s = self.put(*[act(f"a{i}", f"2026-11-0{i + 1}T01:00:00Z", amount="3.33 JPY") for i in range(3)])
+        self.assertEqual(s["usd"]["out"], round(sum(a["usd"] for a in s["items"]), 2))
+        self.assertEqual(s["items"][0]["usd"], 1.67)
+
+    def test_a_row_with_no_rate_stays_out_and_is_named(self):
+        s = self.put(act("a", "2026-11-02T01:00:00Z", amount="50 XXX"), act("b", "2026-11-03T01:00:00Z", amount="10.00 USD"))
+        self.assertEqual(s["usd"]["out"], 10.0)
+        self.assertEqual(s["unconverted"], {"XXX": 1})
+        self.assertEqual(wise_sync.read_json("state.json", {})["ratesMissing"], 1)
+
+    def test_a_split_payment_converts_the_first_amount(self):
         s = self.put(act("a", "2026-11-02T01:00:00Z", amount="50 AUD", second="JPY, USD"))
-        self.assertEqual(s["totals"]["AUD"]["out"], 50.0)
+        self.assertEqual((s["paid"]["AUD"]["out"], s["usd"]["out"]), (50.0, 25.0))
 
     def test_moving_between_own_balances_is_not_income_or_spending(self):
         s = self.put(act("a", "2026-11-02T01:00:00Z", amount="100 USD", second="15,000 JPY", type_="INTERBALANCE"))
-        self.assertEqual(s["totals"], {})
+        self.assertEqual((s["usd"]["count"], s["paid"]), (0, {}))
         self.assertEqual(len(s["items"]), 1)
 
     def test_another_month_stays_out(self):
         s = self.put(act("a", "2026-10-02T01:00:00Z"))
-        self.assertEqual((s["totals"], s["items"]), ({}, []))
+        self.assertEqual((s["usd"]["count"], s["items"]), (0, []))
         self.assertEqual(s["months"], ["2026-11", "2026-10"])
 
 
@@ -195,23 +228,159 @@ class Server(SandboxCase, Base):
         wise_sync.run(FakeWise([[act("a", last + "-02T01:00:00Z", "Tool", "10.00 USD"), act("b", today + "-01T01:00:00Z", "Tool", "12.00 USD")]]))
 
     def test_a_bad_month_is_refused(self):
-        self.assertEqual(server.wise_view("2026-13")[0], 400)
-        self.assertEqual(server.wise_view("../x")[0], 400)
+        self.assertEqual(server.wise_view({"month": "2026-13"})[0], 400)
+        self.assertEqual(server.wise_view({"month": "../x"})[0], 400)
+        self.assertEqual(server.wise_view({"period": "nope"})[0], 400)
 
     def test_a_candidate_reaches_life_os_18_with_the_statement_amount(self):
         code, view = server.wise_view()
         self.assertEqual(code, 200)
         self.assertFalse(view["recurring"][0]["inSubs"])
         key = view["recurring"][0]["key"]
-        code, view = server.wise_to_subs({"key": key, "amount": 1})
-        self.assertEqual(code, 200)
-        self.assertTrue(view["recurring"][0]["inSubs"])
+        self.assertEqual(server.wise_to_subs({"key": key, "amount": 1})[0], 200)
+        self.assertTrue(server.wise_view()[1]["recurring"][0]["inSubs"])
         sub = list(server.subs_core().load().values())[0]
         self.assertEqual((sub["manual"]["amount"], sub["manual"]["currency"]), (12.0, "USD"))
 
     def test_an_unknown_candidate_adds_nothing(self):
         self.assertEqual(server.wise_to_subs({"key": "nope|USD"})[0], 404)
         self.assertEqual(server.subs_core().load(), {})
+
+
+class Periods(unittest.TestCase):
+    TODAY = __import__("datetime").date(2026, 11, 5)  # a Thursday
+
+    def range_of(self, *args, **kw):
+        first, last, _, before = wise_report.period_range(*args, today=self.TODAY, **kw)
+        return first.isoformat(), last.isoformat(), before and (before[0].isoformat(), before[1].isoformat())
+
+    def test_this_week_starts_on_monday(self):
+        self.assertEqual(self.range_of("week"), ("2026-11-02", "2026-11-05", ("2026-10-26", "2026-10-29")))
+
+    def test_a_month_is_the_whole_month(self):
+        self.assertEqual(self.range_of("month", "2026-02"), ("2026-02-01", "2026-02-28", ("2026-01-01", "2026-01-31")))
+
+    def test_three_and_six_months(self):
+        self.assertEqual(self.range_of("3m")[:2], ("2026-08-06", "2026-11-05"))
+        self.assertEqual(self.range_of("6m")[:2], ("2026-05-06", "2026-11-05"))
+
+    def test_a_short_month_does_not_break_months_back(self):
+        self.assertEqual(wise_report.months_back(__import__("datetime").date(2026, 5, 31), 3).isoformat(), "2026-02-28")
+
+    def test_custom_and_bad_ranges(self):
+        self.assertEqual(self.range_of("custom", start="2026-01-01", end="2026-01-10")[2], ("2025-12-22", "2025-12-31"))
+        for kw in ({"start": "2026-02-01", "end": "2026-01-01"}, {"start": "x", "end": "y"}, {}):
+            with self.assertRaises(ValueError):
+                self.range_of("custom", **kw)
+
+
+class Report(Base):
+    TODAY = __import__("datetime").date(2026, 11, 20)
+
+    def put(self, *rows):
+        wise_sync.run(FakeWise([list(rows)]))
+        return wise_report.view("month", "2026-11", today=self.TODAY)
+
+    def test_categories_rules_type_and_the_persons_choice(self):
+        self.assertEqual(wise_report.category_of({"title": "Starbucks", "type": "CARD_PAYMENT"}), "外食・カフェ")
+        self.assertEqual(wise_report.category_of({"title": "Anyone", "type": "TRANSFER"}), "送金")
+        self.assertEqual(wise_report.category_of({"title": "Unknown Shop", "type": "CARD_PAYMENT"}), wise_report.UNSORTED)
+        self.assertEqual(wise_report.category_of({"title": "Unknown Shop", "type": "CARD_PAYMENT"}, {"unknown shop": "医療"}), "医療")
+
+    def test_category_totals_add_up_to_the_outflow(self):
+        v = self.put(act("a", "2026-11-02T01:00:00Z", "Coles", "10.00 USD"), act("b", "2026-11-03T01:00:00Z", "Zed", "5.50 USD"),
+                     act("c", "2026-11-04T01:00:00Z", "Me", "7.25 USD", "TRANSFER"), act("d", "2026-11-05T01:00:00Z", "ATM", "20.00 USD", "CASH_WITHDRAWAL"))
+        self.assertEqual(round(sum(c["usd"] for c in v["categories"]), 2), v["usd"]["out"])
+
+    def test_spending_is_card_and_cash_less_refunds_not_transfers(self):
+        v = self.put(act("a", "2026-11-02T01:00:00Z", amount="10.00 USD"), act("b", "2026-11-03T01:00:00Z", amount="<positive>+ 3.00 USD</positive>"),
+                     act("c", "2026-11-04T01:00:00Z", amount="20.00 USD", type_="CASH_WITHDRAWAL"), act("d", "2026-11-05T01:00:00Z", amount="500.00 USD", type_="TRANSFER"))
+        self.assertEqual(v["spent"], 27.0)
+
+    def test_pace_needs_a_limit_and_projects_the_month(self):
+        self.assertEqual(self.put(act("a", "2026-11-02T01:00:00Z", amount="100.00 USD"))["pace"], {})
+        wise_sync.write_json("limits.json", {"month": 120.0, "week": None})
+        v = wise_report.view("month", "2026-11", today=self.TODAY)
+        self.assertEqual(v["pace"]["month"]["left"], 20.0)
+        self.assertEqual(v["pace"]["month"]["forecast"], 150.0)
+        self.assertIn("超えそう", v["finding"]["fact"])
+        self.assertNotIn("week", v["pace"])
+
+    def test_cash_is_the_finding_when_it_is_large(self):
+        v = self.put(act("a", "2026-11-02T01:00:00Z", amount="10.00 USD"), act("b", "2026-11-03T01:00:00Z", amount="30.00 USD", type_="CASH_WITHDRAWAL"))
+        self.assertIn("現金", v["finding"]["fact"])
+        self.assertTrue(v["finding"]["lesson"]["url"].startswith("https://"))
+
+    def test_findings_do_not_blame_or_advise_on_products(self):
+        v = self.put(act("a", "2026-11-02T01:00:00Z", amount="10.00 USD"))
+        text = str(v["finding"]) + str(v["lessons"])
+        for word in ("使いすぎ", "ダメ", "だらしない", "NISA", "銘柄", "買うべき"):
+            self.assertNotIn(word, text)
+
+    def test_reconcile_shows_the_gap_in_the_chosen_currency(self):
+        self.put(act("a", "2026-11-02T01:00:00Z", amount="1,000 JPY"), act("b", "2026-11-03T01:00:00Z", amount="10.00 USD"))
+        wise_sync.write_json("recon.json", {"2026-11": {"in": None, "out": 1200.0, "currency": "JPY"}})
+        r = wise_report.view("month", "2026-11", today=self.TODAY)["recon"]
+        self.assertEqual((r["oursOut"], r["diffOut"], r["diffIn"]), (1000.0, -200.0, None))
+
+    def test_the_balances_snapshot_is_kept_with_usd(self):
+        v = self.put(act("a", "2026-11-02T01:00:00Z"))
+        self.assertEqual(v["balances"]["usd"], 600.0)
+        self.assertEqual(len(v["balances"]["rows"]), 2)
+
+
+class Files(Base):
+    def data(self):
+        wise_sync.run(FakeWise([[act("a", "2026-11-02T01:00:00Z", "=HYPERLINK(1)", "1,000 JPY", second="389.00 PHP"), act("b", "2026-11-03T01:00:00Z", "<b>日本語</b>", "5.00 USD", status="CANCELLED")]]))
+        return wise_report.view("month", "2026-11", today=__import__("datetime").date(2026, 11, 20))
+
+    def test_csv_opens_in_excel_and_cannot_run_a_formula(self):
+        raw = wise_report.to_csv(self.data())
+        self.assertTrue(raw.startswith(b"\xef\xbb\xbf"))
+        text = raw.decode("utf-8-sig")
+        self.assertIn("'=HYPERLINK(1)", text)
+        self.assertEqual(len(text.strip().split("\r\n")), 3)
+        self.assertIn('500.0,レートで換算,1000.0,JPY,"1,000 JPY",389.00 PHP', text)
+
+    def test_the_report_escapes_titles_and_keeps_rows_to_the_list(self):
+        wise_sync.write_json("categories.json", {})
+        d = self.data()
+        d["items"][0]["title"] = "<script>x</script>"
+        report, full = wise_report.to_html(d), wise_report.to_html(d, "list")
+        self.assertNotIn("<script>x", full)
+        self.assertIn("&lt;script&gt;x", full)
+        self.assertNotIn("件</h2>", report)
+        self.assertIn("出入金 2件", full)
+
+    def test_a_bad_format_is_refused(self):
+        with self.assertRaises(ValueError):
+            wise_report.export("exe", period="month")
+
+    def test_a_file_name_has_the_period(self):
+        self.data()
+        _, ctype, name = wise_report.export("csv", period="custom", start="2026-11-01", end="2026-11-30")
+        self.assertEqual((ctype, name), ("text/csv; charset=utf-8", "wise-list-2026-11-01_2026-11-30.csv"))
+
+
+class Settings(SandboxCase, Base):
+    def setUp(self):
+        SandboxCase.setUp(self)
+        Base.setUp(self)
+
+    def test_a_category_is_kept_by_title(self):
+        self.assertEqual(server.wise_settings(["category"], {"title": "Zed Shop", "category": "医療"})[0], 200)
+        self.assertEqual(wise_sync.read_json("categories.json", {}), {"zed shop": "医療"})
+        self.assertEqual(server.wise_settings(["category"], {"title": "Zed", "category": "nope"})[0], 400)
+
+    def test_limits_and_recon_refuse_bad_numbers(self):
+        self.assertEqual(server.wise_settings(["limits"], {"week": "100", "month": ""})[0], 200)
+        self.assertEqual(wise_sync.read_json("limits.json", {}), {"week": 100.0, "month": None})
+        self.assertEqual(server.wise_settings(["limits"], {"week": "-1"})[0], 400)
+        self.assertEqual(server.wise_settings(["limits"], {"week": "abc"})[0], 400)
+        self.assertEqual(server.wise_settings(["recon", "2026-13"], {})[0], 404)
+        self.assertEqual(server.wise_settings(["recon", "2026-11"], {"out": "5", "currency": "jpy"})[0], 200)
+        self.assertEqual(wise_sync.read_json("recon.json", {})["2026-11"]["currency"], "JPY")
+        self.assertEqual(server.wise_settings(["../x"], {})[0], 404)
 
 
 if __name__ == "__main__":

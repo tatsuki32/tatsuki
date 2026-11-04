@@ -308,6 +308,23 @@ details.draft .sent-as summary{cursor:pointer;display:block;padding:var(--s2) 0;
 .mrow .wt{font-weight:400}
 .mrow.off .wt,.mrow.off .amt{color:var(--muted)}
 .mrow .btn{grid-column:1/-1;justify-self:start;margin-top:var(--s1)}
+.mrow .mfull{grid-column:1/-1}
+.mcat{justify-self:start;grid-column:1/-1;min-height:32px;margin-top:var(--s1);max-width:100%;font-size:var(--t1)}
+.mexport{display:flex;align-items:center;gap:var(--s2);flex-wrap:wrap}
+.mexport .sub{margin-right:var(--s1)}
+.mform{display:flex;align-items:flex-end;gap:var(--s2);flex-wrap:wrap;padding:var(--s2) var(--s3) var(--s3)}
+.mform label{display:grid;gap:var(--s1);font-size:var(--t1);color:var(--muted);min-width:0}
+.mform input{min-height:32px;width:120px;max-width:100%;background:var(--surface);color:var(--ink);border:1px solid var(--line-2);border-radius:var(--r-s);padding:0 var(--s2);font-size:var(--t2)}
+.mfind{display:grid;gap:var(--s2);padding:var(--s3);justify-items:start}
+.mfind p{margin:0}
+.mnext{font-size:var(--t2)}
+.mlesson summary,.mlearn summary{cursor:pointer;font-size:var(--t1);color:var(--muted)}
+.mlesson p{margin-top:var(--s2);max-width:40em}
+.mlearn{padding:var(--s3)}
+.mlearn summary{font-size:var(--t2);color:var(--ink);font-weight:700}
+.mlearn .mrow{padding-left:0;padding-right:0}
+.mnote{margin:var(--s2) 0 0}
+.money>.btn{justify-self:start}
 /* the mail inside a task */
 .mailbox{display:grid;gap:var(--s2);padding:12px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
 .mailbox p{margin:0}
@@ -1782,33 +1799,60 @@ function render(){
    Totals are per currency and show no budget or warning: nothing here blames. */
 const WISETYPE={CARD_PAYMENT:"カード決済",TRANSFER:"送金",CARD_CHECK:"カードの確認",BALANCE_DEPOSIT:"入金",CASH_WITHDRAWAL:"ATM の引き出し",INTERBALANCE:"両替",CARD_ORDER:"カードの注文"};
 const monthJa=m=>m?`${m.slice(0,4)}年${Number(m.slice(5,7))}月`:"";
+const moneyQuery=()=>{const q=S.moneyQ||{period:"month"},p=new URLSearchParams({period:q.period});if(q.period==="month"&&q.month)p.set("month",q.month);if(q.period==="custom"){p.set("from",q.from||"");p.set("to",q.to||"")}return p};
 async function moneyLoad(force){
   if(!LOCALAPI||S.moneyBusy||(!force&&S.money&&Date.now()-(S.moneyAt||0)<60000))return;
   S.moneyBusy=true;S.moneyAt=Date.now();
-  try{const v=await api("GET","/api/wise"+(S.moneyMonth?"?month="+encodeURIComponent(S.moneyMonth):"")),same=JSON.stringify(v)===JSON.stringify(S.money);S.money=v;S.moneyErr=false;S.moneyBusy=false;if(!same&&viewId()==="money")render()}
+  try{const v=await api("GET","/api/wise?"+moneyQuery()),same=JSON.stringify(v)===JSON.stringify(S.money);S.money=v;S.moneyErr=false;S.moneyBusy=false;if(!same&&viewId()==="money")render()}
   catch(e){const was=S.moneyErr;S.moneyErr=true;S.moneyBusy=false;if(!was&&viewId()==="money")render()}
 }
 function moneyView(){
   const d=S.money, head=`<header class="head"><div><p class="eyebrow">Wise</p><h1>お金</h1></div></header>`;
-  if(!d) return head+`<div class="card empty"><b>${S.moneyErr?"読み込めませんでした":"読み込んでいます"}</b>${S.moneyErr?"Desk のサーバーが動いているか確かめてください。":""}</div>`;
+  if(!d) return head+`<div class="card empty"><b>${S.moneyErr?"読み込めませんでした":"読み込んでいます"}</b>${S.moneyErr?"Desk のサーバーが動いているか、期間の指定が正しいか確かめてください。":""}</div>`;
+  const q=S.moneyQ||{period:"month"}, num=v=>esc(Number(v).toLocaleString("ja-JP")), usd=v=>esc(Number(v).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}));
   const st=d.state||{}, at=st.lastSuccess?new Date(st.lastSuccess).toLocaleString("ja-JP",{month:"long",day:"numeric",hour:"2-digit",minute:"2-digit"}):"";
-  const trouble=st.ok===false||!st.lastTry?`<div class="card empty"><b>${st.error?esc(st.error):"まだ取り込んでいません"}</b>${at?`最後に取り込めたのは ${esc(at)} です。`:"取り込めると、ここに決済が出ます。"}</div>`:"";
+  const trouble=st.ok===false||!st.lastTry?`<div class="card empty"><b>${st.error?esc(st.error):"まだ取り込んでいません"}</b>${at?`最後に取り込めたのは ${esc(at)} です。`:"取り込めると、ここに出入金が出ます。"}</div>`:"";
+  const chips=[["week","今週"],["month","月"],["3m","3か月"],["6m","半年"],["all","最初から"],["custom","期間指定"]];
+  const pick=`<div class="chips" role="group" aria-label="期間を選ぶ">${chips.map(([k,l])=>`<button class="chip" data-mperiod="${k}" aria-pressed="${k===d.period}">${l}</button>`).join("")}</div>`;
   const i=d.months.indexOf(d.month), older=d.months[i+1], newer=d.months[i-1];
-  const nav=`<div class="mmonth"><h2>${esc(monthJa(d.month))}</h2><button class="btn sm" data-mmonth="${esc(older||"")}" ${older?"":"disabled"}>前の月</button><button class="btn sm" data-mmonth="${esc(newer||"")}" ${newer?"":"disabled"}>次の月</button></div>`;
-  const cur=Object.keys(d.totals).sort((a,b)=>d.totals[b].count-d.totals[a].count), num=v=>esc(v.toLocaleString("ja-JP"));
-  const breakdown=(t,dir)=>Object.entries(t.types).filter(([k])=>k.startsWith(dir+":")).sort((a,b)=>b[1]-a[1]).map(([k,v])=>{const y=k.slice(dir.length+1);return `${esc(WISETYPE[y]||y)} ${num(v)}`}).join(" · ");
-  const totals=cur.length?`<section class="card" aria-label="入金と出金の合計">${cur.map(c=>{const t=d.totals[c],i=breakdown(t,"in"),o=breakdown(t,"out");return `<div class="mcur"><h3>${esc(c)}</h3><div class="mnums"><div class="mnum"><span class="sub">入金</span><b>${num(t.in)}</b></div><div class="mnum"><span class="sub">出金</span><b>${num(t.out)}</b></div><div class="mnum net"><span class="sub">差引</span><b>${num(t.net)}</b></div></div>${i?`<span class="due">入金の内訳：${i}</span>`:""}${o?`<span class="due">出金の内訳：${o}</span>`:""}</div>`}).join("")}</section>`:"";
-  const f=S.moneyFilter||"all", shownItems=d.items.filter(a=>f==="all"||a.flow===f);
-  const chips=d.items.length?`<div class="chips" role="group" aria-label="決済を絞り込む">${[["all","すべて"],["in","入金"],["out","出金"]].map(([k,l])=>`<button class="chip" data-mfilter="${k}" aria-pressed="${k===f}">${l}</button>`).join("")}</div>`:"";
+  const nav=`<div class="mmonth"><h2>${esc(d.label)}</h2>${d.period==="month"?`<button class="btn sm" data-mmonth="${esc(older||"")}" ${older?"":"disabled"}>前の月</button><button class="btn sm" data-mmonth="${esc(newer||"")}" ${newer?"":"disabled"}>次の月</button>`:""}</div>${d.period==="custom"?`<form class="mform" id="mRange"><label>開始<input type="date" id="mFrom" value="${esc(q.from||d.start)}"></label><label>終了<input type="date" id="mTo" value="${esc(q.to||d.end)}"></label><button class="btn sm" type="submit">この期間を見る</button></form>`:""}`;
+  const file=(format,kind)=>{const p=moneyQuery();p.set("format",format);p.set("kind",kind);return `${esc(location.origin)}/api/wise/export?${esc(p.toString())}`};
+  const exports=`<div class="mexport"><span class="sub">この期間を書き出す</span><a class="btn sm" href="${file("csv","list")}">CSV</a><a class="btn sm" href="${file("pdf","list")}">一覧の PDF</a><a class="btn sm" href="${file("pdf","report")}">レポートの PDF</a></div>`;
+  const breakdown=(t,dir)=>Object.entries(t.types).filter(([k])=>k.startsWith(dir+":")).sort((a,b)=>b[1]-a[1]).map(([k,v])=>{const y=k.slice(dir.length+1);return `${esc(WISETYPE[y]||y)} ${usd(v)}`}).join(" · ");
+  const u=d.usd, cur=Object.keys(d.paid).sort((a,b)=>d.paid[b].count-d.paid[a].count), inB=breakdown(u,"in"), outB=breakdown(u,"out"), left=Object.entries(d.unconverted);
+  const ea=d.earlier, vs=ea?`<span class="due">支出（カードと現金）${usd(d.spent)} · 前の同じ長さの期間 ${usd(ea.spent)}</span>`:`<span class="due">支出（カードと現金）${usd(d.spent)}</span>`;
+  const totals=`<section class="card" aria-label="USD の合計"><div class="mcur"><h3>USD の合計</h3><div class="mnums"><div class="mnum"><span class="sub">入金</span><b>${usd(u.in)}</b></div><div class="mnum"><span class="sub">出金</span><b>${usd(u.out)}</b></div><div class="mnum net"><span class="sub">差引</span><b>${usd(u.net)}</b></div></div>${vs}${inB?`<span class="due">入金の内訳：${inB}</span>`:""}${outB?`<span class="due">出金の内訳：${outB}</span>`:""}<span class="due">Wise の USD 記録 ${u.recorded}件 · レートで換算 ${u.converted}件</span>${left.length?`<span class="due">レートを取れず合計に入っていない分：${left.map(([c,n])=>`${esc(c)} ${n}件`).join(" · ")}</span>`:""}</div></section>`;
+  const paces=Object.values(d.pace||{}), lim=d.limits||{};
+  const paceRow=p=>`<div class="mrow"><span class="wt">${esc(p.label)} ${usd(p.spent)} / 上限 ${usd(p.limit)}</span><span class="amt">残り ${usd(p.left)}</span><span class="due">このペースだと ${usd(p.forecast)} USD</span></div>`;
+  const pace=`<section class="card dpanel" aria-label="自分で決めた上限"><div class="dhead"><h2>自分で決めた上限</h2><span class="sub">カードと現金の支出。単位は USD</span></div>${paces.length?`<div>${paces.map(paceRow).join("")}</div>`:""}<form class="mform" id="mLimits"><label>1週間<input type="number" min="0" step="any" inputmode="decimal" id="mWeek" value="${lim.week==null?"":esc(lim.week)}"></label><label>1か月<input type="number" min="0" step="any" inputmode="decimal" id="mMonth" value="${lim.month==null?"":esc(lim.month)}"></label><button class="btn sm" type="submit">保存</button></form></section>`;
+  const f=d.finding, l=f.lesson;
+  const find=`<section class="card mfind" aria-label="気づき"><p class="wt">${esc(f.fact)}</p><p class="mnext">次の1つ：${esc(f.next)}</p><button class="btn sm" id="mTask">タスクに入れる</button><details class="mlesson"><summary>${esc(l.title)}</summary><p>${esc(l.body)}</p><p class="due"><a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.source)} ↗</a> · ${esc(d.takeNote)}</p></details></section>`;
+  const paid=cur.length?`<section class="card dpanel" aria-label="支払った通貨ごとの合計"><div class="dhead"><h2>支払った通貨ごと</h2></div><div>${cur.map(c=>`<div class="mrow"><span class="wt">${esc(c)}</span><span class="amt">出金 ${num(d.paid[c].out)}${d.paid[c].in?` · 入金 ${num(d.paid[c].in)}`:""}</span></div>`).join("")}</div></section>`:"";
+  const cats=d.categories.length?`<section class="card dpanel" aria-label="分類ごとの出金"><div class="dhead"><h2>分類ごとの出金</h2></div><div>${d.categories.map(c=>`<div class="mrow"><span class="wt">${esc(c.name)}</span><span class="amt">${usd(c.usd)}</span><span class="due">${c.count}件</span></div>`).join("")}</div></section>`:"";
   const rec=d.recurring.length?`<section class="card dpanel"><div class="dhead"><h2>毎月の請求の候補</h2><span class="count">${d.recurring.length}件</span></div><div>${d.recurring.map(r=>`<div class="mrow"><span class="wt">${esc(r.title)}</span><span class="amt">${esc(r.amountText)}</span><span class="due">${r.months}か月 · 最後 ${esc(r.last)}</span>${r.inSubs?`<span class="due">サブスク自作に入っています</span>`:`<button class="btn sm" data-wisesub="${esc(r.key)}">サブスク自作に渡す</button>`}</div>`).join("")}</div></section>`:"";
-  const row=a=>{const off=a.status==="CANCELLED",paid=a.secondaryText&&a.settledValue!==a.value?` · 残高から ${esc(a.secondaryText)}`:"";return `<div class="mrow ${off?"off":""}"><span class="wt">${esc(a.title||a.description||"（題名なし）")}</span><span class="amt">${esc(a.amountText)}</span><span class="due">${esc(a.date.slice(5).replace("-","/"))} · ${esc(WISETYPE[a.type]||a.type||"")}${off?" · 取り消し":""}${paid}</span></div>`};
-  const list=d.items.length?`<section class="card dpanel"><div class="dhead"><h2>出入金</h2><span class="count">${shownItems.length}件</span></div><div>${shownItems.map(row).join("")}</div></section>`:(trouble?"":`<div class="card empty"><b>この月の出入金はありません</b></div>`);
-  return head+`<div class="money">${trouble}${nav}${totals}${rec}${chips}${list}<p class="sub">合計は残高から出入りした額です。取り消しと、自分の残高どうしの両替は入れていません。${at&&!trouble?`最後の取り込み ${esc(at)}。`:""}</p></div>`;
+  const rc=d.recon, gap=v=>v==null?"":v===0?"差なし":`差 ${num(v)}`;
+  const recon=d.month?`<section class="card dpanel" aria-label="正しい数字との照合"><div class="dhead"><h2>正しい数字と照合</h2><span class="sub">${esc(monthJa(d.month))}の数字を入れると差を出します</span></div>${rc?`<div><div class="mrow"><span class="wt">入金 ${num(rc.oursIn)} ${esc(rc.currency)}</span><span class="amt">${esc(gap(rc.diffIn))}</span></div><div class="mrow"><span class="wt">出金 ${num(rc.oursOut)} ${esc(rc.currency)}</span><span class="amt">${esc(gap(rc.diffOut))}</span></div></div>`:""}<form class="mform" id="mRecon"><label>入金<input type="number" min="0" step="any" inputmode="decimal" id="mrIn" value="${rc&&rc.in!=null?esc(rc.in):""}"></label><label>出金<input type="number" min="0" step="any" inputmode="decimal" id="mrOut" value="${rc&&rc.out!=null?esc(rc.out):""}"></label><label>通貨<select id="mrCur">${[...new Set(["USD",...cur,...(rc?[rc.currency]:[])])].map(c=>`<option ${rc&&rc.currency===c?"selected":""}>${esc(c)}</option>`).join("")}</select></label><button class="btn sm" type="submit">照合</button></form></section>`:"";
+  const b=d.balances, balances=b?`<section class="card dpanel" aria-label="今の残高"><div class="dhead"><h2>Wise の残高</h2><span class="count">${esc(b.date)}</span></div><div><div class="mrow"><span class="wt">合計（今のレートで換算）</span><span class="amt">${usd(b.usd)} USD${b.complete?"":"（一部を除く）"}</span></div>${b.rows.filter(r=>r.value).map(r=>`<div class="mrow"><span class="wt">${esc(r.currency)} ${num(r.value)}</span><span class="amt">${r.usd==null?"":usd(r.usd)+" USD"}</span></div>`).join("")}</div></section>`:"";
+  const flt=S.moneyFilter||"all", all=d.items.filter(a=>flt==="all"||a.flow===flt), limit=S.moneyShow||100, shownItems=all.slice(0,limit);
+  const filter=d.items.length?`<div class="chips" role="group" aria-label="出入金を絞り込む">${[["all","すべて"],["in","入金"],["out","出金"]].map(([k,l])=>`<button class="chip" data-mfilter="${k}" aria-pressed="${k===flt}">${l}</button>`).join("")}</div>`:"";
+  const catPick=a=>`<select class="mcat" data-mcat="${esc(a.title)}" aria-label="「${esc(a.title)}」の分類">${d.categoryNames.map(n=>`<option ${n===a.category?"selected":""}>${esc(n)}</option>`).join("")}</select>`;
+  const row=a=>{const off=!a.flow,big=a.flow&&a.usd!=null?`${a.flow==="in"?"+ ":""}${usd(a.usd)} USD`:esc(a.amountText),orig=[a.amountText,a.secondaryText].filter(Boolean).map(esc).join(" / ");return `<div class="mrow ${off?"off":""}"><span class="wt">${esc(a.title||a.description||"（題名なし）")}</span><span class="amt">${big}</span><span class="due">${esc(a.date.slice(5).replace("-","/"))} · ${esc(WISETYPE[a.type]||a.type||"")}${a.status==="CANCELLED"?" · 取り消し":""} · ${orig}${a.flow&&a.usdSource==="rate"?" · 換算":""}</span>${a.flow==="out"?catPick(a):""}</div>`};
+  const list=d.items.length?`<section class="card dpanel"><div class="dhead"><h2>出入金</h2><span class="count">${all.length}件</span></div><div>${shownItems.map(row).join("")}</div></section>${all.length>shownItems.length?`<button class="btn" id="mMore">続きを見る（あと ${all.length-shownItems.length}件）</button>`:""}`:(trouble?"":`<div class="card empty"><b>この期間の出入金はありません</b></div>`);
+  const learn=`<details class="card mlearn"><summary>お金の学び ${d.lessons.length}件</summary>${d.lessons.map(x=>`<div class="mrow"><span class="wt mfull">${esc(x.title)}</span><span class="due mfull">${esc(x.body)} <a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.source)} ↗</a></span></div>`).join("")}<p class="sub mnote">${esc(d.takeNote)}</p></details>`;
+  return head+`<div class="money">${trouble}${pick}${nav}${exports}${totals}${pace}${find}${paid}${cats}${rec}${recon}${balances}${filter}${list}${learn}<p class="sub">合計は USD です。Wise に USD の記録がなければ、決済時刻の Wise のレートで換算します。実際に払った額とは少し差が出ることがあります。取り消しと、自分の残高どうしの両替は入れていません。${at&&!trouble?`最後の取り込み ${esc(at)}。`:""}</p></div>`;
 }
 function wireMoney(){
-  document.querySelectorAll("[data-mfilter]").forEach(b=>b.onclick=()=>{S.moneyFilter=b.dataset.mfilter;render()});
-  document.querySelectorAll("[data-mmonth]").forEach(b=>b.onclick=()=>{if(!b.dataset.mmonth)return;S.moneyMonth=b.dataset.mmonth;moneyLoad(true)});
-  document.querySelectorAll("[data-wisesub]").forEach(b=>b.onclick=async()=>{b.disabled=true;try{S.money=await api("POST","/api/wise/subs",{key:b.dataset.wisesub,month:S.money.month});toast("サブスク自作に入れました");render()}catch(e){b.disabled=false;toast("入れられませんでした")}});
+  const go=()=>{S.moneyShow=0;moneyLoad(true)}, put=async(path,rec,msg)=>{try{await api("PUT",path,rec);if(msg)toast(msg);moneyLoad(true)}catch(e){toast("保存できませんでした。入力を確かめてください")}};
+  document.querySelectorAll("[data-mperiod]").forEach(b=>b.onclick=()=>{const p=b.dataset.mperiod,d=S.money;S.moneyQ=p==="custom"?{period:p,from:d.start,to:d.end}:{period:p};go()});
+  document.querySelectorAll("[data-mmonth]").forEach(b=>b.onclick=()=>{if(!b.dataset.mmonth)return;S.moneyQ={period:"month",month:b.dataset.mmonth};go()});
+  document.querySelectorAll("[data-mfilter]").forEach(b=>b.onclick=()=>{S.moneyFilter=b.dataset.mfilter;S.moneyShow=0;render()});
+  $("#mMore")&&($("#mMore").onclick=()=>{S.moneyShow=(S.moneyShow||100)+100;render()});
+  $("#mRange")&&($("#mRange").onsubmit=e=>{e.preventDefault();S.moneyQ={period:"custom",from:$("#mFrom").value,to:$("#mTo").value};go()});
+  $("#mLimits")&&($("#mLimits").onsubmit=e=>{e.preventDefault();put("/api/wise/limits",{week:$("#mWeek").value,month:$("#mMonth").value},"上限を保存しました")});
+  $("#mRecon")&&($("#mRecon").onsubmit=e=>{e.preventDefault();put("/api/wise/recon/"+encodeURIComponent(S.money.month),{in:$("#mrIn").value,out:$("#mrOut").value,currency:$("#mrCur").value})});
+  document.querySelectorAll("[data-mcat]").forEach(c=>c.onchange=()=>put("/api/wise/category",{title:c.dataset.mcat,category:c.value},"同じ題名の分類を変えました"));
+  $("#mTask")&&($("#mTask").onclick=async()=>{try{await store.putTask({id:newTaskId(),title:S.money.finding.next,note:S.money.finding.fact,status:"notyet",source:"money",createdAt:Date.now()});toast("タスクに入れました")}catch(e){toast("入れられませんでした")}});
+  document.querySelectorAll("[data-wisesub]").forEach(b=>b.onclick=async()=>{b.disabled=true;try{await api("POST","/api/wise/subs",{key:b.dataset.wisesub});toast("サブスク自作に入れました");moneyLoad(true)}catch(e){b.disabled=false;toast("入れられませんでした")}});
 }
 /* 返信待ち: Life OS 02. On the Mac the server holds the state; online the hourly sync copies it to db "followups"
    and an answer waits on its doc until the next sync. This view has no way to send mail: 送る opens the Gmail draft. */
