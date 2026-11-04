@@ -1,18 +1,29 @@
 {
   "no": "01",
   "name": "朝コマンド",
-  "oneline": "/morning で今日やる3件を出す。作業再開は /tsuzuki（15番）",
-  "status": "planned",
+  "oneline": "/morning で今日やる3件を出す。作業再開は /tsuzuki（15番）か /recap",
+  "status": "working",
   "usage": [
     "Claude Code で /morning と打つ。今日やる3件だけが、理由1行ずつ付いて出る",
-    "同じ内容が今日のブリーフィングとして保存され、Telegram にも届く"
+    "同じ内容が今日のブリーフィングとして保存される",
+    "Telegram がつながると、同じ内容が届く。同じ内容は1日1回だけ送る",
+    "作業の続きを知りたいときは /tsuzuki か /recap を使う"
   ],
   "howToCheck": [
-    "/morning と打つ",
+    "Claude Code で /morning と打つ",
     "30秒以内に3件出ることを見る",
-    "4件以上出ていないことを見る"
+    "4件以上出ていないことを見る",
+    "選ばれた3件と理由が、今日の感覚に合うかを見る",
+    "別の画面の朝のまとめが出たら、python3 lifeos/01-morning/morning.py と打つ",
+    "Telegram をつないだあと、もう一度 /morning と打ち、届くことを見る"
   ],
-  "blockers": [],
+  "blockers": [
+    {
+      "what": "Telegram に届かない",
+      "why": "ボットのトークンとチャット番号がまだありません。今は送る文を控えとして残しています",
+      "needs": "Telegram の BotFather でボットを作り、トークンとチャット番号を desk/data/lifeos/secrets/telegram.json に書いてください。チャットには貼らないでください"
+    }
+  ],
   "commands": [
     "/morning"
   ],
