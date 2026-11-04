@@ -18,7 +18,7 @@ claude.ai のチャットで直接編集しない。変更は必ずここで行�
   `reports`, `editions`, `days`, `watch`（マイナー国ウォッチの号。doc id は日付、本文はマークダウン）
 - Mac版も同じ `desk/index.html` を使う。`desk/server.py`（Python標準ライブラリのみ）が
   `http://localhost:4747` で配信し、`desk/data/*.js`（`window.TOOLS` 等）をページに差し込む。
-  API: `GET /api/memos|dues|tasks|prompts|notes|habits|lifemap|wins`、`POST /api/memos`、`PATCH /api/memos/<id>`、`PUT /api/dues/<id>`、`PUT /api/tasks/<id>`、`PUT /api/prompts/<id>`、`PUT /api/notes/<id>`、`PUT /api/habits/<id>`、`PUT /api/lifemap/<id>`（Life OS 14）、`PUT /api/wins/<id>`、`GET /api/followups`、`POST /api/followups/<番号>/answer`（Life OS 02。送信はしない）、`POST /api/claude`（`{cmd,arg}`。決めた11個のコマンドだけ。Terminal を開いて `claude "<コマンド>"` を始める。macOS のみ）、`GET /api/focus/state`・`POST /api/focus/start|stop`（FocusBlock への中継。パスワードは保存もログもしない）。
+  API: `GET /api/memos|dues|tasks|prompts|notes|habits|lifemap|wins`、`POST /api/memos`、`PATCH /api/memos/<id>`、`PUT /api/dues/<id>`、`PUT /api/tasks/<id>`、`PUT /api/prompts/<id>`、`PUT /api/notes/<id>`、`PUT /api/habits/<id>`、`PUT /api/lifemap/<id>`（Life OS 14）、`PUT /api/wins/<id>`、`GET /api/followups`、`POST /api/followups/<番号>/answer`（Life OS 02。送信はしない）、`POST /api/claude`（`{cmd,arg}`。決めた13個のコマンドだけ。Terminal を開いて `claude "<コマンド>"` を始める。macOS のみ）、`GET /api/focus/state`・`POST /api/focus/start|stop`（FocusBlock への中継。パスワードは保存もログもしない）。
   データは `desk/data/*.json`（`.gitignore` 済み。個人データは絶対にコミットしない）。
 - Mac の置き場所は `~/TatsukiDesk`（Documents などの保護フォルダは自動起動から読めないので不可）。
 - Mac の導入: `bash desk/setup-mac.sh`（サーバー常駐＋5分ごとの `git pull origin main`）。
@@ -28,7 +28,7 @@ claude.ai のチャットで直接編集しない。変更は必ずここで行�
   memos/dues/tasks/prompts/notes/habits/lifemap/wins は双方向、それ以外はオンライン → Mac。`desk/index.html` が変わっていればオンライン版にも公開する。
 - 削除は `deleted:true` の論理削除。同期は `updatedAt` が新しい方を採用。
 - メール送信（Gmail `send_message`）はオンライン版のみ、送信前の確認を必ず残す。
-- Claude Code のコマンド（`.claude/commands/`）：`/morning-kickoff`・`/begin`・`/kickoff`（Mac 用）、`/recap`（文脈要約。標準の `/resume` と別）、`/tsuzuki`（続きを3行で出す）・`/split`（15分以内に分けて Desk のタスクに足す）、`/rsd`、`/sync`・`/learn`・`/knowledge`。毎回守るルールは `.claude/rules/`。
+- Claude Code のコマンド（`.claude/commands/`）：`/morning-kickoff`・`/begin`・`/kickoff`（Mac 用）、`/recap`（文脈要約。標準の `/resume` と別）、`/tsuzuki`（続きを3行で出す）・`/split`（15分以内に分けて Desk のタスクに足す）、`/rsd`、`/sync`・`/learn`・`/knowledge`、`/where`・`/lowenergy`（Life OS 16。Mac 用）。毎回守るルールは `.claude/rules/`。
 - コミット前フック `.githooks/pre-commit`（`core.hooksPath`。SessionStart と setup-mac.sh で有効化）。実名などの禁止語は `tools/banned-words.local.txt`（git に入れない）。公開前チェック：`npm run validate-writing <file>`。
 - Desk の「⌨️ Claude に頼む」（Home のカード・🤖 ボタン・C キー・検索欄で `/`）：Claude Code のコマンドをボタンで渡す。Mac は Terminal で claude が始まり、オンラインはコピー＋claude.ai/code。押した日は習慣 `claude-cmd` に付く。検索欄で `/` を打つと Notion 風のコマンド一覧（操作・移動・Claude コマンド・設定）。
 - Desk の「🎯 集中」（Mac 版だけ）：アプリとWebサイトをブロックする `focusblock/`（root で常駐、127.0.0.1:47800）の開始・解除・残り時間。リストとスケジュールは FocusBlock の設定画面で編集。導入と更新は `focusblock/install.sh`。Claude・Claude のサイト・システム設定は常にブロックしない。
@@ -61,6 +61,7 @@ claude.ai のチャットで直接編集しない。変更は必ずここで行�
 - `lifeos/NN-slug/tool.json` が各ツールの正本。Desk の「Life OS」画面に出る（Mac は `server.py` が毎回読んで `window.LIFEOS`、オンラインは DB の `lifeos`。毎時同期で Mac → オンラインの一方向）。
 - 共通部品は `lifeos/lib/`（データ置き場・Desk タスク・追記ログ・Markdown）。Telegram の受け口は `lifeos/bot/`（`NN-slug/handler.py` を自動で読む。試すのは `python3 lifeos/bot/cli.py "テキスト"`）。
 - 個人データは `desk/data/lifeos/`（`LIFEOS_DATA`）。タスクは Desk の `tasks` だけに置く。
+- メモ連携（11）：Desk の「🔗 メモ連携」から動かす（Mac だけ。`GET /api/memolink`、`POST /api/memolink/run`）。毎時同期でも動く。メモは `id` が `ln-` で始まるノートになる。
 - 返信待ち（02）：状態の正本は Mac の `desk/data/lifeos/tools/02-followup/state.json`。オンラインの DB `followups` は毎時同期の写しで、件名と相手のアドレスだけを載せる。iPhone の答えは `answer` 欄に置き、次の同期で Mac に反映する。Desk からメールは送らない。
 - 続き復元（15）：`Stop` と `SessionEnd` のフック（`lifeos/15-resume/hook.py`）が、やったことと次の一手を `logs/work.jsonl` に書く。`/tsuzuki` がそれを読む。
 - テスト：`python3 -m unittest discover -s lifeos/tests -t .`

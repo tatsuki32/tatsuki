@@ -243,9 +243,21 @@ def run(desk=None):
     _write_json("index.json", {m["id"]: {
         "title": m["display"], "src": m["src"], "day": m["day"], "kind": m["kind"], "tags": m["all_tags"],
         "related": m["related"], "cosense": m["cosense"], "unread": m["unread"]} for m in all_memos})
+    _write_json("last.json", {"at": paths.now().isoformat(timespec="seconds"), "written": shown["written"]})
     return {"stopped": False, "memos": len(all_memos), "linked": sum(1 for m in all_memos if m["related"]),
             "unread": sum(1 for m in all_memos if m["unread"]), "briefs": briefs,
             "desk": use_desk, **shown}
+
+
+def desk_view():
+    """What Desk's メモ連携 screen shows: counts and settings only, never a memo's words."""
+    conf = settings()
+    index = load_index()
+    last = _read_json("last.json", {})
+    return {"enabled": conf["enabled"], "memos": len(index), "linked": sum(1 for v in index.values() if v.get("related")),
+            "unread": sum(1 for v in index.values() if v.get("unread")), "lastRun": last.get("at"),
+            "written": last.get("written"), "cosense": bool((conf.get("cosense") or {}).get("scope")),
+            "reader": memos_mod.reader_connected()}
 
 
 def find(word):

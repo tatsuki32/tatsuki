@@ -42,9 +42,10 @@ DATA_JS = [
     ("watch.js", "WATCH", "[]"),
 ]
 LOCK = threading.Lock()
+MEMOLINK_LOCK = threading.Lock()
 REPO = os.path.dirname(ROOT)
 # Desk's ⌨️ buttons may start only these Claude Code commands (POST /api/claude)
-CLAUDE_CMDS = ("/morning-kickoff", "/begin", "/recap", "/rsd", "/learn", "/sync", "/knowledge", "/desk-feature", "/followup", "/newtool", "/kickoff")
+CLAUDE_CMDS = ("/morning-kickoff", "/begin", "/recap", "/rsd", "/learn", "/sync", "/knowledge", "/desk-feature", "/followup", "/newtool", "/kickoff", "/where", "/lowenergy")
 CLAUDE_ARG_MAX = 6000
 FOCUS_URL = "http://127.0.0.1:47800"
 # no proxy: while websites are blocked the system proxy points at FocusBlock itself
@@ -138,6 +139,35 @@ def followup_answer(no, rec):
     if core is None or choice not in core.CHOICES or not no.isdigit():
         return 400, {"error": "bad answer"}
     return 200, {"message": core.answer(int(no), choice), "view": core.desk_view()}
+
+
+def memolink_core():
+    """Life OS 11, or None in a checkout without lifeos/."""
+    if REPO not in sys.path:
+        sys.path.insert(0, REPO)
+    try:
+        from lifeos.lib.tools import load_tool
+        return load_tool("11-notes", "core")
+    except (ImportError, OSError):
+        return None
+
+
+def memolink_run():
+    """POST /api/memolink/run: one pass, never two at once. The answer holds counts only, never a memo's words."""
+    core = memolink_core()
+    if core is None:
+        return 404, {"error": "メモ連携がこの Desk に入っていません"}
+    if not MEMOLINK_LOCK.acquire(blocking=False):
+        return 409, {"error": "連携しています。終わるまでお待ちください"}
+    try:
+        core.run()
+        return 200, core.desk_view()
+    except core.desk_notes.NoteStoreError as e:
+        return 500, {"error": str(e)}
+    except Exception:
+        return 500, {"error": "連携できませんでした。元のメモは変わっていません"}
+    finally:
+        MEMOLINK_LOCK.release()
 
 
 def page():
@@ -270,6 +300,9 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/followups":
             core = followup_core()
             return self.send(200, core.desk_view()) if core else self.send(404, {"error": "not found"})
+        if path == "/api/memolink":
+            core = memolink_core()
+            return self.send(200, core.desk_view()) if core else self.send(404, {"error": "not found"})
         self.send(404, {"error": "not found"})
 
     def write(self, method):
@@ -284,6 +317,10 @@ class Handler(BaseHTTPRequestHandler):
             return self.claude(rec)
         if method == "POST" and urlsplit(self.path).path in ("/api/focus/start", "/api/focus/stop"):
             return self.focus(urlsplit(self.path).path.rsplit("/", 1)[1], rec)
+        if method == "POST" and urlsplit(self.path).path == "/api/memolink/run":
+            if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+                return self.send(415, {"error": "json only"})
+            return self.send(*memolink_run())
         parts = urlsplit(self.path).path.split("/")
         if method == "POST" and len(parts) == 5 and parts[1:3] == ["api", "followups"] and parts[4] == "answer":
             if not (self.headers.get("Content-Type") or "").startswith("application/json"):
