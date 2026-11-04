@@ -13,6 +13,8 @@
 - コマンドを忘れる対策：Desk の「🤖 Claude に頼む」カードと、検索欄の `/` コマンド一覧。main にマージ済み。Mac の Terminal 起動は未確認。
 - Desk 全体の文字リンク（Scrapbox 式）：main にマージ済み・オンライン版に公開済み。iPhone 実機の長押しは未確認。
 
+- Desk の「🎯 集中」と `focusblock/`：main にマージ済み。本物のブロックは本人の確認待ち。
+
 - Life OS（18個のツール）：土台を `lifeos/base` に作った。ツール別の作業はこれから。約束は `lifeos/README.md`。
 
 ## 決定済みの事項

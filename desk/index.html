@@ -360,6 +360,18 @@ button .awl,.nav .awl,#tabs .awl{border-bottom:0}
 .inedit{width:100%;background:var(--bg);color:var(--ink);border:1px solid var(--accent);border-radius:var(--r-s);padding:var(--s2) 10px;font:inherit;font-size:var(--t3);line-height:1.75;resize:vertical}
 h1 .inedit{font-size:var(--t4);font-weight:700}
 
+/* ---------- focus (Mac only) ---------- */
+.fbform{padding:var(--s3);display:grid;gap:var(--s4)}
+.fbgroup{display:grid;gap:var(--s2)}
+.fbuntil{display:flex;align-items:center;gap:var(--s2);flex-wrap:wrap;margin-top:var(--s1)}
+.fbuntil input{min-height:32px;background:var(--bg);color:var(--ink);border:1px solid var(--line-2);border-radius:var(--r-s);padding:0 var(--s2);font:inherit;font-size:var(--t2);color-scheme:dark}
+.fbform,.fbfoot{max-width:40em}
+.fbfoot{display:grid;gap:var(--s2);justify-items:start}
+.fbfoot p{margin:0}
+.fbsrc{margin:var(--s2) 0 0}
+.fbclock{font-size:56px;line-height:1.1}
+@media (max-width:760px){.nav a[href="#focus"]{display:none}}
+
 /* ---------- popups ---------- */
 .scrim{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.6);display:flex;align-items:flex-start;justify-content:center;padding:calc(64px + env(safe-area-inset-top,0px)) max(var(--s3),env(safe-area-inset-right,0px)) var(--s3) max(var(--s3),env(safe-area-inset-left,0px))}
 .pop{width:min(460px,100%);background:var(--surface);border:1px solid var(--line-2);border-radius:16px;box-shadow:0 24px 60px rgba(0,0,0,.5);padding:var(--s4) var(--s3) var(--s3);display:grid;gap:12px;max-height:calc(100vh - 80px);overflow-y:auto}
@@ -367,7 +379,7 @@ h1 .inedit{font-size:var(--t4);font-weight:700}
 .pop .hint{font-size:var(--t1);color:var(--muted);margin:0}
 .pop textarea{width:100%;min-height:140px;resize:vertical;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:var(--r);padding:12px;font:inherit;font-size:var(--t3);line-height:1.6}
 .pop textarea:focus,.pop input:focus,.pop select:focus{outline:none;border-color:var(--accent)}
-.pop input[type=text],.pop input[type=datetime-local],.pop select{width:100%;min-height:44px;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:0 12px;font:inherit;font-size:var(--t3)}
+.pop input[type=text],.pop input[type=password],.pop input[type=datetime-local],.pop select{width:100%;min-height:44px;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:0 12px;font:inherit;font-size:var(--t3)}
 .pop .tnote{min-height:80px}
 .pop .pbody{min-height:min(52vh,420px);font-size:var(--t2);line-height:1.6}
 .seg{display:grid;grid-template-columns:1fr 1fr;gap:var(--s2)}
@@ -491,6 +503,7 @@ function toast(t){const el=document.createElement("div");el.className="toast";el
 /* ---------- store: claude db online, browser storage on the PC ---------- */
 /* Notes are never hard-deleted: deleted:true + updatedAt lets the hourly sync merge the Mac and the cloud safely. */
 const LOCALAPI=/^https?:$/.test(location.protocol)&&/^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+if(LOCALAPI) VIEWS.splice(4,0,{id:"focus",e:"🎯",label:"集中",g:"today"}); // blocks apps on this Mac, so the Mac version only
 async function api(method,path,body){const r=await fetch(path,{method,headers:{"Content-Type":"application/json"},body:body?JSON.stringify(body):undefined});if(!r.ok)throw new Error(r.status);return r.json()}
 async function loadApiMemos(){try{
   const [memos,dues,tasks,prompts,notes,habits]=await Promise.all([api("GET","/api/memos"),api("GET","/api/dues"),api("GET","/api/tasks"),api("GET","/api/prompts").catch(()=>[]),api("GET","/api/notes").catch(()=>[]),api("GET","/api/habits").catch(()=>[])]);
@@ -579,7 +592,7 @@ const dlClass=ms=>ms<0?"over":ms<DAY?"hot":ms<2*DAY?"warn":"";
 const fmtDue=ms=>new Date(ms).toLocaleString("ja-JP",{month:"numeric",day:"numeric",weekday:"short",hour:"2-digit",minute:"2-digit"});
 function dlChip(x){const left=x.deadline-Date.now();return `<span class="dl ${dlClass(left)}" data-dl="${x.deadline}" title="期日 ${esc(fmtDue(x.deadline))}">${dlText(left)}</span>`}
 const dueLine=x=>`期日 ${esc(fmtDue(x.due))} · <button class="duebtn" data-due="${esc(x.uid)}" aria-label="期日を変更">${esc(x.src)}</button>`;
-function tick(){const now=Date.now();document.querySelectorAll("[data-dl]").forEach(el=>{const left=+el.dataset.dl-now;el.textContent=dlText(left);el.className="dl "+dlClass(left)});
+function tick(){const now=Date.now();let fbDone=false;document.querySelectorAll("[data-fleft]").forEach(el=>{const left=+el.dataset.fleft-now;el.textContent=fbLeft(left);if(left<=0)fbDone=true});if(fbDone)fbLoad();document.querySelectorAll("[data-dl]").forEach(el=>{const left=+el.dataset.dl-now;el.textContent=dlText(left);el.className="dl "+dlClass(left)});
   document.querySelectorAll("[data-until]").forEach(el=>{const left=+el.dataset.until-now;if(left<=0&&!el.dataset.done){el.dataset.done="1";setTimeout(render,500)}el.textContent=untilText(left)})}
 setInterval(tick,1000);
 /* badges: Home panel, rail counts, tab title, favicon, home-screen icon */
@@ -1418,6 +1431,7 @@ try{S.aiExp=JSON.parse(localStorage.getItem("desk-ai-exp")||"{}")||{}}catch(e){S
 
 /* ---------- nav ---------- */
 function navCount(id){
+  if(id==="focus"&&fbActive()) return `<span class="count" data-fleft="${fbEndMs()}">${fbLeft(fbEndMs()-Date.now())}</span>`;
   const open=S.memos.filter(m=>!m.done&&m.place==="inbox").length, mailN=S.dl.filter(x=>x.kind==="mail").length, taskN=S.board.filter(t=>t.status==="doing").length;
   return id==="inbox"&&open?`<span class="count">${open}</span>`:id==="mail"&&mailN?`<span class="count hot" title="要対応">${mailN}</span>`:id==="tasks"&&taskN?`<span class="count" title="進行中">${taskN}</span>`:id==="log"&&S.reports[0]?.pending?.length?`<span class="count" title="ペンディング">${S.reports[0].pending.length}</span>`:"";
 }
@@ -1468,6 +1482,7 @@ function home(){
   return `
   <header class="head"><div><p class="eyebrow">${d.toLocaleDateString("ja-JP",{month:"long",day:"numeric",weekday:"long"})} · ${greet} · ${t3Mode()}</p><h1>今日の3つ</h1></div><button class="btn" data-opennext>次は？</button></header>
   ${topThree()}
+  ${focusHomeCard()}
   <div class="duo">${todayEvents()}${habitStrip()||`<section class="card"><div class="dhead"><h2><span class="e">🌱</span>今日の習慣</h2><a class="more" href="#habits">足す →</a></div><div class="empty">続けたいことを「習慣」で足せます。</div></section>`}</div>
   ${ccCard()}
   ${todayPanel(top)}
@@ -1598,7 +1613,7 @@ function render(){
   renderNav();
   if(viewId()==="lifeos"){$("#view").innerHTML=searchResults()+lifeosView();wire();wireLifeos();return}
   const v=viewId();
-  $("#view").innerHTML=searchResults()+(v==="notes"?notesView():v==="watch"?watch():v==="tasks"?tasks():v==="calendar"?calendar():v==="news"?news():v==="mail"?mail():v==="inbox"?inbox():v==="habits"?habitsView():v==="log"?log():v==="tools"?toolsView():home());
+  $("#view").innerHTML=searchResults()+(v==="focus"?focusView():v==="notes"?notesView():v==="watch"?watch():v==="tasks"?tasks():v==="calendar"?calendar():v==="news"?news():v==="mail"?mail():v==="inbox"?inbox():v==="habits"?habitsView():v==="log"?log():v==="tools"?toolsView():home());
   if(v==="news"||v==="watch") linkSources($("#view"));
   wire();
   if(v==="news"&&S.focus!=null){const el=document.getElementById("story-"+S.focus);S.focus=null;if(el){el.classList.add("flash");setTimeout(()=>el.scrollIntoView({block:"start"}),0)}}
@@ -1633,6 +1648,7 @@ function wireLifeos(){
   document.querySelectorAll("details[data-los]").forEach(d=>d.ontoggle=()=>{(S.losOpen=S.losOpen||{})[d.dataset.los]=d.open});
 }
 function wire(){
+  wireFocus();
   document.querySelectorAll("[data-pal]").forEach(b=>b.onclick=()=>palRun(+b.dataset.pal));
   document.querySelectorAll("#view [data-cc]").forEach(b=>b.onclick=()=>openCC(b.dataset.cc));
   document.querySelectorAll("[data-hit]").forEach(b=>b.onclick=()=>{const [,i]=b.dataset.hit.split(":");const h=runSearch(S.q).hits[+i];if(h)goHit(h)});
@@ -1876,6 +1892,92 @@ document.addEventListener("keydown",e=>{const t=e.target.tagName;if(t==="INPUT"|
   if(e.key==="/"){e.preventDefault();$("#q").focus()}});
 window.addEventListener("hashchange",()=>{S.confirm=null;hideSelMenu();if(location.hash==="#notes"&&!S.noteKeep)S.noteId=null;S.noteKeep=false;const f=S.focus!=null;if(!f)window.scrollTo(0,0);render()});
 
+/* ---------- focus: starts and lifts FocusBlock on this Mac, through desk/server.py. Mac only; nothing is stored in Desk. ---------- */
+S.fb={state:null,err:null,min:25,until:"",apps:true,web:true};
+const fbActive=()=>!!S.fb.state?.active?.active;
+const fbEndMs=()=>(S.fb.state?.active?.end||0)*1000;
+const FB_SETTINGS="http://127.0.0.1:47800";
+function fbLeft(ms){ms=Math.max(0,ms);const s=Math.round(ms/1000),h=Math.floor(s/3600),m=Math.floor(s%3600/60);return (h?h+":"+pad(m):m)+":"+pad(s%60)}
+const fbTargets=a=>[a.apps&&"アプリ",a.web&&"Webサイト"].filter(Boolean).join("・");
+let fbKey=null;
+async function fbLoad(){
+  try{const r=await fetch("/api/focus/state");const j=await r.json();
+    if(r.ok){S.fb.state=j;S.fb.err=null}else{S.fb.state=null;S.fb.err=j.error||"FocusBlock につながりません"}
+  }catch(e){S.fb.state=null;S.fb.err="Desk サーバーにつながりません"}
+  const key=JSON.stringify([S.fb.state,S.fb.err]);
+  if(key!==fbKey){fbKey=key;render()}
+}
+async function fbPost(action,body){
+  const r=await fetch("/api/focus/"+action,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+  const j=await r.json();
+  if(!r.ok) throw new Error(j.error||"うまくいきませんでした");
+  S.fb.state=j;S.fb.err=null;fbKey=JSON.stringify([j,null]);
+}
+function fbWarning(){
+  const st=S.fb.state,f=S.fb;
+  if(f.apps&&st.apps.mode==="allow"&&!st.apps.count) return "許可アプリが0個なので、開始するとブラウザもすべて終了し、このデスクも閉じます。先に設定で使うブラウザを許可してください。";
+  const none=(f.apps&&st.apps.mode==="block"&&!st.apps.count)||(f.web&&st.web.mode==="block"&&!st.web.count);
+  return none?"ブロックするものがリストにありません。設定で追加してください。":"";
+}
+const FB_FOOT=`<div class="fbfoot"><p class="sub">ブラウザが使えないときは、アプリケーションフォルダの FocusBlock を開いて解除できます。Claude とシステム設定はブロックされません。</p><a class="more" href="${FB_SETTINGS}" target="_blank" rel="noopener">リストとスケジュールの設定 ↗</a></div>`;
+function focusView(){
+  const st=S.fb.state,f=S.fb;
+  if(!st) return `<header class="head"><div><p class="eyebrow">集中</p><h1>${f.err?"FocusBlock につながりません":"確認しています"}</h1></div></header>
+    ${f.err?`<div class="card empty"><b>${esc(f.err)}</b>少し待ってから、もう一度開いてください。ブロック中なら、アプリケーションフォルダの FocusBlock から解除できます。</div>`:""}`;
+  if(fbActive()){const a=st.active;
+    return `<header class="head"><div><p class="eyebrow">集中 · ${esc(fbTargets(a))}をブロック中</p><h1 class="fbclock" data-fleft="${fbEndMs()}">${fbLeft(fbEndMs()-Date.now())}</h1><p class="sub fbsrc">${a.sources.map(s=>esc(s.name)+"："+esc(fmtDue(s.end*1000))+" まで").join(" / ")}</p></div><button class="btn" data-fbstop>パスワードで解除</button></header>
+    ${FB_FOOT}
+    ${notesHere("focus")}`;
+  }
+  const warn=fbWarning(), ok=st.hasPassword&&(f.apps||f.web);
+  const chip=(attr,on,label)=>`<button class="chip" ${attr} aria-pressed="${on}">${label}</button>`;
+  return `<header class="head"><div><p class="eyebrow">集中</p><h1>どのくらい集中しますか</h1></div></header>
+  <section class="card fbform">
+    <div class="fbgroup"><div class="chips">${[[25,"25分"],[50,"50分"],[60,"1時間"],[120,"2時間"],[240,"4時間"]].map(([m,l])=>chip(`data-fbmin="${m}"`,!f.until&&f.min===m,l)).join("")}</div>
+      <label class="fbuntil"><span class="sub">終了時刻で決める</span><input type="time" id="fbUntil" value="${esc(f.until)}"></label></div>
+    <div class="fbgroup"><h2>ブロックするもの</h2><div class="chips">${chip('data-fbt="apps"',f.apps,"アプリ")}${chip('data-fbt="web"',f.web,"Webサイト")}</div></div>
+    ${!st.hasPassword?`<p class="todo" style="margin:0">先に設定画面で解除パスワードを決めてください。</p>`:warn?`<p class="todo" style="margin:0">${esc(warn)}</p>`:""}
+    <div class="row"><button class="btn primary" id="fbStart" ${ok?"":"disabled"}>${warn&&st.hasPassword?"それでも開始":"開始"}</button></div>
+  </section>
+  ${FB_FOOT}
+  ${notesHere("focus")}`;
+}
+function focusHomeCard(){
+  if(!LOCALAPI||!fbActive()) return "";
+  const a=S.fb.state.active;
+  return `<section class="card" aria-label="ブロック中"><div class="dhead"><h2><span class="e">🎯</span>ブロック中</h2><span class="sub">${esc(fbTargets(a))}</span><span class="until" data-fleft="${fbEndMs()}">${fbLeft(fbEndMs()-Date.now())}</span><button class="btn sm" data-fbstop>パスワードで解除</button></div></section>`;
+}
+function openFbStop(){
+  if($("#modal").firstChild) return;
+  $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop" role="dialog" aria-modal="true" aria-label="ブロックを解除">
+    <div class="top"><h2>🎯 ブロックを解除</h2><button class="ibtn" id="xFb" aria-label="閉じる">✕</button></div>
+    <label class="sub" for="fbPw">解除パスワード</label>
+    <input type="password" id="fbPw" autocomplete="off">
+    <p class="msg err" id="fbErr" role="alert" style="margin:0"></p>
+    <div class="row"><button class="btn primary" id="fbGo">解除</button><button class="btn" id="fbNo">やめる</button></div>
+  </div></div>`;
+  const inp=$("#fbPw"), close=()=>{$("#modal").innerHTML=""};
+  inp.focus();
+  $("#fbGo").onclick=async()=>{const b=$("#fbGo");b.disabled=true;
+    try{await fbPost("stop",{password:inp.value});close();toast("解除しました");render()}
+    catch(e){if($("#fbErr")){$("#fbErr").textContent=e.message;b.disabled=false;inp.select()}}};
+  $("#fbNo").onclick=close;$("#xFb").onclick=close;
+  $("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};
+  inp.onkeydown=e=>{if(e.key==="Enter"&&!e.isComposing){e.preventDefault();if(!$("#fbGo").disabled)$("#fbGo").click()}if(e.key==="Escape")close()};
+}
+async function fbStartNow(){
+  const f=S.fb;let end=Date.now()/1000+60*f.min;
+  if(f.until){const [h,m]=f.until.split(":").map(Number),d=new Date();d.setHours(h,m,0,0);if(d<=new Date())d.setDate(d.getDate()+1);end=d.getTime()/1000}
+  try{await fbPost("start",{end,apps:f.apps,web:f.web});toast("ブロックを始めました");render()}catch(e){toast(e.message)}
+}
+function wireFocus(){
+  document.querySelectorAll("[data-fbstop]").forEach(b=>b.onclick=openFbStop);
+  document.querySelectorAll("[data-fbmin]").forEach(b=>b.onclick=()=>{S.fb.min=+b.dataset.fbmin;S.fb.until="";render()});
+  document.querySelectorAll("[data-fbt]").forEach(b=>b.onclick=()=>{S.fb[b.dataset.fbt]=!S.fb[b.dataset.fbt];render()});
+  $("#fbUntil")&&($("#fbUntil").oninput=e=>{S.fb.until=e.target.value;document.querySelectorAll("[data-fbmin]").forEach(b=>b.setAttribute("aria-pressed",!S.fb.until&&S.fb.min===+b.dataset.fbmin))});
+  $("#fbStart")&&($("#fbStart").onclick=fbStartNow);
+}
+
 /* ---------- boot ---------- */
 render();
 autoLinkStart();
@@ -1883,7 +1985,7 @@ autoLinkStart();
   if(Array.isArray(window.TOOLS)){ // PC version
     try{S.dues=JSON.parse(localStorage.getItem("desk-dues")||"{}")||{}}catch(e){S.dues={}}
     S.loaded=true;S.local=true;S.tools=window.TOOLS;S.editions=window.WORLD||[];S.days=window.MAIL||[];S.cal=window.CAL||null;S.gtasks=window.GTASKS||null;S.reports=window.REPORTS||[];S.watch=window.WATCH||[];S.memory=window.MEMORY||null;
-    if(LOCALAPI){await loadApiMemos();setInterval(loadApiMemos,30000);window.addEventListener("focus",loadApiMemos);return}
+    if(LOCALAPI){fbLoad();setInterval(fbLoad,5000);await loadApiMemos();setInterval(loadApiMemos,30000);window.addEventListener("focus",loadApiMemos);return}
     try{S.memos=JSON.parse(localStorage.getItem("desk-memos")||"[]")}catch(e){S.memos=[]}
     try{S.tasks=JSON.parse(localStorage.getItem("desk-tasks")||"[]")}catch(e){S.tasks=[]}
     try{S.prompts=JSON.parse(localStorage.getItem("desk-prompts")||"{}")||{}}catch(e){S.prompts={}}
