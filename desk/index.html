@@ -523,6 +523,7 @@ const VIEWS=[{id:"home",e:"🏠",label:"ホーム",g:"today"},{id:"tasks",e:"�
 const TABS=["home","tasks","calendar","notes"]; // phone tab bar; the rest is under その他
 VIEWS.push({id:"lifeos",e:"🧩",label:"Life OS",g:"write"});
 VIEWS.splice(VIEWS.findIndex(v=>v.id==="wins")+1,0,{id:"followups",e:"⏳",label:"返信待ち",g:"in"});
+VIEWS.splice(VIEWS.findIndex(v=>v.id==="notes")+1,0,{id:"memolink",e:"🔗",label:"メモ連携",g:"write"});
 /* Stored values (group, region, priority, status) stay in English so sync and older data keep working; only the labels shown are Japanese. */
 const GROUPS=[["Daily","☀️","毎日"],["Work","💼","仕事"],["Study","🎓","学習"],["Folders","🗂️","フォルダ"],["Other","✨","その他"]];
 const REGJA={"Middle East":"中東","Europe & Russia":"欧州・ロシア","Asia-Pacific":"アジア太平洋","Americas":"南北アメリカ","Africa":"アフリカ","Global":"世界全体","All":"すべて"};
@@ -1734,6 +1735,7 @@ function render(){
   updateBadges();checkNew();
   renderNav();
   if(viewId()==="lifeos"){$("#view").innerHTML=searchResults()+lifeosView();wire();wireLifeos();return}
+  if(viewId()==="memolink"){mlLoad();$("#view").innerHTML=searchResults()+mlView();wire();wireMl();return}
   if(viewId()==="followups"){fuLoad();$("#view").innerHTML=searchResults()+fuView();wire();wireFu();return}
   const v=viewId();
   $("#view").innerHTML=searchResults()+(v==="focus"?focusView():v==="notes"?notesView():v==="watch"?watch():v==="tasks"?tasks():v==="calendar"?calendar():v==="news"?news():v==="wins"?winsView():v==="inbox"?inbox():v==="habits"?habitsView():v==="log"?log():v==="tools"?toolsView():home());
@@ -1792,6 +1794,42 @@ function wireFu(){
   });
   const run=$("#fuRun");
   if(run) run.onclick=async()=>{run.disabled=true;try{await api("POST","/api/claude",{cmd:"/followup",arg:""});toast("⌨️ Terminal で開きました")}catch(e){run.disabled=false;toast("Terminal を開けませんでした")}};
+}
+/* メモ連携: Life OS 11. The memos themselves are notes whose id starts with "ln-", so this screen only runs the pass (Mac)
+   and counts. Online the numbers come from the synced notes; the pass needs the Mac, so there is no button there. */
+function mlData(){
+  if(LOCALAPI) return S.ml||null;
+  const xs=noteList().filter(n=>/^ln-(?!sum-|tag-)/.test(n.id));
+  return {enabled:true,memos:xs.length,linked:xs.filter(n=>/^# 関連メモ$/m.test(n.body||"")).length,unread:xs.filter(n=>/^写真の文字はまだ読めていません/m.test(n.body||"")).length,
+    tags:noteList().filter(n=>/^ln-tag-/.test(n.id)).length,lastAt:Math.max(0,...xs.map(n=>n.updatedAt||0))};
+}
+async function mlLoad(force){
+  if(!LOCALAPI||S.mlBusy||S.mlRun||(!force&&Date.now()-(S.mlAt||0)<20000))return;
+  S.mlBusy=true;S.mlAt=Date.now();
+  try{const v=await api("GET","/api/memolink"),same=JSON.stringify(v)===JSON.stringify(S.ml);S.ml=v;S.mlErr=false;S.mlBusy=false;if(!same&&viewId()==="memolink")render()}
+  catch(e){const was=S.mlErr;S.mlErr=true;S.mlBusy=false;if(!was&&viewId()==="memolink")render()}
+}
+function mlView(){
+  const d=mlData(), when=d&&(d.lastRun?Date.parse(d.lastRun):d.lastAt);
+  const head=(sub,act)=>`<header class="head"><div><p class="eyebrow">${sub}</p><h1>メモ連携</h1></div>${act||""}</header>`;
+  if(!d) return head("Life OS")+`<div class="card empty"><b>${S.mlErr?"読み込めませんでした":"読み込んでいます"}</b>${S.mlErr?"Desk サーバーを再起動すると使えるようになります。":""}</div>`;
+  if(!d.enabled) return head("Life OS")+`<div class="card empty"><b>止めています</b>再開するときは python3 lifeos/11-notes/cli.py start</div>`;
+  const btn=LOCALAPI?`<button class="btn primary" id="mlRun" ${S.mlRun?"disabled":""}>${S.mlRun?"連携しています":"今すぐ連携"}</button>`:"";
+  const sub=when?"最後に動いた時刻 "+esc(fmtDue(when)):"まだ動いていません";
+  const third=LOCALAPI?[d.written??0,"前回更新したノート"]:[d.tags,"タグ"];
+  const stat=(n,l)=>`<div class="wst"><span class="wn">${n}</span><span class="sub">${l}</span></div>`;
+  const notes=[d.unread?`文字をまだ読めていない写真：${d.unread}枚。同じ名前の .txt に書くと読めます。`:"",
+    LOCALAPI?"":"連携は Mac で動きます。結果は毎時の同期で届きます。",
+    LOCALAPI&&!d.cosense?"Cosense は範囲が決まるまで使いません。":"",LOCALAPI&&!d.reader&&d.unread?"写真の自動の読み取りはまだつないでいません。":""].filter(Boolean);
+  const body=d.memos?`<section class="card wstats" aria-label="メモ連携の数">${stat(d.memos,"メモ")}${stat(d.linked,"関連メモあり")}${stat(third[0],third[1])}</section><a class="more" href="#notes">ノートで見る →</a>`
+    :`<div class="card empty"><b>まだメモがありません</b>04番が仕分けたアイデアと日記が入ります。手で足すときは python3 lifeos/11-notes/cli.py add "文"</div>`;
+  return head(sub,btn)+body+notes.map(x=>`<p class="sub" style="margin:0">${esc(x)}</p>`).join("");
+}
+function wireMl(){
+  const b=$("#mlRun"); if(!b) return;
+  b.onclick=async()=>{S.mlRun=true;render();
+    try{S.ml=await api("POST","/api/memolink/run",{});toast("🔗 連携しました");S.mlRun=false;await loadApiMemos()}
+    catch(e){S.mlRun=false;toast("連携できませんでした。もう一度お試しください");render()}};
 }
 /* Life OS: one section per tool. The source is each tool's tool.json in lifeos/: window.LIFEOS on the Mac, db "lifeos" online. */
 const LOS=[["working","動いている","live"],["building","作っている","blue"],["blocked","止まっている","red"],["planned","予定",""],["stopped","止めた","amber"]];

@@ -14,6 +14,14 @@ git -C "$DESK/.." pull --ff-only origin main
 
 失敗したら（ローカルに未コミットの変更があるなど）、内容を報告して手順 2 に進む。勝手にリセットしない。
 
+## 1.5. メモを連携する
+
+```bash
+python3 "$DESK/../lifeos/11-notes/cli.py" run
+```
+
+失敗したら内容を報告して手順 2 に進む。
+
 ## 2. データを同期する（memos / dues / tasks / prompts / notes / habits / wins は双方向、lifeos は Mac → オンライン、それ以外はオンライン → Mac）
 
 1. ArtifactData でオンライン版の次のコレクションを全件読む（`list`、ページがあれば最後まで）:

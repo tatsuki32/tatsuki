@@ -61,6 +61,7 @@ claude.ai のチャットで直接編集しない。変更は必ずここで行�
 - `lifeos/NN-slug/tool.json` が各ツールの正本。Desk の「Life OS」画面に出る（Mac は `server.py` が毎回読んで `window.LIFEOS`、オンラインは DB の `lifeos`。毎時同期で Mac → オンラインの一方向）。
 - 共通部品は `lifeos/lib/`（データ置き場・Desk タスク・追記ログ・Markdown）。Telegram の受け口は `lifeos/bot/`（`NN-slug/handler.py` を自動で読む。試すのは `python3 lifeos/bot/cli.py "テキスト"`）。
 - 個人データは `desk/data/lifeos/`（`LIFEOS_DATA`）。タスクは Desk の `tasks` だけに置く。
+- メモ連携（11）：Desk の「🔗 メモ連携」から動かす（Mac だけ。`GET /api/memolink`、`POST /api/memolink/run`）。毎時同期でも動く。メモは `id` が `ln-` で始まるノートになる。
 - 返信待ち（02）：状態の正本は Mac の `desk/data/lifeos/tools/02-followup/state.json`。オンラインの DB `followups` は毎時同期の写しで、件名と相手のアドレスだけを載せる。iPhone の答えは `answer` 欄に置き、次の同期で Mac に反映する。Desk からメールは送らない。
 - 続き復元（15）：`Stop` と `SessionEnd` のフック（`lifeos/15-resume/hook.py`）が、やったことと次の一手を `logs/work.jsonl` に書く。`/tsuzuki` がそれを読む。
 - テスト：`python3 -m unittest discover -s lifeos/tests -t .`
