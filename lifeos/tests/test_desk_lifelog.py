@@ -261,7 +261,7 @@ class Typed(Base):
         self.h = tools.load_file(os.path.join(ROOT, "lifeos", "20-lifelog"), "handler")
 
     def test_records_match_and_ideas_do_not(self):
-        for yes in ("体重65.2", "昼 カレー大盛り食べた", "ベンチ60kg 10回3セット", "昨日7時間寝た", "歩数 12000", "筋トレ：胸", "記録：水2L", "朝食 おにぎり"):
+        for yes in ("体重65.2", "昼 カレー大盛り食べた", "ベンチ60kg 10回3セット", "昨日7時間寝た", "歩数 12000", "筋トレ：胸", "記録：水2L", "朝食 おにぎり", "ベンチ 60x8x3", "60×10×3"):
             self.assertTrue(self.h.match(yes), yes)
         for no in ("筋トレした", "読書30分", "朝食を見直したい", "体重を減らす方法は？", "新しいアプリのアイデア", "/start", "task: 買い物"):
             self.assertFalse(self.h.match(no), no)
@@ -298,6 +298,117 @@ class Typed(Base):
         with mock.patch.object(ll, "call_claude", lambda p, n: ([], USAGE)), mock.patch.object(ll.process, "__defaults__", (ll.BATCH, lambda p, n: ([], USAGE))):
             with mock.patch.object(router, "dispatch", lambda text, ctx, routes: "他のツール") as d:
                 self.assertEqual(self.h.handle("歩数計の話をした 3つ", router.Ctx(source="telegram")), "他のツール")
+
+
+class Sleep(View):
+    def nights(self):
+        ll.write_json(ll.bp("targets.json"), {"total_min": {"target": 480, "dir": "above"}})
+        self.save(*[stored(f"2026-11-0{d}", "sleep", {"total_min": m, "bedtime": b, "wake_time": "07:00"}, at=d) for d, m, b in ((3, 420, "23:30"), (4, 480, "00:30"), (5, 500, "23:30"))])
+
+    def test_debt_counts_only_the_short_nights(self):
+        self.nights()
+        s = ll.view("2026-11-05")["sleep"]
+        self.assertEqual((s["goal"], s["last"]["pct"], s["debt7"], s["avg7"]), (480, 104, 60, 467))
+
+    def test_bedtime_spread_crosses_midnight(self):
+        self.assertEqual(ll._spread(["23:30", "00:30", "23:30"]), 28)
+        self.assertIsNone(ll._spread(["23:30", None]))
+
+    def good(self, **more):
+        return {"title": "記事", "url": "https://www.cdc.gov/sleep/about/index.html", "learned": "同じ時刻に起きると整いやすい", "yours": "7日の不足は60分です", "tryTonight": "同じ時刻に布団に入る", **more}
+
+    def test_advice_with_real_numbers_is_kept(self):
+        self.nights()
+        saved, why = ll.save_coach(self.good(), "2026-11-05")
+        self.assertIsNone(why)
+        self.assertEqual(saved["source"], "www.cdc.gov")
+
+    def test_advice_is_refused_when_it_cannot_be_stood_behind(self):
+        self.nights()
+        self.assertIn("計算にない", ll.save_coach(self.good(yours="平均は999分です"), "2026-11-05")[1])
+        self.assertIn("出典", ll.save_coach(self.good(url="https://example.com/a"), "2026-11-05")[1])
+        self.assertIn("出典", ll.save_coach(self.good(url="https://evilcdc.gov.example.com/a"), "2026-11-05")[1])
+        self.assertIn("責める", ll.save_coach(self.good(tryTonight="寝ないのはダメです"), "2026-11-05")[1])
+
+    def test_same_article_is_not_repeated_within_a_month(self):
+        self.nights()
+        ll.save_coach(self.good(), "2026-11-04")
+        self.assertIn("30日", ll.save_coach(self.good(), "2026-11-05")[1])
+
+
+class Weight(View):
+    def test_trend_moves_slowly_and_fills_gaps(self):
+        self.save(stored("2026-11-01", "body", {"weight_kg": 70}), stored("2026-11-03", "body", {"weight_kg": 60}))
+        w = ll.view("2026-11-03")["weight"]
+        self.assertEqual([p[1] for p in w["points"]], [70, None, 60])
+        self.assertEqual(w["latest"], 60)
+        self.assertGreater(w["trend"], 68)
+
+    def test_no_projection_until_two_weeks(self):
+        ll.write_json(ll.bp("targets.json"), {"weight_kg": {"target": 60}})
+        self.save(stored("2026-11-01", "body", {"weight_kg": 70}), stored("2026-11-05", "body", {"weight_kg": 69}))
+        self.assertIsNone(ll.view("2026-11-05")["weight"]["projection"])
+        self.save(stored("2026-10-01", "body", {"weight_kg": 72}), stored("2026-11-05", "body", {"weight_kg": 69}))
+        self.assertIsNotNone(ll.view("2026-11-05")["weight"]["projection"])
+
+
+class Meals(View):
+    def test_half_portion_changes_the_days_total(self):
+        self.save(stored("2026-11-05", "meal_photo", {"energy_kcal": 800, "protein_g": 40}))
+        rid = "meal_photo-2026-11-05-1"
+        out = ll.update_record(rid, "scale", {"factor": 0.5})
+        self.assertEqual(out["values"], {"energy_kcal": 400.0, "protein_g": 20.0})
+        self.assertEqual(self.row("energy_kcal")["value"], 400.0)
+        self.assertIn("error", ll.update_record(rid, "scale", {"factor": 99}))
+
+    def test_repeat_copies_without_reading(self):
+        self.save(stored("2026-11-01", "meal_photo", {"energy_kcal": 800}, label="カレー"))
+        out = ll.repeat_meal("meal_photo-2026-11-01-1", "2026-11-05")
+        self.assertEqual((out["date"], out["source"], out["values"]["energy_kcal"]), ("2026-11-05", "repeat", 800))
+        self.assertEqual(ll.month_usage()["photos"], 0)
+        self.assertEqual(ll.view("2026-11-05")["frequent"][0]["times"], 2)
+
+
+class Workout(View):
+    def rec(self, day, w, r, n, rid):
+        return {"id": rid, "kind": "workout", "date": day, "status": "confirmed", "at": 1, "label": "", "values": ll.workout_totals([{"exercise": "ベンチプレス", "weight_kg": w, "reps": r, "sets": n}]), "sets": [{"exercise": "ベンチプレス", "weight_kg": w, "reps": r, "sets": n}]}
+
+    def test_typed_sets_are_split_named_and_totalled(self):
+        raw = {"kind": "workout", "date": None, "label": "", "items": [], "uncertain": [], "values": [], "sets": [{"exercise": "ベンチ", "weight_kg": 60, "reps": 8, "sets": 3}]}
+        got = ll.check(raw, ll.today(), typed=True)
+        self.assertEqual(got["sets"][0]["exercise"], "ベンチプレス")
+        self.assertEqual(got["values"], {"workout_sets": 3, "workout_reps": 24, "workout_volume": 1440.0})
+
+    def test_impossible_sets_wait_for_review(self):
+        raw = {"kind": "workout", "date": None, "label": "", "items": [], "uncertain": [], "values": [], "sets": [{"exercise": "ベンチ", "weight_kg": 6000, "reps": 8, "sets": 3}]}
+        self.assertEqual(ll.check(raw, ll.today())["status"], "review")
+
+    def test_e1rm_stops_past_twelve_reps(self):
+        self.assertEqual(ll.e1rm(60, 10), 80.0)
+        self.assertIsNone(ll.e1rm(60, 13))
+        self.assertIsNone(ll.e1rm(0, 10))
+
+    def test_reply_compares_with_last_time_and_names_a_best(self):
+        a, b = self.rec("2026-11-01", 60, 8, 3, "a"), self.rec("2026-11-05", 62.5, 8, 3, "b")
+        self.save(a)
+        text = ll.describe({**b, "status": "confirmed"})
+        self.assertIn("前回（11/01）60kg × 8回 → 今回 62.5kg × 8回", text)
+        self.assertIn("最大重量", text)
+        self.assertIn("初めての記録", ll.describe({**a, "id": "a"}))
+
+    def test_next_step_only_after_holding_a_weight(self):
+        rows = [{"weight": 60, "reps": 8}, {"weight": 60, "reps": 8}]
+        self.assertEqual(ll.next_step(rows), "62.5kg を試す")
+        self.assertIsNone(ll.next_step([{"weight": 60, "reps": 8}, {"weight": 60, "reps": 6}]))
+        self.assertEqual(ll.next_step([{"weight": 0, "reps": 10}, {"weight": 0, "reps": 10}]), "11回を目指す")
+
+    def test_week_counts_sets_by_muscle(self):
+        self.save(self.rec("2026-11-05", 60, 8, 3, "a"))
+        ll.write_json(ll.bp("exercises.json"), {})
+        v = ll.view("2026-11-05")["workouts"]
+        self.assertEqual(v["weeks"][0]["sets"], {"胸": 3})
+        ll.set_muscle("ベンチプレス", "上半身")
+        self.assertEqual(ll.view("2026-11-05")["workouts"]["weeks"][0]["sets"], {"上半身": 3})
 
 
 class Receipts(Base):

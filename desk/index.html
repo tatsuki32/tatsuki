@@ -439,6 +439,30 @@ details.draft .sent-as summary{cursor:pointer;display:block;padding:var(--s2) 0;
   .bdbar{grid-column:1/-1}
   .bdnutword{grid-column:1/-1}
 }
+.bdhead2{display:flex;flex-wrap:wrap;gap:var(--s4);align-items:center}
+.bdhead2>.bdfacts,.bdtodayright{flex:1 1 280px;min-width:0}
+.bdring{position:relative;width:150px;height:150px;flex:none}
+.bdringtext{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;text-align:center;padding:0 var(--s4)}
+.bdringtext b{font-size:var(--t5);line-height:1.2}
+.bdtoday{padding:var(--s3)}
+.bdtodayright{display:grid;gap:var(--s3)}
+.bdpfc{display:grid;gap:var(--s1)}
+.bdplan{display:grid;gap:var(--s1)}
+.bdplan b{font-size:var(--t4)}
+.bdcoach p{margin:var(--s2) 0 0;max-width:40em}
+.bdcoach a{color:var(--accent)}
+.bdfold>summary{cursor:pointer;color:var(--muted);font-size:var(--t1);padding:var(--s2) 0}
+.bdfold{display:grid;gap:var(--s2)}
+.bdpin{background:none;border:0;color:var(--muted);cursor:pointer;padding:0 var(--s1) 0 0;font-size:var(--t2)}
+.bdpin[aria-pressed="true"]{color:var(--accent)}
+.bdcal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px}
+.bdcal>span{text-align:center}
+.bdday{min-height:48px;padding:2px;border-radius:4px;display:grid;align-content:space-between;font-size:var(--t1);color:var(--muted);background:rgba(57,135,229,calc(var(--on)*.55));min-width:0;overflow:hidden}
+.bdday b{font-weight:400;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
+.bdex{cursor:pointer}
+.bdex[aria-pressed="true"]{border-color:var(--accent)}
+.bdweeks{grid-template-columns:minmax(0,1.2fr) repeat(4,minmax(0,1fr))}
+.mmonth h3{margin:0;font-size:var(--t3);flex:1}
 /* ---------- 朝夜ルーティン ---------- */
 .rtwrap{display:grid;gap:var(--s5)}
 .rtbar{display:flex;flex-wrap:wrap;gap:var(--s2);align-items:center;justify-content:space-between}
@@ -1587,7 +1611,7 @@ const calLink=(title,ms)=>"https://calendar.google.com/calendar/render?action=TE
 async function bodyLoad(force){
   if(!LOCALAPI||S.bodyBusy||(!force&&S.body&&Date.now()-(S.bodyAt||0)<30000))return;
   S.bodyBusy=true;S.bodyAt=Date.now();
-  try{const v=await api("GET","/api/body"),same=JSON.stringify(v)===JSON.stringify(S.body);S.body=v;S.bodyErr=false;S.bodyBusy=false;if(!same&&(viewId().startsWith("body")||viewId()==="home"))render()}
+  try{const v=await api("GET","/api/body"),same=JSON.stringify(v)===JSON.stringify(S.body);S.body=v;S.bodyErr=false;S.bodyBusy=false;if(!same&&(viewId().startsWith("body")||viewId()==="home"||(viewId()==="money"&&S.moneyTab==="receipts")))render()}
   catch(e){const was=S.bodyErr;S.bodyErr=true;S.bodyBusy=false;if(!was&&viewId().startsWith("body"))render()}
 }
 const bdNum=v=>v==null?"–":Math.abs(v)>=1000?Math.round(v).toLocaleString("ja-JP"):String(Math.round(v*100)/100);
@@ -1619,7 +1643,7 @@ const BDTREND={up:"増えている",down:"減っている",flat:"横ばい"};
 const bdShort=d=>d?`${+d.slice(5,7)}/${+d.slice(8)}`:"–";
 const bdHist=r=>Object.fromEntries(r.history||[]);
 const bdYesterday=(d,x)=>new Date(Date.parse(d+"T12:00:00Z")-864e5*(x||1)).toISOString().slice(0,10);
-const bdMins=v=>v==null?"–":v>=60?`${Math.floor(v/60)}時間${Math.round(v%60)}分`:`${Math.round(v)}分`;
+const bdMins=v=>{if(v==null)return "–";const t=Math.round(v),h=Math.floor(t/60),m=t%60;return h?`${h}時間${m?m+"分":""}`:`${m}分`};
 function bdChart(r,days){
   const hist=(r.history||[]).slice(-(days||60));
   if(hist.length<2)return `<p class="sub">グラフは記録が2日分たまると出ます。</p>`;
@@ -1651,20 +1675,6 @@ function bdGroupTab(d,id,w,first,extra,why){
   const pick=g.rows.find(r=>r.key===S.bodyPick)||g.rows.find(r=>r.key===first)||g.rows[0];
   return `${bdFacts(pick)}${bdChart(pick)}${bdColumns(pick)}${extra||""}<section class="bdsec"><h2>全項目</h2>${bdPeriods(d,w)}${bdMetricTable(g,w)}</section>`;
 }
-/* 食事: one day. What was eaten, then each nutrient against the sheet's target, then the days around it. */
-function bdMealTab(d,w){
-  const g=d.groups.find(x=>x.id==="meal");
-  if(!g||!g.rows.length)return `<div class="card empty"><b>まだ記録がありません</b>食事の写真や文字を送ると、食べたものと栄養がここに並びます。</div>`;
-  const days=Object.keys(d.meals||{}).sort(),day=S.bodyDay&&days.includes(S.bodyDay)?S.bodyDay:days[days.length-1],i=days.indexOf(day),older=days[i-1],newer=days[i+1];
-  const yesterday=bdYesterday(day),rows=g.rows,at=(r,x)=>bdHist(r)[x],kcal=rows.find(r=>r.key==="energy_kcal"),score=rows.find(r=>r.key==="meal_score"),est=(d.estimatedDays||[]).includes(day);
-  const total=kcal&&at(kcal,day),ty=kcal&&at(kcal,yesterday),left=kcal&&kcal.target&&total!=null?kcal.target-total:null;
-  const nav=`<div class="mmonth"><h2>${esc(new Date(day+"T12:00:00").toLocaleDateString("ja-JP",{month:"long",day:"numeric",weekday:"short"}))}</h2><button class="btn sm" data-bdday="${esc(older||"")}" ${older?"":"disabled"}>前の日</button><button class="btn sm" data-bdday="${esc(newer||"")}" ${newer?"":"disabled"}>次の日</button></div>`;
-  const sum=`<div class="bdfacts"><div><span class="sub">摂取カロリー${est?"（推定を含む）":""}</span><b class="bdhero">${bdNum(total)}<span class="sub"> kcal</span></b><span class="bdverdict">${total!=null&&kcal.target?BDWORD[verdict(total,kcal)]:""}</span></div><div><span class="sub">目標</span><b>${kcal&&kcal.target?bdNum(kcal.target):"–"}</b><span class="sub">${left==null?"":left>=0?`あと ${bdNum(left)} kcal`:`${bdNum(-left)} kcal 多い`}</span></div><div><span class="sub">昨日比</span><b>${total!=null&&ty!=null?bdSigned(total-ty):"–"}</b><span class="sub">${ty==null?"昨日の記録なし":`昨日 ${bdNum(ty)} kcal`}</span></div><div><span class="sub">完璧度</span><b>${score&&at(score,day)!=null?Math.round(at(score,day))+"%":"–"}</b><span class="sub">シートと同じ計算</span></div></div>`;
-  const foods=(d.meals[day]||[]).map(m=>{const v=m.values,name=m.label||(m.kind==="meal_screen"?"1日の栄養":"食事");return `<article class="bdfood">${m.photo&&!/\.pdf$/.test(m.photo)?`<img class="bdthumb" src="/lifelog-photos/${esc(m.photo)}" alt="${esc(name)}" loading="lazy">`:`<span class="bdthumb bdnophoto"></span>`}<div class="bdfoodtext"><b>${esc(name)}</b>${m.estimated?` <span class="sub">推定</span>`:""}<span class="sub">${bdNum(v.energy_kcal)} kcal · たんぱく質 ${bdNum(v.protein_g)}g · 脂質 ${bdNum(v.fat_g)}g · 炭水化物 ${bdNum(v.carb_g)}g</span>${m.items.length?`<span class="sub">${m.items.map(esc).join("、")}</span>`:""}${m.note?`<span class="sub">${esc(m.note)}</span>`:""}</div></article>`}).join("");
-  const bar=r=>{const v=at(r,day),y=at(r,yesterday),t=r.target,pct=t&&v!=null?v/t*100:null,vd=v==null?null:verdict(v,r);return `<div class="bdnut"><span class="bdnutname">${esc(r.label)}</span><span class="bdv"><b>${bdNum(v)}</b><span class="sub"> / ${t?bdNum(t):"–"}${esc(r.unit)}</span></span><span class="bdbar" role="img" aria-label="${esc(r.label)} 目標の ${pct==null?"不明":Math.round(pct)+"%"}"><span class="bdfill" style="width:${pct==null?0:Math.min(100,pct/2)}%"></span><span class="bdmark"></span></span><span class="sub bdnutword">${vd?BDWORD[vd]:""}${pct!=null?` ${Math.round(pct)}%`:""}${v!=null&&y!=null?` · 昨日比 ${bdSigned(v-y)}`:""}</span></div>`};
-  return `${nav}${sum}<section class="bdsec"><h2>食べたもの <span class="sub">${(d.meals[day]||[]).length}件</span></h2>${foods||`<p class="sub">この日の記録はありません。</p>`}</section><section class="bdsec"><h2>栄養素と目標 <span class="sub">棒の線が目標。線の右は目標より多い</span></h2>${rows.filter(r=>r.key!=="meal_score").map(bar).join("")}</section><section class="bdsec"><h2>カロリーの推移</h2>${kcal?bdColumns(kcal)+bdChart(kcal):""}${rows.find(r=>r.key==="protein_g")?bdChart(rows.find(r=>r.key==="protein_g")):""}</section><section class="bdsec"><h2>全項目の平均</h2>${bdPeriods(d,w)}${bdMetricTable(g,w)}</section>`;
-  function verdict(val,r){return !r.target?null:r.dir==="above"?(val>=r.target?"ok":"low"):r.dir==="below"?(val<=r.target?"ok":"high"):(Math.abs(val-r.target)<=Math.abs(r.target)*.03?"ok":val>r.target?"high":"low")}
-}
 function bdSleepExtra(d){
   const g=d.groups.find(x=>x.id==="sleep"),keys=[["deep_min","深い睡眠","var(--v1)"],["light_min","浅い睡眠","var(--v6)"],["rem_min","レム睡眠","var(--v3)"],["awake_min","覚醒","var(--v4)"]];
   const parts=keys.map(k=>[...k,g.rows.find(r=>r.key===k[0])]).filter(k=>k[3]);
@@ -1680,6 +1690,93 @@ function bdWorkoutExtra(d){
 function bdHabitsExtra(d){
   const apps=(d.apps||[]).slice().reverse()[0],studied=(d.studied||[]).slice().reverse();
   return (apps?`<section class="bdsec"><h2>${esc(bdShort(apps.date))} のスクリーンタイム</h2><p class="sub">${apps.peak?`多い時間帯 ${esc(apps.peak)}`:""}${apps.genre?` · 多い分類 ${esc(apps.genre)}`:""}</p>${apps.items.length?`<p class="sub">${apps.items.map(esc).join("<br>")}</p>`:""}</section>`:"")+(studied.length?`<section class="bdsec"><h2>学習の記録</h2><div class="bdlist">${studied.map(s=>`<div class="rcrow"><span class="sub rcdate">${esc(bdShort(s.date))}</span><span>${esc(s.label||"学習")} <span class="sub">${esc(bdMins(s.minutes))}</span></span></div>`).join("")}</div></section>`:"");
+}
+/* Each 身体 screen opens on the one number it exists for. The full tables stay below, folded. */
+const bdRow0=(d,id,key)=>(d.groups.find(g=>g.id===id)?.rows||[]).find(r=>r.key===key);
+function bdRing(value,goal,big,small){
+  const pct=goal&&value!=null?Math.min(1,value/goal):0,R=62,C=2*Math.PI*R;
+  return `<div class="bdring" role="img" aria-label="${esc(big)} ${esc(small)}"><svg viewBox="0 0 150 150" width="150" height="150" aria-hidden="true"><circle cx="75" cy="75" r="${R}" fill="none" stroke="var(--surface-2)" stroke-width="12"/><circle cx="75" cy="75" r="${R}" fill="none" stroke="var(--accent)" stroke-width="12" stroke-linecap="round" stroke-dasharray="${(pct*C).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 75 75)"/></svg><div class="bdringtext"><b>${esc(big)}</b><span class="sub">${esc(small)}</span></div></div>`;
+}
+function bdFold(title,inner){return `<details class="bdfold"><summary>${esc(title)}</summary>${inner}</details>`}
+function bdSpans(){const v=String(S.bodySpan||30);return `<div class="chips" role="group" aria-label="グラフの期間">${[[7,"週"],[30,"月"],[365,"年"]].map(([n,l])=>`<button class="chip" data-bdspan="${n}" aria-pressed="${String(n)===v}">${l}</button>`).join("")}</div>`}
+function bdCalendar(values,goal,fmt,note){
+  const today=S.body.today,ym=S.bodyMonth||today.slice(0,7),[y,m]=ym.split("-").map(Number),first=new Date(Date.UTC(y,m-1,1)),n=new Date(Date.UTC(y,m,0)).getUTCDate(),pad=first.getUTCDay();
+  const cell=i=>{const iso=`${ym}-${String(i).padStart(2,"0")}`,v=values[iso],on=v==null?0:Math.max(.12,Math.min(1,v/goal));return `<div class="bdday" style="--on:${on}" title="${esc(iso)}${v==null?" 記録なし":` ${esc(fmt(v))}`}"><span>${i}</span>${v!=null?`<b>${esc(fmt(v))}</b>`:""}</div>`};
+  const shift=k=>{const d=new Date(Date.UTC(y,m-1+k,1));return d.toISOString().slice(0,7)};
+  return `<div class="mmonth"><h3>${y}年${m}月</h3><button class="btn sm" data-bdmonth="${shift(-1)}">前の月</button><button class="btn sm" data-bdmonth="${shift(1)}" ${shift(1)>today.slice(0,7)?"disabled":""}>次の月</button></div><div class="bdcal">${["日","月","火","水","木","金","土"].map(x=>`<span class="sub">${x}</span>`).join("")}${"<span></span>".repeat(pad)}${[...Array(n)].map((_,i)=>cell(i+1)).join("")}</div>${note?`<p class="sub">${esc(note)}</p>`:""}`;
+}
+function bdFullTable(d,id,w){const g=d.groups.find(x=>x.id===id);return g&&g.rows.length?bdFold("全項目の表と平均",bdPeriods(d,w)+bdMetricTable(g,w)):""}
+/* 睡眠 */
+function bdSleepTab(d,w){
+  const s=d.sleep,total=bdRow0(d,"sleep","total_min");
+  if(!s||!s.last)return `<div class="card empty"><b>まだ記録がありません</b>睡眠のスクショか「7時間寝た」のような文字を送ると、ここに並びます。</div>`;
+  const wake=S.bodyWake||s.lastWake||"07:00",bedFor=t=>{const [h,m]=t.split(":").map(Number);const x=((h*60+m-s.goal)%1440+1440)%1440;return `${String(Math.floor(x/60)).padStart(2,"0")}:${String(x%60).padStart(2,"0")}`};
+  const hero=`<div class="bdhead2">${bdRing(s.last.total,s.goal,s.last.pct+"%",`昨夜の達成度 · ${bdShort(s.last.date)}`)}<div class="bdfacts"><div><span class="sub">睡眠時間</span><b class="bdhero">${esc(bdMins(s.last.total))}</b><span class="sub">目標 ${esc(bdMins(s.goal))}</span></div><div><span class="sub">この7日の不足</span><b>${esc(bdMins(s.debt7))}</b><span class="sub">記録 ${s.days7}日分。超えた日は相殺しません</span></div><div><span class="sub">この7日の平均</span><b>${esc(bdMins(s.avg7))}</b></div><div><span class="sub">時刻のばらつき（14日）</span><b>${s.bedSpread==null?"–":`就寝 ±${s.bedSpread}分`}</b><span class="sub">${s.wakeSpread==null?"記録が3日分たまると出ます":`起床 ±${s.wakeSpread}分`}</span></div></div></div>`;
+  const plan=`<form class="bdtarget" id="bdPlan"><label>明日の起床<input type="time" id="bdWake" value="${esc(wake)}"></label><div class="bdplan"><span class="sub">この時刻までに寝ると${esc(bdMins(s.goal))}</span><b>${esc(bedFor(wake))}</b></div></form>`;
+  const c=(d.coach||[]).slice().reverse()[0];
+  const coach=c?`<section class="bdsec bdcoach"><h2>今日の記事 <span class="sub">${esc(bdShort(c.date))}</span></h2><a href="${esc(c.url)}" target="_blank" rel="noopener">${esc(c.title)}</a><span class="sub">${esc(c.source)}</span><p><b>分かったこと</b><br>${esc(c.learned)}</p><p><b>あなたのデータ</b><br>${esc(c.yours)}</p><p><b>今夜試すこと</b><br>${esc(c.tryTonight)}</p></section>`:`<p class="sub">今日の記事は、朝の定期タスクが動くとここに出ます。</p>`;
+  const stages=[["sleep_score","スコア"],["deep_min","深い"],["light_min","浅い"],["rem_min","レム"],["hr_avg","心拍"],["hrv_avg","HRV"],["spo2_avg","SpO2"],["wake_count","起きた回数"]].map(([k,l])=>{const r=bdRow0(d,"sleep",k);return r&&r.date===s.last.date?`<span class="bdpair"><span class="sub">${l}</span> ${esc(/_min$/.test(k)?bdMins(r.value):bdNum(r.value))}</span>`:""}).join("");
+  const span=S.bodySpan||30;
+  return `${hero}${plan}${coach}${stages?`<section class="bdsec"><h2>昨夜の内訳</h2><div class="bdpairs">${stages}</div></section>`:""}<section class="bdsec"><h2>推移</h2>${bdSpans()}${total?bdColumns(total,span):""}</section>${bdSleepExtra(d)}${bdFullTable(d,"sleep",w)}`;
+}
+/* 食事・カロリー */
+function bdMealTab(d,w){
+  const g=d.groups.find(x=>x.id==="meal");
+  if(!g||!g.rows.length)return `<div class="card empty"><b>まだ記録がありません</b>食事の写真や文字を送ると、食べたものと栄養がここに並びます。</div>`;
+  const days=[...new Set([...Object.keys(d.meals||{}),d.today])].sort(),day=S.bodyDay&&days.includes(S.bodyDay)?S.bodyDay:d.today,i=days.indexOf(day),older=days[i-1],newer=days[i+1],rows=g.rows;
+  const at=(r,x)=>r?bdHist(r)[x]:undefined,row=k=>rows.find(r=>r.key===k),kcal=row("energy_kcal"),score=row("meal_score"),est=(d.estimatedDays||[]).includes(day),total=at(kcal,day)??0,left=kcal?.target?kcal.target-total:null,yes=at(kcal,bdYesterday(day));
+  const nav=`<div class="mmonth"><h2>${esc(new Date(day+"T12:00:00").toLocaleDateString("ja-JP",{month:"long",day:"numeric",weekday:"short"}))}${day===d.today?" · 今日":""}</h2><button class="btn sm" data-bdday="${esc(older||"")}" ${older?"":"disabled"}>前の日</button><button class="btn sm" data-bdday="${esc(newer||"")}" ${newer?"":"disabled"}>次の日</button></div>`;
+  const pfc=[["protein_g","たんぱく質"],["fat_g","脂質"],["carb_g","炭水化物"]].map(([k,l])=>{const r=row(k),v=at(r,day)??0,t=r?.target;return `<div class="bdpfc"><span class="sub">${l}</span><b>${bdNum(v)}<span class="sub"> / ${t?bdNum(t):"–"} g</span></b><span class="bdbar"><span class="bdfill" style="width:${t?Math.min(100,v/t*50):0}%"></span><span class="bdmark"></span></span></div>`}).join("");
+  const box=`<section class="card bdtoday"><div class="bdhead2">${bdRing(total,kcal?.target,left==null?bdNum(total):left>=0?bdNum(left):`+${bdNum(-left)}`,left==null?"kcal":left>=0?"残り kcal":"kcal 多い")}<div class="bdtodayright"><div class="bdfacts"><div><span class="sub">摂取${est?"（推定を含む）":""}</span><b>${bdNum(total)} kcal</b><span class="sub">目標 ${kcal?.target?bdNum(kcal.target):"–"}</span></div><div><span class="sub">昨日比</span><b>${yes!=null?bdSigned(total-yes):"–"}</b></div><div><span class="sub">完璧度</span><b>${at(score,day)!=null?Math.round(at(score,day))+"%":"–"}</b></div></div>${pfc}</div></div></section>`;
+  const foods=(d.meals[day]||[]).slice().sort((a,b)=>a.at-b.at).map(m=>{const v=m.values,name=m.label||(m.kind==="meal_screen"?"1日の栄養":"食事");return `<article class="bdfood">${m.photo&&!/\.pdf$/.test(m.photo)?`<img class="bdthumb" src="/lifelog-photos/${esc(m.photo)}" alt="${esc(name)}" loading="lazy">`:`<span class="bdthumb bdnophoto"></span>`}<div class="bdfoodtext"><b>${esc(name)}</b>${m.estimated?` <span class="sub">推定</span>`:""}<span class="sub">${bdNum(v.energy_kcal)} kcal · たんぱく質 ${bdNum(v.protein_g)}g · 脂質 ${bdNum(v.fat_g)}g · 炭水化物 ${bdNum(v.carb_g)}g</span>${m.items.length?`<span class="sub">${m.items.map(esc).join("、")}</span>`:""}${m.note?`<span class="sub">${esc(m.note)}</span>`:""}${m.source!=="sheet"?`<div class="bdacts"><button class="btn sm" data-bdscale="${esc(m.id)}" data-f="0.5">半分</button><button class="btn sm" data-bdscale="${esc(m.id)}" data-f="1.5">1.5倍</button><button class="btn sm" data-bdrepeat="${esc(m.id)}">今日もう一度</button><button class="btn sm" data-bdreopen="${esc(m.id)}">直す</button></div>`:""}</div></article>`}).join("");
+  const often=(d.frequent||[]).length?`<section class="bdsec"><h2>いつもの食事 <span class="sub">押すと今日に入ります。読み取りの費用はかかりません</span></h2><div class="chips">${d.frequent.map(f=>`<button class="chip" data-bdrepeat="${esc(f.id)}">${esc(f.label)} <span class="sub">${bdNum(f.kcal)} kcal</span></button>`).join("")}</div></section>`:"";
+  const pin=d.pinned||[],bar=r=>{const v=at(r,day),y=at(r,bdYesterday(day)),t=r.target,pct=t&&v!=null?v/t*100:null,vd=v==null||!t?null:lifeVerdict(v,r);return `<div class="bdnut"><span class="bdnutname"><button class="bdpin" data-bdpin="${esc(r.key)}" aria-pressed="${pin.includes(r.key)}" title="上に固定">${pin.includes(r.key)?"★":"☆"}</button>${esc(r.label)}</span><span class="bdv"><b>${bdNum(v)}</b><span class="sub"> / ${t?bdNum(t):"–"}${esc(r.unit)}</span></span><span class="bdbar" role="img" aria-label="${esc(r.label)} 目標の ${pct==null?"不明":Math.round(pct)+"%"}"><span class="bdfill" style="width:${pct==null?0:Math.min(100,pct/2)}%"></span><span class="bdmark"></span></span><span class="sub bdnutword">${vd?BDWORD[vd]:""}${pct!=null?` ${Math.round(pct)}%`:""}${v!=null&&y!=null?` · 昨日比 ${bdSigned(v-y)}`:""}</span></div>`};
+  const nut=rows.filter(r=>r.key!=="meal_score"),ordered=[...pin.map(k=>nut.find(r=>r.key===k)).filter(Boolean),...nut.filter(r=>!pin.includes(r.key))];
+  const week=[...Array(7)].map((_,k)=>bdYesterday(d.today,k)),weekKcal=week.map(x=>at(kcal,x)).filter(v=>v!=null),shortage=nut.filter(r=>r.target&&r.dir!=="below").map(r=>{const vs=week.map(x=>at(r,x)).filter(v=>v!=null);return vs.length?[r,vs.reduce((a,b)=>a+b,0)/vs.length/r.target]:null}).filter(Boolean).sort((a,b)=>a[1]-b[1]).slice(0,3),dishes={};week.forEach(x=>(d.meals[x]||[]).forEach(m=>{if(m.label)dishes[m.label]=(dishes[m.label]||0)+1}));
+  const top=Object.entries(dishes).sort((a,b)=>b[1]-a[1]).slice(0,3);
+  const review=weekKcal.length?`<section class="bdsec"><h2>この7日のふりかえり</h2><p>平均 ${bdNum(weekKcal.reduce((a,b)=>a+b,0)/weekKcal.length)} kcal（記録 ${weekKcal.length}日分）${shortage.length?`<br>目標に遠い栄養：${shortage.map(([r,x])=>`${esc(r.label)} ${Math.round(x*100)}%`).join("、")}`:""}${top.length?`<br>よく食べたもの：${top.map(([n,c])=>`${esc(n)}（${c}回）`).join("、")}`:""}</p></section>`:"";
+  const scores=Object.fromEntries(score?.history||[]);
+  return `${nav}${box}<section class="bdsec"><h2>食べたもの <span class="sub">${(d.meals[day]||[]).length}件</span></h2>${foods||`<p class="sub">この日の記録はありません。写真か文字をボットに送ってください。</p>`}</section>${often}<section class="bdsec"><h2>栄養素と目標 <span class="sub">棒の線が目標。線の右は目標より多い。☆で上に固定</span></h2>${ordered.map(bar).join("")}</section>${review}<section class="bdsec"><h2>カレンダー</h2>${bdCalendar(scores,100,v=>Math.round(v)+"%","濃いほど完璧度が高い日です")}</section><section class="bdsec"><h2>カロリーの推移</h2>${bdSpans()}${kcal?bdColumns(kcal,S.bodySpan||30):""}</section>${bdFullTable(d,"meal",w)}`;
+}
+function lifeVerdict(val,r){return r.dir==="above"?(val>=r.target?"ok":"low"):r.dir==="below"?(val<=r.target?"ok":"high"):(Math.abs(val-r.target)<=Math.abs(r.target)*.03?"ok":val>r.target?"high":"low")}
+/* 体重 */
+function bdWeightTab(d,w){
+  const t=d.weight;
+  if(!t)return `<div class="card empty"><b>まだ記録がありません</b>体重計のアプリの画面か「体重65.2」のような文字を送ると、ここに並びます。</div>`;
+  const span=S.bodySpan||30,pts=t.points.slice(-Math.max(span,2)),labels=pts.map(p=>bdShort(p[0])),series=[{name:"実測",c:"var(--muted)",values:pts.map(p=>p[1])},{name:"傾向",c:"var(--v1)",values:pts.map(p=>p[2])}];
+  if(t.goal)series.push({name:"目標",c:"var(--line-2)",values:pts.map(()=>t.goal)});
+  const next=t.goal&&t.trend>t.goal?Math.max(t.goal,Math.ceil(t.trend)-1):null;
+  const proj=t.projection?`今のペースなら ${esc(bdShort(t.projection))} ごろ`:t.daysOfData<14?"記録が2週間分たまると出ます":"今のペースでは目標に向かっていません";
+  const stale=t.staleDays>7?`<p class="sub">最後の記録は ${esc(bdShort(t.latestDate))} です。傾向もその日までのものです。</p>`:"";
+  const hero=`<div class="bdfacts bdheroes"><div><span class="sub">傾向の体重</span><b class="bdhero">${bdNum(t.trend)}<span class="sub"> kg</span></b><span class="sub">実測 ${bdNum(t.latest)} kg · ${esc(bdShort(t.latestDate))}</span></div><div><span class="sub">週の変化</span><b>${t.week==null?"–":bdSigned(t.week)+" kg"}</b><span class="sub">傾向で比べています</span></div><div><span class="sub">目標まで</span><b>${t.toGoal==null?"–":bdNum(Math.abs(t.toGoal))+" kg"}</b><span class="sub">${t.goal?`目標 ${bdNum(t.goal)} kg${next?` · 次の区切り ${next} kg`:""}`:"目標は下の表で入れられます"}</span></div><div><span class="sub">到達の予測</span><b>${t.projection?esc(bdShort(t.projection)):"–"}</b><span class="sub">${proj}</span></div></div>`;
+  const legend=`<div class="bdlegend"><span><i style="background:var(--muted)"></i>実測</span><span><i style="background:var(--v1)"></i>傾向</span>${t.goal?`<span><i style="background:var(--line-2)"></i>目標</span>`:""}</div>`;
+  const chart=pts.length>1?legend+mlines({labels,series,height:220,label:"体重の実測と傾向"}):`<p class="sub">グラフは記録が2日分たまると出ます。</p>`;
+  const g=d.groups.find(x=>x.id==="body"),comp=(g?.rows||[]).filter(r=>r.key!=="weight_kg"&&r.value!=null).map(r=>`<span class="bdpair"><span class="sub">${esc(r.label)}</span> ${bdNum(r.value)}<span class="sub"> ${esc(r.unit)}${r.change!=null?` · 前回比 ${bdSigned(r.change)}`:""}</span></span>`).join("");
+  return `${hero}${stale}<section class="bdsec"><h2>推移</h2>${bdSpans()}${chart}<p class="sub">日々の体重は水分などで上下します。傾向は移動平均なので、変化が少し遅れて出ます。</p></section>${comp?`<section class="bdsec"><h2>体組成 <span class="sub">${esc(bdShort(g.rows[0].date))}</span></h2><div class="bdpairs">${comp}</div></section>`:""}${bdFullTable(d,"body",w)}`;
+}
+/* 歩数 */
+function bdStepsTab(d,w){
+  const r=bdRow0(d,"activity","steps");
+  if(!r||r.value==null)return `<div class="card empty"><b>まだ記録がありません</b>歩数の画面か「歩数 12000」のような文字を送ると、ここに並びます。</div>`;
+  const h=bdHist(r),today=h[d.today],shown=today??r.value,goal=r.target||0,label=today!=null?"今日":bdShort(r.date),extra=[["distance_km","距離"],["active_kcal","活動カロリー"],["active_min","活動時間"],["floors","階数"]].map(([k,l])=>{const x=bdRow0(d,"activity",k);return x&&x.value!=null?`<span class="bdpair"><span class="sub">${l}</span> ${bdNum(x.value)}<span class="sub"> ${esc(x.unit)}</span></span>`:""}).join("");
+  const week=[...Array(7)].map((_,i)=>bdYesterday(d.today,6-i)),slots=week.map(x=>({label:bdShort(x),tip:`${x} ${h[x]==null?"記録なし":bdNum(h[x])+"歩"}`,parts:[{v:h[x]||0,c:"var(--v1)"}]}));
+  const lastWeek=[...Array(7)].map((_,i)=>bdYesterday(d.today,i+1)).map(x=>h[x]).filter(v=>v!=null),avg=lastWeek.length?lastWeek.reduce((a,b)=>a+b,0)/lastWeek.length:null,monday=new Date(d.today+"T12:00:00Z").getUTCDay()===1;
+  const reviewText=avg==null?"":`${monday?"先週":"直近7日"}の平均は ${bdNum(avg)} 歩です（記録 ${lastWeek.length}日分）。`;
+  return `<div class="bdhead2">${bdRing(shown,goal,bdNum(shown),`歩 · ${label}`)}<div class="bdfacts"><div><span class="sub">目標</span><b>${goal?bdNum(goal):"–"} 歩</b><span class="sub">${goal?`達成 ${Math.round(shown/goal*100)}%`:""}</span></div><div><span class="sub">前回比</span><b>${bdSigned(r.change)}</b></div><div><span class="sub">この7日の平均</span><b>${bdNum(r.week)}</b><span class="sub">${r.trend?`前の7日より${BDTREND[r.trend]}`:""}</span></div></div></div>${today==null?`<p class="sub">今日の分はまだ届いていません。最新は ${esc(bdShort(r.date))} です。</p>`:""}${extra?`<div class="bdpairs">${extra}</div>`:""}${reviewText?`<section class="bdsec"><h2>ふりかえり</h2><p>${reviewText}</p><form class="bdtarget" data-bdtarget="steps"><label>目標（歩）<input type="number" step="500" value="${r.target??""}" data-bdt></label><input type="hidden" data-bdd value="above"><button class="btn sm">変える</button></form></section>`:""}<section class="bdsec"><h2>この7日</h2>${mcolumns({slots,height:180,label:"7日の歩数",line:goal,lineName:"目標"})}</section><section class="bdsec"><h2>カレンダー</h2>${bdCalendar(h,goal||1,v=>v>=1000?(v/1000).toFixed(1)+"k":String(Math.round(v)),"濃いほど目標に近い日です")}</section><section class="bdsec"><h2>長い推移</h2>${bdChart(r,365)}</section>${bdFullTable(d,"activity",w)}`;
+}
+/* 筋トレ */
+function bdWorkoutTab(d,w){
+  const v=d.workouts||{exercises:[],weeks:[]},list=v.exercises;
+  const legacy=bdWorkoutExtra(d);
+  if(!list.length)return `<div class="card empty"><b>まだ記録がありません</b>ボットに「ベンチ 60x8x3」のように送ると、60kg・8回・3セットとして記録し、前回との差を返します。</div>${legacy}${bdFullTable(d,"workout",w)}`;
+  const pick=list.find(x=>x.name===S.bodyEx)||list[0],muscles=[...new Set(v.weeks.flatMap(x=>Object.keys(x.sets)))];
+  const delta=x=>!x.prev?"初めての記録":`前回 ${x.prev.weight}kg × ${x.prev.reps}回 → ${x.last.weight}kg × ${x.last.reps}回`;
+  const cards=list.map(x=>`<button class="card bdcard bdex" data-bdex="${esc(x.name)}" aria-pressed="${x===pick}"><b>${esc(x.name)}</b><span class="sub">${esc(x.muscle)} · ${esc(bdShort(x.last.date))}</span><span>${esc(delta(x))}</span><span class="sub">推定1RM ${x.last.e1rm==null?"–":bdNum(x.last.e1rm)+" kg"}${x.next?` · 次の案：${esc(x.next)}`:""}</span></button>`).join("");
+  const rows=pick.rows,series=[{name:"推定1RM",c:"var(--v1)",values:rows.map(r=>r.e1rm)}],chart=rows.length>1&&rows.some(r=>r.e1rm)?`<p class="sub">推定1RM（kg）</p>`+mlines({labels:rows.map(r=>bdShort(r.date)),series,height:180,label:`${pick.name}の推定1RM`}):`<p class="sub">グラフは2回分たまると出ます。</p>`;
+  const vol=`<p class="sub">ボリューム（kg）</p>`+mcolumns({slots:rows.map(r=>({label:bdShort(r.date),tip:`${r.date} ${bdNum(r.volume)} kg`,parts:[{v:r.volume,c:"var(--v1)"}]})),height:160,label:`${pick.name}のボリューム`});
+  const b=pick.bests,detail=`<section class="bdsec"><h2>${esc(pick.name)}</h2><div class="bdfacts"><div><span class="sub">最大重量</span><b>${bdNum(b.weight)} kg</b></div><div><span class="sub">最多回数</span><b>${bdNum(b.reps)} 回</b></div><div><span class="sub">推定1RM</span><b>${b.e1rm?bdNum(b.e1rm)+" kg":"–"}</b></div><div><span class="sub">1回のボリューム</span><b>${bdNum(b.volume)} kg</b></div></div>${chart}${vol}<form class="bdtarget" data-bdmuscle="${esc(pick.name)}"><label>筋群<input value="${esc(pick.muscle)}" data-bdm></label><button class="btn sm">保存</button></form><div class="bdlist">${rows.slice().reverse().map(r=>`<div class="rcrow"><span class="sub rcdate">${esc(bdShort(r.date))}</span><span>${r.detail.map(x=>`${x.weight_kg}kg × ${x.reps}回 × ${x.sets}セット`).map(esc).join("、")}</span></div>`).join("")}</div></section>`;
+  const table=muscles.length?`<section class="bdsec"><h2>筋群ごとのセット数</h2><div class="bdtable"><div class="bdrow bdweeks bdhead"><span>筋群</span>${v.weeks.map((x,i)=>`<span class="bdv">${i?`${i}週前`:"この7日"}</span>`).join("")}</div>${muscles.map(m=>`<div class="bdrow bdweeks"><span>${esc(m)}</span>${v.weeks.map(x=>`<span class="bdv">${x.sets[m]||0}</span>`).join("")}</div>`).join("")}</div></section>`:"";
+  return `<section class="bdsec"><h2>種目 <span class="sub">押すと詳しく見られます</span></h2><div class="bdcards">${cards}</div></section>${table}${detail}${bdFullTable(d,"workout",w)}`;
 }
 /* 概要: the latest of everything on one screen. Each card opens its own tab. */
 function bdOverview(d){
@@ -1697,9 +1794,11 @@ function bodyView(){
   if(!d)return head+`<div class="card empty"><b>${S.bodyErr?"読み込めませんでした":"読み込んでいます"}</b>${S.bodyErr?"Desk のサーバーを再起動すると直ることがあります。":""}</div>`;
   const w=S.bodyWin||"7",tab=Object.keys(BDVIEW).find(k=>BDVIEW[k]===viewId())||"overview";
   const info=[d.waiting?`読み取り待ち ${d.waiting}件`:"",d.failed?`読めなかったもの ${d.failed}件`:"",!d.keyReady?"API キーが未登録なので、読み取りは止まっています":""].filter(Boolean).join(" · ");
-  const review=d.review.length?`<section class="bdsec"><h2>要確認 <span class="sub">${d.review.length}件</span></h2>${d.review.map(r=>bdReview(r,d)).join("")}</section>`:"";
+  const reviewKinds={sleep:["sleep"],meal:["meal_photo","meal_screen"],weight:["body"],activity:["steps","glucose"],workout:["workout"],habits:["screen_time","study"]}[tab];
+  const mine=d.review.filter(r=>reviewKinds?reviewKinds.includes(r.kind):r.kind!=="receipt"); // receipts wait in お金 → 領収書
+  const review=mine.length?`<section class="bdsec"><h2>要確認 <span class="sub">${mine.length}件</span></h2>${mine.map(r=>bdReview(r,d)).join("")}</section>`:"";
   const send=`<details class="bdhelp"><summary>送り先と費用</summary><p>Telegram のボットに写真か文字を送るか、Drive の Daily_Photos_Inbox に写真を置きます。キャプションに一言書くと、読み取りの手がかりになります。古い写真は「11/3 の夕食」のように日付も書いてください。Telegram の写真は最大24時間まで Telegram 側に残り、Drive の取り込みは Claude アプリが開いている間に毎時動きます。</p><p class="sub">今月 ${d.usage.photos}件 · 約 $${Number(d.usage.usd).toFixed(2)} · モデル ${esc(d.model)}</p><form id="bdLimit" class="bdtarget"><label>今月の上限（USD）<input type="number" min="0" step="1" id="bdLimitV" value="${d.limit??""}" placeholder="なし"></label><button class="btn sm">保存</button></form></details>`;
-  const panel=tab==="overview"?bdOverview(d):tab==="meal"?bdMealTab(d,w):tab==="sleep"?bdGroupTab(d,"sleep",w,"total_min",bdSleepExtra(d),"睡眠のスクショか「7時間寝た」のような文字を送ると、ここに並びます。"):tab==="workout"?bdGroupTab(d,"workout",w,"workout_min",bdWorkoutExtra(d),"アプリの画面か「ベンチ60kg 10回3セット」のような文字を送ると、ここに並びます。"):tab==="habits"?bdGroupTab(d,"habits",w,"screen_min",bdHabitsExtra(d),"スクリーンタイムや学習アプリの画面を送ると、ここに並びます。"):bdGroupTab(d,BDGROUP[tab],w,tab==="activity"?"steps":"weight_kg","","体重計のアプリの画面か「体重65.2」のような文字を送ると、ここに並びます。");
+  const panel=tab==="overview"?bdOverview(d):tab==="meal"?bdMealTab(d,w):tab==="sleep"?bdSleepTab(d,w):tab==="workout"?bdWorkoutTab(d,w):tab==="weight"?bdWeightTab(d,w):tab==="activity"?bdStepsTab(d,w):bdGroupTab(d,"habits",w,"screen_min",bdHabitsExtra(d),"スクリーンタイムや学習アプリの画面を送ると、ここに並びます。");
   return head+`<div class="money bd">${info?`<p class="sub" role="status">${esc(info)}</p>`:""}${review}${panel}${send}</div>`;
 }
 function bdWireTips(){
@@ -1710,22 +1809,34 @@ function bdWireTips(){
     h.onmouseleave=()=>{tip.hidden=true};
   });
 }
+function bdWireReview(){
+  const bdPut=async(path,rec,msg)=>{try{await api("PUT",path,rec);if(msg)toast(msg);bodyLoad(true);if(viewId()==="money")rcLoad(true)}catch(e){toast("保存できませんでした。値を確かめてください")}};
+  document.querySelectorAll("[data-bdrec]").forEach(card=>{
+    const send=action=>{const f=card.querySelector("form"),values={};f.querySelectorAll("[data-bdval]").forEach(i=>values[i.dataset.bdval]=i.value);const label=f.querySelector("[name=label]");
+      bdPut("/api/body/records/"+encodeURIComponent(card.dataset.bdrec),{action,date:f.querySelector("[name=date]").value,values,...(label?{label:label.value}:{})},action==="confirm"?"確定しました":"捨てました")};
+    card.querySelector("form").onsubmit=e=>{e.preventDefault();send("confirm")};
+    card.querySelector('[data-bdact="discard"]').onclick=()=>send("discard");
+  });
+}
 function wireBody(){
   const put=async(path,rec,msg)=>{try{await api("PUT",path,rec);if(msg)toast(msg);bodyLoad(true);return true}catch(e){toast("保存できませんでした。値を確かめてください");return false}};
   document.querySelectorAll("[data-bdwin]").forEach(b=>b.onclick=()=>{S.bodyWin=b.dataset.bdwin;render()});
   document.querySelectorAll("[data-bdtab]").forEach(b=>b.onclick=()=>{S.bodyPick=null;S.bodyOpen=null;location.hash=BDVIEW[b.dataset.bdtab];window.scrollTo(0,0)});
   document.querySelectorAll("[data-bdday]").forEach(b=>b.onclick=()=>{if(b.dataset.bdday){S.bodyDay=b.dataset.bdday;render()}});
   bdWireTips();
+  document.querySelectorAll("[data-bdspan]").forEach(b=>b.onclick=()=>{S.bodySpan=+b.dataset.bdspan;render()});
+  document.querySelectorAll("[data-bdmonth]").forEach(b=>b.onclick=()=>{S.bodyMonth=b.dataset.bdmonth;render()});
+  document.querySelectorAll("[data-bdex]").forEach(b=>b.onclick=()=>{S.bodyEx=b.dataset.bdex;render()});
+  document.querySelectorAll("[data-bdscale]").forEach(b=>b.onclick=()=>put("/api/body/records/"+encodeURIComponent(b.dataset.bdscale),{action:"scale",factor:+b.dataset.f},"量を直しました"));
+  document.querySelectorAll("[data-bdrepeat]").forEach(b=>b.onclick=()=>{S.bodyDay=null;put("/api/body/repeat/"+encodeURIComponent(b.dataset.bdrepeat),{},"今日に入れました")});
+  document.querySelectorAll("[data-bdpin]").forEach(b=>b.onclick=()=>{const k=b.dataset.bdpin,cur=S.body.pinned||[];put("/api/body/settings",{pinned:cur.includes(k)?cur.filter(x=>x!==k):[...cur,k]})});
+  document.querySelectorAll("[data-bdmuscle]").forEach(f=>f.onsubmit=e=>{e.preventDefault();put("/api/body/exercises/"+encodeURIComponent(f.dataset.bdmuscle),{muscle:f.querySelector("[data-bdm]").value},"筋群を保存しました")});
+  $("#bdWake")&&($("#bdWake").onchange=e=>{S.bodyWake=e.target.value;render()});
   document.querySelectorAll("[data-bdreopen]").forEach(b=>b.onclick=()=>put("/api/body/records/"+encodeURIComponent(b.dataset.bdreopen),{action:"reopen"},"要確認に移しました"));
   document.querySelectorAll("[data-bdopen]").forEach(b=>b.onclick=()=>{S.bodyOpen=S.bodyOpen===b.dataset.bdopen?null:b.dataset.bdopen;S.bodyPick=b.dataset.bdopen;render()});
   document.querySelectorAll("[data-bdtarget]").forEach(f=>f.onsubmit=e=>{e.preventDefault();put("/api/body/targets/"+encodeURIComponent(f.dataset.bdtarget),{target:f.querySelector("[data-bdt]").value,dir:f.querySelector("[data-bdd]").value},"目標を保存しました")});
   $("#bdLimit")&&($("#bdLimit").onsubmit=e=>{e.preventDefault();put("/api/body/settings",{monthlyLimitUsd:$("#bdLimitV").value},"上限を保存しました")});
-  document.querySelectorAll("[data-bdrec]").forEach(card=>{
-    const send=action=>{const f=card.querySelector("form"),values={};f.querySelectorAll("[data-bdval]").forEach(i=>values[i.dataset.bdval]=i.value);const label=f.querySelector("[name=label]");
-      put("/api/body/records/"+encodeURIComponent(card.dataset.bdrec),{action,date:f.querySelector("[name=date]").value,values,...(label?{label:label.value}:{})},action==="confirm"?"確定しました":"捨てました")};
-    card.querySelector("form").onsubmit=e=>{e.preventDefault();send("confirm")};
-    card.querySelector('[data-bdact="discard"]').onclick=()=>send("discard");
-  });
+  bdWireReview();
 }
 /* ---------- 朝夜ルーティン and ご褒美カード: tabs inside 習慣. No streak and no red: a day is simply how far it went. ---------- */
 async function rtLoad(force){
@@ -1806,7 +1917,7 @@ function habTabs(){
 function homeBodyStrip(){
   if(!LOCALAPI)return "";
   bodyLoad();rtLoad();
-  const when=rtWhenNow(),items=rtItems(when),marks=rtLog(rtDay())[when]||{},n=items.filter(i=>marks[i.id]).length,review=S.body?.review?.length||0;
+  const when=rtWhenNow(),items=rtItems(when),marks=rtLog(rtDay())[when]||{},n=items.filter(i=>marks[i.id]).length,review=(S.body?.review||[]).filter(r=>r.kind!=="receipt").length;
   const parts=[items.length?`<a href="#habits" data-rthome>${RTNAME[when]}のルーティン <span class="sub">${n} / ${items.length}</span></a>`:"",review?`<a href="#body">要確認 <span class="sub">${review}件</span></a>`:""].filter(Boolean);
   return parts.length?`<div class="homestrip">${parts.join("")}</div>`:"";
 }
@@ -1818,16 +1929,17 @@ async function rcLoad(force,month){
 }
 const RCSTATE={matched:"Wise の明細と一致",linked:"Wise の明細につないだ",added:"支出に足した",ignored:"数えない",new:"Wise にない支出",choose:"候補が複数"};
 function moneyReceipts(){
-  rcLoad();const d=S.rc;
+  rcLoad();bodyLoad();const d=S.rc,waiting=(S.body?.review||[]).filter(r=>r.kind==="receipt");
   if(!d)return `<div class="card empty"><b>読み込んでいます</b></div>`;
   const i=d.months.indexOf(d.month),older=d.months[i+1],newer=d.months[i-1];
   const nav=`<div class="mmonth"><h2>${esc(monthJa(d.month))}</h2><button class="btn sm" data-rcmonth="${esc(older||"")}" ${older?"":"disabled"}>前の月</button><button class="btn sm" data-rcmonth="${esc(newer||"")}" ${newer?"":"disabled"}>次の月</button></div>`;
   const row=r=>{const act=r.matchState==="new"?`<button class="btn sm" data-rcset="${esc(r.id)}" data-rcstate="added">支出に足す</button><button class="btn sm" data-rcset="${esc(r.id)}" data-rcstate="ignored">数えない</button>`:r.matchState==="choose"?r.candidates.map(c=>`<button class="btn sm" data-rcset="${esc(r.id)}" data-rcstate="linked" data-rcwise="${esc(c.id)}">${esc(c.date.slice(5).replace("-","/"))} ${esc(c.title||"明細")}</button>`).join("")+`<button class="btn sm" data-rcset="${esc(r.id)}" data-rcstate="added">別の支出</button>`:["added","ignored","linked"].includes(r.matchState)?`<button class="btn sm" data-rcset="${esc(r.id)}" data-rcstate="open">戻す</button>`:"";
     return `<div class="rcrow"><span class="sub rcdate">${esc(r.date.slice(5).replace("-","/"))}</span><div class="rctext"><span>${esc(r.label||"店名なし")}</span><span class="sub">${esc(r.values.category||"")}${r.status==="review"?" · 要確認":""} · ${esc(RCSTATE[r.matchState])}${r.matchState==="matched"&&r.candidates[0]?.title?`（${esc(r.candidates[0].title)}）`:""}</span>${(r.items||[]).length?`<details><summary class="sub">品目 ${r.items.length}件</summary><p class="sub">${r.items.map(esc).join("<br>")}</p></details>`:""}${r.photo?`<a class="sub" href="/lifelog-photos/${esc(r.photo)}" target="_blank" rel="noopener">元の写真</a>`:""}${act?`<div class="bdacts">${act}</div>`:""}</div><b class="rcamt">${bdNum(r.values.amount)} <span class="sub">${esc(r.values.currency||"")}</span></b></div>`};
   const totals=Object.entries(d.totals).map(([c,t])=>`<div class="rctotal"><b>${bdNum(t.all)} ${esc(c)}</b><span class="sub">${Object.entries(t.byCategory).map(([k,v])=>`${esc(k)} ${bdNum(v)}`).join(" · ")}</span>${t.added?`<span class="sub">Wise の外で足した分 ${bdNum(t.added)}</span>`:""}${t.new?`<span class="sub">未確認の支出 ${bdNum(t.new)}</span>`:""}</div>`).join("");
-  return nav+(d.rows.length?`<div class="rclist">${d.rows.map(row).join("")}</div>${totals}<p class="sub">「支出に足す」を押した分は、この画面の合計に入ります。Wise の概要の合計には入りません。</p>`:`<div class="card empty"><b>この月の領収書はありません</b>写真を送ると、ここにまとまります。</div>`);
+  return (waiting.length?`<section class="bdsec bd"><h2>要確認 <span class="sub">${waiting.length}件</span></h2>${waiting.map(r=>bdReview(r,S.body)).join("")}</section>`:"")+nav+(d.rows.length?`<div class="rclist">${d.rows.map(row).join("")}</div>${totals}<p class="sub">「支出に足す」を押した分は、この画面の合計に入ります。Wise の概要の合計には入りません。</p>`:`<div class="card empty"><b>この月の領収書はありません</b>写真を送ると、ここにまとまります。</div>`);
 }
 function wireReceipts(){
+  bdWireReview();
   document.querySelectorAll("[data-rcmonth]").forEach(b=>b.onclick=()=>{if(b.dataset.rcmonth)rcLoad(true,b.dataset.rcmonth)});
   document.querySelectorAll("[data-rcset]").forEach(b=>b.onclick=async()=>{try{await api("PUT","/api/receipts/"+encodeURIComponent(b.dataset.rcset),{state:b.dataset.rcstate,wiseId:b.dataset.rcwise||null});rcLoad(true)}catch(e){toast("保存できませんでした")}});
 }

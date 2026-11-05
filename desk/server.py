@@ -564,6 +564,10 @@ def lifelog_put(parts, rec):
         out = lifelog.update_record(parts[2], rec.get("action"), rec)
     elif parts[:2] == ["body", "targets"] and len(parts) == 3:
         out = lifelog.set_target(parts[2], rec.get("target"), rec.get("dir"))
+    elif parts[:2] == ["body", "repeat"] and len(parts) == 3:
+        out = lifelog.repeat_meal(parts[2])
+    elif parts[:2] == ["body", "exercises"] and len(parts) == 3:
+        out = lifelog.set_muscle(parts[2], rec.get("muscle"))
     elif parts == ["body", "settings"]:
         try:
             out = lifelog.set_settings(rec)
