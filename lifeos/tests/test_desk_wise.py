@@ -10,6 +10,7 @@ from lifeos.tests.sandbox import SandboxCase
 
 import backup_data  # noqa: E402
 import wise_analysis  # noqa: E402
+import wise_plan  # noqa: E402
 import wise_report  # noqa: E402
 import wise_sync  # noqa: E402
 
@@ -500,3 +501,72 @@ class Analysis(SandboxCase, Base):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class Plan(SandboxCase, Base):
+    def setUp(self):
+        SandboxCase.setUp(self)
+        Base.setUp(self)
+
+    def spent(self, day, usd, currency="THB", value=None):
+        return {"date": day, "kind": "spend", "usd": usd, "currency": currency, "value": value or usd * 30, "flow": "out"}
+
+    def test_paid_is_shown_but_not_counted_again(self):
+        wise_plan.put_upcoming({"items": [{"id": "a", "title": "Fake Air", "kind": "flight", "date": "2026-12-01", "paid": {"value": 200, "currency": "USD"}, "due": {"value": 50, "currency": "USD"}}]}, "2026-11-05")
+        h = wise_plan.ahead([], "2026-11-05")
+        self.assertEqual((h["items"][0]["paidUsd"], h["due"], h["total"]), (200, 50, 50))
+
+    def test_a_trip_is_estimated_from_ones_own_days_in_that_currency(self):
+        rows = [self.spent(f"2026-01-{d:02d}", 10 + d) for d in range(1, 8)]
+        wise_plan.put_upcoming({"items": [{"id": "a", "title": "Fake Trip", "date": "2026-12-01", "end": "2026-12-03", "currency": "THB"}]}, "2026-11-05")
+        item = wise_plan.ahead(rows, "2026-11-05")["items"][0]
+        self.assertEqual((item["estimate"], item["days"], item["basedOn"]), (42, 3, 7))
+        self.assertEqual((item["low"], item["high"]), (29.4, 54.6))
+
+    def test_no_history_means_no_estimate(self):
+        wise_plan.put_upcoming({"items": [{"id": "a", "title": "Fake Trip", "date": "2026-12-01", "end": "2026-12-03", "currency": "ISK"}]}, "2026-11-05")
+        self.assertIsNone(wise_plan.ahead([], "2026-11-05")["items"][0]["estimate"])
+
+    def test_an_amount_with_no_rate_is_named_and_left_out(self):
+        wise_plan.put_upcoming({"items": [{"id": "a", "title": "x", "date": "2026-12-01", "due": {"value": 5, "currency": "ISK"}}]}, "2026-11-05")
+        h = wise_plan.ahead([], "2026-11-05")
+        self.assertEqual((h["unknown"], h["total"]), (1, 0))
+
+    def test_the_past_and_the_hidden_do_not_show(self):
+        wise_plan.put_upcoming({"items": [{"id": "old", "title": "x", "date": "2026-01-01"}, {"id": "gone", "title": "y", "date": "2026-12-01"}, {"id": "ok", "title": "z", "date": "2026-12-02"}]}, "2026-11-05")
+        self.assertEqual(server.wise_settings(["upcoming-hide"], {"id": "gone"})[0], 200)
+        self.assertEqual([i["id"] for i in wise_plan.ahead([], "2026-11-05")["items"]], ["ok"])
+
+    def test_mail_text_cannot_be_saved(self):
+        wise_plan.put_upcoming({"items": [{"id": "a", "title": "x", "date": "2026-12-01", "body": "the whole mail", "snippet": "more"}]}, "2026-11-05")
+        self.assertNotIn("the whole mail", json.dumps(wise_sync.read_json("upcoming.json", {})))
+
+    def test_a_bad_record_is_dropped(self):
+        result = wise_plan.put_upcoming({"items": [{"id": "a", "title": "x", "date": "soon"}, {"id": "b", "title": "x", "date": "2026-12-05", "end": "2026-12-01"}]}, "2026-11-05")
+        self.assertEqual((result["saved"], result["dropped"]), (0, 2))
+
+    def test_the_runway_with_what_is_coming(self):
+        wise_plan.put_upcoming({"items": [{"id": "a", "title": "x", "date": "2026-12-01", "due": {"value": 200, "currency": "USD"}}]}, "2026-11-05")
+        self.assertEqual(wise_plan.ahead([], "2026-11-05", {"balance": 1000}, {"usd": 400})["runwayAfter"], 2)
+
+    def good_tip(self, **more):
+        return {"topic": "t1", "title": "題", "body": "本文", "source": "統計", "url": "https://example.org/a", "year": 2024, **more}
+
+    def test_a_tip_needs_a_source_and_a_year(self):
+        self.assertFalse(wise_plan.put_tip(self.good_tip(url="nope"), "2026-11-05")["saved"])
+        self.assertFalse(wise_plan.put_tip(self.good_tip(year="2024"), "2026-11-05")["saved"])
+        self.assertTrue(wise_plan.put_tip(self.good_tip(), "2026-11-05")["saved"])
+
+    def test_a_tip_is_not_repeated_and_does_not_blame(self):
+        wise_plan.put_tip(self.good_tip(), "2026-11-05")
+        self.assertFalse(wise_plan.put_tip(self.good_tip(url="https://example.org/b"), "2026-11-06")["saved"])
+        self.assertFalse(wise_plan.put_tip(self.good_tip(topic="t2", url="https://example.org/c", body="使いすぎです"), "2026-11-06")["saved"])
+
+    def test_an_old_tip_leaves_the_front_page(self):
+        wise_plan.put_tip(self.good_tip(), "2026-11-01")
+        self.assertIsNotNone(wise_plan.today_tip("2026-11-03"))
+        self.assertIsNone(wise_plan.today_tip("2026-11-04"))
+
+    def test_age(self):
+        self.assertEqual(wise_plan.age_on("2000-03-14", "2026-03-13"), 25)
+        self.assertEqual(wise_plan.age_on("2000-03-14", "2026-03-14"), 26)

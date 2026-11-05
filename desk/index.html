@@ -344,7 +344,7 @@ details.draft .sent-as summary{cursor:pointer;display:block;padding:var(--s2) 0;
 .mpanel{padding:var(--s3);display:grid;gap:var(--s2);min-width:0}
 .mpanelh{display:flex;flex-wrap:wrap;gap:var(--s1) var(--s2);align-items:baseline}
 .mpanelh h2{margin:0;font-size:var(--t3)}
-.mpanel>.mrow{padding-left:0;padding-right:0}
+.mpanel .mrow{padding-left:0;padding-right:0}
 .mchart{display:block;max-width:100%;height:auto;margin-top:var(--s2)}
 .mtick{font-size:12px;fill:var(--muted);font-variant-numeric:tabular-nums}
 .mhit{cursor:pointer}
@@ -1927,7 +1927,10 @@ function moneyOverview(d){
   const b=d.balances,balance=b?`<div><h3>Wise の残高（${esc(b.date)}）</h3>${b.rows.filter(x=>x.value).map(x=>`<div class="mrow"><span class="wt">${esc(x.currency)} ${esc(Number(x.value).toLocaleString("ja-JP"))}</span><span class="amt">${x.usd==null?"":musd(x.usd)}</span></div>`).join("")}</div>`:"";
   const gap=z.bridge&&Math.abs(z.bridge.gap)>=1?`<p class="due">記録の入金 ${musd(z.bridge.in)} − 出金 ${musd(z.bridge.out)} と今の残高には ${musd(Math.abs(z.bridge.gap))} USD の差があります。残高を通らない支払いが明細に入っている可能性があり、確かめ中です。</p>`:"";
   const sure=`<div><h3>データの確かさ</h3><p class="due">${z.monthsAll}か月分。USD の記録 ${d.usd.recorded}件、レートで換算 ${d.usd.converted}件。種類が未確認 ${k.unknown.count}件。${at?`最後の取り込み ${esc(at)}。`:""}</p>${gap}</div>`;
-  return `${main}${dayline}${act}<details class="card mmore"><summary>もっと見る</summary><div class="mmorein">${next}${seen}${balance}${sure}</div></details>`;
+  const h=d.ahead,aheadRow=i=>{const parts=[i.paidUsd?`支払済み ${musd(i.paidUsd)}`:i.paid?`支払済み ${esc(i.paid.value)} ${esc(i.paid.currency)}`:"",i.dueUsd?`これから ${musd(i.dueUsd)}`:i.due?`これから ${esc(i.due.value)} ${esc(i.due.currency)}`:"",i.estimate!=null?`現地費の目安 ${mround(i.low)}〜${mround(i.high)}（${esc(i.currency)} の日 ${i.basedOn}日分から）`:i.end&&i.currency?"現地費の目安なし":""].filter(Boolean).join(" · ");return `<div class="mrow"><span class="wt">${i.url?`<a class="ext" href="${esc(i.url)}" target="_blank" rel="noopener">${esc(i.title)} ↗</a>`:esc(i.title)}</span><span class="due mfull">${esc(mjaDate(i.date))}${i.end&&i.end!==i.date?`〜${esc(mjaDate(i.end))}`:""} · ${esc(i.kindName)}${i.place?` · ${esc(i.place)}`:""}${parts?` · ${parts}`:""}</span><button class="btn sm" data-mhide="${esc(i.id)}">消す</button></div>`};
+  const coming=mpanel("これからの支出",h.at?`${esc(h.at)} に確認。カレンダーと予約メールから`:"カレンダーと予約メールから",h.items.length?`${h.total?`<p class="wt">これから約 ${mround(h.total)} USD${h.runwayAfter!=null?`。入れると暮らせる月数は約${esc(h.runwayAfter)}か月`:""}</p>`:""}${h.unknown?`<p class="due">USD に直せない金額が ${h.unknown}件あり、合計に入っていません。</p>`:""}<div>${h.items.slice(0,S.moneyAheadAll?99:3).map(aheadRow).join("")}</div>${h.items.length>3&&!S.moneyAheadAll?`<button class="btn sm" id="mAheadAll">残り ${h.items.length-3}件を見る</button>`:""}`:`<p class="due">まだ見つかっていません。</p>`);
+  const tip=d.tip?`<section class="card mact"><span class="sub">今日の豆知識</span><p class="wt">${esc(d.tip.title)}</p><p class="mread">${esc(d.tip.body)}</p><p class="due"><a class="ext" href="${esc(d.tip.url)}" target="_blank" rel="noopener">${esc(d.tip.source)}（${esc(d.tip.year)}年）↗</a></p></section>`:"";
+  return `${main}${dayline}${act}${coming}${tip}<details class="card mmore"><summary>もっと見る</summary><div class="mmorein">${next}${seen}${balance}${sure}</div></details>`;
 }
 function moneyCharts(d){
   const z=d.analysis,ms=z.months,bandShort=m=>`${Number(m.slice(5,7))}月`;
@@ -1980,7 +1983,8 @@ function moneyAdvice(d){
   const paceRow=p=>`<div class="mrow"><span class="wt">${esc(p.label)} 約${mround(p.spent)} / 目安 ${mround(p.limit)}</span><span class="due">このペースだと約 ${mround(p.forecast)} USD</span></div>`;
   const limits=mpanel("自分で決めた目安","カードや現金などの支出。USD",`${paces.map(paceRow).join("")}<form class="mform" id="mLimits"><label>1週間<input type="number" min="0" step="any" inputmode="decimal" id="mWeek" value="${lim.week==null?"":esc(lim.week)}"></label><label>1か月<input type="number" min="0" step="any" inputmode="decimal" id="mMonth" value="${lim.month==null?"":esc(lim.month)}"></label><button class="btn sm" type="submit">保存</button></form>`);
   const learn=`<details class="card mmore"><summary>お金の学び ${d.lessons.length}件</summary><div class="mmorein">${d.lessons.map(x=>`<div><h3>${esc(x.title)}</h3><p class="mread">${esc(x.body)}</p><p class="due"><a class="ext" href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.source)} ↗</a>${x.checked?` · ${esc(x.checked)}`:""}</p></div>`).join("")}<p class="due">${esc(d.takeNote)}</p></div></details>`;
-  return `${one}${aiPanel}${closing}${limits}${learn}<p class="due">自分では止められないと感じるときは、信頼できる人、FP、医療機関に相談する方法もあります。</p>`;
+  const pastTips=d.tips&&d.tips.length?`<details class="card mmore"><summary>豆知識 ${d.tips.length}件</summary><div class="mmorein">${d.tips.map(x=>`<div><h3>${esc(x.title)}</h3><p class="mread">${esc(x.body)}</p><p class="due">${esc(x.date)} · <a class="ext" href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.source)}（${esc(x.year)}年）↗</a></p></div>`).join("")}</div></details>`:"";
+  return `${one}${aiPanel}${closing}${limits}${learn}${pastTips}<p class="due">自分では止められないと感じるときは、信頼できる人、FP、医療機関に相談する方法もあります。</p>`;
 }
 function moneyDetail(d){
   const drill=S.moneyDrill,flt=S.moneyFilter||"all",q=(S.moneySearch||"").toLowerCase(),cur=S.moneyCur||"";
@@ -2045,6 +2049,8 @@ function wireMoney(){
   document.querySelectorAll("[data-mcharge]").forEach(b=>b.onclick=()=>put("/api/wise/recurring",{key:b.dataset.mcharge,mark:true},"毎月の請求に入れました"));
   document.querySelectorAll("[data-mnotcharge]").forEach(b=>b.onclick=()=>put("/api/wise/recurring",{key:b.dataset.mnotcharge,mark:false},"一覧から外しました"));
   document.querySelectorAll("[data-mchoice]").forEach(b=>b.onclick=()=>put("/api/wise/recurring",{key:S.money.analysis.action.key,choice:b.dataset.mchoice},"記録しました"));
+  document.querySelectorAll("[data-mhide]").forEach(b=>b.onclick=()=>put("/api/wise/upcoming-hide",{id:b.dataset.mhide},"一覧から消しました"));
+  $("#mAheadAll")&&($("#mAheadAll").onclick=()=>{S.moneyAheadAll=true;render()});
   document.querySelectorAll("[data-mclose]").forEach(c=>c.onchange=()=>{const rec={};document.querySelectorAll("[data-mclose]").forEach(x=>rec[x.dataset.mclose]=x.checked);put("/api/wise/close/"+encodeURIComponent(S.money.analysis.month),rec)});
   const taskIn=async(title,note)=>{try{await store.putTask({id:newTaskId(),title,note,status:"notyet",source:"money",createdAt:Date.now()});toast("タスクに入れました")}catch(e){toast("入れられませんでした")}};
   $("#mTask")&&($("#mTask").onclick=()=>{const a=S.money.analysis.action;taskIn(`${a.name} の明細を1回見る`,a.fact)});

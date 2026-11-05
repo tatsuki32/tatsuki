@@ -321,6 +321,13 @@ def wise_settings(parts, rec):
                 entry.update(choice=rec["choice"], reviewed=wise_report.today_hcmc().isoformat() if rec["choice"] == "keep" else entry.get("reviewed"))
             wise_sync.write_json("recurring.json", saved)
             return 200, {"ok": True}
+        if parts == ["upcoming-hide"]:
+            item = str(rec.get("id") or "").strip()
+            if not item or len(item) > 80:
+                return 400, {"error": "bad id"}
+            hidden = wise_sync.read_json("upcoming-hidden.json", [])
+            wise_sync.write_json("upcoming-hidden.json", sorted(set(hidden) | {item}))
+            return 200, {"ok": True}
         if parts == ["seen"]:
             today, seen = wise_report.today_hcmc().isoformat(), wise_sync.read_json("seen.json", {})
             if seen.get("last") != today:
