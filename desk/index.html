@@ -384,6 +384,75 @@ details.draft .sent-as summary{cursor:pointer;display:block;padding:var(--s2) 0;
 .jobs h2{font-size:var(--t2)}
 .jobs .row .btn{flex:1 1 180px;justify-content:center}
 
+/* ---------- 体 ---------- */
+.bd{display:grid;gap:var(--s4)}
+.bdsec{display:grid;gap:var(--s2)}
+.bdsec h2,.rtsec h2{font-size:var(--t3);margin:0}
+.bdtable{display:grid}
+.bdrow{display:grid;grid-template-columns:minmax(0,2fr) repeat(5,minmax(0,1fr));gap:var(--s2);align-items:baseline;padding:var(--s2) 0;border-bottom:1px solid var(--line)}
+.bdhead{background:var(--surface-2);border:0;border-radius:var(--r-s);padding:var(--s2);color:var(--ink-2);font-size:var(--t1);font-weight:700}
+.bdrow:not(.bdhead){padding-left:var(--s2);padding-right:var(--s2)}
+.bdname{background:none;border:0;padding:0;color:var(--ink);font:inherit;text-align:left;cursor:pointer;min-height:24px}
+.bdname:hover{color:var(--accent)}
+.bdv{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.bddetail{display:grid;gap:var(--s3);padding:var(--s3) var(--s2);border-bottom:1px solid var(--line);min-width:0;overflow-x:auto}
+.bdtarget{display:flex;flex-wrap:wrap;gap:var(--s2);align-items:flex-end}
+.bdtarget label,.bdvalues label{display:grid;gap:var(--s1);font-size:var(--t1);color:var(--muted)}
+.bdtarget input,.bdtarget select,.bdvalues input{background:transparent;border:0;border-bottom:1px solid var(--line-2);color:var(--ink);font:inherit;font-size:var(--t2);min-height:32px;padding:0;min-width:0;width:100%}
+.bdtarget input{width:7em}
+.bdreview{display:grid;grid-template-columns:minmax(0,220px) minmax(0,1fr);gap:var(--s3);align-items:start;padding:var(--s3) 0;border-top:1px solid var(--line)}
+.bdphoto{width:100%;max-height:320px;object-fit:contain;object-position:top left;border-radius:var(--r-s);display:block}
+.bdvalues{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:var(--s2) var(--s3)}
+.bdkind,.bdacts{grid-column:1/-1;margin:0}
+.bdacts{display:flex;flex-wrap:wrap;gap:var(--s2);margin-top:var(--s1)}
+.bdvalues label.doubt{color:var(--accent)}
+.bdvalues label.doubt input{border-bottom-color:var(--accent)}
+.bdrec{padding:var(--s2) 0;border-bottom:1px solid var(--line)}
+.bdrec summary{cursor:pointer}
+.bdpairs{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:var(--s1) var(--s3);margin-top:var(--s2)}
+.bdhelp summary{cursor:pointer;color:var(--muted);font-size:var(--t1)}
+.bdhelp p{max-width:40em}
+/* ---------- 朝夜ルーティン ---------- */
+.rtwrap{display:grid;gap:var(--s5)}
+.rtbar{display:flex;flex-wrap:wrap;gap:var(--s2);align-items:center;justify-content:space-between}
+.rtsec{display:grid;gap:var(--s1)}
+.rthead{display:flex;gap:var(--s2);align-items:baseline;margin-bottom:var(--s1)}
+.rthead .btn{margin-left:auto}
+.rtrow{display:flex;gap:var(--s2);align-items:flex-start;padding:var(--s1) 0}
+.rtcheck{flex:none;width:28px;height:28px;border:1px solid var(--line-2);border-radius:var(--r-s);background:transparent;color:var(--accent-ink);cursor:pointer;font-weight:700}
+.rtcheck[aria-checked="true"]{background:var(--accent);border-color:var(--accent)}
+.rttext{display:grid;min-width:0;flex:1}
+.rtdone{color:var(--muted)}
+.rtedit{display:flex;gap:var(--s1);flex:none;flex-wrap:wrap;justify-content:flex-end}
+.rtweek{display:grid;grid-template-columns:auto minmax(0,1fr);gap:var(--s1) var(--s2);align-items:center}
+.rtcells{display:grid;grid-template-columns:repeat(14,minmax(0,1fr));gap:2px}
+.rtcell{font-size:var(--t1);text-align:center;border-radius:4px;padding:2px 0;color:var(--muted);background:rgba(226,184,102,calc(var(--on)*.55))}
+/* ---------- ご褒美カード ---------- */
+.rwtools{display:flex;gap:var(--s2)}
+.rwlist{display:grid;gap:var(--s3);grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
+.rwcard{padding:var(--s3);display:grid;gap:var(--s3);align-content:start}
+.rwhead{display:flex;gap:var(--s2);justify-content:space-between;align-items:flex-start}
+.rwhead>div{min-width:0}
+.rwn{white-space:nowrap}
+.rwgrid{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:var(--s1)}
+.rwstamp{aspect-ratio:1;min-width:0;padding:0;border:1px solid var(--line-2);border-radius:50%;background:var(--surface-2);color:var(--accent-ink);font-weight:700;font-size:var(--t1);cursor:pointer}
+.rwstamp.on{background:var(--accent);border-color:var(--accent)}
+.homestrip{display:flex;flex-wrap:wrap;gap:var(--s3)}
+.homestrip a{color:var(--ink-2);text-decoration:none}
+.homestrip a:hover{color:var(--ink)}
+/* ---------- 領収書 ---------- */
+.rclist{display:grid;max-width:720px}
+.rcrow{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:var(--s2);padding:var(--s2) 0;border-bottom:1px solid var(--line);align-items:baseline}
+.rctext{display:grid;gap:var(--s1);min-width:0}
+.rcamt{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.rctotal{display:grid;gap:var(--s1);max-width:720px;margin-top:var(--s3)}
+@media (max-width:640px){
+  .bdrow{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,.8fr) minmax(0,.9fr)}
+  .bdt,.bdc{display:none}
+  .bdreview{grid-template-columns:minmax(0,1fr)}
+  .rtedit{flex-basis:100%}
+  .rtrow{flex-wrap:wrap}
+}
 /* ---------- habits ---------- */
 .habits{display:grid;gap:var(--s3)}
 .habit{padding:var(--s3);display:grid;gap:12px}
@@ -911,6 +980,7 @@ function toast(t){const el=document.createElement("div");el.className="toast";el
 /* ---------- store: claude db online, browser storage on the PC ---------- */
 /* Notes are never hard-deleted: deleted:true + updatedAt lets the hourly sync merge the Mac and the cloud safely. */
 const LOCALAPI=/^https?:$/.test(location.protocol)&&/^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="habits")+1,0,{id:"body",e:"🫀",label:"体",g:"today"}); // photos and health records stay on this Mac
 if(LOCALAPI) VIEWS.splice(4,0,{id:"focus",e:"🎯",label:"集中",g:"today"}); // blocks apps on this Mac, so the Mac version only
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="memolink")+1,0,{id:"money",e:"💰",label:"お金",g:"write"}); // statements stay on this Mac
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="money")+1,0,{id:"screentime",e:"📱",label:"スクリーンタイム",g:"write"});
@@ -1486,6 +1556,168 @@ function freeSlot(min){
 const gcalTime=ms=>new Date(ms).toISOString().replace(/[-:]/g,"").replace(/\.\d{3}/,"");
 const calLink=(title,ms)=>"https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent(title)+"&dates="+gcalTime(ms)+"/"+gcalTime(ms+30*6e4);
 
+/* ---------- 体: photos become records (desk/lifelog.py). A value below a target is only a number: nothing here turns red or blames. ---------- */
+async function bodyLoad(force){
+  if(!LOCALAPI||S.bodyBusy||(!force&&S.body&&Date.now()-(S.bodyAt||0)<30000))return;
+  S.bodyBusy=true;S.bodyAt=Date.now();
+  try{const v=await api("GET","/api/body"),same=JSON.stringify(v)===JSON.stringify(S.body);S.body=v;S.bodyErr=false;S.bodyBusy=false;if(!same&&["body","home"].includes(viewId()))render()}
+  catch(e){const was=S.bodyErr;S.bodyErr=true;S.bodyBusy=false;if(!was&&viewId()==="body")render()}
+}
+const bdNum=v=>v==null?"–":Math.abs(v)>=1000?Math.round(v).toLocaleString("ja-JP"):String(Math.round(v*100)/100);
+const bdSigned=v=>v==null?"–":(v>0?"+":"")+bdNum(v);
+const BDDIR={above:"以上",below:"未満",near:"近づける"};
+function bdDetail(r){
+  const hist=r.history||[];
+  const chart=hist.length>1?mlines({labels:hist.map(h=>h[0].slice(5).replace("-","/")),series:[{name:r.label,c:"var(--v1)",values:hist.map(h=>h[1])}],height:160,label:`${r.label}の推移`}):`<p class="sub">グラフは記録が2日分たまると出ます。</p>`;
+  return `<div class="bddetail">${chart}<form class="bdtarget" data-bdtarget="${esc(r.key)}"><label>目標${r.unit?`（${esc(r.unit)}）`:""}<input type="number" step="any" inputmode="decimal" value="${r.target??""}" data-bdt></label><label>向き<select data-bdd>${Object.entries(BDDIR).map(([k,l])=>`<option value="${k}" ${k===r.dir?"selected":""}>${l}</option>`).join("")}</select></label><button class="btn sm">保存</button></form></div>`;
+}
+function bdRow(r,w,est){
+  const open=S.bodyOpen===r.key;
+  return `<div class="bdrow"><button class="bdname" data-bdopen="${esc(r.key)}" aria-expanded="${open}">${esc(r.label)}${est?` <span class="sub">推定</span>`:""}</button><b class="bdv">${bdNum(r.value)}<span class="sub"> ${esc(r.unit)}</span></b><span class="bdv bdt">${r.target==null?"–":bdNum(r.target)}</span><b class="bdv">${r.rate==null?"–":Math.round(r.rate)+"%"}</b><span class="bdv bdc">${bdSigned(r.change)}</span><span class="bdv bda">${bdNum(r.avg[w])}</span></div>${open?bdDetail(r):""}`;
+}
+function bdReview(rec,d){
+  const k=d.kinds[rec.kind]||{label:rec.kind,values:{}},pdf=/\.pdf$/.test(rec.photo||"");
+  const photo=rec.photo?(pdf?`<a class="btn sm" href="/lifelog-photos/${esc(rec.photo)}" target="_blank" rel="noopener">PDF を開く</a>`:`<img class="bdphoto" src="/lifelog-photos/${esc(rec.photo)}" alt="${esc(k.label)}の写真" loading="lazy">`):"";
+  const shown=Object.keys(k.values).filter(x=>rec.values[x]!=null||(rec.doubts||[]).includes(x)||["sleep","workout","steps"].includes(rec.kind));
+  return `<article class="bdreview" data-bdrec="${esc(rec.id)}">${photo}<form class="bdvalues"><p class="bdkind"><b>${esc(k.label)}</b>${rec.estimated?` <span class="sub">${rec.photo?"写真":"文章"}からの推定</span>`:""}${!rec.photo&&rec.note?`<br><span class="sub">${esc(rec.note)}</span>`:""}</p>
+    <label class="${(rec.doubts||[]).includes("date")?"doubt":""}">日付<input type="date" name="date" value="${esc(rec.date)}"></label>
+    ${rec.kind==="receipt"||rec.kind==="meal_photo"||rec.kind==="study"?`<label>${rec.kind==="receipt"?"店名":"内容"}<input name="label" value="${esc(rec.label||"")}"></label>`:""}
+    ${shown.map(x=>`<label class="${(rec.doubts||[]).includes(x)?"doubt":""}">${esc(k.values[x].label)}${k.values[x].unit?`（${esc(k.values[x].unit)}）`:""}<input ${k.values[x].text?"":'type="number" step="any" inputmode="decimal"'} data-bdval="${esc(x)}" value="${esc(rec.values[x]??"")}"></label>`).join("")}
+    <div class="bdacts"><button class="btn primary sm" data-bdact="confirm">確定する</button><button class="btn sm" type="button" data-bdact="discard">捨てる</button></div></form></article>`;
+}
+function bodyView(){
+  const d=S.body,head=`<header class="head"><div><p class="eyebrow">写真から記録</p><h1>体</h1></div></header>`;
+  if(!d)return head+`<div class="card empty"><b>${S.bodyErr?"読み込めませんでした":"読み込んでいます"}</b>${S.bodyErr?"Desk のサーバーを再起動すると直ることがあります。":""}</div>`;
+  const w=S.bodyWin||"7",rows=d.groups.flatMap(g=>g.rows);
+  const info=[d.waiting?`読み取り待ち ${d.waiting}枚`:"",d.failed?`読めなかった写真 ${d.failed}枚`:"",!d.keyReady?"API キーが未登録なので、写真の読み取りは止まっています":""].filter(Boolean).join(" · ");
+  const review=d.review.length?`<section class="bdsec"><h2>要確認 <span class="sub">${d.review.length}件</span></h2>${d.review.map(r=>bdReview(r,d)).join("")}</section>`:"";
+  const label=(d.windows.find(x=>String(x[0])===w)||[0,""])[1];
+  const est=new Set(d.estimatedDays||[]);
+  const table=g=>g.rows.length?`<section class="bdsec"><h2>${esc(g.name)} <span class="sub">最新の記録 ${esc(g.rows.map(r=>r.date||"").sort().pop().slice(5).replace("-","/"))}${g.id==="sleep"&&d.lastNight?` · 就寝 ${esc(d.lastNight.bedtime)}${d.lastNight.wake_time?` · 起床 ${esc(d.lastNight.wake_time)}`:""}`:""}</span></h2><div class="bdtable"><div class="bdrow bdhead"><span>項目</span><span class="bdv">最新</span><span class="bdv bdt">目標</span><span class="bdv">達成率</span><span class="bdv bdc">前回比</span><span class="bdv bda">${esc(label)}平均</span></div>${g.rows.map(r=>bdRow(r,w,g.id==="meal"&&est.has(r.date))).join("")}</div></section>`:"";
+  const send=`<details class="bdhelp"><summary>写真の送り先と費用</summary><p>Telegram のボットに送るか、Drive の Daily_Photos_Inbox に置きます。キャプションに一言書くと、読み取りの手がかりになります。Telegram の写真は最大24時間まで Telegram 側に残り、Drive の取り込みは Claude アプリが開いている間に毎時動きます。</p><p class="sub">今月 ${d.usage.photos}枚 · 約 $${Number(d.usage.usd).toFixed(2)} · モデル ${esc(d.model)}</p><form id="bdLimit" class="bdtarget"><label>今月の上限（USD）<input type="number" min="0" step="1" id="bdLimitV" value="${d.limit??""}" placeholder="なし"></label><button class="btn sm">保存</button></form></details>`;
+  const valueText=rec=>{const k=d.kinds[rec.kind]||{values:{}};return Object.entries(rec.values).map(([x,v])=>{const f=k.values[x]||{label:x,unit:""};return `<span class="bdpair"><span class="sub">${esc(f.label)}</span> ${esc(typeof v==="number"?bdNum(v):v)}${f.unit?`<span class="sub"> ${esc(f.unit)}</span>`:""}</span>`}).join("")};
+  const recent=(d.recent||[]).length?`<section class="bdsec"><h2>最近の記録</h2>${d.recent.map(r=>`<details class="bdrec"><summary><span class="sub">${esc(r.date.slice(5).replace("-","/"))}</span> ${esc((d.kinds[r.kind]||{}).label||r.kind)}${r.label?` · ${esc(r.label)}`:""}${r.estimated?` <span class="sub">推定</span>`:""}</summary>${!r.photo&&r.note?`<p class="sub">${esc(r.note)}</p>`:""}<div class="bdpairs">${valueText(r)}</div>${(r.items||[]).length?`<p class="sub">${r.items.map(esc).join("<br>")}</p>`:""}<div class="bdacts">${r.photo?`<a class="btn sm" href="/lifelog-photos/${esc(r.photo)}" target="_blank" rel="noopener">元の写真</a>`:""}<button class="btn sm" data-bdreopen="${esc(r.id)}">直す</button></div></details>`).join("")}</section>`:"";
+  const none=!rows.length&&!d.review.length?`<div class="card empty"><b>まだ記録がありません</b>睡眠のスクショ、レシート、食事の写真を送ると、ここに並びます。</div>`:"";
+  return head+`<div class="money bd">${info?`<p class="sub" role="status">${esc(info)}</p>`:""}${review}${none}${rows.length?`<div class="chips" role="group" aria-label="平均の期間">${d.windows.map(([n,l])=>`<button class="chip" data-bdwin="${n}" aria-pressed="${String(n)===w}">${esc(l)}</button>`).join("")}</div>`:""}${d.groups.map(table).join("")}${recent}${send}</div>`;
+}
+function wireBody(){
+  const put=async(path,rec,msg)=>{try{await api("PUT",path,rec);if(msg)toast(msg);bodyLoad(true);return true}catch(e){toast("保存できませんでした。値を確かめてください");return false}};
+  document.querySelectorAll("[data-bdwin]").forEach(b=>b.onclick=()=>{S.bodyWin=b.dataset.bdwin;render()});
+  document.querySelectorAll("[data-bdreopen]").forEach(b=>b.onclick=()=>put("/api/body/records/"+encodeURIComponent(b.dataset.bdreopen),{action:"reopen"},"要確認に移しました"));
+  document.querySelectorAll("[data-bdopen]").forEach(b=>b.onclick=()=>{S.bodyOpen=S.bodyOpen===b.dataset.bdopen?null:b.dataset.bdopen;render()});
+  document.querySelectorAll("[data-bdtarget]").forEach(f=>f.onsubmit=e=>{e.preventDefault();put("/api/body/targets/"+encodeURIComponent(f.dataset.bdtarget),{target:f.querySelector("[data-bdt]").value,dir:f.querySelector("[data-bdd]").value},"目標を保存しました")});
+  $("#bdLimit")&&($("#bdLimit").onsubmit=e=>{e.preventDefault();put("/api/body/settings",{monthlyLimitUsd:$("#bdLimitV").value},"上限を保存しました")});
+  document.querySelectorAll("[data-bdrec]").forEach(card=>{
+    const send=action=>{const f=card.querySelector("form"),values={};f.querySelectorAll("[data-bdval]").forEach(i=>values[i.dataset.bdval]=i.value);const label=f.querySelector("[name=label]");
+      put("/api/body/records/"+encodeURIComponent(card.dataset.bdrec),{action,date:f.querySelector("[name=date]").value,values,...(label?{label:label.value}:{})},action==="confirm"?"確定しました":"捨てました")};
+    card.querySelector("form").onsubmit=e=>{e.preventDefault();send("confirm")};
+    card.querySelector('[data-bdact="discard"]').onclick=()=>send("discard");
+  });
+}
+/* ---------- 朝夜ルーティン and ご褒美カード: tabs inside 習慣. No streak and no red: a day is simply how far it went. ---------- */
+async function rtLoad(force){
+  if(!LOCALAPI||S.rtBusy||(!force&&S.routines&&Date.now()-(S.rtAt||0)<30000))return;
+  S.rtBusy=true;S.rtAt=Date.now();
+  try{const [r,l,c]=await Promise.all([api("GET","/api/routines"),api("GET","/api/routinelog"),api("GET","/api/rewards")]);
+    const was=JSON.stringify([S.routines,S.routinelog,S.rewards]);S.routines=r.filter(x=>!x.deleted);S.routinelog=l;S.rewards=c.filter(x=>!x.deleted);S.rtBusy=false;
+    if(was!==JSON.stringify([S.routines,S.routinelog,S.rewards])&&["habits","home"].includes(viewId()))render()}
+  catch(e){S.rtBusy=false}
+}
+const rtSettings=()=>(S.routinelog||[]).find(x=>x.id==="settings")||{cutoff:4};
+const rtDay=()=>new Date(Date.now()+HCMC-(Number(rtSettings().cutoff)||0)*3600000).toISOString().slice(0,10);
+const rtLog=day=>(S.routinelog||[]).find(x=>x.id===day)||{id:day,morning:{},night:{},totals:{}};
+const rtItems=when=>(S.routines||[]).filter(x=>x.when===when).sort((a,b)=>(a.order||0)-(b.order||0));
+const RTNAME={morning:"朝",night:"夜"};
+const rtWhenNow=()=>{const h=new Date(Date.now()+HCMC).getUTCHours();return h>=4&&h<12?"morning":"night"};
+async function rtSaveLog(rec){
+  const id=rec.id,{id:_,...body}=rec;S.routinelog=[...(S.routinelog||[]).filter(x=>x.id!==id),rec];render();
+  try{await api("PUT","/api/routinelog/"+encodeURIComponent(id),body)}catch(e){toast("保存できませんでした");rtLoad(true)}
+}
+function rtToggle(when,item){
+  const day=rtDay(),log=JSON.parse(JSON.stringify(rtLog(day))),marks=log[when]||(log[when]={});
+  if(marks[item])delete marks[item];else marks[item]=Date.now();
+  log.totals={morning:rtItems("morning").length,night:rtItems("night").length};rtSaveLog(log);
+}
+const rtRate=(log,when)=>{const t=(log.totals||{})[when]||0;return t?Object.keys(log[when]||{}).length/t:null};
+function rtSection(when,edit){
+  const items=rtItems(when),log=rtLog(rtDay()),marks=log[when]||{};
+  const row=it=>{const at=marks[it.id];return `<div class="rtrow"><button class="rtcheck" data-rttoggle="${esc(it.id)}" data-rtwhen="${when}" role="checkbox" aria-checked="${!!at}" aria-label="${esc(it.title)}">${at?"✓":""}</button><div class="rttext"><span class="${at?"rtdone":""}">${it.icon?esc(it.icon)+" ":""}${esc(it.title)}</span>${it.how?`<span class="sub">${esc(it.how)}</span>`:""}</div>${at?`<span class="sub">${new Date(at+HCMC).toISOString().slice(11,16)}</span>`:""}${edit?`<span class="rtedit"><button class="btn sm" data-rtup="${esc(it.id)}" aria-label="${esc(it.title)}を上へ">上へ</button><button class="btn sm" data-rtedit="${esc(it.id)}">直す</button><button class="btn sm" data-rtdel="${esc(it.id)}">外す</button></span>`:""}</div>`};
+  return `<section class="rtsec"><div class="rthead"><h2>${RTNAME[when]}</h2><span class="sub">${Object.keys(marks).filter(k=>items.some(i=>i.id===k)).length} / ${items.length}</span>${edit?`<button class="btn sm" data-rtadd="${when}">足す</button>`:""}</div>${items.map(row).join("")||`<p class="sub">まだ項目がありません。</p>`}</section>`;
+}
+function routinesTab(){
+  if(!S.routines)return `<div class="card empty"><b>読み込んでいます</b></div>`;
+  const edit=!!S.rtEdit,first=rtWhenNow(),second=first==="morning"?"night":"morning",today=rtDay(),days=[...Array(14)].map((_,i)=>dayOff(today,i-13));
+  const cell=(d,w)=>{const r=rtRate(rtLog(d),w);return `<span class="rtcell" title="${esc(d)} ${RTNAME[w]} ${r==null?"記録なし":Math.round(r*100)+"%"}" style="--on:${r==null?0:Math.max(.12,r)}">${+d.slice(8)}</span>`};
+  return `<div class="rtbar"><span class="sub">${esc(rtSettings().cutoff)}時に次の日へ切り替わります</span><button class="btn sm" id="rtEditMode" aria-pressed="${edit}">${edit?"編集を終わる":"項目を編集"}</button></div>${edit?`<form class="bdtarget" id="rtCut"><label>切り替えの時刻<input type="number" min="0" max="12" id="rtCutV" value="${esc(rtSettings().cutoff)}"></label><button class="btn sm">保存</button></form>`:""}${rtSection(first,edit)}${rtSection(second,edit)}<section class="rtsec"><h2>この14日</h2><div class="rtweek"><span class="sub">朝</span><div class="rtcells">${days.map(d=>cell(d,"morning")).join("")}</div><span class="sub">夜</span><div class="rtcells">${days.map(d=>cell(d,"night")).join("")}</div></div></section>`;
+}
+const rwSave=async rec=>{const {id,...body}=rec;try{await api("PUT","/api/rewards/"+encodeURIComponent(id),{...body,updatedAt:Date.now()});await rtLoad(true)}catch(e){toast("保存できませんでした")}};
+function rewardsTab(){
+  if(!S.rewards)return `<div class="card empty"><b>読み込んでいます</b></div>`;
+  const list=[...S.rewards].sort((a,b)=>(a.createdAt||0)-(b.createdAt||0)),edit=!!S.rtEdit;
+  const card=c=>{const n=Math.min(c.count||0,c.target),done=n>=c.target;return `<article class="card rwcard"><div class="rwhead"><div><b>${esc(c.title)}</b>${c.reward?`<div class="sub">ご褒美：${esc(c.reward)}</div>`:""}</div><span class="sub rwn">${done?"達成":`${n} / ${c.target}`}</span></div><div class="rwgrid" role="group" aria-label="${esc(c.title)}のスタンプ">${[...Array(c.target)].map((_,i)=>`<button class="rwstamp ${i<n?"on":""}" data-rwstamp="${esc(c.id)}" data-rwi="${i}" aria-label="${i+1}個目" aria-pressed="${i<n}">${i<n?"✓":""}</button>`).join("")}</div>${edit?`<div class="bdacts"><button class="btn sm" data-rwedit="${esc(c.id)}">直す</button><button class="btn sm" data-rwdel="${esc(c.id)}">外す</button></div>`:""}</article>`};
+  return `<div class="rtbar"><span class="sub">マスを押すと1つ進み、もう一度押すと戻ります</span><span class="rwtools"><button class="btn sm" id="rtEditMode" aria-pressed="${edit}">${edit?"編集を終わる":"編集"}</button><button class="btn primary sm" id="rwAdd">カードを足す</button></span></div>${list.length?`<div class="rwlist">${list.map(card).join("")}</div>`:`<div class="card empty"><b>まだカードがありません</b>目標とご褒美を決めて、1枚作れます。</div>`}`;
+}
+async function rwEdit(c){
+  const title=await askText(c?"カードを直す":"カードを足す","何をしたら1マス進むか",c?.title||"",120);if(!title)return;
+  const reward=await askText("ご褒美","達成したときのご褒美（空でも可）",c?.reward||"",120);if(reward==null)return;
+  const t=Number(await askText("目標","何マスで達成するか（1〜100）",String(c?.target||10),3));if(!(t>=1&&t<=100)){toast("目標は1から100で入れてください");return}
+  rwSave({...(c||{id:"rw"+Date.now(),count:0,createdAt:Date.now()}),title,reward,target:Math.round(t)});
+}
+async function rtEditItem(when,it){
+  const title=await askText(it?"項目を直す":`${RTNAME[when]}の項目を足す`,"すること",it?.title||"",120);if(!title)return;
+  const how=await askText("手順","1秒で始める手順（空でも可）",it?.how||"",200);if(how==null)return;
+  const id=it?.id||"rt"+Date.now(),order=it?it.order:Math.max(0,...rtItems(when).map(x=>x.order||0))+1;
+  try{await api("PUT","/api/routines/"+encodeURIComponent(id),{when,order,icon:it?.icon||"",title,how,updatedAt:Date.now()});await rtLoad(true)}catch(e){toast("保存できませんでした")}
+}
+function wireRoutines(){
+  document.querySelectorAll("[data-habtab]").forEach(b=>b.onclick=()=>{S.habTab=b.dataset.habtab;S.rtEdit=false;render()});
+  $("#rtEditMode")&&($("#rtEditMode").onclick=()=>{S.rtEdit=!S.rtEdit;render()});
+  document.querySelectorAll("[data-rttoggle]").forEach(b=>b.onclick=()=>rtToggle(b.dataset.rtwhen,b.dataset.rttoggle));
+  document.querySelectorAll("[data-rtadd]").forEach(b=>b.onclick=()=>rtEditItem(b.dataset.rtadd));
+  const find=id=>(S.routines||[]).find(x=>x.id===id);
+  const putItem=async(it,more)=>{const {id,...body}=it;try{await api("PUT","/api/routines/"+encodeURIComponent(id),{...body,...more,updatedAt:Date.now()})}catch(e){toast("保存できませんでした")}};
+  document.querySelectorAll("[data-rtedit]").forEach(b=>b.onclick=()=>{const it=find(b.dataset.rtedit);if(it)rtEditItem(it.when,it)});
+  document.querySelectorAll("[data-rtdel]").forEach(b=>b.onclick=async()=>{const it=find(b.dataset.rtdel);if(it){await putItem(it,{deleted:true});rtLoad(true)}});
+  document.querySelectorAll("[data-rtup]").forEach(b=>b.onclick=async()=>{const it=find(b.dataset.rtup);if(!it)return;const list=rtItems(it.when),i=list.findIndex(x=>x.id===it.id);if(i<1)return;const up=list[i-1];await putItem(it,{order:up.order});await putItem(up,{order:it.order});rtLoad(true)});
+  $("#rtCut")&&($("#rtCut").onsubmit=e=>{e.preventDefault();const v=Number($("#rtCutV").value);if(!(v>=0&&v<=12))return toast("0から12で入れてください");rtSaveLog({id:"settings",cutoff:v})});
+  document.querySelectorAll("[data-rwstamp]").forEach(b=>b.onclick=()=>{const c=(S.rewards||[]).find(x=>x.id===b.dataset.rwstamp);if(!c)return;const i=Number(b.dataset.rwi),n=c.count||0;rwSave({...c,count:i<n?i:i+1});if(i>=n)toast(i+1>=c.target?"達成です。ご褒美をどうぞ":"1つ進みました")});
+  $("#rwAdd")&&($("#rwAdd").onclick=()=>rwEdit());
+  document.querySelectorAll("[data-rwedit]").forEach(b=>b.onclick=()=>rwEdit((S.rewards||[]).find(x=>x.id===b.dataset.rwedit)));
+  document.querySelectorAll("[data-rwdel]").forEach(b=>b.onclick=()=>{const c=(S.rewards||[]).find(x=>x.id===b.dataset.rwdel);if(c)rwSave({...c,deleted:true})});
+}
+function habTabs(){
+  if(!LOCALAPI)return "";
+  const t=S.habTab||"habits";
+  return `<div class="mtabs" role="tablist" aria-label="習慣の画面">${[["habits","習慣"],["routines","朝夜ルーティン"],["rewards","ご褒美カード"]].map(([k,l])=>`<button role="tab" class="mtab" data-habtab="${k}" aria-selected="${k===t}">${l}</button>`).join("")}</div>`;
+}
+function homeBodyStrip(){
+  if(!LOCALAPI)return "";
+  bodyLoad();rtLoad();
+  const when=rtWhenNow(),items=rtItems(when),marks=rtLog(rtDay())[when]||{},n=items.filter(i=>marks[i.id]).length,review=S.body?.review?.length||0;
+  const parts=[items.length?`<a href="#habits" data-rthome>${RTNAME[when]}のルーティン <span class="sub">${n} / ${items.length}</span></a>`:"",review?`<a href="#body">要確認 <span class="sub">${review}件</span></a>`:""].filter(Boolean);
+  return parts.length?`<div class="homestrip">${parts.join("")}</div>`:"";
+}
+/* 領収書: the months of receipts, each checked against Wise. A receipt that matches a Wise line is never new spending. */
+async function rcLoad(force,month){
+  if(S.rcBusy||(!force&&S.rc&&Date.now()-(S.rcAt||0)<30000&&!month))return;
+  S.rcBusy=true;S.rcAt=Date.now();
+  try{S.rc=await api("GET","/api/receipts"+(month||S.rc?.month?`?month=${encodeURIComponent(month||S.rc.month)}`:""));S.rcBusy=false;if(viewId()==="money"&&S.moneyTab==="receipts")render()}catch(e){S.rcBusy=false}
+}
+const RCSTATE={matched:"Wise の明細と一致",linked:"Wise の明細につないだ",added:"支出に足した",ignored:"数えない",new:"Wise にない支出",choose:"候補が複数"};
+function moneyReceipts(){
+  rcLoad();const d=S.rc;
+  if(!d)return `<div class="card empty"><b>読み込んでいます</b></div>`;
+  const i=d.months.indexOf(d.month),older=d.months[i+1],newer=d.months[i-1];
+  const nav=`<div class="mmonth"><h2>${esc(monthJa(d.month))}</h2><button class="btn sm" data-rcmonth="${esc(older||"")}" ${older?"":"disabled"}>前の月</button><button class="btn sm" data-rcmonth="${esc(newer||"")}" ${newer?"":"disabled"}>次の月</button></div>`;
+  const row=r=>{const act=r.matchState==="new"?`<button class="btn sm" data-rcset="${esc(r.id)}" data-rcstate="added">支出に足す</button><button class="btn sm" data-rcset="${esc(r.id)}" data-rcstate="ignored">数えない</button>`:r.matchState==="choose"?r.candidates.map(c=>`<button class="btn sm" data-rcset="${esc(r.id)}" data-rcstate="linked" data-rcwise="${esc(c.id)}">${esc(c.date.slice(5).replace("-","/"))} ${esc(c.title||"明細")}</button>`).join("")+`<button class="btn sm" data-rcset="${esc(r.id)}" data-rcstate="added">別の支出</button>`:["added","ignored","linked"].includes(r.matchState)?`<button class="btn sm" data-rcset="${esc(r.id)}" data-rcstate="open">戻す</button>`:"";
+    return `<div class="rcrow"><span class="sub rcdate">${esc(r.date.slice(5).replace("-","/"))}</span><div class="rctext"><span>${esc(r.label||"店名なし")}</span><span class="sub">${esc(r.values.category||"")}${r.status==="review"?" · 要確認":""} · ${esc(RCSTATE[r.matchState])}${r.matchState==="matched"&&r.candidates[0]?.title?`（${esc(r.candidates[0].title)}）`:""}</span>${(r.items||[]).length?`<details><summary class="sub">品目 ${r.items.length}件</summary><p class="sub">${r.items.map(esc).join("<br>")}</p></details>`:""}${r.photo?`<a class="sub" href="/lifelog-photos/${esc(r.photo)}" target="_blank" rel="noopener">元の写真</a>`:""}${act?`<div class="bdacts">${act}</div>`:""}</div><b class="rcamt">${bdNum(r.values.amount)} <span class="sub">${esc(r.values.currency||"")}</span></b></div>`};
+  const totals=Object.entries(d.totals).map(([c,t])=>`<div class="rctotal"><b>${bdNum(t.all)} ${esc(c)}</b><span class="sub">${Object.entries(t.byCategory).map(([k,v])=>`${esc(k)} ${bdNum(v)}`).join(" · ")}</span>${t.added?`<span class="sub">Wise の外で足した分 ${bdNum(t.added)}</span>`:""}${t.new?`<span class="sub">未確認の支出 ${bdNum(t.new)}</span>`:""}</div>`).join("");
+  return nav+(d.rows.length?`<div class="rclist">${d.rows.map(row).join("")}</div>${totals}<p class="sub">「支出に足す」を押した分は、この画面の合計に入ります。Wise の概要の合計には入りません。</p>`:`<div class="card empty"><b>この月の領収書はありません</b>写真を送ると、ここにまとまります。</div>`);
+}
+function wireReceipts(){
+  document.querySelectorAll("[data-rcmonth]").forEach(b=>b.onclick=()=>{if(b.dataset.rcmonth)rcLoad(true,b.dataset.rcmonth)});
+  document.querySelectorAll("[data-rcset]").forEach(b=>b.onclick=async()=>{try{await api("PUT","/api/receipts/"+encodeURIComponent(b.dataset.rcset),{state:b.dataset.rcstate,wiseId:b.dataset.rcwise||null});rcLoad(true)}catch(e){toast("保存できませんでした")}});
+}
 /* ---------- habits: counted, never punished. Missed days are simply not counted; nothing resets, nothing turns red. ---------- */
 const habitList=()=>S.habits.filter(h=>!h.deleted).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
 const dayOff=(d,n)=>new Date(Date.parse(d+"T12:00:00Z")+n*DAY).toISOString().slice(0,10);
@@ -1507,6 +1739,9 @@ function habitStrip(){
     <div class="hchips">${list.map(h=>{const st=habitStats(h);return `<button class="hchip ${st.today?"on":""}" data-habit="${esc(h.id)}" aria-pressed="${st.today}">${esc(h.emoji||"🌱")} ${esc(h.name)}${st.today?" ✓":""}</button>`}).join("")}</div></section>`;
 }
 function habitsView(){
+  if(LOCALAPI)rtLoad();
+  const habTab=LOCALAPI?(S.habTab||"habits"):"habits";
+  if(habTab!=="habits")return `<header class="head"><div><p class="eyebrow">習慣</p><h1>${habTab==="routines"?"朝夜ルーティン":"ご褒美カード"}</h1></div></header>${habTabs()}<div class="rtwrap">${habTab==="routines"?routinesTab():rewardsTab()}</div>`;
   const list=habitList(), today=hcmcDate(), days=[...Array(14)].map((_,i)=>dayOff(today,i-13));
   const card=h=>{const st=habitStats(h),done=new Set(h.done||[]);
     return `<article class="card habit"><div class="hhead"><span class="ico">${esc(h.emoji||"🌱")}</span><div style="min-width:0"><b>${esc(h.name)}</b><div class="sub">これまで ${st.total}回 · この7日で ${st.week}回${st.last&&!st.today?` · 前回 ${esc(st.last.slice(5).replace("-","/"))}`:""}</div></div>
@@ -1515,6 +1750,7 @@ function habitsView(){
       <div class="hdays" aria-label="この14日">${days.map(d=>`<button class="hday ${done.has(d)?"on":""}" data-habit="${esc(h.id)}" data-day="${d}" title="${esc(d)}${done.has(d)?" できた":""}" aria-label="${esc(d)} ${done.has(d)?"できた":"記録なし"}">${+d.slice(8)}</button>`).join("")}</div>
       <div class="row"><button class="ibtn" data-hedit="${esc(h.id)}" aria-label="名前を変える">✏️</button><button class="ibtn" data-hdel="${esc(h.id)}" aria-label="やめる">🗑️</button></div></article>`};
   return `<header class="head"><div><p class="eyebrow">習慣</p><h1>続けたいこと</h1></div><button class="btn primary" id="newHabit">＋ 習慣を足す</button></header>
+  ${habTabs()}
   <p class="sub" style="margin:0">できた日を数えます。できなかった日は数えないだけで、何もリセットされません。過去の日も押して記録できます。</p>
   ${notesHere("habits")}
   ${list.length?`<div class="habits">${list.map(card).join("")}</div>`:`<div class="card empty"><b>まだ習慣がありません</b>「＋ 習慣を足す」から。たとえば「5分歩く」「水を1杯」など、小さいもので十分です。</div>`}`;
@@ -2567,6 +2803,7 @@ function home(){
   ${topThree()}
   ${triHome()}
   ${focusHomeCard()}
+  ${homeBodyStrip()}
   <div class="duo">${todayEvents()}${habitStrip()||`<section class="card"><div class="dhead"><h2><span class="e">🌱</span>今日の習慣</h2><a class="more" href="#habits">足す →</a></div><div class="empty">続けたいことを「習慣」で足せます。</div></section>`}</div>
   ${heritageCard()}
   ${ccCard()}
@@ -2906,6 +3143,7 @@ function render(){
   if(viewId()==="followups"){fuLoad();$("#view").innerHTML=searchResults()+fuView();wire();wireFu();return}
   if(viewId()==="money"){moneyLoad();$("#view").innerHTML=searchResults()+moneyView();wire();wireMoney();return}
   if(viewId()==="screentime"){stLoad();$("#view").innerHTML=searchResults()+stView();wire();wireSt();return}
+  if(viewId()==="body"){bodyLoad();$("#view").innerHTML=searchResults()+bodyView();wire();wireBody();return}
   if(viewId()==="netspeed"){nsLoad();$("#view").innerHTML=searchResults()+nsView();wire();wireNs();return}
   const v=viewId();
   $("#view").innerHTML=searchResults()+(v==="focus"?focusView():v==="notes"?notesView():v==="watch"?watch():v==="heritage"?heritageView():v==="tasks"?tasks():v==="calendar"?calendar():v==="news"?news():v==="wins"?winsView():v==="presents"?presentsView():v==="habits"?habitsView():v==="log"?log():v==="tools"?toolsView():home());
@@ -3124,7 +3362,7 @@ function moneyDetail(d){
   const t=d.kinds,totals=`<p class="due">${Object.entries(d.kindNames).filter(([k])=>t[k]&&t[k].count).map(([k,n])=>`${esc(n)} ${musd(t[k].usd)}（${t[k].count}件）`).join(" · ")}</p>`;
   return head+totals+list;
 }
-const MGROUPS=[["see","見る",[["overview","概要"],["charts","グラフ"],["analysis","分析"],["detail","明細"],["world","世界"]]],["decide","決める",[["budget","予算"],["trips","旅の計画"],["saving","貯金"]]],["learn","学ぶ",[["advice","助言"],["sim","シミュレーション"],["lesson","毎日の学び"]]]];
+const MGROUPS=[["see","見る",[["overview","概要"],["charts","グラフ"],["analysis","分析"],["detail","明細"],["receipts","領収書"],["world","世界"]]],["decide","決める",[["budget","予算"],["trips","旅の計画"],["saving","貯金"]]],["learn","学ぶ",[["advice","助言"],["sim","シミュレーション"],["lesson","毎日の学び"]]]];
 const mgroupOf=tab=>MGROUPS.find(g=>g[2].some(t=>t[0]===tab))||MGROUPS[0];
 function mdonut(rows,label){
   const total=rows.reduce((n,r)=>n+Math.max(r.v,0),0);
@@ -3246,11 +3484,12 @@ function moneyView(){
   const nav=`<div class="mmonth"><h2>${esc(d.label)}</h2>${d.period==="month"?`<button class="btn sm" data-mmonth="${esc(older||"")}" ${older?"":"disabled"}>前の月</button><button class="btn sm" data-mmonth="${esc(newer||"")}" ${newer?"":"disabled"}>次の月</button>`:""}</div>${d.period==="custom"?`<form class="mform" id="mRange"><label>開始<input type="date" id="mFrom" value="${esc(q.from||d.start)}"></label><label>終了<input type="date" id="mTo" value="${esc(q.to||d.end)}"></label><button class="btn sm" type="submit">この期間を見る</button></form>`:""}`;
   const file=(format,kind)=>{const p=moneyQuery();p.set("format",format);p.set("kind",kind);return `${esc(location.origin)}/api/wise/export?${esc(p.toString())}`};
   const exports=`<div class="mexport"><span class="sub">この期間を書き出す</span><a class="btn sm" href="${file("csv","list")}">CSV</a><a class="btn sm" href="${file("pdf","list")}">一覧の PDF</a><a class="btn sm" href="${file("pdf","report")}">レポートの PDF</a></div>`;
-  const body={overview:moneyOverview,charts:moneyCharts,analysis:moneyAnalysis,advice:moneyAdvice,detail:moneyDetail,world:moneyWorld,budget:moneyBudget,trips:moneyTrips,saving:moneySaving,sim:moneySim,lesson:moneyLesson}[tab](d);
-  const timed=!["trips","saving","sim","lesson","world"].includes(tab);
+  const body={overview:moneyOverview,charts:moneyCharts,analysis:moneyAnalysis,advice:moneyAdvice,detail:moneyDetail,receipts:moneyReceipts,world:moneyWorld,budget:moneyBudget,trips:moneyTrips,saving:moneySaving,sim:moneySim,lesson:moneyLesson}[tab](d);
+  const timed=!["trips","saving","sim","lesson","world","receipts"].includes(tab);
   return head+`<div class="money" ${tab==="world"?"data-noauto":""}>${tabs}${trouble}${timed?pick+nav:""}${body}${exports}<p class="sub">合計は USD です。Wise に USD の記録がなければ、決済時刻の Wise のレートで換算します。種類と分類は Claude の推定を含み、明細で直せます。取り消しと、自分の残高どうしの両替は入れていません。</p></div>`;
 }
 function wireMoney(){
+  wireReceipts();
   const go=()=>{S.moneyShow=0;moneyLoad(true)}, put=async(path,rec,msg)=>{try{await api("PUT",path,rec);if(msg)toast(msg);moneyLoad(true)}catch(e){toast("保存できませんでした。入力を確かめてください")}};
   if(!S.moneySeen&&S.money){S.moneySeen=true;api("PUT","/api/wise/seen",{}).catch(()=>{})}
   const toDetail=drill=>{S.moneyDrill=drill;S.moneyTab="detail";S.moneyFilter="all";S.moneySearch="";S.moneyCur="";S.moneyShow=0;render()};
@@ -3504,6 +3743,8 @@ function wire(){
   document.querySelectorAll("[data-region]").forEach(b=>b.onclick=()=>{S.region=b.dataset.region;render()});
   document.querySelectorAll("[data-opennext]").forEach(b=>b.onclick=()=>{S.nextSkip=0;openNext()});
   document.querySelectorAll("[data-t3]").forEach(b=>b.onclick=()=>setTaskStatus(b.dataset.id,b.dataset.t3));
+  wireRoutines();
+  document.querySelectorAll("[data-rthome]").forEach(a=>a.onclick=()=>{S.habTab="routines"});
   document.querySelectorAll("[data-habit]").forEach(b=>b.onclick=()=>toggleHabit(b.dataset.habit,b.dataset.day));
   document.querySelectorAll("[data-hedit]").forEach(b=>b.onclick=()=>newHabit(S.habits.find(x=>x.id===b.dataset.hedit)));
   document.querySelectorAll("[data-hdel]").forEach(b=>b.onclick=async()=>{if(!b.dataset.sure){b.dataset.sure="1";b.textContent="やめる？";b.setAttribute("aria-label","もう一度押すとやめます。記録は残りません");return}

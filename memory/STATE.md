@@ -8,7 +8,6 @@
   - ① CLAUDE.md＋memory/（外付けメモリ）… 完了
   - ②〜⑪ もすべて最小版を実装（2026-11-03）。Mac での本番確認はマージ後。使ってみて直す段階。
   - ③ は標準の /resume とぶつかるので `/recap`。⑦ ペルソナは仮の設定（Tatsuki が決めたら /sync）。全部 main にマージ済み（tatsuki32/tatsuki#9）。
-- Desk の UI/UX 作り替え：main にマージ済み（tatsuki32/tatsuki#12）。
 - 朝のメールをタスクに一本化＋「できたこと」画面（`wins`）：実装・オンライン版に公開。main に未マージ（Mac に届くのはマージ後）。
 - コマンドを忘れる対策：Desk の「🤖 Claude に頼む」カードと、検索欄の `/` コマンド一覧。main にマージ済み。Mac の Terminal 起動は未確認。
 - Desk 全体の文字リンク（Scrapbox 式）：main にマージ済み・オンライン版に公開済み。iPhone 実機の長押しは未確認。
@@ -25,6 +24,7 @@
 - プレゼント・ノート吸収・返信待ちの WhatsApp 対応：`desk/page-cards` に統合。`desk-morning-mail` の実走は確認待ち。
 - 毎日世界遺産（`desk/heritage.py`、`desk-heritage-daily`）：実装し最初の3カ国を保存。`desk/page-cards` にコミット済み。main に未マージ。朝の自動実行は確認待ち。
 - スクリーンタイムの画面（`desk/screentime_sync.py`）：実装済み。本物を19日分取り込めた。Chrome の1分ごとの記録は確認済み。Brave は確認待ち。
+- Life Dashboard を Desk へ（`desk/lifelog.py`、体の画面、朝夜ルーティン、ご褒美カード、領収書）：最初の版を実装（未コミット）。睡眠と食事は本番で確認済み。レシートと Drive は確認待ち。
 ## 決定済みの事項
 - UI/UX を作るときは毎回、本を全文読んでから（`.claude/rules/design-ui.md`）。Drive の文字変換は p.136 まで。後半は Tatsuki のまとめで補っている。
 - Desk の見た目：文字 12/14/16/20/28px・太さ 400/700・余白 4/8/16/24/40px。金は今いる場所・焦点・主ボタン・外部リンクだけ。ボタンに絵文字を付けない。

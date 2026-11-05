@@ -29,6 +29,7 @@ import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, unquote, urlsplit
 
+import lifelog
 import netspeed
 import screentime_sync
 import wise_analysis
@@ -39,7 +40,7 @@ import wise_sync
 ROOT = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(ROOT, "data")
 PORT = int(os.environ.get("DESK_PORT", "4747"))
-COLLECTIONS = ("memos", "dues", "tasks", "prompts", "notes", "habits", "lifemap", "wins", "worldlog", "presents", "heritagelog")
+COLLECTIONS = ("memos", "dues", "tasks", "prompts", "notes", "habits", "lifemap", "wins", "worldlog", "presents", "heritagelog", "routines", "routinelog", "rewards")
 # file in data/, global the page reads, value when the file is missing
 DATA_JS = [
     ("tools.js", "TOOLS", "[]"),
@@ -556,6 +557,29 @@ def save_upload(data):
     return "/uploads/" + name
 
 
+def lifelog_put(parts, rec):
+    """parts after /api/: body records <id> | body targets <key> | body settings | receipts <id>"""
+    parts = [unquote(x) for x in parts]
+    if parts[:2] == ["body", "records"] and len(parts) == 3:
+        out = lifelog.update_record(parts[2], rec.get("action"), rec)
+    elif parts[:2] == ["body", "targets"] and len(parts) == 3:
+        out = lifelog.set_target(parts[2], rec.get("target"), rec.get("dir"))
+    elif parts == ["body", "settings"]:
+        try:
+            out = lifelog.set_settings(rec)
+        except (TypeError, ValueError):
+            return 400, {"error": "値の形が違います"}
+    elif parts[0] == "receipts" and len(parts) == 2:
+        out = lifelog.settle_receipt(parts[1], rec.get("state"), rec.get("wiseId"))
+    else:
+        return 404, {"error": "not found"}
+    if out is None:
+        return 404, {"error": "not found"}
+    if isinstance(out, dict) and out.get("error"):
+        return 400, out
+    return 200, out
+
+
 class Handler(BaseHTTPRequestHandler):
     server_version = "TatsukiDesk/2"
 
@@ -591,6 +615,19 @@ class Handler(BaseHTTPRequestHandler):
             raise ValueError("object expected")
         return v
 
+    def lifelog_photo(self, name):
+        p = lifelog.photo_path(name)
+        if not p:
+            return self.send(404, {"error": "not found"})
+        with open(p, "rb") as f:
+            data = f.read()
+        self.send_response(200)
+        self.send_header("Content-Type", lifelog.MEDIA.get(os.path.splitext(p)[1], "application/octet-stream"))
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.end_headers()
+        self.wfile.write(data)
+
     def route(self):
         p = urlsplit(self.path).path.rstrip("/").split("/")[1:]  # ['api','memos','id']
         if len(p) >= 2 and p[0] == "api" and p[1] in COLLECTIONS:
@@ -622,6 +659,12 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, whatsapp_view())
         if path == "/api/netspeed":
             return self.send(200, netspeed.view())
+        if path == "/api/body":
+            return self.send(200, lifelog.view())
+        if path == "/api/receipts":
+            return self.send(200, lifelog.receipts_view(parse_qs(urlsplit(self.path).query).get("month", [None])[0]))
+        if path.startswith("/lifelog-photos/"):
+            return self.lifelog_photo(path.rsplit("/", 1)[1])
         if path == "/api/screentime":
             q = parse_qs(urlsplit(self.path).query)
             return self.send(200, screentime_sync.view(q.get("period", ["week"])[0], q.get("device", ["mac"])[0]))
@@ -705,6 +748,10 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(415, {"error": "json only"})
             netspeed.start()
             return self.send(200, netspeed.view())
+        if method == "PUT" and urlsplit(self.path).path.startswith(("/api/body/", "/api/receipts/")):
+            if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+                return self.send(415, {"error": "json only"})
+            return self.send(*lifelog_put(urlsplit(self.path).path.split("/")[2:], rec))
         if method == "POST" and urlsplit(self.path).path == "/api/memolink/run":
             if not (self.headers.get("Content-Type") or "").startswith("application/json"):
                 return self.send(415, {"error": "json only"})

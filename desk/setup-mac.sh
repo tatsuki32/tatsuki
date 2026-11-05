@@ -8,6 +8,7 @@
 #   com.tatsuki.desk.backup  every 15 minutes, desk/data goes to its private repository (backup_data.py)
 #   com.tatsuki.desk.wise    every morning and at login, Wise activity comes to desk/data/wise (wise_sync.py, read only)
 #   com.tatsuki.desk.screentime  every hour, Screen Time totals come to desk/data/screentime (screentime_sync.py, read only)
+#   com.tatsuki.desk.telegram    the Telegram bot: photos and messages reach this Mac (lifeos/bot/run.py). Without a token it waits and tries again
 # Run it again any time; it replaces the old jobs. Remove with: bash desk/setup-mac.sh --uninstall
 set -euo pipefail
 
@@ -24,7 +25,7 @@ UID_="$(id -u)"
 unload() { launchctl bootout "gui/$UID_/$1" 2>/dev/null || true; rm -f "$AGENTS/$1.plist"; }
 
 if [[ "${1:-}" == "--uninstall" ]]; then
-  unload com.tatsuki.desk.server; unload com.tatsuki.desk.pull; unload com.tatsuki.desk.backup; unload com.tatsuki.desk.wise; unload com.tatsuki.desk.screentime; unload com.tatsuki.desk.tabwatch
+  unload com.tatsuki.desk.server; unload com.tatsuki.desk.pull; unload com.tatsuki.desk.backup; unload com.tatsuki.desk.wise; unload com.tatsuki.desk.screentime; unload com.tatsuki.desk.tabwatch; unload com.tatsuki.desk.telegram
   rm -f "$HOME/Desktop/Tatsuki's Desk.html" "$HOME/Desktop/Tatsuki's Desk.app"
   echo "Desk の常駐ジョブを削除しました。$DESK/data のデータはそのまま残っています。"; exit 0
 fi
@@ -43,7 +44,7 @@ case "$REPO/" in
 esac
 
 # stop our own jobs first, then make sure nothing else holds the port (the old Desk server)
-unload com.tatsuki.desk.server; unload com.tatsuki.desk.pull; unload com.tatsuki.desk.backup; unload com.tatsuki.desk.wise; unload com.tatsuki.desk.screentime; unload com.tatsuki.desk.tabwatch
+unload com.tatsuki.desk.server; unload com.tatsuki.desk.pull; unload com.tatsuki.desk.backup; unload com.tatsuki.desk.wise; unload com.tatsuki.desk.screentime; unload com.tatsuki.desk.tabwatch; unload com.tatsuki.desk.telegram
 if lsof -nP -iTCP:"$PORT" -sTCP:LISTEN >/dev/null 2>&1; then
   echo "ポート $PORT を別のプログラムが使っています（古い Desk サーバーの可能性）："
   lsof -nP -iTCP:"$PORT" -sTCP:LISTEN
@@ -137,6 +138,21 @@ PLIST
 
 launchctl bootstrap "gui/$UID_" "$AGENTS/com.tatsuki.desk.tabwatch.plist"
 launchctl bootstrap "gui/$UID_" "$AGENTS/com.tatsuki.desk.screentime.plist"
+cat > "$AGENTS/com.tatsuki.desk.telegram.plist" <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>com.tatsuki.desk.telegram</string>
+  <key>ProgramArguments</key><array><string>$PY</string><string>$REPO/lifeos/bot/run.py</string></array>
+  <key>WorkingDirectory</key><string>$REPO</string>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>ThrottleInterval</key><integer>60</integer>
+  <key>StandardOutPath</key><string>$LOGS/tatsuki-desk-telegram.log</string>
+  <key>StandardErrorPath</key><string>$LOGS/tatsuki-desk-telegram.log</string>
+</dict></plist>
+PLIST
+launchctl bootstrap "gui/$UID_" "$AGENTS/com.tatsuki.desk.telegram.plist"
 launchctl bootstrap "gui/$UID_" "$AGENTS/com.tatsuki.desk.server.plist"
 launchctl bootstrap "gui/$UID_" "$AGENTS/com.tatsuki.desk.backup.plist"
 launchctl bootstrap "gui/$UID_" "$AGENTS/com.tatsuki.desk.pull.plist"
