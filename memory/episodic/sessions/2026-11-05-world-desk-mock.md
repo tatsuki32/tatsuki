@@ -1,9 +1,9 @@
 # 2026-11-05 World Desk の新しい読み方の見本
 
 ## ひとこと
-- いま：ニュースの読む画面を作った
-- 次：Desk に入れて朝のタスクを替える
-- 待ち：Desk に入れてよいかの返事
+- いま：ニュースの読む画面を Desk に入れた
+- 次：明日の朝の号を見て直す
+- 待ち：11月6日の朝の実行
 
 ## やったこと
 - `desk/mock/world-reading.html`：1つの出来事を3つの媒体で読む画面の見本（静的 HTML、中身は架空）。Desk 本体（`desk/index.html`）と定期タスク `desk-world-brief` は変えていない。
@@ -56,7 +56,13 @@
 - 整列：選択肢・入力欄・履歴の右端がずれていた（40em が 14px と 16px で違う幅になる）。読む幅を 640px にそろえた。
 - 落とし穴：`.wd-read p{padding:0}` が `.wd-quote` の字下げを消していた。`.wd-g>*{max-width:100%}` が入力欄の幅の上限を消していた。どちらも直した。
 
+## Desk に入れた（本人の「入れて」を受けて）
+- `desk/page-cards` の最新（文カードの変更）を `desk/world-reading` に取り込んだ。CLAUDE.md がぶつかり、両方の記述を残した。新しい画面にも `data-noauto` を付けた。
+- Mac の Desk のフォルダ（`desk/page-cards`）を、取り込み済みの `desk/world-reading` まで早送りした。先に、このセッションが置いた追跡外の見本と記録を消した（同じものがコミットに入っている）。
+- `launchctl kickstart -k gui/<uid>/com.tatsuki.desk.server` でサーバーを再起動した（サンドボックスの外で実行）。`GET /api/worldlog` が `[]` を返し、今日の号は今までどおり表示される。
+- 定期タスク `desk-world-brief` の指示を入れ替えた。本文の最後に号の形（JSON）を付けてあるので、`WORLD_EDITION.md` が無いブランチでも動く。前の指示は `desk/sync/world-brief-v1.md`。
+
 ## 次の一手
-- `desk/world-reading` を、Mac の Desk が動いているブランチに入れる（本人の判断）。
-- 入ったら、定期タスク `desk-world-brief` の指示を `desk/sync/world-brief-v2.md` に置き換え、3日間ためす。
+- 11月6日の朝の実行を見る：かかった時間、本数、リンクが開けるか、問いの答えが見出しに出ていないか。
+- うまくいかなければ、本数を減らすか、前の指示に戻す。
 - 要件定義の未決事項（朝に全部作るか、読む時間帯、曜日）を決めてもらう。

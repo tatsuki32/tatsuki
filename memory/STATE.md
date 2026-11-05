@@ -21,7 +21,7 @@
 - タスクの時期トグル・並び替え・仕分けカード：実装済み。`desk-task-estimate` は手動で成功、朝の自動実行は確認待ち。
 - 言葉のページの文カード：全ページ対象。ニュース・マイナー国・タスクは自動リンクしない。`desk/page-cards` にコミット済み。main に未マージ。
 - 連絡返信（Gmail・WhatsApp を 3:00・16:00 にタスクへ、`desk/whatsapp_sync.py`）：実装済み。定期タスクの実走は確認待ち。
-- World Desk の読む画面（一覧 → 予想・見比べ・なぜ5回・意見、`worldlog`）：`desk/world-reading` にコミット済み。main に未マージ。朝のタスクの指示はまだ古いまま（`desk/sync/world-brief-v2.md` に用意）。
+- World Desk の読む画面（一覧 → 予想・見比べ・なぜ5回・意見、`worldlog`）：`desk/page-cards` に入れて Mac の Desk に反映済み。main に未マージ。朝のタスク `desk-world-brief` の指示を入れ替えた（最初の実行は 11月6日。3日間ためす）。
 - タスクをやりやすくする（`clear`）：実装済み。3件を本番で試した。`desk-task-clarify` の夜の実走は確認待ち。ボタンにはサーバーの再起動が要る。
 
 ## 決定済みの事項

@@ -25,7 +25,7 @@ Tatsuki の個人ダッシュボード。**Mac だけで使う**（2026-11-04 �
   ブラウザで開くときの入口は `desk/launcher.html`。
   旧版 `~/Documents/ClaudeTools` は使わない。
 - データの保管: `desk/data/` は独立した Git リポジトリで、`desk/backup_data.py`（launchd、15分ごと）が非公開リポジトリへ送る。キーらしい文字列があれば送らずに止まる。公開リポジトリには入れない。
-- World Desk の読む画面：号の記事に `question` と `media` があると、一覧（結果を書かない見出しと予想の問い）→ 読む画面（予想 → 媒体か研究を並べて見比べる → なぜを5回 → 予想を直す → 意見とタスク）で表示する。なければ今までの一覧。号の形は `desk/sync/WORLD_EDITION.md`、見本は `desk/mock/`。朝のタスクの新しい指示は `desk/sync/world-brief-v2.md`（ページが Mac に入ってから定期タスクに入れる）。要件定義: https://claude.ai/artifact/PKehDPtevXUxtbXryg4KCz
+- World Desk の読む画面：号の記事に `question` と `media` があると、一覧（結果を書かない見出しと予想の問い）→ 読む画面（予想 → 媒体か研究を並べて見比べる → なぜを5回 → 予想を直す → 意見とタスク）で表示する。なければ今までの一覧。号の形は `desk/sync/WORLD_EDITION.md`、見本は `desk/mock/`。朝のタスクの指示は `desk/sync/world-brief-v2.md`（2026-11-05 に入れ替え。前の指示は `world-brief-v1.md`）。要件定義: https://claude.ai/artifact/PKehDPtevXUxtbXryg4KCz
 - 定期タスク: `desk/sync/SCHEDULED_TASKS.md`。Mac の Claude スケジュールタスクが `desk/sync.py put` で `desk/data/` に書く。Claude アプリが閉じていた間の分は、次に開いたときに動く。
 - 削除は `deleted:true` の論理削除。
 - タスクの状態は `notyet` / `doing` / `done` / `paused`（一旦中止）/ `archived`。一旦中止とアーカイブはタスク画面の見出し下の小さな入口から見る。

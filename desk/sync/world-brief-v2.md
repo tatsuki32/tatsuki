@@ -1,7 +1,7 @@
 # `desk-world-brief` の新しい指示（読む画面つきの号）
 
-まだ定期タスクには入れていません。ページ（一覧と読む画面）が Mac の Desk に入ってから、
-`~/.claude/scheduled-tasks/desk-world-brief/SKILL.md` の本文をこの下の指示に置き換えます。
+2026-11-05 に定期タスクへ入れました（次の実行は 11月6日の朝）。定期タスクの本文には、この指示の最後に号の形（JSON の見本）も付けてあります。
+元に戻すときは `desk/sync/world-brief-v1.md` の指示に置き換えます。
 号の形は `desk/sync/WORLD_EDITION.md`、見本は `desk/mock/world-edition-sample.json`。
 
 ---
