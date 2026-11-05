@@ -2,7 +2,7 @@
   "no": "13",
   "name": "第二の脳",
   "oneline": "やりとりの顧客メモと、請求・入金の照合。お金の操作は承認制",
-  "status": "blocked",
+  "status": "stopped",
   "usage": [
     "顧客メモを作る：python3 lifeos/13-brain/brain.py contact add --name 名前 --addr 宛先",
     "請求と入金を照合する：python3 lifeos/13-brain/brain.py reconcile --invoices 請求.csv --payments 入金.csv",
@@ -33,5 +33,6 @@
     }
   ],
   "commands": [],
-  "updated": "2026-11-04"
+  "updated": "2026-11-05",
+  "stoppedNote": "2026-11-05 に本人の判断で一旦停止。戻すときは status を元に戻す。コードは残している。"
 }

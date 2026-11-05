@@ -19,18 +19,12 @@
     "/save と打ち、「保存しました」と出ることを見る",
     "変更の履歴は python3 lifeos/03-task/cli.py history で見る"
   ],
-  "blockers": [
-    {
-      "what": "Telegram からの追加",
-      "why": "ボットのトークンがまだ無いので、本番の Telegram では試せていません。/task /next /done /save は使えます。",
-      "needs": "BotFather でボットを作り、トークンを secrets/telegram.json か環境変数に入れる。ボットを Mac とクラウドのどちらに置くかも決める。"
-    }
-  ],
+  "blockers": [],
   "commands": [
     "/task",
     "/next",
     "/done",
     "/save"
   ],
-  "updated": "2026-11-04"
+  "updated": "2026-11-05"
 }

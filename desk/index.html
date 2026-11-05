@@ -977,7 +977,7 @@ h1 .inedit{font-size:var(--t4);font-weight:700}
 
 <script>
 /* the menu in four groups (proximity): today / what came in / reading / writing and looking back */
-const NAVGROUPS=[["today","今日"],["in","届いたもの"],["read","読む"],["write","書く・振り返る"]];
+const NAVGROUPS=[["today","今日"],["body","身体"],["in","届いたもの"],["read","読む"],["write","書く・振り返る"]];
 const VIEWS=[{id:"home",e:"🏠",label:"ホーム",g:"today"},{id:"tasks",e:"🗂️",label:"タスク",g:"today"},{id:"calendar",e:"📅",label:"カレンダー",g:"today"},{id:"habits",e:"🌱",label:"習慣",g:"today"},
   {id:"wins",e:"✨",label:"できたこと",g:"in"},{id:"presents",e:"🎁",label:"プレゼント",g:"in"},
   {id:"news",e:"🌍",label:"世界ニュース",g:"read"},{id:"watch",e:"🗺️",label:"マイナー国",g:"read"},{id:"heritage",e:"🏛️",label:"毎日世界遺産",g:"read"},
@@ -1007,7 +1007,7 @@ function toast(t){const el=document.createElement("div");el.className="toast";el
 /* ---------- store: claude db online, browser storage on the PC ---------- */
 /* Notes are never hard-deleted: deleted:true + updatedAt lets the hourly sync merge the Mac and the cloud safely. */
 const LOCALAPI=/^https?:$/.test(location.protocol)&&/^(localhost|127\.0\.0\.1)$/.test(location.hostname);
-if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="habits")+1,0,{id:"body",e:"🫀",label:"体",g:"today"}); // photos and health records stay on this Mac
+if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="habits")+1,0,{id:"body",e:"🫀",label:"まとめ",g:"body"},{id:"bodysleep",e:"😴",label:"睡眠",g:"body"},{id:"bodymeal",e:"🍽️",label:"食事・カロリー",g:"body"},{id:"bodyweight",e:"⚖️",label:"体重",g:"body"},{id:"bodysteps",e:"👟",label:"歩数",g:"body"},{id:"bodyworkout",e:"💪",label:"筋トレ",g:"body"},{id:"bodyhabits",e:"📚",label:"学習と画面時間",g:"body"}); // photos and health records stay on this Mac
 if(LOCALAPI) VIEWS.splice(4,0,{id:"focus",e:"🎯",label:"集中",g:"today"}); // blocks apps on this Mac, so the Mac version only
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="memolink")+1,0,{id:"money",e:"💰",label:"お金",g:"write"}); // statements stay on this Mac
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="money")+1,0,{id:"screentime",e:"📱",label:"スクリーンタイム",g:"write"});
@@ -1587,8 +1587,8 @@ const calLink=(title,ms)=>"https://calendar.google.com/calendar/render?action=TE
 async function bodyLoad(force){
   if(!LOCALAPI||S.bodyBusy||(!force&&S.body&&Date.now()-(S.bodyAt||0)<30000))return;
   S.bodyBusy=true;S.bodyAt=Date.now();
-  try{const v=await api("GET","/api/body"),same=JSON.stringify(v)===JSON.stringify(S.body);S.body=v;S.bodyErr=false;S.bodyBusy=false;if(!same&&["body","home"].includes(viewId()))render()}
-  catch(e){const was=S.bodyErr;S.bodyErr=true;S.bodyBusy=false;if(!was&&viewId()==="body")render()}
+  try{const v=await api("GET","/api/body"),same=JSON.stringify(v)===JSON.stringify(S.body);S.body=v;S.bodyErr=false;S.bodyBusy=false;if(!same&&(viewId().startsWith("body")||viewId()==="home"))render()}
+  catch(e){const was=S.bodyErr;S.bodyErr=true;S.bodyBusy=false;if(!was&&viewId().startsWith("body"))render()}
 }
 const bdNum=v=>v==null?"–":Math.abs(v)>=1000?Math.round(v).toLocaleString("ja-JP"):String(Math.round(v*100)/100);
 const bdSigned=v=>v==null?"–":(v>0?"+":"")+bdNum(v);
@@ -1612,7 +1612,7 @@ function bdReview(rec,d){
     ${shown.map(x=>`<label class="${(rec.doubts||[]).includes(x)?"doubt":""}">${esc(k.values[x].label)}${k.values[x].unit?`（${esc(k.values[x].unit)}）`:""}<input ${k.values[x].text?"":'type="number" step="any" inputmode="decimal"'} data-bdval="${esc(x)}" value="${esc(rec.values[x]??"")}"></label>`).join("")}
     <div class="bdacts"><button class="btn primary sm" data-bdact="confirm">確定する</button><button class="btn sm" type="button" data-bdact="discard">捨てる</button></div></form></article>`;
 }
-const BDTABS=[["overview","概要"],["weight","体重"],["meal","食事"],["sleep","睡眠"],["workout","筋トレ"],["activity","歩数"],["habits","スクリーンタイムと学習"]];
+const BDVIEW={overview:"body",weight:"bodyweight",meal:"bodymeal",sleep:"bodysleep",workout:"bodyworkout",activity:"bodysteps",habits:"bodyhabits"};
 const BDGROUP={weight:"body",meal:"meal",sleep:"sleep",workout:"workout",activity:"activity",habits:"habits"};
 const BDWORD={ok:"目標どおり",high:"目標より多い",low:"目標より少ない"};
 const BDTREND={up:"増えている",down:"減っている",flat:"横ばい"};
@@ -1693,15 +1693,14 @@ function bdOverview(d){
   return `<div class="bdcards">${cards}</div>${recent}`;
 }
 function bodyView(){
-  const d=S.body,head=`<header class="head"><div><p class="eyebrow">写真と文字から記録</p><h1>体</h1></div></header>`;
+  const d=S.body,head=`<header class="head"><div><p class="eyebrow">身体</p><h1>${esc(viewLabel(viewId()))}</h1></div></header>`;
   if(!d)return head+`<div class="card empty"><b>${S.bodyErr?"読み込めませんでした":"読み込んでいます"}</b>${S.bodyErr?"Desk のサーバーを再起動すると直ることがあります。":""}</div>`;
-  const w=S.bodyWin||"7",tab=S.bodyTab||"overview";
+  const w=S.bodyWin||"7",tab=Object.keys(BDVIEW).find(k=>BDVIEW[k]===viewId())||"overview";
   const info=[d.waiting?`読み取り待ち ${d.waiting}件`:"",d.failed?`読めなかったもの ${d.failed}件`:"",!d.keyReady?"API キーが未登録なので、読み取りは止まっています":""].filter(Boolean).join(" · ");
-  const tabs=`<div class="mtabs" role="tablist" aria-label="体の画面">${BDTABS.map(([k,l])=>`<button role="tab" class="mtab" data-bdtab="${k}" aria-selected="${k===tab}">${esc(l)}</button>`).join("")}</div>`;
   const review=d.review.length?`<section class="bdsec"><h2>要確認 <span class="sub">${d.review.length}件</span></h2>${d.review.map(r=>bdReview(r,d)).join("")}</section>`:"";
   const send=`<details class="bdhelp"><summary>送り先と費用</summary><p>Telegram のボットに写真か文字を送るか、Drive の Daily_Photos_Inbox に写真を置きます。キャプションに一言書くと、読み取りの手がかりになります。古い写真は「11/3 の夕食」のように日付も書いてください。Telegram の写真は最大24時間まで Telegram 側に残り、Drive の取り込みは Claude アプリが開いている間に毎時動きます。</p><p class="sub">今月 ${d.usage.photos}件 · 約 $${Number(d.usage.usd).toFixed(2)} · モデル ${esc(d.model)}</p><form id="bdLimit" class="bdtarget"><label>今月の上限（USD）<input type="number" min="0" step="1" id="bdLimitV" value="${d.limit??""}" placeholder="なし"></label><button class="btn sm">保存</button></form></details>`;
   const panel=tab==="overview"?bdOverview(d):tab==="meal"?bdMealTab(d,w):tab==="sleep"?bdGroupTab(d,"sleep",w,"total_min",bdSleepExtra(d),"睡眠のスクショか「7時間寝た」のような文字を送ると、ここに並びます。"):tab==="workout"?bdGroupTab(d,"workout",w,"workout_min",bdWorkoutExtra(d),"アプリの画面か「ベンチ60kg 10回3セット」のような文字を送ると、ここに並びます。"):tab==="habits"?bdGroupTab(d,"habits",w,"screen_min",bdHabitsExtra(d),"スクリーンタイムや学習アプリの画面を送ると、ここに並びます。"):bdGroupTab(d,BDGROUP[tab],w,tab==="activity"?"steps":"weight_kg","","体重計のアプリの画面か「体重65.2」のような文字を送ると、ここに並びます。");
-  return head+`<div class="money bd">${tabs}${info?`<p class="sub" role="status">${esc(info)}</p>`:""}${review}${panel}${send}</div>`;
+  return head+`<div class="money bd">${info?`<p class="sub" role="status">${esc(info)}</p>`:""}${review}${panel}${send}</div>`;
 }
 function bdWireTips(){
   const tip=document.getElementById("mTip")||Object.assign(document.body.appendChild(document.createElement("div")),{id:"mTip",className:"mtip"});
@@ -1714,7 +1713,7 @@ function bdWireTips(){
 function wireBody(){
   const put=async(path,rec,msg)=>{try{await api("PUT",path,rec);if(msg)toast(msg);bodyLoad(true);return true}catch(e){toast("保存できませんでした。値を確かめてください");return false}};
   document.querySelectorAll("[data-bdwin]").forEach(b=>b.onclick=()=>{S.bodyWin=b.dataset.bdwin;render()});
-  document.querySelectorAll("[data-bdtab]").forEach(b=>b.onclick=()=>{S.bodyTab=b.dataset.bdtab;S.bodyPick=null;S.bodyOpen=null;render();window.scrollTo(0,0)});
+  document.querySelectorAll("[data-bdtab]").forEach(b=>b.onclick=()=>{S.bodyPick=null;S.bodyOpen=null;location.hash=BDVIEW[b.dataset.bdtab];window.scrollTo(0,0)});
   document.querySelectorAll("[data-bdday]").forEach(b=>b.onclick=()=>{if(b.dataset.bdday){S.bodyDay=b.dataset.bdday;render()}});
   bdWireTips();
   document.querySelectorAll("[data-bdreopen]").forEach(b=>b.onclick=()=>put("/api/body/records/"+encodeURIComponent(b.dataset.bdreopen),{action:"reopen"},"要確認に移しました"));
@@ -3257,7 +3256,7 @@ function render(){
   if(viewId()==="followups"){fuLoad();$("#view").innerHTML=searchResults()+fuView();wire();wireFu();return}
   if(viewId()==="money"){moneyLoad();$("#view").innerHTML=searchResults()+moneyView();wire();wireMoney();return}
   if(viewId()==="screentime"){stLoad();$("#view").innerHTML=searchResults()+stView();wire();wireSt();return}
-  if(viewId()==="body"){bodyLoad();$("#view").innerHTML=searchResults()+bodyView();wire();wireBody();return}
+  if(viewId().startsWith("body")){bodyLoad();$("#view").innerHTML=searchResults()+bodyView();wire();wireBody();return}
   if(viewId()==="netspeed"){nsLoad();$("#view").innerHTML=searchResults()+nsView();wire();wireNs();return}
   const v=viewId();
   $("#view").innerHTML=searchResults()+(v==="focus"?focusView():v==="notes"?notesView():v==="watch"?watch():v==="heritage"?heritageView():v==="tasks"?tasks():v==="calendar"?calendar():v==="news"?news():v==="wins"?winsView():v==="presents"?presentsView():v==="habits"?habitsView():v==="log"?log():v==="tools"?toolsView():home());

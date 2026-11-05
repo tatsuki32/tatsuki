@@ -29,11 +29,6 @@
       "needs": "一度 Claude Code に MORNING_RUN.md の手順を実行してもらい、下書きを確かめる。よければ INTEGRATION.md のとおり毎朝のスケジュールタスクに登録する"
     },
     {
-      "what": "Telegram の接続",
-      "why": "ボットのトークンがまだなので、14日の問いは届かず outbox に残ります。",
-      "needs": "Telegram のボットを作り、トークンとチャット ID を secrets/telegram.json に入れる（01番・03番のタスクと同じ作業）"
-    },
-    {
       "what": "予定と「こちらが返すもの」の元データ",
       "why": "Mac に calendar.js と mail.js が見当たりません。届くまで一覧には「まだ届いていません」と出ます。",
       "needs": "Mac の定期タスクが動いているか確かめる（desk/sync/SCHEDULED_TASKS.md）"
@@ -52,5 +47,5 @@
   "commands": [
     "/followup"
   ],
-  "updated": "2026-11-04"
+  "updated": "2026-11-05"
 }

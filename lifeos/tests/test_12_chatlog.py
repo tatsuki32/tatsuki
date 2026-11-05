@@ -1,3 +1,11 @@
+import json as _json
+import os as _os
+import unittest as _unittest
+
+with open(_os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), "12-chatlog", "tool.json"), encoding="utf-8") as _f:
+    if _json.load(_f).get("status") == "stopped":  # the owner stopped this tool; its tests come back with it
+        raise _unittest.SkipTest("12-chatlog は停止中")
+
 import contextlib
 import io
 import json

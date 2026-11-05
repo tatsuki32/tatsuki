@@ -2,7 +2,7 @@
   "no": "08",
   "name": "2分片付け",
   "oneline": "片付けを2分×場所ごとに回す",
-  "status": "blocked",
+  "status": "stopped",
   "usage": [
     "「片付け」と送ると、今日の2分の場所が1つ出る",
     "終わったら「済」と送る。もう1つやるなら、また「片付け」と送る",
@@ -20,13 +20,8 @@
     "どの返事にも、散らかり度や比較が出ないことを見る",
     "Telegram がつながったら、ボットに「片付け」と「済」を送って同じことを見る"
   ],
-  "blockers": [
-    {
-      "what": "Telegram のボット",
-      "why": "トークンがまだないので、Telegram からは使えません。ターミナルでは動きます。",
-      "needs": "BotFather でボットを作り、トークンとチャット ID を desk/data/lifeos/secrets/telegram.json に入れて、python3 lifeos/bot/run.py を起動する"
-    }
-  ],
+  "blockers": [],
   "commands": [],
-  "updated": "2026-11-04"
+  "updated": "2026-11-05",
+  "stoppedNote": "2026-11-05 に本人の判断で一旦停止。戻すときは status を元に戻す。コードは残している。"
 }
