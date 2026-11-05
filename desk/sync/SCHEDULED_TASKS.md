@@ -27,7 +27,7 @@ python3 desk/write_feed.py gtasks <raw.json>                 # Google タスク�
 | `desk-task-clarify` | 毎晩 2:30 | 未整理のタスクを30件まで、具体的なタイトル・まず5分・手順・出典・頼む文面に整える（`desk/task_clarify.py`。送信しない） | `tasks` の `clear` |
 | `desk-task-estimate` | 毎日 6:40 | タスクにかかる時間の目安と時期の案（`desk/task_estimate.py`。本人の選択は変えない） | `tasks` の `estAi`・`planAi` |
 | `desk-world-brief` | 毎日 7:17 | 世界ニュース | `editions` |
-| `desk-morning-mail` | 毎日 7:22 | Gmail の確認と返信の下書き（送信しない） | `days` |
+| `desk-morning-mail` | 毎日 3:00・16:00 | Gmail と WhatsApp の個人トークの確認と返信案（`desk/whatsapp_sync.py`。送信しない） | `days`・`tasks`・`desk/data/whatsapp/` |
 | `desk-minor-watch` | 火・金 7:33 | マイナー国ウォッチ | `watch` |
 | `desk-claude-daily-report` | 毎日 7:40 | 前日の Claude の作業レポート | `reports` |
 | `desk-money-upcoming` | 毎日 7:50 | カレンダーと予約メールから今後の支出（読むだけ。本文は残さない） | `desk/data/wise/upcoming.json` |

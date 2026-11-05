@@ -8,6 +8,8 @@ The Mac's desk/data/ is the only source. The scheduled tasks (sync/SCHEDULED_TAS
   python3 sync.py get COLLECTION DOC_ID            -> prints one doc, or {} when there is none
   python3 sync.py build                            -> rewrites the page's *.js from the docs
   python3 sync.py mail DAY KEY                     -> prints the draft of one mail for /mail-send
+  python3 sync.py mail-add DAY FILE.json           -> adds a run's mail to the day's doc; what an earlier run found stays
+  python3 sync.py mail-replied DAY KEY             -> you answered in Gmail: closes the item and its task
   python3 sync.py merge REMOTE.json                -> imports an export: {"tasks": [{"id": ..., ...fields}], "days": [...], ...}
 
 Rule for memos / dues / tasks / prompts / notes / habits / lifemap / wins: per id, the record with the larger updatedAt wins;
@@ -22,6 +24,7 @@ import urllib.request
 ROOT = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(ROOT, "data")
 sys.path.insert(0, ROOT)
+sys.path.insert(0, os.path.dirname(ROOT))
 from server import FEEDS, LOCK, doc_path, feed_docs, followup_core, lifeos_tools, load, put_doc, rebuild_feed, save, upsert  # noqa: E402
 
 TWO_WAY = ("memos", "dues", "tasks", "prompts", "notes", "habits", "lifemap", "wins")
@@ -102,6 +105,56 @@ def cmd_merge(remote_path):
     print(json.dumps({"write": write}, ensure_ascii=False, indent=1))
 
 
+def mail_ref(item):
+    return item.get("gmail_url") or item.get("key")
+
+
+def merge_mail(old, new):
+    """Today's doc after one more run. An item keeps its status and draft; the newest text wins."""
+    before = {mail_ref(i): i for i in old.get("items") or []}
+    items = []
+    for i in new.get("items") or []:
+        p = before.pop(mail_ref(i), None)
+        if p:
+            if (p.get("status") or "pending") != "pending":
+                i["status"] = p["status"]
+            if p.get("draft") and not i.get("draft"):
+                i["draft"] = p["draft"]
+        items.append(i)
+    return {**new, "items": list(before.values()) + items}
+
+
+def cmd_mail_add(day, path):
+    with open(path, encoding="utf-8") as f:
+        new = json.load(f)
+    old = next((d for d in feed_docs("days") if d.get("id") == day), {})
+    put_doc("days", day, merge_mail(old.get("data") or old, new))
+    rebuild_feed("days")
+    print("ok")
+
+
+def cmd_mail_replied(day, key):
+    from kickoff import due_doc_id
+    from lifeos.lib import paths, tasks
+    d = next((x for x in feed_docs("days") if x.get("id") == day), None)
+    doc = (d.get("data") or d) if d else {}
+    item = next((i for i in doc.get("items") or [] if i.get("key") == key), None)
+    if not item:
+        sys.exit("not found")
+    item["status"] = "sent"
+    put_doc("days", day, {k: v for k, v in doc.items() if k != "id"})
+    rebuild_feed("days")
+    uid = "mail:" + (item.get("gmail_url") or f"{day}/{key}")
+    tid = "t" + due_doc_id(uid)
+    cur = next((t for t in tasks._load() if t["id"] == tid), None)
+    if not cur or cur.get("status") in tasks.OPEN:
+        ms = paths.now_ms()
+        base = cur or {"id": tid, "title": item.get("subject_ja") or item.get("subject") or "（件名なし）", "source": "mail",
+                       "sourceRef": uid, "due": None, "note": "", "createdAt": ms, "deleted": False}
+        tasks._put({**base, "status": "done", "updatedAt": ms})
+    print("ok")
+
+
 def cmd_build():
     for col in FEEDS:
         rebuild_feed(col)
@@ -171,6 +224,10 @@ if __name__ == "__main__":
         cmd_get(args[1], args[2])
     elif args[:1] == ["mail"] and len(args) == 3:
         cmd_mail(args[1], args[2])
+    elif args[:1] == ["mail-add"] and len(args) == 3:
+        cmd_mail_add(args[1], args[2])
+    elif args[:1] == ["mail-replied"] and len(args) == 3:
+        cmd_mail_replied(args[1], args[2])
     elif args == ["build"]:
         cmd_build()
     else:

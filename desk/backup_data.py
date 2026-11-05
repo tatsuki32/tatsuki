@@ -15,7 +15,7 @@ import time
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(ROOT, "data")
-IGNORE = "*.lock\n.*.tmp\n.published\n.DS_Store\n__pycache__/\nwise/\n"  # wise/: bank statements stay on this Mac, even out of the private copy
+IGNORE = "*.lock\n.*.tmp\n.published\n.DS_Store\n__pycache__/\nwise/\nwhatsapp/\n"  # wise/, whatsapp/: statements and messages stay on this Mac, even out of the private copy
 BRANCH = "main"
 # things that must not leave this Mac even privately: keys and passwords in the clear
 SECRETS = re.compile(

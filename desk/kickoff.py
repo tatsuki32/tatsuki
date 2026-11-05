@@ -134,7 +134,9 @@ def mail_tasks(dues, stored):
             due = to_ms(manual) or to_ms(i.get("dueAt")) or base + 3 * DAY
             tid = "t" + due_doc_id(uid)
             st = stored.get(tid, {}).get("status", "notyet")
-            out.append({"id": tid, "title": i.get("subject_ja") or i.get("subject") or "（件名なし）", "source": "mail",
+            who = re.sub(r"\s*[<(（].*$", "", i.get("from") or "").strip()
+            title = "連絡返信：" + who if i.get("priority") == "Reply drafted" and who else i.get("subject_ja") or i.get("subject") or "（件名なし）"
+            out.append({"id": tid, "title": title, "source": "mail",
                         "sourceRef": uid, "status": st, "due": due, "kind": "事務", "from": i.get("from") or ""})
     return [x for x in out if x["sourceRef"] not in closed and x["status"] in OPEN]
 

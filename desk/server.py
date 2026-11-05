@@ -168,6 +168,15 @@ def set_tool_url(tool_id, url):
     return {"id": tool_id, **rec}
 
 
+def whatsapp_view():
+    """Drafts and messages of the open WhatsApp tasks (desk/whatsapp_sync.py writes them; the page only reads)."""
+    try:
+        with open(os.path.join(DATA, "whatsapp", "items.json"), encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
+
+
 def keep_clear(old, new):
     """A page opened before the night's run saves the whole task: it must not erase what the run wrote."""
     cur = old.get("clear")
@@ -546,6 +555,8 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/followups":
             core = followup_core()
             return self.send(200, core.desk_view()) if core else self.send(404, {"error": "not found"})
+        if path == "/api/whatsapp":
+            return self.send(200, whatsapp_view())
         if path == "/api/wise":
             return self.send(*wise_view(wise_query(self.path)))
         if path == "/api/wise/world":

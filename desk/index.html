@@ -742,6 +742,7 @@ if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="memolink")+1,0,{id:"money",
 async function api(method,path,body){const r=await fetch(path,{method,headers:{"Content-Type":"application/json"},body:body?JSON.stringify(body):undefined});if(!r.ok)throw new Error(r.status);return r.json()}
 async function loadApiMemos(){try{
   const [memos,dues,tasks,prompts,notes,habits,wins]=await Promise.all([api("GET","/api/memos"),api("GET","/api/dues"),api("GET","/api/tasks"),api("GET","/api/prompts").catch(()=>[]),api("GET","/api/notes").catch(()=>[]),api("GET","/api/habits").catch(()=>[]),api("GET","/api/wins").catch(()=>[])]);
+  S.wa=await api("GET","/api/whatsapp").catch(()=>({}));
   S.habits=habits.filter(h=>!h.deleted);S.wins=wins.filter(w=>!w.deleted);S.memos=memos.filter(m=>!m.deleted);S.dues=duesById(dues);S.tasks=tasks.filter(t=>!t.deleted);S.prompts=promptsById(prompts);S.wnotes=notes.filter(n=>!n.deleted);render()}catch(e){toast("Desk サーバーにつながりません。起動していますか？")}}
 const promptsById=list=>Object.fromEntries(list.filter(p=>p&&p.id&&!p.deleted).map(p=>[p.id,p]));
 const duesById=list=>Object.fromEntries(list.filter(v=>v&&v.uid).map(v=>[v.uid,v]));
@@ -814,7 +815,8 @@ function deadlines(){
     const uid=mailUid(i,d.id);
     if((i.status||"pending")!=="pending"){closed.add(uid);return}
     if(byUid.has(uid)) return;
-    byUid.set(uid,{uid,kind:"mail",title:i.subject_ja||i.subject||"（件名なし）",sub:i.from||"",sum:i.summary||"",day:d.id,key:i.key,
+    const who=(i.from||"").replace(/\s*[<(（].*$/,"").trim();
+    byUid.set(uid,{uid,kind:"mail",title:i.priority==="Reply drafted"&&who?"連絡返信："+who:i.subject_ja||i.subject||"（件名なし）",sub:i.from||"",sum:i.summary||"",day:d.id,key:i.key,
       base:toMs(i.receivedAt)??parseReceived(i.received,d.id),auto:toMs(i.dueAt),manual:toMs(S.dues[uid]?.at)});
   }));
   const list=[...byUid.values()].filter(x=>!closed.has(x.uid));
@@ -912,8 +914,8 @@ const toLocalInput=ms=>{const d=new Date(ms);return `${d.getFullYear()}-${pad(d.
    A task's due date is the real one; like mail, its countdown runs to it. */
 const TSTATUS=[["notyet","未着手"],["doing","進行中"],["done","完了"],["paused","一旦中止"],["archived","アーカイブ"]];
 const TCOLS=["notyet","doing","done"], TSHELF=["paused","archived"], TOPEN=new Set(["notyet","doing"]);
-const TSRC={manual:["✍️","手入力"],memo:["📝","メモから"],mail:["✉️","メールから"],calendar:["📅","カレンダーから"],gtasks:["☑️","Googleタスク"],claude:["🤖","Claude"],daily:["☀️","毎日"]};
-const LINKED=new Set(["mail","calendar","gtasks","claude","daily"]); // these come from elsewhere: their title and due date live at the source
+const TSRC={manual:["✍️","手入力"],memo:["📝","メモから"],mail:["✉️","メールから"],whatsapp:["💬","WhatsApp"],calendar:["📅","カレンダーから"],gtasks:["☑️","Googleタスク"],claude:["🤖","Claude"],daily:["☀️","毎日"]};
+const LINKED=new Set(["mail","whatsapp","calendar","gtasks","claude","daily"]); // these come from elsewhere: their title and due date live at the source
 const tLabel=k=>(TSTATUS.find(s=>s[0]===k)||[k,k])[1];
 const mailTaskId=uid=>"t"+dueDocId(uid);
 const newTaskId=()=>"t"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
@@ -943,13 +945,13 @@ function boardTasks(mails){
   const byUid=Object.fromEntries(mails.map(x=>[x.uid,x])), linked=Object.fromEntries(linkedTasks().map(x=>[x.id,x]));
   const out=S.tasks.filter(t=>!t.deleted).map(t=>{
     const x=t.source==="mail"?byUid[t.sourceRef]:null, l=linked[t.id];
-    if(x) return {...t,mail:x,due:x.due,deadline:x.deadline};
+    if(x) return {...t,mail:x,due:x.due,deadline:x.deadline,planDate:t.planDate||x.day};
     // completed in Google Tasks wins over an open status on the desk
     if(l) return withDeadline({...l,...t,due:l.due,url:l.url,gdone:l.gdone,status:l.gdone&&TOPEN.has(t.status)?"done":t.status});
     return withDeadline(t);
   });
   const stored=new Set(out.map(t=>t.id));
-  mails.forEach(x=>{const id=mailTaskId(x.uid);if(!stored.has(id))out.push({id,title:x.title,status:"notyet",source:"mail",sourceRef:x.uid,mail:x,due:x.due,deadline:x.deadline,createdAt:x.base})});
+  mails.forEach(x=>{const id=mailTaskId(x.uid);if(!stored.has(id))out.push({id,title:x.title,status:"notyet",source:"mail",sourceRef:x.uid,mail:x,due:x.due,deadline:x.deadline,planDate:x.day,createdAt:x.base})});
   Object.values(linked).forEach(l=>{if(!stored.has(l.id))out.push(withDeadline({...l,status:l.gdone?"done":"notyet"}))});
   return out;
 }
@@ -1389,12 +1391,28 @@ function mailBlock(t){
   if(!i) return `<p class="hint">✉️ ${esc(t.mail?.sub||"メールから")}${t.due!=null?" · 期日 "+esc(fmtDue(t.due)):""}</p>`;
   return `<div class="mailbox">
     <p class="due">${esc(i.from||"")}${i.received?" · "+esc(i.received):""}${t.due!=null?" · 期日 "+esc(fmtDue(t.due))+"（締切パネルで変更）":""}</p>
-    ${i.subject_ja&&i.subject&&i.subject_ja!==i.subject?`<p class="due">原文の件名：${esc(i.subject)}</p>`:""}
+    ${i.subject_ja||i.subject?`<p class="due">件名：${esc(i.subject_ja||i.subject)}</p>`:""}${i.subject_ja&&i.subject&&i.subject_ja!==i.subject?`<p class="due">原文の件名：${esc(i.subject)}</p>`:""}
     ${i.summary?`<p class="msum">${esc(i.summary)}</p>`:""}
     ${i.action?`<div class="todo">${esc(i.action)}</div>`:""}
     ${dr?`<details class="draft"><summary><span>返信の下書き</span><span class="sub">Gmail の下書きに保存済み</span></summary><div class="meta">宛先：${esc((dr.to||[]).join(", "))}<br>件名：${esc(dr.subject)}</div>${dr.body_ja&&dr.body_ja!==dr.body?`<pre>${esc(dr.body_ja)}</pre><details class="sent-as"><summary>実際に送られる文面（原文）</summary><pre>${esc(dr.body)}</pre></details>`:`<pre>${esc(dr.body)}</pre>`}</details>`:""}
     <div class="row" id="mOps">${mailOps(t,i)}</div><p class="msg" id="mMsg" hidden></p>
   </div>`;
+}
+function waBlock(t){
+  const i=(S.wa||{})[t.id];
+  if(!i) return `<p class="hint">💬 WhatsApp</p>`;
+  const at=i.lastAt?new Date(i.lastAt*1000).toLocaleString("ja-JP",{timeZone:"Asia/Ho_Chi_Minh",month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"}):"";
+  return `<div class="mailbox">
+    <p class="due">${esc(i.name||"")}${i.unknown?" · 登録なし":""}${at?" · "+esc(at):""}</p>
+    ${i.summary?`<p class="msum">${esc(i.summary)}</p>`:""}
+    ${(i.texts||[]).length?`<details class="draft"><summary><span>届いたメッセージ</span></summary><pre>${esc(i.texts.join("\n"))}</pre></details>`:""}
+    ${i.body?`<details class="draft" open><summary><span>返信案</span></summary>${i.body_ja&&i.body_ja!==i.body?`<pre>${esc(i.body_ja)}</pre><details class="sent-as"><summary>送る文面（原文）</summary><pre>${esc(i.body)}</pre></details>`:`<pre>${esc(i.body)}</pre>`}</details>`:i.kind&&i.kind!=="text"?`<p class="hint">${esc(i.kind)}が届いています。中身を読めないので、返信案はありません。</p>`:`<p class="hint">返信案は次の取り込みで作ります。</p>`}
+    <div class="row">${i.body?`<button class="btn primary" id="waCopy">返信案をコピー</button>`:""}<a class="btn" href="${i.phone?"https://wa.me/"+esc(i.phone):"whatsapp://"}" target="_blank" rel="noopener">WhatsApp を開く ↗</a></div>
+  </div>`;
+}
+function wireWa(t){
+  const b=$("#waCopy"), i=(S.wa||{})[t?.id]; if(!b||!i) return;
+  b.onclick=async()=>toast(await copyText(i.body)?"📋 コピーしました。送ったら次の取り込みで完了になります":"コピーできませんでした");
 }
 function wireMail(t,close){
   if(t?.source!=="mail") return;
@@ -1430,7 +1448,7 @@ function openTask(id){
     <div class="top"><h2>🗂️ ${t?"タスク":"新しいタスク"}</h2><button class="ibtn" id="xTask" aria-label="閉じる">✕</button></div>
     <label class="sub" for="tTitle">タイトル</label><input type="text" id="tTitle" value="${esc(taskName(t))}" placeholder="例：FWOに書類を送る" autocomplete="off">
     ${clearBlock(t)}
-    ${t?.source==="daily"&&t.sourceRef==="jobs"?jobsBlock():isMail?mailBlock(t)
+    ${t?.source==="daily"&&t.sourceRef==="jobs"?jobsBlock():isMail?mailBlock(t):t?.source==="whatsapp"?waBlock(t)
       :isLinked?`<p class="hint">${TSRC[t.source][0]} ${TSRC[t.source][1]}${t.due!=null?" · 期日 "+esc(fmtDue(t.due)):""} · 期日とタイトルは元の場所で変更${okUrl(t.url)?` · <a href="${esc(t.url)}" target="_blank" rel="noopener">開く ↗</a>`:""}${t.source==="gtasks"?"<br>「完了」にすると、次の更新で Google タスク側も完了になります。":""}</p>`
       :`<div class="tduein"><div><label class="sub" for="tDue">期日（任意）</label><input type="date" id="tDue" value="${dueParts(t?.due)[0]}"></div><div><label class="sub" for="tDueT">時刻（任意）</label><input type="time" id="tDueT" value="${dueParts(t?.due)[1]}"></div></div><p class="hint" id="tDueHint"></p>`}
     <div class="tduein"><div><label class="sub" for="tPlan">いつやる</label><select id="tPlan">${planSel(t||{},tPeriods())}</select></div><div><label class="sub" for="tEst">かかる時間（分）</label><input type="number" id="tEst" min="1" step="5" inputmode="numeric" value="${t?.estMin??""}" placeholder="${t?.estAi?"目安 "+t.estAi:""}"></div></div>
@@ -1439,6 +1457,7 @@ function openTask(id){
     <div class="row"><button class="btn primary" id="tSave">保存 <kbd>⌘/Ctrl + Enter</kbd></button><button class="btn" id="tCancel">キャンセル</button>${t&&!isLinked?`<button class="btn" id="tDel" style="margin-left:auto;color:var(--red)">削除</button>`:""}</div>
   </div></div>`;
   const ti=$("#tTitle");ti.focus();ti.setSelectionRange(ti.value.length,ti.value.length);
+  wireWa(t);
   const close=()=>{$("#modal").innerHTML=""}, plan0=$("#tPlan").value;
   wireJobs(t);wireMail(t,close);wireClear(t,close);
   const dueIn=$("#tDue"), dueT=$("#tDueT"), dueHint=()=>{$("#tDueHint").textContent=dueT.value?"3日前の同じ時刻にカレンダーへ入ります":""};

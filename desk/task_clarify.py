@@ -19,7 +19,7 @@ from lifeos.lib import tasks  # noqa: E402
 
 HCM = timezone(timedelta(hours=7))
 OPEN = ("notyet", "doing")
-SKIP_SOURCES = ("mail", "daily", "lifeos-19")  # these already say what to do, and carry their own flow (lifeos-19: a new one every day)
+SKIP_SOURCES = ("mail", "whatsapp", "daily", "lifeos-19")  # these already say what to do, and carry their own flow (lifeos-19: a new one every day)
 DEFAULT_LIMIT = 30
 TITLE_MAX, FIRST_MAX, LINE_MAX, ASK_MAX = 80, 120, 200, 500
 MAX_STEPS, MAX_SOURCES, MAX_OPEN_QUESTIONS = 10, 5, 2
