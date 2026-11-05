@@ -244,15 +244,15 @@ def answer(no, choice, day=None):
         if item["state"] == "closed":
             return f"「{name}」は相手から返信が来ています。"
         if choice == "戻す":
-            _end_task(item, "dropped")
+            _end_task(item, "archived")
             item.update(state="waiting", holdUntil=None, askedOn=None, askQueuedOn=None)
             return f"「{name}」を返信待ちに戻しました。"
         if choice == "捨てる":
-            _end_task(item, "dropped")
+            _end_task(item, "archived")
             item.update(state="dropped", holdUntil=None)
             return f"「{name}」の催促をやめました。Gmail の下書きは消していません。元に戻すなら：催促 戻す {no}"
         if choice == "保留":
-            _end_task(item, "dropped")
+            _end_task(item, "archived")
             until = datetime.strptime(day, "%Y-%m-%d") + timedelta(days=config()["holdDays"])
             item.update(state="held", holdUntil=until.strftime("%Y-%m-%d"))
             return f"「{name}」を保留にしました。{until.month}月{until.day}日にまた聞きます。"

@@ -27,6 +27,8 @@ Tatsuki の個人ダッシュボード。**Mac だけで使う**（2026-11-04 �
 - データの保管: `desk/data/` は独立した Git リポジトリで、`desk/backup_data.py`（launchd、15分ごと）が非公開リポジトリへ送る。キーらしい文字列があれば送らずに止まる。公開リポジトリには入れない。
 - 定期タスク: `desk/sync/SCHEDULED_TASKS.md`。Mac の Claude スケジュールタスクが `desk/sync.py put` で `desk/data/` に書く。Claude アプリが閉じていた間の分は、次に開いたときに動く。
 - 削除は `deleted:true` の論理削除。
+- タスクの状態は `notyet` / `doing` / `done` / `paused`（一旦中止）/ `archived`。一旦中止とアーカイブはタスク画面の見出し下の小さな入口から見る。
+- タスクをカレンダーへ（`desk/task_calendar.py`、毎時の定期タスク）：未着手で時刻つきの期日のものを、3日前の同じ時刻に primary カレンダーへ入れる（灰色・先頭に ☑️・空き時間・通知なし）。一方向。進行中は残す。完了・一旦中止・アーカイブ・削除で消す。日付だけの期日は 23:59（ホーチミン）で持ち、入れない。☑️ の予定は Desk のカレンダーに取り込まない。対応表は `desk/data/calendar-sync.json`。
 - メール送信は Desk からしない。タスク詳細の「Claude に送信を頼む」が `/mail-send` を Terminal で始め、Claude が会話で承認を得てから送る。
 - Claude Code のコマンド（`.claude/commands/`）：`/morning-kickoff`・`/begin`・`/kickoff`（Mac 用）、`/recap`（文脈要約。標準の `/resume` と別）、`/tsuzuki`（続きを3行で出す）・`/split`（15分以内に分けて Desk のタスクに足す）、`/rsd`、`/sync`・`/learn`・`/knowledge`、`/where`・`/lowenergy`（Life OS 16。Mac 用）、`/mail-send`（Desk から起動するメール送信）、`/money-review`（お金の助言）。毎回守るルールは `.claude/rules/`。
 - コミット前フック `.githooks/pre-commit`（`core.hooksPath`。SessionStart と setup-mac.sh で有効化）。実名などの禁止語は `tools/banned-words.local.txt`（git に入れない）。公開前チェック：`npm run validate-writing <file>`。

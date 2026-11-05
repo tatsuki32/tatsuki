@@ -19,7 +19,7 @@ from server import put_doc, rebuild_feed  # noqa: E402
 def calendar(raw):
     out = []
     for e in raw.get("events", raw.get("items", [])):
-        if e.get("status") == "cancelled":
+        if e.get("status") == "cancelled" or (e.get("summary") or "").startswith("☑️"):  # ☑️: Desk's own tasks (task_calendar.py)
             continue
         s, en = e.get("start", {}), e.get("end", {})
         all_day = "date" in s and "dateTime" not in s

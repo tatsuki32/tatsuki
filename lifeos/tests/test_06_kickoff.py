@@ -53,7 +53,7 @@ class TestStale(Base):
     def test_doing_counts_closed_and_deleted_do_not(self):
         self.task("進行中", 9, status="doing")
         self.task("済み", 9, status="done")
-        self.task("やめた", 9, status="dropped")
+        self.task("やめた", 9, status="archived")
         self.task("消した", 9, deleted=True)
         self.assertEqual([s["title"] for s in self.core.stale(TODAY)], ["進行中"])
 

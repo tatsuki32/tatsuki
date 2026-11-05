@@ -16,7 +16,7 @@ from contextlib import contextmanager
 
 from lifeos.lib import paths
 
-STATUSES = ("notyet", "doing", "done", "archived", "dropped")
+STATUSES = ("notyet", "doing", "done", "paused", "archived")
 OPEN = ("notyet", "doing")
 # desk/index.html drops every other field the next time the task is edited there
 FIELDS = ("title", "status", "source", "sourceRef", "due", "note", "createdAt", "deleted")
