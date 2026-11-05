@@ -29,6 +29,7 @@ import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, unquote, urlsplit
 
+import gmail_clean
 import lifelog
 import netspeed
 import screentime_sync
@@ -663,6 +664,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, whatsapp_view())
         if path == "/api/netspeed":
             return self.send(200, netspeed.view())
+        if path == "/api/mailclean":
+            return self.send(200, gmail_clean.view())
         if path == "/api/body":
             return self.send(200, lifelog.view())
         if path == "/api/receipts":
@@ -752,6 +755,19 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(415, {"error": "json only"})
             netspeed.start()
             return self.send(200, netspeed.view())
+        if method == "POST" and urlsplit(self.path).path.startswith("/api/mailclean/"):
+            # same protection as claude(): Host/Origin checked, and JSON from another origin needs a preflight
+            if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+                return self.send(415, {"error": "json only"})
+            step = urlsplit(self.path).path.rsplit("/", 1)[1]
+            if step == "scan":
+                gmail_clean.scan()
+                return self.send(200, gmail_clean.view())
+            if step == "act":
+                return self.send(*gmail_clean.act(rec.get("id"), rec.get("action"), rec.get("confirm") is True))
+            if step == "undo":
+                return self.send(*gmail_clean.undo(rec.get("id")))
+            return self.send(404, {"error": "not found"})
         if method == "PUT" and urlsplit(self.path).path.startswith(("/api/body/", "/api/receipts/")):
             if not (self.headers.get("Content-Type") or "").startswith("application/json"):
                 return self.send(415, {"error": "json only"})
