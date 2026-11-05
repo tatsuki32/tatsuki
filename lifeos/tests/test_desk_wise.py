@@ -9,6 +9,7 @@ from lifeos.tests.desk_import import server  # noqa: F401  (puts desk/ on the im
 from lifeos.tests.sandbox import SandboxCase
 
 import backup_data  # noqa: E402
+import wise_analysis  # noqa: E402
 import wise_report  # noqa: E402
 import wise_sync  # noqa: E402
 
@@ -287,10 +288,10 @@ class Report(Base):
         self.assertEqual(wise_report.category_of({"title": "Unknown Shop", "type": "CARD_PAYMENT"}), wise_report.UNSORTED)
         self.assertEqual(wise_report.category_of({"title": "Unknown Shop", "type": "CARD_PAYMENT"}, {"unknown shop": "医療"}), "医療")
 
-    def test_category_totals_add_up_to_the_outflow(self):
+    def test_category_totals_add_up_to_the_spending(self):
         v = self.put(act("a", "2026-11-02T01:00:00Z", "Coles", "10.00 USD"), act("b", "2026-11-03T01:00:00Z", "Zed", "5.50 USD"),
                      act("c", "2026-11-04T01:00:00Z", "Me", "7.25 USD", "TRANSFER"), act("d", "2026-11-05T01:00:00Z", "ATM", "20.00 USD", "CASH_WITHDRAWAL"))
-        self.assertEqual(round(sum(c["usd"] for c in v["categories"]), 2), v["usd"]["out"])
+        self.assertEqual(round(sum(c["usd"] for c in v["categories"]), 2), v["spent"])
 
     def test_spending_is_card_and_cash_less_refunds_not_transfers(self):
         v = self.put(act("a", "2026-11-02T01:00:00Z", amount="10.00 USD"), act("b", "2026-11-03T01:00:00Z", amount="<positive>+ 3.00 USD</positive>"),
@@ -381,6 +382,120 @@ class Settings(SandboxCase, Base):
         self.assertEqual(server.wise_settings(["recon", "2026-11"], {"out": "5", "currency": "jpy"})[0], 200)
         self.assertEqual(wise_sync.read_json("recon.json", {})["2026-11"]["currency"], "JPY")
         self.assertEqual(server.wise_settings(["../x"], {})[0], 404)
+
+
+class Analysis(SandboxCase, Base):
+    """Fake people and shops only: real titles stay in desk/data/wise/."""
+
+    def setUp(self):
+        SandboxCase.setUp(self)
+        Base.setUp(self)
+
+    def row(self, id_, date, usd, flow="out", type_="CARD_PAYMENT", title="Shop", currency="USD", value=None, category=None):
+        return {"id": id_, "date": date, "createdOn": date + "T03:00:00Z", "flow": flow, "type": type_, "title": title, "currency": currency,
+                "value": usd if value is None else value, "usd": usd, "kind": None, "category": category or "交通", "status": "COMPLETED", "amountText": f"{usd} USD"}
+
+    def label(self, rows):
+        return wise_analysis.enrich(rows, lambda a, overrides: a["category"])
+
+    def test_a_refund_lowers_spending_and_a_move_is_not_spending(self):
+        rows = self.label([self.row("a", "2026-10-01", 30), self.row("b", "2026-10-02", 5, flow="in"),
+                           self.row("c", "2026-10-03", 100, flow="in", type_="BALANCE_DEPOSIT", title="To JPY")])
+        self.assertEqual(wise_analysis.spent_total(rows), 25)
+        self.assertEqual(rows[2]["kind"], "self")
+
+    def test_a_transfer_stays_unknown_until_someone_says(self):
+        rows = self.label([self.row("a", "2026-10-01", 30, type_="TRANSFER", title="Someone")])
+        self.assertEqual(rows[0]["kind"], "unknown")
+        self.assertEqual(wise_analysis.spent_total(rows), 0)
+
+    def test_the_persons_choice_beats_the_proposal(self):
+        wise_sync.write_json("guess.json", {"flows": {"out:someone": {"kind": "advance", "sure": False, "why": "x"}}})
+        rows = self.label([self.row("a", "2026-10-01", 30, type_="TRANSFER", title="Someone")])
+        self.assertEqual((rows[0]["kind"], rows[0]["kindSure"]), ("advance", False))
+        wise_sync.write_json("flows.json", {"out:someone": "spend"})
+        rows = self.label([self.row("a", "2026-10-01", 30, type_="TRANSFER", title="Someone")])
+        self.assertEqual((rows[0]["kind"], rows[0]["kindSure"]), ("spend", True))
+        self.assertEqual(wise_analysis.spent_total(rows), 30)
+
+    def test_the_chart_series_add_up_to_the_rows(self):
+        rows = self.label([self.row(str(i), f"2026-{m:02d}-{d:02d}", 10 + d) for i, (m, d) in enumerate([(8, 1), (9, 2), (9, 3), (10, 4)])])
+        z = wise_analysis.analyze(rows, "2026-11-05", "2026-10")
+        self.assertEqual(sum(m["spent"] for m in z["months"]), wise_analysis.spent_total(rows))
+        self.assertEqual(sum(d["spent"] for d in z["days"]), 14)
+        self.assertEqual(z["usual"]["months"], 3)
+
+    def test_this_month_is_compared_with_the_same_days(self):
+        rows = self.label([self.row("a", "2026-10-03", 10), self.row("b", "2026-10-25", 500), self.row("c", "2026-11-02", 25)])
+        z = wise_analysis.analyze(rows, "2026-11-05")
+        self.assertEqual((z["soFar"], z["lastSame"], z["cut"]), (25, 10, 5))
+
+    def test_yesterday(self):
+        rows = self.label([self.row("a", "2026-11-04", 3), self.row("b", "2026-11-03", 4), self.row("c", "2026-10-28", 5)])
+        z = wise_analysis.analyze(rows, "2026-11-05")["yesterday"]
+        self.assertEqual((z["usd"], z["before"], z["lastWeek"]), (3, 4, 5))
+
+    def test_a_rate_change_is_told_apart_from_buying_more(self):
+        rows = self.label([self.row("a", "2026-10-01", 100, currency="JPY", value=10000), self.row("b", "2026-11-01", 120, currency="JPY", value=10000)])
+        fx = wise_analysis.analyze(rows, "2026-11-05")["fx"]
+        self.assertEqual((fx["use"], fx["rate"], fx["show"]), (0, 20, True))
+
+    def test_fx_parts_add_up_to_the_change(self):
+        rows = self.label([self.row("a", "2026-10-01", 100, currency="JPY", value=10000), self.row("b", "2026-11-01", 150, currency="JPY", value=12000),
+                           self.row("c", "2026-11-02", 7, currency="EUR", value=6)])
+        fx = wise_analysis.analyze(rows, "2026-11-05")["fx"]
+        self.assertAlmostEqual(fx["use"] + fx["rate"], 57, places=2)
+
+    def test_outliers_need_six_months_of_history(self):
+        few = self.label([self.row(str(m), f"2026-{m:02d}-01", 10) for m in range(8, 11)] + [self.row("x", "2026-11-01", 500)])
+        self.assertEqual(wise_analysis.analyze(few, "2026-11-05")["outliers"], [])
+        many = self.label([self.row(str(m), f"2026-{m:02d}-01", 10 + m) for m in range(1, 11)] + [self.row("x", "2026-11-01", 500)])
+        self.assertEqual(wise_analysis.analyze(many, "2026-11-05")["outliers"][0]["name"], "交通")
+
+    def test_a_monthly_charge_is_found_and_a_kept_one_is_not_asked_again(self):
+        rows = self.label([self.row(str(m), f"2026-{m:02d}-05", 9, title="Tool") for m in range(7, 12)])
+        z = wise_analysis.analyze(rows, "2026-11-06")
+        self.assertEqual(z["charges"][0]["yearly"], 108)
+        self.assertEqual(z["action"]["kind"], "charge")
+        wise_sync.write_json("recurring.json", {z["charges"][0]["key"]: {"reviewed": "2026-11-06", "choice": "keep"}})
+        self.assertNotEqual((wise_analysis.analyze(rows, "2026-11-06")["action"] or {}).get("kind"), "charge")
+
+    def test_marked_not_monthly_leaves_the_list(self):
+        rows = self.label([self.row(str(m), f"2026-{m:02d}-05", 9, title="Tool") for m in range(7, 12)])
+        wise_sync.write_json("recurring.json", {"tool|USD": {"mark": False}})
+        self.assertEqual(wise_analysis.analyze(rows, "2026-11-06")["charges"], [])
+
+    def test_accounts_are_names_only_and_add_up(self):
+        rows = self.label([self.row("a", "2026-10-01", 10), self.row("b", "2026-10-01", 5, category="外食・カフェ"), self.row("c", "2026-10-01", 2, category="未分類")])
+        jp = {r["name"]: r["usd"] for r in wise_analysis.accounts(rows)["jp"]}
+        self.assertEqual(jp, {"旅費交通費": 10, "生活費": 5, "使途不明": 2})
+
+    def test_the_gap_between_records_and_the_balance_is_shown(self):
+        wise_sync.write_json("balances.json", {"2026-11-05": [{"currency": "USD", "value": 50, "usd": 50}]})
+        rows = self.label([self.row("a", "2026-10-01", 100, flow="in", type_="TRANSFER"), self.row("b", "2026-10-02", 90)])
+        self.assertEqual(wise_analysis.analyze(rows, "2026-11-05")["bridge"]["gap"], 40)
+
+    def test_advice_with_a_number_not_on_the_page_is_refused(self):
+        allowed = wise_analysis.numbers_in({"a": 1234.5, "b": [99.25]})
+        self.assertIsNone(wise_analysis.check_advice({"fact": "支出は 1,234.50 USD で、3か月の中央値は 99.25 です。", "next": "明細を見る"}, allowed))
+        self.assertIn("計算にない", wise_analysis.check_advice({"fact": "支出は 5,000 USD です。", "next": "明細を見る"}, allowed))
+
+    def test_advice_never_blames(self):
+        self.assertIn("使わない言葉", wise_analysis.check_advice({"fact": "今月は使いすぎです。", "next": "見直す"}, set()))
+        self.assertIn("必要", wise_analysis.check_advice({"fact": "事実だけ"}, set()))
+
+    def test_a_person_setting_goes_through_the_server(self):
+        self.assertEqual(server.wise_settings(["kind"], {"title": "Someone", "flow": "out", "kind": "advance"})[0], 200)
+        self.assertEqual(wise_sync.read_json("flows.json", {})["out:someone"], "advance")
+        self.assertEqual(server.wise_settings(["kind"], {"title": "Someone", "flow": "out", "kind": "gift"})[0], 400)
+        self.assertEqual(server.wise_settings(["recurring"], {"key": "a|USD", "choice": "keep"})[0], 200)
+        self.assertEqual(server.wise_settings(["close", "2026-11"], {"recon": True})[0], 200)
+        self.assertEqual(wise_sync.read_json("close.json", {})["2026-11"], {"recon": True, "review": False, "next": False})
+
+    def test_seen_keeps_the_day_before(self):
+        wise_sync.write_json("seen.json", {"last": "2026-01-01"})
+        server.wise_settings(["seen"], {})
+        self.assertEqual(wise_sync.read_json("seen.json", {})["previous"], "2026-01-01")
 
 
 if __name__ == "__main__":

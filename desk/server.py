@@ -28,6 +28,7 @@ import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, unquote, urlsplit
 
+import wise_analysis
 import wise_report
 import wise_sync
 
@@ -60,7 +61,7 @@ LOCK = threading.Lock()
 MEMOLINK_LOCK = threading.Lock()
 REPO = os.path.dirname(ROOT)
 # Desk's ⌨️ buttons may start only these Claude Code commands (POST /api/claude)
-CLAUDE_CMDS = ("/morning-kickoff", "/begin", "/recap", "/rsd", "/learn", "/sync", "/knowledge", "/desk-feature", "/followup", "/newtool", "/kickoff", "/where", "/lowenergy", "/mail-send")
+CLAUDE_CMDS = ("/morning-kickoff", "/begin", "/recap", "/rsd", "/learn", "/sync", "/knowledge", "/desk-feature", "/followup", "/newtool", "/kickoff", "/where", "/lowenergy", "/mail-send", "/money-review")
 CLAUDE_ARG_MAX = 6000
 FOCUS_URL = "http://127.0.0.1:47800"
 # no proxy: while websites are blocked the system proxy points at FocusBlock itself
@@ -290,7 +291,7 @@ def wise_number(v):
 
 
 def wise_settings(parts, rec):
-    """PUT /api/wise/category, /limits and /recon/<month>: the person's own settings, kept with the statements."""
+    """PUT /api/wise/category, /kind, /recurring, /seen, /close/<month>, /limits and /recon/<month>: the person's own settings, kept with the statements."""
     try:
         if parts == ["category"]:
             title, name = str(rec.get("title") or "").strip().lower(), rec.get("category")
@@ -299,7 +300,38 @@ def wise_settings(parts, rec):
             chosen = wise_sync.read_json("categories.json", {})
             chosen[title] = name
             wise_sync.write_json("categories.json", chosen)
-        elif parts == ["limits"]:
+            return 200, {"ok": True}
+        if parts == ["kind"]:
+            title, direction, kind = str(rec.get("title") or "").strip().lower(), rec.get("flow"), rec.get("kind")
+            if not title or len(title) > 300 or direction not in ("in", "out") or kind not in wise_analysis.KINDS:
+                return 400, {"error": "bad kind"}
+            chosen = wise_sync.read_json("flows.json", {})
+            chosen[direction + ":" + title] = kind
+            wise_sync.write_json("flows.json", chosen)
+            return 200, {"ok": True}
+        if parts == ["recurring"]:
+            key = str(rec.get("key") or "").strip()
+            if not key or len(key) > 340 or rec.get("choice") not in ("keep", "later", "review", None) or not isinstance(rec.get("mark", True), bool):
+                return 400, {"error": "bad recurring"}
+            saved = wise_sync.read_json("recurring.json", {})
+            entry = saved.setdefault(key, {})
+            if "mark" in rec:
+                entry["mark"] = rec["mark"]
+            if rec.get("choice"):
+                entry.update(choice=rec["choice"], reviewed=wise_report.today_hcmc().isoformat() if rec["choice"] == "keep" else entry.get("reviewed"))
+            wise_sync.write_json("recurring.json", saved)
+            return 200, {"ok": True}
+        if parts == ["seen"]:
+            today, seen = wise_report.today_hcmc().isoformat(), wise_sync.read_json("seen.json", {})
+            if seen.get("last") != today:
+                wise_sync.write_json("seen.json", {"previous": seen.get("last"), "last": today})
+            return 200, {"ok": True}
+        if len(parts) == 2 and parts[0] == "close" and re.fullmatch(r"\d{4}-(0[1-9]|1[0-2])", parts[1]):
+            saved = wise_sync.read_json("close.json", {})
+            saved[parts[1]] = {k: bool(rec.get(k)) for k in ("recon", "review", "next")}
+            wise_sync.write_json("close.json", saved)
+            return 200, {"ok": True}
+        if parts == ["limits"]:
             wise_sync.write_json("limits.json", {"week": wise_number(rec.get("week")), "month": wise_number(rec.get("month"))})
         elif len(parts) == 2 and parts[0] == "recon" and re.fullmatch(r"\d{4}-(0[1-9]|1[0-2])", parts[1]):
             currency = str(rec.get("currency") or "USD").upper()

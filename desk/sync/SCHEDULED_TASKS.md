@@ -22,11 +22,13 @@ python3 desk/write_feed.py gtasks <raw.json>                 # Google タスク�
 
 | ID | 時刻（ホーチミン） | 内容 | 書く先 |
 |---|---|---|---|
-| `desk-calendar-gtasks` | 毎時 | メモ連携（`python3 lifeos/11-notes/cli.py run`）、予定7日分、Google タスク | `calendar`、`gtasks` |
+| `desk-calendar-gtasks` | 毎時 | メモ連携（`python3 lifeos/11-notes/cli.py run`）、予定7日分、Google タスク、Daily Note の返信確認 | `calendar`、`gtasks`、`tasks` |
+| `desk-daily-note` | 毎日 16:00 | 3min Daily Note のメールを本人へ送り、当日のタスクを作る（`lifeos/19-daily-note/`） | `tasks` |
 | `desk-world-brief` | 毎日 7:17 | 世界ニュース | `editions` |
 | `desk-morning-mail` | 毎日 7:22 | Gmail の確認と返信の下書き（送信しない） | `days` |
 | `desk-minor-watch` | 火・金 7:33 | マイナー国ウォッチ | `watch` |
 | `desk-claude-daily-report` | 毎日 7:40 | 前日の Claude の作業レポート | `reports` |
+| `desk-money-review` | 3日ごと 8:10 | お金の助言と、新しい明細の種類・分類の案（`/money-review`） | `desk/data/wise/`（`advice.json`・`guess.json`） |
 | `desk-sunday-mirror` | 日曜 17:08 | 日曜の鏡 | `memos` |
 
 各タスクの手順は Mac の `~/.claude/scheduled-tasks/<ID>/SKILL.md` にあります。経歴やドキュメントの ID を含むので、このリポジトリには入れません。

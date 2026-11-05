@@ -15,6 +15,7 @@
   --s1:4px; --s2:8px; --s3:16px; --s4:24px; --s5:40px;
   --t1:12px; --t2:14px; --t3:16px; --t4:20px; --t5:28px;
   --r:12px; --r-s:8px;
+  --v1:#3987e5; --v2:#d95926; --v3:#199e70; --v4:#c98500; --v5:#d55181; --v6:#9085e9; --v7:#7d7d86; --v8:#b6b6bc;
   --tabbar:0px;
   color-scheme:dark;
 }
@@ -257,10 +258,14 @@ details.draft .sent-as summary{cursor:pointer;display:block;padding:var(--s2) 0;
 .task .tm a{color:var(--ink-2);text-decoration:none}
 .task select{margin-left:auto}
 .colTabs{display:none}
-.shelf{padding:0;overflow:hidden}
-.shelf summary{cursor:pointer;list-style:none;padding:var(--s3);font-weight:700;font-size:var(--t2);display:flex;align-items:center;gap:var(--s2)}
-.shelf summary::-webkit-details-marker{display:none}
-.shelf .list2{display:grid;gap:var(--s2);padding:0 var(--s3) var(--s3)}
+.shelfnav{display:flex;flex-wrap:wrap;gap:var(--s3)}
+.shelfbtn{background:none;border:0;padding:0;min-height:32px;font-size:var(--t1);color:var(--muted);cursor:pointer;font-variant-numeric:tabular-nums}
+.shelfbtn:hover{color:var(--ink)}
+.shelfbtn[aria-expanded="true"]{color:var(--ink);font-weight:700}
+.shelf{display:grid;gap:var(--s2);grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr))}
+.tduein{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s2)}
+.tduein>div{display:grid;gap:var(--s1);min-width:0}
+.tduein input{width:100%;min-width:0}
 @media (max-width:760px){.board{grid-template-columns:minmax(0,1fr)}.colTabs{display:flex}.col:not(.show){display:none}.task{cursor:default}}
 .jobs{display:grid;gap:var(--s2);padding:12px;border:1px solid var(--line-2);border-radius:var(--r);background:var(--bg)}
 .jobs h2{font-size:var(--t2)}
@@ -323,6 +328,72 @@ details.draft .sent-as summary{cursor:pointer;display:block;padding:var(--s2) 0;
 .mlearn{padding:var(--s3)}
 .mlearn summary{font-size:var(--t2);color:var(--ink);font-weight:700}
 .mlearn .mrow{padding-left:0;padding-right:0}
+.mtabs{display:flex;gap:var(--s3);border-bottom:1px solid var(--line);overflow-x:auto}
+.mtab{background:none;border:0;border-bottom:2px solid transparent;color:var(--muted);font-size:var(--t2);padding:var(--s2) 0;min-height:40px;cursor:pointer;white-space:nowrap}
+.mtab:hover{color:var(--ink)}
+.mtab[aria-selected="true"]{color:var(--ink);font-weight:700;border-bottom-color:var(--accent)}
+.mfocus{display:grid;gap:var(--s3);padding:var(--s4) var(--s3);justify-items:start}
+.mtalk{margin:0;font-size:var(--t3);line-height:1.6;max-width:40em}
+.mbigs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--s4) var(--s3);width:100%}
+.mbigs.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.mbig{display:grid;gap:var(--s1);align-content:start;min-width:0}
+.mbig b{font-size:var(--t5);line-height:1.2;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.mline{margin:0;display:flex;gap:var(--s2);flex-wrap:wrap;align-items:baseline}
+.mact{display:grid;gap:var(--s2);padding:var(--s3);justify-items:start}
+.mact p{margin:0}
+.mpanel{padding:var(--s3);display:grid;gap:var(--s2);min-width:0}
+.mpanelh{display:flex;flex-wrap:wrap;gap:var(--s1) var(--s2);align-items:baseline}
+.mpanelh h2{margin:0;font-size:var(--t3)}
+.mpanel>.mrow{padding-left:0;padding-right:0}
+.mchart{display:block;max-width:100%;height:auto;margin-top:var(--s2)}
+.mtick{font-size:12px;fill:var(--muted);font-variant-numeric:tabular-nums}
+.mhit{cursor:pointer}
+.mhit:hover{fill:var(--accent-soft)}
+.mlegend{display:flex;flex-wrap:wrap;gap:var(--s1) var(--s3);font-size:var(--t1);color:var(--ink-2)}
+.mlegend span{display:inline-flex;align-items:center;gap:var(--s1)}
+.mlegend i{width:8px;height:8px;border-radius:2px;display:inline-block}
+.mtable summary,.mmore>summary{cursor:pointer;font-size:var(--t1);color:var(--muted)}
+.mscroll{overflow-x:auto;margin-top:var(--s2)}
+.mpanel table,.mscroll table{width:100%;border-collapse:collapse;font-size:var(--t1)}
+.mpanel th,.mpanel td{padding:var(--s1) var(--s2) var(--s1) 0;border-top:1px solid var(--line);text-align:left;font-weight:400;white-space:nowrap}
+.mpanel th{color:var(--muted);border-top:0}
+.mpanel .n{text-align:right;font-variant-numeric:tabular-nums}
+.mhbars{display:grid;gap:var(--s2)}
+.mhbar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--s1) var(--s3);background:none;border:0;padding:0;color:inherit;text-align:left;font:inherit;width:100%}
+button.mhbar[data-mdrillcat]{cursor:pointer}
+.mhbar .amt{font-size:var(--t2);font-variant-numeric:tabular-nums}
+.mhbar i{grid-column:1/-1;height:8px;border-radius:0 4px 4px 0;background:var(--v1)}
+.mgaps{display:grid;gap:var(--s2)}
+.mgap{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--s1) var(--s3);background:none;border:0;padding:0;color:inherit;text-align:left;font:inherit;width:100%;cursor:pointer}
+.mgap .amt{font-size:var(--t2);font-variant-numeric:tabular-nums}
+.mgapbar{grid-column:1/-1;display:flex;height:8px;position:relative;border-left:0}
+.mgapbar::before{content:"";position:absolute;left:50%;top:-2px;bottom:-2px;width:1px;background:var(--line-2)}
+.mgapbar i{position:absolute;top:0;bottom:0;background:var(--v7)}
+.mgapbar i.up{left:50%;border-radius:0 4px 4px 0;background:var(--ink-2)}
+.mgapbar i.down{right:50%;border-radius:4px 0 0 4px}
+.mtip1{display:grid;gap:var(--s1);justify-items:start;padding:var(--s2) 0 var(--s3);border-bottom:1px solid var(--line)}
+.mtip1 p{margin:0;max-width:40em}
+.mchecks{display:grid;gap:var(--s2)}
+.mcheck{display:flex;gap:var(--s2);align-items:center;font-size:var(--t2);min-height:32px}
+.mchecks .mform{padding:0 0 var(--s2) var(--s4)}
+.mchecks>.due{margin:0 0 0 var(--s4)}
+.mform select{min-height:32px;background:var(--surface);color:var(--ink);border:1px solid var(--line-2);border-radius:var(--r-s)}
+.mmore{padding:var(--s3)}
+.mmorein{display:grid;gap:var(--s3);margin-top:var(--s3)}
+.mmorein h3{margin:0 0 var(--s1);font-size:var(--t2)}
+.mmorein p{margin:0 0 var(--s1)}
+.mmorein .mrow{padding:var(--s2) 0}
+.mread{font-size:var(--t2);line-height:1.6;max-width:40em;color:var(--ink-2)}
+.msearch{display:flex;gap:var(--s2);flex-wrap:wrap}
+.msearch input{flex:1 1 12em;min-height:32px;min-width:0;background:var(--surface);color:var(--ink);border:1px solid var(--line-2);border-radius:var(--r-s);padding:0 var(--s2);font-size:var(--t2)}
+.msearch select{min-height:32px;background:var(--surface);color:var(--ink);border:1px solid var(--line-2);border-radius:var(--r-s)}
+.mpanel>.btn{justify-self:start}
+.mfix summary{cursor:pointer;font-size:var(--t1);color:var(--muted)}
+.mpicks{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:var(--s2);align-items:center;margin-top:var(--s1)}
+.mpicks .mcat{margin:0;grid-column:auto}
+.mrow .mpicks .btn{grid-column:auto;margin:0}
+.mtip{position:fixed;z-index:60;max-width:320px;padding:var(--s1) var(--s2);background:var(--surface-2);border:1px solid var(--line-2);border-radius:var(--r-s);font-size:var(--t1);color:var(--ink);pointer-events:none}
+@media (max-width:560px){.mbigs{grid-template-columns:1fr}.mbigs.two{grid-template-columns:1fr}}
 .mnote{margin:var(--s2) 0 0}
 .money>.btn{justify-self:start}
 /* the mail inside a task */
@@ -754,14 +825,17 @@ function openDue(uid){
 }
 function saveDuesLocal(){try{localStorage.setItem("desk-dues",JSON.stringify(S.dues))}catch(e){}}
 const dueDocId=uid=>{let h=5381;for(const c of uid)h=(h*33^c.charCodeAt(0))>>>0;return "d"+h.toString(36)+uid.length};
+/* A due date without a time is stored as 23:59 in Ho Chi Minh City; only a due date with a time goes on Google Calendar (desk/task_calendar.py). */
+const dueParts=ms=>{if(ms==null)return ["",""];const hcm=new Date(ms+7*3600e3);if(hcm.getUTCHours()===23&&hcm.getUTCMinutes()===59)return [hcm.toISOString().slice(0,10),""];return toLocalInput(ms).split("T")};
+const dueFromParts=(d,t)=>d?new Date(t?`${d}T${t}`:`${d}T23:59:00+07:00`).getTime():null;
 const toLocalInput=ms=>{const d=new Date(ms);return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`};
 
 /* ---------- tasks ---------- */
 /* One board for everything to do. Stored tasks live in "tasks" (Mac: data/tasks.json).
    Mail that needs action appears by itself and is only stored once you move it, under the same id everywhere ("t"+dueDocId).
    A task's due date is the real one; like mail, its countdown runs to it. */
-const TSTATUS=[["notyet","未着手"],["doing","進行中"],["done","完了"],["archived","アーカイブ"],["dropped","やめた"]];
-const TCOLS=["notyet","doing","done"], TOPEN=new Set(["notyet","doing"]);
+const TSTATUS=[["notyet","未着手"],["doing","進行中"],["done","完了"],["paused","一旦中止"],["archived","アーカイブ"]];
+const TCOLS=["notyet","doing","done"], TSHELF=["paused","archived"], TOPEN=new Set(["notyet","doing"]);
 const TSRC={manual:["✍️","手入力"],memo:["📝","メモから"],mail:["✉️","メールから"],calendar:["📅","カレンダーから"],gtasks:["☑️","Googleタスク"],claude:["🤖","Claude"],daily:["☀️","毎日"]};
 const LINKED=new Set(["mail","calendar","gtasks","claude","daily"]); // these come from elsewhere: their title and due date live at the source
 const tLabel=k=>(TSTATUS.find(s=>s[0]===k)||[k,k])[1];
@@ -845,15 +919,16 @@ function taskCard(t){
 }
 function tasks(){
   const col=k=>S.board.filter(t=>t.status===k).sort(k==="done"?(a,b)=>(b.updatedAt||0)-(a.updatedAt||0):byDeadline);
-  const shelf=S.board.filter(t=>t.status==="archived"||t.status==="dropped").sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+  const shelf=k=>S.board.filter(t=>t.status===k).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
   const hint={notyet:"新しいタスクと対応が必要なメール",doing:"ここにドラッグして着手",done:"終わったらここへ"};
   return `
-  <header class="head"><div><p class="eyebrow">タスク</p><h1>やること</h1></div><div class="row"><a class="btn" href="https://tasks.google.com/" target="_blank" rel="noopener">Googleタスク ↗</a><button class="btn primary" id="newTask">＋ 新しいタスク <kbd>T</kbd></button></div></header>
+  <header class="head"><div><p class="eyebrow">タスク</p><h1>やること</h1></div><div class="row"><button class="btn primary" id="newTask">＋ 新しいタスク <kbd>T</kbd></button></div></header>
   ${notesHere("tasks")}
+  <nav class="shelfnav" aria-label="止めたタスク">${TSHELF.map(k=>`<button class="shelfbtn" data-tshelf="${k}" aria-expanded="${S.taskShelf===k}">${tLabel(k)} ${shelf(k).length}</button>`).join("")}</nav>
+  ${S.taskShelf?`<section class="shelf" aria-label="${tLabel(S.taskShelf)}">${shelf(S.taskShelf).map(taskCard).join("")||`<p class="sub">${tLabel(S.taskShelf)}のタスクはありません</p>`}</section>`:""}
   <div class="chips colTabs" role="group" aria-label="表示する列">${TCOLS.map(k=>`<button class="chip" data-tcol="${k}" aria-pressed="${S.taskCol===k}">${tLabel(k)} ${col(k).length}</button>`).join("")}</div>
   <div class="board">${TCOLS.map(k=>{const items=col(k);return `<section class="col ${S.taskCol===k?"show":""}" data-col="${k}" aria-label="${tLabel(k)}">
     <h2>${tLabel(k)}<span class="count">${items.length}</span></h2>${items.map(taskCard).join("")||`<p class="hint">${hint[k]}</p>`}</section>`}).join("")}</div>
-  ${shelf.length?`<details class="card shelf"><summary>🗃️ アーカイブ・やめた <span class="count">${shelf.length}</span></summary><div class="list2">${shelf.map(taskCard).join("")}</div></details>`:""}
   ${S.local&&!LOCALAPI?'<p class="sub">ファイルとして開いているので、タスクはこのブラウザにだけ保存されます。「Start Desk」を実行すると Mac に保存されます。</p>':""}`;
 }
 /* Home: one to-do list = everything in progress, then everything Not yet (mail included), each by nearest due date. */
@@ -1050,7 +1125,7 @@ function wireMail(t,close){
     try{await store.putTask({...t,status});await taskWin(t,status);close();toast(toastText)}catch(e){say("保存できませんでした。もう一度お試しください。")}};
   const wire=()=>{
     $("#mDone")&&($("#mDone").onclick=()=>finish("done","sent","✨ 返信済み。できたことに入れました"));
-    $("#mSkip")&&($("#mSkip").onclick=()=>finish("dropped","skipped","送らないことにしました（タスクは「やめた」へ）"));
+    $("#mSkip")&&($("#mSkip").onclick=()=>finish("archived","skipped","送らないことにしました（タスクは「アーカイブ」へ）"));
     $("#mClaude")&&($("#mClaude").onclick=async e=>{const b=e.currentTarget;b.disabled=true;
       try{await api("POST","/api/claude",{cmd:"/mail-send",arg:`${t.mail.day} ${t.mail.key}`});say("Terminal で Claude が始まります。送信が済んだら「返信済みにする」を押してください。")}
       catch(err){say("Claude を起動できませんでした。Gmail で下書きを開いて送ってください。")}
@@ -1076,7 +1151,7 @@ function openTask(id){
     <label class="sub" for="tTitle">タイトル</label><input type="text" id="tTitle" value="${esc(t?.title||"")}" placeholder="例：FWOに書類を送る" autocomplete="off">
     ${t?.source==="daily"&&t.sourceRef==="jobs"?jobsBlock():isMail?mailBlock(t)
       :isLinked?`<p class="hint">${TSRC[t.source][0]} ${TSRC[t.source][1]}${t.due!=null?" · 期日 "+esc(fmtDue(t.due)):""} · 期日とタイトルは元の場所で変更${okUrl(t.url)?` · <a href="${esc(t.url)}" target="_blank" rel="noopener">開く ↗</a>`:""}${t.source==="gtasks"?"<br>「完了」にすると、次の更新で Google タスク側も完了になります。":""}</p>`
-      :`<label class="sub" for="tDue">期日（任意）</label><input type="datetime-local" id="tDue" value="${t?.due!=null?toLocalInput(t.due):""}">`}
+      :`<div class="tduein"><div><label class="sub" for="tDue">期日（任意）</label><input type="date" id="tDue" value="${dueParts(t?.due)[0]}"></div><div><label class="sub" for="tDueT">時刻（任意）</label><input type="time" id="tDueT" value="${dueParts(t?.due)[1]}"></div></div><p class="hint" id="tDueHint"></p>`}
     <label class="sub" for="tStatus">ステータス</label><select id="tStatus">${TSTATUS.map(([k,l])=>`<option value="${k}" ${k===(t?.status||"notyet")?"selected":""}>${l}</option>`).join("")}</select>
     <label class="sub" for="tNote">メモ</label><textarea id="tNote" class="tnote" placeholder="必要なら詳細を。[言葉] でノートにつながります">${esc(t?.note||"")}</textarea>${t&&linksIn(t.note).length?`<p class="hint">🔗 ${linksIn(t.note).map(x=>wlink(x)).join(" ")}</p>`:""}
     <div class="row"><button class="btn primary" id="tSave">保存 <kbd>⌘/Ctrl + Enter</kbd></button><button class="btn" id="tCancel">キャンセル</button>${t&&!isLinked?`<button class="btn" id="tDel" style="margin-left:auto;color:var(--red)">削除</button>`:""}</div>
@@ -1084,8 +1159,11 @@ function openTask(id){
   const ti=$("#tTitle");ti.focus();ti.setSelectionRange(ti.value.length,ti.value.length);
   const close=()=>{$("#modal").innerHTML=""};
   wireJobs(t);wireMail(t,close);
+  const dueIn=$("#tDue"), dueT=$("#tDueT"), dueHint=()=>{$("#tDueHint").textContent=dueT.value?"3日前の同じ時刻にカレンダーへ入ります":""};
+  if(dueT){dueT.oninput=dueHint;dueHint()}
   const save=async()=>{const title=ti.value.trim();if(!title){ti.focus();toast("タイトルを入れてください");return}
-    const dueIn=$("#tDue"), due=dueIn&&dueIn.value?new Date(dueIn.value).getTime():null;
+    if(dueT&&dueT.value&&!dueIn.value){dueIn.focus();toast("日付も入れてください");return}
+    const due=dueIn?dueFromParts(dueIn.value,dueT.value):null;
     const base=t||{id:newTaskId(),source:"manual",createdAt:Date.now()};
     const st=$("#tStatus").value;
     try{await store.putTask({...base,title,due:isNaN(due)?null:due,status:st,note:$("#tNote").value.trim()});await taskWin({...base,title},st);close();toast(st==="done"&&base.status!=="done"?"✨ 完了。できたことに入れました":t?"🗂️ 保存しました":"🗂️ タスクを追加しました")}
@@ -1782,7 +1860,7 @@ function inbox(){
 function render(){
   const mails=deadlines();S.board=boardTasks(mails);S.dlMap=Object.fromEntries(mails.map(x=>[x.uid,x]));
   const closed=new Set(S.board.filter(t=>t.source==="mail"&&!TOPEN.has(t.status)).map(t=>t.sourceRef));
-  S.dl=mails.filter(x=>!closed.has(x.uid)); // a mail task moved to Done / archive / dropped leaves the 締切 panel
+  S.dl=mails.filter(x=>!closed.has(x.uid)); // a mail task moved to Done / paused / archive leaves the 締切 panel
   updateBadges();checkNew();
   renderNav();
   if(viewId()==="lifeos"){$("#view").innerHTML=searchResults()+lifeosView();wire();wireLifeos();return}
@@ -1796,7 +1874,7 @@ function render(){
   if(v==="news"&&S.focus!=null){const el=document.getElementById("story-"+S.focus);S.focus=null;if(el){el.classList.add("flash");setTimeout(()=>el.scrollIntoView({block:"start"}),0)}}
 }
 /* お金: Wise activity on this Mac (desk/wise_sync.py). Reads files only; opening the view never calls Wise.
-   Totals are per currency and show no budget or warning: nothing here blames. */
+   Totals are in USD; each tab answers one question. Numbers come from desk/wise_analysis.py and nothing here blames. */
 const WISETYPE={CARD_PAYMENT:"カード決済",TRANSFER:"送金",CARD_CHECK:"カードの確認",BALANCE_DEPOSIT:"入金",CASH_WITHDRAWAL:"ATM の引き出し",INTERBALANCE:"両替",CARD_ORDER:"カードの注文"};
 const monthJa=m=>m?`${m.slice(0,4)}年${Number(m.slice(5,7))}月`:"";
 const moneyQuery=()=>{const q=S.moneyQ||{period:"month"},p=new URLSearchParams({period:q.period});if(q.period==="month"&&q.month)p.set("month",q.month);if(q.period==="custom"){p.set("from",q.from||"");p.set("to",q.to||"")}return p};
@@ -1806,53 +1884,179 @@ async function moneyLoad(force){
   try{const v=await api("GET","/api/wise?"+moneyQuery()),same=JSON.stringify(v)===JSON.stringify(S.money);S.money=v;S.moneyErr=false;S.moneyBusy=false;if(!same&&viewId()==="money")render()}
   catch(e){const was=S.moneyErr;S.moneyErr=true;S.moneyBusy=false;if(!was&&viewId()==="money")render()}
 }
+const MCOLOR={"飲食費":"var(--v1)","交通費":"var(--v2)","旅行・宿泊":"var(--v3)","買い物・日用品":"var(--v4)","学び・手続き":"var(--v5)","現金":"var(--v6)","その他":"var(--v7)"};
+const musd=v=>esc(Number(v||0).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}));
+const mround=v=>esc(Math.round(Number(v||0)).toLocaleString("en-US"));
+const msign=v=>(v>0?"+":v<0?"−":"")+musd(Math.abs(v));
+const mjaDate=d=>d?`${Number(d.slice(5,7))}月${Number(d.slice(8,10))}日`:"";
+const mwidth=()=>Math.max(280,Math.min(860,(document.querySelector(".money")?.clientWidth||window.innerWidth-32)-34));
+const mtick=v=>v>=1000?`${Math.round(v/100)/10}K`:String(Math.round(v));
+function mscale(top){const raw=Math.max(top,1),p=10**Math.floor(Math.log10(raw)),s=[1,2,5,10].find(x=>x*p>=raw/3)*p;return {step:s,top:Math.ceil(raw/s)*s}}
+const mbar=(x,y,w,h,fill,attrs="")=>{if(h<=0)return "";const r=Math.min(4,w/2,h);return `<path d="M${x} ${y+h}V${y+r}Q${x} ${y} ${x+r} ${y}H${x+w-r}Q${x+w} ${y} ${x+w} ${y+r}V${y+h}Z" fill="${fill}" ${attrs}/>`};
+/* Columns on one axis: each slot holds stacks or side-by-side bars, with a hit area larger than the mark. Rows and the table carry every value. */
+function mcolumns({slots,height=180,label,line,lineName,caption}){
+  const W=mwidth(),left=36,base=height-20,tops=slots.map(s=>s.mode==="side"?Math.max(0,...s.parts.map(p=>p.v)):s.parts.reduce((n,p)=>n+Math.max(p.v,0),0)),{step,top}=mscale(Math.max(...tops,line||0));
+  const y=v=>base-v/top*(base-8),band=(W-left)/slots.length,grid=[];
+  for(let v=0;v<=top;v+=step)grid.push(`<line x1="${left}" x2="${W}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${left-6}" y="${y(v)+4}" text-anchor="end" class="mtick">${mtick(v)}</text>`);
+  const everyLabel=Math.max(1,Math.ceil(slots.length/(W/44)));
+  const marks=slots.map((s,i)=>{
+    const x0=left+i*band,gap=2;let out="";
+    if(s.mode==="side"){const w=Math.min(24,(band-gap*3)/s.parts.length);s.parts.forEach((p,j)=>{out+=mbar(x0+gap+j*(w+gap),y(Math.max(p.v,0)),w,base-y(Math.max(p.v,0)),p.c)})}
+    else{const w=Math.min(24,Math.max(band-4,2));let at=base;s.parts.forEach((p,j)=>{const h=base-y(Math.max(p.v,0));if(h<=0)return;const seg=Math.max(h-(j?2:0),1);at-=h;out+=(j===s.parts.length-1||!s.parts.slice(j+1).some(q=>q.v>0))?mbar(x0+(band-w)/2,at,w,seg,p.c):`<rect x="${x0+(band-w)/2}" y="${at}" width="${w}" height="${seg}" fill="${p.c}"/>`})}
+    const mark=i%everyLabel===0?`<text x="${x0+band/2}" y="${height-4}" text-anchor="middle" class="mtick">${esc(s.label)}</text>`:"";
+    return `${out}${mark}<rect x="${x0}" y="0" width="${band}" height="${base}" fill="transparent" class="mhit" data-tip="${esc(s.tip)}" ${s.attrs||""}/>`;
+  }).join("");
+  const ref=line?`<line x1="${left}" x2="${W}" y1="${y(line)}" y2="${y(line)}" stroke="var(--ink)" stroke-width="2"/><text x="${W}" y="${y(line)-6}" text-anchor="end" class="mtick">${esc(lineName)} ${mround(line)}</text>`:"";
+  return `<svg class="mchart" viewBox="0 0 ${W} ${height}" width="${W}" height="${height}" role="img" aria-label="${esc(label)}">${grid.join("")}${marks}${ref}</svg>`;
+}
+const mlegend=items=>`<div class="mlegend">${items.map(([n,c])=>`<span><i style="background:${c}"></i>${esc(n)}</span>`).join("")}</div>`;
+const mtable=(heads,rows)=>`<details class="mtable"><summary>表で見る</summary><div class="mscroll"><table><thead><tr>${heads.map((h,i)=>`<th class="${i?"n":""}">${esc(h)}</th>`).join("")}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map((c,i)=>`<td class="${i?"n":""}">${c}</td>`).join("")}</tr>`).join("")}</tbody></table></div></details>`;
+const mpanel=(title,sub,body)=>`<section class="card mpanel"><div class="mpanelh"><h2>${esc(title)}</h2>${sub?`<span class="sub">${sub}</span>`:""}</div>${body}</section>`;
+const mhbars=(rows,attr)=>{const top=Math.max(...rows.map(r=>Math.abs(r.usd)),1);return `<div class="mhbars">${rows.map(r=>`<button class="mhbar" ${attr?attr(r):""}><span class="wt">${esc(r.name)}</span><span class="amt">${musd(r.usd)}${r.note?` <span class="sub">${esc(r.note)}</span>`:""}</span><i style="width:${Math.max(1,Math.abs(r.usd)/top*100)}%"></i></button>`).join("")}</div>`};
+
+function moneyOverview(d){
+  const z=d.analysis,u=z.usual,r=z.runway,y=z.yesterday,st=d.state||{},k=d.kinds;
+  const talk=z.isCurrent?(z.sameTime==null?`今月はここまで ${musd(z.soFar)} USD です。`:`今月はここまで ${musd(z.soFar)} USD で、いつもの同じ時期は ${musd(z.sameTime)} USD です。`):`${monthJa(z.month)}の支出は ${musd(z.soFar)} USD でした。`;
+  const big=(label,value,sub)=>`<div class="mbig"><span class="sub">${esc(label)}</span><b>${value}</b>${sub?`<span class="due">${sub}</span>`:""}</div>`;
+  const main=`<section class="card mfocus" aria-label="今の状態"><p class="mtalk">${talk}</p><div class="mbigs">${big("いつもの月の支出",u?`${musd(u.usd)}`:"まだありません",u?`USD。直近${u.months}か月の中央値。${mround(u.low)}〜${mround(u.high)}`:"")}${big("収入ゼロで暮らせる月数",r?(r.short!=null?`約${esc(r.short)}〜${esc(r.long)}か月`:`約${esc(r.long)}か月`):"まだ出せません",r?`Wise 内の残高 ${mround(r.balance)} USD で計算。他の口座は入りません`:"")}${big("収益 − 支出",msign(z.netNow),z.netUsual==null?"USD":`USD。直近3か月の中央値 ${msign(z.netUsual)}`)}</div></section>`;
+  const dayline=`<p class="mline"><span class="wt">昨日 ${musd(y.usd)} USD</span> <span class="due">一昨日 ${musd(y.before)} · 先週の同じ曜日 ${musd(y.lastWeek)}</span></p>`;
+  const act=z.action?`<section class="card mact"><p class="wt">${esc(z.action.fact)}</p><button class="btn sm" data-mtab="advice">助言を見る</button></section>`:"";
+  const next=z.next.length?`<div><h3>次の支払い（日付は推定）</h3>${z.next.map(p=>`<div class="mrow"><span class="wt">${esc(p.title)}</span><span class="amt">${musd(p.usd)}</span><span class="due">${esc(mjaDate(p.date))}ごろ</span></div>`).join("")}</div>`:"";
+  const seen=d.seen?`<div><h3>前回から</h3><div class="mrow"><span class="wt">新しい明細 ${d.seen.count}件</span><span class="amt">${musd(d.seen.spent)}</span></div></div>`:"";
+  const at=st.lastSuccess?new Date(st.lastSuccess).toLocaleString("ja-JP",{month:"long",day:"numeric",hour:"2-digit",minute:"2-digit"}):"";
+  const b=d.balances,balance=b?`<div><h3>Wise の残高（${esc(b.date)}）</h3>${b.rows.filter(x=>x.value).map(x=>`<div class="mrow"><span class="wt">${esc(x.currency)} ${esc(Number(x.value).toLocaleString("ja-JP"))}</span><span class="amt">${x.usd==null?"":musd(x.usd)}</span></div>`).join("")}</div>`:"";
+  const gap=z.bridge&&Math.abs(z.bridge.gap)>=1?`<p class="due">記録の入金 ${musd(z.bridge.in)} − 出金 ${musd(z.bridge.out)} と今の残高には ${musd(Math.abs(z.bridge.gap))} USD の差があります。残高を通らない支払いが明細に入っている可能性があり、確かめ中です。</p>`:"";
+  const sure=`<div><h3>データの確かさ</h3><p class="due">${z.monthsAll}か月分。USD の記録 ${d.usd.recorded}件、レートで換算 ${d.usd.converted}件。種類が未確認 ${k.unknown.count}件。${at?`最後の取り込み ${esc(at)}。`:""}</p>${gap}</div>`;
+  return `${main}${dayline}${act}<details class="card mmore"><summary>もっと見る</summary><div class="mmorein">${next}${seen}${balance}${sure}</div></details>`;
+}
+function moneyCharts(d){
+  const z=d.analysis,ms=z.months,bandShort=m=>`${Number(m.slice(5,7))}月`;
+  const flows=mcolumns({label:"月ごとの収益と支出",slots:ms.map(m=>({label:bandShort(m.month),mode:"side",parts:[{v:m.income,c:"var(--v3)"},{v:m.spent,c:"var(--v7)"}],tip:`${monthJa(m.month)}　収益 ${musd(m.income)} · 支出 ${musd(m.spent)} · 差引 ${msign(m.net)}`,attrs:`data-mdrillmonth="${esc(m.month)}"`}))});
+  const flowT=mtable(["月","収益","支出","差引"],ms.map(m=>[esc(monthJa(m.month)),musd(m.income),musd(m.spent),msign(m.net)]));
+  const mids=[...z.days.map(x=>x.spent)].sort((a,b)=>a-b),mid=mids.length?mids[Math.floor(mids.length/2)]:0;
+  const daily=mcolumns({label:"日ごとの支出",line:mid||null,lineName:"中央値",slots:z.days.map(x=>({label:String(Number(x.date.slice(8,10))),parts:[{v:x.spent,c:"var(--v1)"}],tip:`${mjaDate(x.date)}　${musd(x.spent)} USD`,attrs:`data-mdrillday="${esc(x.date)}"`}))});
+  const dailyT=mtable(["日","支出"],z.days.map(x=>[esc(mjaDate(x.date)),musd(x.spent)]));
+  const pick=S.moneyGroup||"all",order=z.groupOrder,chosen=pick==="all"?order:[pick];
+  const groupChips=`<div class="chips" role="group" aria-label="分類を選ぶ">${[["all","すべて"],...order.map(g=>[g,g])].map(([k,l])=>`<button class="chip" data-mgroup="${esc(k)}" aria-pressed="${k===pick}">${esc(l)}</button>`).join("")}</div>`;
+  const byGroup=mcolumns({label:"分類ごとの月の推移",slots:ms.map(m=>{const g=z.groups[m.month]||{},parts=chosen.map(n=>({v:g[n]||0,c:MCOLOR[n]}));return {label:bandShort(m.month),parts,tip:`${monthJa(m.month)}　${chosen.map(n=>`${n} ${musd(g[n]||0)}`).join(" · ")}`,attrs:`data-mdrillmonth="${esc(m.month)}"`}})});
+  const byGroupT=mtable(["月",...chosen],ms.map(m=>[esc(monthJa(m.month)),...chosen.map(n=>musd((z.groups[m.month]||{})[n]||0))]));
+  const trend=z.usual?mcolumns({label:"支出の推移",line:z.usual.usd,lineName:"いつもの月",slots:ms.map(m=>({label:bandShort(m.month),parts:[{v:m.spent,c:m.month===z.today.slice(0,7)?"var(--v8)":"var(--v7)"}],tip:`${monthJa(m.month)}　${musd(m.spent)} USD${m.month===z.today.slice(0,7)?"（途中）":""}`,attrs:`data-mdrillmonth="${esc(m.month)}"`}))}):"";
+  const cats=d.categories,total=d.spent||1,tops=cats.slice(0,5),rest=cats.slice(5).reduce((n,c)=>n+c.usd,0),large=[...tops.map(c=>({name:c.name,usd:c.usd,note:`${Math.round(c.usd/total*100)}%`})),...(rest>0?[{name:"その他",usd:Math.round(rest*100)/100,note:`${Math.round(rest/total*100)}%`}]:[])];
+  const side=S.moneyAcct||"jp",acct=(d.accounts||{})[side]||[];
+  const acctChips=`<div class="chips" role="group" aria-label="科目の名前"><button class="chip" data-macct="jp" aria-pressed="${side==="jp"}">日本の科目</button><button class="chip" data-macct="us" aria-pressed="${side==="us"}">米国の区分</button></div>`;
+  const acctBody=acct.length?mhbars(acct.map(a=>({name:a.name,usd:a.usd,note:`${Math.round(a.usd/total*100)}%`}))):`<p class="due">この期間の支出はありません。</p>`;
+  return `${mpanel("月ごとの収益と支出","USD。棒を押すとその月の明細",mlegend([["収益","var(--v3)"],["支出","var(--v7)"]])+flows+flowT)}
+  ${mpanel("日ごとの支出",`${esc(monthJa(z.month))}。棒を押すとその日の明細`,daily+dailyT)}
+  ${mpanel("分類ごとの月の推移","USD",groupChips+(pick==="all"?mlegend(order.map(n=>[n,MCOLOR[n]])):"")+byGroup+byGroupT)}
+  ${trend?mpanel("支出の推移","線は完了した月の中央値。明るい棒は途中の月",trend):""}
+  ${mpanel("この期間の大きい順",esc(d.label),large.length?mhbars(large,r=>r.name==="その他"?"":`data-mdrillcat="${esc(r.name)}"`):`<p class="due">この期間の支出はありません。</p>`)}
+  ${mpanel("経営の科目で見る","用途を見るための名前です。税の判定ではありません",acctChips+acctBody)}`;
+}
+function moneyAnalysis(d){
+  const z=d.analysis,cats=z.categories,top=Math.max(...cats.map(c=>Math.abs(c.gap)),1);
+  const scope=z.isCurrent?`今月1日〜${z.cut}日`:monthJa(z.month);
+  const pair=(z.focus||[]).map(c=>`<div class="mbig"><span class="sub">${esc(c.name)}</span><b>${musd(c.usd)}</b><span class="due">いつもの同じ時期 ${musd(c.usual)}（差 ${msign(c.gap)}）。先月の同じ日数 ${musd(c.last)}。支出の${c.share}%</span></div>`).join("");
+  const focus=mpanel("交通費と飲食費",`${esc(scope)}。USD`,`<div class="mbigs two">${pair}</div>`);
+  const gaps=cats.filter(c=>c.gap).slice(0,5);
+  const gapBody=gaps.length?`<div class="mgaps">${gaps.map(c=>`<button class="mgap" data-mdrillcat="${esc(c.name)}"><span class="wt">${esc(c.name)}</span><span class="amt">${msign(c.gap)}</span><span class="mgapbar"><i class="${c.gap>0?"up":"down"}" style="width:${Math.abs(c.gap)/top*50}%"></i></span></button>`).join("")}</div>`:`<p class="due">大きな差はありません。</p>`;
+  const compare=mtable(["分類",z.isCurrent?"今月":"この月","先月の同じ日数","差","割合"],cats.filter(c=>c.usd||c.last).map(c=>[esc(c.name),musd(c.usd),musd(c.last),msign(c.change),`${c.share}%`]));
+  const odd=z.outliers.length?mpanel("いつもと違う分類","確かめる目印です。誤りという意味ではありません",z.outliers.map(o=>`<div class="mrow"><span class="wt">${esc(o.name)}</span><span class="amt">${musd(o.usd)}</span><span class="due">いつもの同じ時期 ${musd(o.usual)}</span></div>`).join("")):"";
+  const fx=z.fx.show?mpanel("為替の影響","先月の同じ日数との差を分けたもの",`<p class="wt">使い方の増減 ${msign(z.fx.use)} USD · 為替の増減 ${msign(z.fx.rate)} USD</p><p class="due">店の通貨の金額と、USD に直したときのレートで分けています。</p>`):"";
+  const cur=d.currencies.length?mpanel("通貨ごとの支出",esc(d.label),`<div class="mscroll"><table><thead><tr><th>通貨</th><th class="n">店の通貨の額</th><th class="n">USD</th><th class="n">1単位の USD</th></tr></thead><tbody>${d.currencies.map(c=>`<tr><td>${esc(c.currency)}</td><td class="n">${esc(Number(c.value).toLocaleString("en-US"))}</td><td class="n">${musd(c.usd)}</td><td class="n">${c.rate==null?"":esc(c.rate)}</td></tr>`).join("")}</tbody></table></div>`):"";
+  const charge=c=>`<div class="mrow"><span class="wt">${esc(c.title)}</span><span class="amt">月 ${musd(c.usd)}</span><span class="due">年 ${musd(c.yearly)} · ${c.months}か月 · 最後 ${esc(c.last)}${c.active?"":" · 止まっています"}${c.reviewed?` · 見直した日 ${esc(c.reviewed)}`:""}</span><button class="btn sm" data-mnotcharge="${esc(c.key)}">毎月の請求ではない</button></div>`;
+  const list=mpanel("毎月の請求",`${z.charges.length}件。カードの支払いから見つけた候補です`,z.charges.length?z.charges.map(charge).join(""):`<p class="due">まだ見つかっていません。明細の「毎月の請求にする」で足せます。</p>`);
+  return `${focus}${mpanel("いつもとの差",`${esc(scope)}を、直近${z.usual?z.usual.months:0}か月の同じ時期の中央値と比べます`,gapBody+compare)}${odd}${fx}${cur}${list}`;
+}
+function moneyAdvice(d){
+  const z=d.analysis,a=z.action,lim=d.limits||{},paces=Object.values(d.pace||{}),rc=d.recon,close=d.close||{};
+  const one=a?`<section class="card mfocus" aria-label="今週の1手"><span class="sub">今週の1手</span><p class="mtalk">${esc(a.fact)}</p><p class="due">${esc(a.ask)}</p>${a.kind==="charge"?`<div class="row"><button class="btn primary sm" data-mchoice="keep">続ける</button><button class="btn sm" data-mchoice="later">あとで</button><button class="btn sm" data-mchoice="review">見直す</button></div>`:`<div class="row"><button class="btn primary sm" data-mdrillcat="${esc(a.name)}">明細を見る</button><button class="btn sm" id="mTask">タスクに入れる</button></div>`}</section>`:`<section class="card mfocus"><span class="sub">今週の1手</span><p class="mtalk">今週、見ておくものはありません。</p></section>`;
+  const ai=d.advice&&d.advice.items&&d.advice.items.length?d.advice.items.map(x=>`<div class="mtip1"><p class="wt">${esc(x.fact)}</p>${x.why?`<p class="due">${esc(x.why)}</p>`:""}<p class="mnext">次の1つ：${esc(x.next)}</p><button class="btn sm" data-maitask="${esc(x.next)}" data-mainote="${esc(x.fact)}">タスクに入れる</button></div>`).join(""):`<p class="due">まだありません。3日に1回作られます。</p>`;
+  const aiPanel=mpanel("Claude の助言",d.advice?`${esc(d.advice.at)} に作成。数字は Desk の計算だけを使います`:"数字は Desk の計算だけを使います",ai+`<button class="btn sm" id="mReview">今すぐ分析</button>`);
+  const step=(key,label)=>`<label class="mcheck"><input type="checkbox" data-mclose="${key}" ${close[key]?"checked":""}><span>${esc(label)}</span></label>`;
+  const gap=v=>v==null?"":v===0?"差なし":`差 ${musd(Math.abs(v))}`;
+  const curList=Object.keys(d.paid||{});
+  const reconForm=d.month?`<form class="mform" id="mRecon"><label>入金<input type="number" min="0" step="any" inputmode="decimal" id="mrIn" value="${rc&&rc.in!=null?esc(rc.in):""}"></label><label>出金<input type="number" min="0" step="any" inputmode="decimal" id="mrOut" value="${rc&&rc.out!=null?esc(rc.out):""}"></label><label>通貨<select id="mrCur">${[...new Set(["USD",...curList,...(rc?[rc.currency]:[])])].map(c=>`<option ${rc&&rc.currency===c?"selected":""}>${esc(c)}</option>`).join("")}</select></label><button class="btn sm" type="submit">照合</button></form>${rc?`<p class="due">入金 ${musd(rc.oursIn)}（${esc(gap(rc.diffIn))}） · 出金 ${musd(rc.oursOut)}（${esc(gap(rc.diffOut))}）</p>`:""}`:`<p class="due">月を選ぶと、正しい数字と照合できます。</p>`;
+  const closing=mpanel("月の締め",esc(monthJa(z.month)),`<div class="mchecks">${step("recon","正しい数字と照合した")}${reconForm}${step("review","いつもとの差の上位3件を見た")}${step("next","次の月にやることを1つ決めた")}</div>`);
+  const paceRow=p=>`<div class="mrow"><span class="wt">${esc(p.label)} 約${mround(p.spent)} / 目安 ${mround(p.limit)}</span><span class="due">このペースだと約 ${mround(p.forecast)} USD</span></div>`;
+  const limits=mpanel("自分で決めた目安","カードや現金などの支出。USD",`${paces.map(paceRow).join("")}<form class="mform" id="mLimits"><label>1週間<input type="number" min="0" step="any" inputmode="decimal" id="mWeek" value="${lim.week==null?"":esc(lim.week)}"></label><label>1か月<input type="number" min="0" step="any" inputmode="decimal" id="mMonth" value="${lim.month==null?"":esc(lim.month)}"></label><button class="btn sm" type="submit">保存</button></form>`);
+  const learn=`<details class="card mmore"><summary>お金の学び ${d.lessons.length}件</summary><div class="mmorein">${d.lessons.map(x=>`<div><h3>${esc(x.title)}</h3><p class="mread">${esc(x.body)}</p><p class="due"><a class="ext" href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.source)} ↗</a>${x.checked?` · ${esc(x.checked)}`:""}</p></div>`).join("")}<p class="due">${esc(d.takeNote)}</p></div></details>`;
+  return `${one}${aiPanel}${closing}${limits}${learn}<p class="due">自分では止められないと感じるときは、信頼できる人、FP、医療機関に相談する方法もあります。</p>`;
+}
+function moneyDetail(d){
+  const drill=S.moneyDrill,flt=S.moneyFilter||"all",q=(S.moneySearch||"").toLowerCase(),cur=S.moneyCur||"";
+  const test=a=>{
+    if(drill&&((drill.date&&a.date!==drill.date)||(drill.category&&a.category!==drill.category)))return false;
+    if(flt==="review"&&!(a.kind==="unknown"||a.kindSure===false||a.useSure===false||a.category==="未分類"))return false;
+    if(flt==="new"&&!(d.seen&&a.date>=d.seen.since))return false;
+    if(flt==="in"||flt==="out"){if(a.flow!==flt)return false}
+    if(cur&&a.currency!==cur)return false;
+    return !q||`${a.title} ${a.description} ${a.category} ${a.use}`.toLowerCase().includes(q);
+  };
+  const all=d.items.filter(test),limit=S.moneyShow||100,shown=all.slice(0,limit);
+  const reviewN=d.items.filter(a=>a.flow&&(a.kind==="unknown"||a.kindSure===false||a.useSure===false||a.category==="未分類")).length;
+  const chips=[["all","すべて"],["in","入金"],["out","出金"],["review",`確かめたいもの ${reviewN}件`],...(d.seen?[["new","前回から"]]:[])];
+  const head=`<form class="msearch" id="mSearch"><input id="mQ" type="search" placeholder="店名や用途で探す" aria-label="店名や用途で探す" value="${esc(S.moneySearch||"")}"><select id="mCurSel" aria-label="通貨">${[["","通貨"],...[...new Set(d.items.map(a=>a.currency).filter(Boolean))].sort().map(c=>[c,c])].map(([v,l])=>`<option value="${esc(v)}" ${v===cur?"selected":""}>${esc(l)}</option>`).join("")}</select><button class="btn sm" type="submit">探す</button></form><div class="chips" role="group" aria-label="出入金を絞り込む">${chips.map(([k,l])=>`<button class="chip" data-mfilter="${k}" aria-pressed="${k===flt}">${esc(l)}</button>`).join("")}</div>${drill?`<p class="mline"><span class="wt">${esc(drill.label)}</span> <button class="btn sm" id="mDrillOff">解除</button></p>`:""}`;
+  const pickCat=a=>`<select class="mcat" data-mcat="${esc(a.title)}" aria-label="「${esc(a.title)}」の分類">${d.categoryNames.map(n=>`<option ${n===a.category?"selected":""}>${esc(n)}</option>`).join("")}</select>`;
+  const pickKind=a=>`<select class="mcat" data-mkind="${esc(a.title)}" data-mflow="${esc(a.flow)}" aria-label="「${esc(a.title)}」の種類">${Object.entries(d.kindNames).filter(([k])=>k!=="unknown"||a.kind==="unknown").map(([k,n])=>`<option value="${k}" ${k===a.kind?"selected":""}>${esc(n)}</option>`).join("")}</select>`;
+  const row=a=>{const off=!a.flow,big=a.flow&&a.usd!=null?`${a.flow==="in"?"+ ":""}${musd(a.usd)}`:esc(a.amountText),orig=[a.amountText,a.secondaryText].filter(Boolean).map(esc).join(" / ");
+    const why=[a.use?`${a.useSure?"":"たぶん "}${esc(a.use)}`:"",a.kindWhy?`${a.kindSure?"":"たぶん "}${esc(a.kindWhy)}`:""].filter(Boolean).join(" · ");
+    return `<div class="mrow ${off?"off":""}"><span class="wt">${esc(a.title||a.description||"（題名なし）")}</span><span class="amt">${big}</span><span class="due">${esc(a.date.slice(5).replace("-","/"))} · ${esc(WISETYPE[a.type]||a.type||"")}${a.status==="CANCELLED"?" · 取り消し":""} · ${orig}${a.flow&&a.usdSource==="rate"?" · 換算":""}</span>${why?`<span class="due mfull">${why}</span>`:""}${a.flow?`<details class="mfix mfull" ${flt==="review"?"open":""}><summary>${esc(d.kindNames[a.kind]||"")} · ${esc(a.category)}　直す</summary><span class="mpicks">${pickKind(a)}${a.flow==="out"?pickCat(a):""}${a.kind==="spend"&&a.type==="CARD_PAYMENT"?`<button class="btn sm" data-mcharge="${esc((a.title||"").toLowerCase()+"|"+a.currency)}">毎月の請求にする</button>`:""}</span></details>`:""}</div>`};
+  const list=all.length?`<section class="card dpanel"><div class="dhead"><h2>${esc(d.label)}</h2><span class="count">${all.length}件</span></div><div>${shown.map(row).join("")}</div></section>${all.length>shown.length?`<button class="btn" id="mMore">続きを見る（あと ${all.length-shown.length}件）</button>`:""}`:`<div class="card empty"><b>該当する明細はありません</b></div>`;
+  const t=d.kinds,totals=`<p class="due">${Object.entries(d.kindNames).filter(([k])=>t[k]&&t[k].count).map(([k,n])=>`${esc(n)} ${musd(t[k].usd)}（${t[k].count}件）`).join(" · ")}</p>`;
+  return head+totals+list;
+}
 function moneyView(){
   const d=S.money, head=`<header class="head"><div><p class="eyebrow">Wise</p><h1>お金</h1></div></header>`;
   if(!d) return head+`<div class="card empty"><b>${S.moneyErr?"読み込めませんでした":"読み込んでいます"}</b>${S.moneyErr?"Desk のサーバーが動いているか、期間の指定が正しいか確かめてください。":""}</div>`;
-  const q=S.moneyQ||{period:"month"}, num=v=>esc(Number(v).toLocaleString("ja-JP")), usd=v=>esc(Number(v).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}));
-  const st=d.state||{}, at=st.lastSuccess?new Date(st.lastSuccess).toLocaleString("ja-JP",{month:"long",day:"numeric",hour:"2-digit",minute:"2-digit"}):"";
+  const q=S.moneyQ||{period:"month"},tab=S.moneyTab||"overview",st=d.state||{};
+  const at=st.lastSuccess?new Date(st.lastSuccess).toLocaleString("ja-JP",{month:"long",day:"numeric",hour:"2-digit",minute:"2-digit"}):"";
   const trouble=st.ok===false||!st.lastTry?`<div class="card empty"><b>${st.error?esc(st.error):"まだ取り込んでいません"}</b>${at?`最後に取り込めたのは ${esc(at)} です。`:"取り込めると、ここに出入金が出ます。"}</div>`:"";
+  const tabs=`<div class="mtabs" role="tablist" aria-label="お金の画面">${[["overview","概要"],["charts","グラフ"],["analysis","分析"],["advice","助言"],["detail","明細"]].map(([k,l])=>`<button role="tab" class="mtab" data-mtab="${k}" aria-selected="${k===tab}">${l}</button>`).join("")}</div>`;
   const chips=[["week","今週"],["month","月"],["3m","3か月"],["6m","半年"],["all","最初から"],["custom","期間指定"]];
   const pick=`<div class="chips" role="group" aria-label="期間を選ぶ">${chips.map(([k,l])=>`<button class="chip" data-mperiod="${k}" aria-pressed="${k===d.period}">${l}</button>`).join("")}</div>`;
   const i=d.months.indexOf(d.month), older=d.months[i+1], newer=d.months[i-1];
   const nav=`<div class="mmonth"><h2>${esc(d.label)}</h2>${d.period==="month"?`<button class="btn sm" data-mmonth="${esc(older||"")}" ${older?"":"disabled"}>前の月</button><button class="btn sm" data-mmonth="${esc(newer||"")}" ${newer?"":"disabled"}>次の月</button>`:""}</div>${d.period==="custom"?`<form class="mform" id="mRange"><label>開始<input type="date" id="mFrom" value="${esc(q.from||d.start)}"></label><label>終了<input type="date" id="mTo" value="${esc(q.to||d.end)}"></label><button class="btn sm" type="submit">この期間を見る</button></form>`:""}`;
   const file=(format,kind)=>{const p=moneyQuery();p.set("format",format);p.set("kind",kind);return `${esc(location.origin)}/api/wise/export?${esc(p.toString())}`};
   const exports=`<div class="mexport"><span class="sub">この期間を書き出す</span><a class="btn sm" href="${file("csv","list")}">CSV</a><a class="btn sm" href="${file("pdf","list")}">一覧の PDF</a><a class="btn sm" href="${file("pdf","report")}">レポートの PDF</a></div>`;
-  const breakdown=(t,dir)=>Object.entries(t.types).filter(([k])=>k.startsWith(dir+":")).sort((a,b)=>b[1]-a[1]).map(([k,v])=>{const y=k.slice(dir.length+1);return `${esc(WISETYPE[y]||y)} ${usd(v)}`}).join(" · ");
-  const u=d.usd, cur=Object.keys(d.paid).sort((a,b)=>d.paid[b].count-d.paid[a].count), inB=breakdown(u,"in"), outB=breakdown(u,"out"), left=Object.entries(d.unconverted);
-  const ea=d.earlier, vs=ea?`<span class="due">支出（カードと現金）${usd(d.spent)} · 前の同じ長さの期間 ${usd(ea.spent)}</span>`:`<span class="due">支出（カードと現金）${usd(d.spent)}</span>`;
-  const totals=`<section class="card" aria-label="USD の合計"><div class="mcur"><h3>USD の合計</h3><div class="mnums"><div class="mnum"><span class="sub">入金</span><b>${usd(u.in)}</b></div><div class="mnum"><span class="sub">出金</span><b>${usd(u.out)}</b></div><div class="mnum net"><span class="sub">差引</span><b>${usd(u.net)}</b></div></div>${vs}${inB?`<span class="due">入金の内訳：${inB}</span>`:""}${outB?`<span class="due">出金の内訳：${outB}</span>`:""}<span class="due">Wise の USD 記録 ${u.recorded}件 · レートで換算 ${u.converted}件</span>${left.length?`<span class="due">レートを取れず合計に入っていない分：${left.map(([c,n])=>`${esc(c)} ${n}件`).join(" · ")}</span>`:""}</div></section>`;
-  const paces=Object.values(d.pace||{}), lim=d.limits||{};
-  const paceRow=p=>`<div class="mrow"><span class="wt">${esc(p.label)} ${usd(p.spent)} / 上限 ${usd(p.limit)}</span><span class="amt">残り ${usd(p.left)}</span><span class="due">このペースだと ${usd(p.forecast)} USD</span></div>`;
-  const pace=`<section class="card dpanel" aria-label="自分で決めた上限"><div class="dhead"><h2>自分で決めた上限</h2><span class="sub">カードと現金の支出。単位は USD</span></div>${paces.length?`<div>${paces.map(paceRow).join("")}</div>`:""}<form class="mform" id="mLimits"><label>1週間<input type="number" min="0" step="any" inputmode="decimal" id="mWeek" value="${lim.week==null?"":esc(lim.week)}"></label><label>1か月<input type="number" min="0" step="any" inputmode="decimal" id="mMonth" value="${lim.month==null?"":esc(lim.month)}"></label><button class="btn sm" type="submit">保存</button></form></section>`;
-  const f=d.finding, l=f.lesson;
-  const find=`<section class="card mfind" aria-label="気づき"><p class="wt">${esc(f.fact)}</p><p class="mnext">次の1つ：${esc(f.next)}</p><button class="btn sm" id="mTask">タスクに入れる</button><details class="mlesson"><summary>${esc(l.title)}</summary><p>${esc(l.body)}</p><p class="due"><a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.source)} ↗</a> · ${esc(d.takeNote)}</p></details></section>`;
-  const paid=cur.length?`<section class="card dpanel" aria-label="支払った通貨ごとの合計"><div class="dhead"><h2>支払った通貨ごと</h2></div><div>${cur.map(c=>`<div class="mrow"><span class="wt">${esc(c)}</span><span class="amt">出金 ${num(d.paid[c].out)}${d.paid[c].in?` · 入金 ${num(d.paid[c].in)}`:""}</span></div>`).join("")}</div></section>`:"";
-  const cats=d.categories.length?`<section class="card dpanel" aria-label="分類ごとの出金"><div class="dhead"><h2>分類ごとの出金</h2></div><div>${d.categories.map(c=>`<div class="mrow"><span class="wt">${esc(c.name)}</span><span class="amt">${usd(c.usd)}</span><span class="due">${c.count}件</span></div>`).join("")}</div></section>`:"";
-  const rec=d.recurring.length?`<section class="card dpanel"><div class="dhead"><h2>毎月の請求の候補</h2><span class="count">${d.recurring.length}件</span></div><div>${d.recurring.map(r=>`<div class="mrow"><span class="wt">${esc(r.title)}</span><span class="amt">${esc(r.amountText)}</span><span class="due">${r.months}か月 · 最後 ${esc(r.last)}</span>${r.inSubs?`<span class="due">サブスク自作に入っています</span>`:`<button class="btn sm" data-wisesub="${esc(r.key)}">サブスク自作に渡す</button>`}</div>`).join("")}</div></section>`:"";
-  const rc=d.recon, gap=v=>v==null?"":v===0?"差なし":`差 ${num(v)}`;
-  const recon=d.month?`<section class="card dpanel" aria-label="正しい数字との照合"><div class="dhead"><h2>正しい数字と照合</h2><span class="sub">${esc(monthJa(d.month))}の数字を入れると差を出します</span></div>${rc?`<div><div class="mrow"><span class="wt">入金 ${num(rc.oursIn)} ${esc(rc.currency)}</span><span class="amt">${esc(gap(rc.diffIn))}</span></div><div class="mrow"><span class="wt">出金 ${num(rc.oursOut)} ${esc(rc.currency)}</span><span class="amt">${esc(gap(rc.diffOut))}</span></div></div>`:""}<form class="mform" id="mRecon"><label>入金<input type="number" min="0" step="any" inputmode="decimal" id="mrIn" value="${rc&&rc.in!=null?esc(rc.in):""}"></label><label>出金<input type="number" min="0" step="any" inputmode="decimal" id="mrOut" value="${rc&&rc.out!=null?esc(rc.out):""}"></label><label>通貨<select id="mrCur">${[...new Set(["USD",...cur,...(rc?[rc.currency]:[])])].map(c=>`<option ${rc&&rc.currency===c?"selected":""}>${esc(c)}</option>`).join("")}</select></label><button class="btn sm" type="submit">照合</button></form></section>`:"";
-  const b=d.balances, balances=b?`<section class="card dpanel" aria-label="今の残高"><div class="dhead"><h2>Wise の残高</h2><span class="count">${esc(b.date)}</span></div><div><div class="mrow"><span class="wt">合計（今のレートで換算）</span><span class="amt">${usd(b.usd)} USD${b.complete?"":"（一部を除く）"}</span></div>${b.rows.filter(r=>r.value).map(r=>`<div class="mrow"><span class="wt">${esc(r.currency)} ${num(r.value)}</span><span class="amt">${r.usd==null?"":usd(r.usd)+" USD"}</span></div>`).join("")}</div></section>`:"";
-  const flt=S.moneyFilter||"all", all=d.items.filter(a=>flt==="all"||a.flow===flt), limit=S.moneyShow||100, shownItems=all.slice(0,limit);
-  const filter=d.items.length?`<div class="chips" role="group" aria-label="出入金を絞り込む">${[["all","すべて"],["in","入金"],["out","出金"]].map(([k,l])=>`<button class="chip" data-mfilter="${k}" aria-pressed="${k===flt}">${l}</button>`).join("")}</div>`:"";
-  const catPick=a=>`<select class="mcat" data-mcat="${esc(a.title)}" aria-label="「${esc(a.title)}」の分類">${d.categoryNames.map(n=>`<option ${n===a.category?"selected":""}>${esc(n)}</option>`).join("")}</select>`;
-  const row=a=>{const off=!a.flow,big=a.flow&&a.usd!=null?`${a.flow==="in"?"+ ":""}${usd(a.usd)} USD`:esc(a.amountText),orig=[a.amountText,a.secondaryText].filter(Boolean).map(esc).join(" / ");return `<div class="mrow ${off?"off":""}"><span class="wt">${esc(a.title||a.description||"（題名なし）")}</span><span class="amt">${big}</span><span class="due">${esc(a.date.slice(5).replace("-","/"))} · ${esc(WISETYPE[a.type]||a.type||"")}${a.status==="CANCELLED"?" · 取り消し":""} · ${orig}${a.flow&&a.usdSource==="rate"?" · 換算":""}</span>${a.flow==="out"?catPick(a):""}</div>`};
-  const list=d.items.length?`<section class="card dpanel"><div class="dhead"><h2>出入金</h2><span class="count">${all.length}件</span></div><div>${shownItems.map(row).join("")}</div></section>${all.length>shownItems.length?`<button class="btn" id="mMore">続きを見る（あと ${all.length-shownItems.length}件）</button>`:""}`:(trouble?"":`<div class="card empty"><b>この期間の出入金はありません</b></div>`);
-  const learn=`<details class="card mlearn"><summary>お金の学び ${d.lessons.length}件</summary>${d.lessons.map(x=>`<div class="mrow"><span class="wt mfull">${esc(x.title)}</span><span class="due mfull">${esc(x.body)} <a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.source)} ↗</a></span></div>`).join("")}<p class="sub mnote">${esc(d.takeNote)}</p></details>`;
-  return head+`<div class="money">${trouble}${pick}${nav}${exports}${totals}${pace}${find}${paid}${cats}${rec}${recon}${balances}${filter}${list}${learn}<p class="sub">合計は USD です。Wise に USD の記録がなければ、決済時刻の Wise のレートで換算します。実際に払った額とは少し差が出ることがあります。取り消しと、自分の残高どうしの両替は入れていません。${at&&!trouble?`最後の取り込み ${esc(at)}。`:""}</p></div>`;
+  const body={overview:moneyOverview,charts:moneyCharts,analysis:moneyAnalysis,advice:moneyAdvice,detail:moneyDetail}[tab](d);
+  return head+`<div class="money">${tabs}${trouble}${pick}${nav}${body}${exports}<p class="sub">合計は USD です。Wise に USD の記録がなければ、決済時刻の Wise のレートで換算します。種類と分類は Claude の推定を含み、明細で直せます。取り消しと、自分の残高どうしの両替は入れていません。</p></div>`;
 }
 function wireMoney(){
   const go=()=>{S.moneyShow=0;moneyLoad(true)}, put=async(path,rec,msg)=>{try{await api("PUT",path,rec);if(msg)toast(msg);moneyLoad(true)}catch(e){toast("保存できませんでした。入力を確かめてください")}};
-  document.querySelectorAll("[data-mperiod]").forEach(b=>b.onclick=()=>{const p=b.dataset.mperiod,d=S.money;S.moneyQ=p==="custom"?{period:p,from:d.start,to:d.end}:{period:p};go()});
-  document.querySelectorAll("[data-mmonth]").forEach(b=>b.onclick=()=>{if(!b.dataset.mmonth)return;S.moneyQ={period:"month",month:b.dataset.mmonth};go()});
+  if(!S.moneySeen&&S.money){S.moneySeen=true;api("PUT","/api/wise/seen",{}).catch(()=>{})}
+  const toDetail=drill=>{S.moneyDrill=drill;S.moneyTab="detail";S.moneyFilter="all";S.moneySearch="";S.moneyCur="";S.moneyShow=0;render()};
+  document.querySelectorAll("[data-mtab]").forEach(b=>b.onclick=()=>{S.moneyTab=b.dataset.mtab;render();window.scrollTo(0,0)});
+  document.querySelectorAll("[data-mperiod]").forEach(b=>b.onclick=()=>{const p=b.dataset.mperiod,d=S.money;S.moneyDrill=null;S.moneyQ=p==="custom"?{period:p,from:d.start,to:d.end}:{period:p};go()});
+  document.querySelectorAll("[data-mmonth]").forEach(b=>b.onclick=()=>{if(!b.dataset.mmonth)return;S.moneyDrill=null;S.moneyQ={period:"month",month:b.dataset.mmonth};go()});
+  document.querySelectorAll("[data-mdrillmonth]").forEach(b=>b.onclick=()=>{S.moneyDrill=null;S.moneyQ={period:"month",month:b.dataset.mdrillmonth};S.moneyTab="detail";S.moneyFilter="all";go()});
+  document.querySelectorAll("[data-mdrillday]").forEach(b=>b.onclick=()=>toDetail({date:b.dataset.mdrillday,label:mjaDate(b.dataset.mdrillday)+"の明細"}));
+  document.querySelectorAll("[data-mdrillcat]").forEach(b=>b.onclick=()=>toDetail({category:b.dataset.mdrillcat,label:b.dataset.mdrillcat+"の明細"}));
+  $("#mDrillOff")&&($("#mDrillOff").onclick=()=>{S.moneyDrill=null;render()});
+  document.querySelectorAll("[data-mgroup]").forEach(b=>b.onclick=()=>{S.moneyGroup=b.dataset.mgroup;render()});
+  document.querySelectorAll("[data-macct]").forEach(b=>b.onclick=()=>{S.moneyAcct=b.dataset.macct;render()});
   document.querySelectorAll("[data-mfilter]").forEach(b=>b.onclick=()=>{S.moneyFilter=b.dataset.mfilter;S.moneyShow=0;render()});
+  $("#mSearch")&&($("#mSearch").onsubmit=e=>{e.preventDefault();S.moneySearch=$("#mQ").value.trim();S.moneyCur=$("#mCurSel").value;S.moneyShow=0;render()});
   $("#mMore")&&($("#mMore").onclick=()=>{S.moneyShow=(S.moneyShow||100)+100;render()});
   $("#mRange")&&($("#mRange").onsubmit=e=>{e.preventDefault();S.moneyQ={period:"custom",from:$("#mFrom").value,to:$("#mTo").value};go()});
-  $("#mLimits")&&($("#mLimits").onsubmit=e=>{e.preventDefault();put("/api/wise/limits",{week:$("#mWeek").value,month:$("#mMonth").value},"上限を保存しました")});
+  $("#mLimits")&&($("#mLimits").onsubmit=e=>{e.preventDefault();put("/api/wise/limits",{week:$("#mWeek").value,month:$("#mMonth").value},"目安を保存しました")});
   $("#mRecon")&&($("#mRecon").onsubmit=e=>{e.preventDefault();put("/api/wise/recon/"+encodeURIComponent(S.money.month),{in:$("#mrIn").value,out:$("#mrOut").value,currency:$("#mrCur").value})});
   document.querySelectorAll("[data-mcat]").forEach(c=>c.onchange=()=>put("/api/wise/category",{title:c.dataset.mcat,category:c.value},"同じ題名の分類を変えました"));
-  $("#mTask")&&($("#mTask").onclick=async()=>{try{await store.putTask({id:newTaskId(),title:S.money.finding.next,note:S.money.finding.fact,status:"notyet",source:"money",createdAt:Date.now()});toast("タスクに入れました")}catch(e){toast("入れられませんでした")}});
+  document.querySelectorAll("[data-mkind]").forEach(c=>c.onchange=()=>put("/api/wise/kind",{title:c.dataset.mkind,flow:c.dataset.mflow,kind:c.value},"同じ題名の種類を変えました"));
+  document.querySelectorAll("[data-mcharge]").forEach(b=>b.onclick=()=>put("/api/wise/recurring",{key:b.dataset.mcharge,mark:true},"毎月の請求に入れました"));
+  document.querySelectorAll("[data-mnotcharge]").forEach(b=>b.onclick=()=>put("/api/wise/recurring",{key:b.dataset.mnotcharge,mark:false},"一覧から外しました"));
+  document.querySelectorAll("[data-mchoice]").forEach(b=>b.onclick=()=>put("/api/wise/recurring",{key:S.money.analysis.action.key,choice:b.dataset.mchoice},"記録しました"));
+  document.querySelectorAll("[data-mclose]").forEach(c=>c.onchange=()=>{const rec={};document.querySelectorAll("[data-mclose]").forEach(x=>rec[x.dataset.mclose]=x.checked);put("/api/wise/close/"+encodeURIComponent(S.money.analysis.month),rec)});
+  const taskIn=async(title,note)=>{try{await store.putTask({id:newTaskId(),title,note,status:"notyet",source:"money",createdAt:Date.now()});toast("タスクに入れました")}catch(e){toast("入れられませんでした")}};
+  $("#mTask")&&($("#mTask").onclick=()=>{const a=S.money.analysis.action;taskIn(`${a.name} の明細を1回見る`,a.fact)});
+  document.querySelectorAll("[data-maitask]").forEach(b=>b.onclick=()=>taskIn(b.dataset.maitask,b.dataset.mainote));
+  $("#mReview")&&($("#mReview").onclick=async()=>{try{await api("POST","/api/claude",{cmd:"/money-review"});toast("Terminal で Claude が始まります")}catch(e){toast("始められませんでした")}});
   document.querySelectorAll("[data-wisesub]").forEach(b=>b.onclick=async()=>{b.disabled=true;try{await api("POST","/api/wise/subs",{key:b.dataset.wisesub});toast("サブスク自作に入れました");moneyLoad(true)}catch(e){b.disabled=false;toast("入れられませんでした")}});
+  const tip=document.getElementById("mTip")||Object.assign(document.body.appendChild(document.createElement("div")),{id:"mTip",className:"mtip"});
+  tip.hidden=true;
+  document.querySelectorAll("[data-tip]").forEach(h=>{
+    h.onmousemove=e=>{tip.textContent=h.dataset.tip;tip.hidden=false;tip.style.left=Math.min(e.clientX+12,window.innerWidth-tip.offsetWidth-8)+"px";tip.style.top=(e.clientY-tip.offsetHeight-8)+"px"};
+    h.onmouseleave=()=>{tip.hidden=true};
+  });
 }
 /* 返信待ち: Life OS 02. On the Mac the server holds the state; online the hourly sync copies it to db "followups"
    and an answer waits on its doc until the next sync. This view has no way to send mail: 送る opens the Gmail draft. */
@@ -2063,6 +2267,7 @@ function wire(){
   document.querySelectorAll("[data-tstart]").forEach(b=>b.onclick=()=>setTaskStatus(b.dataset.tstart,"doing"));
   document.querySelectorAll("[data-gonotyet]").forEach(b=>b.onclick=()=>{S.taskCol="notyet";location.hash="tasks"});
   document.querySelectorAll("[data-tstatus]").forEach(s=>s.onchange=()=>setTaskStatus(s.dataset.tstatus,s.value));
+  document.querySelectorAll("[data-tshelf]").forEach(b=>b.onclick=()=>{S.taskShelf=S.taskShelf===b.dataset.tshelf?null:b.dataset.tshelf;render()});
   document.querySelectorAll("[data-tcol]").forEach(b=>b.onclick=()=>{S.taskCol=b.dataset.tcol;render()});
   document.querySelectorAll("[data-task]").forEach(c=>{
     c.ondragstart=e=>{e.dataTransfer.setData("text/plain",c.dataset.task);e.dataTransfer.effectAllowed="move";c.classList.add("dragging")};
