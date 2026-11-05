@@ -321,6 +321,14 @@ def wise_settings(parts, rec):
                 entry.update(choice=rec["choice"], reviewed=wise_report.today_hcmc().isoformat() if rec["choice"] == "keep" else entry.get("reviewed"))
             wise_sync.write_json("recurring.json", saved)
             return 200, {"ok": True}
+        if parts == ["direct"]:
+            title = str(rec.get("title") or "").strip().lower()
+            if not title or len(title) > 300 or not isinstance(rec.get("on"), bool):
+                return 400, {"error": "bad direct"}
+            chosen = set(wise_sync.read_json("direct.json", []))
+            (chosen.add if rec["on"] else chosen.discard)("out:" + title)
+            wise_sync.write_json("direct.json", sorted(chosen))
+            return 200, {"ok": True}
         if parts == ["upcoming-hide"]:
             item = str(rec.get("id") or "").strip()
             if not item or len(item) > 80:
@@ -515,6 +523,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, core.desk_view()) if core else self.send(404, {"error": "not found"})
         if path == "/api/wise":
             return self.send(*wise_view(wise_query(self.path)))
+        if path == "/api/wise/world":
+            return self.send(200, wise_report.world())
         if path == "/api/wise/export":
             return self.wise_export()
         if path == "/api/memolink":

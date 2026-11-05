@@ -58,11 +58,13 @@ def enrich(items, category_of):
     chosen = wise_sync.read_json("flows.json", {})
     guess = wise_sync.read_json("guess.json", {})
     overrides = wise_sync.read_json("categories.json", {})
+    direct = set(wise_sync.read_json("direct.json", []))
     for a in items:
         title = (a.get("title") or "").lower()
         a["kind"], proposal = kind_of(a, chosen, guess)
         a["kindSure"] = proposal["sure"] if proposal else True
         a["kindWhy"] = proposal["why"] if proposal else ""
+        a["direct"] = (a.get("flow") or "") + ":" + title in direct
         a["category"] = category_of(a, overrides)
         a["group"] = GROUPS.get(a["category"], "その他")
         found = (guess.get("categories") or {}).get(title)
@@ -319,7 +321,7 @@ def analyze(rows, today, month=None):
     for name in ("交通費", "飲食費"):
         v = next((g for g in variances(counted, month, cut, earlier, this, "group") if g["name"] == name), {"name": name, "usd": 0, "usual": 0, "gap": 0})
         focus.append({**v, "last": spent_total(a for a in before if a["group"] == name), "share": round(v["usd"] / so_far * 100, 1) if so_far > 0 else 0})
-    moved = [a for a in counted if a["date"]]
+    moved = [a for a in counted if a["date"] and not a.get("direct")]  # paid straight from a bank: the balance never moved
     money_in, money_out = round(sum(a["usd"] for a in moved if a["flow"] == "in"), 2), round(sum(a["usd"] for a in moved if a["flow"] == "out"), 2)
     bridge = {"in": money_in, "out": money_out, "balance": balance["usd"], "gap": round(balance["usd"] - (money_in - money_out), 2)} if balance else None
     today_d = dt.date.fromisoformat(today)

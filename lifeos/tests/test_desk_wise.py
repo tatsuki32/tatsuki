@@ -13,6 +13,7 @@ import wise_analysis  # noqa: E402
 import wise_plan  # noqa: E402
 import wise_report  # noqa: E402
 import wise_sync  # noqa: E402
+import wise_world  # noqa: E402
 
 
 def act(id_, when, title="<strong>Shop</strong>", amount="10.00 USD", type_="CARD_PAYMENT", status="COMPLETED", second=""):
@@ -570,3 +571,49 @@ class Plan(SandboxCase, Base):
     def test_age(self):
         self.assertEqual(wise_plan.age_on("2000-03-14", "2026-03-13"), 25)
         self.assertEqual(wise_plan.age_on("2000-03-14", "2026-03-14"), 26)
+
+
+class World(SandboxCase, Base):
+    def setUp(self):
+        SandboxCase.setUp(self)
+        Base.setUp(self)
+
+    def fake(self, path):
+        if path.startswith("/country"):
+            return [{}, [{"id": "AAA", "iso2Code": "AA", "region": {"value": "Asia"}}, {"id": "BBB", "iso2Code": "BB", "region": {"value": "Asia"}}, {"id": "WLD", "iso2Code": "1W", "region": {"value": "Aggregates"}}]]
+        series = path.split("/series/")[1].split("/")[0]
+        row = lambda code, v: {"value": v, "variable": [{"concept": "Country", "id": code}]}
+        values = {"9020000": [("AAA", 1200), ("WLD", 9999), ("BBB", None)], "1107000": [("AAA", 120)], "1103000": [("AAA", 60)], "1105000": []}
+        return {"source": {"data": [row(c, v) for c, v in values.get(series, [])]}}
+
+    def test_only_countries_with_a_value_are_kept_and_shares_are_of_the_total(self):
+        countries = wise_world.fetch(self.fake)
+        self.assertEqual(list(countries), ["AAA"])
+        self.assertEqual((countries["AAA"]["month"], countries["AAA"]["uses"]["transport"]), (100, 10))
+
+    def test_a_use_made_of_two_series_needs_both(self):
+        self.assertNotIn("goods", wise_world.fetch(self.fake)["AAA"]["uses"])
+
+    def test_a_failed_fetch_keeps_the_old_table(self):
+        wise_sync.write_json("world.json", {"at": 1, "countries": {"AAA": {}}})
+        def down(path):
+            raise OSError("no network")
+        self.assertFalse(wise_world.update(down))
+        self.assertEqual(list(wise_sync.read_json("world.json", {})["countries"]), ["AAA"])
+
+    def test_my_row_uses_finished_months_and_names_what_it_cannot_place(self):
+        rows = [{"date": "2026-10-01", "kind": "spend", "usd": 60, "category": "交通"}, {"date": "2026-10-02", "kind": "spend", "usd": 60, "category": "現金"},
+                {"date": "2026-11-01", "kind": "spend", "usd": 500, "category": "交通"}, {"date": "2024-01-01", "kind": "spend", "usd": 500, "category": "交通"}]
+        me = wise_world.mine(rows, "2026-11-05")
+        self.assertEqual((me["month"], me["uses"]["transport"], me["unknownShare"]), (10, 50, 50))
+
+    def test_a_payment_straight_from_the_bank_leaves_the_balance_check_but_stays_spending(self):
+        wise_sync.write_json("balances.json", {"2026-11-05": [{"currency": "USD", "value": 100, "usd": 100}]})
+        rows = lambda: wise_analysis.enrich([{"id": "i", "date": "2026-10-01", "flow": "in", "type": "TRANSFER", "title": "Pay", "usd": 100, "value": 100, "currency": "USD"},
+                                             {"id": "o", "date": "2026-10-02", "flow": "out", "type": "TRANSFER", "title": "School", "usd": 900, "value": 900, "currency": "USD"}], lambda a, o: "学び")
+        wise_sync.write_json("flows.json", {"out:school": "spend"})
+        self.assertEqual(wise_analysis.analyze(rows(), "2026-11-05")["bridge"]["gap"], 900)
+        self.assertEqual(server.wise_settings(["direct"], {"title": "School", "on": True})[0], 200)
+        z = wise_analysis.analyze(rows(), "2026-11-05")
+        self.assertEqual(z["bridge"]["gap"], 0)
+        self.assertEqual(z["months"][-2]["spent"], 900)

@@ -1925,7 +1925,7 @@ function moneyOverview(d){
   const seen=d.seen?`<div><h3>前回から</h3><div class="mrow"><span class="wt">新しい明細 ${d.seen.count}件</span><span class="amt">${musd(d.seen.spent)}</span></div></div>`:"";
   const at=st.lastSuccess?new Date(st.lastSuccess).toLocaleString("ja-JP",{month:"long",day:"numeric",hour:"2-digit",minute:"2-digit"}):"";
   const b=d.balances,balance=b?`<div><h3>Wise の残高（${esc(b.date)}）</h3>${b.rows.filter(x=>x.value).map(x=>`<div class="mrow"><span class="wt">${esc(x.currency)} ${esc(Number(x.value).toLocaleString("ja-JP"))}</span><span class="amt">${x.usd==null?"":musd(x.usd)}</span></div>`).join("")}</div>`:"";
-  const gap=z.bridge&&Math.abs(z.bridge.gap)>=1?`<p class="due">記録の入金 ${musd(z.bridge.in)} − 出金 ${musd(z.bridge.out)} と今の残高には ${musd(Math.abs(z.bridge.gap))} USD の差があります。残高を通らない支払いが明細に入っている可能性があり、確かめ中です。</p>`:"";
+  const gap=z.bridge&&Math.abs(z.bridge.gap)>=25?`<p class="due">記録の入金 ${musd(z.bridge.in)} − 出金 ${musd(z.bridge.out)} と今の残高には ${musd(Math.abs(z.bridge.gap))} USD の差があります。残高を通らない支払いが明細に入っている可能性があり、確かめ中です。</p>`:"";
   const sure=`<div><h3>データの確かさ</h3><p class="due">${z.monthsAll}か月分。USD の記録 ${d.usd.recorded}件、レートで換算 ${d.usd.converted}件。種類が未確認 ${k.unknown.count}件。${at?`最後の取り込み ${esc(at)}。`:""}</p>${gap}</div>`;
   const h=d.ahead,aheadRow=i=>{const parts=[i.paidUsd?`支払済み ${musd(i.paidUsd)}`:i.paid?`支払済み ${esc(i.paid.value)} ${esc(i.paid.currency)}`:"",i.dueUsd?`これから ${musd(i.dueUsd)}`:i.due?`これから ${esc(i.due.value)} ${esc(i.due.currency)}`:"",i.estimate!=null?`現地費の目安 ${mround(i.low)}〜${mround(i.high)}（${esc(i.currency)} の日 ${i.basedOn}日分から）`:i.end&&i.currency?"現地費の目安なし":""].filter(Boolean).join(" · ");return `<div class="mrow"><span class="wt">${i.url?`<a class="ext" href="${esc(i.url)}" target="_blank" rel="noopener">${esc(i.title)} ↗</a>`:esc(i.title)}</span><span class="due mfull">${esc(mjaDate(i.date))}${i.end&&i.end!==i.date?`〜${esc(mjaDate(i.end))}`:""} · ${esc(i.kindName)}${i.place?` · ${esc(i.place)}`:""}${parts?` · ${parts}`:""}</span><button class="btn sm" data-mhide="${esc(i.id)}">消す</button></div>`};
   const coming=mpanel("これからの支出",h.at?`${esc(h.at)} に確認。カレンダーと予約メールから`:"カレンダーと予約メールから",h.items.length?`${h.total?`<p class="wt">これから約 ${mround(h.total)} USD${h.runwayAfter!=null?`。入れると暮らせる月数は約${esc(h.runwayAfter)}か月`:""}</p>`:""}${h.unknown?`<p class="due">USD に直せない金額が ${h.unknown}件あり、合計に入っていません。</p>`:""}<div>${h.items.slice(0,S.moneyAheadAll?99:3).map(aheadRow).join("")}</div>${h.items.length>3&&!S.moneyAheadAll?`<button class="btn sm" id="mAheadAll">残り ${h.items.length-3}件を見る</button>`:""}`:`<p class="due">まだ見つかっていません。</p>`);
@@ -2004,10 +2004,27 @@ function moneyDetail(d){
   const pickKind=a=>`<select class="mcat" data-mkind="${esc(a.title)}" data-mflow="${esc(a.flow)}" aria-label="「${esc(a.title)}」の種類">${Object.entries(d.kindNames).filter(([k])=>k!=="unknown"||a.kind==="unknown").map(([k,n])=>`<option value="${k}" ${k===a.kind?"selected":""}>${esc(n)}</option>`).join("")}</select>`;
   const row=a=>{const off=!a.flow,big=a.flow&&a.usd!=null?`${a.flow==="in"?"+ ":""}${musd(a.usd)}`:esc(a.amountText),orig=[a.amountText,a.secondaryText].filter(Boolean).map(esc).join(" / ");
     const why=[a.use?`${a.useSure?"":"たぶん "}${esc(a.use)}`:"",a.kindWhy?`${a.kindSure?"":"たぶん "}${esc(a.kindWhy)}`:""].filter(Boolean).join(" · ");
-    return `<div class="mrow ${off?"off":""}"><span class="wt">${esc(a.title||a.description||"（題名なし）")}</span><span class="amt">${big}</span><span class="due">${esc(a.date.slice(5).replace("-","/"))} · ${esc(WISETYPE[a.type]||a.type||"")}${a.status==="CANCELLED"?" · 取り消し":""} · ${orig}${a.flow&&a.usdSource==="rate"?" · 換算":""}</span>${why?`<span class="due mfull">${why}</span>`:""}${a.flow?`<details class="mfix mfull" ${flt==="review"?"open":""}><summary>${esc(d.kindNames[a.kind]||"")} · ${esc(a.category)}　直す</summary><span class="mpicks">${pickKind(a)}${a.flow==="out"?pickCat(a):""}${a.kind==="spend"&&a.type==="CARD_PAYMENT"?`<button class="btn sm" data-mcharge="${esc((a.title||"").toLowerCase()+"|"+a.currency)}">毎月の請求にする</button>`:""}</span></details>`:""}</div>`};
+    return `<div class="mrow ${off?"off":""}"><span class="wt">${esc(a.title||a.description||"（題名なし）")}</span><span class="amt">${big}</span><span class="due">${esc(a.date.slice(5).replace("-","/"))} · ${esc(WISETYPE[a.type]||a.type||"")}${a.status==="CANCELLED"?" · 取り消し":""} · ${orig}${a.flow&&a.usdSource==="rate"?" · 換算":""}</span>${why?`<span class="due mfull">${why}</span>`:""}${a.flow?`<details class="mfix mfull" ${flt==="review"?"open":""}><summary>${esc(d.kindNames[a.kind]||"")} · ${esc(a.category)}　直す</summary><span class="mpicks">${pickKind(a)}${a.flow==="out"?pickCat(a):""}${a.kind==="spend"&&a.type==="CARD_PAYMENT"?`<button class="btn sm" data-mcharge="${esc((a.title||"").toLowerCase()+"|"+a.currency)}">毎月の請求にする</button>`:""}${a.flow==="out"&&a.type==="TRANSFER"?`<button class="btn sm" data-mdirect="${esc(a.title)}" data-mon="${a.direct?"":"1"}">${a.direct?"残高から払った":"銀行から直接払った"}</button>`:""}</span></details>`:""}</div>`};
   const list=all.length?`<section class="card dpanel"><div class="dhead"><h2>${esc(d.label)}</h2><span class="count">${all.length}件</span></div><div>${shown.map(row).join("")}</div></section>${all.length>shown.length?`<button class="btn" id="mMore">続きを見る（あと ${all.length-shown.length}件）</button>`:""}`:`<div class="card empty"><b>該当する明細はありません</b></div>`;
   const t=d.kinds,totals=`<p class="due">${Object.entries(d.kindNames).filter(([k])=>t[k]&&t[k].count).map(([k,n])=>`${esc(n)} ${musd(t[k].usd)}（${t[k].count}件）`).join(" · ")}</p>`;
   return head+totals+list;
+}
+const mcountry=(code,c)=>{try{return new Intl.DisplayNames(["ja"],{type:"region"}).of(c.iso2)}catch(e){return code}};
+function moneyWorld(d){
+  const w=S.moneyWorldData;
+  if(!w)return `<div class="card empty"><b>読み込んでいます</b></div>`;
+  const codes=Object.keys(w.countries);
+  if(!codes.length)return `<div class="card empty"><b>まだ統計がありません</b>次の取り込みのあとに出ます。</div>`;
+  const picked=(S.moneyPicked||["JPN","USA","VNM","PHL"]).filter(c=>w.countries[c]),use=S.moneyUse||"transport",name=c=>mcountry(c,w.countries[c]);
+  const sorted=[...codes].sort((a,b)=>name(a).localeCompare(name(b),"ja"));
+  const add=`<form class="msearch" id="mWorldAdd"><select id="mWorldPick" aria-label="国を選ぶ">${sorted.filter(c=>!picked.includes(c)).map(c=>`<option value="${c}">${esc(name(c))}</option>`).join("")}</select><button class="btn sm" type="submit">国を足す</button></form><div class="chips" role="group" aria-label="選んだ国">${picked.map(c=>`<button class="chip" data-mdrop="${c}" aria-pressed="true">${esc(name(c))}　外す</button>`).join("")}</div>`;
+  const totals=mhbars([{name:"自分（Wise の直近12か月）",usd:w.me.month},...picked.map(c=>({name:name(c),usd:w.countries[c].month,note:w.countries[c].monthPpp?`物価調整 ${mround(w.countries[c].monthPpp)}`:""}))]);
+  const useChips=`<div class="chips" role="group" aria-label="用途を選ぶ">${Object.entries(w.useNames).map(([k,n])=>`<button class="chip" data-muse="${k}" aria-pressed="${k===use}">${esc(n)}</button>`).join("")}</div>`;
+  const pct=rows=>{const top=Math.max(...rows.map(r=>r.v||0),1);return `<div class="mhbars">${rows.map(r=>`<div class="mhbar"><span class="wt">${esc(r.name)}</span><span class="amt">${r.v==null?"データなし":`${esc(r.v)}%`}</span><i style="width:${Math.max(r.v==null?0:1,(r.v||0)/top*100)}%"></i></div>`).join("")}</div>`};
+  const shares=pct([{name:"自分（Wise の直近12か月）",v:w.me.uses[use]||0},...picked.map(c=>({name:name(c),v:w.countries[c].uses[use]??null}))]);
+  const all=mtable(["国","月の消費（USD）","物価調整","選んだ用途"],sorted.map(c=>{const x=w.countries[c];return [esc(name(c)),mround(x.month),x.monthPpp?mround(x.monthPpp):"データなし",x.uses[use]==null?"データなし":`${x.uses[use]}%`]}));
+  const src=w.source;
+  return `${add}${mpanel("1人あたりの月の消費",`USD。${src.year}年の統計です。順位や合格の線ではありません`,totals+all)}${mpanel("何に使っているか","消費の中の割合",useChips+shares+`<p class="due">自分の分のうち ${esc(w.me.unknownShare)}% は現金や未分類で、どの用途にも入っていません。</p>`)}${mpanel("最低賃金","",`<p class="due">まだ入っていません。ILO の統計を自動で取れなかったので、確かな出どころが見つかるまで推測で埋めません。</p>`)}<p class="due">出典：<a class="ext" href="${esc(src.url)}" target="_blank" rel="noopener">${esc(src.name)} ↗</a>（${src.year}年）。国の数字は政府が負担する医療や教育、持ち家の家賃相当も含む全国平均です。自分の数字は Wise を通った分だけで、家族の人数や都市、年も違います。参考として見てください。</p>`;
 }
 function moneyView(){
   const d=S.money, head=`<header class="head"><div><p class="eyebrow">Wise</p><h1>お金</h1></div></header>`;
@@ -2015,15 +2032,15 @@ function moneyView(){
   const q=S.moneyQ||{period:"month"},tab=S.moneyTab||"overview",st=d.state||{};
   const at=st.lastSuccess?new Date(st.lastSuccess).toLocaleString("ja-JP",{month:"long",day:"numeric",hour:"2-digit",minute:"2-digit"}):"";
   const trouble=st.ok===false||!st.lastTry?`<div class="card empty"><b>${st.error?esc(st.error):"まだ取り込んでいません"}</b>${at?`最後に取り込めたのは ${esc(at)} です。`:"取り込めると、ここに出入金が出ます。"}</div>`:"";
-  const tabs=`<div class="mtabs" role="tablist" aria-label="お金の画面">${[["overview","概要"],["charts","グラフ"],["analysis","分析"],["advice","助言"],["detail","明細"]].map(([k,l])=>`<button role="tab" class="mtab" data-mtab="${k}" aria-selected="${k===tab}">${l}</button>`).join("")}</div>`;
+  const tabs=`<div class="mtabs" role="tablist" aria-label="お金の画面">${[["overview","概要"],["charts","グラフ"],["analysis","分析"],["advice","助言"],["detail","明細"],["world","世界"]].map(([k,l])=>`<button role="tab" class="mtab" data-mtab="${k}" aria-selected="${k===tab}">${l}</button>`).join("")}</div>`;
   const chips=[["week","今週"],["month","月"],["3m","3か月"],["6m","半年"],["all","最初から"],["custom","期間指定"]];
   const pick=`<div class="chips" role="group" aria-label="期間を選ぶ">${chips.map(([k,l])=>`<button class="chip" data-mperiod="${k}" aria-pressed="${k===d.period}">${l}</button>`).join("")}</div>`;
   const i=d.months.indexOf(d.month), older=d.months[i+1], newer=d.months[i-1];
   const nav=`<div class="mmonth"><h2>${esc(d.label)}</h2>${d.period==="month"?`<button class="btn sm" data-mmonth="${esc(older||"")}" ${older?"":"disabled"}>前の月</button><button class="btn sm" data-mmonth="${esc(newer||"")}" ${newer?"":"disabled"}>次の月</button>`:""}</div>${d.period==="custom"?`<form class="mform" id="mRange"><label>開始<input type="date" id="mFrom" value="${esc(q.from||d.start)}"></label><label>終了<input type="date" id="mTo" value="${esc(q.to||d.end)}"></label><button class="btn sm" type="submit">この期間を見る</button></form>`:""}`;
   const file=(format,kind)=>{const p=moneyQuery();p.set("format",format);p.set("kind",kind);return `${esc(location.origin)}/api/wise/export?${esc(p.toString())}`};
   const exports=`<div class="mexport"><span class="sub">この期間を書き出す</span><a class="btn sm" href="${file("csv","list")}">CSV</a><a class="btn sm" href="${file("pdf","list")}">一覧の PDF</a><a class="btn sm" href="${file("pdf","report")}">レポートの PDF</a></div>`;
-  const body={overview:moneyOverview,charts:moneyCharts,analysis:moneyAnalysis,advice:moneyAdvice,detail:moneyDetail}[tab](d);
-  return head+`<div class="money">${tabs}${trouble}${pick}${nav}${body}${exports}<p class="sub">合計は USD です。Wise に USD の記録がなければ、決済時刻の Wise のレートで換算します。種類と分類は Claude の推定を含み、明細で直せます。取り消しと、自分の残高どうしの両替は入れていません。</p></div>`;
+  const body={overview:moneyOverview,charts:moneyCharts,analysis:moneyAnalysis,advice:moneyAdvice,detail:moneyDetail,world:moneyWorld}[tab](d);
+  return head+`<div class="money" ${tab==="world"?"data-noauto":""}>${tabs}${trouble}${pick}${nav}${body}${exports}<p class="sub">合計は USD です。Wise に USD の記録がなければ、決済時刻の Wise のレートで換算します。種類と分類は Claude の推定を含み、明細で直せます。取り消しと、自分の残高どうしの両替は入れていません。</p></div>`;
 }
 function wireMoney(){
   const go=()=>{S.moneyShow=0;moneyLoad(true)}, put=async(path,rec,msg)=>{try{await api("PUT",path,rec);if(msg)toast(msg);moneyLoad(true)}catch(e){toast("保存できませんでした。入力を確かめてください")}};
@@ -2049,6 +2066,12 @@ function wireMoney(){
   document.querySelectorAll("[data-mcharge]").forEach(b=>b.onclick=()=>put("/api/wise/recurring",{key:b.dataset.mcharge,mark:true},"毎月の請求に入れました"));
   document.querySelectorAll("[data-mnotcharge]").forEach(b=>b.onclick=()=>put("/api/wise/recurring",{key:b.dataset.mnotcharge,mark:false},"一覧から外しました"));
   document.querySelectorAll("[data-mchoice]").forEach(b=>b.onclick=()=>put("/api/wise/recurring",{key:S.money.analysis.action.key,choice:b.dataset.mchoice},"記録しました"));
+  document.querySelectorAll("[data-mdirect]").forEach(b=>b.onclick=()=>put("/api/wise/direct",{title:b.dataset.mdirect,on:!!b.dataset.mon},"残高との照合を変えました"));
+  if(S.moneyTab==="world"&&!S.moneyWorldData&&!S.moneyWorldBusy){S.moneyWorldBusy=true;api("GET","/api/wise/world").then(v=>{S.moneyWorldData=v;S.moneyWorldBusy=false;if(viewId()==="money")render()}).catch(()=>{S.moneyWorldBusy=false;S.moneyWorldData={countries:{}};if(viewId()==="money")render()})}
+  const worldPicked=()=>S.moneyPicked||["JPN","USA","VNM","PHL"];
+  $("#mWorldAdd")&&($("#mWorldAdd").onsubmit=e=>{e.preventDefault();S.moneyPicked=[...worldPicked(),$("#mWorldPick").value];render()});
+  document.querySelectorAll("[data-mdrop]").forEach(b=>b.onclick=()=>{S.moneyPicked=worldPicked().filter(c=>c!==b.dataset.mdrop);render()});
+  document.querySelectorAll("[data-muse]").forEach(b=>b.onclick=()=>{S.moneyUse=b.dataset.muse;render()});
   document.querySelectorAll("[data-mhide]").forEach(b=>b.onclick=()=>put("/api/wise/upcoming-hide",{id:b.dataset.mhide},"一覧から消しました"));
   $("#mAheadAll")&&($("#mAheadAll").onclick=()=>{S.moneyAheadAll=true;render()});
   document.querySelectorAll("[data-mclose]").forEach(c=>c.onchange=()=>{const rec={};document.querySelectorAll("[data-mclose]").forEach(x=>rec[x.dataset.mclose]=x.checked);put("/api/wise/close/"+encodeURIComponent(S.money.analysis.month),rec)});

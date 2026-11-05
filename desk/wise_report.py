@@ -245,6 +245,12 @@ def view(period="month", month=None, start=None, end=None, today=None):
     return data
 
 
+def world():
+    import wise_world
+    today = today_hcmc().isoformat()
+    return wise_world.view(labelled(wise_sync.summary(start="0000-01-01", end="9999-12-31", today=today)["items"]), today)
+
+
 # ---------- files ----------
 
 def cell(v):

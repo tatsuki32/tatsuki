@@ -348,5 +348,7 @@ if __name__ == "__main__":
         print(json.dumps(read_json("state.json", {}), ensure_ascii=False, indent=1))
     else:
         result = run()
+        import wise_world  # here, not at the top: it needs this module loaded
+        wise_world.update_if_stale()
         print(time.strftime("%F %T ") + (f"ok {result['count']} rows, {result['added']} new" if result["ok"] else "stopped: " + result["error"]), flush=True)
         sys.exit(0 if result["ok"] else 1)
