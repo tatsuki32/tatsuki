@@ -546,8 +546,21 @@ h1 .inedit{font-size:var(--t4);font-weight:700}
 .pop .hint{font-size:var(--t1);color:var(--muted);margin:0}
 .pop textarea{width:100%;min-height:140px;resize:vertical;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:var(--r);padding:12px;font:inherit;font-size:var(--t3);line-height:1.6}
 .pop textarea:focus,.pop input:focus,.pop select:focus{outline:none;border-color:var(--accent)}
-.pop input[type=text],.pop input[type=number],.pop input[type=password],.pop input[type=datetime-local],.pop select{width:100%;min-height:44px;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:0 12px;font:inherit;font-size:var(--t3)}
+.pop.tri input[type=date],.pop input[type=text],.pop input[type=number],.pop input[type=password],.pop input[type=datetime-local],.pop select{width:100%;min-height:44px;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:0 12px;font:inherit;font-size:var(--t3)}
 .pop .tnote{min-height:80px}
+.pop.tri{color-scheme:dark;width:min(520px,100%);gap:var(--s3);cursor:grab;touch-action:pan-y;transition:transform .12s;outline:none}
+.pop.tri.drag{transition:none;cursor:grabbing;user-select:none;-webkit-user-select:none}
+.tri .top{gap:var(--s2);margin:0}
+.tri .trhint{flex:1;font-size:var(--t1);font-weight:700;color:var(--ink)}
+.pop.tri textarea.trtitle,.tri h2.trtitle{display:block;width:100%;min-height:0;margin:0;padding:0;resize:none;overflow:hidden;background:none;border:0;border-bottom:1px solid transparent;border-radius:0;font:inherit;font-size:var(--t4);font-weight:700;line-height:1.4;color:var(--ink)}
+.pop.tri textarea.trtitle:focus{border-bottom-color:var(--accent)}
+.pop textarea.trnote{min-height:64px;font-size:var(--t2)}
+.trps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--s2)}
+.trps .btn[hidden]{display:none}
+.trps .btn{min-height:44px;padding:0 var(--s2);justify-content:flex-start;min-width:0;white-space:nowrap}
+.trrow{flex-wrap:wrap;gap:var(--s2)}
+.trhome{display:block;margin-top:calc(-1 * var(--s2))}
+@media (max-width:560px){.tri kbd{display:none}}
 .pop .pbody{min-height:min(52vh,420px);font-size:var(--t2);line-height:1.6}
 .seg{display:grid;grid-template-columns:1fr 1fr;gap:var(--s2)}
 .seg button{padding:12px;border-radius:var(--r);border:1px solid var(--line-2);background:transparent;cursor:pointer;font-weight:700;text-align:left;display:grid;gap:2px}
@@ -986,8 +999,83 @@ function taskGroups(k,items,ps){
   const keyOf=k==="done"?t=>doneGroup(t):t=>{const w=tWhen(t);return w?tPeriodOf(w,ps)[0]:"none"};
   const by={};items.forEach(t=>(by[keyOf(t)]||=[]).push(t));
   return groups.filter(([g])=>by[g]).map(([g,label])=>{const id=k+":"+g, open=S.taskOpen[id]??TOPENDEF.has(id), n=g==="none"?by[g].filter(aiPlanOf).length:0;
-    return `<div class="tgroup"><div class="tghead" data-noauto><button class="tg" data-tgroup="${id}" aria-expanded="${open}">${label}<span class="count">${by[g].length}</span></button>${n?`<button class="shelfbtn" data-tadopt="${k}">案をまとめて採用（${n}件）</button>`:""}</div>${open?by[g].map(t=>taskCard(t,ps)).join(""):""}</div>`}).join("");
+    return `<div class="tgroup"><div class="tghead" data-noauto><button class="tg" data-tgroup="${id}" aria-expanded="${open}">${label}<span class="count">${by[g].length}</span></button>${g==="none"?`<button class="shelfbtn" data-ttriage>仕分ける</button>`:""}${n?`<button class="shelfbtn" data-tadopt="${k}">案をまとめて採用（${n}件）</button>`:""}</div>${open?by[g].map(t=>taskCard(t,ps)).join(""):""}</div>`}).join("");
 }
+/* ---------- 仕分け: 未分類, one card at a time. A choice saves behind the scenes and the next card comes at once. ---------- */
+const unsorted=()=>S.board.filter(t=>TOPEN.has(t.status)&&!tWhen(t)).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
+const TRI_BATCH=10, TRI_SWIPE=90;
+function openTriage(){
+  if($("#modal").firstChild) return;
+  const queue=unsorted().map(t=>t.id), past=[], ps=tPeriods();
+  if(!queue.length){toast("未分類のタスクはありません");return}
+  let seen=0,cur=null,busy=false,saving=Promise.resolve();
+  const draw=html=>{$("#modal").innerHTML=`<div class="scrim" id="scrim">${html}</div>`;$("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};$("#triCard").focus()};
+  const save=(from,rec)=>{saving=saving.then(async()=>{await store.putTask(rec);if(from!==rec.status)await taskWin({...rec,status:from},rec.status)}).catch(()=>{toast("保存できませんでした。もう一度お試しください");if($(".tri")){if(cur)queue.unshift(cur.t.id);queue.unshift(rec.id);cur=null;next()}})};
+  const edits=()=>{if(!cur||!$("#trNote"))return {};const t=cur.t,o={},title=$("#trTitle")?.value.replace(/\s*\n\s*/g," ").trim(),note=$("#trNote").value.trim(),est=$("#trEst").value.trim(),due=$("#trDue");
+    if(title&&title!==t.title)o.title=title;
+    if(note!==(t.note||""))o.note=note;
+    if(est!==cur.est){const n=parseInt(est,10);o.estMin=n>0?n:null}
+    if(due&&due.value)o.due=dueFromParts(due.value,"");
+    return o};
+  const primary=()=>$("#trDue")?.value?{planDate:null,by:"期日どおり"}:cur?.ai?{planDate:cur.ai,by:"案："+tPeriodOf(cur.ai,ps)[1]}:null;
+  const fly=(dir,then)=>{const c=$("#triCard");if(!dir||matchMedia("(prefers-reduced-motion:reduce)").matches)return then();busy=true;c.classList.remove("drag");c.style.transform=`translateX(${dir*120}%) rotate(${dir*6}deg)`;setTimeout(()=>{busy=false;then()},120)};
+  const go=(change,dir,again)=>{if(busy||!cur)return;const before=cur.t,e=edits(),changed=Object.keys(e).length>0||Object.keys(change).length>0;
+    past.push({before,again,changed,to:change.status||before.status});if(again)queue.push(before.id);seen++;
+    if(changed)save(before.status,{...before,...e,...change});
+    fly(dir,()=>{cur=null;next()})};
+  const adopt=dir=>{const p=primary();if(p)go({planDate:p.planDate},dir)};
+  const undo=()=>{const p=past.pop();if(!p||busy)return;if(cur)queue.unshift(cur.t.id);if(p.again)queue.pop();seen=Math.max(0,seen-1);
+    if(p.changed)save(p.to,p.before);cur=null;card(p.before)};
+  const close=()=>{document.removeEventListener("keydown",onKey,true);const e=edits();if(cur&&Object.keys(e).length)save(cur.t.status,{...cur.t,...e});cur=null;$("#modal").innerHTML=""};
+  const pause=msg=>{cur=null;draw(`<div class="pop tri" id="triCard" tabindex="-1" role="dialog" aria-modal="true" aria-label="未分類の仕分け"><h2>${msg}</h2>
+    <div class="row">${queue.length?`<button class="btn primary" id="trGo">続ける <kbd>Enter</kbd></button>`:""}<button class="btn" id="trClose">閉じる</button>${past.length?`<button class="btn sm" id="trUndo">ひとつ戻す <kbd>Z</kbd></button>`:""}</div></div>`);
+    $("#trClose").onclick=close;$("#trGo")&&($("#trGo").onclick=resume);$("#trUndo")&&($("#trUndo").onclick=undo)};
+  const resume=()=>{seen=0;next()};
+  const next=()=>{if(!queue.length)return pause("未分類はもうありません");
+    if(seen>=TRI_BATCH)return pause(`ここまで${TRI_BATCH}枚。残り ${queue.length}件`);
+    const t=findTask(queue.shift());if(!t||!TOPEN.has(t.status)||tWhen(t))return next();card(t)};
+  const card=t=>{const linked=LINKED.has(t.source), ai=aiPlanOf(t), aiKey=ai&&tPeriodOf(ai,ps)[0], est=String(estOf(t)??"");cur={t,ai,est};
+    draw(`<div class="pop tri" id="triCard" tabindex="-1" role="dialog" aria-modal="true" aria-label="未分類の仕分け">
+      <div class="top"><span class="sub">${seen+1}/${TRI_BATCH} · 残り ${queue.length+1}件</span><span class="trhint" id="trHint" aria-live="polite"></span><button class="ibtn" id="trClose" aria-label="閉じる">✕</button></div>
+      ${linked?`<h2 class="trtitle">${esc(t.title)}</h2>`:`<textarea class="trtitle" id="trTitle" rows="1" aria-label="タイトル">${esc(t.title)}</textarea>`}
+      <textarea id="trNote" class="trnote" placeholder="メモ" aria-label="メモ">${esc(t.note||"")}</textarea>
+      <div class="trps" role="group" aria-label="いつやる">${ps.map(([k,l],i)=>`<button class="btn trp ${k===aiKey?"primary":""}" data-trp="${k}"><kbd>${i+1}</kbd>${l}</button>`).join("")}<button class="btn trp" id="trByDue" hidden>期日どおり</button></div>
+      <div class="tduein"><div><label class="sub" for="trEst">かかる時間（分）${t.estMin==null&&t.estAi!=null?" · 目安":""}</label><input type="number" id="trEst" min="1" step="5" inputmode="numeric" value="${est}"></div>${linked?"":`<div><label class="sub" for="trDue">期日（任意）</label><input type="date" id="trDue"></div>`}</div>
+      <div class="row trrow"><button class="btn sm" id="trLater">あと回し <kbd>←</kbd></button><button class="btn sm" data-trs="done">済んだ</button><button class="btn sm" data-trs="paused">一旦中止</button><button class="btn sm" data-trs="archived">アーカイブ</button>${past.length?`<button class="btn sm" id="trUndo">ひとつ戻す <kbd>Z</kbd></button>`:""}</div>
+    </div>`);
+    const c=$("#triCard"), hint=$("#trHint"), byDue=$("#trByDue"), due=$("#trDue"), ti=$("#trTitle");
+    if(ti){const fit=()=>{ti.style.height="auto";ti.style.height=ti.scrollHeight+"px"};fit();ti.oninput=fit;ti.onkeydown=e=>{if(e.key==="Enter")e.preventDefault()}}
+    $("#trClose").onclick=close;$("#trLater").onclick=()=>go({},-1,true);$("#trUndo")&&($("#trUndo").onclick=undo);byDue.onclick=()=>adopt(1);
+    c.querySelectorAll("[data-trp]").forEach(b=>b.onclick=()=>go({planDate:ps.find(p=>p[0]===b.dataset.trp)[2]},1));
+    c.querySelectorAll("[data-trs]").forEach(b=>b.onclick=()=>go({status:b.dataset.trs},0));
+    if(due)due.oninput=()=>{byDue.hidden=!due.value;byDue.classList.toggle("primary",!!due.value);c.querySelector(`[data-trp="${aiKey}"]`)?.classList.toggle("primary",!due.value)};
+    let sx=null,dx=0;
+    c.onpointerdown=e=>{if(e.button||e.target.closest("input,textarea,select,button,a,label"))return;sx=e.clientX;dx=0;c.setPointerCapture(e.pointerId);c.classList.add("drag")};
+    c.onpointermove=e=>{if(sx==null)return;dx=e.clientX-sx;c.style.transform=`translateX(${dx}px) rotate(${dx/40}deg)`;hint.textContent=dx>TRI_SWIPE/2?(primary()?.by||"案がありません"):dx<-TRI_SWIPE/2?"あと回し":""};
+    c.onpointerup=c.onpointercancel=e=>{if(sx==null)return;sx=null;c.classList.remove("drag");hint.textContent="";
+      if(e.type==="pointerup"&&dx>TRI_SWIPE&&primary())return adopt(1);
+      if(e.type==="pointerup"&&dx<-TRI_SWIPE)return go({},-1,true);
+      c.style.transform=""};
+  };
+  function onKey(e){
+    if(!$(".tri")){document.removeEventListener("keydown",onKey,true);return}
+    if(e.isComposing||e.metaKey||e.ctrlKey||e.altKey)return;
+    if(e.key==="Escape"){e.preventDefault();e.stopPropagation();close();return}
+    if(/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName))return;
+    if(e.key==="Enter"&&e.target.tagName==="BUTTON"){e.stopPropagation();return}
+    if(e.key.length>1&&!/^(Enter|Arrow(Left|Right))$/.test(e.key))return; // Tab and the like keep working
+    e.preventDefault();e.stopPropagation(); // the desk's own single-key shortcuts wait while this is open
+    if(e.key==="z"||e.key==="Z")return undo();
+    if(!cur){if(e.key==="Enter"&&queue.length)resume();return}
+    if(e.key==="Enter"||e.key==="ArrowRight")return adopt(1);
+    if(e.key==="ArrowLeft")return go({},-1,true);
+    const p=/^[1-9]$/.test(e.key)&&ps[+e.key-1];
+    if(p)go({planDate:p[2]},1);
+  }
+  document.addEventListener("keydown",onKey,true);
+  next();
+}
+function triHome(){const n=unsorted().length;return n?`<button class="shelfbtn trhome" data-ttriage>未分類 ${n}件を仕分ける →</button>`:""}
 function tasks(){
   const ps=tPeriods(), col=k=>S.board.filter(t=>t.status===k).sort(taskCmp(S.taskSort,k==="done"));
   const shelf=k=>S.board.filter(t=>t.status===k).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
@@ -1804,6 +1892,7 @@ function home(){
   return `
   <header class="head"><div><p class="eyebrow">${d.toLocaleDateString("ja-JP",{month:"long",day:"numeric",weekday:"long"})} · ${greet} · ${t3Mode()}</p><h1>今日の3つ</h1></div><button class="btn" data-opennext>次は？</button></header>
   ${topThree()}
+  ${triHome()}
   ${focusHomeCard()}
   <div class="duo">${todayEvents()}${habitStrip()||`<section class="card"><div class="dhead"><h2><span class="e">🌱</span>今日の習慣</h2><a class="more" href="#habits">足す →</a></div><div class="empty">続けたいことを「習慣」で足せます。</div></section>`}</div>
   ${ccCard()}
@@ -2485,6 +2574,7 @@ function wire(){
   document.querySelectorAll("[data-tstart]").forEach(b=>b.onclick=()=>setTaskStatus(b.dataset.tstart,"doing"));
   document.querySelectorAll("[data-gonotyet]").forEach(b=>b.onclick=()=>{S.taskCol="notyet";location.hash="tasks"});
   document.querySelectorAll("[data-tstatus]").forEach(s=>s.onchange=()=>setTaskStatus(s.dataset.tstatus,s.value));
+  document.querySelectorAll("[data-ttriage]").forEach(b=>b.onclick=()=>openTriage());
   document.querySelectorAll("[data-tplan]").forEach(s=>s.onchange=()=>setTaskPlan(s.dataset.tplan,s.value));
   document.querySelectorAll("[data-taiplan]").forEach(b=>b.onclick=async()=>{const t=findTask(b.dataset.taiplan);if(!t)return;
     try{await store.putTask({...t,planDate:t.planAi});toast("🗂️ 案のとおりに決めました")}catch(e){toast("保存できませんでした。もう一度お試しください")}});
@@ -2633,6 +2723,7 @@ function palItems(){
     {e:"⌨️",name:"Claude に頼む",key:"C",kw:"くろーど claude",run:()=>openAsk()},
     {e:"⚡",name:"コマンド一覧（この画面）",key:"/ /",kw:"こまんど command palette",run:()=>{const q=$("#q");q.value="/";S.q="/";S.palSel=0;render();q.focus()}},
     {e:"🔎",name:"検索",key:"/",kw:"けんさく search",run:()=>setTimeout(()=>$("#q")?.focus(),0)},
+    {e:"🗂️",name:"未分類を仕分ける",kw:"しわけ みぶんるい triage",run:()=>openTriage()},
     {e:"🌱",name:"習慣を足す",kw:"しゅうかん habit",run:()=>newHabit()},
     {e:"📒",name:"新しいノート",kw:"のーと note",run:()=>newNotePrompt()},
   ].map(x=>({...x,g:"Desk の操作"}));
