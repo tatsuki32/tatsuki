@@ -13,6 +13,7 @@ POST /api/claude opens Terminal with a Claude Code command (Desk's ⌨️ button
 - Nothing is ever hard-deleted: the page sends deleted:true, same as online.
 """
 import glob
+import hashlib
 import json
 import os
 import re
@@ -497,6 +498,46 @@ def focus_state():
                  "web": {"mode": st["web"]["mode"], "count": len(st["web"]["list"])}}
 
 
+UPLOADS = os.path.join(DATA, "uploads")
+UPLOAD_MAX = 20 * 1024 * 1024
+UPLOAD_NAME = re.compile(r"^[0-9a-f]{32}\.(png|jpg|gif|webp|heic|pdf)$")
+UPLOAD_TYPES = {"png": "image/png", "jpg": "image/jpeg", "gif": "image/gif", "webp": "image/webp",
+                "heic": "image/heic", "pdf": "application/pdf"}
+
+
+def upload_kind(data):
+    """What a file really is, from its first bytes. The name and declared type are not trusted, and SVG (which can hold scripts) is not accepted."""
+    if data.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "png"
+    if data.startswith(b"\xff\xd8\xff"):
+        return "jpg"
+    if data[:6] in (b"GIF87a", b"GIF89a"):
+        return "gif"
+    if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        return "webp"
+    if data[4:8] == b"ftyp" and data[8:12] in (b"heic", b"heix", b"hevc", b"mif1", b"msf1"):
+        return "heic"
+    if data.startswith(b"%PDF-"):
+        return "pdf"
+    return None
+
+
+def save_upload(data):
+    """Stores a file under a name made from its content, so the same file is kept once. Returns its URL."""
+    kind = upload_kind(data)
+    if not kind:
+        raise ValueError("画像か PDF だけ置けます")
+    name = hashlib.sha256(data).hexdigest()[:32] + "." + kind
+    os.makedirs(UPLOADS, exist_ok=True)
+    path = os.path.join(UPLOADS, name)
+    if not os.path.exists(path):
+        tmp = path + "." + secrets.token_hex(4) + ".tmp"
+        with open(tmp, "wb") as f:
+            f.write(data)
+        os.replace(tmp, path)
+    return "/uploads/" + name
+
+
 class Handler(BaseHTTPRequestHandler):
     server_version = "TatsukiDesk/2"
 
@@ -544,6 +585,8 @@ class Handler(BaseHTTPRequestHandler):
         path = urlsplit(self.path).path
         if path in ("/", "/index.html"):
             return self.send(200, page(), "text/html; charset=utf-8")
+        if path.startswith("/uploads/"):
+            return self.upload_get(path.rsplit("/", 1)[1])
         col, doc_id = self.route()
         if col and doc_id is None:
             with LOCK:
@@ -568,9 +611,44 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, core.desk_view()) if core else self.send(404, {"error": "not found"})
         self.send(404, {"error": "not found"})
 
+    def upload_get(self, name):
+        m = UPLOAD_NAME.match(name)
+        try:
+            with open(os.path.join(UPLOADS, name), "rb") as f:
+                data = f.read() if m else None
+        except OSError:
+            data = None
+        if data is None:
+            return self.send(404, {"error": "no such file"})
+        self.send_response(200)
+        self.send_header("Content-Type", UPLOAD_TYPES[m.group(1)])
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("Content-Disposition", "inline")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("Cache-Control", "max-age=31536000, immutable")
+        self.end_headers()
+        self.wfile.write(data)
+
+    def upload_post(self):
+        # the custom header needs a CORS preflight this server never answers, so another site's page cannot post here
+        if self.headers.get("X-Desk-Upload") != "1":
+            return self.send(415, {"error": "upload header required"})
+        n = int(self.headers.get("Content-Length") or 0)
+        if n > UPLOAD_MAX:
+            self.close_connection = True
+            return self.send(413, {"error": "20MB までです"})
+        try:
+            return self.send(200, {"url": save_upload(self.rfile.read(n))})
+        except ValueError as e:
+            return self.send(415, {"error": str(e)})
+        except OSError:
+            return self.send(500, {"error": "保存できませんでした"})
+
     def write(self, method):
         if not self.allowed():
             return self.send(403, {"error": "forbidden"})
+        if method == "POST" and urlsplit(self.path).path == "/api/uploads":
+            return self.upload_post()
         col, doc_id = self.route()
         try:
             rec = self.body()

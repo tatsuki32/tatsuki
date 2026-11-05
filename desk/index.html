@@ -621,6 +621,18 @@ button .awl,.nav .awl,#tabs .awl{border-bottom:0}
 .wiki h3{font-size:var(--t4);margin:var(--s4) 0 var(--s1)}
 .wiki .li{padding-left:1em;position:relative}.wiki .li::before{content:"・";position:absolute;left:0;color:var(--muted)}
 .wiki .gap{height:var(--s2)}.wiki>:first-child{margin-top:0}
+.wb2{font-size:var(--t4);line-height:1.45}.wb3{font-size:var(--t5);line-height:1.35}
+.wimg{display:block;max-width:100%;max-height:360px;margin:var(--s2) 0;border-radius:var(--r-s)}.wimg.full{width:100%;max-height:none;object-fit:contain}
+.wicon{display:inline-flex;gap:1px;vertical-align:-.2em;border:0}.wicon img{width:1.25em;height:1.25em;border-radius:50%;object-fit:cover}
+.wpdf{display:grid;gap:var(--s1);margin:var(--s2) 0}.wpdf iframe{width:100%;height:480px;border:1px solid var(--line);border-radius:var(--r-s);background:var(--surface-2)}
+.wq{margin:var(--s1) 0;padding-left:12px;border-left:2px solid var(--line-2);color:var(--muted)}
+.wiki code,.wiki pre{font-family:var(--code);font-size:var(--t1)}.wiki :not(pre)>code{background:var(--surface-2);padding:0 4px;border-radius:4px}
+.wcode{margin:var(--s2) 0}.wcode figcaption{font-size:var(--t1);color:var(--muted);margin-bottom:var(--s1)}
+.wcode pre,.wcmd{margin:0;padding:var(--s2) 12px;background:var(--surface-2);border-radius:var(--r-s);overflow-x:auto;line-height:1.6}.wcmd{margin:var(--s1) 0}
+.wtable{margin:var(--s2) 0;overflow-x:auto}.wtable p{margin:0 0 var(--s1)}.wtable table{border-collapse:collapse;font-size:var(--t2)}.wtable th,.wtable td{padding:var(--s1) var(--s2);border:1px solid var(--line);text-align:left;vertical-align:top}.wtable th{color:var(--ink)}
+.whtml{margin:var(--s2) 0;overflow-x:auto}.whtml img{max-width:100%}
+.edbar{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s2);margin-top:var(--s2)}.edbar label{cursor:pointer}
+.nthumb{width:100%;height:96px;object-fit:cover;border-radius:var(--r-s)}
 .ngrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:var(--s2)}
 .ncard{display:grid;gap:var(--s1);text-align:left;padding:12px;cursor:pointer;color:var(--ink);align-content:start}
 .ncard:hover{border-color:var(--line-2)}
@@ -797,7 +809,7 @@ h1 .inedit{font-size:var(--t4);font-weight:700}
 
 <div class="app">
   <aside class="rail">
-    <a class="brand" href="#home" aria-label="ホーム"><span class="mark">🧭</span><b>Tatsuki's Desk</b></a>
+    <a class="brand" href="#home" aria-label="ホーム" data-noauto><span class="mark">🧭</span><b>Tatsuki's Desk</b></a>
     <label class="qbox"><span class="e" aria-hidden="true">🔎</span><input id="q" type="search" placeholder="検索" aria-label="すべてを検索（ノート・メモ・タスク・ニュース・メール）" autocomplete="off"><kbd>/</kbd></label>
     <nav class="nav" id="nav" aria-label="メニュー"></nav>
     <div class="foot">
@@ -1728,24 +1740,130 @@ const noteList=()=>S.wnotes.filter(n=>!n.deleted);
 const normTitle=t=>String(t||"").normalize("NFKC").trim().toLowerCase();
 const noteByTitle=t=>noteList().find(n=>normTitle(n.title)===normTitle(t));
 const newNoteId=()=>"n"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
-/* inline text with [links]; external links open in a new tab */
+/* Scrapbox notation (scrapbox.io/help-jp/その他の書き方). Text only: nothing here writes to a note.
+   [word] page · [* bold] [** bigger] [/ italic] [- strike] · [title https://…] either order · [https://….png] [[…png]] [link image]
+   [page.icon] · #tag · `code` · lines: indent, > quote, $ command, code:name, table:name, html:name. */
+const IMG_RE=/\.(?:png|jpe?g|gif|webp|avif)(?:[?#]\S*)?$/i, PDF_RE=/\.pdf(?:[?#]\S*)?$/i;
+const isUrlTok=t=>/^(?:https?:\/\/\S+|\/uploads\/[\w.-]+)$/.test(t);
+const extLink=(url,label)=>`<a class="ext" href="${esc(url)}" target="_blank" rel="noopener">${esc(label||url)} ↗</a>`;
+function wikiMedia(u,full){
+  if(IMG_RE.test(u)) return `<img class="wimg${full?" full":""}" loading="lazy" alt="" src="${esc(u)}">`;
+  if(PDF_RE.test(u)&&u.startsWith("/uploads/")) return `<span class="wpdf"><iframe title="PDF" loading="lazy" src="${esc(u)}"></iframe>${extLink(u,"PDF を開く")}</span>`;
+  return extLink(u,u.startsWith("/uploads/")?"ファイルを開く":u);
+}
+const firstImage=raw=>{const m=/(?:https?:\/\/|\/uploads\/)[^\s\[\]]+\.(?:png|jpe?g|gif|webp|avif)(?:[?#][^\s\[\]]*)?/i.exec(String(raw||""));return m?m[0]:""};
+function wikiIcon(name,times){
+  const img=firstImage(noteByTitle(name)?.body);
+  if(!img) return wlink(name);
+  const one=`<img alt="${esc(name)}" title="${esc(name)}" loading="lazy" src="${esc(img)}">`;
+  return `<a class="wicon" href="#notes" data-wiki="${esc(name)}">${one.repeat(Math.min(Math.max(times||1,1),20))}</a>`;
+}
+function wikiBracket(inner){
+  let m; inner=inner.trim();
+  if(m=/^\[(.+)\]$/.exec(inner)) return isUrlTok(m[1])&&IMG_RE.test(m[1])?wikiMedia(m[1],true):`<b>${wikiInline(m[1])}</b>`;
+  if(m=/^([*\/\-]+)\s+(.+)$/.exec(inner)){
+    const stars=(m[1].match(/\*/g)||[]).length; let h=wikiInline(m[2]);
+    if(m[1].includes("-")) h=`<s>${h}</s>`;
+    if(m[1].includes("/")) h=`<i>${h}</i>`;
+    if(stars) h=`<b${stars>=4?' class="wb3"':stars>=2?' class="wb2"':""}>${h}</b>`;
+    return h;
+  }
+  const toks=inner.split(/\s+/), first=toks[0], last=toks[toks.length-1];
+  if(toks.length===1&&isUrlTok(first)) return wikiMedia(first);
+  if(toks.length===2&&isUrlTok(first)&&isUrlTok(last)&&(IMG_RE.test(first)!==IMG_RE.test(last))){
+    const [img,to]=IMG_RE.test(first)?[first,last]:[last,first];
+    return `<a href="${esc(to)}" target="_blank" rel="noopener">${wikiMedia(img)}</a>`;
+  }
+  if(isUrlTok(first)) return extLink(first,toks.slice(1).join(" "));
+  if(isUrlTok(last)) return extLink(last,toks.slice(0,-1).join(" "));
+  if(m=/^(.+?)\.icon(?:\*(\d+))?$/.exec(inner)) return wikiIcon(m[1],+m[2]);
+  if((m=/^(.+) icon$/.exec(inner))&&noteByTitle(m[1])&&!noteByTitle(inner)) return wikiIcon(m[1]);
+  return wlink(inner);
+}
+function wikiText(t){
+  let out="",last=0;
+  for(const m of t.matchAll(/(^|\s)#([^\s#\[\]]+)|https?:\/\/[^\s\[\]<>"、。）]+/g)){
+    if(m[2]){out+=esc(t.slice(last,m.index))+esc(m[1])+`<a class="wl${linkLone(m[2])?" lone":""}" href="#notes" data-wiki="${esc(m[2])}">#${esc(m[2])}</a>`}
+    else out+=esc(t.slice(last,m.index))+extLink(m[0]);
+    last=m.index+m[0].length;
+  }
+  return out+esc(t.slice(last));
+}
 function wikiInline(raw){
-  return String(raw||"").split(/(\[[^\[\]\n]+\])/g).map(part=>{
-    const m=/^\[([^\[\]\n]+)\]$/.exec(part); if(!m) return esc(part);
-    const inner=m[1].trim();
-    if(/^https:\/\//.test(inner)){const [,url,label]=/^(\S+)(?:\s+(.+))?$/.exec(inner);return `<a class="ext" href="${esc(url)}" target="_blank" rel="noopener">${esc(label||url)} ↗</a>`}
-    return wlink(inner);
-  }).join("");
+  const s=String(raw||""); let out="",buf="",i=0;
+  const flush=()=>{out+=wikiText(buf);buf=""};
+  while(i<s.length){
+    if(s[i]==="`"){const j=s.indexOf("`",i+1);if(j>i+1&&!s.slice(i,j).includes("\n")){flush();out+=`<code>${esc(s.slice(i+1,j))}</code>`;i=j+1;continue}}
+    if(s[i]==="["){let d=0,j=i;for(;j<s.length&&s[j]!=="\n";j++){if(s[j]==="[")d++;else if(s[j]==="]"&&--d===0)break}
+      if(d===0&&s[j]==="]"&&j>i+1&&s.slice(i+1,j).trim()){flush();out+=wikiBracket(s.slice(i+1,j));i=j+1;continue}}
+    buf+=s[i++];
+  }
+  flush(); return out;
 }
-/* a whole body: "# heading", "- bullet", blank lines; everything else a line */
+/* HTML you write in a page: kept to plain structure, so nothing pasted can run or send anything */
+const HTML_TAGS=new Set("a abbr article aside b blockquote br caption cite code col colgroup dd del details div dl dt em figcaption figure h1 h2 h3 h4 h5 h6 hr i img ins kbd li mark ol p pre q s section small span strong sub summary sup table tbody td tfoot th thead tr u ul".split(" "));
+const HTML_DROP=new Set("script style iframe object embed form input button select textarea link meta base svg math template noscript".split(" "));
+const HTML_ATTRS=new Set("href src alt title class id style width height colspan rowspan open".split(" "));
+function cleanHtml(raw){
+  const doc=new DOMParser().parseFromString(String(raw||""),"text/html");
+  const walk=node=>[...node.children].forEach(el=>{
+    const tag=el.tagName.toLowerCase();
+    if(HTML_DROP.has(tag)||!HTML_TAGS.has(tag)&&el.namespaceURI!=="http://www.w3.org/1999/xhtml"){el.remove();return}
+    walk(el);
+    if(!HTML_TAGS.has(tag)){el.replaceWith(...el.childNodes);return}
+    [...el.attributes].forEach(a=>{const n=a.name.toLowerCase(),v=a.value.trim();
+      if(!HTML_ATTRS.has(n)||((n==="href"||n==="src")&&!/^(https?:\/\/|\/uploads\/|#)/i.test(v))||(n==="style"&&/url\s*\(|expression|@import/i.test(v)))el.removeAttribute(a.name)});
+    if(tag==="a"){el.setAttribute("target","_blank");el.setAttribute("rel","noopener")}
+  });
+  walk(doc.body);
+  return doc.body.innerHTML;
+}
+const indentOf=l=>/^[ \t　]*/.exec(l)[0].length;
+/* The lines under "code:…", "table:…" or "html:…": everything indented deeper than the opening line. */
+function blockBody(lines,i){
+  const base=indentOf(lines[i]), out=[]; let j=i+1;
+  for(;j<lines.length;j++){if(lines[j].trim()&&indentOf(lines[j])<=base)break;out.push(lines[j].slice(Math.min(base+1,indentOf(lines[j]))))}
+  while(out.length&&!out[out.length-1].trim()){out.pop();j--}
+  return {body:out,next:j};
+}
+function codeBlock(raw,name){
+  const lines=String(raw||"").split("\n"), i=lines.findIndex(l=>l.trim()==="code:"+name);
+  return i<0?"":blockBody(lines,i).body.join("\n");
+}
+/* a whole body. Each piece remembers its first line (data-l), so a double click can put the cursor there. */
 function wikiBlock(raw){
-  return String(raw||"").split("\n").map(l=>{let m;
-    if(m=/^#{1,3}\s+(.*)$/.exec(l)) return `<h3>${wikiInline(m[1])}</h3>`;
-    if(m=/^(\s*)[-・]\s+(.*)$/.exec(l)) return `<div class="li" style="margin-left:${Math.min(m[1].length,8)*6}px">${wikiInline(m[2])}</div>`;
-    return l.trim()?`<div class="ln">${wikiInline(l)}</div>`:`<div class="ln gap"></div>`;
-  }).join("");
+  const lines=String(raw||"").split("\n"), out=[]; let i=0;
+  while(i<lines.length){
+    const l=lines[i], at=`data-l="${i}"`, t=l.trim(); let m;
+    if(m=/^(code|table|html):(.*)$/.exec(t)){
+      const {body,next}=blockBody(lines,i), name=m[2].trim();
+      if(m[1]==="code") out.push(`<figure class="wcode" ${at}>${name?`<figcaption>${esc(name)}</figcaption>`:""}<pre><code>${esc(body.join("\n"))}</code></pre></figure>`);
+      else if(m[1]==="table"){const rows=body.filter(r=>r.trim()&&!/^[-\s\t]+$/.test(r)).map(r=>r.split("\t"));
+        out.push(`<div class="wtable" ${at}>${name?`<p class="sub">${esc(name)}</p>`:""}<table>${rows.map((r,y)=>`<tr>${r.map(c=>y?`<td>${wikiInline(c.trim())}</td>`:`<th>${wikiInline(c.trim())}</th>`).join("")}</tr>`).join("")}</table></div>`)}
+      else out.push(`<div class="whtml" ${at}>${cleanHtml(body.join("\n"))}</div>`);
+      i=next; continue;
+    }
+    if(m=/^#{1,3}\s+(.*)$/.exec(l)) out.push(`<h3 ${at}>${wikiInline(m[1])}</h3>`);
+    else if(m=/^\s*>\s?(.*)$/.exec(l)) out.push(`<blockquote class="wq" ${at}>${wikiInline(m[1])}</blockquote>`);
+    else if(m=/^\s*([$%] .*)$/.exec(l)) out.push(`<pre class="wcmd" ${at}><code>${esc(m[1])}</code></pre>`);
+    else if(m=/^(\s*)[-・]\s+(.*)$/.exec(l)) out.push(`<div class="li" ${at} style="margin-left:${Math.min(m[1].length,8)*6}px">${wikiInline(m[2])}</div>`);
+    else if(t&&(m=/^[ \t　]+/.exec(l))) out.push(`<div class="li" ${at} style="margin-left:${Math.min(m[0].length-1,8)*16}px">${wikiInline(t)}</div>`);
+    else out.push(t?`<div class="ln" ${at}>${wikiInline(l)}</div>`:`<div class="ln gap" ${at}></div>`);
+    i++;
+  }
+  return out.join("");
 }
-const linksIn=raw=>[...String(raw||"").matchAll(/\[([^\[\]\n]+)\]/g)].map(m=>m[1].trim()).filter(t=>!/^https:\/\//.test(t));
+/* Words a text links to. Decorations, URLs and code are not links; [page.icon] and #tag are. */
+function linksIn(raw){
+  const s=String(raw||"").replace(/`[^`\n]*`/g,""), out=[];
+  for(const m of s.matchAll(/\[([^\[\]\n]+)\]/g)){
+    const t=m[1].trim(); let i;
+    if(/^[*\/\-]+\s/.test(t)||/https?:\/\/|\/uploads\//.test(t)||(s[m.index-1]==="["&&s[m.index+m[0].length]==="]")) continue;
+    out.push((i=/^(.+?)\.icon(?:\*\d+)?$/.exec(t))||(i=/^(.+) icon$/.exec(t))&&noteByTitle(i[1])&&!noteByTitle(t)?i[1]:t);
+  }
+  for(const m of s.matchAll(/(?:^|\s)#([^\s#\[\]]+)/g)) out.push(m[1]);
+  return out;
+}
 /* Where each [word] is used: one count per note, memo, task note, or news article (a note whose body cites that article's URL).
    Recounted only when notes, memos or tasks change. */
 const SRC_LINE=/^\s*出典[：:]/;
@@ -1779,7 +1897,7 @@ function linkSources(root){
 /* auto-links: a note's title becomes a link wherever it shows on the page (task names, mail, calendar, buttons, menus…).
    Only the page is changed, never the data. Titles of 1 character, and notes switched off (noAuto), are left alone.
    Latin words match whole words only ("AI" is not found inside "MAIL"); case and full/half width don't matter. */
-const AUTO_SKIP="script,style,textarea,input,select,option,svg,.wl,.ext,.selmenu,.inedit,#toastHost,.ntitle,.ncard,[contenteditable],[data-noauto]";
+const AUTO_SKIP="script,style,textarea,input,select,option,svg,.wl,.ext,.selmenu,.inedit,#toastHost,.ntitle,.ncard,code,pre,.whtml,[contenteditable],[data-noauto]";
 let AL={key:null,re:null};
 const WORD_CH="A-Za-z0-9Ａ-Ｚａ-ｚ０-９";
 function wordPat(t){
@@ -1860,11 +1978,19 @@ function twoHop(n){
 const noteMain=raw=>String(raw||"").split("\n").filter(l=>!SRC_LINE.test(l)).join("\n").replace(/^\n+|\s+$/g,"");
 const noteSrc=raw=>String(raw||"").split("\n").filter(l=>SRC_LINE.test(l));
 function sentencesOf(raw){
-  return String(raw||"").split("\n").flatMap(l=>{
-    if(SRC_LINE.test(l)||/^\s*\|?[\s:|-]*$/.test(l)) return [];
+  const lines=String(raw||"").split("\n"), out=[]; let skip=-1;
+  lines.forEach(l=>{
+    if(skip>=0){if(!l.trim()||indentOf(l)>skip)return;skip=-1}
+    if(/^\s*(code|html):/.test(l)){skip=indentOf(l);return}
+    if(SRC_LINE.test(l)||/^\s*\|?[\s:|-]*$/.test(l)||/^\s*table:/.test(l)) return;
     l=l.replace(/\[([^\[\]\n]+)\]\(https?:[^)\s]+\)/g,"$1").replace(/^\s*(#{1,4}\s+|[-・]\s+|>\s*)/,"").replace(/[*`]/g,"").replace(/\|/g," ").trim();
-    return (l.match(/(?:\[[^\[\]]*\]|[^。！？!?.]|\.(?!\s|$))+(?:[。！？!?]+|\.)?[」』）)"”]*|[。！？!?]+/g)||[]).map(x=>x.trim()).filter(x=>x.length>1);
+    const deco=/\[[\/\-]+\s+((?:[^\[\]]|\[[^\[\]]*\])*)\]/; let n=0; while(deco.test(l)&&n++<9) l=l.replace(deco,"$1");
+    l=l.replace(/\[\s+((?:[^\[\]]|\[[^\[\]]*\])*)\]/g,"$1").replace(/\[\[([^\[\]\n]+)\]\]/g,(a,x)=>isUrlTok(x)?"":x).replace(/\[[^\[\]\n]+\.icon(?:\d+)?\]/g,"").replace(/\[([^\[\]\n]+) icon\]/g,(a,x)=>noteByTitle(x)&&!noteByTitle(x+" icon")?"":a)
+      .replace(/\[(?:https?:\/\/|\/uploads\/)\S+\.(?:png|jpe?g|gif|webp|avif|pdf)\S*\]/gi,"").replace(/\[(?:https?:\/\/\S+|\/uploads\/\S+)\s+(?:https?:\/\/\S+|\/uploads\/\S+)\]/g,"")
+      .replace(/\[(?:https?:\/\/\S+)\s+([^\[\]\n]+)\]/g,"$1").replace(/\[([^\[\]\n]+?)\s+https?:\/\/\S+\]/g,"$1").trim();
+    out.push(...(l.match(/(?:\[[^\[\]]*\]|[^。！？!?.]|\.(?!\s|$))+(?:[。！？!?]+|\.)?[」』）)"”]*|[。！？!?]+/g)||[]).map(x=>x.trim()).filter(x=>x.length>1));
   });
+  return out;
 }
 let SX=null;
 const sentDeps=()=>[S.editions,S.watch,S.wnotes,S.memos,S.board,S.wa,S.cal,S.habits,S.wins,S.reports,S.tools,S.lifeos,S.fu,S.money,S.memory];
@@ -1913,15 +2039,16 @@ function sentHtml(x,n){
   }).join("");
 }
 const sentMeta=x=>SKIND[x.kind][1]+(x.label?" · "+x.label:"");
-const noteSnip=x=>(noteMain(x.body).replace(/[\[\]#]/g,"")||sentencesFor(x)[0]?.plain||"").slice(0,90);
+const noteSnip=x=>(sentencesOf(noteMain(x.body)).slice(0,3).map(t=>plain(t)).join(" ")||sentencesFor(x)[0]?.plain||"").slice(0,90);
+const noteThumb=x=>{const u=firstImage(noteMain(x.body));return u?`<img class="nthumb" loading="lazy" alt="" src="${esc(u)}">`:""};
 function sentCards(n){
   if(LOCALAPI&&!S.sentFetched){S.sentFetched=true;Promise.all([fuLoad(),moneyLoad()]).then(()=>{if(viewId()==="notes"&&!document.querySelector(".inedit"))render()})}
   const xs=sentencesFor(n), max=S.sentNote===n.id?S.sentMax:12, shown=xs.slice(0,max);
   S.sentShown=shown;
-  return `<section class="sents"><h2>🔗 この言葉が出てくる文 <span class="count">${xs.length}</span></h2>
+  return `<section class="sents"><h2 data-noauto>🔗 この言葉が出てくる文 <span class="count">${xs.length}</span></h2>
     ${xs.length?`<div class="sgrid">${shown.map((x,i)=>`<button class="card scard" data-sent="${i}"><span class="smeta" data-noauto>${esc(sentMeta(x))}</span><span class="stext"${x.kind==="news"||x.kind==="watch"||x.kind==="task"?" data-noauto":""}>${sentHtml(x,n)}</span></button>`).join("")}</div>
       ${xs.length>max?`<button class="btn" id="sentMore">もっと見る（あと ${xs.length-max}件）</button>`:""}`
-    :`<p class="sub">まだありません。ニュースやノートにこの言葉が出てくると、ここに並びます。</p>`}</section>`;
+    :`<p class="sub" data-noauto>まだありません。ニュースやノートにこの言葉が出てくると、ここに並びます。</p>`}</section>`;
 }
 /* Tapping a card goes to that sentence and lights it for a moment; if the words can't be found the article's top is enough. */
 function markText(root,text){
@@ -1990,20 +2117,35 @@ async function absorbMemos(){
     await store.patchMemo(m.id,{movedTo:"day-"+hcmcDay(at)});
   }}catch(e){}finally{absorbing=false}
 }
+/* The page "settings" holds code:style.css, which styles note bodies only (it is nested under .wiki). */
+const noteCssOff=()=>{try{return localStorage.getItem("desk-note-css-off")==="1"}catch(e){return false}};
+function applyNoteCss(){
+  let el=$("#noteCss"); if(!el){el=document.createElement("style");el.id="noteCss";document.head.append(el)}
+  const css=noteCssOff()?"":codeBlock(noteByTitle("settings")?.body,"style.css").replace(/@import[^;]*;?/gi,"");
+  let depth=0,ok=true;for(const c of css){if(c==="{")depth++;else if(c==="}"&&--depth<0){ok=false;break}}
+  const text=css.trim()&&ok&&depth===0?`.wiki{${css}}`:""; if(el.textContent!==text) el.textContent=text;
+}
+async function openSettings(){
+  if(!noteByTitle("settings")){
+    const body="ここに書いた CSS がノート本文に効きます。\ncode:style.css\n /* 例：見出しの色を変える */\n /* h3{color:#93b6ff} */\n";
+    try{await store.putNote({id:newNoteId(),title:"settings",body,noAuto:true,createdAt:Date.now()})}catch(e){toast("設定を作れませんでした");return}
+  }
+  openWiki("settings");
+}
 function notesView(){
   const n=S.noteId&&noteList().find(x=>x.id===S.noteId);
   if(n){
     const main=noteMain(n.body), src=noteSrc(n.body);
     return `<header class="head"><div><p class="eyebrow"><a href="#notes" data-notelist>📒 ノート</a> · 更新 ${esc(ago(n.updatedAt||n.createdAt||0))}</p><h1 class="ntitle" data-edit="notetitle:${esc(n.id)}">${esc(n.title)}</h1></div>
-      <div class="row"><button class="btn" id="noteAuto" aria-pressed="${!n.noAuto}" title="${n.noAuto?"[ ] で囲んだ所だけリンクになります":"Desk のどこに出てきても、この言葉はリンクになります"}">自動リンク：${n.noAuto?"オフ":"オン"}</button><button class="btn" data-editnow="note:${esc(n.id)}">編集</button><button class="btn" id="noteDel" style="color:var(--red)">削除</button></div></header>
+      <div class="row">${normTitle(n.title)==="settings"?`<button class="btn" id="noteCssToggle" aria-pressed="${!noteCssOff()}">${noteCssOff()?"CSS を入れる":"CSS を切る"}</button>`:""}<button class="btn" id="noteAuto" aria-pressed="${!n.noAuto}" title="${n.noAuto?"[ ] で囲んだ所だけリンクになります":"Desk のどこに出てきても、この言葉はリンクになります"}">自動リンク：${n.noAuto?"オフ":"オン"}</button><button class="btn" data-editnow="note:${esc(n.id)}">編集</button><button class="btn" id="noteDel" style="color:var(--red)">削除</button></div></header>
     <article class="card wiki" data-edit="note:${esc(n.id)}">${main?(isDayNote(n)?dayLines(main):wikiBlock(main)):`<p class="sub">まだ何も書いていません。「編集」か、ここを選んで書き始めてください。[言葉] で別のノートにつながります。</p>`}</article>
     ${sentCards(n)}
-    ${(h=>h.length?`<section class="card hop"><h2>🕸️ つながり <span class="sub">同じ言葉でつながるノート</span></h2>${h.map(g=>`<div class="grp"><h3>${wlink(g.word)} 経由</h3><div class="ngrid">${[g.page,...g.others].filter(Boolean).map(x=>`<button class="card ncard" data-nopen="${esc(x.id)}"><b>${esc(x.title)}</b><span>${esc(noteSnip(x))}</span></button>`).join("")}</div></div>`).join("")}</section>`:"")(twoHop(n))}
+    ${(h=>h.length?`<section class="card hop"><h2>🕸️ つながり <span class="sub">同じ言葉でつながるノート</span></h2>${h.map(g=>`<div class="grp"><h3>${wlink(g.word)} 経由</h3><div class="ngrid">${[g.page,...g.others].filter(Boolean).map(x=>`<button class="card ncard" data-nopen="${esc(x.id)}">${noteThumb(x)}<b>${esc(x.title)}</b><span>${esc(noteSnip(x))}</span></button>`).join("")}</div></div>`).join("")}</section>`:"")(twoHop(n))}
     ${src.length?`<p class="sub nsrc">出典 ${src.map((l,i)=>`<span>${wikiInline(l.replace(SRC_LINE,"").trim())} <button class="btn sm" data-srcdel="${i}">外す</button></span>`).join("")}</p>`:""}`;
   }
   const list=noteList().sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
-  return `<header class="head"><div><p class="eyebrow">ノート</p><h1>ノート</h1></div><button class="btn primary" id="newNote">＋ 新しいノート</button></header>
-  ${list.length?`<div class="ngrid">${list.map(x=>`<button class="card ncard" data-nopen="${esc(x.id)}"><b>${esc(x.title)}</b><span>${esc(noteSnip(x))}</span></button>`).join("")}</div>`
+  return `<header class="head"><div><p class="eyebrow">ノート</p><h1>ノート</h1></div><div class="row"><button class="btn" id="noteSettings">設定</button><button class="btn primary" id="newNote">＋ 新しいノート</button></div></header>
+  ${list.length?`<div class="ngrid">${list.map(x=>`<button class="card ncard" data-nopen="${esc(x.id)}">${noteThumb(x)}<b>${esc(x.title)}</b><span>${esc(noteSnip(x))}</span></button>`).join("")}</div>`
     :`<div class="card empty"><b>まだノートがありません</b>「＋ 新しいノート」か、N キーで書き始められます。</div>`}`;
 }
 async function newNotePrompt(){
@@ -2080,22 +2222,123 @@ function findOutsideBrackets(raw,txt){
 document.addEventListener("selectionchange",()=>{clearTimeout(showSelMenu.t);showSelMenu.t=setTimeout(showSelMenu,250)});
 document.addEventListener("scroll",hideSelMenu,{passive:true});
 /* inline editor: the text turns into a textarea where it stands; blur or ⌘/Ctrl+Enter saves, Esc cancels */
-function startEdit(el,near){
+/* Text changes go through insertText so ⌘Z still works */
+function taPut(ta,a,b,text,sa,sb){
+  ta.focus();ta.setSelectionRange(a,b);
+  if(!text||!document.execCommand("insertText",false,text)) ta.setRangeText(text,a,b,"end");
+  ta.setSelectionRange(sa??a+text.length,sb??sa??a+text.length);
+}
+function taLines(ta){
+  const v=ta.value, e=ta.selectionEnd-(ta.selectionEnd>ta.selectionStart&&v[ta.selectionEnd-1]==="\n"?1:0);
+  const a=v.lastIndexOf("\n",ta.selectionStart-1)+1, n=v.indexOf("\n",e);
+  return [a,n<0?v.length:n];
+}
+function taMove(ta,dir,block){
+  const v=ta.value; let [a,b]=taLines(ta); const ind=indentOf(v.slice(a,b));
+  const lineAt=p=>{const n=v.indexOf("\n",p);return v.slice(p,n<0?v.length:n)};
+  const skipDeep=e=>{while(e<v.length&&lineAt(e+1).trim()&&indentOf(lineAt(e+1))>ind){const n=v.indexOf("\n",e+1);e=n<0?v.length:n}return e};
+  if(block) b=skipDeep(b);
+  const off=ta.selectionStart-a, len=ta.selectionEnd-ta.selectionStart;
+  if(dir<0){
+    if(a===0) return;
+    let p=v.lastIndexOf("\n",a-2)+1;
+    if(block) while(p>0&&lineAt(p).trim()&&indentOf(lineAt(p))>ind) p=v.lastIndexOf("\n",p-2)+1;
+    const up=v.slice(p,a-1), me=v.slice(a,b);
+    taPut(ta,p,b,me+"\n"+up,p+off,p+off+len);
+  }else{
+    if(b>=v.length) return;
+    let e=v.indexOf("\n",b+1); if(e<0)e=v.length;
+    if(block){while(e<v.length&&lineAt(e+1).trim()&&indentOf(lineAt(e+1))>indentOf(v.slice(b+1,e))){const n=v.indexOf("\n",e+1);e=n<0?v.length:n}}
+    const me=v.slice(a,b), down=v.slice(b+1,e), at=a+down.length+1;
+    taPut(ta,a,e,down+"\n"+me,at+off,at+off+len);
+  }
+}
+const NOW_FORMS=[d=>d.replace("T"," "),d=>d.slice(0,10).replace(/-/g,"/"),d=>d.slice(11),d=>d.slice(0,10)];
+const ME_ICON="[tatsuki.icon]";
+/* Scrapbox's keys, inside the box only. Returns true when it used the key. */
+function editKeys(e,ta){
+  if(e.isComposing||e.keyCode===229) return false;
+  const a=ta.selectionStart, b=ta.selectionEnd, sel=ta.value.slice(a,b);
+  if(sel&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&"[*/-".includes(e.key)){
+    const wrap=e.key==="["?`[${sel}]`:`[${e.key} ${sel}]`; taPut(ta,a,b,wrap); return true;
+  }
+  if(e.key==="Tab"){
+    const [x,y]=taLines(ta), lines=ta.value.slice(x,y).split("\n");
+    const out=lines.map(l=>e.shiftKey?l.replace(/^[ \t　]/,""):" "+l).join("\n"), d=out.length-(y-x);
+    const first=e.shiftKey?Math.max(x,a-1):a+1;
+    taPut(ta,x,y,out,sel?first:Math.max(x,a+(e.shiftKey?-1:1)),sel?b+d:Math.max(x,a+(e.shiftKey?-1:1))); return true;
+  }
+  if((e.ctrlKey||e.altKey)&&!e.metaKey&&(e.key==="ArrowUp"||e.key==="ArrowDown")){taMove(ta,e.key==="ArrowUp"?-1:1,e.altKey);return true}
+  if(e.ctrlKey&&!e.metaKey&&e.key==="t"){
+    const d=new Date(Date.now()+HCMC).toISOString().slice(0,16), l=ta.__now;
+    const same=l&&l.b===a&&a===b&&ta.value.slice(l.a,l.b)===l.text, i=same?(l.i+1)%NOW_FORMS.length:0, text=NOW_FORMS[i](d), from=same?l.a:a;
+    taPut(ta,from,b,text); ta.__now={a:from,b:from+text.length,text,i}; return true;
+  }
+  if(e.ctrlKey&&!e.metaKey&&e.key==="i"){taPut(ta,a,b,ME_ICON);return true}
+  if(e.key==="Enter"&&!e.shiftKey&&!e.metaKey&&!e.ctrlKey&&!e.altKey){
+    const x=ta.value.lastIndexOf("\n",a-1)+1, line=ta.value.slice(x,a), ind=/^[ \t　]*/.exec(line)[0];
+    if(!ind) return false;
+    if(!line.trim()&&a===b){taPut(ta,x,a,"");return true} // an empty bullet ends the list
+    taPut(ta,a,b,"\n"+ind); return true;
+  }
+  return false;
+}
+async function uploadFile(file){
+  if(file.size>20*1024*1024) throw new Error("20MB までです");
+  const r=await fetch("/api/uploads",{method:"POST",headers:{"Content-Type":file.type||"application/octet-stream","X-Desk-Upload":"1"},body:file});
+  const v=await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(v.error||"保存できませんでした");
+  return v.url;
+}
+/* inline editor: the text turns into a textarea where it stands; blur or ⌘/Ctrl+Enter saves, Esc cancels */
+function startEdit(el,near,line){
   if(!el||el.querySelector("textarea")) return;
   const [kind,id]=el.dataset.edit.split(/:(.*)/s), raw=rawOf(kind,id), single=kind==="notetitle";
   const ta=document.createElement(single?"input":"textarea");ta.className="inedit";ta.value=raw;
   if(!single){ta.rows=Math.min(24,Math.max(4,raw.split("\n").length+2))}
-  el.replaceChildren(ta);ta.focus();
-  const at=near?raw.indexOf(near):-1; const pos=at>=0?at+near.length:raw.length; ta.setSelectionRange(pos,pos);
+  const canFile=!single&&LOCALAPI, bar=canFile?document.createElement("div"):null; let busy=0,status=null;
+  if(bar){bar.className="edbar";bar.innerHTML=`<label class="btn sm">ファイルを選ぶ<input type="file" hidden multiple accept="image/*,application/pdf"></label><span class="sub" role="status"></span>`;status=bar.querySelector("span")}
+  el.replaceChildren(...(bar?[ta,bar]:[ta]));ta.focus();
+  const at=near?raw.indexOf(near):-1; let pos=at>=0?at+near.length:raw.length;
+  if(line!=null){const ls=raw.split("\n").slice(0,line+1);pos=Math.min(raw.length,ls.join("\n").length)}
+  ta.setSelectionRange(pos,pos);
   let done=false;
   const finish=async save=>{if(done)return;done=true;hideSuggest();
     if(save){try{await saveRaw(kind,id,single?ta.value:ta.value.replace(/\s+$/,""));}catch(e){toast("保存できませんでした")}}
     render()};
-  ta.onkeydown=e=>{if(e.key==="Escape"){e.preventDefault();finish(false)}
-    if(e.key==="Enter"&&(e.metaKey||e.ctrlKey||single)){e.preventDefault();finish(true)}};
-  ta.onblur=()=>setTimeout(()=>{if(document.activeElement!==ta&&!suggestBox?.matches(":hover"))finish(true)},120);
+  const put=async files=>{
+    busy++;
+    for(const f of files){
+      if(status) status.textContent=`${f.name||"ファイル"} を保存しています`;
+      try{const url=await uploadFile(f);if(!done)taPut(ta,ta.selectionStart,ta.selectionEnd,`[${url}]`);if(status)status.textContent=""}
+      catch(err){if(status)status.textContent=err.message;toast(err.message)}
+    }
+    busy--;ta.focus();
+  };
+  ta.onkeydown=e=>{if(e.key==="Escape"){e.preventDefault();finish(false);return}
+    if(e.key==="Enter"&&(e.metaKey||e.ctrlKey||single)){e.preventDefault();finish(true);return}
+    if(!single&&editKeys(e,ta)){e.preventDefault();ta.oninput?.()}};
+  ta.onblur=()=>setTimeout(()=>{if(!busy&&document.activeElement!==ta&&!suggestBox?.matches(":hover"))finish(true)},120);
   if(!single) ta.oninput=()=>suggest(ta);
+  if(canFile){
+    const inp=bar.querySelector("input");
+    bar.querySelector("label").onclick=()=>{busy++;addEventListener("focus",()=>setTimeout(()=>{busy--;ta.focus()},400),{once:true})};
+    inp.onchange=()=>{const fs=[...inp.files];inp.value="";if(fs.length)put(fs)};
+    ta.onpaste=e=>{const fs=[...(e.clipboardData?.files||[])];
+      if(fs.length){e.preventDefault();put(fs);return}
+      const t=(e.clipboardData?.getData("text")||"").trim();
+      if(isUrlTok(t)&&IMG_RE.test(t)){e.preventDefault();taPut(ta,ta.selectionStart,ta.selectionEnd,`[${t}]`)}};
+    ta.ondragover=e=>e.preventDefault();
+    ta.ondrop=e=>{const fs=[...(e.dataTransfer?.files||[])];if(fs.length){e.preventDefault();put(fs)}};
+  }
 }
+/* double click: edit what you own, with the cursor on that line */
+document.addEventListener("dblclick",e=>{
+  const el=e.target.closest?.("[data-edit]");
+  if(!el||e.target.closest("a,button,input,textarea,iframe,summary,.awl")||el.querySelector(".inedit")) return;
+  window.getSelection()?.removeAllRanges();hideSelMenu();
+  const l=e.target.closest("[data-l]")?.dataset.l; startEdit(el,null,l==null?null:+l);
+});
 /* typing "[" suggests note titles */
 let suggestBox=null;
 function hideSuggest(){suggestBox?.remove();suggestBox=null}
@@ -2542,6 +2785,7 @@ async function addPresent(){
   setTimeout(()=>$("#presentText")&&$("#presentText").focus(),0);
 }
 function render(){
+  applyNoteCss();
   const mails=deadlines();S.board=boardTasks(mails);S.dlMap=Object.fromEntries(mails.map(x=>[x.uid,x]));
   const closed=new Set(S.board.filter(t=>t.source==="mail"&&!TOPEN.has(t.status)).map(t=>t.sourceRef));
   S.dl=mails.filter(x=>!closed.has(x.uid)); // a mail task moved to Done / paused / archive leaves the 締切 panel
@@ -3057,6 +3301,8 @@ function wire(){
   document.querySelectorAll("[data-nopen]").forEach(b=>b.onclick=()=>{S.noteId=b.dataset.nopen;render();window.scrollTo(0,0)});
   document.querySelectorAll("[data-notelist]").forEach(a=>a.onclick=e=>{e.preventDefault();S.noteId=null;render()});
   document.querySelectorAll("[data-editnow]").forEach(b=>b.onclick=()=>startEdit(document.querySelector(`[data-edit="${b.dataset.editnow}"]`)));
+  $("#noteSettings")&&($("#noteSettings").onclick=openSettings);
+  $("#noteCssToggle")&&($("#noteCssToggle").onclick=()=>{try{localStorage.setItem("desk-note-css-off",noteCssOff()?"0":"1")}catch(e){}render()});
   document.querySelectorAll("[data-srcdel]").forEach(b=>b.onclick=async()=>{const n=noteList().find(x=>x.id===S.noteId);if(!n)return;
     const src=noteSrc(n.body);src.splice(+b.dataset.srcdel,1);const main=noteMain(n.body);
     try{await store.putNote({...n,body:main+(src.length?(main?"\n":"")+src.join("\n")+"\n":"")});toast("リンクを外しました")}catch(err){toast("保存できませんでした")}});

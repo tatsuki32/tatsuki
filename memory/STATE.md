@@ -21,6 +21,7 @@
 - 言葉のページの文カード：全ページ対象。ニュース・マイナー国・タスクは自動リンクしない。`desk/page-cards` にコミット済み。main に未マージ。
 - 連絡返信（Gmail・WhatsApp を 3:00・16:00 にタスクへ、`desk/whatsapp_sync.py`）：実装済み。定期タスクの実走は確認待ち。
 - World Desk の読む画面（一覧 → 予想・見比べ・なぜ5回・意見、`worldlog`）：`desk/page-cards` に入れて Mac の Desk に反映済み。main に未マージ。朝のタスク `desk-world-brief` の指示を入れ替えた（最初の実行は 11月6日。3日間ためす）。
+- ノートの Scrapbox 機能：`desk/note-scrapbox` に実装。本体への取り込みは確認待ち。
 - タスクをやりやすくする（`clear`）：実装済み。3件を本番で試した。`desk-task-clarify` の夜の実走は確認待ち。ボタンにはサーバーの再起動が要る。
 - プレゼント・ノート吸収・返信待ちの WhatsApp 対応：`desk/page-cards` に統合。`desk-morning-mail` の実走は確認待ち。
 
@@ -34,7 +35,6 @@
 - URL が変わるツールは `tools` に `urlEditable:true`。✏️ はオンライン版だけ。
 - 習慣（`habits`）は連続記録を持たない。できた日の配列 `done` だけ。赤・リセット・責める表示は出さない。
 - 「今日の3つ」と /morning-kickoff は同じ順番（今日締切 → 期限切れ → 進行中 → 時間帯に合うもの）。12時（ホーチミン）で集中／事務を切り替え。
-
 ## よくあるハマりどころ
 - このリポジトリは公開（Tatsuki が非公開に切り替え予定）。切り替え後も memory/ には個人データ・ツールのURL・健康のことは書かない。
 - 非公開にすると Mac の5分ごとの `git pull` に GitHub の認証が要る（`gh auth login` など）。

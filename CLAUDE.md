@@ -14,7 +14,7 @@ Tatsuki の個人ダッシュボード。**Mac だけで使う**（2026-11-04 �
 - ビュー（メニューは4つのまとまり）: 今日＝Home（焦点は「今日の3つ」）/ Tasks / Calendar / 習慣、届いたもの＝できたこと / 返信待ち / プレゼント（朝のメールの画面はなくし、返信が要るメール＝要対応・返信案ありはタスクに入る。下書き・送信はタスクの詳細から）、読む＝World Desk / マイナー国、書く・振り返る＝ノート / Claude Log / ツール。
   iPhone は下にタブ（ホーム・タスク・カレンダー・ノート・その他）、ノートのポップアップは右下の丸ボタン。検索はどの画面でも `/`。
 - データの置き場（すべて `desk/data/`）：
-  `memos`（古い置き場。画面には出さない。残りや `desk-sunday-mirror` の分は開いたときに日付ノートへ移り、`movedTo` が付く）, `presents`（プレゼント。保管から外す）, `tasks`, `dues`, `prompts`（毎日の求人チェックの Claude プロンプト。経歴入りなのでリポジトリに入れない）, `notes`（Scrapbox 風のノート。[言葉] でつながる。ノートのタイトルは Desk 全体で自動リンクになる。`noAuto:true` で止める。ページにはその言葉を含む文がカードで並ぶ（`sentencesFor`。全ページが対象で、保存しない）。ニュースとマイナー国は自動リンクせず、文字を選んでリンクした記事の文だけがカードになる。タスクの表示も自動リンクしない（`data-noauto`）。「出典：」の行は表示と編集から外してページの下に出し、「外す」で消せる）, `habits`（罰を与えない習慣。doc ごとに `done` に日付の配列）, `wins`（できたこと。完了したタスクは `task-<id>`、✓した予定は `event-<id>`、自分で書いたものは `self-…`。`kind`・`title`・`date`（ホーチミンの日付）。Claude の作業は `reports` の `done` から読む）, `lifemap` は `<名前>.json`、`worldlog`（World Desk を読むときの本人の入力。予想と理由、確率の履歴、意見、何が変わったか。doc id は `<号の日付>-<記事の番号>`）。
+  `memos`（古い置き場。画面には出さない。残りや `desk-sunday-mirror` の分は開いたときに日付ノートへ移り、`movedTo` が付く）, `presents`（プレゼント。保管から外す）, `tasks`, `dues`, `prompts`（毎日の求人チェックの Claude プロンプト。経歴入りなのでリポジトリに入れない）, `notes`（Scrapbox 風のノート。[言葉] でつながる。ノートのタイトルは Desk 全体で自動リンクになる。`noAuto:true` で止める。ページにはその言葉を含む文がカードで並ぶ（`sentencesFor`。全ページが対象で、保存しない）。ニュースとマイナー国は自動リンクせず、文字を選んでリンクした記事の文だけがカードになる。タスクの表示も自動リンクしない（`data-noauto`）。「出典：」の行は表示と編集から外してページの下に出し、「外す」で消せる。本文は Scrapbox の記法で書け（`wikiBlock`・`wikiInline`）、ダブルクリックで編集する。ページ `settings` の `code:style.css` が本文のデザインになる）, `habits`（罰を与えない習慣。doc ごとに `done` に日付の配列）, `wins`（できたこと。完了したタスクは `task-<id>`、✓した予定は `event-<id>`、自分で書いたものは `self-…`。`kind`・`title`・`date`（ホーチミンの日付）。Claude の作業は `reports` の `done` から読む）, `lifemap` は `<名前>.json`、`worldlog`（World Desk を読むときの本人の入力。予想と理由、確率の履歴、意見、何が変わったか。doc id は `<号の日付>-<記事の番号>`）。
   `tools`, `calendar`(doc `upcoming`), `gtasks`(doc `current`), `reports`, `editions`, `days`, `watch`（マイナー国ウォッチの号。doc id は日付、本文はマークダウン）は `docs/<名前>/<id>.json` が正本で、ページ用の `*.js` はそこから作る（`server.py` の `FEEDS`）。
 - `desk/server.py`（Python標準ライブラリのみ）が
   `http://localhost:4747` で配信し、`desk/data/*.js`（`window.TOOLS` 等）をページに差し込む。
@@ -24,6 +24,7 @@ Tatsuki の個人ダッシュボード。**Mac だけで使う**（2026-11-04 �
 - Mac の導入: `bash desk/setup-mac.sh`（アプリのビルド＋サーバー常駐＋5分ごとの `git pull origin main`＋15分ごとのデータ保管）。
   ブラウザで開くときの入口は `desk/launcher.html`。
   旧版 `~/Documents/ClaudeTools` は使わない。
+- 画像と PDF は `desk/data/uploads/`（`POST /api/uploads`、`GET /uploads/<名前>`、1個20MB。非公開リポジトリにも保管）。
 - データの保管: `desk/data/` は独立した Git リポジトリで、`desk/backup_data.py`（launchd、15分ごと）が非公開リポジトリへ送る。キーらしい文字列があれば送らずに止まる。公開リポジトリには入れない。
 - World Desk の読む画面：号の記事に `question` と `media` があると、一覧（結果を書かない見出しと予想の問い）→ 読む画面（予想 → 媒体か研究を並べて見比べる → なぜを5回 → 予想を直す → 意見とタスク）で表示する。なければ今までの一覧。号の形は `desk/sync/WORLD_EDITION.md`、見本は `desk/mock/`。朝のタスクの指示は `desk/sync/world-brief-v2.md`（2026-11-05 に入れ替え。前の指示は `world-brief-v1.md`）。要件定義: https://claude.ai/artifact/PKehDPtevXUxtbXryg4KCz
 - 定期タスク: `desk/sync/SCHEDULED_TASKS.md`。Mac の Claude スケジュールタスクが `desk/sync.py put` で `desk/data/` に書く。Claude アプリが閉じていた間の分は、次に開いたときに動く。

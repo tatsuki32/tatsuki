@@ -58,6 +58,8 @@ def leaks(files):
     """The files holding something that looks like a secret. Contents are never printed."""
     hits = []
     for path in files:
+        if path.startswith("uploads/"):  # images and PDFs: binary, so a chance match would stop every backup
+            continue
         try:
             with open(os.path.join(DATA, path), encoding="utf-8", errors="ignore") as f:
                 if SECRETS.search(f.read()):
