@@ -28,6 +28,7 @@ Tatsuki の個人ダッシュボード。**Mac だけで使う**（2026-11-04 �
 - 定期タスク: `desk/sync/SCHEDULED_TASKS.md`。Mac の Claude スケジュールタスクが `desk/sync.py put` で `desk/data/` に書く。Claude アプリが閉じていた間の分は、次に開いたときに動く。
 - 削除は `deleted:true` の論理削除。
 - タスクの状態は `notyet` / `doing` / `done` / `paused`（一旦中止）/ `archived`。一旦中止とアーカイブはタスク画面の見出し下の小さな入口から見る。
+- タスクの時期と並び替え：各列をトグルで分ける（未着手・進行中は 今日／未分類／今週／今月／来月／再来月／年／もっと先、完了は 今日／今週／今月／それより前）。時期は「本人の選択 `planDate`（期間の最後の日）→ 期日 → 未分類」で決まり、過ぎたら今日に入る。Claude の案 `planAi` と目安 `estAi` は毎朝の定期タスク `desk-task-estimate`（`desk/task_estimate.py`）が付け、案は押すまで動かない。本人の所要時間は `estMin`。並び替えと開閉は端末に覚える。
 - タスクをカレンダーへ（`desk/task_calendar.py`、毎時の定期タスク `desk-task-calendar`）：未着手で時刻つきの期日のものを、3日前の同じ時刻に primary カレンダーへ入れる（灰色・先頭に ☑️・空き時間・通知なし）。一方向。進行中は残す。完了・一旦中止・アーカイブ・削除で消す。日付だけの期日は 23:59（ホーチミン）で持ち、入れない。☑️ の予定は Desk のカレンダーに取り込まない。対応表は `desk/data/calendar-sync.json`。
 - メール送信は Desk からしない。タスク詳細の「Claude に送信を頼む」が `/mail-send` を Terminal で始め、Claude が会話で承認を得てから送る。
 - Claude Code のコマンド（`.claude/commands/`）：`/morning-kickoff`・`/begin`・`/kickoff`（Mac 用）、`/recap`（文脈要約。標準の `/resume` と別）、`/tsuzuki`（続きを3行で出す）・`/split`（15分以内に分けて Desk のタスクに足す）、`/rsd`、`/sync`・`/learn`・`/knowledge`、`/where`・`/lowenergy`（Life OS 16。Mac 用）、`/mail-send`（Desk から起動するメール送信）、`/money-review`（お金の助言）。毎回守るルールは `.claude/rules/`。

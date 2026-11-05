@@ -24,6 +24,7 @@ python3 desk/write_feed.py gtasks <raw.json>                 # Google タスク�
 |---|---|---|---|
 | `desk-daily-note` | 毎日 16:00 | 3min Daily Note のメールを本人へ送り、当日のタスクを作る（`lifeos/19-daily-note/`） | `tasks` |
 | `desk-task-calendar` | 毎時 | 未着手で時刻つき期日のタスクを Google カレンダーへ（`desk/task_calendar.py`） | `calendar-sync.json` |
+| `desk-task-estimate` | 毎日 6:40 | タスクにかかる時間の目安と時期の案（`desk/task_estimate.py`。本人の選択は変えない） | `tasks` の `estAi`・`planAi` |
 | `desk-world-brief` | 毎日 7:17 | 世界ニュース | `editions` |
 | `desk-morning-mail` | 毎日 7:22 | Gmail の確認と返信の下書き（送信しない） | `days` |
 | `desk-minor-watch` | 火・金 7:33 | マイナー国ウォッチ | `watch` |
