@@ -350,5 +350,7 @@ if __name__ == "__main__":
         result = run()
         import wise_world  # here, not at the top: it needs this module loaded
         wise_world.update_if_stale()
+        import presents
+        presents.add_wise()  # new deposits also show under プレゼント
         print(time.strftime("%F %T ") + (f"ok {result['count']} rows, {result['added']} new" if result["ok"] else "stopped: " + result["error"]), flush=True)
         sys.exit(0 if result["ok"] else 1)

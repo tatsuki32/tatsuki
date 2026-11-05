@@ -409,6 +409,12 @@ details.draft .sent-as summary{cursor:pointer;display:block;padding:var(--s2) 0;
 .wday .dhead .count{margin-left:auto}
 .wt{font-weight:700;font-size:var(--t2);line-height:1.5;overflow-wrap:anywhere}
 .wdays+.btn{justify-self:start}
+.dline{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:var(--s2) var(--s3);padding:var(--s2) 0;border-top:1px solid var(--line)}
+.dline:first-child{border-top:0}
+.dline p{flex:1 1 240px;min-width:0;margin:0;overflow-wrap:anywhere}
+.dline.done p{color:var(--muted)}
+.dlacts{display:flex;gap:var(--s2)}
+.notesave{justify-content:space-between;align-items:center}
 @media (max-width:560px){.drow.wrow{grid-template-columns:20px minmax(0,1fr) auto}.drow.wrow .dacts{grid-column:3;justify-self:end}}
 .money{display:grid;gap:var(--s3)}
 .mmonth{display:flex;align-items:center;gap:var(--s2);flex-wrap:wrap}
@@ -796,7 +802,7 @@ h1 .inedit{font-size:var(--t4);font-weight:700}
     <nav class="nav" id="nav" aria-label="メニュー"></nav>
     <div class="foot">
       <button class="railbtn" id="nextBtn" aria-label="何していたかと、次にやること"><span class="e">🧭</span><span class="label">次は？</span><kbd>G</kbd></button>
-      <button class="railbtn" id="noteBtn" aria-label="メモを書く"><span class="e">📝</span><span class="label">メモ</span><kbd>N</kbd></button>
+      <button class="railbtn" id="noteBtn" aria-label="ノートを書く"><span class="e">📝</span><span class="label">ノート</span><kbd>N</kbd></button>
       <button class="railbtn" id="aiBtn" aria-label="Claude に頼む（コマンド一覧）"><span class="e">🤖</span><span class="label">Claude に頼む</span><kbd>C</kbd></button>
       <p class="hint"><kbd>T</kbd> タスクを足す · <kbd>/</kbd><kbd>/</kbd> コマンド</p>
     </div>
@@ -811,7 +817,7 @@ h1 .inedit{font-size:var(--t4);font-weight:700}
 /* the menu in four groups (proximity): today / what came in / reading / writing and looking back */
 const NAVGROUPS=[["today","今日"],["in","届いたもの"],["read","読む"],["write","書く・振り返る"]];
 const VIEWS=[{id:"home",e:"🏠",label:"ホーム",g:"today"},{id:"tasks",e:"🗂️",label:"タスク",g:"today"},{id:"calendar",e:"📅",label:"カレンダー",g:"today"},{id:"habits",e:"🌱",label:"習慣",g:"today"},
-  {id:"wins",e:"✨",label:"できたこと",g:"in"},{id:"inbox",e:"📥",label:"受信箱",g:"in"},
+  {id:"wins",e:"✨",label:"できたこと",g:"in"},{id:"presents",e:"🎁",label:"プレゼント",g:"in"},
   {id:"news",e:"🌍",label:"世界ニュース",g:"read"},{id:"watch",e:"🗺️",label:"マイナー国",g:"read"},
   {id:"notes",e:"📒",label:"ノート",g:"write"},{id:"log",e:"🤖",label:"Claudeの記録",g:"write"},{id:"tools",e:"🧰",label:"ツール",g:"write"}];
 const TABS=["home","tasks","calendar","notes"]; // phone tab bar; the rest is under その他
@@ -826,12 +832,12 @@ const GROUPJA=Object.fromEntries(GROUPS.map(g=>[g[0],g[2]]));
 const REG={"Middle East":"🕌","Europe & Russia":"🏰","Asia-Pacific":"🌏","Americas":"🗽","Africa":"🌍","Global":"🌐"};
 const PRI={"Action needed":"red","Reply drafted":"amber","FYI":""};
 const PRIO={"Action needed":0,"Reply drafted":1,"FYI":2};
-const S={tools:[],editions:[],days:[],memos:[],ed:null,day:null,region:"All",q:"",confirm:null,busy:null,notes:{},local:false,dues:{},dl:[],dlMap:{},dlAll:false,quietUntil:0,tasks:[],board:[],taskCol:"notyet",cal:null,gtasks:null,reports:[],logDay:null,prompts:{},watch:[],watchId:null,focus:null,wnotes:[],noteId:null,habits:[],memory:null,nextSkip:0,wins:[],winsDays:14,wread:null,wmode:"gist",wlog:{}};
+const S={tools:[],editions:[],days:[],memos:[],ed:null,day:null,region:"All",q:"",confirm:null,busy:null,notes:{},local:false,dues:{},dl:[],dlMap:{},dlAll:false,quietUntil:0,tasks:[],board:[],taskCol:"notyet",cal:null,gtasks:null,reports:[],logDay:null,prompts:{},watch:[],watchId:null,focus:null,wnotes:[],noteId:null,habits:[],memory:null,nextSkip:0,wins:[],winsDays:14,wread:null,wmode:"gist",wlog:{},presents:[]};
 let db=null;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const okUrl=u=>/^(https:\/\/|file:\/\/|#)/.test(u||"");
-const viewId=()=>{const h=(location.hash||"").slice(1);if(h==="mail")return "tasks";return VIEWS.some(v=>v.id===h)?h:"home"}; // 朝のメール moved into the tasks
+const viewId=()=>{const h=(location.hash||"").slice(1);if(h==="mail")return "tasks";if(h==="inbox")return "presents";return VIEWS.some(v=>v.id===h)?h:"home"}; // 朝のメール moved into the tasks
 const viewLabel=id=>(VIEWS.find(v=>v.id===id)||{}).label||id;
 const ago=ms=>{const d=(Date.now()-ms)/6e4;if(d<1)return"たった今";if(d<60)return Math.round(d)+"分前";if(d<1440)return Math.round(d/60)+"時間前";return new Date(ms).toLocaleDateString("ja-JP",{month:"long",day:"numeric"})};
 function toast(t){const el=document.createElement("div");el.className="toast";el.textContent=t;$("#toastHost").replaceChildren(el);setTimeout(()=>el.remove(),2200)}
@@ -843,10 +849,10 @@ if(LOCALAPI) VIEWS.splice(4,0,{id:"focus",e:"🎯",label:"集中",g:"today"}); /
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="memolink")+1,0,{id:"money",e:"💰",label:"お金",g:"write"}); // statements stay on this Mac
 async function api(method,path,body){const r=await fetch(path,{method,headers:{"Content-Type":"application/json"},body:body?JSON.stringify(body):undefined});if(!r.ok)throw new Error(r.status);return r.json()}
 async function loadApiMemos(){try{
-  const [memos,dues,tasks,prompts,notes,habits,wins,wlog]=await Promise.all([api("GET","/api/memos"),api("GET","/api/dues"),api("GET","/api/tasks"),api("GET","/api/prompts").catch(()=>[]),api("GET","/api/notes").catch(()=>[]),api("GET","/api/habits").catch(()=>[]),api("GET","/api/wins").catch(()=>[]),api("GET","/api/worldlog").catch(()=>[])]);
+  const [memos,dues,tasks,prompts,notes,habits,wins,wlog,presents]=await Promise.all([api("GET","/api/memos"),api("GET","/api/dues"),api("GET","/api/tasks"),api("GET","/api/prompts").catch(()=>[]),api("GET","/api/notes").catch(()=>[]),api("GET","/api/habits").catch(()=>[]),api("GET","/api/wins").catch(()=>[]),api("GET","/api/worldlog").catch(()=>[]),api("GET","/api/presents").catch(()=>[])]);
   S.wlog=Object.fromEntries(wlog.filter(x=>x&&x.id&&!x.deleted).map(x=>[x.id,x]));
   S.wa=await api("GET","/api/whatsapp").catch(()=>({}));
-  S.habits=habits.filter(h=>!h.deleted);S.wins=wins.filter(w=>!w.deleted);S.memos=memos.filter(m=>!m.deleted);S.dues=duesById(dues);S.tasks=tasks.filter(t=>!t.deleted);S.prompts=promptsById(prompts);S.wnotes=notes.filter(n=>!n.deleted);render()}catch(e){toast("Desk サーバーにつながりません。起動していますか？")}}
+  S.habits=habits.filter(h=>!h.deleted);S.wins=wins.filter(w=>!w.deleted);S.presents=presents.filter(p=>!p.deleted);S.memos=memos.filter(m=>!m.deleted&&!m.movedTo);S.dues=duesById(dues);S.tasks=tasks.filter(t=>!t.deleted);S.prompts=promptsById(prompts);S.wnotes=notes.filter(n=>!n.deleted);render();absorbMemos()}catch(e){toast("Desk サーバーにつながりません。起動していますか？")}}
 const promptsById=list=>Object.fromEntries(list.filter(p=>p&&p.id&&!p.deleted).map(p=>[p.id,p]));
 const duesById=list=>Object.fromEntries(list.filter(v=>v&&v.uid).map(v=>[v.uid,v]));
 const store={
@@ -885,6 +891,10 @@ const store={
     if(db){await db.collection("wins").doc(w.id).set(rec)}
     else if(LOCALAPI){await api("PUT","/api/wins/"+encodeURIComponent(w.id),rec);await loadApiMemos()}
     else {S.wins=[...S.wins.filter(x=>x.id!==w.id),{id:w.id,...rec}].filter(x=>!x.deleted);try{localStorage.setItem("desk-wins",JSON.stringify(S.wins))}catch(e){}render()} },
+  async putPresent(p){ const rec={kind:p.kind||"self",title:p.title||"",from:p.from||"",date:p.date||hcmcDate(),source:p.source||"self",ref:p.ref||"",url:p.url||"",createdAt:p.createdAt||Date.now(),updatedAt:Date.now(),deleted:!!p.deleted};
+    if(db){await db.collection("presents").doc(p.id).set(rec)}
+    else if(LOCALAPI){await api("PUT","/api/presents/"+encodeURIComponent(p.id),rec);await loadApiMemos()}
+    else {S.presents=[...S.presents.filter(x=>x.id!==p.id),{id:p.id,...rec}].filter(x=>!x.deleted);render()} },
   async setMailStatus(key,status,day){ if(!db)return; const ref=db.collection("days").doc(day||S.day);const s=await ref.get();if(!s.exists)return;const items=(s.data().items||[]).map(x=>x.key===key?{...x,status}:x);await ref.update({items}) }
 };
 function saveLocal(){try{localStorage.setItem("desk-memos",JSON.stringify(S.memos))}catch(e){}}
@@ -1017,7 +1027,7 @@ const toLocalInput=ms=>{const d=new Date(ms);return `${d.getFullYear()}-${pad(d.
    A task's due date is the real one; like mail, its countdown runs to it. */
 const TSTATUS=[["notyet","未着手"],["doing","進行中"],["done","完了"],["paused","一旦中止"],["archived","アーカイブ"]];
 const TCOLS=["notyet","doing","done"], TSHELF=["paused","archived"], TOPEN=new Set(["notyet","doing"]);
-const TSRC={manual:["✍️","手入力"],memo:["📝","メモから"],mail:["✉️","メールから"],whatsapp:["💬","WhatsApp"],calendar:["📅","カレンダーから"],gtasks:["☑️","Googleタスク"],claude:["🤖","Claude"],daily:["☀️","毎日"]};
+const TSRC={manual:["✍️","手入力"],memo:["📝","ノートから"],mail:["✉️","メールから"],whatsapp:["💬","WhatsApp"],calendar:["📅","カレンダーから"],gtasks:["☑️","Googleタスク"],claude:["🤖","Claude"],daily:["☀️","毎日"]};
 const LINKED=new Set(["mail","whatsapp","calendar","gtasks","claude","daily"]); // these come from elsewhere: their title and due date live at the source
 const tLabel=k=>(TSTATUS.find(s=>s[0]===k)||[k,k])[1];
 const mailTaskId=uid=>"t"+dueDocId(uid);
@@ -1085,11 +1095,6 @@ function winList(){
 const winsToday=()=>{const d=hcmcDate();return winList().filter(w=>w.date===d)};
 const evWinId=e=>winId("event-"+e.id);
 async function eventWin(e){try{await store.putWin({id:evWinId(e),kind:"event",title:e.title,ref:String(e.id),at:e.endMs,date:hcmcDay(e.startMs)});toast("✨ できたことに入れました")}catch(err){toast("保存できませんでした")}}
-async function memoToTask(m){
-  const first=m.text.split("\n")[0].trim(), title=first.length>120?first.slice(0,119)+"…":first;
-  try{await store.putTask({id:newTaskId(),title,note:m.text===title?"":m.text,status:"notyet",source:"memo",sourceRef:m.id,createdAt:Date.now()});
-    await store.patchMemo(m.id,{done:true});toast("🗂️ タスクにしました")}catch(e){toast("保存できませんでした。もう一度お試しください")}
-}
 /* When a task happens. A choice is kept as the last day of its period, so 今月 slides into 今週 and 今日 by itself; a passed date lands on 今日. */
 const ymd=(y,m,d)=>new Date(Date.UTC(y,m,d)).toISOString().slice(0,10);
 const dayParts=today=>{const [y,m,d]=today.split("-").map(Number);return {y,m,d,dow:(new Date(Date.UTC(y,m-1,d)).getUTCDay()+6)%7}}; // Monday first
@@ -1916,7 +1921,7 @@ function sentCards(n){
   return `<section class="sents"><h2>🔗 この言葉が出てくる文 <span class="count">${xs.length}</span></h2>
     ${xs.length?`<div class="sgrid">${shown.map((x,i)=>`<button class="card scard" data-sent="${i}"><span class="smeta" data-noauto>${esc(sentMeta(x))}</span><span class="stext"${x.kind==="news"||x.kind==="watch"||x.kind==="task"?" data-noauto":""}>${sentHtml(x,n)}</span></button>`).join("")}</div>
       ${xs.length>max?`<button class="btn" id="sentMore">もっと見る（あと ${xs.length-max}件）</button>`:""}`
-    :`<p class="sub">まだありません。ニュースやメモにこの言葉が出てくると、ここに並びます。</p>`}</section>`;
+    :`<p class="sub">まだありません。ニュースやノートにこの言葉が出てくると、ここに並びます。</p>`}</section>`;
 }
 /* Tapping a card goes to that sentence and lights it for a moment; if the words can't be found the article's top is enough. */
 function markText(root,text){
@@ -1951,13 +1956,47 @@ async function openWiki(title){
   S.noteId=n.id;S.noteEditNew=!noteMain(n.body)&&!sentencesFor(n).length;S.noteKeep=true;
   if(location.hash==="#notes")render();else location.hash="notes";
 }
+/* The day's note: quick writes land here as one time-stamped line each, so nothing has to be sorted first.
+   A date as a title must not link itself all over the Desk, so these are noAuto. A finished line starts with the mark. */
+const DONE_MARK="✓ ";
+const isDayNote=n=>!!n.noAuto&&/^\d{4}-\d{2}-\d{2}$/.test(n.title||"");
+async function addToDayNote(text,ms=Date.now(),done=false){
+  const day=hcmcDay(ms), n=noteByTitle(day), body=String(n?.body||"").replace(/\s+$/,"");
+  const add=(done?DONE_MARK:"")+hm(ms)+" "+text.trim().split("\n").map(l=>l.trim()).filter(Boolean).join("\n");
+  await store.putNote({id:n?.id||"day-"+day,title:day,createdAt:n?.createdAt||ms,noAuto:true,body:(body?body+"\n":"")+add+"\n"});
+}
+function dayLines(main){
+  return main.split("\n").map((l,i)=>{ if(!l.trim()) return "";
+    const done=l.startsWith(DONE_MARK);
+    return `<div class="dline ${done?"done":""}"><p>${wikiInline(l)}</p><div class="dlacts">${done?"":`<button class="btn sm" data-dline="task" data-i="${i}">タスクにする</button>`}<button class="btn sm" data-dline="done" data-i="${i}">${done?"戻す":"完了にする"}</button></div></div>`}).join("");
+}
+async function dayLineAct(n,act,i){
+  const lines=noteMain(n.body).split("\n"), line=lines[i]; if(line==null) return;
+  const done=line.startsWith(DONE_MARK), plainLine=line.replace(DONE_MARK,"");
+  try{
+    if(act==="task"){const text=plainLine.replace(/^\d{1,2}:\d{2}\s+/,"").trim(), title=text.length>120?text.slice(0,119)+"…":text;
+      await store.putTask({id:newTaskId(),title,note:"",status:"notyet",source:"memo",sourceRef:n.id,createdAt:Date.now()});toast("🗂️ タスクにしました")}
+    lines[i]=act==="task"||!done?DONE_MARK+plainLine:plainLine;
+    await saveRaw("note",n.id,lines.join("\n"));
+  }catch(e){toast("保存できませんでした。もう一度お試しください")}
+}
+/* Memos are gone from the screens. Whatever still lands in the old list (older data, 日曜の鏡) moves into the note of the day it was written. */
+let absorbing=false;
+async function absorbMemos(){
+  if(absorbing||!S.memos.length) return; absorbing=true;
+  try{for(const m of [...S.memos].sort((a,b)=>(a.createdAt||0)-(b.createdAt||0))){
+    const at=m.createdAt||m.updatedAt||Date.now();
+    if(String(m.text||"").trim()) await addToDayNote(m.text,at,!!m.done);
+    await store.patchMemo(m.id,{movedTo:"day-"+hcmcDay(at)});
+  }}catch(e){}finally{absorbing=false}
+}
 function notesView(){
   const n=S.noteId&&noteList().find(x=>x.id===S.noteId);
   if(n){
     const main=noteMain(n.body), src=noteSrc(n.body);
     return `<header class="head"><div><p class="eyebrow"><a href="#notes" data-notelist>📒 ノート</a> · 更新 ${esc(ago(n.updatedAt||n.createdAt||0))}</p><h1 class="ntitle" data-edit="notetitle:${esc(n.id)}">${esc(n.title)}</h1></div>
       <div class="row"><button class="btn" id="noteAuto" aria-pressed="${!n.noAuto}" title="${n.noAuto?"[ ] で囲んだ所だけリンクになります":"Desk のどこに出てきても、この言葉はリンクになります"}">自動リンク：${n.noAuto?"オフ":"オン"}</button><button class="btn" data-editnow="note:${esc(n.id)}">編集</button><button class="btn" id="noteDel" style="color:var(--red)">削除</button></div></header>
-    <article class="card wiki" data-edit="note:${esc(n.id)}">${main?wikiBlock(main):`<p class="sub">まだ何も書いていません。「編集」か、ここを選んで書き始めてください。[言葉] で別のノートにつながります。</p>`}</article>
+    <article class="card wiki" data-edit="note:${esc(n.id)}">${main?(isDayNote(n)?dayLines(main):wikiBlock(main)):`<p class="sub">まだ何も書いていません。「編集」か、ここを選んで書き始めてください。[言葉] で別のノートにつながります。</p>`}</article>
     ${sentCards(n)}
     ${(h=>h.length?`<section class="card hop"><h2>🕸️ つながり <span class="sub">同じ言葉でつながるノート</span></h2>${h.map(g=>`<div class="grp"><h3>${wlink(g.word)} 経由</h3><div class="ngrid">${[g.page,...g.others].filter(Boolean).map(x=>`<button class="card ncard" data-nopen="${esc(x.id)}"><b>${esc(x.title)}</b><span>${esc(noteSnip(x))}</span></button>`).join("")}</div></div>`).join("")}</section>`:"")(twoHop(n))}
     ${src.length?`<p class="sub nsrc">出典 ${src.map((l,i)=>`<span>${wikiInline(l.replace(SRC_LINE,"").trim())} <button class="btn sm" data-srcdel="${i}">外す</button></span>`).join("")}</p>`:""}`;
@@ -1965,7 +2004,7 @@ function notesView(){
   const list=noteList().sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
   return `<header class="head"><div><p class="eyebrow">ノート</p><h1>ノート</h1></div><button class="btn primary" id="newNote">＋ 新しいノート</button></header>
   ${list.length?`<div class="ngrid">${list.map(x=>`<button class="card ncard" data-nopen="${esc(x.id)}"><b>${esc(x.title)}</b><span>${esc(noteSnip(x))}</span></button>`).join("")}</div>`
-    :`<div class="card empty"><b>まだノートがありません</b>「＋ 新しいノート」か、メモに [言葉] と書いて押すと作れます。</div>`}`;
+    :`<div class="card empty"><b>まだノートがありません</b>「＋ 新しいノート」か、N キーで書き始められます。</div>`}`;
 }
 async function newNotePrompt(){
   const t=((await askText("📒 新しいノート","ノートのタイトル","",80))||"").trim(); if(t) openWiki(t);
@@ -2157,7 +2196,6 @@ function goHit(h){
   if(h.kind!=="tool"){S.q="";$("#q").value=""}
   if(h.kind==="tool"){if(okUrl(h.href)){if(/^https?:/.test(h.href))window.open(h.href,"_blank","noopener");else location.href=h.href}return}
   if(g.note){S.noteId=g.note;S.noteKeep=true;if(location.hash==="#notes")render();else location.hash="notes";return}
-  if(g.memo){S.inboxFilter="all";location.hash="inbox";return}
   if(g.task) return openTask(g.task);
   if(g.ed!=null){S.ed=g.ed;S.region="All";S.focus=g.story;if(location.hash==="#news")render();else location.hash="news";return}
   if(g.watch){S.watchId=g.watch;location.hash="watch";return}
@@ -2183,8 +2221,8 @@ try{S.aiExp=JSON.parse(localStorage.getItem("desk-ai-exp")||"{}")||{}}catch(e){S
 /* ---------- nav ---------- */
 function navCount(id){
   if(id==="focus"&&fbActive()) return `<span class="count" data-fleft="${fbEndMs()}">${fbLeft(fbEndMs()-Date.now())}</span>`;
-  const open=S.memos.filter(m=>!m.done&&m.place==="inbox").length, winsN=id==="wins"?winsToday().length:0, taskN=S.board.filter(t=>t.status==="doing").length;
-  return id==="inbox"&&open?`<span class="count">${open}</span>`:id==="wins"&&winsN?`<span class="count" title="今日">${winsN}</span>`:id==="tasks"&&taskN?`<span class="count" title="進行中">${taskN}</span>`:id==="log"&&S.reports[0]?.pending?.length?`<span class="count" title="ペンディング">${S.reports[0].pending.length}</span>`:"";
+  const fresh=presentsNew(), winsN=id==="wins"?winsToday().length:0, taskN=S.board.filter(t=>t.status==="doing").length;
+  return id==="presents"&&fresh?`<span class="count" title="新着">${fresh}</span>`:id==="wins"&&winsN?`<span class="count" title="今日">${winsN}</span>`:id==="tasks"&&taskN?`<span class="count" title="進行中">${taskN}</span>`:id==="log"&&S.reports[0]?.pending?.length?`<span class="count" title="ペンディング">${S.reports[0].pending.length}</span>`:"";
 }
 function navHtml(){
   const cur=viewId();
@@ -2214,15 +2252,7 @@ function openMore(){
 }
 
 /* ---------- notes shown on a page ---------- */
-function notesHere(place){
-  const list=S.memos.filter(m=>m.place===place&&!m.done);
-  if(!list.length) return "";
-  return `<section><div class="section-title"><span class="e">📌</span>このページのメモ</div><div class="notes-here">${list.map(noteCard).join("")}</div></section>`;
-}
-function noteCard(m){
-  return `<div class="note ${m.done?"done":""}"><div><p data-edit="memo:${esc(m.id)}">${wikiInline(m.text)}</p><div class="when">${m.place==="inbox"?"📥 受信箱":"📌 "+esc(VIEWS.some(v=>v.id===m.place)?viewLabel(m.place):m.placeLabel||m.place)} · ${ago(m.createdAt||0)}</div>${(x=>x?`<div class="dlbox">${dlChip(x)}<span class="due">${dueLine(x)}</span></div>`:"")(S.dlMap["memo:"+m.id])}</div>
-  <div class="acts">${m.done?"":`<button class="ibtn" data-memo="totask" data-id="${esc(m.id)}" title="タスクにする" aria-label="タスクにする">🗂️</button>`}<button class="ibtn" data-memo="done" data-id="${esc(m.id)}" title="${m.done?"未完了に戻す":"完了にする"}" aria-label="${m.done?"未完了に戻す":"完了にする"}">${m.done?"↩️":"✅"}</button>${m.place!=="inbox"?`<button class="ibtn" data-memo="toinbox" data-id="${esc(m.id)}" title="受信箱に移す" aria-label="受信箱に移す">📥</button>`:""}<button class="ibtn" data-memo="del" data-id="${esc(m.id)}" title="削除" aria-label="削除">🗑️</button></div></div>`;
-}
+const notesHere=()=>""; // notes pinned to a page ended with the memos; the views still call this
 
 /* ---------- views ---------- */
 /* Home: one focal point (today's three), then the day's context, then what came in, then the daily tools. */
@@ -2244,13 +2274,13 @@ function home(){
   ${daily.length?`<section><div class="section-title"><span class="e">☀️</span>毎日のツール<a href="#tools">すべてのツール →</a></div><div class="tiles mini">${daily.map(tile).join("")}</div></section>`:`<p class="sub" style="margin:0"><a href="#tools" class="more">ツールを開く →</a></p>`}`;
 }
 const topThreeIds=()=>topList().map(t=>t.id);
-/* what came in: mail that needs action, inbox memos, today's news, each count on one right-hand line */
+/* what came in: mail that needs action, good news, today's news, each count on one right-hand line */
 function inflow(){
-  const act=S.dl.filter(x=>x.kind==="mail").length, inbox=S.memos.filter(m=>!m.done&&m.place==="inbox").length, e=S.editions[0], st=e?.data?.stories||[];
+  const act=S.dl.filter(x=>x.kind==="mail").length, fresh=presentsNew(), e=S.editions[0], st=e?.data?.stories||[];
   const n=(v,hot)=>`<span class="n ${v?hot?"hot":"":"zero"}">${v}</span>`;
   return `<section aria-label="届いたもの"><div class="section-title"><span class="e">📬</span>届いたもの</div><div class="card inflow">
     <a class="irow" href="#tasks" data-gonotyet><span class="e">✉️</span>返信するメール${n(act,true)}</a>
-    <a class="irow" href="#inbox"><span class="e">📥</span>受信箱のメモ${n(inbox)}</a>
+    <a class="irow" href="#presents"><span class="e">🎁</span>プレゼント${n(fresh)}</a>
     ${e?`<details class="digest" ${S.digestOpen?"open":""} id="digest"><summary class="irow"><span class="e">📰</span>今日のニュース<span class="s" data-noauto>${esc(e.data.headline||"")}</span>${n(st.length)}</summary>
       <ol data-noauto>${st.map((x,i)=>`<li><button class="tt" data-story="${i}" data-ed="${esc(e.id)}">${esc(x.title)}</button></li>`).join("")}</ol></details>`:""}
     ${actx?"":`<button class="irow" id="soundBtn"><span class="e">🔈</span>新着のときに音を鳴らす<span class="n zero">オフ</span></button>`}
@@ -2490,14 +2520,26 @@ async function addWin(){
 /* Home: one quiet line, today's count and the latest thing */
 function winsMini(){const xs=winsToday().sort((a,b)=>(b.at||0)-(a.at||0));
   return `<div class="card inflow"><a class="irow" href="#wins"><span class="e">✨</span>今日できたこと<span class="s">${xs[0]?esc(xs[0].title):"終わったら、ここに入ります"}</span><span class="n ${xs.length?"":"zero"}">${xs.length}</span></a></div>`}
-function inbox(){
-  const f=S.inboxFilter||"open";
-  const list=S.memos.filter(m=>f==="all"?true:f==="done"?m.done:!m.done).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
-  return `
-  <header class="head"><div><p class="eyebrow">受信箱</p><h1>メモ</h1></div></header>
-  <div class="chips" role="group" aria-label="メモを絞り込む">${[["open","📝 未完了"],["done","✅ 完了"],["all","🗃️ すべて"]].map(([k,l])=>`<button class="chip" data-filter="${k}" aria-pressed="${k===f}">${l}</button>`).join("")}</div>
-  ${list.length?`<div class="notes-here">${list.map(noteCard).join("")}</div>`:`<div class="card empty"><b>メモはありません</b>N キーか「📝 メモ」ボタンで思いついたことを書けます。ここに届くか、開いていたページに残ります。</div>`}
-  ${S.local&&!LOCALAPI?'<p class="sub">ファイルとして開いているので、メモはこのブラウザにだけ保存されます。</p>':""}`;
+/* ---------- プレゼント ---------- */
+/* Good news only: awards, offers, money in, kind words. None of it asks anything of you, so it is not a task. */
+const PKIND={award:["🏆","受賞"],hired:["🤝","採用"],payment:["💰","入金"],invoice:["🧾","請求書"],praise:["💬","褒められた"],self:["🎁","自分で"]};
+const presentsSeen=()=>{try{return +localStorage.getItem("desk-presents-seen")||0}catch(e){return 0}};
+const presentsNew=()=>S.presents.filter(p=>(p.createdAt||0)>presentsSeen()).length;
+function presentsView(){
+  const byMonth=new Map();
+  [...S.presents].sort((a,b)=>String(b.date).localeCompare(String(a.date))||(b.createdAt||0)-(a.createdAt||0)).forEach(p=>{const m=String(p.date).slice(0,7);if(!byMonth.has(m))byMonth.set(m,[]);byMonth.get(m).push(p)});
+  const when=d=>new Date(d+"T12:00:00").toLocaleDateString("ja-JP",{month:"long",day:"numeric"});
+  const row=p=>{const [e,l]=PKIND[p.kind]||PKIND.self;return `<div class="drow wrow"><span class="e" aria-hidden="true">${e}</span><div style="min-width:0"><span class="wt">${okUrl(p.url)?`<a class="ext" href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.title)} ↗</a>`:esc(p.title)}</span><div class="due">${esc(l)}${p.from?" · "+esc(p.from):""} · ${esc(when(p.date))}</div></div><div class="dacts"><button class="ibtn" data-predel="${esc(p.id)}" aria-label="「${esc(p.title)}」を消す" title="消す">✕</button></div></div>`};
+  try{localStorage.setItem("desk-presents-seen",String(Date.now()))}catch(e){}
+  return `<header class="head"><div><p class="eyebrow">届いたもの</p><h1>プレゼント</h1></div></header>
+  <form class="wadd" id="presentAdd" autocomplete="off"><label class="sr" for="presentText">うれしかったことを書く</label><input type="text" id="presentText" maxlength="120" placeholder="うれしかったことを書く（例：友達に褒められた）"><button class="btn primary" type="submit">足す</button></form>
+  ${byMonth.size?`<div class="wdays">${[...byMonth].map(([m,xs])=>`<section class="card wday"><div class="dhead"><h2>${esc(new Date(m+"-15T12:00:00").toLocaleDateString("ja-JP",{year:"numeric",month:"long"}))}</h2><span class="count">${xs.length}件</span></div><div>${xs.map(row).join("")}</div></section>`).join("")}</div>`
+  :`<div class="card empty"><b>うれしいことが届くと、ここに並びます</b>受賞や採用のメール、Wise の入金、褒められた言葉を1日2回集めます。</div>`}`;
+}
+async function addPresent(){
+  const inp=$("#presentText"), title=(inp.value||"").trim().slice(0,120); if(!title){inp.focus();return}
+  try{await store.putPresent({id:"self-"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),kind:"self",title,source:"self"});toast("🎁 入れました")}catch(e){toast("保存できませんでした。入力はそのまま残っています");return}
+  setTimeout(()=>$("#presentText")&&$("#presentText").focus(),0);
 }
 function render(){
   const mails=deadlines();S.board=boardTasks(mails);S.dlMap=Object.fromEntries(mails.map(x=>[x.uid,x]));
@@ -2510,7 +2552,7 @@ function render(){
   if(viewId()==="followups"){fuLoad();$("#view").innerHTML=searchResults()+fuView();wire();wireFu();return}
   if(viewId()==="money"){moneyLoad();$("#view").innerHTML=searchResults()+moneyView();wire();wireMoney();return}
   const v=viewId();
-  $("#view").innerHTML=searchResults()+(v==="focus"?focusView():v==="notes"?notesView():v==="watch"?watch():v==="tasks"?tasks():v==="calendar"?calendar():v==="news"?news():v==="wins"?winsView():v==="inbox"?inbox():v==="habits"?habitsView():v==="log"?log():v==="tools"?toolsView():home());
+  $("#view").innerHTML=searchResults()+(v==="focus"?focusView():v==="notes"?notesView():v==="watch"?watch():v==="tasks"?tasks():v==="calendar"?calendar():v==="news"?news():v==="wins"?winsView():v==="presents"?presentsView():v==="habits"?habitsView():v==="log"?log():v==="tools"?toolsView():home());
   if(v==="news"||v==="watch") linkSources($("#view"));
   wire();
   if(v==="news"&&S.focus!=null){const el=document.getElementById("story-"+S.focus);S.focus=null;if(el){el.classList.add("flash");setTimeout(()=>el.scrollIntoView({block:"start"}),0)}}
@@ -2862,7 +2904,8 @@ async function fuLoad(force){
 }
 const fuDraftBtn=i=>i.hasDraft&&okUrl(i.draftUrl)?`<a class="btn sm" href="${esc(i.draftUrl)}" target="_blank" rel="noopener">Gmail で下書きを開く ↗</a>`:"";
 const fuBtn=(i,c,cls)=>`<button class="btn sm ${cls||""}" data-fu="${esc(c)}" data-fuid="${i.no}">${esc(c)}</button>`;
-function fuHead(i){return `<div class="futop"><h3>${esc(i.subject)}</h3><span class="fudays">${fuAge(i)}日</span></div><div class="fuwho">${esc((i.to||[]).join(", "))}</div>`}
+function fuHead(i){return `<div class="futop"><h3>${esc(i.subject)}</h3><span class="fudays">${fuAge(i)}日</span></div><div class="fuwho">${i.source==="whatsapp"?"WhatsApp":"Gmail · "+esc((i.to||[]).join(", "))}</div>`}
+const fuCopyBtn=i=>i.copyText?`<button class="btn sm" data-fucopy="${esc(i.copyText)}">文面をコピー</button>`:"";
 function fuActions(i,btns){
   if(i.answer) return `<p class="msg">「${esc(i.answer)}」を受け取りました。次の同期で反映します。</p>`;
   return `<div class="row">${btns}</div>`;
@@ -2879,13 +2922,14 @@ function fuView(){
   const note=d.lastRun?(today?"今朝のメールを確認しました":`最後の確認 ${esc(d.lastRun)}。今朝の確認はまだです`):"メールの確認はまだです";
   const run=LOCALAPI&&!db?`<button class="btn" id="fuRun">メールを確認</button>`:"";
   const ask=asks.length?`<section><h2 class="section-title">答えを待っています</h2>${asks.map(i=>`<article class="card fucard"><div>${fuHead(i)}</div>${fuActions(i,fuBtn(i,"送る","primary")+fuBtn(i,"保留")+fuBtn(i,"捨てる"))}</article>`).join("")}</section>`:"";
-  const row=i=>`<div><div>${fuHead(i)}</div>${fuActions(i,i.state==="send"?`<span class="msg">Gmail で確かめて、自分で送る番です</span>${fuDraftBtn(i)}`:(fuDraftBtn(i)+(i.asking?fuBtn(i,"送る")+fuBtn(i,"保留"):"")+fuBtn(i,"捨てる")))}</div>`;
+  const row=i=>`<div><div>${fuHead(i)}</div>${fuActions(i,i.state==="send"?`<span class="msg">Gmail で確かめて、自分で送る番です</span>${fuDraftBtn(i)}`:(fuDraftBtn(i)+fuCopyBtn(i)+(i.asking?fuBtn(i,"送る")+fuBtn(i,"保留"):"")+fuBtn(i,"捨てる")))}</div>`;
   const list=rest.length?`<section><h2 class="section-title">返信待ち ${rest.length}件</h2><div class="card fulist">${rest.map(row).join("")}</div></section>`:(asks.length?"":`<div class="card empty"><b>返信待ちはありません</b>メールの確認のあとに、ここへ出ます。</div>`);
   const qrow=i=>`<div><div>${fuHead(i)}</div><p class="fuwho">${i.state==="held"?`保留中。${esc(i.holdUntil||"")} にまた聞きます`:"催促をやめました。下書きは Gmail に残っています"}</p>${fuActions(i,fuBtn(i,"戻す"))}</div>`;
   const more=quiet.length?`<details class="fumore"><summary>保留・やめたもの ${quiet.length}件</summary><div class="card fulist">${quiet.map(qrow).join("")}</div></details>`:"";
-  return head(note,run)+`<div class="fu">${ask}${list}${more}</div><p class="sub">メールは Desk からは送られません。送るのは Gmail で本人が行います。</p>`;
+  return head(note,run)+`<div class="fu">${ask}${list}${more}</div><p class="sub">Desk からは送られません。送るのは本人が Gmail や WhatsApp で行います。</p>`;
 }
 function wireFu(){
+  document.querySelectorAll("[data-fucopy]").forEach(b=>b.onclick=async()=>{try{await navigator.clipboard.writeText(b.dataset.fucopy);toast("コピーしました。WhatsApp で自分で送ってください")}catch(e){toast("コピーできませんでした")}});
   document.querySelectorAll("[data-fu]").forEach(b=>b.onclick=async()=>{
     const c=b.dataset.fu,no=+b.dataset.fuid,item=(fuData()?.items||[]).find(i=>i.no===no);
     if(c==="送る"&&item&&okUrl(item.draftUrl)) window.open(item.draftUrl,"_blank","noopener");
@@ -3028,7 +3072,6 @@ function wire(){
   wireWorld();
   $("#logDay")&&($("#logDay").onchange=e=>{S.logDay=e.target.value;render()});
   document.querySelectorAll("[data-region]").forEach(b=>b.onclick=()=>{S.region=b.dataset.region;render()});
-  document.querySelectorAll("[data-filter]").forEach(b=>b.onclick=()=>{S.inboxFilter=b.dataset.filter;render()});
   document.querySelectorAll("[data-opennext]").forEach(b=>b.onclick=()=>{S.nextSkip=0;openNext()});
   document.querySelectorAll("[data-t3]").forEach(b=>b.onclick=()=>setTaskStatus(b.dataset.id,b.dataset.t3));
   document.querySelectorAll("[data-habit]").forEach(b=>b.onclick=()=>toggleHabit(b.dataset.habit,b.dataset.day));
@@ -3042,12 +3085,10 @@ function wire(){
   document.querySelectorAll("[data-windel]").forEach(b=>b.onclick=async()=>{if(!b.dataset.sure){b.dataset.sure="1";b.textContent="消す？";return}
     const w=S.wins.find(x=>x.id===b.dataset.windel);if(w)try{await store.putWin({...w,deleted:true})}catch(e){toast("保存できませんでした")}});
   document.querySelectorAll("[data-turl]").forEach(b=>b.onclick=()=>openToolUrl(b.dataset.turl));
-  document.querySelectorAll("[data-memo]").forEach(b=>b.onclick=async()=>{const m=S.memos.find(x=>x.id===b.dataset.id);if(!m)return;try{
-    if(b.dataset.memo==="totask") return memoToTask(m);
-    if(b.dataset.memo==="done") await store.patchMemo(m.id,{done:!m.done});
-    if(b.dataset.memo==="toinbox"){await store.patchMemo(m.id,{place:"inbox"});toast("📥 受信箱に移しました")}
-    if(b.dataset.memo==="del"){ if(b.dataset.sure){await store.delMemo(m.id);toast("🗑️ 削除しました")} else {b.dataset.sure="1";b.textContent="削除？";b.style.color="var(--red)";setTimeout(()=>{if(b.isConnected){delete b.dataset.sure;b.textContent="🗑️";b.style.color=""}},3000)} }
-  }catch(e){toast("保存できませんでした。少しして、もう一度お試しください")}});
+  $("#presentAdd")&&($("#presentAdd").onsubmit=e=>{e.preventDefault();addPresent()});
+  document.querySelectorAll("[data-predel]").forEach(b=>b.onclick=async()=>{if(!b.dataset.sure){b.dataset.sure="1";b.textContent="消す？";return}
+    const p=S.presents.find(x=>x.id===b.dataset.predel);if(p)try{await store.putPresent({...p,deleted:true})}catch(e){toast("保存できませんでした")}});
+  document.querySelectorAll("[data-dline]").forEach(b=>b.onclick=e=>{e.stopPropagation();const n=noteList().find(x=>x.id===S.noteId);if(n)dayLineAct(n,b.dataset.dline,+b.dataset.i)});
   document.querySelectorAll("[data-due]").forEach(b=>b.onclick=e=>{e.preventDefault();openDue(b.dataset.due)});
   document.querySelectorAll("[data-goday]").forEach(a=>a.onclick=()=>{S.day=a.dataset.goday});
   $("#soundBtn")&&($("#soundBtn").onclick=()=>{unlockAudio();setTimeout(()=>{lastChime=0;chime()},80);toast("🔈 新着のときに音が鳴ります")});
@@ -3083,22 +3124,21 @@ function wire(){
 /* ---------- note popup ---------- */
 function openNote(){
   if($("#modal").firstChild) return;
-  const place=viewId();
   let draft="";try{draft=localStorage.getItem("desk-draft")||""}catch(e){}
-  $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop" role="dialog" aria-modal="true" aria-label="メモを書く">
-    <div class="top"><h2>📝 クイックメモ</h2><button class="ibtn" id="xNote" aria-label="閉じる">✕</button></div>
+  $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop" role="dialog" aria-modal="true" aria-label="ノートを書く">
+    <div class="top"><h2>📝 ノート</h2><button class="ibtn" id="xNote" aria-label="閉じる">✕</button></div>
     <textarea id="noteText" placeholder="頭の中にあることを書き出す…">${esc(draft)}</textarea>
-    <div class="seg"><button id="toInbox">受信箱に送る<small>⌘/Ctrl + Enter</small></button><button id="keepHere">「${esc(viewLabel(place))}」に残す<small>このページに表示されます</small></button></div>
+    <div class="row notesave"><span class="sub">今日のノートに足します</span><button class="btn primary" id="saveNote">保存<kbd>⌘ Enter</kbd></button></div>
   </div></div>`;
   const ta=$("#noteText");ta.focus();ta.setSelectionRange(ta.value.length,ta.value.length);
   ta.oninput=()=>{try{localStorage.setItem("desk-draft",ta.value)}catch(e){}};
   const close=()=>{$("#modal").innerHTML="";$("#noteBtn").focus()};
-  const save=async where=>{const text=ta.value.trim();if(!text){ta.focus();return}
-    try{await store.addMemo({text,place:where,placeLabel:where==="inbox"?"受信箱":viewLabel(where),createdAt:Date.now(),done:false});try{localStorage.removeItem("desk-draft")}catch(e){}close();toast(where==="inbox"?"📥 受信箱に送りました":"📌 「"+viewLabel(where)+"」に残しました")}
+  const save=async()=>{const text=ta.value.trim();if(!text){ta.focus();return}
+    try{await addToDayNote(text);try{localStorage.removeItem("desk-draft")}catch(e){}close();toast("📒 今日のノートに足しました")}
     catch(e){toast("保存できませんでした。入力した文章はそのまま残っています")}};
-  $("#toInbox").onclick=()=>save("inbox");$("#keepHere").onclick=()=>save(place);$("#xNote").onclick=close;
+  $("#saveNote").onclick=save;$("#xNote").onclick=close;
   $("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};
-  ta.onkeydown=e=>{if(e.key==="Enter"&&(e.metaKey||e.ctrlKey)){e.preventDefault();save("inbox")} if(e.key==="Escape")close()};
+  ta.onkeydown=e=>{if(e.key==="Enter"&&(e.metaKey||e.ctrlKey)){e.preventDefault();save()} if(e.key==="Escape")close()};
 }
 $("#noteBtn").onclick=openNote;
 {const q=$("#q"),go=()=>{S.q=q.value;S.qAll=null;render();if(S.q.trim())window.scrollTo(0,0)};
@@ -3205,7 +3245,7 @@ const isPal=q=>/^[/／]/.test(q.trim());
 function palItems(){
   const act=[
     {e:"🧭",name:"次は？",key:"G",kw:"つぎ next",run:()=>{S.nextSkip=0;openNext()}},
-    {e:"📝",name:"メモ",key:"N",kw:"めも memo note",run:()=>openNote()},
+    {e:"📝",name:"ノートを書く",key:"N",kw:"のーと めも memo note",run:()=>openNote()},
     {e:"☑️",name:"タスクを足す",key:"T",kw:"たすく task",run:()=>openTask(null)},
     {e:"⌨️",name:"Claude に頼む",key:"C",kw:"くろーど claude",run:()=>openAsk()},
     {e:"⚡",name:"コマンド一覧（この画面）",key:"/ /",kw:"こまんど command palette",run:()=>{const q=$("#q");q.value="/";S.q="/";S.palSel=0;render();q.focus()}},

@@ -2,7 +2,8 @@
 """Life OS 02: follow-ups. Mail goes through MORNING_RUN.md; this never sends any.
 
   run.py snapshot FILE|-          saves today's sent-thread snapshot
-  run.py morning                  applies it: queues drafts at 3 days, asks at 14 days
+  run.py morning                  applies it: queues drafts and tasks at 3 days, asks at 14 days
+  run.py whatsapp                 reads the Mac's WhatsApp store: chats waiting on them, a task at 3 days
   run.py pending-drafts           the drafts to create, as JSON
   run.py drafted NO ID [URL]      records a draft that now exists in Gmail
   run.py today                    prints the morning list
@@ -75,6 +76,10 @@ def main(argv=None):
         print(f"{save_snapshot(read_snapshot(a[1]))}件を保存しました")
     elif cmd == "morning":
         print(json.dumps(core().morning(), ensure_ascii=False))
+    elif cmd == "whatsapp":
+        sys.path.insert(0, os.path.join(paths.REPO, "desk"))
+        import whatsapp_sync
+        print(json.dumps(core().apply_chats(whatsapp_sync.waiting_threads()), ensure_ascii=False))
     elif cmd == "pending-drafts":
         print(json.dumps(core().pending_drafts(), ensure_ascii=False, indent=1))
     elif cmd == "drafted" and len(a) >= 3:

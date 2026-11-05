@@ -193,3 +193,22 @@ class NoReply(Scan):
         self.assertEqual(tasks.get(ref)["status"], "archived")
         again = wa.scan(NOW)
         self.assertEqual((again["created"], again["drafts"]), (0, []))
+
+    def test_chat_waiting_on_them_is_a_thread_without_text(self):
+        self.s.chat(1, "相手")
+        self.s.msg(1, True, "見積もりはどうなりましたか？", ago=4 * 86400)
+        self.s.chat(2, "友達")
+        self.s.msg(2, False, "返事きたよ")
+        rows = {r["subject"]: r for r in wa.waiting_threads(NOW)}
+        self.assertEqual((rows["相手"]["lastFrom"], rows["友達"]["lastFrom"]), ("me", "them"))
+        self.assertEqual(rows["相手"]["lang"], "ja")
+        self.assertNotIn("見積もり", json.dumps(rows, ensure_ascii=False))
+
+    def test_a_closing_word_or_an_old_or_group_chat_is_not_waiting(self):
+        self.s.chat(1, "相手")
+        self.s.msg(1, True, "ありがとうございます！")
+        self.s.chat(2, "昔の人")
+        self.s.msg(2, True, "お元気ですか？", ago=40 * 86400)
+        self.s.chat(3, "みんな", kind=GROUP, jid="1" + GROUP_HOST)
+        self.s.msg(3, True, "集まりませんか？")
+        self.assertEqual(wa.waiting_threads(NOW), [])

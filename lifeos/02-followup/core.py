@@ -14,11 +14,13 @@ from lifeos.lib import paths, tasks, tools
 SLUG = "02-followup"
 DEFAULTS = {"enabled": True, "draftDays": 3, "askDays": 14, "holdDays": 7, "maxDraftsPerRun": 5, "maxAsksPerRun": 3,
             "ignore": ["noreply", "no-reply", "donotreply", "do-not-reply", "mailer-daemon", "notifications@"]}
+MAX_TASKS_PER_RUN = 5  # the first run may find many old threads at once
 OPEN = ("waiting", "held", "send")
 BODY = {
     "ja": "お世話になっております。\n先日お送りした件について、その後いかがでしょうか。\nお手すきの際にご確認いただけますと幸いです。\nよろしくお願いいたします。",
     "en": "Hi,\nI wanted to follow up on my earlier message. Have you had a chance to look at it?\nThank you.",
 }
+CHAT_BODY = {"ja": "先日の件、その後いかがでしょうか？", "en": "Hi, just checking in on my last message. Any update?"}
 
 
 def connect():
@@ -110,7 +112,7 @@ def _end_task(item, status):
 
 
 def _start_cycle(item, thread, at):
-    item.update(state="waiting", waitingAt=at, messageId=thread.get("messageId") or "", to=thread["to"],
+    item.update(state="waiting", waitingAt=at, source=thread.get("source") or "gmail", messageId=thread.get("messageId") or "", to=thread["to"],
                 subject=thread.get("subject") or "（件名なし）", lang=thread.get("lang") or "", viewUrl=thread.get("viewUrl") or "",
                 draft=None, draftQueuedOn=None, askedOn=None, askQueuedOn=None, holdUntil=None)
 
@@ -138,6 +140,38 @@ def ingest(s, snapshot, cfg):
             item["state"] = "closed"
 
 
+def _is_chat(item):
+    return item.get("source") == "whatsapp"
+
+
+def _who(item):
+    """The name to show: 'Name <address>' without the address."""
+    return (item["to"][0].split("<")[0].strip(' "') or item["to"][0]) if item.get("to") else item["subject"]
+
+
+def _queue_tasks(s, day, cfg):
+    """A Desk task for today once someone has not answered for draftDays. It closes when they answer (ingest)."""
+    due = sorted((i for i in s["threads"].values() if i["state"] == "waiting" and not i.get("taskId")
+                  and age_days(i, day) >= cfg["draftDays"]), key=lambda i: i["waitingAt"])
+    for item in due[:MAX_TASKS_PER_RUN]:
+        note = "返信待ちの画面で文面をコピーして、WhatsApp で自分で送る。" if _is_chat(item) else "Gmail の下書きを開いて、自分で送る。Life OS は送信しません。"
+        rec = tasks.add("催促：" + _who(item), source="lifeos-02", source_ref=item["threadId"], note=note)
+        tasks._put({**rec, "planDate": day})
+        item["taskId"] = rec["id"]
+    return len(due[:MAX_TASKS_PER_RUN])
+
+
+def apply_chats(threads, day=None):
+    """The same rules for chats. They have no draft and no 14-day question: the task and the screen are enough."""
+    day = day or paths.today()
+    cfg = config()
+    if not cfg["enabled"] or tools.info(os.path.join(tools.root_dir(), SLUG)).get("status") == "stopped":
+        return {"stopped": True}
+    with state() as s:
+        ingest(s, {"threads": threads}, cfg)
+        return {"tasks": _queue_tasks(s, day, cfg)}
+
+
 def draft_request(item):
     subject = item["subject"]
     if not subject.lower().startswith(("re:", "re：")):
@@ -152,7 +186,7 @@ def _queued(s):
 
 def _queue_drafts(s, day, cfg):
     due = sorted((i for i in s["threads"].values() if i["state"] == "waiting" and not i.get("draft") and not i.get("draftQueuedOn")
-                  and age_days(i, day) >= cfg["draftDays"]), key=lambda i: i["waitingAt"])
+                  and not _is_chat(i) and age_days(i, day) >= cfg["draftDays"]), key=lambda i: i["waitingAt"])
     for item in due[:max(0, cfg["maxDraftsPerRun"] - len(_queued(s)))]:
         item["draftQueuedOn"] = day
     made = 0
@@ -204,8 +238,9 @@ def morning(day=None):
         ingest(s, snapshot, cfg)
         made = _queue_drafts(s, day, cfg)
         asked = _ask(s, day, cfg)
+        added = _queue_tasks(s, day, cfg)
         s["lastRun"] = day
-        return {"drafted": made, "asked": asked, "pendingDrafts": len(_queued(s))}
+        return {"drafted": made, "asked": asked, "tasks": added, "pendingDrafts": len(_queued(s))}
 
 
 def pending_drafts():
@@ -271,6 +306,7 @@ def _public(item, day, cfg):
     draft = item.get("draft") or {}
     return {"id": f"f{item['no']}", "no": item["no"], "subject": item["subject"], "to": item["to"], "state": item["state"],
             "waitingAt": item["waitingAt"], "hasDraft": bool(draft), "draftUrl": draft.get("viewUrl") or item.get("viewUrl") or "",
+            "source": item.get("source") or "gmail", "copyText": CHAT_BODY["ja" if item.get("lang") == "ja" else "en"] if _is_chat(item) else "",
             "holdUntil": item.get("holdUntil"),
             "asking": item["state"] == "waiting" and bool(draft) and age_days(item, day) >= cfg["askDays"]}
 
