@@ -559,7 +559,23 @@ h1 .inedit{font-size:var(--t4);font-weight:700}
 .trps .btn[hidden]{display:none}
 .trps .btn{min-height:44px;padding:0 var(--s2);justify-content:flex-start;min-width:0;white-space:nowrap}
 .trrow{flex-wrap:wrap;gap:var(--s2)}
-.trhome{display:block;margin-top:calc(-1 * var(--s2))}
+.trhome{display:flex;flex-wrap:wrap;gap:0 var(--s3);margin-top:calc(-1 * var(--s2))}
+.pop.qa{width:min(520px,100%)}
+.pop.qa h2{margin:0;font-size:var(--t4);line-height:1.4}
+.pop.qa .top{margin:0}
+.tfirstline{margin:0;font-size:var(--t1);color:var(--ink-2);overflow-wrap:anywhere}
+.tnotyet{align-self:center}
+.tclear{display:grid;gap:var(--s2);min-width:0}
+.tclear .btn{justify-self:start}
+.torig{margin:0;font-size:var(--t1);color:var(--muted);overflow-wrap:anywhere}
+.linkbtn{background:none;border:0;padding:0;font:inherit;color:var(--ink-2);text-decoration:underline;cursor:pointer}
+.tfirst{border-left:2px solid var(--accent);padding-left:var(--s2);display:grid;gap:var(--s1)}
+.tfirst p{margin:0;font-size:var(--t3);font-weight:700;line-height:1.5;overflow-wrap:anywhere}
+.twho{display:grid;gap:var(--s2)}
+.twho[hidden]{display:none}
+.tmore summary{cursor:pointer;font-size:var(--t1);color:var(--ink-2);min-height:32px;display:flex;align-items:center}
+.tmore ol,.tmore ul{margin:0 0 var(--s2);padding-left:20px;display:grid;gap:var(--s1);font-size:var(--t2)}
+.tmore p{margin:0 0 var(--s2);font-size:var(--t2);overflow-wrap:anywhere}
 @media (max-width:560px){.tri kbd{display:none}}
 .pop .pbody{min-height:min(52vh,420px);font-size:var(--t2);line-height:1.6}
 .seg{display:grid;grid-template-columns:1fr 1fr;gap:var(--s2)}
@@ -890,7 +906,7 @@ const LINKED=new Set(["mail","calendar","gtasks","claude","daily"]); // these co
 const tLabel=k=>(TSTATUS.find(s=>s[0]===k)||[k,k])[1];
 const mailTaskId=uid=>"t"+dueDocId(uid);
 const newTaskId=()=>"t"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
-const taskRecord=t=>({id:t.id,title:t.title,status:t.status||"notyet",source:t.source||"manual",sourceRef:t.sourceRef||"",due:LINKED.has(t.source)?null:(t.due??null),note:t.note||"",planDate:t.planDate||null,planAi:t.planAi||null,estMin:t.estMin??null,estAi:t.estAi??null,createdAt:t.createdAt||Date.now(),deleted:!!t.deleted});
+const taskRecord=t=>({id:t.id,title:t.title,status:t.status||"notyet",source:t.source||"manual",sourceRef:t.sourceRef||"",due:LINKED.has(t.source)?null:(t.due??null),note:t.note||"",planDate:t.planDate||null,planAi:t.planAi||null,estMin:t.estMin??null,estAi:t.estAi??null,...(t.clear?{clear:t.clear}:{}),createdAt:t.createdAt||Date.now(),deleted:!!t.deleted});
 const byDeadline=(a,b)=>(a.deadline??Infinity)-(b.deadline??Infinity)||(b.createdAt||0)-(a.createdAt||0);
 const withDeadline=t=>({...t,deadline:t.due!=null?t.due-LEAD:null});
 /* Calendar events whose title starts with a mark become tasks: "TODO 書類を送る", "【やる】…", "☑ …" */
@@ -986,10 +1002,84 @@ function planSel(t,ps){const cur=t.planDate?tPeriodOf(t.planDate,ps)[0]:"";
 async function setTaskPlan(id,key){const t=findTask(id);if(!t)return;const p=tPeriods().find(x=>x[0]===key);
   try{await store.putTask({...t,planDate:p?p[2]:null});toast(`🗂️ ${p?p[1]:"未分類"} にしました`)}catch(e){toast("保存できませんでした。もう一度お試しください")}}
 const aiPlanOf=t=>!t.planDate&&t.due==null&&t.planAi?t.planAi:null;
+/* A clearer wording from the night's run sits beside the person's own title, which is never overwritten. */
+const clearOn=t=>!!(t?.clear?.title&&!t.clear.titleOff);
+const taskName=t=>clearOn(t)?t.clear.title:(t?.title||"");
+const nameEdit=(t,name)=>clearOn(t)?{clear:{...t.clear,title:name}}:{title:name};
+const openQs=t=>(t.clear?.questions||[]).filter(q=>q.state==="open");
+const waitingQs=()=>S.board.filter(t=>TOPEN.has(t.status)&&openQs(t).length);
+const CLEAR_SKIP=new Set(["mail","daily","lifeos-19"]); // same as SKIP_SOURCES in desk/task_clarify.py
+const notCleared=()=>S.board.filter(t=>TOPEN.has(t.status)&&!t.clear&&!CLEAR_SKIP.has(t.source)).length;
+function clearBlock(t){
+  if(!t||CLEAR_SKIP.has(t.source)||!TOPEN.has(t.status)) return "";
+  const c=t.clear, qs=c?openQs(t):[], btn=LOCALAPI?`<button class="btn sm" id="tClarify">${c?"やり直す":"やりやすくする"}</button>`:"";
+  if(!c) return btn?`<div class="tclear">${btn}</div>`:"";
+  const day=new Date(c.at||0).toLocaleDateString("ja-JP",{month:"numeric",day:"numeric"});
+  return `<div class="tclear">
+    <p class="torig">元の文：${esc(t.title)} <button class="linkbtn" id="tTitleBack">${c.titleOff?"書き直しを使う":"元に戻す"}</button></p>
+    ${c.first?`<div class="tfirst"><span class="sub">まず5分で</span><p>${esc(c.first)}</p></div>`:""}
+    ${qs.length?`<button class="btn sm" id="tAnswer">聞かれていることに答える（${qs.length}件）</button>`:""}
+    <div class="chips" role="group" aria-label="誰とやる">${[["self","自分で"],["claude","Claude と"],["friend","友達に頼む"]].map(([k,l])=>`<button class="chip" data-twho="${k}" aria-pressed="false">${l}</button>`).join("")}</div>
+    <div id="tWho" class="twho" hidden></div>
+    ${c.steps?.length||c.done||c.sources?.length?`<details class="tmore"><summary>手順と出典</summary>
+      ${c.steps?.length?`<ol>${c.steps.map(x=>`<li>${esc(x)}</li>`).join("")}</ol>`:""}
+      ${c.done?`<p><span class="sub">完了の目印</span><br>${esc(c.done)}</p>`:""}
+      ${c.sources?.length?`<ul>${c.sources.filter(x=>/^https:\/\//.test(x.url)).map(x=>`<li><a class="ext" href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.label||x.url)} ↗</a></li>`).join("")}</ul>`:""}
+      <p class="sub">${day} 時点の情報です</p></details>`:""}
+    ${btn}
+  </div>`;
+}
+const ccStart=async(cmd,arg)=>{try{await api("POST","/api/claude",{cmd,arg});toast("⌨️ Terminal で開きました")}catch(e){toast("Terminal を開けませんでした")}};
+function wireClear(t,close){
+  if(!t) return;
+  const reopen=async rec=>{try{await store.putTask(rec);close();openTask(t.id)}catch(e){toast("保存できませんでした。もう一度お試しください")}};
+  $("#tClarify")&&($("#tClarify").onclick=async()=>{if(!S.tasks.some(x=>x.id===t.id))await store.putTask(t);close();ccStart("/clarify",t.id)});
+  $("#tTitleBack")&&($("#tTitleBack").onclick=()=>reopen({...t,clear:{...t.clear,titleOff:!t.clear.titleOff}}));
+  $("#tAnswer")&&($("#tAnswer").onclick=()=>{close();openQuestions(t.id)});
+  const who=$("#tWho"), asks=t.clear?.asks||{}, KINDS=[["teach","教えて"],["together","一緒にやって"],["help","手伝って"]];
+  const friend=k=>{who.innerHTML=`<div class="chips" role="group" aria-label="頼み方">${KINDS.map(([x,l])=>`<button class="chip" data-task-ask="${x}" aria-pressed="${x===k}">${l}</button>`).join("")}</div>
+    <textarea id="tAsk" class="tnote" aria-label="頼む文面">${esc(asks[k]||"")}</textarea><div class="row"><button class="btn sm primary" id="tAskCopy">コピー</button><span class="sub">送るのはご自分で。Desk からは送りません</span></div>`;
+    who.querySelectorAll("[data-task-ask]").forEach(b=>b.onclick=()=>friend(b.dataset.taskAsk));
+    $("#tAskCopy").onclick=async()=>{const ta=$("#tAsk");try{await navigator.clipboard.writeText(ta.value);toast("📋 コピーしました")}catch(e){ta.focus();ta.select();toast("選択しました。⌘C でコピーしてください")}}};
+  document.querySelectorAll("[data-twho]").forEach(b=>b.onclick=()=>{const k=b.dataset.twho;document.querySelectorAll("[data-twho]").forEach(x=>x.setAttribute("aria-pressed",x===b));who.hidden=false;
+    if(k==="self"){who.innerHTML=t.status==="notyet"?`<button class="btn sm primary" id="tStart">始める</button>`:`<p class="sub">進行中です。まず5分だけどうぞ</p>`;$("#tStart")&&($("#tStart").onclick=()=>{close();setTaskStatus(t.id,"doing")})}
+    if(k==="claude"){who.innerHTML=`<div class="row"><button class="btn sm" id="tKick">最初の一歩を任せる</button><button class="btn sm" id="tSplit">15分以内に分ける</button></div>`;
+      $("#tKick").onclick=()=>{close();ccStart("/kickoff",taskName(t))};$("#tSplit").onclick=()=>{close();ccStart("/split",taskName(t))}}
+    if(k==="friend") friend("teach")});
+}
+/* Questions the night's run could not answer alone, one card at a time. An answer sends the task back to the top of the next night. */
+function openQuestions(onlyId){
+  if($("#modal").firstChild) return;
+  const queue=[];(onlyId?[findTask(onlyId)].filter(Boolean):waitingQs()).forEach(t=>openQs(t).forEach(q=>queue.push({id:t.id,q:q.id})));
+  if(!queue.length){toast("聞かれていることはありません");return}
+  const latest={}, total=queue.length;let n=0,cur=null,saving=Promise.resolve();
+  const close=()=>{document.removeEventListener("keydown",onKey,true);$("#modal").innerHTML=""};
+  const answer=(a,state)=>{const t=latest[cur.id]||findTask(cur.id);if(!t)return next();
+    const rec={...t,clear:{...t.clear,redo:true,questions:t.clear.questions.map(x=>x.id===cur.q?{...x,a,state}:x)}};latest[t.id]=rec;n++;
+    saving=saving.then(()=>store.putTask(rec)).catch(()=>toast("保存できませんでした。もう一度お試しください"));next()};
+  const next=()=>{cur=queue.shift();
+    if(!cur){$("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop qa" role="dialog" aria-modal="true" aria-label="聞かれていること"><h2>${n?"ありがとうございます":"今回はここまで"}</h2><p class="sub">${n?"答えた分は、次の夜に調べ直します。":""}</p><div class="row"><button class="btn primary" id="qClose">閉じる</button></div></div></div>`;$("#qClose").onclick=close;$("#qClose").focus();return}
+    const t=latest[cur.id]||findTask(cur.id), q=t?.clear?.questions?.find(x=>x.id===cur.q);if(!q||q.state!=="open")return next();
+    $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop qa" role="dialog" aria-modal="true" aria-label="聞かれていること">
+      <div class="top"><span class="sub">残り ${queue.length+1}件</span><button class="ibtn" id="qX" aria-label="閉じる">✕</button></div>
+      <p class="sub">${esc(taskName(t))}</p><h2>${esc(q.q)}</h2>
+      <textarea id="qA" class="tnote" placeholder="短くて大丈夫です" aria-label="答え"></textarea>
+      <div class="row"><button class="btn primary" id="qGo">答える <kbd>⌘ + Enter</kbd></button><button class="btn" id="qNo">分からない</button><button class="btn" id="qLater">あと回し</button></div></div></div>`;
+    const ta=$("#qA");ta.focus();$("#qX").onclick=close;$("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};
+    const go=()=>{const a=ta.value.trim();if(!a){ta.focus();toast("答えを入れるか「分からない」を押してください");return}answer(a,"answered")};
+    $("#qGo").onclick=go;$("#qNo").onclick=()=>answer(null,"unknown");$("#qLater").onclick=()=>next();
+    ta.onkeydown=e=>{if(e.key==="Enter"&&(e.metaKey||e.ctrlKey)&&!e.isComposing){e.preventDefault();go()}}};
+  function onKey(e){if(!$(".qa")){document.removeEventListener("keydown",onKey,true);return}
+    if(e.key==="Escape"&&!e.isComposing){e.preventDefault();e.stopPropagation();close();return}
+    if(!/^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(e.target.tagName)&&e.key.length===1&&!e.metaKey&&!e.ctrlKey)e.stopPropagation()}
+  document.addEventListener("keydown",onKey,true);
+  next();
+}
 function taskCard(t,ps){
   const [ic,src]=TSRC[t.source]||TSRC.manual, open=TOPEN.has(t.status), est=estOf(t), ai=open&&aiPlanOf(t);
   return `<article class="task ${open?"":"closed"}" draggable="true" data-task="${esc(t.id)}">
-    <button class="tt" data-topen="${esc(t.id)}">${esc(t.title)}</button>
+    <button class="tt" data-topen="${esc(t.id)}">${esc(taskName(t))}</button>
+    ${open&&clearOn(t)&&t.clear.first?`<p class="tfirstline">まず：${esc(t.clear.first)}</p>`:""}
     <div class="tm">${t.url&&okUrl(t.url)?`<a href="${esc(t.url)}" target="_blank" rel="noopener" title="${src}で開く" aria-label="${src}で開く">${ic}</a>`:`<span title="${src}" aria-label="${src}">${ic}</span>`}${t.mail?`<span class="from">${esc(t.mail.sub)}</span>`:t.due!=null?`<span>期日 ${esc(fmtDue(t.due))}</span>`:""}${open&&t.deadline!=null?dlChip(t):""}${open&&est!=null?`<span>${t.estMin!=null?"":"目安 "}${fmtMin(est)}</span>`:""}${ai?`<button class="chip aiplan" data-taiplan="${esc(t.id)}" title="Claude の案。押すと決まります">案：${tPeriodOf(ai,ps)[1]}</button>`:""}
       <span class="tsel">${open?`<select data-tplan="${esc(t.id)}" aria-label="いつやる">${planSel(t,ps)}</select>`:""}<select data-tstatus="${esc(t.id)}" aria-label="ステータス">${TSTATUS.map(([k,l])=>`<option value="${k}" ${k===t.status?"selected":""}>${l}</option>`).join("")}</select></span></div>
   </article>`;
@@ -1012,7 +1102,7 @@ function openTriage(){
   const draw=html=>{$("#modal").innerHTML=`<div class="scrim" id="scrim">${html}</div>`;$("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};$("#triCard").focus()};
   const save=(from,rec)=>{saving=saving.then(async()=>{await store.putTask(rec);if(from!==rec.status)await taskWin({...rec,status:from},rec.status)}).catch(()=>{toast("保存できませんでした。もう一度お試しください");if($(".tri")){if(cur)queue.unshift(cur.t.id);queue.unshift(rec.id);cur=null;next()}})};
   const edits=()=>{if(!cur||!$("#trNote"))return {};const t=cur.t,o={},title=$("#trTitle")?.value.replace(/\s*\n\s*/g," ").trim(),note=$("#trNote").value.trim(),est=$("#trEst").value.trim(),due=$("#trDue");
-    if(title&&title!==t.title)o.title=title;
+    if(title&&title!==taskName(t))Object.assign(o,nameEdit(t,title));
     if(note!==(t.note||""))o.note=note;
     if(est!==cur.est){const n=parseInt(est,10);o.estMin=n>0?n:null}
     if(due&&due.value)o.due=dueFromParts(due.value,"");
@@ -1037,7 +1127,7 @@ function openTriage(){
   const card=t=>{const linked=LINKED.has(t.source), ai=aiPlanOf(t), aiKey=ai&&tPeriodOf(ai,ps)[0], est=String(estOf(t)??"");cur={t,ai,est};
     draw(`<div class="pop tri" id="triCard" tabindex="-1" role="dialog" aria-modal="true" aria-label="未分類の仕分け">
       <div class="top"><span class="sub">${seen+1}/${TRI_BATCH} · 残り ${queue.length+1}件</span><span class="trhint" id="trHint" aria-live="polite"></span><button class="ibtn" id="trClose" aria-label="閉じる">✕</button></div>
-      ${linked?`<h2 class="trtitle">${esc(t.title)}</h2>`:`<textarea class="trtitle" id="trTitle" rows="1" aria-label="タイトル">${esc(t.title)}</textarea>`}
+      ${linked?`<h2 class="trtitle">${esc(taskName(t))}</h2>`:`<textarea class="trtitle" id="trTitle" rows="1" aria-label="タイトル">${esc(taskName(t))}</textarea>`}
       <textarea id="trNote" class="trnote" placeholder="メモ" aria-label="メモ">${esc(t.note||"")}</textarea>
       <div class="trps" role="group" aria-label="いつやる">${ps.map(([k,l],i)=>`<button class="btn trp ${k===aiKey?"primary":""}" data-trp="${k}"><kbd>${i+1}</kbd>${l}</button>`).join("")}<button class="btn trp" id="trByDue" hidden>期日どおり</button></div>
       <div class="tduein"><div><label class="sub" for="trEst">かかる時間（分）${t.estMin==null&&t.estAi!=null?" · 目安":""}</label><input type="number" id="trEst" min="1" step="5" inputmode="numeric" value="${est}"></div>${linked?"":`<div><label class="sub" for="trDue">期日（任意）</label><input type="date" id="trDue"></div>`}</div>
@@ -1075,7 +1165,7 @@ function openTriage(){
   document.addEventListener("keydown",onKey,true);
   next();
 }
-function triHome(){const n=unsorted().length;return n?`<button class="shelfbtn trhome" data-ttriage>未分類 ${n}件を仕分ける →</button>`:""}
+function triHome(){const n=unsorted().length,q=waitingQs().reduce((a,t)=>a+openQs(t).length,0);return n||q?`<div class="trhome">${n?`<button class="shelfbtn" data-ttriage>未分類 ${n}件を仕分ける →</button>`:""}${q?`<button class="shelfbtn" data-tqs>聞かれていること ${q}件に答える →</button>`:""}</div>`:""}
 function tasks(){
   const ps=tPeriods(), col=k=>S.board.filter(t=>t.status===k).sort(taskCmp(S.taskSort,k==="done"));
   const shelf=k=>S.board.filter(t=>t.status===k).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
@@ -1083,7 +1173,7 @@ function tasks(){
   return `
   <header class="head"><div><p class="eyebrow">タスク</p><h1>やること</h1></div><div class="row"><button class="btn primary" id="newTask">＋ 新しいタスク <kbd>T</kbd></button></div></header>
   ${notesHere("tasks")}
-  <div class="taskbar"><label class="tsort">並び替え<select id="tSort">${TSORT.map(([k,l])=>`<option value="${k}" ${k===S.taskSort?"selected":""}>${l}</option>`).join("")}</select></label><nav class="shelfnav" aria-label="止めたタスク">${TSHELF.map(k=>`<button class="shelfbtn" data-tshelf="${k}" aria-expanded="${S.taskShelf===k}">${tLabel(k)} ${shelf(k).length}</button>`).join("")}</nav></div>
+  <div class="taskbar"><label class="tsort">並び替え<select id="tSort">${TSORT.map(([k,l])=>`<option value="${k}" ${k===S.taskSort?"selected":""}>${l}</option>`).join("")}</select></label><nav class="shelfnav" aria-label="止めたタスク">${TSHELF.map(k=>`<button class="shelfbtn" data-tshelf="${k}" aria-expanded="${S.taskShelf===k}">${tLabel(k)} ${shelf(k).length}</button>`).join("")}${(q=>q?`<button class="shelfbtn" data-tqs>聞かれていること ${q}</button>`:"")(waitingQs().reduce((a,t)=>a+openQs(t).length,0))}<span class="sub tnotyet">まだ整えていない ${notCleared()}</span></nav></div>
   ${S.taskShelf?`<section class="shelf" aria-label="${tLabel(S.taskShelf)}">${shelf(S.taskShelf).map(t=>taskCard(t,ps)).join("")||`<p class="sub">${tLabel(S.taskShelf)}のタスクはありません</p>`}</section>`:""}
   <div class="chips colTabs" role="group" aria-label="表示する列">${TCOLS.map(k=>`<button class="chip" data-tcol="${k}" aria-pressed="${S.taskCol===k}">${tLabel(k)} ${col(k).length}</button>`).join("")}</div>
   <div class="board">${TCOLS.map(k=>{const items=col(k);return `<section class="col ${S.taskCol===k?"show":""}" data-col="${k}" aria-label="${tLabel(k)}">
@@ -1111,7 +1201,7 @@ function topThree(){
   const r=rankedTasks(), list=r.list.slice(0,3);
   const slot=freeSlot(30);
   const why=t=>whyText(t,r);
-  const row=(t,i)=>`<div class="t3row ${i?"":"first"}"><span class="t3n">${i+1}</span><div style="min-width:0"><button class="tt" data-topen="${esc(t.id)}">${esc(t.title)}</button><div class="due">${esc(why(t))}${t.deadline!=null?` · ${dlChip(t)}`:""}</div>
+  const row=(t,i)=>`<div class="t3row ${i?"":"first"}"><span class="t3n">${i+1}</span><div style="min-width:0"><button class="tt" data-topen="${esc(t.id)}">${esc(taskName(t))}</button><div class="due">${esc(why(t))}${t.deadline!=null?` · ${dlChip(t)}`:""}</div>
     <div class="t3acts">${t.status==="notyet"?`<button class="btn ${i?"sm":"primary"}" data-t3="doing" data-id="${esc(t.id)}">始める</button>`:""}${mailUrl(t)?`<a class="btn ${i?"sm":""}" href="${esc(mailUrl(t))}" target="_blank" rel="noopener">返信する</a>`:""}${slot&&!i?`<a class="btn" href="${esc(calLink(t.title,slot))}" target="_blank" rel="noopener" title="${esc(fmtDue(slot))} から30分">予定を確保</a>`:""}<button class="btn ${i?"sm":""}" data-t3="done" data-id="${esc(t.id)}">完了</button></div></div></div>`;
   return `<section class="card t3" aria-label="今日の3つ">${list.length?list.map(row).join(""):`<div class="empty"><b>今日の3つはありません</b>のんびりどうぞ。T キーでタスクを足せます。</div>`}</section>`;
 }
@@ -1145,7 +1235,7 @@ function openNext(){
   $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop nextpop" role="dialog" aria-modal="true" aria-label="何していたかと、次にやること">
     <div class="top"><h2>🧭 次は？</h2><button class="ibtn" id="xNext" aria-label="閉じる">✕</button></div>
     <section class="nsec pick"><h3>👉 次はこれ</h3>
-      ${pick?`<button class="tt big" data-topen="${esc(pick.id)}">${esc(pick.title)}</button>
+      ${pick?`<button class="tt big" data-topen="${esc(pick.id)}">${esc(taskName(pick))}</button>
         <p class="hint">理由：${esc(whyText(pick,r))}${pick.deadline!=null?` · 期日 ${esc(fmtDue(pick.deadline))}`:""}</p>
         <p class="hint">⏱ ${nextLine}${r.short?"（短いので、すぐ終わる部分だけ）":""}</p>
         <p class="hint" id="nextStep"></p>
@@ -1307,7 +1397,8 @@ function openTask(id){
   const t=id?findTask(id):null, isMail=t?.source==="mail", isLinked=LINKED.has(t?.source);
   $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop" role="dialog" aria-modal="true" aria-label="${t?"タスクを編集":"新しいタスク"}">
     <div class="top"><h2>🗂️ ${t?"タスク":"新しいタスク"}</h2><button class="ibtn" id="xTask" aria-label="閉じる">✕</button></div>
-    <label class="sub" for="tTitle">タイトル</label><input type="text" id="tTitle" value="${esc(t?.title||"")}" placeholder="例：FWOに書類を送る" autocomplete="off">
+    <label class="sub" for="tTitle">タイトル</label><input type="text" id="tTitle" value="${esc(taskName(t))}" placeholder="例：FWOに書類を送る" autocomplete="off">
+    ${clearBlock(t)}
     ${t?.source==="daily"&&t.sourceRef==="jobs"?jobsBlock():isMail?mailBlock(t)
       :isLinked?`<p class="hint">${TSRC[t.source][0]} ${TSRC[t.source][1]}${t.due!=null?" · 期日 "+esc(fmtDue(t.due)):""} · 期日とタイトルは元の場所で変更${okUrl(t.url)?` · <a href="${esc(t.url)}" target="_blank" rel="noopener">開く ↗</a>`:""}${t.source==="gtasks"?"<br>「完了」にすると、次の更新で Google タスク側も完了になります。":""}</p>`
       :`<div class="tduein"><div><label class="sub" for="tDue">期日（任意）</label><input type="date" id="tDue" value="${dueParts(t?.due)[0]}"></div><div><label class="sub" for="tDueT">時刻（任意）</label><input type="time" id="tDueT" value="${dueParts(t?.due)[1]}"></div></div><p class="hint" id="tDueHint"></p>`}
@@ -1318,7 +1409,7 @@ function openTask(id){
   </div></div>`;
   const ti=$("#tTitle");ti.focus();ti.setSelectionRange(ti.value.length,ti.value.length);
   const close=()=>{$("#modal").innerHTML=""}, plan0=$("#tPlan").value;
-  wireJobs(t);wireMail(t,close);
+  wireJobs(t);wireMail(t,close);wireClear(t,close);
   const dueIn=$("#tDue"), dueT=$("#tDueT"), dueHint=()=>{$("#tDueHint").textContent=dueT.value?"3日前の同じ時刻にカレンダーへ入ります":""};
   if(dueT){dueT.oninput=dueHint;dueHint()}
   const save=async()=>{const title=ti.value.trim();if(!title){ti.focus();toast("タイトルを入れてください");return}
@@ -1327,7 +1418,8 @@ function openTask(id){
     const base=t||{id:newTaskId(),source:"manual",createdAt:Date.now()};
     const st=$("#tStatus").value, plan=$("#tPlan").value, est=parseInt($("#tEst").value,10);
     const planDate=plan===plan0?base.planDate||null:tPeriods().find(p=>p[0]===plan)?.[2]||null; // untouched: keeps the date it had
-    try{await store.putTask({...base,title,due:isNaN(due)?null:due,status:st,note:$("#tNote").value.trim(),planDate,estMin:est>0?est:null});await taskWin({...base,title},st);close();toast(st==="done"&&base.status!=="done"?"✨ 完了。できたことに入れました":t?"🗂️ 保存しました":"🗂️ タスクを追加しました")}
+    const named=t?nameEdit(base,title):{title};
+    try{await store.putTask({...base,...named,due:isNaN(due)?null:due,status:st,note:$("#tNote").value.trim(),planDate,estMin:est>0?est:null});await taskWin({...base,...named},st);close();toast(st==="done"&&base.status!=="done"?"✨ 完了。できたことに入れました":t?"🗂️ 保存しました":"🗂️ タスクを追加しました")}
     catch(e){toast("保存できませんでした。入力はそのまま残っています")}};
   $("#tSave").onclick=save;$("#tCancel").onclick=close;$("#xTask").onclick=close;
   $("#tDel")&&($("#tDel").onclick=async e=>{const b=e.currentTarget;if(!b.dataset.sure){b.dataset.sure="1";b.textContent="本当に削除？";return}
@@ -1768,7 +1860,7 @@ function searchIndex(){
   S.tools.filter(t=>!t.deleted).forEach(t=>add("tool",t.name,[t.desc,(t.tags||[]).join(" "),t.path,GROUPJA[t.group]].join(" "),{href:S.local&&t.local?t.local:(t.url||t.local||"")}));
   noteList().forEach(n=>add("note",n.title,n.body,{note:n.id},{at:n.updatedAt}));
   S.memos.forEach(m=>add("memo",m.text.split("\n")[0],m.text,{memo:m.id},{at:m.createdAt}));
-  S.board.forEach(t=>add("task",t.title,[t.note,t.mail?.sub,t.mail?.sum].join(" "),{task:t.id},{at:t.createdAt}));
+  S.board.forEach(t=>add("task",taskName(t),[t.title,t.clear?.first,t.note,t.mail?.sub,t.mail?.sum].join(" "),{task:t.id},{at:t.createdAt}));
   winList().forEach(w=>add("win",w.title,w.sub||"",{wins:1},{date:w.date}));
   S.editions.forEach(e=>(e.data.stories||[]).forEach((s,i)=>add("news",s.title,[s.summary,s.lens,REGJA[s.region],(s.sources||[]).map(x=>x.name).join(" ")].join(" "),{ed:e.id,story:i},{date:e.id})));
   S.watch.forEach(w=>add("watch",w.title||w.id,w.body,{watch:w.id},{date:w.date}));
@@ -2575,6 +2667,7 @@ function wire(){
   document.querySelectorAll("[data-gonotyet]").forEach(b=>b.onclick=()=>{S.taskCol="notyet";location.hash="tasks"});
   document.querySelectorAll("[data-tstatus]").forEach(s=>s.onchange=()=>setTaskStatus(s.dataset.tstatus,s.value));
   document.querySelectorAll("[data-ttriage]").forEach(b=>b.onclick=()=>openTriage());
+  document.querySelectorAll("[data-tqs]").forEach(b=>b.onclick=()=>openQuestions());
   document.querySelectorAll("[data-tplan]").forEach(s=>s.onchange=()=>setTaskPlan(s.dataset.tplan,s.value));
   document.querySelectorAll("[data-taiplan]").forEach(b=>b.onclick=async()=>{const t=findTask(b.dataset.taiplan);if(!t)return;
     try{await store.putTask({...t,planDate:t.planAi});toast("🗂️ 案のとおりに決めました")}catch(e){toast("保存できませんでした。もう一度お試しください")}});
@@ -2724,6 +2817,7 @@ function palItems(){
     {e:"⚡",name:"コマンド一覧（この画面）",key:"/ /",kw:"こまんど command palette",run:()=>{const q=$("#q");q.value="/";S.q="/";S.palSel=0;render();q.focus()}},
     {e:"🔎",name:"検索",key:"/",kw:"けんさく search",run:()=>setTimeout(()=>$("#q")?.focus(),0)},
     {e:"🗂️",name:"未分類を仕分ける",kw:"しわけ みぶんるい triage",run:()=>openTriage()},
+    {e:"❓",name:"聞かれていることに答える",kw:"しつもん こたえる question",run:()=>openQuestions()},
     {e:"🌱",name:"習慣を足す",kw:"しゅうかん habit",run:()=>newHabit()},
     {e:"📒",name:"新しいノート",kw:"のーと note",run:()=>newNotePrompt()},
   ].map(x=>({...x,g:"Desk の操作"}));

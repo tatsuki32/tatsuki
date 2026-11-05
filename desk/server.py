@@ -62,7 +62,7 @@ LOCK = threading.Lock()
 MEMOLINK_LOCK = threading.Lock()
 REPO = os.path.dirname(ROOT)
 # Desk's ⌨️ buttons may start only these Claude Code commands (POST /api/claude)
-CLAUDE_CMDS = ("/morning-kickoff", "/begin", "/recap", "/rsd", "/learn", "/sync", "/knowledge", "/desk-feature", "/followup", "/newtool", "/kickoff", "/where", "/lowenergy", "/mail-send", "/money-review")
+CLAUDE_CMDS = ("/morning-kickoff", "/begin", "/recap", "/rsd", "/learn", "/sync", "/knowledge", "/desk-feature", "/followup", "/newtool", "/kickoff", "/clarify", "/split", "/where", "/lowenergy", "/mail-send", "/money-review")
 CLAUDE_ARG_MAX = 6000
 FOCUS_URL = "http://127.0.0.1:47800"
 # no proxy: while websites are blocked the system proxy points at FocusBlock itself
@@ -168,12 +168,21 @@ def set_tool_url(tool_id, url):
     return {"id": tool_id, **rec}
 
 
+def keep_clear(old, new):
+    """A page opened before the night's run saves the whole task: it must not erase what the run wrote."""
+    cur = old.get("clear")
+    if cur and (not new.get("clear") or (new["clear"].get("at") or 0) < (cur.get("at") or 0)):
+        new["clear"] = cur
+
+
 def upsert(col, doc_id, rec, merge):
     with LOCK:
         items = load(col)
         for i, x in enumerate(items):
             if x["id"] == doc_id:
                 items[i] = {**x, **rec, "id": doc_id} if merge else {**rec, "id": doc_id}
+                if col == "tasks":
+                    keep_clear(x, items[i])
                 break
         else:
             if merge:
