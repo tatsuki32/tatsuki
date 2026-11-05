@@ -513,11 +513,21 @@ button .awl,.nav .awl,#tabs .awl{border-bottom:0}
 .wiki h3{font-size:var(--t4);margin:var(--s4) 0 var(--s1)}
 .wiki .li{padding-left:1em;position:relative}.wiki .li::before{content:"・";position:absolute;left:0;color:var(--muted)}
 .wiki .gap{height:var(--s2)}.wiki>:first-child{margin-top:0}
-.backl{padding:var(--s3)}.backl ul{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:var(--s2)}
 .ngrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:var(--s2)}
 .ncard{display:grid;gap:var(--s1);text-align:left;padding:12px;cursor:pointer;color:var(--ink);align-content:start}
 .ncard:hover{border-color:var(--line-2)}
 .ncard span{font-size:var(--t1);color:var(--muted);overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
+.sents{display:grid;gap:var(--s2)}
+.sents h2{margin:0}
+.sents>.sub{margin:0}
+.sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:var(--s2)}
+.scard{display:grid;gap:var(--s1);text-align:left;padding:var(--s3);cursor:pointer;align-content:start;min-width:0}
+.scard:hover{border-color:var(--line-2)}
+.smeta{font-size:var(--t1);color:var(--muted)}
+.stext{font-size:var(--t2);line-height:1.6;color:var(--ink-2);overflow-wrap:anywhere;text-wrap:pretty}
+.stext b{color:var(--ink)}
+.nsrc{margin:0;display:flex;flex-wrap:wrap;gap:var(--s1) var(--s2);font-size:var(--t1)}
+.sflash{background:var(--accent-soft);color:inherit;transition:background 2s}.sflash.off{background:transparent}
 .ntitle{cursor:text}
 .selmenu{position:fixed;z-index:60;display:flex;gap:2px;padding:4px;border-radius:10px;background:var(--surface-2);border:1px solid var(--line-2);box-shadow:0 10px 30px rgba(0,0,0,.5)}
 .selmenu button{border:0;background:none;color:var(--ink);font-size:var(--t2);padding:6px 10px;border-radius:7px;cursor:pointer;white-space:nowrap}
@@ -1623,7 +1633,7 @@ function linkStats(){
   return LS={n:S.wnotes,m:S.memos,t:S.tasks,count,byT:new Map(noteList().map(n=>[normTitle(n.title),n]))};
 }
 const linkUses=t=>linkStats().count.get(normTitle(t))||0;
-const linkLone=t=>!hasContent(linkStats().byT.get(normTitle(t)))&&linkUses(t)<2;
+const linkLone=t=>{const n=linkStats().byT.get(normTitle(t));return !hasContent(n)&&linkUses(t)<2&&!(n&&sentencesFor(n).length>=2)};
 const wlink=t=>`<a class="wl${linkLone(t)?" lone":""}" href="#notes" data-wiki="${esc(t)}"${linkLone(t)?' title="まだどこにもつながっていません"':""}>${esc(t)}</a>`;
 /* news and Minor Countries: words linked from an article show as links inside it (first match per note, per article) */
 function linkSources(root){
@@ -1644,15 +1654,18 @@ function linkSources(root){
    Latin words match whole words only ("AI" is not found inside "MAIL"); case and full/half width don't matter. */
 const AUTO_SKIP="script,style,textarea,input,select,option,svg,.wl,.ext,.selmenu,.inedit,#toastHost,.ntitle,.ncard,[contenteditable],[data-noauto]";
 let AL={key:null,re:null};
+const WORD_CH="A-Za-z0-9Ａ-Ｚａ-ｚ０-９";
+function wordPat(t){
+  const ch=c=>{const k=c.charCodeAt(0),e=c.replace(/[.*+?^${}()|[\]\\\/-]/g,"\\$&");return k>0x20&&k<0x7f&&c!==" "?`[${e}${String.fromCharCode(k+0xFEE0)}]`:/\s/.test(c)?"[\\s\\u3000]+":e};
+  return (/^[A-Za-z0-9]/.test(t)?`(?<![${WORD_CH}])`:"")+[...t].map(ch).join("")+(/[A-Za-z0-9]$/.test(t)?`(?![${WORD_CH}])`:"");
+}
+// older Safari has no lookbehind: fall back to plain matching rather than break the page
+function wordRe(alt,flags){try{return new RegExp(alt.join("|"),flags)}catch(e){return new RegExp(alt.map(a=>a.replace(/^\(\?<!\[[^\]]*\]\)/,"")).join("|"),flags)}}
 function autoRe(){
   const titles=[...new Set(noteList().filter(n=>!n.noAuto).map(n=>String(n.title||"").normalize("NFKC").trim()).filter(t=>[...t].length>=2))].sort((a,b)=>b.length-a.length);
   const key=titles.map(t=>t+(linkLone(t)?"0":"1")).join("\n");
   if(AL.key===key) return AL;
-  const ch=c=>{const k=c.charCodeAt(0),e=c.replace(/[.*+?^${}()|[\]\\\/-]/g,"\\$&");return k>0x20&&k<0x7f&&c!==" "?`[${e}${String.fromCharCode(k+0xFEE0)}]`:/\s/.test(c)?"[\\s\\u3000]+":e};
-  const W="A-Za-z0-9Ａ-Ｚａ-ｚ０-９";
-  const alt=titles.map(t=>(/^[A-Za-z0-9]/.test(t)?`(?<![${W}])`:"")+[...t].map(ch).join("")+(/[A-Za-z0-9]$/.test(t)?`(?![${W}])`:""));
-  let re=null; // older Safari has no lookbehind: fall back to plain matching rather than break the page
-  if(alt.length){try{re=new RegExp(alt.join("|"),"giu")}catch(e){re=new RegExp(alt.map(a=>a.replace(/^\(\?<!\[[^\]]*\]\)/,"")).join("|"),"giu")}}
+  const alt=titles.map(wordPat), re=alt.length?wordRe(alt,"giu"):null;
   return AL={key,re};
 }
 function titleFor(found){const k=normTitle(found);return noteList().find(n=>normTitle(n.title)===k)?.title||found}
@@ -1715,32 +1728,104 @@ function twoHop(n){
     return {word:page?.title||linksIn(n.body).find(y=>normTitle(y)===k),page,others};
   }).filter(g=>g.others.length);
 }
-function backlinks(n){
-  const t=normTitle(n.title), has=raw=>linksIn(raw).some(x=>normTitle(x)===t);
-  return [...noteList().filter(x=>x.id!==n.id&&has(x.body)).map(x=>({kind:"note",id:x.id,title:x.title})),
-    ...S.memos.filter(m=>has(m.text)).map(m=>({kind:"memo",id:m.id,title:m.text.split("\n")[0].slice(0,60)})),
-    ...S.tasks.filter(x=>!x.deleted&&has(x.note)).map(x=>({kind:"task",id:x.id,title:x.title}))];
+/* A page's cards: every sentence in the Desk that holds its word, worked out from the text and never stored.
+   Source lines ("出典：…") are kept in the note but shown apart from what you write. */
+const noteMain=raw=>String(raw||"").split("\n").filter(l=>!SRC_LINE.test(l)).join("\n").replace(/^\n+|\s+$/g,"");
+const noteSrc=raw=>String(raw||"").split("\n").filter(l=>SRC_LINE.test(l));
+function sentencesOf(raw){
+  return String(raw||"").split("\n").flatMap(l=>{
+    if(SRC_LINE.test(l)||/^\s*\|?[\s:|-]*$/.test(l)) return [];
+    l=l.replace(/\[([^\[\]\n]+)\]\(https?:[^)\s]+\)/g,"$1").replace(/^\s*(#{1,4}\s+|[-・]\s+|>\s*)/,"").replace(/[*`]/g,"").replace(/\|/g," ").trim();
+    return (l.match(/(?:\[[^\[\]]*\]|[^。！？!?.]|\.(?!\s|$))+(?:[。！？!?]+|\.)?[」』）)"”]*|[。！？!?]+/g)||[]).map(x=>x.trim()).filter(x=>x.length>1);
+  });
+}
+let SX=null;
+function sentIndex(){
+  if(SX&&SX.e===S.editions&&SX.w===S.watch&&SX.n===S.wnotes&&SX.m===S.memos&&SX.t===S.tasks) return SX;
+  const all=[], add=(kind,raw,label,at,go)=>sentencesOf(raw).forEach(text=>all.push({kind,text,plain:plain(text).trim(),label,at,go}));
+  S.editions.forEach(e=>{const at=Date.parse(e.id)||0;(e.data.stories||[]).forEach((x,i)=>[x.title,x.summary,x.lens].forEach(r=>add("news",r,e.id,at,{ed:e.id,story:i})))});
+  S.watch.filter(w=>!w.deleted).forEach(w=>add("watch",w.body,w.date||w.id,Date.parse(w.date)||0,{watch:w.id}));
+  noteList().forEach(n=>add("note",n.body,n.title,n.updatedAt||n.createdAt||0,{note:n.id}));
+  S.memos.filter(m=>!m.deleted).forEach(m=>add("memo",m.text,"",m.updatedAt||m.createdAt||0,{memo:m.id}));
+  S.tasks.filter(t=>!t.deleted).forEach(t=>add("task",t.note,t.title,t.updatedAt||t.createdAt||0,{task:t.id}));
+  return SX={e:S.editions,w:S.watch,n:S.wnotes,m:S.memos,t:S.tasks,all,hits:new Map()};
+}
+/* Same rule as auto-links. 1-character words and notes switched off match only where they are written in [ ]. */
+const pageWord=n=>{const t=String(n.title||"").normalize("NFKC").trim();return !n.noAuto&&[...t].length>=2?wordPat(t):null};
+function sentencesFor(n){
+  const ix=sentIndex(), key=n.id+"\n"+n.title+"\n"+(n.noAuto?1:0); if(ix.hits.has(key)) return ix.hits.get(key);
+  const t=normTitle(n.title), pat=pageWord(n), re=pat&&wordRe([pat],"iu"), seen=new Set();
+  const out=ix.all.filter(x=>x.go.note!==n.id&&(linksIn(x.text).some(y=>normTitle(y)===t)||re&&re.test(x.plain)))
+    .sort((a,b)=>b.at-a.at).filter(x=>{const k=normTitle(x.plain);if(seen.has(k))return false;seen.add(k);return true});
+  ix.hits.set(key,out); return out;
+}
+function sentHtml(x,n){
+  const me=normTitle(n.title), pat=pageWord(n), word=w=>`<b data-noauto>${esc(w)}</b>`;
+  const text=raw=>pat?raw.split(wordRe(["("+pat+")"],"giu")).map((p,i)=>i%2?word(p):esc(p)).join(""):esc(raw);
+  return x.text.split(/(\[[^\[\]\n]+\])/g).map(part=>{
+    const m=/^\[([^\[\]\n]+)\]$/.exec(part); if(!m) return text(part);
+    const inner=m[1].trim(), url=/^https:\/\/\S+(?:\s+(.+))?$/.exec(inner);
+    if(url) return text(url[1]||inner);
+    if(normTitle(inner)===me) return word(inner);
+    return `<span class="wl awl${linkLone(inner)?" lone":""}" data-wiki="${esc(inner)}">${esc(inner)}</span>`;
+  }).join("");
+}
+const sentMeta=x=>SKIND[x.kind][1]+(x.label?" · "+x.label:"");
+const noteSnip=x=>(noteMain(x.body).replace(/[\[\]#]/g,"")||sentencesFor(x)[0]?.plain||"").slice(0,90);
+function sentCards(n){
+  const xs=sentencesFor(n), max=S.sentNote===n.id?S.sentMax:12, shown=xs.slice(0,max);
+  S.sentShown=shown;
+  return `<section class="sents"><h2>🔗 この言葉が出てくる文 <span class="count">${xs.length}</span></h2>
+    ${xs.length?`<div class="sgrid">${shown.map((x,i)=>`<button class="card scard" data-sent="${i}"><span class="smeta">${esc(sentMeta(x))}</span><span class="stext">${sentHtml(x,n)}</span></button>`).join("")}</div>
+      ${xs.length>max?`<button class="btn" id="sentMore">もっと見る（あと ${xs.length-max}件）</button>`:""}`
+    :`<p class="sub">まだありません。ニュースやメモにこの言葉が出てくると、ここに並びます。</p>`}</section>`;
+}
+/* Tapping a card goes to that sentence and lights it for a moment; if the words can't be found the article's top is enough. */
+function markText(root,text){
+  const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT), nodes=[]; let all="",x;
+  while(x=w.nextNode()){nodes.push([x,all.length]);all+=x.data}
+  const i=all.indexOf(text); if(i<0||!text) return null;
+  const j=i+text.length, at=p=>nodes.filter(a=>a[1]<=p).pop(), a=at(i), b=at(j-1), r=document.createRange();
+  r.setStart(a[0],i-a[1]);r.setEnd(b[0],j-b[1]);
+  const m=document.createElement("mark");m.className="sflash";m.append(r.extractContents());r.insertNode(m);return m;
+}
+function flashSentence(){
+  const f=S.flash; if(!f) return; S.flash=null;
+  setTimeout(()=>{
+    const story=f.kind==="news"&&document.getElementById("story-"+f.story);
+    const root=story||(f.kind==="task"?$("#modal"):f.kind==="note"?document.querySelector(".wiki"):f.kind==="watch"?document.querySelector(".md"):$("#view"));
+    const m=root&&markText(root,f.text); if(!m) return;
+    if(story) story.classList.remove("flash");
+    m.scrollIntoView({block:"center"});
+    setTimeout(()=>m.classList.add("off"),3000);
+  },0);
+}
+function openSentence(x){
+  S.flash={kind:x.kind,text:x.plain,story:x.go.story};
+  goHit({kind:x.kind,go:x.go});
+  if(x.kind==="task") flashSentence();
 }
 async function openWiki(title){
   title=String(title||"").trim().slice(0,80); if(!title) return;
   let n=noteByTitle(title);
   if(!n){n={id:newNoteId(),title,body:"",createdAt:Date.now()};try{await store.putNote(n)}catch(e){toast("ノートを作れませんでした");return}toast("📒 「"+title+"」を作りました")}
-  S.noteId=n.id;S.noteEditNew=!n.body;S.noteKeep=true;
+  S.noteId=n.id;S.noteEditNew=!noteMain(n.body)&&!sentencesFor(n).length;S.noteKeep=true;
   if(location.hash==="#notes")render();else location.hash="notes";
 }
 function notesView(){
   const n=S.noteId&&noteList().find(x=>x.id===S.noteId);
   if(n){
-    const bl=backlinks(n);
+    const main=noteMain(n.body), src=noteSrc(n.body);
     return `<header class="head"><div><p class="eyebrow"><a href="#notes" data-notelist>📒 ノート</a> · 更新 ${esc(ago(n.updatedAt||n.createdAt||0))}</p><h1 class="ntitle" data-edit="notetitle:${esc(n.id)}">${esc(n.title)}</h1></div>
       <div class="row"><button class="btn" id="noteAuto" aria-pressed="${!n.noAuto}" title="${n.noAuto?"[ ] で囲んだ所だけリンクになります":"Desk のどこに出てきても、この言葉はリンクになります"}">自動リンク：${n.noAuto?"オフ":"オン"}</button><button class="btn" data-editnow="note:${esc(n.id)}">編集</button><button class="btn" id="noteDel" style="color:var(--red)">削除</button></div></header>
-    <article class="card wiki" data-edit="note:${esc(n.id)}">${n.body?wikiBlock(n.body):`<p class="sub">まだ何も書いていません。「編集」か、ここを選んで書き始めてください。[言葉] で別のノートにつながります。</p>`}</article>
-    <section class="card backl"><h2>🔗 このノートにリンクしているもの <span class="count">${bl.length}</span></h2>${bl.length?`<ul>${bl.map(b=>`<li><button class="tt" data-blk="${b.kind}" data-id="${esc(b.id)}">${{note:"📒",memo:"📝",task:"🗂️"}[b.kind]} ${esc(b.title)}</button></li>`).join("")}</ul>`:`<p class="sub" style="margin:0">まだありません。ほかのノートやメモに [${esc(n.title)}] と書くとここに出ます。</p>`}</section>
-    ${(h=>h.length?`<section class="card hop"><h2>🕸️ つながり <span class="sub">同じ言葉でつながるノート</span></h2>${h.map(g=>`<div class="grp"><h3>${wlink(g.word)} 経由</h3><div class="ngrid">${[g.page,...g.others].filter(Boolean).map(x=>`<button class="card ncard" data-nopen="${esc(x.id)}"><b>${esc(x.title)}</b><span>${esc(String(x.body||"").replace(/[\[\]#]/g,"").slice(0,90))}</span></button>`).join("")}</div></div>`).join("")}</section>`:"")(twoHop(n))}`;
+    <article class="card wiki" data-edit="note:${esc(n.id)}">${main?wikiBlock(main):`<p class="sub">まだ何も書いていません。「編集」か、ここを選んで書き始めてください。[言葉] で別のノートにつながります。</p>`}</article>
+    ${sentCards(n)}
+    ${(h=>h.length?`<section class="card hop"><h2>🕸️ つながり <span class="sub">同じ言葉でつながるノート</span></h2>${h.map(g=>`<div class="grp"><h3>${wlink(g.word)} 経由</h3><div class="ngrid">${[g.page,...g.others].filter(Boolean).map(x=>`<button class="card ncard" data-nopen="${esc(x.id)}"><b>${esc(x.title)}</b><span>${esc(noteSnip(x))}</span></button>`).join("")}</div></div>`).join("")}</section>`:"")(twoHop(n))}
+    ${src.length?`<p class="sub nsrc">出典 ${src.map(l=>wikiInline(l.replace(SRC_LINE,"").trim())).join(" ")}</p>`:""}`;
   }
   const list=noteList().sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
   return `<header class="head"><div><p class="eyebrow">ノート</p><h1>ノート</h1></div><button class="btn primary" id="newNote">＋ 新しいノート</button></header>
-  ${list.length?`<div class="ngrid">${list.map(x=>`<button class="card ncard" data-nopen="${esc(x.id)}"><b>${esc(x.title)}</b><span>${esc(String(x.body||"").replace(/[\[\]#]/g,"").slice(0,90))}</span></button>`).join("")}</div>`
+  ${list.length?`<div class="ngrid">${list.map(x=>`<button class="card ncard" data-nopen="${esc(x.id)}"><b>${esc(x.title)}</b><span>${esc(noteSnip(x))}</span></button>`).join("")}</div>`
     :`<div class="card empty"><b>まだノートがありません</b>「＋ 新しいノート」か、メモに [言葉] と書いて押すと作れます。</div>`}`;
 }
 async function newNotePrompt(){
@@ -1759,13 +1844,13 @@ async function renameNote(n,title){
 /* ---------- select text → edit / link / make a note ---------- */
 /* [data-edit="kind:id"] marks text you own (notes, memos); [data-src] marks text Claude rewrites every morning (news, minor countries). */
 function rawOf(kind,id){
-  if(kind==="note") return noteList().find(x=>x.id===id)?.body??"";
+  if(kind==="note") return noteMain(noteList().find(x=>x.id===id)?.body);
   if(kind==="notetitle") return noteList().find(x=>x.id===id)?.title??"";
   if(kind==="memo") return S.memos.find(x=>x.id===id)?.text??"";
   return "";
 }
 async function saveRaw(kind,id,val){
-  if(kind==="note"){const n=noteList().find(x=>x.id===id);if(n&&n.body!==val)await store.putNote({...n,body:val});return}
+  if(kind==="note"){const n=noteList().find(x=>x.id===id);if(n&&noteMain(n.body)!==val){const src=noteSrc(n.body);await store.putNote({...n,body:val+(src.length?(val?"\n":"")+src.join("\n")+"\n":"")})}return}
   if(kind==="notetitle"){const n=noteList().find(x=>x.id===id);if(n)await renameNote(n,val);return}
   if(kind==="memo"){const m=S.memos.find(x=>x.id===id);if(m&&m.text!==val&&val.trim())await store.patchMemo(id,{text:val});return}
 }
@@ -2147,6 +2232,7 @@ function render(){
   if(v==="news"||v==="watch") linkSources($("#view"));
   wire();
   if(v==="news"&&S.focus!=null){const el=document.getElementById("story-"+S.focus);S.focus=null;if(el){el.classList.add("flash");setTimeout(()=>el.scrollIntoView({block:"start"}),0)}}
+  if(S.flash&&S.flash.kind!=="task") flashSentence();
 }
 /* お金: Wise activity on this Mac (desk/wise_sync.py). Reads files only; opening the view never calls Wise.
    Totals are in USD; each tab answers one question. Numbers come from desk/wise_analysis.py and nothing here blames. */
@@ -2645,7 +2731,8 @@ function wire(){
   document.querySelectorAll("[data-nopen]").forEach(b=>b.onclick=()=>{S.noteId=b.dataset.nopen;render();window.scrollTo(0,0)});
   document.querySelectorAll("[data-notelist]").forEach(a=>a.onclick=e=>{e.preventDefault();S.noteId=null;render()});
   document.querySelectorAll("[data-editnow]").forEach(b=>b.onclick=()=>startEdit(document.querySelector(`[data-edit="${b.dataset.editnow}"]`)));
-  document.querySelectorAll("[data-blk]").forEach(b=>b.onclick=()=>{const k=b.dataset.blk,id=b.dataset.id;if(k==="note"){S.noteId=id;render()}else if(k==="task")openTask(id);else{S.inboxFilter="all";location.hash="inbox"}});
+  document.querySelectorAll("[data-sent]").forEach(b=>b.onclick=()=>openSentence(S.sentShown[+b.dataset.sent]));
+  $("#sentMore")&&($("#sentMore").onclick=()=>{S.sentMax=(S.sentNote===S.noteId?S.sentMax:12)+12;S.sentNote=S.noteId;render()});
   $("#newNote")&&($("#newNote").onclick=newNotePrompt);
   $("#noteAuto")&&($("#noteAuto").onclick=async()=>{const n=noteList().find(x=>x.id===S.noteId);if(!n)return;
     try{await store.putNote({...n,noAuto:!n.noAuto});toast(n.noAuto?"🔗 自動リンクをオンにしました":"自動リンクをオフにしました（[ ] で囲んだ所はリンクのまま）")}catch(err){toast("保存できませんでした")}});
