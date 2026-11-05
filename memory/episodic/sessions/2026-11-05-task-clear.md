@@ -12,6 +12,8 @@
 - `.claude/commands/clarify.md`、定期タスク `desk-task-clarify`（毎晩 2:30）。
 - テスト：`lifeos/tests/test_desk_task_clarify.py`。
 
+- `desk/index.html`：「Claude と」を押すと、タスクの内容をまとめた文章をコピーする（`claudePrompt`）。未整理のタスクにも「Claude と始める」。
+
 ## 決めたこと
 - 公開リポジトリなので、画面とコードの言葉は「やりやすくする」「整える」にする。文体の基準は `desk/data/clarify-style.md`。
 - 元の `title` は上書きしない。カレンダーとできたことは元の文のまま。

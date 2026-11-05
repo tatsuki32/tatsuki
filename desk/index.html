@@ -567,6 +567,7 @@ h1 .inedit{font-size:var(--t4);font-weight:700}
 .tnotyet{align-self:center}
 .tclear{display:grid;gap:var(--s2);min-width:0}
 .tclear .btn{justify-self:start}
+.pop textarea#tPrompt{min-height:120px;font-size:var(--t1)}
 .torig{margin:0;font-size:var(--t1);color:var(--muted);overflow-wrap:anywhere}
 .linkbtn{background:none;border:0;padding:0;font:inherit;color:var(--ink-2);text-decoration:underline;cursor:pointer}
 .tfirst{border-left:2px solid var(--accent);padding-left:var(--s2);display:grid;gap:var(--s1)}
@@ -1013,7 +1014,7 @@ const notCleared=()=>S.board.filter(t=>TOPEN.has(t.status)&&!t.clear&&!CLEAR_SKI
 function clearBlock(t){
   if(!t||CLEAR_SKIP.has(t.source)||!TOPEN.has(t.status)) return "";
   const c=t.clear, qs=c?openQs(t):[], btn=LOCALAPI?`<button class="btn sm" id="tClarify">${c?"やり直す":"やりやすくする"}</button>`:"";
-  if(!c) return btn?`<div class="tclear">${btn}</div>`:"";
+  if(!c) return `<div class="tclear"><div class="row"><button class="btn sm" data-twho="claude" aria-pressed="false">Claude と始める</button>${btn}</div><div id="tWho" class="twho" hidden></div></div>`;
   const day=new Date(c.at||0).toLocaleDateString("ja-JP",{month:"numeric",day:"numeric"});
   return `<div class="tclear">
     <p class="torig">元の文：${esc(t.title)} <button class="linkbtn" id="tTitleBack">${c.titleOff?"書き直しを使う":"元に戻す"}</button></p>
@@ -1029,6 +1030,24 @@ function clearBlock(t){
     ${btn}
   </div>`;
 }
+/* What gets pasted into Claude: everything known about the task, and how to work on it together. */
+function claudePrompt(t){
+  const c=t.clear||{}, name=taskName(t), lines=["このタスクを一緒に進めたいです。","",`タスク：${name}`];
+  if(name!==t.title) lines.push(`元の文：${t.title}`);
+  if(c.first) lines.push(`まず5分で：${c.first}`);
+  if(c.steps?.length) lines.push("手順：",...c.steps.map((x,i)=>`${i+1}. ${x}`));
+  if(c.done) lines.push(`完了の目印：${c.done}`);
+  if(t.note) lines.push("メモ：",t.note);
+  if(c.sources?.length) lines.push("出典：",...c.sources.map(x=>`- ${x.label} ${x.url}`));
+  (c.questions||[]).filter(q=>q.a).forEach(q=>lines.push(`${q.q} → ${q.a}`));
+  lines.push("","最初の一歩から一緒に進めてください。聞くのは1度に1つ、短い言葉でお願いします。","送信、申し込み、支払いは、私に確認してから進めてください。");
+  return lines.join("\n");
+}
+async function copyText(text){
+  try{await navigator.clipboard.writeText(text);return true}catch(e){}
+  const ta=document.createElement("textarea");ta.value=text;ta.style.cssText="position:fixed;opacity:0";($("#scrim")||document.body).append(ta);ta.select();
+  let ok=false;try{ok=document.execCommand("copy")}catch(e){}ta.remove();return ok;
+}
 const ccStart=async(cmd,arg)=>{try{await api("POST","/api/claude",{cmd,arg});toast("⌨️ Terminal で開きました")}catch(e){toast("Terminal を開けませんでした")}};
 function wireClear(t,close){
   if(!t) return;
@@ -1043,8 +1062,10 @@ function wireClear(t,close){
     $("#tAskCopy").onclick=async()=>{const ta=$("#tAsk");try{await navigator.clipboard.writeText(ta.value);toast("📋 コピーしました")}catch(e){ta.focus();ta.select();toast("選択しました。⌘C でコピーしてください")}}};
   document.querySelectorAll("[data-twho]").forEach(b=>b.onclick=()=>{const k=b.dataset.twho;document.querySelectorAll("[data-twho]").forEach(x=>x.setAttribute("aria-pressed",x===b));who.hidden=false;
     if(k==="self"){who.innerHTML=t.status==="notyet"?`<button class="btn sm primary" id="tStart">始める</button>`:`<p class="sub">進行中です。まず5分だけどうぞ</p>`;$("#tStart")&&($("#tStart").onclick=()=>{close();setTaskStatus(t.id,"doing")})}
-    if(k==="claude"){who.innerHTML=`<div class="row"><button class="btn sm" id="tKick">最初の一歩を任せる</button><button class="btn sm" id="tSplit">15分以内に分ける</button></div>`;
-      $("#tKick").onclick=()=>{close();ccStart("/kickoff",taskName(t))};$("#tSplit").onclick=()=>{close();ccStart("/split",taskName(t))}}
+    if(k==="claude"){const text=claudePrompt(t);who.innerHTML=`<textarea id="tPrompt" class="tnote" aria-label="Claude に貼る文章">${esc(text)}</textarea><div class="row"><button class="btn sm primary" id="tPromptCopy">もう一度コピー</button><a class="ext" href="https://claude.ai/new" target="_blank" rel="noopener">Claude を開く ↗</a></div>
+      ${LOCALAPI?`<div class="row"><button class="btn sm" id="tKick">最初の一歩を任せる</button><button class="btn sm" id="tSplit">15分以内に分ける</button></div>`:""}`;
+      const copy=async()=>{const ta=$("#tPrompt");if(await copyText(ta.value))toast("📋 コピーしました。Claude に貼り付けてください");else{ta.focus();ta.select();toast("選択しました。⌘C でコピーしてください")}};copy();$("#tPromptCopy").onclick=copy;
+      $("#tKick")&&($("#tKick").onclick=()=>{close();ccStart("/kickoff",taskName(t))});$("#tSplit")&&($("#tSplit").onclick=()=>{close();ccStart("/split",taskName(t))})}
     if(k==="friend") friend("teach")});
 }
 /* Questions the night's run could not answer alone, one card at a time. An answer sends the task back to the top of the next night. */
