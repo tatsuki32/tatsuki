@@ -30,6 +30,9 @@ SYSTEM = (6, 10)  # group and security notices
 KINDS = {0: "text", 1: "画像", 2: "動画", 3: "音声", 4: "連絡先", 5: "位置情報", 7: "text", 8: "ファイル", 15: "スタンプ"}
 RECENT = 12  # messages given to Claude for one draft
 BODY_MAX = 4000
+WAIT_WINDOW = 30 * 86400  # how far back an unanswered chat of yours still counts
+CLOSERS = re.compile(r"(ありがと(う|うございます|うございました)?|了解(です|しました)?|りょうかい|ok|okay|おっけー?|thanks?( you)?|thx|👍|おやすみ(なさい)?|またね)[!！。.ー〜~\s]*", re.IGNORECASE)
+KANA = re.compile(r"[ぁ-んァ-ヶ]")
 
 
 def store_path():
@@ -100,6 +103,34 @@ def waiting_turn(msgs):
 def answered(msgs, since):
     """You wrote after their message, also when they have written again since."""
     return any(m["me"] and m["at"] >= since for m in msgs)
+
+
+def closes_chat(m):
+    """Your last word ends the talk, so nobody owes you an answer: a sticker, a thank-you, or too short to ask anything."""
+    text = m["text"].strip()
+    return m["kind"] != "text" or len(text) < 4 or bool(CLOSERS.fullmatch(text))
+
+
+def waiting_threads(now=None):
+    """One-to-one chats as Life OS 02 threads. lastFrom "them" lets it close one they answered."""
+    now = now or int(time.time())
+    db = connect()
+    try:
+        out = []
+        for session, jid, name in db.execute(
+                "SELECT DISTINCT s.Z_PK, s.ZCONTACTJID, s.ZPARTNERNAME FROM ZWAMESSAGE m JOIN ZWACHATSESSION s ON m.ZCHATSESSION=s.Z_PK"
+                " WHERE s.ZSESSIONTYPE=0 AND COALESCE(s.ZREMOVED,0)=0 AND s.ZCONTACTJID NOT LIKE '0@%' AND m.ZMESSAGEDATE>?",
+                (now - WAIT_WINDOW - APPLE_EPOCH,)).fetchall():
+            msgs = recent(db, session, RECENT)
+            if not msgs or (msgs[0]["me"] and closes_chat(msgs[0])):
+                continue
+            who = clean_name(name) or "（名前なし）"
+            out.append({"threadId": "wa" + hashlib.sha1(jid.encode()).hexdigest()[:16], "source": "whatsapp", "subject": who, "to": [who],
+                        "lastFrom": "me" if msgs[0]["me"] else "them", "lang": "ja" if KANA.search(msgs[0]["text"]) else "",
+                        "lastAt": datetime.fromtimestamp(msgs[0]["at"], paths.HCMC).isoformat(timespec="seconds")})
+        return out
+    finally:
+        db.close()
 
 
 def task_id(jid, first_id):

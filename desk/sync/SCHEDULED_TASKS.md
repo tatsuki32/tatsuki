@@ -14,7 +14,7 @@ python3 desk/write_feed.py calendar <raw.json>               # 予定：必要�
 python3 desk/write_feed.py gtasks <raw.json>                 # Google タスク：同上
 ```
 
-- 使えるコレクション：`editions`、`days`、`watch`、`reports`、`calendar`、`gtasks`、`tools`、`memos`、`tasks`、`notes`、`habits`、`wins`。
+- 使えるコレクション：`editions`、`days`、`watch`、`reports`、`calendar`、`gtasks`、`tools`、`memos`、`tasks`、`notes`、`habits`、`wins`、`presents`。
 - `memos` や `tasks` はサーバー経由で書きます。`desk/data/*.json` を手で書き換えません。
 - メール本文やメモの中身を、報告やログに書きません。一時ファイルは使い終わったら消します。
 
@@ -27,7 +27,7 @@ python3 desk/write_feed.py gtasks <raw.json>                 # Google タスク�
 | `desk-task-clarify` | 毎晩 2:30 | 未整理のタスクを30件まで、具体的なタイトル・まず5分・手順・出典・頼む文面に整える（`desk/task_clarify.py`。送信しない） | `tasks` の `clear` |
 | `desk-task-estimate` | 毎日 6:40 | タスクにかかる時間の目安と時期の案（`desk/task_estimate.py`。本人の選択は変えない） | `tasks` の `estAi`・`planAi` |
 | `desk-world-brief` | 毎日 7:17 | 世界ニュース | `editions` |
-| `desk-morning-mail` | 毎日 3:00・16:00 | Gmail と WhatsApp の個人トークの確認と返信案（`desk/whatsapp_sync.py`。送信しない） | `days`・`tasks`・`desk/data/whatsapp/` |
+| `desk-morning-mail` | 毎日 3:00・16:00 | Gmail と WhatsApp の個人トークの確認と返信案（`desk/whatsapp_sync.py`）。相手の返信待ち（`lifeos/02-followup/MORNING_RUN.md`、`run.py whatsapp`）。プレゼントの判定（`desk/presents.py`）。送信しない | `days`・`tasks`・`desk/data/whatsapp/`・`02-followup/state.json`・`presents` |
 | `desk-minor-watch` | 火・金 7:33 | マイナー国ウォッチ | `watch` |
 | `desk-claude-daily-report` | 毎日 7:40 | 前日の Claude の作業レポート | `reports` |
 | `desk-money-upcoming` | 毎日 7:50 | カレンダーと予約メールから今後の支出（読むだけ。本文は残さない） | `desk/data/wise/upcoming.json` |
