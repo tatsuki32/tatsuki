@@ -24,7 +24,7 @@
 - タスクをやりやすくする（`clear`）：実装済み。3件を本番で試した。`desk-task-clarify` の夜の実走は確認待ち。ボタンにはサーバーの再起動が要る。
 - プレゼント・ノート吸収・返信待ちの WhatsApp 対応：`desk/page-cards` に統合。`desk-morning-mail` の実走は確認待ち。
 - 毎日世界遺産（`desk/heritage.py`、`desk-heritage-daily`）：実装し最初の3カ国を保存。`desk/page-cards` にコミット済み。main に未マージ。朝の自動実行は確認待ち。
-
+- スクリーンタイムの画面（`desk/screentime_sync.py`）：実装済み。本物を19日分取り込めた。Chrome の1分ごとの記録は確認済み。Brave は確認待ち。
 ## 決定済みの事項
 - UI/UX を作るときは毎回、本を全文読んでから（`.claude/rules/design-ui.md`）。Drive の文字変換は p.136 まで。後半は Tatsuki のまとめで補っている。
 - Desk の見た目：文字 12/14/16/20/28px・太さ 400/700・余白 4/8/16/24/40px。金は今いる場所・焦点・主ボタン・外部リンクだけ。ボタンに絵文字を付けない。

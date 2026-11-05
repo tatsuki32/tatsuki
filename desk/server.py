@@ -29,6 +29,7 @@ import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, unquote, urlsplit
 
+import screentime_sync
 import wise_analysis
 import wise_goals
 import wise_report
@@ -618,6 +619,9 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, core.desk_view()) if core else self.send(404, {"error": "not found"})
         if path == "/api/whatsapp":
             return self.send(200, whatsapp_view())
+        if path == "/api/screentime":
+            q = parse_qs(urlsplit(self.path).query)
+            return self.send(200, screentime_sync.view(q.get("period", ["week"])[0], q.get("device", ["mac"])[0]))
         if path == "/api/wise":
             return self.send(*wise_view(wise_query(self.path)))
         if path == "/api/wise/world":

@@ -7,6 +7,7 @@
 #   com.tatsuki.desk.pull    git pull every 5 minutes, so GitHub changes reach the Mac
 #   com.tatsuki.desk.backup  every 15 minutes, desk/data goes to its private repository (backup_data.py)
 #   com.tatsuki.desk.wise    every morning and at login, Wise activity comes to desk/data/wise (wise_sync.py, read only)
+#   com.tatsuki.desk.screentime  every hour, Screen Time totals come to desk/data/screentime (screentime_sync.py, read only)
 # Run it again any time; it replaces the old jobs. Remove with: bash desk/setup-mac.sh --uninstall
 set -euo pipefail
 
@@ -23,7 +24,7 @@ UID_="$(id -u)"
 unload() { launchctl bootout "gui/$UID_/$1" 2>/dev/null || true; rm -f "$AGENTS/$1.plist"; }
 
 if [[ "${1:-}" == "--uninstall" ]]; then
-  unload com.tatsuki.desk.server; unload com.tatsuki.desk.pull; unload com.tatsuki.desk.backup; unload com.tatsuki.desk.wise
+  unload com.tatsuki.desk.server; unload com.tatsuki.desk.pull; unload com.tatsuki.desk.backup; unload com.tatsuki.desk.wise; unload com.tatsuki.desk.screentime; unload com.tatsuki.desk.tabwatch
   rm -f "$HOME/Desktop/Tatsuki's Desk.html" "$HOME/Desktop/Tatsuki's Desk.app"
   echo "Desk の常駐ジョブを削除しました。$DESK/data のデータはそのまま残っています。"; exit 0
 fi
@@ -42,7 +43,7 @@ case "$REPO/" in
 esac
 
 # stop our own jobs first, then make sure nothing else holds the port (the old Desk server)
-unload com.tatsuki.desk.server; unload com.tatsuki.desk.pull; unload com.tatsuki.desk.backup; unload com.tatsuki.desk.wise
+unload com.tatsuki.desk.server; unload com.tatsuki.desk.pull; unload com.tatsuki.desk.backup; unload com.tatsuki.desk.wise; unload com.tatsuki.desk.screentime; unload com.tatsuki.desk.tabwatch
 if lsof -nP -iTCP:"$PORT" -sTCP:LISTEN >/dev/null 2>&1; then
   echo "ポート $PORT を別のプログラムが使っています（古い Desk サーバーの可能性）："
   lsof -nP -iTCP:"$PORT" -sTCP:LISTEN
@@ -106,6 +107,36 @@ cat > "$AGENTS/com.tatsuki.desk.wise.plist" <<PLIST
 </dict></plist>
 PLIST
 
+[[ -x "$HOME/Applications/TatsukiScreenTime" ]] || { mkdir -p "$HOME/Applications"; swiftc -O "$DESK/app/screentime-helper.swift" -o "$HOME/Applications/TatsukiScreenTime"; }
+cat > "$AGENTS/com.tatsuki.desk.screentime.plist" <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>com.tatsuki.desk.screentime</string>
+  <key>ProgramArguments</key><array><string>$HOME/Applications/TatsukiScreenTime</string></array>
+  <key>WorkingDirectory</key><string>$DESK</string>
+  <key>RunAtLoad</key><true/>
+  <key>StartInterval</key><integer>3600</integer>
+  <key>StandardOutPath</key><string>$LOGS/tatsuki-desk-screentime.log</string>
+  <key>StandardErrorPath</key><string>$LOGS/tatsuki-desk-screentime.log</string>
+</dict></plist>
+PLIST
+
+[[ -x "$HOME/Applications/TatsukiTabWatch" ]] || swiftc -O "$DESK/app/tabwatch.swift" -o "$HOME/Applications/TatsukiTabWatch" -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __info_plist -Xlinker "$DESK/app/tabwatch-info.plist" && codesign -f -s - -i com.tatsuki.desk.tabwatch "$HOME/Applications/TatsukiTabWatch"
+cat > "$AGENTS/com.tatsuki.desk.tabwatch.plist" <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>com.tatsuki.desk.tabwatch</string>
+  <key>ProgramArguments</key><array><string>$HOME/Applications/TatsukiTabWatch</string></array>
+  <key>StartInterval</key><integer>60</integer>
+  <key>StandardOutPath</key><string>$LOGS/tatsuki-desk-tabwatch.log</string>
+  <key>StandardErrorPath</key><string>$LOGS/tatsuki-desk-tabwatch.log</string>
+</dict></plist>
+PLIST
+
+launchctl bootstrap "gui/$UID_" "$AGENTS/com.tatsuki.desk.tabwatch.plist"
+launchctl bootstrap "gui/$UID_" "$AGENTS/com.tatsuki.desk.screentime.plist"
 launchctl bootstrap "gui/$UID_" "$AGENTS/com.tatsuki.desk.server.plist"
 launchctl bootstrap "gui/$UID_" "$AGENTS/com.tatsuki.desk.backup.plist"
 launchctl bootstrap "gui/$UID_" "$AGENTS/com.tatsuki.desk.pull.plist"
