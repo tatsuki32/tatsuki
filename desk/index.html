@@ -409,6 +409,42 @@ details.draft .sent-as summary{cursor:pointer;display:block;padding:var(--s2) 0;
 .wday .dhead .count{margin-left:auto}
 .wt{font-weight:700;font-size:var(--t2);line-height:1.5;overflow-wrap:anywhere}
 .wdays+.btn{justify-self:start}
+/* 毎日世界遺産: the photo's edge and the text share one left line; gaps grow from inside a site to between sites */
+.hhome{display:flex;align-items:center;gap:var(--s3);width:100%;padding:var(--s2);text-align:left;cursor:pointer;color:var(--ink)}
+.hhome:hover{border-color:var(--line-2)}
+.hhome img{width:96px;height:64px;object-fit:cover;border-radius:var(--r-s);flex:none}
+.hhomet{display:grid;gap:var(--s1);min-width:0;padding-left:var(--s2);overflow-wrap:anywhere}
+.hcountry{overflow:hidden;display:grid;gap:var(--s5);padding-bottom:var(--s4)}
+.hbody{padding:0 var(--s4);display:grid;gap:var(--s2);min-width:0}
+.hcountry>.hbody:first-child{padding-top:var(--s4)}
+.hbody p{margin:0}
+.hbody .eyebrow{margin:0 0 var(--s1)}
+.hname1{font-size:var(--t4)}
+.hbody h3{margin:0;font-size:var(--t3);line-height:1.4}
+.hbody .mread{margin-top:var(--s2);max-width:40em;font-size:var(--t3);line-height:1.8}
+.hfacts{display:flex;flex-wrap:wrap;gap:var(--s2) var(--s4);margin:var(--s2) 0 0}
+.hfacts div{min-width:0}
+.hfacts dt{font-size:var(--t1);color:var(--muted)}
+.hfacts dd{margin:0;overflow-wrap:anywhere}
+.hsite{display:grid;gap:var(--s3)}
+.hfig{margin:0;display:grid;gap:var(--s1)}
+.hfig img{display:block;width:100%;aspect-ratio:3/2;object-fit:cover;background:var(--surface-2)}
+.hfig figcaption{padding:0 var(--s4);overflow-wrap:anywhere}
+.hfig:not(.big){padding:0 var(--s4)}
+.hfig:not(.big) figcaption{padding:0}
+.hfig:not(.big) img{border-radius:var(--r-s);aspect-ratio:16/9}
+.hend{gap:var(--s3);justify-items:start}
+.hpick .btn{white-space:normal;text-align:left}
+.hpast{display:flex;align-items:center;gap:var(--s2);flex-wrap:wrap}
+.hpast select{max-width:100%;min-height:36px}
+.hsum{margin:0}
+.hlist{display:flex;flex-wrap:wrap;gap:var(--s2) var(--s3)}
+.hname{border:0;background:transparent;padding:0;font:inherit;color:var(--ink-2);text-align:left}
+button.hname{cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px}
+button.hname:hover{color:var(--ink)}
+.hname.read{color:var(--ink);font-weight:700}
+.hname.later{color:var(--muted)}
+@media (max-width:560px){.hbody{padding:0 var(--s3)}.hfig figcaption{padding:0 var(--s3)}.hfig:not(.big){padding:0 var(--s3)}.hfig:not(.big) figcaption{padding:0}}
 .dline{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:var(--s2) var(--s3);padding:var(--s2) 0;border-top:1px solid var(--line)}
 .dline:first-child{border-top:0}
 .dline p{flex:1 1 240px;min-width:0;margin:0;overflow-wrap:anywhere}
@@ -830,7 +866,7 @@ h1 .inedit{font-size:var(--t4);font-weight:700}
 const NAVGROUPS=[["today","今日"],["in","届いたもの"],["read","読む"],["write","書く・振り返る"]];
 const VIEWS=[{id:"home",e:"🏠",label:"ホーム",g:"today"},{id:"tasks",e:"🗂️",label:"タスク",g:"today"},{id:"calendar",e:"📅",label:"カレンダー",g:"today"},{id:"habits",e:"🌱",label:"習慣",g:"today"},
   {id:"wins",e:"✨",label:"できたこと",g:"in"},{id:"presents",e:"🎁",label:"プレゼント",g:"in"},
-  {id:"news",e:"🌍",label:"世界ニュース",g:"read"},{id:"watch",e:"🗺️",label:"マイナー国",g:"read"},
+  {id:"news",e:"🌍",label:"世界ニュース",g:"read"},{id:"watch",e:"🗺️",label:"マイナー国",g:"read"},{id:"heritage",e:"🏛️",label:"毎日世界遺産",g:"read"},
   {id:"notes",e:"📒",label:"ノート",g:"write"},{id:"log",e:"🤖",label:"Claudeの記録",g:"write"},{id:"tools",e:"🧰",label:"ツール",g:"write"}];
 const TABS=["home","tasks","calendar","notes"]; // phone tab bar; the rest is under その他
 VIEWS.push({id:"lifeos",e:"🧩",label:"Life OS",g:"write"});
@@ -844,7 +880,7 @@ const GROUPJA=Object.fromEntries(GROUPS.map(g=>[g[0],g[2]]));
 const REG={"Middle East":"🕌","Europe & Russia":"🏰","Asia-Pacific":"🌏","Americas":"🗽","Africa":"🌍","Global":"🌐"};
 const PRI={"Action needed":"red","Reply drafted":"amber","FYI":""};
 const PRIO={"Action needed":0,"Reply drafted":1,"FYI":2};
-const S={tools:[],editions:[],days:[],memos:[],ed:null,day:null,region:"All",q:"",confirm:null,busy:null,notes:{},local:false,dues:{},dl:[],dlMap:{},dlAll:false,quietUntil:0,tasks:[],board:[],taskCol:"notyet",cal:null,gtasks:null,reports:[],logDay:null,prompts:{},watch:[],watchId:null,focus:null,wnotes:[],noteId:null,habits:[],memory:null,nextSkip:0,wins:[],winsDays:14,wread:null,wmode:"gist",wlog:{},presents:[]};
+const S={tools:[],editions:[],days:[],memos:[],ed:null,day:null,region:"All",q:"",confirm:null,busy:null,notes:{},local:false,dues:{},dl:[],dlMap:{},dlAll:false,quietUntil:0,tasks:[],board:[],taskCol:"notyet",cal:null,gtasks:null,reports:[],logDay:null,prompts:{},watch:[],watchId:null,focus:null,wnotes:[],noteId:null,habits:[],memory:null,nextSkip:0,wins:[],winsDays:14,wread:null,wmode:"gist",wlog:{},presents:[],heritage:[],hcountries:[],hlog:{},hId:null,hCode:null,hTab:"today"};
 let db=null;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -861,8 +897,9 @@ if(LOCALAPI) VIEWS.splice(4,0,{id:"focus",e:"🎯",label:"集中",g:"today"}); /
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="memolink")+1,0,{id:"money",e:"💰",label:"お金",g:"write"}); // statements stay on this Mac
 async function api(method,path,body){const r=await fetch(path,{method,headers:{"Content-Type":"application/json"},body:body?JSON.stringify(body):undefined});if(!r.ok)throw new Error(r.status);return r.json()}
 async function loadApiMemos(){try{
-  const [memos,dues,tasks,prompts,notes,habits,wins,wlog,presents]=await Promise.all([api("GET","/api/memos"),api("GET","/api/dues"),api("GET","/api/tasks"),api("GET","/api/prompts").catch(()=>[]),api("GET","/api/notes").catch(()=>[]),api("GET","/api/habits").catch(()=>[]),api("GET","/api/wins").catch(()=>[]),api("GET","/api/worldlog").catch(()=>[]),api("GET","/api/presents").catch(()=>[])]);
+  const [memos,dues,tasks,prompts,notes,habits,wins,wlog,presents,hlog]=await Promise.all([api("GET","/api/memos"),api("GET","/api/dues"),api("GET","/api/tasks"),api("GET","/api/prompts").catch(()=>[]),api("GET","/api/notes").catch(()=>[]),api("GET","/api/habits").catch(()=>[]),api("GET","/api/wins").catch(()=>[]),api("GET","/api/worldlog").catch(()=>[]),api("GET","/api/presents").catch(()=>[]),api("GET","/api/heritagelog").catch(()=>[])]);
   S.wlog=Object.fromEntries(wlog.filter(x=>x&&x.id&&!x.deleted).map(x=>[x.id,x]));
+  S.hlog=Object.fromEntries(hlog.filter(x=>x&&x.id&&!x.deleted).map(x=>[x.id,x]));
   S.wa=await api("GET","/api/whatsapp").catch(()=>({}));
   S.habits=habits.filter(h=>!h.deleted);S.wins=wins.filter(w=>!w.deleted);S.presents=presents.filter(p=>!p.deleted);S.memos=memos.filter(m=>!m.deleted&&!m.movedTo);S.dues=duesById(dues);S.tasks=tasks.filter(t=>!t.deleted);S.prompts=promptsById(prompts);S.wnotes=notes.filter(n=>!n.deleted);render();absorbMemos()}catch(e){toast("Desk サーバーにつながりません。起動していますか？")}}
 const promptsById=list=>Object.fromEntries(list.filter(p=>p&&p.id&&!p.deleted).map(p=>[p.id,p]));
@@ -2392,10 +2429,11 @@ function searchIndex(){
   winList().forEach(w=>add("win",w.title,w.sub||"",{wins:1},{date:w.date}));
   S.editions.forEach(e=>(e.data.stories||[]).forEach((s,i)=>add("news",s.title,[s.summary,s.lens,REGJA[s.region],(s.sources||[]).map(x=>x.name).join(" ")].join(" "),{ed:e.id,story:i},{date:e.id})));
   S.watch.forEach(w=>add("watch",w.title||w.id,w.body,{watch:w.id},{date:w.date}));
+  S.heritage.forEach(h=>(h.countries||[]).forEach(c=>add("heritage",c.name,[c.capital,c.about,c.noSites,(c.sites||[]).map(s=>s.name+" "+s.why).join(" ")].join(" "),{heritage:h.id,code:c.code},{date:h.date})));
   calEvents().forEach(e=>add("event",e.title,[e.location,e.description].join(" "),{cal:1},{at:e.startMs}));
   return out;
 }
-const SKIND={tool:["🧩","ツール"],note:["📒","ノート"],memo:["📝","メモ"],task:["🗂️","タスク"],news:["🌍","ニュース"],watch:["🗺️","マイナー国"],mail:["✉️","メール"],event:["📅","予定"],win:["✨","できたこと"],habit:["🌱","習慣"],log:["🤖","Claudeの記録"],lifeos:["🧰","Life OS"],followup:["⏳","返信待ち"],money:["💰","お金"],memory:["🧭","次は？"]};
+const SKIND={tool:["🧩","ツール"],note:["📒","ノート"],memo:["📝","メモ"],task:["🗂️","タスク"],news:["🌍","ニュース"],watch:["🗺️","マイナー国"],heritage:["🏛️","毎日世界遺産"],mail:["✉️","メール"],event:["📅","予定"],win:["✨","できたこと"],habit:["🌱","習慣"],log:["🤖","Claudeの記録"],lifeos:["🧰","Life OS"],followup:["⏳","返信待ち"],money:["💰","お金"],memory:["🧭","次は？"]};
 function runSearch(q){
   const terms=q.trim().split(/\s+/).filter(Boolean); if(!terms.length) return {hits:[],via:[]};
   const ai=(S.aiExp||{})[norm(q)]||[];
@@ -2430,7 +2468,7 @@ function searchResults(){
     <div class="rhead"><b>「${esc(q)}」 ${hits.length}件</b>${via.length?`<span class="sub">「${via.map(esc).join("」「")}」でも探しました</span>`:""}${aiWords?`<span class="sub">🤖 ${aiWords.map(esc).join("・")}</span>`:""}${aiState}</div>
     ${kinds.map(k=>{const xs=hits.filter(h=>h.kind===k), all=S.qAll===k, shown=all?xs:xs.slice(0,5);
       return `<div class="rgroup"><div class="section-title"><span class="e">${SKIND[k][0]}</span>${SKIND[k][1]} <span class="count">${xs.length}</span></div>
-      ${shown.map((h,i)=>`<button class="rrow" data-hit="${k}:${hits.indexOf(h)}"${k==="news"||k==="watch"||k==="task"?" data-noauto":""}><b>${esc(h.title)}</b>${h.date?`<span class="sub"> · ${esc(h.date)}</span>`:""}<span class="snip">${snippet(h)}</span></button>`).join("")}
+      ${shown.map((h,i)=>`<button class="rrow" data-hit="${k}:${hits.indexOf(h)}"${k==="news"||k==="watch"||k==="task"||k==="heritage"?" data-noauto":""}><b>${esc(h.title)}</b>${h.date?`<span class="sub"> · ${esc(h.date)}</span>`:""}<span class="snip">${snippet(h)}</span></button>`).join("")}
       ${xs.length>5&&!all?`<button class="dmore" data-qall="${k}">もっと見る（${xs.length}件）</button>`:""}</div>`}).join("")||`<p class="sub" style="padding:4px 12px 10px;margin:0">見つかりませんでした。${S.sampleOk?"「AIで広げて探す」を試してください。":"別の言葉で試してください。"}</p>`}
   </section>`;
 }
@@ -2442,6 +2480,7 @@ function goHit(h){
   if(g.task) return openTask(g.task);
   if(g.ed!=null){S.ed=g.ed;S.region="All";S.focus=g.story;if(location.hash==="#news")render();else location.hash="news";return}
   if(g.watch){S.watchId=g.watch;location.hash="watch";return}
+  if(g.heritage){heritageOpen(g.heritage,g.code);return}
   if(g.wins){location.hash="wins";return}
   if(g.log){S.logDay=g.log;location.hash="log";return}
   if(g.next) return openNext();
@@ -2509,6 +2548,7 @@ function home(){
   ${triHome()}
   ${focusHomeCard()}
   <div class="duo">${todayEvents()}${habitStrip()||`<section class="card"><div class="dhead"><h2><span class="e">🌱</span>今日の習慣</h2><a class="more" href="#habits">足す →</a></div><div class="empty">続けたいことを「習慣」で足せます。</div></section>`}</div>
+  ${heritageCard()}
   ${ccCard()}
   ${todayPanel(top)}
   ${winsMini()}
@@ -2784,6 +2824,55 @@ async function addPresent(){
   try{await store.putPresent({id:"self-"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),kind:"self",title,source:"self"});toast("🎁 入れました")}catch(e){toast("保存できませんでした。入力はそのまま残っています");return}
   setTimeout(()=>$("#presentText")&&$("#presentText").focus(),0);
 }
+/* 毎日世界遺産: three countries a day (desk/heritage.py writes the issues; the page only marks what was read). One country at a time, photo first. */
+const HREGION={asia:"アジア",mideast:"中東",europe:"ヨーロッパ",africa:"アフリカ",namerica:"北中米・カリブ",samerica:"南米",oceania:"オセアニア"};
+const HKIND={cultural:"文化遺産",natural:"自然遺産",mixed:"複合遺産"};
+const hIsRead=code=>!!S.hlog[code];
+const hPhoto=(p,big)=>`<figure class="hfig${big?" big":""}"><img src="/heritage-photos/${encodeURIComponent(p.file)}" alt="${esc(p.alt||"")}" loading="lazy"><figcaption class="due"><a class="ext" href="${esc(p.page)}" target="_blank" rel="noopener">${esc(p.author)} · ${esc(p.license)} ↗</a></figcaption></figure>`;
+const hIssueOf=code=>S.heritage.find(h=>(h.countries||[]).some(c=>c.code===code));
+function heritageOpen(id,code){S.hId=id;S.hCode=code||null;S.hTab="today";if(location.hash==="#heritage")render();else location.hash="heritage"}
+function heritageCard(){
+  const h=S.heritage[0]; if(!h) return "";
+  const cs=h.countries||[], first=cs.flatMap(c=>[...(c.sites||[]).flatMap(s=>s.photos||[]),...(c.photos||[])])[0], all=cs.every(c=>hIsRead(c.code));
+  return `<section aria-label="毎日世界遺産"><div class="section-title"><span class="e">🏛️</span>今日の世界遺産<a href="#heritage">${Object.keys(S.hlog).length} / ${S.hcountries.length} カ国 →</a></div>
+  <button class="card hhome" data-hopen="${esc(h.id)}" data-noauto>${first&&!all?`<img src="/heritage-photos/${encodeURIComponent(first.file)}" alt="" loading="lazy">`:""}<span class="hhomet"><b>${cs.map(c=>esc(c.name)).join("・")}</b><span class="due">${all?"3カ国とも読みました":"まだ読んでいない国があります"}</span></span></button></section>`;
+}
+function heritageList(){
+  const read=Object.keys(S.hlog).length;
+  return `<p class="sub hsum">読んだ国 ${read} / ${S.hcountries.length}</p>`+Object.keys(HREGION).map(r=>{const xs=S.hcountries.filter(c=>c.region===r), n=xs.filter(c=>hIsRead(c.code)).length;
+    return `<section><div class="section-title">${HREGION[r]}<span class="count">${n} / ${xs.length}</span></div><div class="hlist" data-noauto>${xs.map(c=>{const iss=hIssueOf(c.code);return iss?`<button class="hname${hIsRead(c.code)?" read":""}" data-hgo="${esc(iss.id)}" data-hcode="${esc(c.code)}">${esc(c.name)}</button>`:`<span class="hname later">${esc(c.name)}</span>`}).join("")}</div></section>`}).join("");
+}
+function heritageCountry(h,c){
+  const sites=c.sites||[], read=hIsRead(c.code);
+  const facts=[["首都",c.capital],["公用語",c.languages],["通貨",c.currency],["人口",c.population]].filter(x=>x[1]);
+  return `<article class="card hcountry" data-noauto data-src="${esc((c.sources||[])[0]?.url||"")}" data-srclabel="毎日世界遺産 ${esc(c.name)}">
+    ${(c.photos||[]).map((p,i)=>hPhoto(p,i===0)).join("")}
+    <div class="hbody">
+      <header><p class="eyebrow">${esc(HREGION[c.region]||"")}${c.location?" · "+esc(c.location):""}</p><h2 class="hname1">${esc(c.name)}</h2></header>
+      ${facts.length?`<dl class="hfacts">${facts.map(([k,v])=>`<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join("")}</dl>`:""}
+      <p class="mread">${esc(c.about)}</p>
+    </div>
+    ${sites.map(s=>`<section class="hsite">${(s.photos||[]).map((p,i)=>hPhoto(p,i===0)).join("")}<div class="hbody"><h3>${esc(s.name)}</h3><p class="due">${esc(HKIND[s.kind]||"")} · ${esc(s.year)}年登録</p><p class="mread">${esc(s.why)}</p><p class="due"><a class="ext" href="${esc(s.url)}" target="_blank" rel="noopener">出典 ↗</a></p></div></section>`).join("")}
+    ${!sites.length?`<div class="hbody hnone"><h3>世界遺産はまだありません</h3><p class="mread">${esc(c.noSites||"")}</p></div>`:""}
+    <div class="hbody hend"><p class="due">${(c.sources||[]).map(s=>`<a class="ext" href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.name)} ↗</a>`).join("　")}</p><button class="btn${read?"":" primary"}" data-hread="${esc(c.code)}">${read?"読んだ（取り消す）":"読んだ"}</button></div>
+  </article>`;
+}
+function heritageView(){
+  const head=x=>`<header class="head"><div><p class="eyebrow">読む${x?" · "+esc(new Date(x.date+"T12:00:00").toLocaleDateString("ja-JP",{year:"numeric",month:"long",day:"numeric"})):""}</p><h1>毎日世界遺産</h1></div><div class="chips" role="tablist"><button class="btn sm${S.hTab==="today"?" primary":""}" data-htab="today">今日の国</button><button class="btn sm${S.hTab==="list"?" primary":""}" data-htab="list">国の一覧</button></div></header>`;
+  if(S.hTab==="list") return head()+heritageList();
+  const h=S.heritage.find(x=>x.id===S.hId)||S.heritage[0];
+  if(!h) return head()+`<div class="card empty"><b>最初の3カ国を準備しています</b>毎朝3カ国ずつ、ここに届きます。</div>`;
+  const cs=h.countries||[], c=cs.find(x=>x.code===S.hCode)||cs.find(x=>!hIsRead(x.code))||cs[0];
+  return head(h)+`<div class="chips hpick" data-noauto>${cs.map(x=>`<button class="btn${x.code===c.code?" primary":""}" data-hcode2="${esc(x.code)}">${hIsRead(x.code)?"✓ ":""}${esc(x.name)}</button>`).join("")}</div>${c?heritageCountry(h,c):""}
+  ${S.heritage.length>1?`<label class="sub hpast">前の号 <select id="hIssue">${S.heritage.map(x=>`<option value="${esc(x.id)}" ${x.id===h.id?"selected":""}>${esc(x.date)}　${(x.countries||[]).map(y=>esc(y.name)).join("・")}</option>`).join("")}</select></label>`:""}`;
+}
+async function heritageMark(code){
+  const was=S.hlog[code], rec={read:hcmcDate(),deleted:!!was,updatedAt:Date.now()};
+  try{await api("PUT","/api/heritagelog/"+encodeURIComponent(code),rec)}catch(e){toast("保存できませんでした");return}
+  if(was)delete S.hlog[code];else S.hlog[code]={id:code,...rec};
+  if(!was){const h=S.heritage.find(x=>(x.countries||[]).some(y=>y.code===code)), next=h&&h.countries.find(y=>!hIsRead(y.code));S.hId=h?.id||S.hId;S.hCode=next?next.code:code;if(next)window.scrollTo(0,0)}
+  render();
+}
 function render(){
   applyNoteCss();
   const mails=deadlines();S.board=boardTasks(mails);S.dlMap=Object.fromEntries(mails.map(x=>[x.uid,x]));
@@ -2796,7 +2885,7 @@ function render(){
   if(viewId()==="followups"){fuLoad();$("#view").innerHTML=searchResults()+fuView();wire();wireFu();return}
   if(viewId()==="money"){moneyLoad();$("#view").innerHTML=searchResults()+moneyView();wire();wireMoney();return}
   const v=viewId();
-  $("#view").innerHTML=searchResults()+(v==="focus"?focusView():v==="notes"?notesView():v==="watch"?watch():v==="tasks"?tasks():v==="calendar"?calendar():v==="news"?news():v==="wins"?winsView():v==="presents"?presentsView():v==="habits"?habitsView():v==="log"?log():v==="tools"?toolsView():home());
+  $("#view").innerHTML=searchResults()+(v==="focus"?focusView():v==="notes"?notesView():v==="watch"?watch():v==="heritage"?heritageView():v==="tasks"?tasks():v==="calendar"?calendar():v==="news"?news():v==="wins"?winsView():v==="presents"?presentsView():v==="habits"?habitsView():v==="log"?log():v==="tools"?toolsView():home());
   if(v==="news"||v==="watch") linkSources($("#view"));
   wire();
   if(v==="news"&&S.focus!=null){const el=document.getElementById("story-"+S.focus);S.focus=null;if(el){el.classList.add("flash");setTimeout(()=>el.scrollIntoView({block:"start"}),0)}}
@@ -3331,6 +3420,12 @@ function wire(){
   document.querySelectorAll("[data-windel]").forEach(b=>b.onclick=async()=>{if(!b.dataset.sure){b.dataset.sure="1";b.textContent="消す？";return}
     const w=S.wins.find(x=>x.id===b.dataset.windel);if(w)try{await store.putWin({...w,deleted:true})}catch(e){toast("保存できませんでした")}});
   document.querySelectorAll("[data-turl]").forEach(b=>b.onclick=()=>openToolUrl(b.dataset.turl));
+  document.querySelectorAll("[data-hopen]").forEach(b=>b.onclick=()=>heritageOpen(b.dataset.hopen));
+  document.querySelectorAll("[data-htab]").forEach(b=>b.onclick=()=>{S.hTab=b.dataset.htab;render()});
+  document.querySelectorAll("[data-hcode2]").forEach(b=>b.onclick=()=>{S.hCode=b.dataset.hcode2;render();window.scrollTo(0,0)});
+  document.querySelectorAll("[data-hgo]").forEach(b=>b.onclick=()=>{heritageOpen(b.dataset.hgo,b.dataset.hcode);window.scrollTo(0,0)});
+  document.querySelectorAll("[data-hread]").forEach(b=>b.onclick=()=>heritageMark(b.dataset.hread));
+  $("#hIssue")&&($("#hIssue").onchange=e=>{S.hId=e.target.value;S.hCode=null;render();window.scrollTo(0,0)});
   $("#presentAdd")&&($("#presentAdd").onsubmit=e=>{e.preventDefault();addPresent()});
   document.querySelectorAll("[data-predel]").forEach(b=>b.onclick=async()=>{if(!b.dataset.sure){b.dataset.sure="1";b.textContent="消す？";return}
     const p=S.presents.find(x=>x.id===b.dataset.predel);if(p)try{await store.putPresent({...p,deleted:true})}catch(e){toast("保存できませんでした")}});
@@ -3633,7 +3728,7 @@ autoLinkStart();
 (async()=>{
   if(Array.isArray(window.TOOLS)){ // PC version
     try{S.dues=JSON.parse(localStorage.getItem("desk-dues")||"{}")||{}}catch(e){S.dues={}}
-    S.loaded=true;S.local=true;S.tools=window.TOOLS;S.editions=window.WORLD||[];S.days=window.MAIL||[];S.cal=window.CAL||null;S.gtasks=window.GTASKS||null;S.reports=window.REPORTS||[];S.watch=window.WATCH||[];S.memory=window.MEMORY||null;
+    S.loaded=true;S.local=true;S.tools=window.TOOLS;S.editions=window.WORLD||[];S.days=window.MAIL||[];S.cal=window.CAL||null;S.gtasks=window.GTASKS||null;S.reports=window.REPORTS||[];S.watch=window.WATCH||[];S.heritage=(window.HERITAGE||[]).filter(h=>!h.deleted);S.hcountries=(window.HERITAGE_COUNTRIES||[]).map(([code,name,region])=>({code,name,region}));S.memory=window.MEMORY||null;
     if(LOCALAPI){fbLoad();setInterval(fbLoad,5000);await loadApiMemos();setInterval(loadApiMemos,30000);window.addEventListener("focus",loadApiMemos);return}
     try{S.memos=JSON.parse(localStorage.getItem("desk-memos")||"[]")}catch(e){S.memos=[]}
     try{S.tasks=JSON.parse(localStorage.getItem("desk-tasks")||"[]")}catch(e){S.tasks=[]}

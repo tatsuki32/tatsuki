@@ -7,8 +7,7 @@
 - 作りたい機能リスト（全11件）を順番に作っている。Desk のタスク「作りたい機能①〜⑪」で進み具合を見る。
   - ① CLAUDE.md＋memory/（外付けメモリ）… 完了
   - ②〜⑪ もすべて最小版を実装（2026-11-03）。Mac での本番確認はマージ後。使ってみて直す段階。
-  - ③ は標準の /resume とぶつかるので `/recap`。⑦ ペルソナは仮の設定（Tatsuki が決めたら /sync）。
-- 全部 main にマージ済み（tatsuki32/tatsuki#9、2026-11-03）。Mac で実際に動かして直す段階。
+  - ③ は標準の /resume とぶつかるので `/recap`。⑦ ペルソナは仮の設定（Tatsuki が決めたら /sync）。全部 main にマージ済み（tatsuki32/tatsuki#9）。
 - Desk の UI/UX 作り替え：main にマージ済み（tatsuki32/tatsuki#12）。
 - 朝のメールをタスクに一本化＋「できたこと」画面（`wins`）：実装・オンライン版に公開。main に未マージ（Mac に届くのはマージ後）。
 - コマンドを忘れる対策：Desk の「🤖 Claude に頼む」カードと、検索欄の `/` コマンド一覧。main にマージ済み。Mac の Terminal 起動は未確認。
@@ -24,6 +23,7 @@
 - ノートの Scrapbox 機能：`desk/page-cards` に取り込み済み。main に未マージ。iPhone のダブルタップは未確認。
 - タスクをやりやすくする（`clear`）：実装済み。3件を本番で試した。`desk-task-clarify` の夜の実走は確認待ち。ボタンにはサーバーの再起動が要る。
 - プレゼント・ノート吸収・返信待ちの WhatsApp 対応：`desk/page-cards` に統合。`desk-morning-mail` の実走は確認待ち。
+- 毎日世界遺産（`desk/heritage.py`、`desk-heritage-daily`）：実装し最初の3カ国を保存。`desk/page-cards` にコミット済み。main に未マージ。朝の自動実行は確認待ち。
 
 ## 決定済みの事項
 - UI/UX を作るときは毎回、本を全文読んでから（`.claude/rules/design-ui.md`）。Drive の文字変換は p.136 まで。後半は Tatsuki のまとめで補っている。

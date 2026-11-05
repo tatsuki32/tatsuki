@@ -37,7 +37,7 @@ import wise_sync
 ROOT = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(ROOT, "data")
 PORT = int(os.environ.get("DESK_PORT", "4747"))
-COLLECTIONS = ("memos", "dues", "tasks", "prompts", "notes", "habits", "lifemap", "wins", "worldlog", "presents")
+COLLECTIONS = ("memos", "dues", "tasks", "prompts", "notes", "habits", "lifemap", "wins", "worldlog", "presents", "heritagelog")
 # file in data/, global the page reads, value when the file is missing
 DATA_JS = [
     ("tools.js", "TOOLS", "[]"),
@@ -47,6 +47,7 @@ DATA_JS = [
     ("gtasks.js", "GTASKS", "null"),
     ("reports.js", "REPORTS", "[]"),
     ("watch.js", "WATCH", "[]"),
+    ("heritage.js", "HERITAGE", "[]"),
 ]
 # what the scheduled tasks and the tools view write: one file per doc in data/docs/<collection>/, joined into the page's
 # data/*.js. collection -> (file, global, newest docs kept in the page; the docs stay on disk)
@@ -56,6 +57,7 @@ FEEDS = {
     "days": ("mail.js", "MAIL", 30),
     "reports": ("reports.js", "REPORTS", 30),
     "watch": ("watch.js", "WATCH", 30),
+    "heritage": ("heritage.js", "HERITAGE", None),
     "calendar": ("calendar.js", "CAL", "upcoming"),
     "gtasks": ("gtasks.js", "GTASKS", "current"),
 }
@@ -104,6 +106,14 @@ def write_atomic(path, text):
     fd, tmp = tempfile.mkstemp(dir=os.path.dirname(path), prefix=".doc", suffix=".tmp")
     with os.fdopen(fd, "w", encoding="utf-8") as f:
         f.write(text)
+    os.replace(tmp, path)
+
+
+def write_bytes_atomic(path, data):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    fd, tmp = tempfile.mkstemp(dir=os.path.dirname(path), prefix=".doc", suffix=".tmp")
+    with os.fdopen(fd, "wb") as f:
+        f.write(data)
     os.replace(tmp, path)
 
 
@@ -444,6 +454,11 @@ def page():
     parts.append(f"window.MEMORY={mem};")
     los = json.dumps(lifeos_tools(), ensure_ascii=False).replace("</", "<\\/")
     parts.append(f"window.LIFEOS={los};")
+    try:
+        with open(os.path.join(ROOT, "heritage_countries.json"), encoding="utf-8") as f:
+            parts.append("window.HERITAGE_COUNTRIES=" + json.dumps(json.load(f), ensure_ascii=False).replace("</", "<\\/") + ";")
+    except (OSError, ValueError):
+        parts.append("window.HERITAGE_COUNTRIES=[];")
     inject = "<script>\n" + "\n".join(parts) + "\n</script>\n"
     i = html.find("<script>")
     return html[:i] + inject + html[i:] if i >= 0 else html + inject
@@ -499,6 +514,7 @@ def focus_state():
 
 
 UPLOADS = os.path.join(DATA, "uploads")
+HERITAGE_PHOTO = re.compile(r"^[0-9a-f]{16}\.(jpg|png)$")
 UPLOAD_MAX = 20 * 1024 * 1024
 UPLOAD_NAME = re.compile(r"^[0-9a-f]{32}\.(png|jpg|gif|webp|heic|pdf)$")
 UPLOAD_TYPES = {"png": "image/png", "jpg": "image/jpeg", "gif": "image/gif", "webp": "image/webp",
@@ -587,6 +603,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, page(), "text/html; charset=utf-8")
         if path.startswith("/uploads/"):
             return self.upload_get(path.rsplit("/", 1)[1])
+        if path.startswith("/heritage-photos/"):
+            return self.heritage_photo(path.rsplit("/", 1)[1])
         col, doc_id = self.route()
         if col and doc_id is None:
             with LOCK:
@@ -610,6 +628,23 @@ class Handler(BaseHTTPRequestHandler):
             core = memolink_core()
             return self.send(200, core.desk_view()) if core else self.send(404, {"error": "not found"})
         self.send(404, {"error": "not found"})
+
+    def heritage_photo(self, name):
+        m = HERITAGE_PHOTO.match(name)
+        try:
+            with open(os.path.join(DATA, "heritage", "photos", name), "rb") as f:
+                data = f.read() if m else None
+        except OSError:
+            data = None
+        if data is None:
+            return self.send(404, {"error": "no such file"})
+        self.send_response(200)
+        self.send_header("Content-Type", "image/jpeg" if m.group(1) == "jpg" else "image/png")
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("Cache-Control", "max-age=31536000, immutable")
+        self.end_headers()
+        self.wfile.write(data)
 
     def upload_get(self, name):
         m = UPLOAD_NAME.match(name)

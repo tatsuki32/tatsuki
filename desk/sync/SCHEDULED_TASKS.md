@@ -29,6 +29,7 @@ python3 desk/write_feed.py gtasks <raw.json>                 # Google タスク�
 | `desk-world-brief` | 毎日 7:17 | 世界ニュース（結果のある出来事と研究を8〜10本。予想の問い、媒体の見比べ、なぜを5回つき。指示は `desk/sync/world-brief-v2.md`、号の形は `WORLD_EDITION.md`） | `editions` |
 | `desk-morning-mail` | 毎日 3:00・16:00 | Gmail と WhatsApp の個人トークの確認と返信案（`desk/whatsapp_sync.py`）。相手の返信待ち（`lifeos/02-followup/MORNING_RUN.md`、`run.py whatsapp`）。プレゼントの判定（`desk/presents.py`）。送信しない | `days`・`tasks`・`desk/data/whatsapp/`・`02-followup/state.json`・`presents` |
 | `desk-minor-watch` | 火・金 7:33 | マイナー国ウォッチ | `watch` |
+| `desk-heritage-daily` | 毎日 7:05 | 毎日世界遺産。まだ出ていない国を3カ国、国の紹介と遺産を写真つきで（`desk/heritage.py`。休んだ日の分は作らない） | `heritage`・`desk/data/heritage/photos/` |
 | `desk-claude-daily-report` | 毎日 7:40 | 前日の Claude の作業レポート | `reports` |
 | `desk-money-upcoming` | 毎日 7:50 | カレンダーと予約メールから今後の支出（読むだけ。本文は残さない） | `desk/data/wise/upcoming.json` |
 | `desk-money-tips` | 毎日 8:20 | ライフプランや世界の暮らしの豆知識を出典つきで1件 | `desk/data/wise/tips.json` |
