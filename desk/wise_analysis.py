@@ -34,6 +34,7 @@ MAX_ADVICE = 3
 HISTORY = 12
 Z_LIMIT = 3.5
 MIN_OUTLIER_MONTHS = 6
+MAX_DAY_BARS = 92
 FX_MIN_SHARE, FX_MIN_USD = 0.01, 5
 
 
@@ -156,26 +157,29 @@ def days_series(rows, first, last):
     return out
 
 
-def variances(rows, month, cut, earlier, this=None, field="category"):
-    """This month to day `cut` against the median of the same days in earlier months, largest gap first."""
-    this = this if this is not None else [a for a in rows if a["date"][:7] == month and within_day(a, cut)]
+def in_window(a, window):
+    return window[0] <= a["date"] <= window[1]
+
+
+def variances(rows, this, windows, field="category"):
+    """`this` against the median of the same stretch in earlier windows, largest gap first."""
     names = {a[field] for a in rows if spent_amount(a)}
     out = []
     for name in names:
         now = round(sum(spent_amount(a) for a in this if a[field] == name), 2)
-        past = [sum(spent_amount(a) for a in rows if a[field] == name and a["date"][:7] == m and within_day(a, cut)) for m in earlier]
+        past = [sum(spent_amount(a) for a in rows if a[field] == name and in_window(a, w)) for w in windows]
         usual = round(statistics.median(past), 2) if past else 0
         out.append({"name": name, "usd": now, "usual": usual, "gap": round(now - usual, 2)})
     return sorted(out, key=lambda v: -abs(v["gap"]))
 
 
-def outliers(rows, month, cut, earlier):
-    """Categories far from their own usual, by modified z-score. Fewer than six months of history says nothing."""
-    if len(earlier) < MIN_OUTLIER_MONTHS:
+def outliers(rows, this, windows):
+    """Categories far from their own usual, by modified z-score. Fewer than six earlier stretches say nothing."""
+    if len(windows) < MIN_OUTLIER_MONTHS:
         return []
     out = []
-    for v in variances(rows, month, cut, earlier):
-        past = [sum(spent_amount(a) for a in rows if a["category"] == v["name"] and a["date"][:7] == m and within_day(a, cut)) for m in earlier]
+    for v in variances(rows, this, windows):
+        past = [sum(spent_amount(a) for a in rows if a["category"] == v["name"] and in_window(a, w)) for w in windows]
         mid = statistics.median(past)
         mad = statistics.median(abs(x - mid) for x in past)
         if mad and 0.6745 * (v["usd"] - mid) / mad > Z_LIMIT:
@@ -183,19 +187,17 @@ def outliers(rows, month, cut, earlier):
     return sorted(out, key=lambda v: -v["gap"])[:3]
 
 
-def fx_effect(rows, month, previous, cut):
+def fx_effect(this, before):
     """How much of the change came from the rate and how much from what was bought, per currency of the price (Bennet)."""
     now, then = {}, {}
-    for a in rows:
-        if a["kind"] not in ("spend", "refund") or a.get("value") is None or not within_day(a, cut):
-            continue
-        side = now if a["date"][:7] == month else then if a["date"][:7] == previous else None
-        if side is None:
-            continue
-        sign = spent_amount(a) / a["usd"] if a["usd"] else 0
-        t = side.setdefault(a["currency"], [0, 0])
-        t[0] += sign * a["value"]
-        t[1] += spent_amount(a)
+    for side, part in ((now, this), (then, before)):
+        for a in part:
+            if a["kind"] not in ("spend", "refund") or a.get("value") is None:
+                continue
+            sign = spent_amount(a) / a["usd"] if a["usd"] else 0
+            t = side.setdefault(a["currency"], [0, 0])
+            t[0] += sign * a["value"]
+            t[1] += spent_amount(a)
     use = rate = 0
     for currency in set(now) | set(then):
         l1, u1 = now.get(currency, (0, 0))
@@ -287,12 +289,29 @@ def balance_now():
     return {"date": max(snaps), "usd": round(sum(known), 2), "complete": len(known) == len(rows)}
 
 
-def analyze(rows, today, month=None):
-    """rows: every enriched row. `month` is the month looked at; the current one is compared only up to today."""
+def month_windows(series_months, cut):
+    return [(f"{m}-01", f"{m}-{min(cut, month_days(m)):02d}") for m in series_months]
+
+
+def same_length_windows(first, last, data_start, n=HISTORY):
+    """Earlier stretches of the same length, as far back as there is data."""
+    start, end = dt.date.fromisoformat(first), dt.date.fromisoformat(last)
+    length, out = (end - start).days + 1, []
+    for i in range(1, n + 1):
+        s0 = start - dt.timedelta(days=length * i)
+        if s0.isoformat() < data_start:
+            break
+        out.append((s0.isoformat(), (s0 + dt.timedelta(days=length - 1)).isoformat()))
+    return out
+
+
+def analyze(rows, today, month=None, start=None, end=None, before=None, label=None):
+    """rows: every enriched row. With `month`, the month looked at (the current one only up to today). With start and end,
+    any stretch, compared with the stretch before it and with earlier stretches of the same length."""
     current = today[:7]
-    month = month or current
     counted = [a for a in rows if a.get("kind") and a.get("usd") is not None and a.get("date")]
     first_month = min([a["date"][:7] for a in counted] or [current])
+    data_start = min([a["date"] for a in counted] or [today])
     series = months_series(counted, first_month, current)
     done = [m for m in series if m["month"] < current]
     spends = [m["spent"] for m in done[-HISTORY:]]
@@ -302,25 +321,39 @@ def analyze(rows, today, month=None):
     if balance and usual and usual["usd"] > 0:
         runway = {"long": round(balance["usd"] / usual["usd"], 1), "short": round(balance["usd"] / usual["high"], 1) if usual["high"] > 0 else None,
                   "balance": balance["usd"], "complete": balance["complete"], "date": balance["date"]}
-    cut = int(today[8:10]) if month == current else month_days(month)
-    previous = wise_sync.month_add(month, -1)
-    prior_cut = min(cut, month_days(previous))
-    earlier = [m["month"] for m in series if m["month"] < month][-HISTORY:]
-    this = [a for a in counted if a["date"][:7] == month and within_day(a, cut)]
-    before = [a for a in counted if a["date"][:7] == previous and within_day(a, prior_cut)]
-    gaps = variances(counted, month, cut, earlier, this)
-    last_gaps = {v["name"]: spent_total(a for a in before if a["category"] == v["name"]) for v in gaps}
-    same_time = [sum(spent_amount(a) for a in counted if a["date"][:7] == m and within_day(a, cut)) for m in earlier]
+    this_month_cut = int(today[8:10])
+    current_windows = month_windows([m["month"] for m in series if m["month"] < current][-HISTORY:], this_month_cut)
+    current_rows = [a for a in counted if a["date"][:7] == current and int(a["date"][8:10]) <= this_month_cut]
+    current_gaps = variances(counted, current_rows, current_windows)
+    is_month = start is None
+    if is_month:
+        month = month or current
+        cut = this_month_cut if month == current else month_days(month)
+        previous = wise_sync.month_add(month, -1)
+        prior_cut = min(cut, month_days(previous))
+        start, end = f"{month}-01", f"{month}-{cut:02d}"
+        window_before = (f"{previous}-01", f"{previous}-{prior_cut:02d}")
+        windows = month_windows([m["month"] for m in series if m["month"] < month][-HISTORY:], cut)
+        scope = ("今月" + f"1日〜{cut}日") if month == current else f"{int(month[:4])}年{int(month[5:7])}月"
+    else:
+        month, cut, prior_cut = None, None, None
+        window_before = tuple(d.isoformat() if hasattr(d, "isoformat") else d for d in before) if before else None
+        windows = same_length_windows(start, end, data_start)
+        scope = label or f"{start} 〜 {end}"
+    this = [a for a in counted if in_window(a, (start, end))]
+    prior = [a for a in counted if window_before and in_window(a, window_before)]
+    gaps = variances(counted, this, windows)
     so_far = spent_total(this)
+    same_time = [sum(spent_amount(a) for a in counted if in_window(a, w)) for w in windows]
     categories = []
     for v in gaps:
-        prev = last_gaps[v["name"]]
-        total = so_far or 0
-        categories.append({**v, "last": prev, "change": round(v["usd"] - prev, 2), "share": round(v["usd"] / total * 100, 1) if total > 0 else 0})
+        prev = spent_total(a for a in prior if a["category"] == v["name"])
+        categories.append({**v, "last": prev, "change": round(v["usd"] - prev, 2), "share": round(v["usd"] / so_far * 100, 1) if so_far > 0 else 0})
     focus = []
+    group_gaps = variances(counted, this, windows, "group")
     for name in ("交通費", "飲食費"):
-        v = next((g for g in variances(counted, month, cut, earlier, this, "group") if g["name"] == name), {"name": name, "usd": 0, "usual": 0, "gap": 0})
-        focus.append({**v, "last": spent_total(a for a in before if a["group"] == name), "share": round(v["usd"] / so_far * 100, 1) if so_far > 0 else 0})
+        v = next((g for g in group_gaps if g["name"] == name), {"name": name, "usd": 0, "usual": 0, "gap": 0})
+        focus.append({**v, "last": spent_total(a for a in prior if a["group"] == name), "share": round(v["usd"] / so_far * 100, 1) if so_far > 0 else 0})
     moved = [a for a in counted if a["date"] and not a.get("direct")]  # paid straight from a bank: the balance never moved
     money_in, money_out = round(sum(a["usd"] for a in moved if a["flow"] == "in"), 2), round(sum(a["usd"] for a in moved if a["flow"] == "out"), 2)
     bridge = {"in": money_in, "out": money_out, "balance": balance["usd"], "gap": round(balance["usd"] - (money_in - money_out), 2)} if balance else None
@@ -329,15 +362,27 @@ def analyze(rows, today, month=None):
     on_day = lambda d: spent_total(a for a in counted if a["date"] == d)
     nets = [m["net"] for m in done[-3:]]
     charges = monthly_charges(counted, today)
-    start, end = f"{month}-01", f"{month}-{month_days(month):02d}"
+    income = round(sum(a["usd"] for a in this if a["kind"] == "income"), 2)
+    span_months = max(1, (int(end[:4]) - int(start[:4])) * 12 + int(end[5:7]) - int(start[5:7]) + 1)
+    shown = series[-HISTORY - 1:] if is_month or span_months < 2 else [m for m in series if start[:7] <= m["month"] <= end[:7]]
+    last_day = min(end, today)
+    day_start = max(start, (dt.date.fromisoformat(last_day) - dt.timedelta(days=MAX_DAY_BARS - 1)).isoformat())
+    cur_totals = {}
+    for a in counted:
+        amount = spent_amount(a)
+        if amount and a.get("currency"):
+            cur_totals[a["currency"]] = cur_totals.get(a["currency"], 0) + amount
+    largest_move = next((v for v in gaps if v["gap"] and v["name"] != UNSORTED), None)
     return {
-        "today": today, "month": month, "cut": cut, "isCurrent": month == current, "months": series[-HISTORY - 1:], "monthsAll": len(done),
-        "usual": usual, "runway": runway, "soFar": so_far, "sameTime": round(statistics.median(same_time), 2) if same_time else None, "lastSame": spent_total(before), "lastCut": prior_cut,
-        "netNow": next((m["net"] for m in series if m["month"] == month), 0), "netUsual": round(statistics.median(nets), 2) if nets else None,
+        "today": today, "month": month, "cut": cut, "isCurrent": month == current, "isMonth": is_month, "scope": scope, "start": start, "end": end,
+        "before": window_before, "windows": len(windows), "months": shown, "monthsAll": len(done),
+        "usual": usual, "runway": runway, "soFar": so_far, "sameTime": round(statistics.median(same_time), 2) if same_time else None, "lastSame": spent_total(prior), "lastCut": prior_cut,
+        "income": income, "netNow": round(income - so_far, 2), "netUsual": round(statistics.median(nets), 2) if nets else None, "perMonth": round(so_far / span_months, 2), "spanMonths": span_months,
         "yesterday": {"date": day_of(1), "usd": on_day(day_of(1)), "before": on_day(day_of(2)), "lastWeek": on_day(day_of(8))},
-        "days": days_series(counted, start, min(end, today)), "groups": by_group_month(counted), "groupOrder": GROUP_ORDER,
-        "categories": categories, "focus": focus, "bridge": bridge, "outliers": outliers(counted, month, cut, earlier), "fx": fx_effect(counted, month, previous, cut),
-        "charges": charges, "next": next_payments(charges, today), "action": week_action(charges, gaps, today),
+        "days": days_series(counted, day_start, last_day), "daysCut": day_start > start, "groups": by_group_month(counted), "groupOrder": GROUP_ORDER,
+        "categories": categories, "focus": focus, "bridge": bridge, "outliers": outliers(counted, this, windows), "fx": fx_effect(this, prior), "moved": largest_move,
+        "currencyOrder": sorted(cur_totals, key=lambda c: -cur_totals[c]),
+        "charges": charges, "next": next_payments(charges, today), "action": week_action(charges, current_gaps, today),
     }
 
 
@@ -378,9 +423,15 @@ def check_advice(item, allowed):
 def facts():
     """What /money-review reads. The row list stays out: shop names only as the page itself lists them."""
     import wise_report
-    data = wise_report.view(period="month")
-    return {"analysis": data["analysis"], "kinds": data["kinds"], "accounts": data["accounts"], "currencies": data["currencies"], "largest": data["largest"],
-            "balances": data["balances"]}
+    out = {}
+    for name, period in (("month", "month"), ("threeMonths", "3m"), ("sixMonths", "6m"), ("all", "all")):
+        data = wise_report.view(period=period)
+        z = data["analysis"]
+        out[name] = {"scope": z["scope"], "start": z["start"], "end": z["end"], "spent": z["soFar"], "income": z["income"], "net": z["netNow"], "perMonth": z["perMonth"], "sameLengthUsual": z["sameTime"], "before": z["lastSame"],
+                     "categories": z["categories"], "focus": z["focus"], "outliers": z["outliers"], "fx": z["fx"], "kinds": data["kinds"], "accounts": data["accounts"], "currencies": data["currencies"], "largest": data["largest"]}
+    now = wise_report.view(period="month")
+    z = now["analysis"]
+    return {"periods": out, "usual": z["usual"], "runway": z["runway"], "bridge": z["bridge"], "charges": z["charges"], "action": z["action"], "balances": now["balances"], "budget": now["budget"], "saving": now["saving"]}
 
 
 def unknown_titles():

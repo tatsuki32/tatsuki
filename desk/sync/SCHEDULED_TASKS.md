@@ -30,6 +30,7 @@ python3 desk/write_feed.py gtasks <raw.json>                 # Google タスク�
 | `desk-claude-daily-report` | 毎日 7:40 | 前日の Claude の作業レポート | `reports` |
 | `desk-money-upcoming` | 毎日 7:50 | カレンダーと予約メールから今後の支出（読むだけ。本文は残さない） | `desk/data/wise/upcoming.json` |
 | `desk-money-tips` | 毎日 8:20 | ライフプランや世界の暮らしの豆知識を出典つきで1件 | `desk/data/wise/tips.json` |
+| `desk-money-learn` | 毎日 8:35 | FP の6分野と金融機関のレポートから解説とクイズを1本 | `desk/data/wise/lessons.json` |
 | `desk-money-review` | 3日ごと 8:10 | お金の助言と、新しい明細の種類・分類の案（`/money-review`） | `desk/data/wise/`（`advice.json`・`guess.json`） |
 | `desk-sunday-mirror` | 日曜 17:08 | 日曜の鏡 | `memos` |
 

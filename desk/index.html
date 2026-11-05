@@ -245,7 +245,7 @@ details.draft .sent-as summary{cursor:pointer;display:block;padding:var(--s2) 0;
 
 /* ---------- tasks: three columns, no box around a column (space separates them) ---------- */
 .board{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--s4);align-items:start}
-.col{border-radius:var(--r);display:grid;gap:var(--s2);align-content:start;min-height:140px;padding:var(--s1);margin:calc(-1 * var(--s1));transition:background .15s}
+.col{border-radius:var(--r);display:grid;gap:var(--s3);align-content:start;min-height:140px;padding:var(--s1);margin:calc(-1 * var(--s1));transition:background .15s}
 .col.over{background:var(--accent-soft)}
 .col>h2{display:flex;align-items:baseline;gap:var(--s2);padding:0 var(--s1) var(--s1)}
 .col .hint{margin:0 var(--s1);font-size:var(--t1);color:var(--muted)}
@@ -256,7 +256,18 @@ details.draft .sent-as summary{cursor:pointer;display:block;padding:var(--s2) 0;
 .task .tm{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:var(--t1);color:var(--muted);min-width:0}
 .task .tm .from{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:14em}
 .task .tm a{color:var(--ink-2);text-decoration:none}
-.task select{margin-left:auto}
+.task .tsel{margin-left:auto;display:flex;gap:var(--s1);flex:none;max-width:100%}
+.task select{min-width:0;max-width:100%}
+.task .dl.hot,.task .dl.over{color:var(--ink-2);background:var(--surface-2);font-weight:400} /* 今日 already says it: no red on the board */
+.taskbar{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s2) var(--s4)}
+.tsort{display:flex;align-items:center;gap:var(--s2);font-size:var(--t1);color:var(--muted)}
+.tgroup{display:grid;gap:var(--s2)}
+.tghead{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s1) var(--s3)}
+.tg{background:none;border:0;padding:0;min-height:32px;display:flex;align-items:baseline;gap:var(--s2);font:inherit;font-size:var(--t2);font-weight:700;color:var(--ink);cursor:pointer;font-variant-numeric:tabular-nums}
+.tg::before{content:"▸";color:var(--muted);font-weight:400}
+.tg[aria-expanded="true"]::before{content:"▾"}
+.tg .count{font-size:var(--t1);font-weight:400;color:var(--muted)}
+.chip.aiplan{min-height:32px;padding:0 var(--s2);font-size:var(--t1)}
 .colTabs{display:none}
 .shelfnav{display:flex;flex-wrap:wrap;gap:var(--s3)}
 .shelfbtn{background:none;border:0;padding:0;min-height:32px;font-size:var(--t1);color:var(--muted);cursor:pointer;font-variant-numeric:tabular-nums}
@@ -387,7 +398,32 @@ button.mhbar[data-mdrillcat]{cursor:pointer}
 .msearch{display:flex;gap:var(--s2);flex-wrap:wrap}
 .msearch input{flex:1 1 12em;min-height:32px;min-width:0;background:var(--surface);color:var(--ink);border:1px solid var(--line-2);border-radius:var(--r-s);padding:0 var(--s2);font-size:var(--t2)}
 .msearch select{min-height:32px;background:var(--surface);color:var(--ink);border:1px solid var(--line-2);border-radius:var(--r-s)}
-.mpanel>.btn{justify-self:start}
+.mpanel>.btn,.mstart{justify-self:start}
+.mgroups{margin-bottom:calc(var(--s2) * -1)}
+.mdonut{display:flex;flex-wrap:wrap;gap:var(--s3);align-items:center}
+.mdonutl{flex:1 1 14em;display:grid;gap:var(--s1);min-width:0}
+.mrow0{display:flex;justify-content:space-between;gap:var(--s2);font-size:var(--t2)}
+.mrow0 i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:var(--s1)}
+.mrow0 .amt{font-variant-numeric:tabular-nums;white-space:nowrap}
+.mdonutn{font-size:var(--t3);font-weight:700;fill:var(--ink)}
+.mhit2{cursor:default}
+.mform0{padding:0}
+.mfull2{flex:1 1 100%}
+.mcatb{display:flex;flex-wrap:wrap;gap:var(--s2);align-items:flex-end}
+.mcatb label{display:grid;gap:var(--s1);font-size:var(--t1);color:var(--muted)}
+.mcatb input,.mcatb select,.mform input:not([type=checkbox]),.mtripitems input{min-height:32px;background:var(--surface);color:var(--ink);border:1px solid var(--line-2);border-radius:var(--r-s);padding:0 var(--s2);font-size:var(--t2)}
+.mcatb input{width:100px}
+.mtripitems{width:100%;border-collapse:collapse}
+.mtripitems th{text-align:left;font-size:var(--t1);color:var(--muted);font-weight:400}
+.mtripitems td{padding:2px var(--s1) 2px 0}
+.mtripitems input{width:100%;min-width:0}
+.msteps{margin:0;padding-left:var(--s4);display:grid;gap:var(--s1);font-size:var(--t2);max-width:40em}
+.mltitle{margin:0;font-size:var(--t4)}
+.mlesson1{gap:var(--s2)}
+.mlesson1 p{margin:0}
+.mquiz{display:grid;gap:var(--s2);margin-top:var(--s2);padding-top:var(--s3);border-top:1px solid var(--line);width:100%}
+.mquiz p{margin:0}
+.mquizc{display:flex;flex-wrap:wrap;gap:var(--s2)}
 .mfix summary{cursor:pointer;font-size:var(--t1);color:var(--muted)}
 .mpicks{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:var(--s2);align-items:center;margin-top:var(--s1)}
 .mpicks .mcat{margin:0;grid-column:auto}
@@ -510,7 +546,7 @@ h1 .inedit{font-size:var(--t4);font-weight:700}
 .pop .hint{font-size:var(--t1);color:var(--muted);margin:0}
 .pop textarea{width:100%;min-height:140px;resize:vertical;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:var(--r);padding:12px;font:inherit;font-size:var(--t3);line-height:1.6}
 .pop textarea:focus,.pop input:focus,.pop select:focus{outline:none;border-color:var(--accent)}
-.pop input[type=text],.pop input[type=password],.pop input[type=datetime-local],.pop select{width:100%;min-height:44px;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:0 12px;font:inherit;font-size:var(--t3)}
+.pop input[type=text],.pop input[type=number],.pop input[type=password],.pop input[type=datetime-local],.pop select{width:100%;min-height:44px;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:0 12px;font:inherit;font-size:var(--t3)}
 .pop .tnote{min-height:80px}
 .pop .pbody{min-height:min(52vh,420px);font-size:var(--t2);line-height:1.6}
 .seg{display:grid;grid-template-columns:1fr 1fr;gap:var(--s2)}
@@ -841,7 +877,7 @@ const LINKED=new Set(["mail","calendar","gtasks","claude","daily"]); // these co
 const tLabel=k=>(TSTATUS.find(s=>s[0]===k)||[k,k])[1];
 const mailTaskId=uid=>"t"+dueDocId(uid);
 const newTaskId=()=>"t"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
-const taskRecord=t=>({id:t.id,title:t.title,status:t.status||"notyet",source:t.source||"manual",sourceRef:t.sourceRef||"",due:LINKED.has(t.source)?null:(t.due??null),note:t.note||"",createdAt:t.createdAt||Date.now(),deleted:!!t.deleted});
+const taskRecord=t=>({id:t.id,title:t.title,status:t.status||"notyet",source:t.source||"manual",sourceRef:t.sourceRef||"",due:LINKED.has(t.source)?null:(t.due??null),note:t.note||"",planDate:t.planDate||null,planAi:t.planAi||null,estMin:t.estMin??null,estAi:t.estAi??null,createdAt:t.createdAt||Date.now(),deleted:!!t.deleted});
 const byDeadline=(a,b)=>(a.deadline??Infinity)-(b.deadline??Infinity)||(b.createdAt||0)-(a.createdAt||0);
 const withDeadline=t=>({...t,deadline:t.due!=null?t.due-LEAD:null});
 /* Calendar events whose title starts with a mark become tasks: "TODO 書類を送る", "【やる】…", "☑ …" */
@@ -909,26 +945,61 @@ async function memoToTask(m){
   try{await store.putTask({id:newTaskId(),title,note:m.text===title?"":m.text,status:"notyet",source:"memo",sourceRef:m.id,createdAt:Date.now()});
     await store.patchMemo(m.id,{done:true});toast("🗂️ タスクにしました")}catch(e){toast("保存できませんでした。もう一度お試しください")}
 }
-function taskCard(t){
-  const [ic,src]=TSRC[t.source]||TSRC.manual, open=TOPEN.has(t.status);
+/* When a task happens. A choice is kept as the last day of its period, so 今月 slides into 今週 and 今日 by itself; a passed date lands on 今日. */
+const ymd=(y,m,d)=>new Date(Date.UTC(y,m,d)).toISOString().slice(0,10);
+const dayParts=today=>{const [y,m,d]=today.split("-").map(Number);return {y,m,d,dow:(new Date(Date.UTC(y,m-1,d)).getUTCDay()+6)%7}}; // Monday first
+function tPeriods(today=hcmcDate()){
+  const {y,m,d,dow}=dayParts(today), out=[["today","今日",today],["week","今週",ymd(y,m-1,d+6-dow)],["month","今月",ymd(y,m,0)],["next","来月",ymd(y,m+1,0)],["next2","再来月",ymd(y,m+2,0)]];
+  for(let yr=y;yr<=y+2;yr++) if(yr+"-12-31">out[4][2]) out.push(["y"+yr,yr+"年",yr+"-12-31"]);
+  return [...out,["later","もっと先","9999-12-31"]];
+}
+const tPeriodOf=(date,ps)=>ps.find(p=>date<=p[2]);
+const tWhen=t=>t.planDate||(t.due!=null?hcmcDay(t.due):null);
+function doneGroup(t,today=hcmcDate()){const at=hcmcDay(t.updatedAt||t.createdAt||0),{y,m,d,dow}=dayParts(today);
+  return at>=today?"today":at>=ymd(y,m-1,d-dow)?"week":at>=ymd(y,m-1,1)?"month":"older"}
+const estOf=t=>t.estMin??t.estAi??null;
+const fmtMin=n=>n<60?n+"分":Math.floor(n/60)+"時間"+(n%60?n%60+"分":"");
+const TSORT=[["due","期限順"],["dueRev","期限の逆順"],["new","新着順"],["old","作成が古い順"],["long","AIの見積もりが長い順"],["short","AIの見積もりが短い順"]];
+const TOPENDEF=new Set(["notyet:today","notyet:none","doing:today","doing:none","done:today"]);
+try{S.taskSort=localStorage.getItem("desk-task-sort")||"due";S.taskOpen=JSON.parse(localStorage.getItem("desk-task-open")||"{}")||{}}catch(e){S.taskSort="due";S.taskOpen={}}
+function taskCmp(k,done){
+  const byNew=(a,b)=>(b.createdAt||0)-(a.createdAt||0);
+  const blanksLast=(f,dir)=>(a,b)=>{const x=f(a),y=f(b);return x==null?(y==null?byNew(a,b):1):y==null?-1:dir*(x-y)||byNew(a,b)};
+  return k==="dueRev"?blanksLast(t=>t.deadline,-1):k==="new"?byNew:k==="old"?(a,b)=>byNew(b,a):k==="long"?blanksLast(estOf,-1):k==="short"?blanksLast(estOf,1)
+    :done?(a,b)=>(b.updatedAt||0)-(a.updatedAt||0):byDeadline; // 期限順 on 完了: the last finished first, as before
+}
+function planSel(t,ps){const cur=t.planDate?tPeriodOf(t.planDate,ps)[0]:"";
+  return `<option value="">${t.due!=null?"期日どおり":"未分類"}</option>${ps.map(([k,l])=>`<option value="${k}" ${k===cur?"selected":""}>${l}</option>`).join("")}`}
+async function setTaskPlan(id,key){const t=findTask(id);if(!t)return;const p=tPeriods().find(x=>x[0]===key);
+  try{await store.putTask({...t,planDate:p?p[2]:null});toast(`🗂️ ${p?p[1]:"未分類"} にしました`)}catch(e){toast("保存できませんでした。もう一度お試しください")}}
+const aiPlanOf=t=>!t.planDate&&t.due==null&&t.planAi?t.planAi:null;
+function taskCard(t,ps){
+  const [ic,src]=TSRC[t.source]||TSRC.manual, open=TOPEN.has(t.status), est=estOf(t), ai=open&&aiPlanOf(t);
   return `<article class="task ${open?"":"closed"}" draggable="true" data-task="${esc(t.id)}">
     <button class="tt" data-topen="${esc(t.id)}">${esc(t.title)}</button>
-    <div class="tm">${t.url&&okUrl(t.url)?`<a href="${esc(t.url)}" target="_blank" rel="noopener" title="${src}で開く" aria-label="${src}で開く">${ic}</a>`:`<span title="${src}" aria-label="${src}">${ic}</span>`}${t.mail?`<span class="from">${esc(t.mail.sub)}</span>`:t.due!=null?`<span>期日 ${esc(fmtDue(t.due))}</span>`:""}${open&&t.deadline!=null?dlChip(t):""}
-      <select data-tstatus="${esc(t.id)}" aria-label="ステータス">${TSTATUS.map(([k,l])=>`<option value="${k}" ${k===t.status?"selected":""}>${l}</option>`).join("")}</select></div>
+    <div class="tm">${t.url&&okUrl(t.url)?`<a href="${esc(t.url)}" target="_blank" rel="noopener" title="${src}で開く" aria-label="${src}で開く">${ic}</a>`:`<span title="${src}" aria-label="${src}">${ic}</span>`}${t.mail?`<span class="from">${esc(t.mail.sub)}</span>`:t.due!=null?`<span>期日 ${esc(fmtDue(t.due))}</span>`:""}${open&&t.deadline!=null?dlChip(t):""}${open&&est!=null?`<span>${t.estMin!=null?"":"目安 "}${fmtMin(est)}</span>`:""}${ai?`<button class="chip aiplan" data-taiplan="${esc(t.id)}" title="Claude の案。押すと決まります">案：${tPeriodOf(ai,ps)[1]}</button>`:""}
+      <span class="tsel">${open?`<select data-tplan="${esc(t.id)}" aria-label="いつやる">${planSel(t,ps)}</select>`:""}<select data-tstatus="${esc(t.id)}" aria-label="ステータス">${TSTATUS.map(([k,l])=>`<option value="${k}" ${k===t.status?"selected":""}>${l}</option>`).join("")}</select></span></div>
   </article>`;
 }
+function taskGroups(k,items,ps){
+  const groups=k==="done"?[["today","今日"],["week","今週"],["month","今月"],["older","それより前"]]:[["today","今日"],["none","未分類"],...ps.slice(1).map(p=>[p[0],p[1]])];
+  const keyOf=k==="done"?t=>doneGroup(t):t=>{const w=tWhen(t);return w?tPeriodOf(w,ps)[0]:"none"};
+  const by={};items.forEach(t=>(by[keyOf(t)]||=[]).push(t));
+  return groups.filter(([g])=>by[g]).map(([g,label])=>{const id=k+":"+g, open=S.taskOpen[id]??TOPENDEF.has(id), n=g==="none"?by[g].filter(aiPlanOf).length:0;
+    return `<div class="tgroup"><div class="tghead" data-noauto><button class="tg" data-tgroup="${id}" aria-expanded="${open}">${label}<span class="count">${by[g].length}</span></button>${n?`<button class="shelfbtn" data-tadopt="${k}">案をまとめて採用（${n}件）</button>`:""}</div>${open?by[g].map(t=>taskCard(t,ps)).join(""):""}</div>`}).join("");
+}
 function tasks(){
-  const col=k=>S.board.filter(t=>t.status===k).sort(k==="done"?(a,b)=>(b.updatedAt||0)-(a.updatedAt||0):byDeadline);
+  const ps=tPeriods(), col=k=>S.board.filter(t=>t.status===k).sort(taskCmp(S.taskSort,k==="done"));
   const shelf=k=>S.board.filter(t=>t.status===k).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
   const hint={notyet:"新しいタスクと対応が必要なメール",doing:"ここにドラッグして着手",done:"終わったらここへ"};
   return `
   <header class="head"><div><p class="eyebrow">タスク</p><h1>やること</h1></div><div class="row"><button class="btn primary" id="newTask">＋ 新しいタスク <kbd>T</kbd></button></div></header>
   ${notesHere("tasks")}
-  <nav class="shelfnav" aria-label="止めたタスク">${TSHELF.map(k=>`<button class="shelfbtn" data-tshelf="${k}" aria-expanded="${S.taskShelf===k}">${tLabel(k)} ${shelf(k).length}</button>`).join("")}</nav>
-  ${S.taskShelf?`<section class="shelf" aria-label="${tLabel(S.taskShelf)}">${shelf(S.taskShelf).map(taskCard).join("")||`<p class="sub">${tLabel(S.taskShelf)}のタスクはありません</p>`}</section>`:""}
+  <div class="taskbar"><label class="tsort">並び替え<select id="tSort">${TSORT.map(([k,l])=>`<option value="${k}" ${k===S.taskSort?"selected":""}>${l}</option>`).join("")}</select></label><nav class="shelfnav" aria-label="止めたタスク">${TSHELF.map(k=>`<button class="shelfbtn" data-tshelf="${k}" aria-expanded="${S.taskShelf===k}">${tLabel(k)} ${shelf(k).length}</button>`).join("")}</nav></div>
+  ${S.taskShelf?`<section class="shelf" aria-label="${tLabel(S.taskShelf)}">${shelf(S.taskShelf).map(t=>taskCard(t,ps)).join("")||`<p class="sub">${tLabel(S.taskShelf)}のタスクはありません</p>`}</section>`:""}
   <div class="chips colTabs" role="group" aria-label="表示する列">${TCOLS.map(k=>`<button class="chip" data-tcol="${k}" aria-pressed="${S.taskCol===k}">${tLabel(k)} ${col(k).length}</button>`).join("")}</div>
   <div class="board">${TCOLS.map(k=>{const items=col(k);return `<section class="col ${S.taskCol===k?"show":""}" data-col="${k}" aria-label="${tLabel(k)}">
-    <h2>${tLabel(k)}<span class="count">${items.length}</span></h2>${items.map(taskCard).join("")||`<p class="hint">${hint[k]}</p>`}</section>`}).join("")}</div>
+    <h2>${tLabel(k)}<span class="count">${items.length}</span></h2>${taskGroups(k,items,ps)||`<p class="hint">${hint[k]}</p>`}</section>`}).join("")}</div>
   ${S.local&&!LOCALAPI?'<p class="sub">ファイルとして開いているので、タスクはこのブラウザにだけ保存されます。「Start Desk」を実行すると Mac に保存されます。</p>':""}`;
 }
 /* Home: one to-do list = everything in progress, then everything Not yet (mail included), each by nearest due date. */
@@ -1152,12 +1223,13 @@ function openTask(id){
     ${t?.source==="daily"&&t.sourceRef==="jobs"?jobsBlock():isMail?mailBlock(t)
       :isLinked?`<p class="hint">${TSRC[t.source][0]} ${TSRC[t.source][1]}${t.due!=null?" · 期日 "+esc(fmtDue(t.due)):""} · 期日とタイトルは元の場所で変更${okUrl(t.url)?` · <a href="${esc(t.url)}" target="_blank" rel="noopener">開く ↗</a>`:""}${t.source==="gtasks"?"<br>「完了」にすると、次の更新で Google タスク側も完了になります。":""}</p>`
       :`<div class="tduein"><div><label class="sub" for="tDue">期日（任意）</label><input type="date" id="tDue" value="${dueParts(t?.due)[0]}"></div><div><label class="sub" for="tDueT">時刻（任意）</label><input type="time" id="tDueT" value="${dueParts(t?.due)[1]}"></div></div><p class="hint" id="tDueHint"></p>`}
+    <div class="tduein"><div><label class="sub" for="tPlan">いつやる</label><select id="tPlan">${planSel(t||{},tPeriods())}</select></div><div><label class="sub" for="tEst">かかる時間（分）</label><input type="number" id="tEst" min="1" step="5" inputmode="numeric" value="${t?.estMin??""}" placeholder="${t?.estAi?"目安 "+t.estAi:""}"></div></div>
     <label class="sub" for="tStatus">ステータス</label><select id="tStatus">${TSTATUS.map(([k,l])=>`<option value="${k}" ${k===(t?.status||"notyet")?"selected":""}>${l}</option>`).join("")}</select>
     <label class="sub" for="tNote">メモ</label><textarea id="tNote" class="tnote" placeholder="必要なら詳細を。[言葉] でノートにつながります">${esc(t?.note||"")}</textarea>${t&&linksIn(t.note).length?`<p class="hint">🔗 ${linksIn(t.note).map(x=>wlink(x)).join(" ")}</p>`:""}
     <div class="row"><button class="btn primary" id="tSave">保存 <kbd>⌘/Ctrl + Enter</kbd></button><button class="btn" id="tCancel">キャンセル</button>${t&&!isLinked?`<button class="btn" id="tDel" style="margin-left:auto;color:var(--red)">削除</button>`:""}</div>
   </div></div>`;
   const ti=$("#tTitle");ti.focus();ti.setSelectionRange(ti.value.length,ti.value.length);
-  const close=()=>{$("#modal").innerHTML=""};
+  const close=()=>{$("#modal").innerHTML=""}, plan0=$("#tPlan").value;
   wireJobs(t);wireMail(t,close);
   const dueIn=$("#tDue"), dueT=$("#tDueT"), dueHint=()=>{$("#tDueHint").textContent=dueT.value?"3日前の同じ時刻にカレンダーへ入ります":""};
   if(dueT){dueT.oninput=dueHint;dueHint()}
@@ -1165,8 +1237,9 @@ function openTask(id){
     if(dueT&&dueT.value&&!dueIn.value){dueIn.focus();toast("日付も入れてください");return}
     const due=dueIn?dueFromParts(dueIn.value,dueT.value):null;
     const base=t||{id:newTaskId(),source:"manual",createdAt:Date.now()};
-    const st=$("#tStatus").value;
-    try{await store.putTask({...base,title,due:isNaN(due)?null:due,status:st,note:$("#tNote").value.trim()});await taskWin({...base,title},st);close();toast(st==="done"&&base.status!=="done"?"✨ 完了。できたことに入れました":t?"🗂️ 保存しました":"🗂️ タスクを追加しました")}
+    const st=$("#tStatus").value, plan=$("#tPlan").value, est=parseInt($("#tEst").value,10);
+    const planDate=plan===plan0?base.planDate||null:tPeriods().find(p=>p[0]===plan)?.[2]||null; // untouched: keeps the date it had
+    try{await store.putTask({...base,title,due:isNaN(due)?null:due,status:st,note:$("#tNote").value.trim(),planDate,estMin:est>0?est:null});await taskWin({...base,title},st);close();toast(st==="done"&&base.status!=="done"?"✨ 完了。できたことに入れました":t?"🗂️ 保存しました":"🗂️ タスクを追加しました")}
     catch(e){toast("保存できませんでした。入力はそのまま残っています")}};
   $("#tSave").onclick=save;$("#tCancel").onclick=close;$("#xTask").onclick=close;
   $("#tDel")&&($("#tDel").onclick=async e=>{const b=e.currentTarget;if(!b.dataset.sure){b.dataset.sure="1";b.textContent="本当に削除？";return}
@@ -1916,7 +1989,7 @@ const mhbars=(rows,attr)=>{const top=Math.max(...rows.map(r=>Math.abs(r.usd)),1)
 
 function moneyOverview(d){
   const z=d.analysis,u=z.usual,r=z.runway,y=z.yesterday,st=d.state||{},k=d.kinds;
-  const talk=z.isCurrent?(z.sameTime==null?`今月はここまで ${musd(z.soFar)} USD です。`:`今月はここまで ${musd(z.soFar)} USD で、いつもの同じ時期は ${musd(z.sameTime)} USD です。`):`${monthJa(z.month)}の支出は ${musd(z.soFar)} USD でした。`;
+  const talk=z.isMonth?(z.isCurrent?(z.sameTime==null?`今月はここまで ${musd(z.soFar)} USD です。`:`今月はここまで ${musd(z.soFar)} USD で、いつもの同じ時期は ${musd(z.sameTime)} USD です。`):`${esc(z.scope)}の支出は ${musd(z.soFar)} USD でした。前の月の同じ日数は ${musd(z.lastSame)} USD です。`):z.before?`${esc(z.scope)}の支出は ${musd(z.soFar)} USD で、前の同じ長さの期間は ${musd(z.lastSame)} USD です。`:`${esc(z.scope)}の支出は ${musd(z.soFar)} USD で、月の平均は ${musd(z.perMonth)} USD です。`;
   const big=(label,value,sub)=>`<div class="mbig"><span class="sub">${esc(label)}</span><b>${value}</b>${sub?`<span class="due">${sub}</span>`:""}</div>`;
   const main=`<section class="card mfocus" aria-label="今の状態"><p class="mtalk">${talk}</p><div class="mbigs">${big("いつもの月の支出",u?`${musd(u.usd)}`:"まだありません",u?`USD。直近${u.months}か月の中央値。${mround(u.low)}〜${mround(u.high)}`:"")}${big("収入ゼロで暮らせる月数",r?(r.short!=null?`約${esc(r.short)}〜${esc(r.long)}か月`:`約${esc(r.long)}か月`):"まだ出せません",r?`Wise 内の残高 ${mround(r.balance)} USD で計算。他の口座は入りません`:"")}${big("収益 − 支出",msign(z.netNow),z.netUsual==null?"USD":`USD。直近3か月の中央値 ${msign(z.netUsual)}`)}</div></section>`;
   const dayline=`<p class="mline"><span class="wt">昨日 ${musd(y.usd)} USD</span> <span class="due">一昨日 ${musd(y.before)} · 先週の同じ曜日 ${musd(y.lastWeek)}</span></p>`;
@@ -1948,8 +2021,8 @@ function moneyCharts(d){
   const side=S.moneyAcct||"jp",acct=(d.accounts||{})[side]||[];
   const acctChips=`<div class="chips" role="group" aria-label="科目の名前"><button class="chip" data-macct="jp" aria-pressed="${side==="jp"}">日本の科目</button><button class="chip" data-macct="us" aria-pressed="${side==="us"}">米国の区分</button></div>`;
   const acctBody=acct.length?mhbars(acct.map(a=>({name:a.name,usd:a.usd,note:`${Math.round(a.usd/total*100)}%`}))):`<p class="due">この期間の支出はありません。</p>`;
-  return `${mpanel("月ごとの収益と支出","USD。棒を押すとその月の明細",mlegend([["収益","var(--v3)"],["支出","var(--v7)"]])+flows+flowT)}
-  ${mpanel("日ごとの支出",`${esc(monthJa(z.month))}。棒を押すとその日の明細`,daily+dailyT)}
+  return `${moneyDonuts(d)}${mpanel("月ごとの収益と支出","USD。棒を押すとその月の明細",mlegend([["収益","var(--v3)"],["支出","var(--v7)"]])+flows+flowT)}
+  ${mpanel("日ごとの支出",`${esc(z.scope)}${z.daysCut?"（直近92日）":""}。棒を押すとその日の明細`,daily+dailyT)}
   ${mpanel("分類ごとの月の推移","USD",groupChips+(pick==="all"?mlegend(order.map(n=>[n,MCOLOR[n]])):"")+byGroup+byGroupT)}
   ${trend?mpanel("支出の推移","線は完了した月の中央値。明るい棒は途中の月",trend):""}
   ${mpanel("この期間の大きい順",esc(d.label),large.length?mhbars(large,r=>r.name==="その他"?"":`data-mdrillcat="${esc(r.name)}"`):`<p class="due">この期間の支出はありません。</p>`)}
@@ -1957,18 +2030,19 @@ function moneyCharts(d){
 }
 function moneyAnalysis(d){
   const z=d.analysis,cats=z.categories,top=Math.max(...cats.map(c=>Math.abs(c.gap)),1);
-  const scope=z.isCurrent?`今月1日〜${z.cut}日`:monthJa(z.month);
-  const pair=(z.focus||[]).map(c=>`<div class="mbig"><span class="sub">${esc(c.name)}</span><b>${musd(c.usd)}</b><span class="due">いつもの同じ時期 ${musd(c.usual)}（差 ${msign(c.gap)}）。先月の同じ日数 ${musd(c.last)}。支出の${c.share}%</span></div>`).join("");
+  const scope=z.scope,lastName=z.isMonth?"先月の同じ日数":"前の同じ長さ",nowName="この期間";
+  const pair=(z.focus||[]).map(c=>`<div class="mbig"><span class="sub">${esc(c.name)}</span><b>${musd(c.usd)}</b><span class="due">${z.windows?`過去の同じ長さの中央値 ${musd(c.usual)}（差 ${msign(c.gap)}）。`:""}${z.before?`${lastName} ${musd(c.last)}。`:""}支出の${c.share}%</span></div>`).join("");
   const focus=mpanel("交通費と飲食費",`${esc(scope)}。USD`,`<div class="mbigs two">${pair}</div>`);
   const gaps=cats.filter(c=>c.gap).slice(0,5);
   const gapBody=gaps.length?`<div class="mgaps">${gaps.map(c=>`<button class="mgap" data-mdrillcat="${esc(c.name)}"><span class="wt">${esc(c.name)}</span><span class="amt">${msign(c.gap)}</span><span class="mgapbar"><i class="${c.gap>0?"up":"down"}" style="width:${Math.abs(c.gap)/top*50}%"></i></span></button>`).join("")}</div>`:`<p class="due">大きな差はありません。</p>`;
-  const compare=mtable(["分類",z.isCurrent?"今月":"この月","先月の同じ日数","差","割合"],cats.filter(c=>c.usd||c.last).map(c=>[esc(c.name),musd(c.usd),musd(c.last),msign(c.change),`${c.share}%`]));
-  const odd=z.outliers.length?mpanel("いつもと違う分類","確かめる目印です。誤りという意味ではありません",z.outliers.map(o=>`<div class="mrow"><span class="wt">${esc(o.name)}</span><span class="amt">${musd(o.usd)}</span><span class="due">いつもの同じ時期 ${musd(o.usual)}</span></div>`).join("")):"";
-  const fx=z.fx.show?mpanel("為替の影響","先月の同じ日数との差を分けたもの",`<p class="wt">使い方の増減 ${msign(z.fx.use)} USD · 為替の増減 ${msign(z.fx.rate)} USD</p><p class="due">店の通貨の金額と、USD に直したときのレートで分けています。</p>`):"";
+  const compare=mtable(["分類",nowName,lastName,"差","割合"],cats.filter(c=>c.usd||c.last).map(c=>[esc(c.name),musd(c.usd),musd(c.last),msign(c.change),`${c.share}%`]));
+  const odd=z.outliers.length?mpanel("いつもと違う分類","確かめる目印です。誤りという意味ではありません",z.outliers.map(o=>`<div class="mrow"><span class="wt">${esc(o.name)}</span><span class="amt">${musd(o.usd)}</span><span class="due">過去の同じ長さの中央値 ${musd(o.usual)}</span></div>`).join("")):"";
+  const fx=z.fx.show?mpanel("為替の影響",`${lastName}との差を分けたもの`,`<p class="wt">使い方の増減 ${msign(z.fx.use)} USD · 為替の増減 ${msign(z.fx.rate)} USD</p><p class="due">店の通貨の金額と、USD に直したときのレートで分けています。</p>`):"";
   const cur=d.currencies.length?mpanel("通貨ごとの支出",esc(d.label),`<div class="mscroll"><table><thead><tr><th>通貨</th><th class="n">店の通貨の額</th><th class="n">USD</th><th class="n">1単位の USD</th></tr></thead><tbody>${d.currencies.map(c=>`<tr><td>${esc(c.currency)}</td><td class="n">${esc(Number(c.value).toLocaleString("en-US"))}</td><td class="n">${musd(c.usd)}</td><td class="n">${c.rate==null?"":esc(c.rate)}</td></tr>`).join("")}</tbody></table></div>`):"";
   const charge=c=>`<div class="mrow"><span class="wt">${esc(c.title)}</span><span class="amt">月 ${musd(c.usd)}</span><span class="due">年 ${musd(c.yearly)} · ${c.months}か月 · 最後 ${esc(c.last)}${c.active?"":" · 止まっています"}${c.reviewed?` · 見直した日 ${esc(c.reviewed)}`:""}</span><button class="btn sm" data-mnotcharge="${esc(c.key)}">毎月の請求ではない</button></div>`;
   const list=mpanel("毎月の請求",`${z.charges.length}件。カードの支払いから見つけた候補です`,z.charges.length?z.charges.map(charge).join(""):`<p class="due">まだ見つかっていません。明細の「毎月の請求にする」で足せます。</p>`);
-  return `${focus}${mpanel("いつもとの差",`${esc(scope)}を、直近${z.usual?z.usual.months:0}か月の同じ時期の中央値と比べます`,gapBody+compare)}${odd}${fx}${cur}${list}`;
+  const avg=mpanel("この期間の平均",esc(scope),`<p class="wt">月あたり ${musd(z.perMonth)} USD · ${z.spanMonths}か月 · 収益 ${musd(z.income)} · 差引 ${msign(z.netNow)}</p>`);
+  return `${avg}${focus}${mpanel("いつもとの差",z.windows?`${esc(scope)}を、過去${z.windows}回の同じ長さの中央値と比べます`:`${esc(scope)}。これより前のデータがないので、比べる相手がありません`,gapBody+compare)}${odd}${fx}${cur}${list}`;
 }
 function moneyAdvice(d){
   const z=d.analysis,a=z.action,lim=d.limits||{},paces=Object.values(d.pace||{}),rc=d.recon,close=d.close||{};
@@ -1984,7 +2058,8 @@ function moneyAdvice(d){
   const limits=mpanel("自分で決めた目安","カードや現金などの支出。USD",`${paces.map(paceRow).join("")}<form class="mform" id="mLimits"><label>1週間<input type="number" min="0" step="any" inputmode="decimal" id="mWeek" value="${lim.week==null?"":esc(lim.week)}"></label><label>1か月<input type="number" min="0" step="any" inputmode="decimal" id="mMonth" value="${lim.month==null?"":esc(lim.month)}"></label><button class="btn sm" type="submit">保存</button></form>`);
   const learn=`<details class="card mmore"><summary>お金の学び ${d.lessons.length}件</summary><div class="mmorein">${d.lessons.map(x=>`<div><h3>${esc(x.title)}</h3><p class="mread">${esc(x.body)}</p><p class="due"><a class="ext" href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.source)} ↗</a>${x.checked?` · ${esc(x.checked)}`:""}</p></div>`).join("")}<p class="due">${esc(d.takeNote)}</p></div></details>`;
   const pastTips=d.tips&&d.tips.length?`<details class="card mmore"><summary>豆知識 ${d.tips.length}件</summary><div class="mmorein">${d.tips.map(x=>`<div><h3>${esc(x.title)}</h3><p class="mread">${esc(x.body)}</p><p class="due">${esc(x.date)} · <a class="ext" href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.source)}（${esc(x.year)}年）↗</a></p></div>`).join("")}</div></details>`:"";
-  return `${one}${aiPanel}${closing}${limits}${learn}${pastTips}<p class="due">自分では止められないと感じるときは、信頼できる人、FP、医療機関に相談する方法もあります。</p>`;
+  const movedLine=z.moved?`<section class="card mact"><span class="sub">${esc(z.scope)}で一番動いた分類</span><p class="wt">${esc(z.moved.name)} は ${musd(z.moved.usd)} USD で、過去の同じ長さの中央値との差は ${msign(z.moved.gap)} USD です。</p><button class="btn sm" data-mdrillcat="${esc(z.moved.name)}">明細を見る</button></section>`:"";
+  return `${one}${movedLine}${aiPanel}${closing}${limits}${learn}${pastTips}<p class="due">自分では止められないと感じるときは、信頼できる人、FP、医療機関に相談する方法もあります。</p>`;
 }
 function moneyDetail(d){
   const drill=S.moneyDrill,flt=S.moneyFilter||"all",q=(S.moneySearch||"").toLowerCase(),cur=S.moneyCur||"";
@@ -2009,6 +2084,96 @@ function moneyDetail(d){
   const t=d.kinds,totals=`<p class="due">${Object.entries(d.kindNames).filter(([k])=>t[k]&&t[k].count).map(([k,n])=>`${esc(n)} ${musd(t[k].usd)}（${t[k].count}件）`).join(" · ")}</p>`;
   return head+totals+list;
 }
+const MGROUPS=[["see","見る",[["overview","概要"],["charts","グラフ"],["analysis","分析"],["detail","明細"],["world","世界"]]],["decide","決める",[["budget","予算"],["trips","旅の計画"],["saving","貯金"]]],["learn","学ぶ",[["advice","助言"],["sim","シミュレーション"],["lesson","毎日の学び"]]]];
+const mgroupOf=tab=>MGROUPS.find(g=>g[2].some(t=>t[0]===tab))||MGROUPS[0];
+function mdonut(rows,label){
+  const total=rows.reduce((n,r)=>n+Math.max(r.v,0),0);
+  if(total<=0)return `<p class="due">この期間の支出はありません。</p>`;
+  const R=62,r=40,C=72;let a=-Math.PI/2;
+  const arc=x=>{const sweep=Math.max(x.v,0)/total*Math.PI*2;if(sweep<=0)return "";const gap=rows.length>1?.02:0,a0=a+gap,a1=a+sweep-gap;a+=sweep;const big=a1-a0>Math.PI?1:0,p=(rad,th)=>`${(C+rad*Math.cos(th)).toFixed(2)} ${(C+rad*Math.sin(th)).toFixed(2)}`;const whole=sweep>=Math.PI*2-.001;return whole?`<circle cx="${C}" cy="${C}" r="${(R+r)/2}" fill="none" stroke="${x.c}" stroke-width="${R-r}" data-tip="${esc(x.name)} 100%"/>`:`<path d="M${p(R,a0)}A${R} ${R} 0 ${big} 1 ${p(R,a1)}L${p(r,a1)}A${r} ${r} 0 ${big} 0 ${p(r,a0)}Z" fill="${x.c}" class="mhit2" data-tip="${esc(x.name)} ${musd(x.v)} USD · ${Math.round(x.v/total*100)}%" ${x.attrs||""}/>`};
+  return `<div class="mdonut"><svg viewBox="0 0 144 144" width="144" height="144" role="img" aria-label="${esc(label)}">${rows.map(arc).join("")}<text x="${C}" y="${C+5}" text-anchor="middle" class="mdonutn">${mround(total)}</text></svg><div class="mdonutl">${rows.map(x=>`<div class="mrow0"><span><i style="background:${x.c}"></i>${esc(x.name)}</span><span class="amt">${mround(x.v)}　${Math.round(Math.max(x.v,0)/total*100)}%</span></div>`).join("")}</div></div>`;
+}
+function mlines({labels,series,height=190,label}){
+  const W=mwidth(),left=44,base=height-20,all=series.flatMap(s=>s.values.filter(v=>v!=null));
+  if(!all.length)return "";
+  const low=Math.min(0,...all),{step,top}=mscale(Math.max(...all,1)),bottom=low<0?-Math.ceil(-low/step)*step:0;
+  const x=i=>left+(W-left-6)*(labels.length>1?i/(labels.length-1):0),y=v=>base-(v-bottom)/(top-bottom)*(base-8),grid=[];
+  for(let v=bottom;v<=top;v+=step)grid.push(`<line x1="${left}" x2="${W}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${left-6}" y="${y(v)+4}" text-anchor="end" class="mtick">${v<0?"−":""}${mtick(Math.abs(v))}</text>`);
+  const every=Math.max(1,Math.ceil(labels.length/(W/48))),marks=labels.map((l,i)=>i%every===0?`<text x="${x(i)}" y="${height-4}" text-anchor="middle" class="mtick">${esc(l)}</text>`:"").join("");
+  const lines=series.map(s=>{const pts=s.values.map((v,i)=>v==null?null:`${x(i).toFixed(1)},${y(v).toFixed(1)}`).filter(Boolean).join(" ");return `<polyline points="${pts}" fill="none" stroke="${s.c}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`}).join("");
+  const hits=labels.map((l,i)=>`<rect x="${x(i)-(W-left)/labels.length/2}" y="0" width="${(W-left)/labels.length}" height="${base}" fill="transparent" data-tip="${esc(l)}　${series.map(s=>`${s.name} ${s.values[i]==null?"なし":mround(s.values[i])}`).join(" · ")}"/>`).join("");
+  return `<svg class="mchart" viewBox="0 0 ${W} ${height}" width="${W}" height="${height}" role="img" aria-label="${esc(label)}">${grid.join("")}${marks}${lines}${hits}</svg>`;
+}
+function moneyDonuts(d){
+  const spentRows=d.items.filter(a=>a.kind==="spend"||a.kind==="refund"),amount=a=>a.kind==="refund"?-a.usd:(a.usd||0);
+  const byGroup={},byCur={},byDay=[0,0,0,0,0,0,0];
+  spentRows.forEach(a=>{if(a.usd==null)return;byGroup[a.group]=(byGroup[a.group]||0)+amount(a);if(a.currency)byCur[a.currency]=(byCur[a.currency]||0)+amount(a);byDay[new Date(a.date+"T00:00:00Z").getUTCDay()]+=amount(a)});
+  const groups=d.analysis.groupOrder.map(g=>({name:g,v:byGroup[g]||0,c:MCOLOR[g]})).filter(x=>x.v>0);
+  const order=d.analysis.currencyOrder.slice(0,6),COL=["var(--v1)","var(--v2)","var(--v3)","var(--v4)","var(--v5)","var(--v6)"];
+  const curs=order.map((c,i)=>({name:c,v:byCur[c]||0,c:COL[i]})).filter(x=>x.v>0),restCur=Object.entries(byCur).filter(([c])=>!order.includes(c)).reduce((n,[,v])=>n+v,0);
+  if(restCur>0)curs.push({name:"その他",v:restCur,c:"var(--v7)"});
+  const names=["日","月","火","水","木","金","土"],week=[1,2,3,4,5,6,0];
+  const dayChart=mcolumns({label:"曜日ごとの支出",height:150,slots:week.map(i=>({label:names[i],parts:[{v:Math.max(byDay[i],0),c:"var(--v1)"}],tip:`${names[i]}曜日　${musd(byDay[i])} USD`}))});
+  return `${mpanel("何に使ったか",`${esc(d.label)}。USD`,mdonut(groups,"分類の割合"))}${mpanel("どの通貨で使ったか",`${esc(d.label)}。USD に直した額`,mdonut(curs,"通貨の割合"))}${mpanel("曜日ごとの支出",esc(d.label),dayChart)}`;
+}
+function moneyBudget(d){
+  const b=d.budget,n=b.now,monthName=monthJa(n.month),isNow=n.month===d.analysis.today.slice(0,7);
+  const head=n.total==null?`<section class="card mfocus"><span class="sub">${esc(monthName)}の予算</span><p class="mtalk">予算はまだありません。下で金額を入れると、残りと1日あたりが出ます。</p><p class="due">使った額 ${mround(n.spent)} USD · 直近12か月の平均 ${mround(b.average)} · 中央値 ${mround(b.median)}</p></section>`:`<section class="card mfocus"><span class="sub">${esc(monthName)}の予算</span><div class="mbigs"><div class="mbig"><span class="sub">${n.left>=0?"あと使える額":"予算を超えた額"}</span><b>${mround(Math.abs(n.left))}</b><span class="due">USD。予算 ${mround(n.total)} · 使った額 ${mround(n.spent)}</span></div>${isNow?`<div class="mbig"><span class="sub">1日あたり</span><b>${mround(n.perDay)}</b><span class="due">USD。残り${n.daysLeft}日</span></div>`:""}<div class="mbig"><span class="sub">あなたの平均</span><b>${mround(b.average)}</b><span class="due">USD。直近12か月。中央値 ${mround(b.median)}</span></div></div></section>`;
+  const cats=n.cats.length?mpanel("分類ごとの予算",esc(monthName),n.cats.map(c=>`<div class="mrow"><span class="wt">${esc(c.name)}</span><span class="amt">${mround(c.spent)} / ${mround(c.budget)}</span><span class="due">${c.left>=0?`あと ${mround(c.left)}`:`${mround(-c.left)} 超えています`}</span></div>`).join("")):"";
+  const has=b.history.filter(h=>h.budget!=null),hist=has.length?mpanel("過去の月と予算","予算を超えた分と余った分。USD",mcolumns({label:"月ごとの支出",line:has[0].budget,lineName:"予算",slots:[...b.history].reverse().map(h=>({label:`${Number(h.month.slice(5,7))}月`,parts:[{v:h.spent,c:"var(--v7)"}],tip:`${monthJa(h.month)}　使った額 ${musd(h.spent)}${h.budget!=null?` · 予算 ${mround(h.budget)} · ${h.over>0?`${mround(h.over)} 超過`:`${mround(-h.over)} 余り`}`:""}`}))})+mtable(["月","使った額","予算","差"],b.history.map(h=>[esc(monthJa(h.month)),mround(h.spent),h.budget==null?"なし":mround(h.budget),h.over==null?"":h.over>0?`${mround(h.over)} 超過`:`${mround(-h.over)} 余り`]))):"";
+  const own=b.months[n.month],src=own||b.default||{},catRows=Object.entries(src.cats||{});
+  const form=mpanel("予算を決める","毎月の予算か、この月だけの予算か選べます",`<form class="mform mform0" id="mBudget"><label>全体（USD）<input type="number" min="0" step="any" inputmode="decimal" id="mbTotal" value="${src.total==null?"":esc(src.total)}"></label><label>使う月<select id="mbMonth"><option value="">毎月</option><option value="${esc(n.month)}" ${own?"selected":""}>${esc(monthName)}だけ</option></select></label><button class="btn primary sm" type="submit">保存</button></form><div class="mcatb">${catRows.map(([c,v])=>`<label>${esc(c)}<input type="number" min="0" step="any" inputmode="decimal" data-mbcat="${esc(c)}" value="${esc(v)}"></label>`).join("")}<label>分類を足す<select id="mbAdd"><option value="">選ぶ</option>${d.categoryNames.filter(c=>!catRows.some(([x])=>x===c)).map(c=>`<option>${esc(c)}</option>`).join("")}</select></label></div>`);
+  return head+cats+hist+form+`<p class="due">比べているのは Wise を通った支出だけです。他の支払いは入りません。</p>`;
+}
+const mTripBlank=()=>({id:"t"+Date.now(),name:"",country:"",start:"",end:"",currency:"USD",budget:"",items:[{name:"航空券",plan:"",actual:""},{name:"宿",plan:"",actual:""},{name:"食費",plan:"",actual:""}],note:"",ahead:false});
+function moneyTrips(d){
+  const e=S.moneyTripEdit;
+  const list=d.trips.length?d.trips.map(t=>{const un=t.currency==="USD"?"":` ${t.currency}`;return `<section class="card mpanel"><div class="mpanelh"><h2>${esc(t.name)}</h2><span class="sub">${esc(t.country)} · ${esc(t.start)}〜${esc(t.end)} · ${t.days}日</span></div><div class="mbigs"><div class="mbig"><span class="sub">予算</span><b>${mround(t.budget??t.planTotal)}${esc(un)}</b>${t.budgetUsd!=null&&t.currency!=="USD"?`<span class="due">約 ${mround(t.budgetUsd)} USD</span>`:""}</div><div class="mbig"><span class="sub">使った額（入力）</span><b>${mround(t.actualTotal)}${esc(un)}</b></div><div class="mbig"><span class="sub">${t.left>=0?"残り":"超えた額"}</span><b>${mround(Math.abs(t.left))}${esc(un)}</b><span class="due">1日あたりの予算 ${mround(t.perDay)}</span></div></div>${t.items.length?`<div class="mscroll"><table><thead><tr><th>項目</th><th class="n">計画</th><th class="n">実際</th></tr></thead><tbody>${t.items.map(i=>`<tr><td>${esc(i.name)}</td><td class="n">${i.plan==null?"":mround(i.plan)}</td><td class="n">${i.actual==null?"":mround(i.actual)}</td></tr>`).join("")}</tbody></table></div>`:""}${t.note?`<p class="due">${esc(t.note)}</p>`:""}<div class="row"><button class="btn sm" data-mtripedit="${esc(t.id)}">直す</button><button class="btn sm" data-mtripdel="${esc(t.id)}">消す</button></div></section>`}).join(""):`<div class="card empty"><b>計画はまだありません</b>国と期間と予算を書いておけます。銀行の明細とは別です。</div>`;
+  const editor=e?mpanel(e.name?"計画を直す":"新しい計画","Wise の明細は変わりません",`<form id="mTripForm" class="mform mform0"><label>名前<input id="mtName" value="${esc(e.name)}" required></label><label>国<input id="mtCountry" value="${esc(e.country)}"></label><label>開始<input type="date" id="mtStart" value="${esc(e.start)}" required></label><label>終了<input type="date" id="mtEnd" value="${esc(e.end)}" required></label><label>通貨<input id="mtCur" value="${esc(e.currency)}" maxlength="3"></label><label>予算<input type="number" min="0" step="any" inputmode="decimal" id="mtBudget" value="${e.budget??""}"></label><div class="mfull2"><table class="mtripitems"><thead><tr><th>項目</th><th>計画</th><th>実際</th></tr></thead><tbody>${e.items.map((i,n)=>`<tr><td><input data-mti="${n}" data-f="name" value="${esc(i.name)}" aria-label="項目"></td><td><input type="number" min="0" step="any" data-mti="${n}" data-f="plan" value="${i.plan??""}" aria-label="計画"></td><td><input type="number" min="0" step="any" data-mti="${n}" data-f="actual" value="${i.actual??""}" aria-label="実際"></td></tr>`).join("")}</tbody></table></div><label class="mfull2">メモ<input id="mtNote" value="${esc(e.note||"")}"></label><label class="mcheck mfull2"><input type="checkbox" id="mtAhead" ${e.ahead?"checked":""}><span>「これからの支出」に入れる</span></label><div class="row mfull2"><button class="btn sm" type="button" id="mtAddItem">項目を足す</button><button class="btn primary sm" type="submit">保存</button><button class="btn sm" type="button" id="mtCancel">やめる</button></div></form>`):`<button class="btn primary sm mstart" id="mTripNew">計画を作る</button>`;
+  return editor+list;
+}
+function moneySaving(d){
+  const g=d.saving,z=d.analysis;
+  const form=mpanel("毎月いくら貯めたいか","入れるまで目標の線は出ません",`<form class="mform mform0" id="mSaveForm"><label>毎月（USD）<input type="number" min="0" step="any" inputmode="decimal" id="msMonthly" value="${g.monthly==null?"":esc(g.monthly)}"></label><button class="btn primary sm" type="submit">保存</button></form><p class="due">直近3か月の収益 − 支出の中央値は ${msign(g.pace)} USD です。Wise の中だけの数字です。</p>`);
+  const fc=g.forecast,chart=mpanel("貯金の予測",g.hasBalance?"今の Wise の残高から12か月。試算です":"残高がまだないので 0 から計算します",mlegend([["今のペース","var(--v7)"],...(g.monthly!=null?[["目標","var(--v1)"]]:[])])+mlines({label:"貯金の予測",labels:fc.map(f=>`${Number(f.month.slice(5,7))}月`),series:[{name:"今のペース",c:"var(--v7)",values:fc.map(f=>f.pace)},...(g.monthly!=null?[{name:"目標",c:"var(--v1)",values:fc.map(f=>f.target)}]:[])]}));
+  const goal=x=>`<div class="mrow"><span class="wt">${esc(x.name)}</span><span class="amt">${mround(x.saved)} / ${mround(x.amount)}</span><span class="due mfull">${x.needed!=null?`${esc(x.due)} までなら毎月 ${mround(x.needed)} USD。`:""}${x.byTarget?`目標のペースなら ${esc(x.byTarget.slice(0,7))} ごろ。`:""}${x.byPace?`今のペースなら ${esc(x.byPace.slice(0,7))} ごろ。`:"今のペースでは増えていません。"}</span><button class="btn sm" data-mgoaldel="${esc(x.id)}">消す</button></div>`;
+  const goals=mpanel("貯めたいもの","名前と金額を入れると、必要な月額が出ます",`${g.goals.map(goal).join("")}<form class="mform mform0" id="mGoalForm"><label>名前<input id="mgName" required></label><label>金額（USD）<input type="number" min="0" step="any" inputmode="decimal" id="mgAmount" required></label><label>今ある額<input type="number" min="0" step="any" inputmode="decimal" id="mgSaved"></label><label>期日<input type="date" id="mgDue"></label><button class="btn sm" type="submit">足す</button></form>`);
+  const how=mpanel("実際に貯めるには","意志より仕組み。根拠は助言タブの学びにあります",`<ol class="msteps"><li>入金がある日を1つ決める。</li><li>貯金を置く別の口座か残高を1つ作る。</li><li>入金の日に、毎月の額が自動で移る設定をする。</li><li>入金が増えたら、増えた分の一部を足す。</li><li>3か月に1回だけ、この画面で見直す。</li></ol>`);
+  return form+chart+goals+how;
+}
+const mfv=(start,monthly,years,rate,fee)=>{const r=(rate-(fee||0))/100/12,n=Math.round(years*12);return r?start*(1+r)**n+monthly*(((1+r)**n-1)/r):start+monthly*n};
+function moneySimInvestOut(s){
+  const start=s.start||0,monthly=s.monthly||0,years=s.years||0,rates=[s.rate1,s.rate2,s.rate3].filter(v=>v!=null);
+  if(!years)return `<p class="due">年数を入れると計算します。</p>`;
+  if(!rates.length)return `<p class="due">想定利回りを入れると計算します。初期値は入れていません。</p>`;
+  const span=Array.from({length:Math.min(years,60)+1},(_,i)=>i),principal=span.map(y=>start+monthly*12*y),COL=["var(--v1)","var(--v2)","var(--v3)"];
+  const out=rates.map((r,i)=>({name:`年${r}%`,c:COL[i],values:span.map(y=>mfv(start,monthly,y,r,s.fee))}));
+  const end=rates.map(r=>mfv(start,monthly,years,r,s.fee)),paid=start+monthly*12*years;
+  return mlegend([["入れた額","var(--v7)"],...out.map(x=>[x.name,x.c])])+mlines({label:"投資の試算",labels:span.map(y=>`${y}年`),series:[{name:"入れた額",c:"var(--v7)",values:principal},...out]})+`<div class="mscroll"><table><thead><tr><th>想定利回り</th><th class="n">${years}年後</th><th class="n">入れた額</th><th class="n">増えた分</th></tr></thead><tbody>${rates.map((r,i)=>`<tr><td>年${esc(r)}%</td><td class="n">${mround(end[i])}</td><td class="n">${mround(paid)}</td><td class="n">${msign(Math.round(end[i]-paid))}</td></tr>`).join("")}</tbody></table></div>`;
+}
+function moneySimLifeOut(l,age){
+  if(age==null)return `<p class="due">生年月日がないので計算できません。</p>`;
+  const to=l.toAge||Math.max(age+30,60),rate=(l.rate||0)/100,labels=[],values=[];let money=l.start||0;
+  for(let a=age;a<=to;a++){labels.push(`${a}歳`);if(a>age)money=money*(1+rate)+(l.monthly||0)*12;(l.events||[]).forEach(e=>{if(e.age===a)money-=e.cost||0});values.push(Math.round(money))}
+  return mlines({label:"ライフプランの試算",labels,series:[{name:"残高",c:"var(--v1)",values}]})+`<p class="due">${esc(to)}歳の時点で約 ${msign(values[values.length-1])} USD。出来事の費用は入力した額です。給料の変化や物価は入っていません。</p>`;
+}
+function moneySim(d){
+  const s=(d.sims||{}).invest||{},l=(d.sims||{}).life||{},age=d.profile.age,field=(k,label,obj,ph)=>`<label>${esc(label)}<input type="number" min="0" step="any" inputmode="decimal" data-msim="${k}" value="${obj[k]==null?"":esc(obj[k])}" ${ph?`placeholder="${esc(ph)}"`:""}></label>`;
+  const invest=mpanel("投資の試算","数字を変えるとすぐ変わります。予測ではありません",`<div class="mform mform0">${field("start","最初の額",s)}${field("monthly","毎月の額",s)}${field("years","年数",s)}${field("fee","手数料（年%）",s)}${field("rate1","想定利回り1（年%）",s)}${field("rate2","想定利回り2",s)}${field("rate3","想定利回り3",s)}</div><div id="mSimInvest">${moneySimInvestOut(s)}</div>`);
+  const ev=(l.events||[]).map((e,i)=>`<div class="mrow"><span class="wt">${esc(e.age)}歳　${esc(e.name)}</span><span class="amt">${mround(e.cost)}</span><button class="btn sm" data-mevdel="${i}">消す</button></div>`).join("");
+  const lf=(k,label)=>`<label>${esc(label)}<input type="number" min="0" step="any" inputmode="decimal" data-mlife="${k}" value="${l[k]==null?"":esc(l[k])}"></label>`;
+  const life=mpanel("ライフプランの試算",age==null?"":`今 ${age}歳。USD。出来事と費用は自分で入れます`,`<div class="mform mform0">${lf("start","今ある額")}${lf("monthly","毎月貯める額")}${lf("rate","想定利回り（年%。空なら0）")}${lf("toAge","何歳まで")}</div>${ev}<form class="mform mform0" id="mEvForm"><label>年齢<input type="number" min="0" id="meAge" required></label><label>出来事<input id="meName" required placeholder="留学、住宅など"></label><label>費用<input type="number" min="0" step="any" id="meCost" required></label><button class="btn sm" type="submit">足す</button></form><div id="mSimLife">${moneySimLifeOut(l,age)}</div>`);
+  return invest+life+`<p class="due">一般的な計算で、個別の投資の助言ではありません。実際の利回りは毎年変わり、損をする年もあります。銘柄や配分は勧めません。NISA は海外在住だと原則として新しく買えないので、制度は金融機関で確かめてください。</p>`;
+}
+function moneyLesson(d){
+  const L=d.learn,all=L.lessons,one=all[0];
+  const quiz=x=>{const g=x.given,q=x.quiz;return `<div class="mquiz"><p class="wt">${esc(q.q)}</p><div class="mquizc">${q.choices.map((c,i)=>`<button class="btn sm" data-mquiz="${esc(x.id)}" data-mchoice2="${i}" ${g?"disabled":""}>${esc(c)}</button>`).join("")}</div>${g?`<p class="mnext">${g.correct?"正解です。":`正解は「${esc(q.choices[q.answer])}」です。`}</p>${q.why?`<p class="mread">${esc(q.why)}</p>`:""}`:""}</div>`};
+  const card=x=>`<span class="sub">${esc(x.field)} · ${esc(x.date)}</span><h3 class="mltitle">${esc(x.title)}</h3><p class="mread">${esc(x.body)}</p><p class="due"><a class="ext" href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.source)}（${esc(x.year)}年）↗</a></p>${quiz(x)}`;
+  const main=one?`<section class="card mfocus mlesson1">${card(one)}</section>`:`<div class="card empty"><b>まだありません</b>毎朝1本届きます。</div>`;
+  const prog=mpanel("進み具合","読んだ数と正解の数",`<div class="mscroll"><table><thead><tr><th>分野</th><th class="n">読んだ</th><th class="n">答えた</th><th class="n">正解</th></tr></thead><tbody>${L.fields.map(f=>{const p=L.progress[f];return `<tr><td>${esc(f)}</td><td class="n">${p.read}</td><td class="n">${p.answered}</td><td class="n">${p.correct}</td></tr>`}).join("")}</tbody></table></div>`);
+  const past=all.length>1?`<details class="card mmore"><summary>これまでの学び ${all.length-1}件</summary><div class="mmorein">${all.slice(1).map(x=>`<div>${card(x)}</div>`).join("")}</div></details>`:"";
+  return main+prog+past+`<p class="due">資格の公式教材ではありません。制度の数字は改正があるので、出典の年を見てください。</p>`;
+}
 const mcountry=(code,c)=>{try{return new Intl.DisplayNames(["ja"],{type:"region"}).of(c.iso2)}catch(e){return code}};
 function moneyWorld(d){
   const w=S.moneyWorldData;
@@ -2023,8 +2188,9 @@ function moneyWorld(d){
   const pct=rows=>{const top=Math.max(...rows.map(r=>r.v||0),1);return `<div class="mhbars">${rows.map(r=>`<div class="mhbar"><span class="wt">${esc(r.name)}</span><span class="amt">${r.v==null?"データなし":`${esc(r.v)}%`}</span><i style="width:${Math.max(r.v==null?0:1,(r.v||0)/top*100)}%"></i></div>`).join("")}</div>`};
   const shares=pct([{name:"自分（Wise の直近12か月）",v:w.me.uses[use]||0},...picked.map(c=>({name:name(c),v:w.countries[c].uses[use]??null}))]);
   const all=mtable(["国","月の消費（USD）","物価調整","選んだ用途"],sorted.map(c=>{const x=w.countries[c];return [esc(name(c)),mround(x.month),x.monthPpp?mround(x.monthPpp):"データなし",x.uses[use]==null?"データなし":`${x.uses[use]}%`]}));
-  const src=w.source;
-  return `${add}${mpanel("1人あたりの月の消費",`USD。${src.year}年の統計です。順位や合格の線ではありません`,totals+all)}${mpanel("何に使っているか","消費の中の割合",useChips+shares+`<p class="due">自分の分のうち ${esc(w.me.unknownShare)}% は現金や未分類で、どの用途にも入っていません。</p>`)}${mpanel("最低賃金","",`<p class="due">まだ入っていません。ILO の統計を自動で取れなかったので、確かな出どころが見つかるまで推測で埋めません。</p>`)}<p class="due">出典：<a class="ext" href="${esc(src.url)}" target="_blank" rel="noopener">${esc(src.name)} ↗</a>（${src.year}年）。国の数字は政府が負担する医療や教育、持ち家の家賃相当も含む全国平均です。自分の数字は Wise を通った分だけで、家族の人数や都市、年も違います。参考として見てください。</p>`;
+  const src=w.source,mw=w.minwage||{},mwRows=[{name:"自分の月の支出（参考）",usd:w.me.month},...picked.map(c=>({name:name(c),usd:mw[c]?mw[c].month:0,note:mw[c]?`${mw[c].date}${mw[c].monthPpp?` · 物価調整 ${Math.round(mw[c].monthPpp)}`:""}`:"データなし"}))];
+  const minwage=Object.keys(mw).length?mhbars(mwRows)+mtable(["国","月額（USD）","物価調整","発効日"],sorted.filter(c=>mw[c]).map(c=>[esc(name(c)),mround(mw[c].month),mw[c].monthPpp?mround(mw[c].monthPpp):"データなし",esc(mw[c].date)]))+`<p class="due">出典：<a class="ext" href="${esc(w.minwageSource.url)}" target="_blank" rel="noopener">${esc(w.minwageSource.name)} ↗</a>。年額を12で割った額です。地域や業種で違う国があります。${esc(Object.keys(mw).length)}か国分。</p>`:`<p class="due">まだ入っていません。次の取り込みのあとに出ます。</p>`;
+  return `${add}${mpanel("1人あたりの月の消費",`USD。${src.year}年の統計です。順位や合格の線ではありません`,totals+all)}${mpanel("何に使っているか","消費の中の割合",useChips+shares+`<p class="due">自分の分のうち ${esc(w.me.unknownShare)}% は現金や未分類で、どの用途にも入っていません。</p>`)}${mpanel("最低賃金",w.minwageSource?`USD に直した額。${esc(w.minwageSource.note)}`:"",minwage)}<p class="due">出典：<a class="ext" href="${esc(src.url)}" target="_blank" rel="noopener">${esc(src.name)} ↗</a>（${src.year}年）。国の数字は政府が負担する医療や教育、持ち家の家賃相当も含む全国平均です。自分の数字は Wise を通った分だけで、家族の人数や都市、年も違います。参考として見てください。</p>`;
 }
 function moneyView(){
   const d=S.money, head=`<header class="head"><div><p class="eyebrow">Wise</p><h1>お金</h1></div></header>`;
@@ -2032,15 +2198,17 @@ function moneyView(){
   const q=S.moneyQ||{period:"month"},tab=S.moneyTab||"overview",st=d.state||{};
   const at=st.lastSuccess?new Date(st.lastSuccess).toLocaleString("ja-JP",{month:"long",day:"numeric",hour:"2-digit",minute:"2-digit"}):"";
   const trouble=st.ok===false||!st.lastTry?`<div class="card empty"><b>${st.error?esc(st.error):"まだ取り込んでいません"}</b>${at?`最後に取り込めたのは ${esc(at)} です。`:"取り込めると、ここに出入金が出ます。"}</div>`:"";
-  const tabs=`<div class="mtabs" role="tablist" aria-label="お金の画面">${[["overview","概要"],["charts","グラフ"],["analysis","分析"],["advice","助言"],["detail","明細"],["world","世界"]].map(([k,l])=>`<button role="tab" class="mtab" data-mtab="${k}" aria-selected="${k===tab}">${l}</button>`).join("")}</div>`;
+  const group=mgroupOf(tab),groupsNav=`<div class="chips mgroups" role="group" aria-label="お金のまとまり">${MGROUPS.map(g=>`<button class="chip" data-mgroupnav="${g[0]}" aria-pressed="${g[0]===group[0]}">${g[1]}</button>`).join("")}</div>`;
+  const tabs=groupsNav+`<div class="mtabs" role="tablist" aria-label="お金の画面">${group[2].map(([k,l])=>`<button role="tab" class="mtab" data-mtab="${k}" aria-selected="${k===tab}">${l}</button>`).join("")}</div>`;
   const chips=[["week","今週"],["month","月"],["3m","3か月"],["6m","半年"],["all","最初から"],["custom","期間指定"]];
   const pick=`<div class="chips" role="group" aria-label="期間を選ぶ">${chips.map(([k,l])=>`<button class="chip" data-mperiod="${k}" aria-pressed="${k===d.period}">${l}</button>`).join("")}</div>`;
   const i=d.months.indexOf(d.month), older=d.months[i+1], newer=d.months[i-1];
   const nav=`<div class="mmonth"><h2>${esc(d.label)}</h2>${d.period==="month"?`<button class="btn sm" data-mmonth="${esc(older||"")}" ${older?"":"disabled"}>前の月</button><button class="btn sm" data-mmonth="${esc(newer||"")}" ${newer?"":"disabled"}>次の月</button>`:""}</div>${d.period==="custom"?`<form class="mform" id="mRange"><label>開始<input type="date" id="mFrom" value="${esc(q.from||d.start)}"></label><label>終了<input type="date" id="mTo" value="${esc(q.to||d.end)}"></label><button class="btn sm" type="submit">この期間を見る</button></form>`:""}`;
   const file=(format,kind)=>{const p=moneyQuery();p.set("format",format);p.set("kind",kind);return `${esc(location.origin)}/api/wise/export?${esc(p.toString())}`};
   const exports=`<div class="mexport"><span class="sub">この期間を書き出す</span><a class="btn sm" href="${file("csv","list")}">CSV</a><a class="btn sm" href="${file("pdf","list")}">一覧の PDF</a><a class="btn sm" href="${file("pdf","report")}">レポートの PDF</a></div>`;
-  const body={overview:moneyOverview,charts:moneyCharts,analysis:moneyAnalysis,advice:moneyAdvice,detail:moneyDetail,world:moneyWorld}[tab](d);
-  return head+`<div class="money" ${tab==="world"?"data-noauto":""}>${tabs}${trouble}${pick}${nav}${body}${exports}<p class="sub">合計は USD です。Wise に USD の記録がなければ、決済時刻の Wise のレートで換算します。種類と分類は Claude の推定を含み、明細で直せます。取り消しと、自分の残高どうしの両替は入れていません。</p></div>`;
+  const body={overview:moneyOverview,charts:moneyCharts,analysis:moneyAnalysis,advice:moneyAdvice,detail:moneyDetail,world:moneyWorld,budget:moneyBudget,trips:moneyTrips,saving:moneySaving,sim:moneySim,lesson:moneyLesson}[tab](d);
+  const timed=!["trips","saving","sim","lesson","world"].includes(tab);
+  return head+`<div class="money" ${tab==="world"?"data-noauto":""}>${tabs}${trouble}${timed?pick+nav:""}${body}${exports}<p class="sub">合計は USD です。Wise に USD の記録がなければ、決済時刻の Wise のレートで換算します。種類と分類は Claude の推定を含み、明細で直せます。取り消しと、自分の残高どうしの両替は入れていません。</p></div>`;
 }
 function wireMoney(){
   const go=()=>{S.moneyShow=0;moneyLoad(true)}, put=async(path,rec,msg)=>{try{await api("PUT",path,rec);if(msg)toast(msg);moneyLoad(true)}catch(e){toast("保存できませんでした。入力を確かめてください")}};
@@ -2066,6 +2234,27 @@ function wireMoney(){
   document.querySelectorAll("[data-mcharge]").forEach(b=>b.onclick=()=>put("/api/wise/recurring",{key:b.dataset.mcharge,mark:true},"毎月の請求に入れました"));
   document.querySelectorAll("[data-mnotcharge]").forEach(b=>b.onclick=()=>put("/api/wise/recurring",{key:b.dataset.mnotcharge,mark:false},"一覧から外しました"));
   document.querySelectorAll("[data-mchoice]").forEach(b=>b.onclick=()=>put("/api/wise/recurring",{key:S.money.analysis.action.key,choice:b.dataset.mchoice},"記録しました"));
+  document.querySelectorAll("[data-mgroupnav]").forEach(b=>b.onclick=()=>{const g=MGROUPS.find(x=>x[0]===b.dataset.mgroupnav);S.moneyTab=g[2][0][0];render();window.scrollTo(0,0)});
+  $("#mBudget")&&($("#mBudget").onsubmit=e=>{e.preventDefault();const cats={};document.querySelectorAll("[data-mbcat]").forEach(i=>{if(i.value!=="")cats[i.dataset.mbcat]=i.value});put("/api/wise/budget",{month:$("#mbMonth").value||null,total:$("#mbTotal").value,cats},"予算を保存しました")});
+  $("#mbAdd")&&($("#mbAdd").onchange=e=>{const v=e.target.value;if(!v)return;const b=S.money.budget,own=b.months[b.now.month],src=own||(b.default=b.default||{});src.cats={...(src.cats||{}),[v]:""};render()});
+  const tripRead=()=>{const e=S.moneyTripEdit;if(!$("#mTripForm"))return e;Object.assign(e,{name:$("#mtName").value,country:$("#mtCountry").value,start:$("#mtStart").value,end:$("#mtEnd").value,currency:$("#mtCur").value,budget:$("#mtBudget").value,note:$("#mtNote").value,ahead:$("#mtAhead").checked});document.querySelectorAll("[data-mti]").forEach(i=>{e.items[+i.dataset.mti][i.dataset.f]=i.value});return e};
+  $("#mTripNew")&&($("#mTripNew").onclick=()=>{S.moneyTripEdit=mTripBlank();render()});
+  $("#mtAddItem")&&($("#mtAddItem").onclick=()=>{tripRead().items.push({name:"",plan:"",actual:""});render()});
+  $("#mtCancel")&&($("#mtCancel").onclick=()=>{S.moneyTripEdit=null;render()});
+  $("#mTripForm")&&($("#mTripForm").onsubmit=e=>{e.preventDefault();const t=tripRead();S.moneyTripEdit=null;put("/api/wise/trips/"+encodeURIComponent(t.id),t,"計画を保存しました")});
+  document.querySelectorAll("[data-mtripedit]").forEach(b=>b.onclick=()=>{S.moneyTripEdit=JSON.parse(JSON.stringify(S.money.trips.find(t=>t.id===b.dataset.mtripedit)));render()});
+  document.querySelectorAll("[data-mtripdel]").forEach(b=>b.onclick=()=>{const t=S.money.trips.find(x=>x.id===b.dataset.mtripdel);put("/api/wise/trips/"+encodeURIComponent(t.id),{...t,deleted:true},"計画を消しました")});
+  const goalsNow=()=>S.money.saving.goals.map(g=>({id:g.id,name:g.name,amount:g.amount,saved:g.saved,due:g.due}));
+  $("#mSaveForm")&&($("#mSaveForm").onsubmit=e=>{e.preventDefault();put("/api/wise/goals",{monthly:$("#msMonthly").value,items:goalsNow()},"保存しました")});
+  $("#mGoalForm")&&($("#mGoalForm").onsubmit=e=>{e.preventDefault();put("/api/wise/goals",{monthly:S.money.saving.monthly,items:[...goalsNow(),{id:"g"+Date.now(),name:$("#mgName").value,amount:$("#mgAmount").value,saved:$("#mgSaved").value,due:$("#mgDue").value}]},"足しました")});
+  document.querySelectorAll("[data-mgoaldel]").forEach(b=>b.onclick=()=>put("/api/wise/goals",{monthly:S.money.saving.monthly,items:goalsNow().filter(g=>g.id!==b.dataset.mgoaldel)},"消しました"));
+  const simSave=()=>{clearTimeout(S.moneySimT);S.moneySimT=setTimeout(()=>api("PUT","/api/wise/sims",S.money.sims).catch(()=>toast("保存できませんでした")),600)};
+  const simNow=()=>{const m=S.money;m.sims=m.sims||{};m.sims.invest=m.sims.invest||{};m.sims.life=m.sims.life||{events:[]};return m.sims};
+  document.querySelectorAll("[data-msim]").forEach(i=>i.oninput=()=>{const s=simNow();s.invest[i.dataset.msim]=i.value===""?null:Number(i.value);$("#mSimInvest").innerHTML=moneySimInvestOut(s.invest);simSave()});
+  document.querySelectorAll("[data-mlife]").forEach(i=>i.oninput=()=>{const s=simNow();s.life[i.dataset.mlife]=i.value===""?null:Number(i.value);$("#mSimLife").innerHTML=moneySimLifeOut(s.life,S.money.profile.age);simSave()});
+  $("#mEvForm")&&($("#mEvForm").onsubmit=e=>{e.preventDefault();const s=simNow();s.life.events=[...(s.life.events||[]),{age:Number($("#meAge").value),name:$("#meName").value,cost:Number($("#meCost").value)}];render();simSave()});
+  document.querySelectorAll("[data-mevdel]").forEach(b=>b.onclick=()=>{const s=simNow();s.life.events.splice(+b.dataset.mevdel,1);render();simSave()});
+  document.querySelectorAll("[data-mquiz]").forEach(b=>b.onclick=()=>put("/api/wise/learn/"+encodeURIComponent(b.dataset.mquiz),{choice:Number(b.dataset.mchoice2)}));
   document.querySelectorAll("[data-mdirect]").forEach(b=>b.onclick=()=>put("/api/wise/direct",{title:b.dataset.mdirect,on:!!b.dataset.mon},"残高との照合を変えました"));
   if(S.moneyTab==="world"&&!S.moneyWorldData&&!S.moneyWorldBusy){S.moneyWorldBusy=true;api("GET","/api/wise/world").then(v=>{S.moneyWorldData=v;S.moneyWorldBusy=false;if(viewId()==="money")render()}).catch(()=>{S.moneyWorldBusy=false;S.moneyWorldData={countries:{}};if(viewId()==="money")render()})}
   const worldPicked=()=>S.moneyPicked||["JPN","USA","VNM","PHL"];
@@ -2296,6 +2485,14 @@ function wire(){
   document.querySelectorAll("[data-tstart]").forEach(b=>b.onclick=()=>setTaskStatus(b.dataset.tstart,"doing"));
   document.querySelectorAll("[data-gonotyet]").forEach(b=>b.onclick=()=>{S.taskCol="notyet";location.hash="tasks"});
   document.querySelectorAll("[data-tstatus]").forEach(s=>s.onchange=()=>setTaskStatus(s.dataset.tstatus,s.value));
+  document.querySelectorAll("[data-tplan]").forEach(s=>s.onchange=()=>setTaskPlan(s.dataset.tplan,s.value));
+  document.querySelectorAll("[data-taiplan]").forEach(b=>b.onclick=async()=>{const t=findTask(b.dataset.taiplan);if(!t)return;
+    try{await store.putTask({...t,planDate:t.planAi});toast("🗂️ 案のとおりに決めました")}catch(e){toast("保存できませんでした。もう一度お試しください")}});
+  document.querySelectorAll("[data-tadopt]").forEach(b=>b.onclick=async()=>{const xs=S.board.filter(t=>t.status===b.dataset.tadopt&&aiPlanOf(t));b.disabled=true;
+    try{for(const t of xs) await store.putTask({...t,planDate:t.planAi});toast(`🗂️ ${xs.length}件を案のとおりに決めました`)}catch(e){toast("途中で保存できなくなりました。もう一度お試しください");b.disabled=false}});
+  document.querySelectorAll("[data-tgroup]").forEach(b=>b.onclick=()=>{const id=b.dataset.tgroup;S.taskOpen={...S.taskOpen,[id]:b.getAttribute("aria-expanded")!=="true"};
+    try{localStorage.setItem("desk-task-open",JSON.stringify(S.taskOpen))}catch(e){}render();document.querySelector(`[data-tgroup="${id}"]`)?.focus()});
+  $("#tSort")&&($("#tSort").onchange=e=>{S.taskSort=e.target.value;try{localStorage.setItem("desk-task-sort",S.taskSort)}catch(err){}render()});
   document.querySelectorAll("[data-tshelf]").forEach(b=>b.onclick=()=>{S.taskShelf=S.taskShelf===b.dataset.tshelf?null:b.dataset.tshelf;render()});
   document.querySelectorAll("[data-tcol]").forEach(b=>b.onclick=()=>{S.taskCol=b.dataset.tcol;render()});
   document.querySelectorAll("[data-task]").forEach(c=>{

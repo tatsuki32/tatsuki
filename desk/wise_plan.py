@@ -70,6 +70,17 @@ def ahead(rows, today, runway=None, usual=None):
         else:
             due += owed
         estimate += guess or 0
+    for t in wise_sync.read_json("trips.json", {}).values():  # a plan the person chose to count
+        if t.get("ahead") and not t.get("deleted") and t["end"] >= today and t["id"] not in hidden:
+            limit = t["budget"] if t["budget"] is not None else sum(i["plan"] or 0 for i in t["items"])
+            spent = sum(i["actual"] or 0 for i in t["items"])
+            owed = to_usd({"value": max(limit - spent, 0), "currency": t["currency"]}, rates)
+            out.append({"id": t["id"], "title": t["name"], "kind": "other", "kindName": "旅の計画", "date": t["start"], "end": t["end"], "place": t.get("country"), "currency": t["currency"], "paid": None,
+                        "due": {"value": max(limit - spent, 0), "currency": t["currency"]}, "url": None, "source": "plan", "paidUsd": None, "dueUsd": owed, "estimate": None, "low": None, "high": None, "days": 0, "basedOn": 0})
+            if owed is None:
+                unknown += 1
+            else:
+                due += owed
     out.sort(key=lambda i: i["date"])
     total = round(due + estimate, 2)
     after = None

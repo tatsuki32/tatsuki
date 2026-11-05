@@ -10,6 +10,7 @@ from lifeos.tests.sandbox import SandboxCase
 
 import backup_data  # noqa: E402
 import wise_analysis  # noqa: E402
+import wise_goals  # noqa: E402
 import wise_plan  # noqa: E402
 import wise_report  # noqa: E402
 import wise_sync  # noqa: E402
@@ -617,3 +618,139 @@ class World(SandboxCase, Base):
         z = wise_analysis.analyze(rows(), "2026-11-05")
         self.assertEqual(z["bridge"]["gap"], 0)
         self.assertEqual(z["months"][-2]["spent"], 900)
+
+
+class Wages(SandboxCase, Base):
+    PAGE = "<table><tr><td>Header</td></tr><tr><td>Vietnam<sup>1</sup></td><td>note</td><td>2,400</td><td></td><td>40</td><td>1.3</td><td></td><td></td><td>1 Jan 2026</td></tr><tr><td>Nowhere</td><td>n</td><td>100</td><td>1</td><td>40</td><td>1</td><td>1</td><td>1%</td><td>2020</td></tr></table>"
+
+    def test_a_row_becomes_a_monthly_amount_with_its_date(self):
+        got = wise_world.parse_wages(self.PAGE, {"VNM": "Viet Nam"})
+        self.assertEqual(got, {"VNM": {"month": 200, "monthPpp": None, "date": "1 Jan 2026"}})
+
+    def test_a_failed_wage_fetch_keeps_the_old_wages(self):
+        def fake(path):
+            if path.startswith("/country"):
+                return [{}, [{"id": "AAA", "iso2Code": "AA", "name": "Aland", "region": {"value": "Asia"}}]]
+            return {"source": {"data": [{"value": 1200, "variable": [{"concept": "Country", "id": "AAA"}]}]}}
+        wise_sync.write_json("world.json", {"at": 1, "minwage": {"AAA": {"month": 1}}})
+        def down(places):
+            raise OSError("no")
+        self.assertTrue(wise_world.update(fake, down))
+        self.assertEqual(wise_sync.read_json("world.json", {})["minwage"], {"AAA": {"month": 1}})
+
+
+class Goals(SandboxCase, Base):
+    def setUp(self):
+        SandboxCase.setUp(self)
+        Base.setUp(self)
+
+    def row(self, day, usd, category="交通", kind="spend"):
+        return {"date": day, "kind": kind, "usd": usd, "category": category, "group": "交通費", "currency": "USD", "value": usd, "flow": "out", "title": "x", "amountText": ""}
+
+    def test_any_period_is_compared_with_the_one_before(self):
+        rows = [self.row("2026-05-10", 100), self.row("2026-08-10", 30), self.row("2026-10-10", 20)]
+        z = wise_analysis.analyze(rows, "2026-11-05", None, "2026-08-06", "2026-11-05", ("2026-05-06", "2026-08-05"), "直近3か月")
+        self.assertEqual((z["scope"], z["soFar"], z["lastSame"]), ("直近3か月", 50, 100))
+        self.assertEqual(z["categories"][0]["change"], -50)
+
+    def test_the_whole_history_has_no_before_but_has_a_month_average(self):
+        rows = [self.row("2026-01-10", 100), self.row("2026-03-10", 200)]
+        z = wise_analysis.analyze(rows, "2026-03-31", None, "2026-01-10", "2026-03-31", None, "計測の最初から")
+        self.assertEqual((z["soFar"], z["lastSame"], z["perMonth"]), (300, 0, 100))
+        self.assertEqual([m["month"] for m in z["months"]], ["2026-01", "2026-02", "2026-03"])
+
+    def test_this_weeks_step_does_not_change_with_the_period(self):
+        rows = [self.row(f"2026-{m:02d}-05", 9) for m in range(7, 12)]
+        for m in rows:
+            m["title"] = "Tool"
+        month = wise_analysis.analyze(rows, "2026-11-06")["action"]
+        wide = wise_analysis.analyze(rows, "2026-11-06", None, "2026-07-01", "2026-11-06", None, "x")["action"]
+        self.assertEqual(month, wide)
+
+    def test_budget_room_and_a_past_overrun(self):
+        wise_goals.put_budget({"total": 100, "cats": {"交通": 40}}, ("交通",))
+        b = wise_goals.budget([self.row("2026-11-02", 60), self.row("2026-10-02", 130)], "2026-11-21")
+        self.assertEqual((b["now"]["left"], b["now"]["daysLeft"], b["now"]["perDay"]), (40, 10, 4))
+        self.assertEqual(b["now"]["cats"][0]["left"], -20)
+        self.assertEqual(b["history"][0]["over"], 30)
+
+    def test_a_months_own_budget_wins(self):
+        wise_goals.put_budget({"total": 100}, ())
+        wise_goals.put_budget({"month": "2026-11", "total": 500}, ())
+        self.assertEqual(wise_goals.budget([], "2026-11-21")["now"]["total"], 500)
+        self.assertEqual(wise_goals.budget([], "2026-11-21")["history"][0]["budget"], 100)
+
+    def test_no_budget_means_no_verdict(self):
+        b = wise_goals.budget([self.row("2026-11-02", 60)], "2026-11-21")
+        self.assertIsNone(b["now"]["left"])
+        self.assertIsNone(b["history"][0]["over"])
+
+    def trip(self, **more):
+        return {"name": "試し", "country": "試し国", "start": "2026-12-01", "end": "2026-12-10", "currency": "USD", "budget": 1000, "items": [{"name": "宿", "plan": 400, "actual": 300}], **more}
+
+    def test_a_trip_is_kept_apart_from_the_bank(self):
+        wise_goals.put_trip("t1", self.trip())
+        t = wise_goals.trips([])[0]
+        self.assertEqual((t["days"], t["left"], t["perDay"], t["budgetUsd"]), (10, 700, 100, 1000))
+        self.assertEqual(wise_plan.ahead([], "2026-11-05")["items"], [])
+
+    def test_a_chosen_trip_counts_towards_what_is_coming(self):
+        wise_goals.put_trip("t1", self.trip(ahead=True))
+        self.assertEqual(wise_plan.ahead([], "2026-11-05")["due"], 700)
+
+    def test_a_deleted_trip_stays_on_disk_only(self):
+        wise_goals.put_trip("t1", self.trip(deleted=True))
+        self.assertEqual(wise_goals.trips([]), [])
+        self.assertIn("t1", wise_sync.read_json("trips.json", {}))
+
+    def test_a_bad_trip_is_refused(self):
+        self.assertEqual(server.wise_settings(["trips", "t1"], self.trip(end="2026-01-01"))[0], 400)
+        self.assertEqual(server.wise_settings(["trips", "t1"], self.trip(start="soon"))[0], 400)
+        self.assertEqual(server.wise_settings(["budget"], {"total": -1})[0], 400)
+
+    def test_a_goal_says_what_it_needs_and_when_it_arrives(self):
+        wise_goals.put_goals({"monthly": 100, "items": [{"id": "a", "name": "車", "amount": 1200, "saved": 200, "due": "2027-11-01"}]})
+        g = wise_goals.saving([], "2026-11-05")
+        self.assertEqual((g["goals"][0]["left"], g["goals"][0]["needed"], g["goals"][0]["byTarget"]), (1000, 83.33, "2027-09-01"))
+        self.assertIsNone(g["goals"][0]["byPace"])
+
+    def test_no_target_means_no_target_line(self):
+        self.assertIsNone(wise_goals.saving([], "2026-11-05")["forecast"][0]["target"])
+
+    def test_the_forecast_starts_from_the_balance(self):
+        wise_sync.write_json("balances.json", {"2026-11-05": [{"currency": "USD", "value": 50, "usd": 50}]})
+        wise_goals.put_goals({"monthly": 10})
+        f = wise_goals.saving([], "2026-11-05")["forecast"]
+        self.assertEqual((f[0]["target"], f[12]["target"]), (50, 170))
+
+    def test_rates_are_not_filled_in(self):
+        wise_goals.put_sims({"invest": {"start": 100, "monthly": 10, "years": 5}})
+        self.assertIsNone(wise_sync.read_json("sims.json", {})["invest"]["rate1"])
+
+    def lesson(self, **more):
+        return {"field": "ライフプランニング", "topic": "t", "title": "題", "body": "本文", "source": "出典", "url": "https://example.org", "year": 2025, "quiz": {"q": "問", "choices": ["a", "b"], "answer": 1, "why": "理由"}, **more}
+
+    def test_a_lesson_needs_a_source_and_a_sound_quiz(self):
+        self.assertFalse(wise_goals.put_lesson(self.lesson(url="x"), "2026-11-05")["saved"])
+        self.assertFalse(wise_goals.put_lesson(self.lesson(quiz={"q": "問", "choices": ["a", "b"], "answer": 5}), "2026-11-05")["saved"])
+        self.assertFalse(wise_goals.put_lesson(self.lesson(field="占い"), "2026-11-05")["saved"])
+        self.assertTrue(wise_goals.put_lesson(self.lesson(), "2026-11-05")["saved"])
+        self.assertFalse(wise_goals.put_lesson(self.lesson(), "2026-11-06")["saved"])
+
+    def test_the_first_answer_counts(self):
+        wise_goals.put_lesson(self.lesson(), "2026-11-05")
+        lesson_id = wise_goals.lessons()[0]["id"]
+        wise_goals.answer_lesson(lesson_id, 0)
+        wise_goals.answer_lesson(lesson_id, 1)
+        p = wise_goals.learn("2026-11-05")["progress"]["ライフプランニング"]
+        self.assertEqual((p["read"], p["answered"], p["correct"]), (1, 1, 0))
+
+    def test_fields_go_round_and_a_report_comes_every_fifth(self):
+        order = []
+        for i in range(6):
+            field = wise_goals.next_field(wise_goals.lessons())
+            order.append(field)
+            wise_goals.put_lesson(self.lesson(field=field, topic=str(i)), "2026-11-05")
+        self.assertEqual(order[:4], list(wise_goals.FIELDS[:4]))
+        self.assertEqual(order[4], wise_goals.REPORT)
+        self.assertEqual(order[5], wise_goals.FIELDS[4])

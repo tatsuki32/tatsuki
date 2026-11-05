@@ -16,6 +16,7 @@ import subprocess
 import tempfile
 
 import wise_analysis
+import wise_goals
 import wise_plan
 import wise_sync
 
@@ -233,12 +234,15 @@ def view(period="month", month=None, start=None, end=None, today=None):
     current = (month or today.isoformat()[:7]) if period == "month" else None
     everything = labelled(wise_sync.summary(start="0000-01-01", end="9999-12-31", today=today.isoformat())["items"])
     seen = wise_sync.read_json("seen.json", {})
-    analysis = wise_analysis.analyze(everything, today.isoformat(), current)
+    if period == "month":
+        analysis = wise_analysis.analyze(everything, today.isoformat(), current)
+    else:
+        analysis = wise_analysis.analyze(everything, today.isoformat(), None, first.isoformat(), min(last, today).isoformat(), before, label)
     data.update(
         period=period, month=current, start=first.isoformat(), end=last.isoformat(), label=label, spent=spent, earlier=earlier,
         categories=cats, categoryNames=CATEGORIES, largest=[{k: a[k] for k in ("date", "title", "usd", "amountText", "category")} for a in top],
         limits=limits, pace=paces, finding={**chosen, "lesson": LESSONS[chosen["lesson"]]}, lessons=list(LESSONS.values()), takeNote=TAKE_NOTE,
-        recon=reconcile(current, data) if current else None, balances=balances_now(), analysis=analysis, ahead=wise_plan.ahead(everything, today.isoformat(), analysis["runway"], analysis["usual"]), tip=wise_plan.today_tip(today.isoformat()), tips=wise_plan.tips()[-30:][::-1],
+        recon=reconcile(current, data) if current else None, balances=balances_now(), analysis=analysis, ahead=wise_plan.ahead(everything, today.isoformat(), analysis["runway"], analysis["usual"]), tip=wise_plan.today_tip(today.isoformat()), tips=wise_plan.tips()[-30:][::-1], budget=wise_goals.budget(everything, today.isoformat(), current), trips=wise_goals.trips(everything), saving=wise_goals.saving(everything, today.isoformat()), sims=wise_sync.read_json("sims.json", {}), profile=wise_goals.age_info(today.isoformat()), learn=wise_goals.learn(today.isoformat()),
         kinds=wise_analysis.kind_totals(data["items"]), kindNames=wise_analysis.KINDS, accounts=wise_analysis.accounts(data["items"]),
         currencies=wise_analysis.by_currency(data["items"]), advice=wise_sync.read_json("advice.json", None), seen=wise_analysis.seen_since(everything, seen.get("previous")),
         close=wise_sync.read_json("close.json", {}).get(current or today.isoformat()[:7]) or {})

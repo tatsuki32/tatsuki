@@ -21,8 +21,8 @@ allowed-tools: Read, Write, Bash(python3 desk/wise_analysis.py:*), WebSearch
    - 分類：食料品、外食・カフェ、コンビニ、交通、旅行・宿泊、通信、買い物、日用品・薬、医療、サブスク・ツール、娯楽・文化、学び、手続き・手数料、現金、送金、カード、未分類
    - 種類：spend、income、self、advance、refund。判断できないものは `sure:false` か、案を出さない。
    - `python3 desk/wise_analysis.py guess-put <ファイル>` で保存する。
-2. `python3 desk/wise_analysis.py facts` を読む。
-3. 助言を3つまで作る。`{"items":[{"fact":"事実","why":"原因","next":"次の1つ（15分以内でできること）"}]}`。
+2. `python3 desk/wise_analysis.py facts` を読む。`periods` に今月・3か月・半年・最初からの数字があり、`budget` と `saving` もある。今月だけでなく、期間をまたいだ傾向も見る。
+3. 助言を3つまで作る。どの期間の話かを文に書く。`{"items":[{"fact":"事実","why":"原因","next":"次の1つ（15分以内でできること）"}]}`。
    言えることがなければ、無理に3つ作らない。
 4. `python3 desk/wise_analysis.py advice-put <ファイル>` で保存し、`refused` があれば直してもう1回だけ試す。
 5. 結果を3行で伝える（保存した数、断られた数、案を足した数）。金額は書かない。

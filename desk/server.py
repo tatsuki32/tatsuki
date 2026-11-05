@@ -29,6 +29,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, unquote, urlsplit
 
 import wise_analysis
+import wise_goals
 import wise_report
 import wise_sync
 
@@ -320,6 +321,21 @@ def wise_settings(parts, rec):
             if rec.get("choice"):
                 entry.update(choice=rec["choice"], reviewed=wise_report.today_hcmc().isoformat() if rec["choice"] == "keep" else entry.get("reviewed"))
             wise_sync.write_json("recurring.json", saved)
+            return 200, {"ok": True}
+        if parts == ["budget"]:
+            wise_goals.put_budget(rec, wise_report.CATEGORIES)
+            return 200, {"ok": True}
+        if len(parts) == 2 and parts[0] == "trips" and re.fullmatch(r"[\w-]{1,60}", parts[1]):
+            wise_goals.put_trip(parts[1], rec)
+            return 200, {"ok": True}
+        if parts == ["goals"]:
+            wise_goals.put_goals(rec)
+            return 200, {"ok": True}
+        if parts == ["sims"]:
+            wise_goals.put_sims(rec)
+            return 200, {"ok": True}
+        if len(parts) == 2 and parts[0] == "learn":
+            wise_goals.answer_lesson(parts[1], rec.get("choice"))
             return 200, {"ok": True}
         if parts == ["direct"]:
             title = str(rec.get("title") or "").strip().lower()
