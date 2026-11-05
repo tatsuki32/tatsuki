@@ -205,6 +205,97 @@ select{background:var(--surface);color:var(--ink);border:1px solid var(--line-2)
 .story.flash{background:var(--accent-soft);transition:background 2s}
 .lens{margin-top:12px;padding-left:12px;border-left:2px solid var(--line-2);font-size:var(--t2);color:var(--ink-2);max-width:40em}
 .lens b{color:var(--ink)}
+/* ---------- World Desk：一覧 → 読む画面（号の形は desk/sync/WORLD_EDITION.md） ---------- */
+.wd-hide{display:none!important}
+.wd-list{display:grid;gap:var(--s5);min-width:0}
+.wd-cat{display:grid;gap:var(--s3)}
+.wd-cat h2,.wd-sec h2{font-size:var(--t4);line-height:1.4}
+.wd-items{display:grid;max-width:40em}
+.wd-item{display:grid;gap:var(--s1);width:100%;padding:var(--s3) 0;border:0;border-top:1px solid var(--line);background:none;color:inherit;font:inherit;text-align:left;cursor:pointer;scroll-margin-top:72px}
+div.wd-item{cursor:default}
+.wd-item:first-child{border-top:0;padding-top:0}
+.wd-item h3{margin:0;font-size:var(--t3);line-height:1.6}
+.wd-item p{margin:0}
+.wd-item .wd-q{font-size:var(--t2);color:var(--ink-2)}
+button.wd-item:hover .wd-q{color:var(--ink)}
+.wd-item.flash{background:var(--accent-soft);transition:background 2s}
+.wd-read{display:grid;gap:var(--s5)}
+.wd-read p,.wd-read h3,.wd-read ol,.wd-read ul,.wd-read dl,.wd-read dd{margin:0;padding:0}
+.wd-read ol,.wd-read ul{list-style:none}
+.wd-read p,.wd-read li,.wd-read dd{overflow-wrap:anywhere}
+.wd-read h3{font-size:var(--t3);line-height:1.6}
+.wd-top{display:grid;gap:var(--s2)}
+.wd-top h1{line-height:1.4}
+.wd-top a{color:inherit;text-decoration:none}
+.wd-top a:hover{color:var(--ink)}
+.wd-sec{display:grid;gap:var(--s3);justify-items:start}
+.wd-sec>*{min-width:0;max-width:100%}
+.wd-sec h2{display:flex;gap:var(--s2);align-items:baseline}
+.wd-sec h2 .n{color:var(--accent)}
+.wd-p{font-size:var(--t3);line-height:1.75;color:var(--ink-2);max-width:40em}
+.wd-read.locked>.wd-sec:not(#wd1){opacity:.3;pointer-events:none}
+.wd-read .btn{min-height:40px}
+.wd-read .btn[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.wd-field{width:100%;max-width:40em;min-height:40px;padding:var(--s2) var(--s3);border-radius:var(--r-s);border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font:inherit;font-size:var(--t3)}
+textarea.wd-field{min-height:96px;line-height:1.75;resize:vertical}
+.wd-field::placeholder{color:var(--muted)}
+.wd-row{display:flex;flex-wrap:wrap;gap:var(--s2);align-items:center}
+.wd-opts{display:grid;gap:var(--s2);width:100%;max-width:40em}
+.wd-opts label{display:flex;gap:var(--s2);align-items:center;min-height:40px;padding:var(--s2) var(--s3);border:1px solid var(--line);border-radius:var(--r-s);font-size:var(--t3);cursor:pointer}
+.wd-opts input{accent-color:var(--accent);margin:0}
+.wd-opts label:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.wd-answer{display:grid;gap:var(--s1)}
+.wd-seg{display:flex;border:1px solid var(--line-2);border-radius:var(--r-s);overflow:hidden}
+.wd-seg button{min-height:40px;padding:0 var(--s3);border:0;background:transparent;color:var(--ink-2);font:inherit;cursor:pointer}
+.wd-seg button+button{border-left:1px solid var(--line-2)}
+.wd-seg button[aria-pressed="true"]{color:var(--ink);font-weight:700;background:var(--accent-soft);box-shadow:inset 0 -2px 0 var(--accent)}
+/* 同じ項目が同じ高さにそろうように、媒体の行を親の行に合わせる */
+.wd-srcs{display:grid;grid-template-columns:repeat(var(--wn,3),minmax(0,1fr));grid-template-rows:repeat(4,auto);gap:var(--s3) var(--s4);width:100%}
+.wd-src{display:grid;grid-row:span 4;grid-template-rows:subgrid;align-content:start}
+.wd-src header{display:grid;gap:var(--s1);justify-items:start}
+.wd-src header a.ext{font-size:var(--t1)}
+.wd-axes{display:grid;grid-template-columns:6em minmax(0,1fr);gap:var(--s1) var(--s2);align-content:start}
+.wd-axes dt{font-size:var(--t1);color:var(--muted);line-height:1.9}
+.wd-axes dd{color:var(--ink-2)}
+.wd-gist,.wd-full,.wd-lang{display:none}
+.wd-srcs[data-mode="gist"] .wd-gist{display:block}
+.wd-srcs[data-mode="full"] .wd-full{display:grid;gap:var(--s3)}
+.wd-srcs[data-mode="study"] .wd-lang{display:grid;gap:var(--s2);align-content:start;justify-items:start}
+/* 詳しく：長い文は細い列だと読みにくいので、1列に積む */
+.wd-srcs[data-mode="full"]{grid-template-columns:minmax(0,1fr);grid-template-rows:none;gap:var(--s4)}
+.wd-srcs[data-mode="full"] .wd-src{grid-row:auto;grid-template-rows:none;gap:var(--s3)}
+.wd-srcs[data-mode="full"] .wd-src+.wd-src{padding-top:var(--s4);border-top:1px solid var(--line)}
+.wd-s{font-size:var(--t3);line-height:1.75}
+/* 日本語の書体はキリル文字と英字が全角になるので、原文と英語だけ端末の欧文書体にする */
+.wd-s [lang]:not([lang="ja"]):not([lang="zh"]),#wdtip .en{font-family:-apple-system,"Helvetica Neue","Segoe UI",system-ui,sans-serif}
+.wd-s [lang="zh"]{font-family:"PingFang SC","Noto Sans SC",var(--font)}
+.wd-s .wd-ja{display:none;font-size:var(--t2);line-height:1.6;color:var(--muted);margin-top:var(--s1)}
+.wd-src.showja .wd-s .wd-ja{display:block}
+.wd-w{border-radius:4px}
+.wd-w.has:hover,.wd-w.pin{background:var(--accent-soft)}
+#wdtip{position:fixed;z-index:60;display:none;max-width:240px;padding:var(--s1) var(--s2);border-radius:var(--r-s);background:var(--surface-2);border:1px solid var(--line-2);font-size:var(--t2);line-height:1.6;pointer-events:none}
+#wdtip .py,#wdtip .ja{display:block;font-size:var(--t1);color:var(--muted)}
+.wd-tbtn{border:0;background:none;padding:0;min-height:24px;color:var(--muted);font:inherit;font-size:var(--t1);cursor:pointer}
+.wd-tbtn:hover{color:var(--ink)}
+.wd-why{display:grid;gap:var(--s4)}
+.wd-why li{display:grid;gap:var(--s1)}
+.wd-root{display:grid;gap:var(--s1)}
+.wd-root b{font-size:var(--t3);line-height:1.75;max-width:40em}
+.wd-pred{display:grid;grid-template-columns:auto minmax(0,240px);gap:var(--s3);align-items:center}
+.wd-pred output{font-size:var(--t5);font-weight:700;line-height:1.2;min-width:3.2em}
+.wd-pred input{width:100%;accent-color:var(--accent)}
+.wd-hist{display:grid;gap:var(--s1);width:100%;max-width:40em}
+.wd-hist li{display:grid;grid-template-columns:5em 3em minmax(0,1fr);gap:var(--s3);color:var(--ink-2)}
+.wd-hist .num{text-align:right;color:var(--ink)}
+.wd-quote{padding-left:var(--s3);border-left:1px solid var(--line-2);color:var(--ink-2);font-size:var(--t3);line-height:1.75;max-width:40em}
+.wd-task{display:grid;gap:var(--s2);width:100%;max-width:40em;justify-items:start}
+@media (max-width:860px){
+  .wd-srcs{grid-template-columns:minmax(0,1fr);grid-template-rows:none;gap:var(--s4)}
+  .wd-src{grid-row:auto;grid-template-rows:none;gap:var(--s3)}
+  .wd-src+.wd-src{padding-top:var(--s4);border-top:1px solid var(--line)}
+  .wd-seg{width:100%}
+  .wd-seg button{flex:1;padding:0 var(--s2)}
+}
 .srcs{margin-top:12px;display:flex;flex-wrap:wrap;gap:var(--s2) var(--s3)}
 .srcs a,a.ext,.md a,.jobs a{color:var(--accent);text-decoration:none}
 .srcs a{font-size:var(--t1)}
@@ -724,7 +815,7 @@ const GROUPJA=Object.fromEntries(GROUPS.map(g=>[g[0],g[2]]));
 const REG={"Middle East":"🕌","Europe & Russia":"🏰","Asia-Pacific":"🌏","Americas":"🗽","Africa":"🌍","Global":"🌐"};
 const PRI={"Action needed":"red","Reply drafted":"amber","FYI":""};
 const PRIO={"Action needed":0,"Reply drafted":1,"FYI":2};
-const S={tools:[],editions:[],days:[],memos:[],ed:null,day:null,region:"All",q:"",confirm:null,busy:null,notes:{},local:false,dues:{},dl:[],dlMap:{},dlAll:false,quietUntil:0,tasks:[],board:[],taskCol:"notyet",cal:null,gtasks:null,reports:[],logDay:null,prompts:{},watch:[],watchId:null,focus:null,wnotes:[],noteId:null,habits:[],memory:null,nextSkip:0,wins:[],winsDays:14};
+const S={tools:[],editions:[],days:[],memos:[],ed:null,day:null,region:"All",q:"",confirm:null,busy:null,notes:{},local:false,dues:{},dl:[],dlMap:{},dlAll:false,quietUntil:0,tasks:[],board:[],taskCol:"notyet",cal:null,gtasks:null,reports:[],logDay:null,prompts:{},watch:[],watchId:null,focus:null,wnotes:[],noteId:null,habits:[],memory:null,nextSkip:0,wins:[],winsDays:14,wread:null,wmode:"gist",wlog:{}};
 let db=null;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -741,7 +832,8 @@ if(LOCALAPI) VIEWS.splice(4,0,{id:"focus",e:"🎯",label:"集中",g:"today"}); /
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="memolink")+1,0,{id:"money",e:"💰",label:"お金",g:"write"}); // statements stay on this Mac
 async function api(method,path,body){const r=await fetch(path,{method,headers:{"Content-Type":"application/json"},body:body?JSON.stringify(body):undefined});if(!r.ok)throw new Error(r.status);return r.json()}
 async function loadApiMemos(){try{
-  const [memos,dues,tasks,prompts,notes,habits,wins]=await Promise.all([api("GET","/api/memos"),api("GET","/api/dues"),api("GET","/api/tasks"),api("GET","/api/prompts").catch(()=>[]),api("GET","/api/notes").catch(()=>[]),api("GET","/api/habits").catch(()=>[]),api("GET","/api/wins").catch(()=>[])]);
+  const [memos,dues,tasks,prompts,notes,habits,wins,wlog]=await Promise.all([api("GET","/api/memos"),api("GET","/api/dues"),api("GET","/api/tasks"),api("GET","/api/prompts").catch(()=>[]),api("GET","/api/notes").catch(()=>[]),api("GET","/api/habits").catch(()=>[]),api("GET","/api/wins").catch(()=>[]),api("GET","/api/worldlog").catch(()=>[])]);
+  S.wlog=Object.fromEntries(wlog.filter(x=>x&&x.id&&!x.deleted).map(x=>[x.id,x]));
   S.wa=await api("GET","/api/whatsapp").catch(()=>({}));
   S.habits=habits.filter(h=>!h.deleted);S.wins=wins.filter(w=>!w.deleted);S.memos=memos.filter(m=>!m.deleted);S.dues=duesById(dues);S.tasks=tasks.filter(t=>!t.deleted);S.prompts=promptsById(prompts);S.wnotes=notes.filter(n=>!n.deleted);render()}catch(e){toast("Desk サーバーにつながりません。起動していますか？")}}
 const promptsById=list=>Object.fromEntries(list.filter(p=>p&&p.id&&!p.deleted).map(p=>[p.id,p]));
@@ -2174,10 +2266,149 @@ function tileBody(t){
   }
   return okUrl(href)?`<a class="tile" href="${esc(href)}"${ext?' target="_blank" rel="noopener"':""}>${inner}</a>`:`<div class="tile">${inner}</div>`;
 }
+/* ---------- World Desk：一覧 → 読む画面。号の形は desk/sync/WORLD_EDITION.md ---------- */
+const WCAT={deals:"国同士の締結",corp:"企業",phil:"研究：哲学",anth:"研究：人類学"};
+const WSTUDY=new Set(["phil","anth"]);
+const isW2=s=>!!(s&&s.question&&Array.isArray(s.question.options)&&Array.isArray(s.media)&&s.media.length);
+const wlogId=(ed,i)=>ed+"-"+i;
+const wlogOf=(ed,i)=>S.wlog[wlogId(ed,i)]||{};
+const WDRAFT={};                       // 書きかけの意見。画面を描き直しても消えないように
+const wDay=at=>new Date(at).toLocaleDateString("ja-JP",{timeZone:"Asia/Ho_Chi_Minh",month:"long",day:"numeric"});
+async function putWlog(ed,i,patch){
+  const id=wlogId(ed,i), rec={...wlogOf(ed,i),...patch,updatedAt:Date.now()}; delete rec.id;
+  if(LOCALAPI) await api("PUT","/api/worldlog/"+encodeURIComponent(id),rec);
+  S.wlog={...S.wlog,[id]:{id,...rec}};
+  if(!LOCALAPI) try{localStorage.setItem("desk-worldlog",JSON.stringify(S.wlog))}catch(e){}
+}
+const worldSide=d=>`<aside class="side">
+      <section class="card"><h2>🏛️ シンクタンク</h2><ul class="list">${(d.thinktank||[]).map(t=>`<li><span class="o">${esc(t.org)} · ${esc(t.date||"")}</span><a href="${esc(okUrl(t.url)?t.url:"#")}" target="_blank" rel="noopener">${esc(t.title)}</a></li>`).join("")||'<li class="sub">新着はありません。</li>'}</ul></section>
+      <section class="card"><h2>🗓️ これからの予定</h2><ul class="list watch">${(d.watch||[]).map(w=>`<li><time>${esc(w.date)}</time><span>${esc(w.label)}</span></li>`).join("")||'<li class="sub">予定はありません。</li>'}</ul></section>
+    </aside>`;
+function worldList(e){
+  const d=e.data, st=d.stories||[], cats=[...new Set(st.map(s=>s.cat||""))];
+  const row=(s,i)=>{
+    if(!isW2(s)) return `<div class="wd-item" id="story-${i}"><h3>${esc(s.title)}</h3><p class="wd-q">${esc(s.summary||"")}</p><div class="srcs">${(s.sources||[]).map(x=>`<a href="${esc(okUrl(x.url)?x.url:"#")}" target="_blank" rel="noopener">${esc(x.name)} ↗</a>`).join("")}</div></div>`;
+    const langs=[...new Set(s.media.map(m=>m.langLabel).filter(Boolean))].join("、"), read=wlogOf(e.id,i).pick!=null;
+    return `<button class="wd-item" id="story-${i}" data-wopen="${i}"><h3>${esc(s.title)}</h3><p class="wd-q">予想：${esc(s.question.text)}</p><p class="sub">${s.media.length}${WSTUDY.has(s.cat)?"本の研究":"つの媒体"}${langs?" ・ "+esc(langs):""}${read?" ・ 読んだ":""}</p></button>`};
+  return `
+  <header class="head"><div><p class="eyebrow">世界ニュース · ${esc(e.id)}</p><h1>今日の世界</h1></div>
+  <label class="sub">号 <select id="ed">${S.editions.map(x=>`<option value="${esc(x.id)}" ${x.id===e.id?"selected":""}>${esc(x.id)}</option>`).join("")}</select></label></header>
+  ${notesHere("news")}
+  <section class="card lead"><p class="eyebrow">全体像</p><h2>${esc(d.headline)}</h2><p>${esc(d.lead)}</p></section>
+  <div class="world">
+    <div class="wd-list">${cats.map(c=>`<section class="wd-cat"><h2>${esc(WCAT[c]||c||"そのほか")}</h2><div class="wd-items">${st.map((s,i)=>(s.cat||"")===c?row(s,i):"").join("")}</div></section>`).join("")}</div>
+    ${worldSide(d)}
+  </div>`;
+}
+function wMedia(m){
+  const lang=m.lang||"", glue=(lang==="zh"||lang==="ja")?"":" ";
+  const axes=a=>`<dl class="wd-axes">${a.map(([l,v])=>`<dt>${esc(l)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>`;
+  const word=w=>{const [t,en,ja,py]=w;return (en||ja)?`<span class="wd-w has" tabindex="0" data-en="${esc(en||"")}" data-ja="${esc(ja||"")}" data-py="${esc(py||"")}">${esc(t)}</span>`:`<span class="wd-w">${esc(t)}</span>`};
+  const study=m.study||[];
+  return `<article class="wd-src">
+    <header><h3>${esc(m.name)}</h3>${m.langLabel?`<p class="sub">${esc(m.langLabel)}</p>`:""}${okUrl(m.url)?`<a class="ext" href="${esc(m.url)}" target="_blank" rel="noopener">元の記事 ↗</a>`:""}</header>
+    ${axes((m.axes||[]).filter(a=>Array.isArray(a)&&a.length>=2))}
+    <div><p class="wd-gist wd-p">${esc(m.gist||"")}</p>
+      <div class="wd-full">${(m.full||[]).map(p=>`<p class="wd-p">${esc(p)}</p>`).join("")}</div>
+      <div class="wd-lang">${study.map(x=>`<p class="wd-s"><span lang="${esc(lang)}">${(x.words||[]).map(word).join(glue)}</span><span class="wd-ja">${esc(x.ja||"")}</span></p>`).join("")}${study.length?`<button class="wd-tbtn" data-wja>日本語を見る</button>`:`<p class="sub">語学用のまとめはありません。</p>`}</div>
+    </div>
+    ${axes([["強調",m.stress||"—"],["書いていない",m.omit||"—"]])}
+  </article>`;
+}
+function worldRead(e,i){
+  const s=e.data.stories[i], q=s.question, L=wlogOf(e.id,i), done=L.pick!=null, n=s.media.length, whys=s.whys||[];
+  const hasLang=s.media.some(m=>(m.study||[]).length), mode=(S.wmode==="study"&&!hasLang)?"gist":S.wmode;
+  const fc=L.forecast||[], last=fc.length?fc[fc.length-1].p:50, draft=WDRAFT[wlogId(e.id,i)]??L.opinion??"";
+  const hist=[...fc].reverse().map((f,k,a)=>{const prev=a[k+1],d=prev?f.p-prev.p:0;return `<li><span>${esc(wDay(f.at))}</span><span class="num">${f.p}%</span><span>${prev?(d>0?"+":"")+d+"　":""}${esc(f.why||(prev?"理由なし":"最初の予想"))}</span></li>`}).join("");
+  return `
+  <div class="wd-read${done?"":" locked"}" data-ed="${esc(e.id)}" data-i="${i}">
+    <header class="wd-top"><p class="sub"><a href="#news" id="wdback">← 今日の一覧</a> ・ ${esc(e.id)} ・ ${esc(WCAT[s.cat]||s.cat||"")} ・ ${i+1}本目（全${e.data.stories.length}本）</p><h1>${esc(s.title)}</h1></header>
+    <section class="wd-sec" id="wd1"><h2><span class="n">1</span>読む前に予想する</h2><p class="wd-p">${esc(q.text)}</p>
+      ${done?`<div class="wd-answer"><p class="sub">あなたの予想：${esc(q.options[L.pick]||"")}${L.why?`（${esc(L.why)}）`:""}</p><h3>答え：${esc(q.result||q.options[q.answer]||"")}</h3><p class="sub">${L.pick===q.answer?"予想どおりでした。":"予想と違いました。どこで見方が分かれたか、下で確かめます。"}</p></div>`
+      :`<div class="wd-opts" role="radiogroup" aria-label="予想">${q.options.map((o,k)=>`<label><input type="radio" name="wdq" value="${k}">${esc(o)}</label>`).join("")}</div>
+      <input class="wd-field" id="wdwhy" type="text" placeholder="そう思う理由を一言" aria-label="そう思う理由">
+      <div class="wd-row"><button class="btn primary" id="wdgo" disabled>予想を記録して読む</button><span class="sub">予想を記録すると、下の記事が開きます。</span></div>`}
+    </section>
+    <section class="wd-sec"><h2><span class="n">2</span>${n}${WSTUDY.has(s.cat)?"本の研究を並べる":"つの媒体で読む"}</h2>
+      <div class="wd-seg" role="group" aria-label="読み方">${[["gist","要点"],["full","詳しく"],...(hasLang?[["study","語学"]]:[])].map(([k,l])=>`<button data-wmode="${k}" aria-pressed="${k===mode}">${l}</button>`).join("")}</div>
+      <p class="sub${mode==="study"?"":" wd-hide"}" id="wdhint">単語にカーソルを合わせると訳が出ます。押すと日本語も出ます。</p>
+      <div class="wd-srcs" id="wdsrcs" data-mode="${mode}" style="--wn:${n}">${s.media.map(wMedia).join("")}</div>
+    </section>
+    ${whys.length?`<section class="wd-sec"><h2><span class="n">3</span>なぜを${whys.length}回たどる</h2>
+      <ol class="wd-why">${whys.map((w,k)=>`<li><p class="sub">なぜ ${k+1}</p><h3>${esc(w.q)}</h3><p class="wd-p">${esc(w.a)}</p><p class="sub">${w.src&&okUrl(w.src.url)?`出典あり：<a class="ext" href="${esc(w.src.url)}" target="_blank" rel="noopener">${esc(w.src.name||"出典")} ↗</a>`:"推測：出典なし"}</p></li>`).join("")}</ol>
+      ${s.root?`<p class="wd-root"><span class="sub">水面下の原因</span><b>${esc(s.root)}</b></p>`:""}
+    </section>`:""}
+    ${s.forecast?`<section class="wd-sec"><h2><span class="n">4</span>予想を小さく直す</h2><p class="wd-p">「${esc(s.forecast)}」</p>
+      <div class="wd-pred"><output id="wdpv" for="wdpr">${last}%</output><input id="wdpr" type="range" min="0" max="100" step="5" value="${last}" aria-label="予想の確率"></div>
+      <input class="wd-field" id="wdpwhy" type="text" placeholder="${fc.length?"直した理由を一言":"そう思う理由を一言"}" aria-label="理由">
+      <button class="btn" id="wdfix">${fc.length?"予想を直す":"予想を記録する"}</button>
+      <ul class="wd-hist">${hist}</ul>
+      <p class="sub">続報が出たら、ここに戻って直します。</p>
+    </section>`:""}
+    <section class="wd-sec"><h2><span class="n">5</span>自分の意見を書く</h2>
+      <p class="sub">読む前に書いたこと</p>
+      <p class="wd-quote">${done?esc((q.options[L.pick]||"")+(L.why?"。"+L.why:"")):"（まだ書いていません）"}</p>
+      <textarea class="wd-field" id="wdop" placeholder="読んだあとの意見。どの見方に近いか、何が足りないと思うか。" aria-label="読んだあとの意見">${esc(draft)}</textarea>
+      <div class="wd-row"><button class="btn primary" id="wdsave">ノートに保存</button>${L.noteId?`<span class="sub">ノートに保存済みです。もう一度押すと上書きします。</span>`:""}</div>
+      <p class="sub">このニュースで何か変わりましたか</p>
+      <div class="wd-row" id="wdchanged">${[["task","タスクを作る"],["pred","予想を直しただけ"],["none","何も変わらない"]].map(([k,l])=>`<button class="btn" data-wch="${k}" aria-pressed="${L.changed===k}">${l}</button>`).join("")}</div>
+      <div class="wd-task${L.changed==="task"&&!L.taskId?"":" wd-hide"}" id="wdtask"><input class="wd-field" id="wdtname" type="text" value="${esc(s.title)}：" aria-label="タスクの名前"><div class="wd-row"><button class="btn" id="wdtadd">Desk のタスクに足す</button></div></div>
+      ${L.taskId?`<p class="sub">タスクに足しました。</p>`:""}
+    </section>
+  </div>`;
+}
+const WTIP={el:null,pin:null};
+function showWtip(w,withJa){
+  let t=WTIP.el; if(!t){t=WTIP.el=document.createElement("div");t.id="wdtip";t.setAttribute("role","tooltip");document.body.append(t)}
+  const {en,ja,py}=w.dataset; t.textContent="";
+  const add=(c,x)=>{if(!x)return;const el=document.createElement("span");el.className=c;el.textContent=x;t.append(el)};
+  add("py",py); add("en",en||ja); if(withJa&&en) add("ja",ja);
+  t.style.display="block";
+  const r=w.getBoundingClientRect(), pad=8;
+  let x=Math.min(Math.max(r.left,pad),innerWidth-t.offsetWidth-pad), y=r.top-t.offsetHeight-6; if(y<pad) y=r.bottom+6;
+  t.style.left=x+"px"; t.style.top=y+"px";
+}
+function hideWtip(){ if(WTIP.pin){WTIP.pin.classList.remove("pin");WTIP.pin=null} if(WTIP.el) WTIP.el.style.display="none" }
+document.addEventListener("click",()=>{if(WTIP.pin)hideWtip()});
+window.addEventListener("scroll",()=>{if(WTIP.el&&WTIP.el.style.display==="block")hideWtip()},{passive:true});
+function wireWorld(){
+  document.querySelectorAll("[data-wopen]").forEach(b=>b.onclick=()=>{S.wread=+b.dataset.wopen;window.scrollTo(0,0);render()});
+  const R=document.querySelector(".wd-read"); hideWtip(); if(!R) return;
+  const ed=R.dataset.ed, i=+R.dataset.i, e=S.editions.find(x=>x.id===ed), s=e&&(e.data.stories||[])[i]; if(!s) return;
+  const id=wlogId(ed,i), fail=()=>toast("保存できませんでした。もう一度お試しください");
+  $("#wdback").onclick=ev=>{ev.preventDefault();S.wread=null;window.scrollTo(0,0);render()};
+  document.querySelectorAll('input[name="wdq"]').forEach(r=>r.onchange=()=>{$("#wdgo").disabled=false});
+  $("#wdgo")&&($("#wdgo").onclick=async()=>{const c=document.querySelector('input[name="wdq"]:checked');if(!c)return;
+    try{await putWlog(ed,i,{pick:+c.value,why:$("#wdwhy").value.trim(),pickedAt:Date.now()});render()}catch(err){fail()}});
+  document.querySelectorAll("[data-wmode]").forEach(b=>b.onclick=()=>{S.wmode=b.dataset.wmode;hideWtip();
+    document.querySelectorAll("[data-wmode]").forEach(x=>x.setAttribute("aria-pressed",x===b));$("#wdsrcs").dataset.mode=S.wmode;$("#wdhint").classList.toggle("wd-hide",S.wmode!=="study")});
+  document.querySelectorAll("[data-wja]").forEach(b=>b.onclick=()=>{const on=b.closest(".wd-src").classList.toggle("showja");b.textContent=on?"日本語を隠す":"日本語を見る"});
+  document.querySelectorAll(".wd-w.has").forEach(w=>{
+    w.onmouseenter=w.onfocus=()=>{if(!WTIP.pin)showWtip(w,false)};
+    w.onmouseleave=w.onblur=()=>{if(!WTIP.pin)hideWtip()};
+    w.onclick=ev=>{ev.stopPropagation();const same=WTIP.pin===w;hideWtip();if(!same){WTIP.pin=w;w.classList.add("pin");showWtip(w,true)}}});
+  $("#wdpr")&&($("#wdpr").oninput=ev=>{$("#wdpv").textContent=ev.target.value+"%"});
+  $("#wdfix")&&($("#wdfix").onclick=async()=>{const fc=wlogOf(ed,i).forecast||[], p=+$("#wdpr").value;
+    if(fc.length&&fc[fc.length-1].p===p){toast("確率が前と同じです");return}
+    try{await putWlog(ed,i,{forecast:[...fc,{at:Date.now(),p,why:$("#wdpwhy").value.trim()}]});render()}catch(err){fail()}});
+  $("#wdop").oninput=ev=>{WDRAFT[id]=ev.target.value};
+  $("#wdsave").onclick=async()=>{const L=wlogOf(ed,i), op=$("#wdop").value.trim(), q=s.question; if(!op){toast("意見を書いてから保存します");return}
+    const nid=L.noteId||newNoteId(), old=noteList().find(x=>x.id===nid);
+    const body=[op,"",L.pick!=null?`読む前の予想：${q.options[L.pick]||""}${L.why?"（"+L.why+"）":""}`:"",`答え：${q.result||q.options[q.answer]||""}`].filter((x,k)=>x||k===1).join("\n");
+    try{await putWlog(ed,i,{opinion:op,noteId:nid});await store.putNote({id:nid,title:`世界ニュース ${ed} ${s.title}`,body,createdAt:old?.createdAt||Date.now(),noAuto:true});toast("📝 ノートに保存しました")}catch(err){fail()}};
+  document.querySelectorAll("[data-wch]").forEach(b=>b.onclick=async()=>{const k=b.dataset.wch;
+    try{await putWlog(ed,i,{changed:k})}catch(err){return fail()}
+    document.querySelectorAll("[data-wch]").forEach(x=>x.setAttribute("aria-pressed",x===b));$("#wdtask").classList.toggle("wd-hide",k!=="task"||!!wlogOf(ed,i).taskId)});
+  $("#wdtadd").onclick=async()=>{const title=$("#wdtname").value.trim(); if(!title){toast("タスクの名前を入れてください");return}
+    const tid=newTaskId();
+    try{await putWlog(ed,i,{changed:"task",taskId:tid});await store.putTask({id:tid,title,status:"notyet",source:"manual",note:`World Desk ${ed}：${s.title}`,createdAt:Date.now()});toast("🗂️ タスクを追加しました")}catch(err){fail()}};
+}
 function news(){
   const e=S.editions.find(x=>x.id===S.ed)||S.editions[0];
   if(!e) return `<header class="head"><div><p class="eyebrow">世界ニュース</p><h1>今日の世界</h1></div></header><div class="card empty"><b>まだニュースがありません</b>毎朝 7:17（ホーチミン時間）に新しい号が届きます。</div>`;
   const d=e.data, stories=d.stories||[];
+  if(S.wread!=null&&isW2(stories[S.wread])) return worldRead(e,S.wread);
+  if(stories.some(isW2)) return worldList(e);
   const regions=["All",...Object.keys(REG).filter(r=>stories.some(s=>s.region===r))];
   const shown=stories.filter(s=>S.region==="All"||s.region===S.region);
   return `
@@ -2758,7 +2989,8 @@ function wire(){
   $("#noteDel")&&($("#noteDel").onclick=async e=>{const b=e.currentTarget;if(!b.dataset.sure){b.dataset.sure="1";b.textContent="本当に削除？";return}
     const n=noteList().find(x=>x.id===S.noteId);if(!n)return;try{await store.putNote({...n,deleted:true});S.noteId=null;toast("🗑️ 削除しました")}catch(err){toast("削除できませんでした")}});
   if(S.noteEditNew&&viewId()==="notes"){S.noteEditNew=false;setTimeout(()=>startEdit(document.querySelector(".wiki[data-edit]")),0)}
-  $("#ed")&&($("#ed").onchange=e=>{S.ed=e.target.value;S.region="All";render()});
+  $("#ed")&&($("#ed").onchange=e=>{S.ed=e.target.value;S.region="All";S.wread=null;render()});
+  wireWorld();
   $("#logDay")&&($("#logDay").onchange=e=>{S.logDay=e.target.value;render()});
   document.querySelectorAll("[data-region]").forEach(b=>b.onclick=()=>{S.region=b.dataset.region;render()});
   document.querySelectorAll("[data-filter]").forEach(b=>b.onclick=()=>{S.inboxFilter=b.dataset.filter;render()});
@@ -3088,6 +3320,7 @@ autoLinkStart();
     try{S.wnotes=JSON.parse(localStorage.getItem("desk-notes")||"[]")||[]}catch(e){S.wnotes=[]}
     try{S.habits=JSON.parse(localStorage.getItem("desk-habits")||"[]")||[]}catch(e){S.habits=[]}
     try{S.wins=JSON.parse(localStorage.getItem("desk-wins")||"[]")||[]}catch(e){S.wins=[]}
+    try{S.wlog=JSON.parse(localStorage.getItem("desk-worldlog")||"{}")||{}}catch(e){S.wlog={}}
     return render();
   }
   db=window.claude?await claude.use("db"):null;

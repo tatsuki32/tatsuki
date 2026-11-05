@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>World Desk 読み方の見本</title>
+<style>
+/* 見本（モックアップ）。色・文字・余白は desk/index.html の :root と同じ値。 */
+:root{
+  --bg:#0b0b0c; --rail:#0f0f11; --surface:#151517; --surface-2:#1e1e21; --line:#2a2a2e; --line-2:#3c3c42;
+  --ink:#ececee; --ink-2:#b6b6bc; --muted:#8a8a93;
+  --accent:#e2b866; --accent-soft:rgba(226,184,102,.10); --accent-ink:#1a1408;
+  --font:"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic UI","Meiryo",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --s1:4px; --s2:8px; --s3:16px; --s4:24px; --s5:40px;
+  --t1:12px; --t2:14px; --t3:16px; --t4:20px; --t5:28px;
+  --r-s:8px;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{background:var(--bg)}
+body{margin:0;color:var(--ink);font-family:var(--font);font-size:var(--t2);line-height:1.6;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums}
+button,input,textarea{font:inherit;color:inherit}
+p,h1,h2,h3,ol,ul,dl,dd{margin:0;padding:0}
+ol,ul{list-style:none}
+p,li,dd{text-wrap:pretty;overflow-wrap:anywhere}
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+
+/* ---------- 枠：メニュー＋読む列 ---------- */
+.app{display:grid;grid-template-columns:224px minmax(0,1fr);min-height:100vh}
+.rail{background:var(--rail);border-right:1px solid var(--line);padding:var(--s4) var(--s3);position:sticky;top:0;height:100vh;display:grid;align-content:start;gap:var(--s4)}
+.brand{display:flex;align-items:center;gap:var(--s2);padding:0 var(--s2);font-weight:700}
+.nav{display:grid;gap:2px}
+.nav .gh{margin:var(--s4) var(--s2) var(--s1);font-size:var(--t1);color:var(--muted)}
+.nav .gh:first-child{margin-top:0}
+.nav a{display:flex;gap:10px;padding:6px var(--s2);border-radius:var(--r-s);color:var(--ink-2)}
+.nav a[aria-current="page"]{background:var(--surface);color:var(--ink);font-weight:700;box-shadow:inset 3px 0 0 var(--accent)}
+.nav .e{width:20px;text-align:center}
+main{padding:var(--s5) var(--s4)}
+.wrap{max-width:1040px;display:grid;gap:var(--s5)}
+
+/* ---------- 文字の役割は3つ：見出し・本文・補足 ---------- */
+h1{font-size:var(--t5);line-height:1.4;text-wrap:balance}
+h2{font-size:var(--t4);line-height:1.4;display:flex;gap:var(--s2);align-items:baseline}
+h2 .n{color:var(--accent)}
+h3{font-size:var(--t3);line-height:1.6}
+.sub{font-size:var(--t1);color:var(--muted)}
+.sub a:hover{color:var(--ink)}
+.ext{font-size:var(--t1);color:var(--accent)}
+.read{font-size:var(--t3);line-height:1.75;color:var(--ink-2);max-width:40em}
+.top{display:grid;gap:var(--s2)}
+section{display:grid;gap:var(--s3);justify-items:start}
+section>*{min-width:0;max-width:100%}
+
+/* ---------- ボタンと入力 ---------- */
+.btn{min-height:40px;padding:0 var(--s3);border-radius:var(--r-s);border:1px solid var(--line-2);background:transparent;cursor:pointer}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+.btn[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.btn:disabled{opacity:.4;cursor:default}
+.field{width:100%;max-width:40em;min-height:40px;padding:var(--s2) var(--s3);border-radius:var(--r-s);border:1px solid var(--line-2);background:var(--surface);font-size:var(--t3)}
+textarea.field{min-height:96px;line-height:1.75;resize:vertical}
+.field::placeholder{color:var(--muted)}
+.row{display:flex;flex-wrap:wrap;gap:var(--s2);align-items:center}
+
+/* ---------- 1 予想 ---------- */
+.opts{display:grid;gap:var(--s2);width:100%;max-width:40em}
+.opts label{display:flex;gap:var(--s2);align-items:center;min-height:40px;padding:var(--s2) var(--s3);border:1px solid var(--line);border-radius:var(--r-s);font-size:var(--t3);cursor:pointer}
+.opts input{accent-color:var(--accent);margin:0}
+.opts label:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.answer{display:none;gap:var(--s1)}
+.done .answer{display:grid}
+.done .before{display:none}
+.locked>section:not(#s1){opacity:.3;pointer-events:none}
+
+/* ---------- 2 3つの媒体：行をそろえて見比べる ---------- */
+.seg{display:flex;border:1px solid var(--line-2);border-radius:var(--r-s);overflow:hidden}
+.seg button{min-height:40px;padding:0 var(--s3);border:0;background:transparent;color:var(--ink-2);cursor:pointer}
+.seg button+button{border-left:1px solid var(--line-2)}
+.seg button[aria-pressed="true"]{color:var(--ink);font-weight:700;background:var(--accent-soft);box-shadow:inset 0 -2px 0 var(--accent)}
+.srcs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(4,auto);gap:var(--s3) var(--s4);width:100%}
+.src{display:grid;grid-row:span 4;grid-template-rows:subgrid;align-content:start}
+.src header{display:grid;gap:var(--s1);justify-items:start}
+.axes{display:grid;grid-template-columns:6em minmax(0,1fr);gap:var(--s1) var(--s2);align-content:start}
+.axes dt{font-size:var(--t1);color:var(--muted);line-height:1.9}
+.axes dd{color:var(--ink-2)}
+/* 読み方は3つ。要点＝短い日本語、詳しく＝約1000字の日本語、語学＝原文の短いまとめ */
+.gist,.full,.lang{display:none}
+.srcs[data-mode="gist"] .gist{display:block}
+.srcs[data-mode="full"] .full{display:grid;gap:var(--s3)}
+.srcs[data-mode="lang"] .lang{display:grid;gap:var(--s2);align-content:start;justify-items:start}
+/* 詳しく：長い文は細い3列だと読みにくいので、1列に積む */
+.srcs[data-mode="full"]{grid-template-columns:minmax(0,1fr);grid-template-rows:none;gap:var(--s4)}
+.srcs[data-mode="full"] .src{grid-row:auto;grid-template-rows:none;gap:var(--s3)}
+.srcs[data-mode="full"] .src+.src{padding-top:var(--s4);border-top:1px solid var(--line)}
+.s{font-size:var(--t3);line-height:1.75}
+/* 日本語の書体はキリル文字と英字が全角になるので、原文と英語だけ端末の欧文書体にする */
+.s [lang="en"],.s [lang="ru"],#tip .en{font-family:-apple-system,"Helvetica Neue","Segoe UI",system-ui,sans-serif}
+.s [lang="zh"]{font-family:"PingFang SC","Noto Sans SC",var(--font)}
+.s .ja{display:none;font-size:var(--t2);line-height:1.6;color:var(--muted);margin-top:var(--s1)}
+.src.showja .s .ja{display:block}
+.w{border-radius:4px;cursor:default}
+.w.has:hover,.w.pin{background:var(--accent-soft)}
+#tip{position:fixed;z-index:10;display:none;max-width:240px;padding:var(--s1) var(--s2);border-radius:var(--r-s);background:var(--surface-2);border:1px solid var(--line-2);font-size:var(--t2);line-height:1.6;pointer-events:none}
+#tip .py,#tip .ja{display:block;font-size:var(--t1);color:var(--muted)}
+.textbtn{border:0;background:none;padding:0;min-height:24px;color:var(--muted);font-size:var(--t1);cursor:pointer}
+.textbtn:hover{color:var(--ink)}
+
+/* ---------- 3 なぜを5回 ---------- */
+.why{display:grid;gap:var(--s4)}
+.why li{display:grid;gap:var(--s1)}
+.root{display:grid;gap:var(--s1)}
+.root b{font-size:var(--t3);line-height:1.75;max-width:40em}
+
+/* ---------- 4 予想を直す ---------- */
+.pred{display:grid;grid-template-columns:auto minmax(0,240px);gap:var(--s3);align-items:center}
+.pred output{font-size:var(--t5);font-weight:700;line-height:1.2;min-width:3.2em}
+.pred input{width:100%;accent-color:var(--accent)}
+.hist{display:grid;gap:var(--s1);width:100%;max-width:40em}
+.hist li{display:grid;grid-template-columns:5em 3em minmax(0,1fr);gap:var(--s3);color:var(--ink-2)}
+.hist .num{text-align:right;color:var(--ink)}
+
+/* ---------- 5 意見 ---------- */
+.quote{padding-left:var(--s3);border-left:1px solid var(--line-2);color:var(--ink-2);font-size:var(--t3);line-height:1.75;max-width:40em}
+.hide{display:none!important}
+
+/* ---------- 一覧：結果を書かない見出しと、予想の問いだけを並べる ---------- */
+.items{display:grid;width:100%;max-width:40em}
+.item{display:grid;gap:var(--s1);width:100%;padding:var(--s3) 0;border:0;border-top:1px solid var(--line);background:none;text-align:left;cursor:pointer}
+.item:first-child{border-top:0;padding-top:0}
+.item .q{font-size:var(--t2);color:var(--ink-2)}
+.item:hover .q{color:var(--ink)}
+.taskbox{display:grid;gap:var(--s2);width:100%;max-width:40em;justify-items:start}
+
+@media (max-width:860px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  .rail{display:none}
+  main{padding:var(--s4) var(--s3) var(--s5)}
+  .srcs{grid-template-columns:minmax(0,1fr);grid-template-rows:none;gap:var(--s4)}
+  .src{grid-row:auto;grid-template-rows:none;gap:var(--s3)}
+  .src+.src{padding-top:var(--s4);border-top:1px solid var(--line)}
+  .seg{width:100%}
+  .seg button{flex:1;padding:0 var(--s2)}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="rail">
+    <div class="brand"><span>🗂️</span><span>Tatsuki's Desk</span></div>
+    <nav class="nav">
+      <div class="gh">今日</div>
+      <a href="#"><span class="e">🏠</span>Home</a>
+      <a href="#"><span class="e">✅</span>Tasks</a>
+      <div class="gh">読む</div>
+      <a href="#" aria-current="page"><span class="e">🌍</span>World Desk</a>
+      <a href="#"><span class="e">🧭</span>マイナー国</a>
+      <div class="gh">書く・振り返る</div>
+      <a href="#"><span class="e">📝</span>ノート</a>
+    </nav>
+  </aside>
+
+  <main>
+    <div class="wrap" id="list">
+      <header class="top">
+        <p class="sub">World Desk ・ 11月5日</p>
+        <h1>今日の8本</h1>
+        <p class="sub">見本です。中身は架空です。結果は書いていません。気になるものだけ開きます。</p>
+      </header>
+      <section>
+        <h2>国同士の締結</h2>
+        <div class="items">
+          <button class="item"><h3>ロシアとカザフスタンが鉄道の協定に署名</h3><p class="q">予想：建設費を多く出すのはどちらか</p><p class="sub">3つの媒体 ・ 英語、ロシア語、中国語</p></button>
+          <button class="item"><h3>東南アジアの2か国が電力の融通で合意</h3><p class="q">予想：電気を送る側になるのはどちらか</p><p class="sub">3つの媒体 ・ 英語、タイ語、ベトナム語</p></button>
+        </div>
+      </section>
+      <section>
+        <h2>企業</h2>
+        <div class="items">
+          <button class="item"><h3>インドの決済会社が上場</h3><p class="q">予想：初日の終値は、公開価格より上か下か</p><p class="sub">3つの媒体 ・ 英語、ヒンディー語</p></button>
+          <button class="item"><h3>欧州の製薬2社が合併を発表</h3><p class="q">予想：残る社名はどちらか</p><p class="sub">3つの媒体 ・ 英語、ドイツ語、フランス語</p></button>
+        </div>
+      </section>
+      <section>
+        <h2>研究：哲学</h2>
+        <div class="items">
+          <button class="item"><h3>わざとではない害の責任を、10か国で尋ねた実験</h3><p class="q">予想：国によって判断は分かれたか</p><p class="sub">3本の研究</p></button>
+          <button class="item"><h3>直感の判断と、時間をかけた判断を比べた研究</h3><p class="q">予想：時間をかけると判断は変わったか</p><p class="sub">2本の研究</p></button>
+        </div>
+      </section>
+      <section>
+        <h2>研究：人類学</h2>
+        <div class="items">
+          <button class="item"><h3>狩猟採集の社会で、子育ての分担を測った調査</h3><p class="q">予想：母親以外が担う時間は半分を超えたか</p><p class="sub">2本の研究</p></button>
+          <button class="item"><h3>贈り物の習慣を30の社会で比べた研究</h3><p class="q">予想：お返しの期限に共通点はあったか</p><p class="sub">3本の研究</p></button>
+        </div>
+      </section>
+    </div>
+
+    <div class="wrap locked hide" id="wrap">
+      <header class="top">
+        <p class="sub"><a href="#" id="back">← 今日の一覧</a> ・ 11月5日 ・ 国同士の締結 ・ 1本目（全8本）</p>
+        <h1>ロシアとカザフスタンが鉄道の協定に署名</h1>
+        <p class="sub">見本です。ニュースの中身と媒体の評価は架空です。</p>
+      </header>
+
+      <section id="s1">
+        <h2><span class="n">1</span>読む前に予想する</h2>
+        <p class="read">この協定で、建設費を多く負担するのはどちらでしょう。</p>
+        <div class="opts before" role="radiogroup" aria-label="予想">
+          <label><input type="radio" name="q" value="ロシア側が多く負担する">ロシア側が多く負担する</label>
+          <label><input type="radio" name="q" value="カザフスタン側が多く負担する">カザフスタン側が多く負担する</label>
+          <label><input type="radio" name="q" value="半分ずつ負担する">半分ずつ負担する</label>
+        </div>
+        <input class="field before" id="reason" type="text" placeholder="そう思う理由を一言" aria-label="そう思う理由">
+        <div class="row before">
+          <button class="btn primary" id="go" disabled>予想を記録して読む</button>
+          <span class="sub">予想を記録すると、下の記事が開きます。</span>
+        </div>
+        <div class="answer">
+          <p class="sub" id="mine"></p>
+          <h3>答え：カザフスタン側が約6割を負担する</h3>
+          <p class="sub" id="judge"></p>
+        </div>
+      </section>
+
+      <section id="s2">
+        <h2><span class="n">2</span>3つの媒体で読む</h2>
+        <div class="seg" role="group" aria-label="読み方">
+          <button aria-pressed="true" data-mode="gist">要点</button>
+          <button aria-pressed="false" data-mode="full">詳しく</button>
+          <button aria-pressed="false" data-mode="lang">語学</button>
+        </div>
+        <p class="sub hide" id="hint"></p>
+
+        <div class="srcs" id="srcs" data-mode="gist">
+          <article class="src">
+            <header><h3>国際通信社</h3><p class="sub">英語</p><a class="ext" href="#">元の記事 ↗</a></header>
+            <dl class="axes">
+              <dt>立ち位置</dt><dd>中央</dd>
+              <dt>信頼性</dt><dd>高い</dd>
+              <dt>中身</dt><dd>事実が中心</dd>
+              <dt>速さ</dt><dd>速報</dd>
+              <dt>お金</dt><dd>民間。配信料と購読</dd>
+            </dl>
+            <div class="text">
+              <p class="gist read">約900kmの鉄道を共同で改修する。費用の約6割はカザフスタンが出す。発効には両国の議会の承認が要る。</p>
+              <div class="full">
+                <p class="read">ロシアとカザフスタンは火曜、両国を結ぶ約900kmの鉄道を共同で改修する協定に署名した。署名式はカザフスタンの首都で行われ、両国の運輸相が出席した。</p>
+                <p class="read">協定によると、改修にかかる費用の約6割をカザフスタンが、残りをロシアが負担する。工事は来年に始まり、5年で終える計画だ。線路の補強と信号設備の更新が中心で、完成すれば運べる貨物の量は今の約1.5倍になる見込みだという。</p>
+                <p class="read">協定の発効には、両国の議会の承認が要る。カザフスタンの当局者は、年内に議会へ出す方針を示した。ロシア側は時期を明らかにしていない。</p>
+                <p class="read">この路線は、中央アジアと欧州を結ぶ貨物輸送の一部を担っている。貨物の量はこの3年で増えており、運輸会社からは遅れへの不満が出ていた。費用の総額は公表されていない。</p>
+              </div>
+              <div class="lang">
+                <p class="s"><span class="orig" lang="en" data-w="en1"></span><span class="ja">ロシアとカザフスタンは火曜、900kmの鉄道を共同で改修する協定に署名した。</span></p>
+                <p class="s"><span class="orig" lang="en" data-w="en2"></span><span class="ja">費用の約6割はカザフスタンが負担すると、当局者が述べた。</span></p>
+                <button class="textbtn ja-btn">日本語を見る</button>
+              </div>
+            </div>
+            <dl class="axes">
+              <dt>強調</dt><dd>距離と費用の数字</dd>
+              <dt>書いていない</dt><dd>協定の背景</dd>
+            </dl>
+          </article>
+
+          <article class="src">
+            <header><h3>ロシア国営通信</h3><p class="sub">ロシア語</p><a class="ext" href="#">元の記事 ↗</a></header>
+            <dl class="axes">
+              <dt>立ち位置</dt><dd>政府寄り</dd>
+              <dt>信頼性</dt><dd>中くらい</dd>
+              <dt>中身</dt><dd>意見が多い</dd>
+              <dt>速さ</dt><dd>速報</dd>
+              <dt>お金</dt><dd>国が所有</dd>
+            </dl>
+            <div class="text">
+              <p class="gist read">協定を「友好と信頼の象徴」として伝える。ロシアの技術が欠かせないと強調する。費用の分担には触れていない。</p>
+              <div class="full">
+                <p class="read">ロシアとカザフスタンは、鉄道を共同で近代化する協定に署名した。両国はこの事業を、両国民の友好と信頼の象徴と位置づけている。</p>
+                <p class="read">ロシアの運輸相は式典で、両国の協力は新しい段階に入ったと述べた。カザフスタン側も、長年の結びつきがこの協定を可能にしたと応じた。</p>
+                <p class="read">記事は、ロシアの技術と経験が事業の成功に欠かせないと強調する。ロシアの鉄道会社が設計と車両の供給を担うことにも触れている。完成後は地域全体の経済が活発になり、両国の企業に新しい機会が生まれるとしている。</p>
+                <p class="read">一方、費用の総額と、両国がどう分担するかについての記述はない。議会の承認の見通しにも触れていない。協力の先行きを疑う西側の専門家の見方は、根拠がないと退けている。</p>
+              </div>
+              <div class="lang">
+                <p class="s"><span class="orig" lang="ru" data-w="ru1"></span><span class="ja">ロシアとカザフスタンは、鉄道を共同で近代化する協定に署名した。</span></p>
+                <p class="s"><span class="orig" lang="ru" data-w="ru2"></span><span class="ja">両国はこの事業を、両国民の友好と信頼の象徴と呼んだ。</span></p>
+                <button class="textbtn ja-btn">日本語を見る</button>
+              </div>
+            </div>
+            <dl class="axes">
+              <dt>強調</dt><dd>両国の友好</dd>
+              <dt>書いていない</dt><dd>費用の分担</dd>
+            </dl>
+          </article>
+
+          <article class="src">
+            <header><h3>中国の経済紙</h3><p class="sub">中国語</p><a class="ext" href="#">元の記事 ↗</a></header>
+            <dl class="axes">
+              <dt>立ち位置</dt><dd>政府寄り</dd>
+              <dt>信頼性</dt><dd>中くらい</dd>
+              <dt>中身</dt><dd>分析と意見</dd>
+              <dt>速さ</dt><dd>分析</dd>
+              <dt>お金</dt><dd>国有企業の系列。広告</dd>
+            </dl>
+            <div class="text">
+              <p class="gist read">中国と欧州を結ぶ貨物列車との競合として伝える。中国の企業の商機にも触れる。カザフスタン側の事情はほとんど書いていない。</p>
+              <div class="full">
+                <p class="read">ロシアとカザフスタンは、鉄道の共同改修協定に署名した。記事はこの協定を、中国と欧州を結ぶ貨物列車への影響という角度から分析している。</p>
+                <p class="read">専門家の見方として、改修される路線は中国発の貨物列車と一部で競合しうると伝える。輸送にかかる日数が縮まれば、荷主が経路を選び直す可能性があるためだ。ただし別の専門家は、全体の貨物の量が増えれば両方の路線に恩恵があるとも述べている。</p>
+                <p class="read">記事は、中国の企業にとっての商機にも触れる。信号設備や建設機械の分野で、中国の企業が受注を狙えるという。</p>
+                <p class="read">カザフスタンがなぜ費用の多くを負担するのか、国内でどんな議論があるのかについては、ほとんど書かれていない。協定の発効時期も、未定とだけ伝えている。</p>
+              </div>
+              <div class="lang">
+                <p class="s"><span class="orig" lang="zh" data-w="zh1"></span><span class="ja">ロシアとカザフスタンは、鉄道の共同改修協定に署名した。</span></p>
+                <p class="s"><span class="orig" lang="zh" data-w="zh2"></span><span class="ja">専門家は、この路線が中国と欧州を結ぶ貨物列車と競合しうるとみている。</span></p>
+                <button class="textbtn ja-btn">日本語を見る</button>
+              </div>
+            </div>
+            <dl class="axes">
+              <dt>強調</dt><dd>自国の路線との競争</dd>
+              <dt>書いていない</dt><dd>カザフスタン側の事情</dd>
+            </dl>
+          </article>
+        </div>
+      </section>
+
+      <section id="s3">
+        <h2><span class="n">3</span>なぜを5回たどる</h2>
+        <ol class="why">
+          <li><p class="sub">なぜ 1</p><h3>なぜ、いま協定を結んだのか</h3><p class="read">今の路線で運べる貨物の量が、上限に近づいているからです。</p><p class="sub">出典あり：<a class="ext" href="#">国際通信社 ↗</a></p></li>
+          <li><p class="sub">なぜ 2</p><h3>なぜ、貨物が増えたのか</h3><p class="read">欧州向けの輸送が、北の路線から中央アジア経由に移ったからです。</p><p class="sub">出典あり：<a class="ext" href="#">シンクタンクの報告 ↗</a></p></li>
+          <li><p class="sub">なぜ 3</p><h3>なぜ、経路が移ったのか</h3><p class="read">制裁で、これまでの経路が使いにくくなったからです。</p><p class="sub">出典あり：<a class="ext" href="#">国際通信社 ↗</a></p></li>
+          <li><p class="sub">なぜ 4</p><h3>なぜ、カザフスタンは単独で改修しないのか</h3><p class="read">建設の資金と車両を、相手国に頼っているからです。</p><p class="sub">推測：出典なし</p></li>
+          <li><p class="sub">なぜ 5</p><h3>なぜ、頼っているのか</h3><p class="read">旧ソ連の時代から線路の幅（1520mm）が同じで、切り替えに大きな費用がかかるからです。</p><p class="sub">出典あり：<a class="ext" href="#">鉄道の統計 ↗</a></p></li>
+        </ol>
+        <p class="root"><span class="sub">水面下の原因</span><b>線路の規格が、何十年も先まで国の選べる相手を決めている。</b></p>
+      </section>
+
+      <section id="s4">
+        <h2><span class="n">4</span>予想を小さく直す</h2>
+        <p class="read">「この協定は2027年末までに発効する」</p>
+        <div class="pred">
+          <output id="pv" for="pr">60%</output>
+          <input id="pr" type="range" min="0" max="100" step="5" value="60" aria-label="予想の確率">
+        </div>
+        <input class="field" id="pwhy" type="text" placeholder="直した理由を一言" aria-label="直した理由">
+        <button class="btn" id="fix">予想を直す</button>
+        <ul class="hist" id="hist">
+          <li><span>11月5日</span><span class="num">60%</span><span>最初の予想</span></li>
+        </ul>
+        <p class="sub">月に1回、続報レポートで続きを調べます。次は12月5日です。</p>
+      </section>
+
+      <section id="s5">
+        <h2><span class="n">5</span>自分の意見を書く</h2>
+        <p class="sub">読む前に書いたこと</p>
+        <p class="quote" id="beforeq">（まだ書いていません）</p>
+        <textarea class="field" id="op" placeholder="読んだあとの意見。3つの媒体のどれに近いか、何が足りないと思うか。" aria-label="読んだあとの意見"></textarea>
+        <div class="row">
+          <button class="btn primary" id="save">ノートに保存</button>
+          <span class="sub hide" id="saved">保存しました（見本なので実際には保存しません）</span>
+        </div>
+        <p class="sub">このニュースで何か変わりましたか</p>
+        <div class="row" id="changed">
+          <button class="btn" aria-pressed="false" data-k="task">タスクを作る</button>
+          <button class="btn" aria-pressed="false" data-k="pred">予想を直しただけ</button>
+          <button class="btn" aria-pressed="false" data-k="none">何も変わらない</button>
+        </div>
+        <div class="taskbox hide" id="taskbox">
+          <input class="field" id="tname" type="text" value="鉄道の協定：議会に出たか12月に確かめる" aria-label="タスクの名前">
+          <div class="row">
+            <button class="btn" id="tadd">Desk のタスクに足す</button>
+            <span class="sub hide" id="tadded">足しました（見本なので実際には足しません）</span>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+<div id="tip" role="tooltip"></div>
+
+<script>
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const ANSWER="カザフスタン側が多く負担する";
+
+// 一覧 → 読む画面（見本はどの行も同じ記事を開く）
+$$(".item").forEach(b=>b.onclick=()=>{$("#list").classList.add("hide");$("#wrap").classList.remove("hide");scrollTo(0,0)});
+$("#back").onclick=e=>{e.preventDefault();$("#wrap").classList.add("hide");$("#list").classList.remove("hide");scrollTo(0,0)};
+
+// 1 予想：選ぶまでボタンは押せない。記録すると下が開く。
+$$('input[name="q"]').forEach(r=>r.onchange=()=>{$("#go").disabled=false});
+$("#go").onclick=()=>{
+  const pick=$('input[name="q"]:checked').value, why=$("#reason").value.trim();
+  $("#mine").textContent="あなたの予想："+pick+(why?"（"+why+"）":"");
+  $("#judge").textContent=pick===ANSWER?"予想どおりでした。":"予想と違いました。どこで見方が分かれたか、下で確かめます。";
+  $("#beforeq").textContent=pick+(why?"。"+why:"");
+  $("#s1").classList.add("done");
+  $("#wrap").classList.remove("locked");
+};
+
+// 2 読み方の切り替え
+const HINT={gist:"",full:"見本は短めです。本番は1本およそ1000字にします。",lang:"単語にカーソルを合わせると訳が出ます。押すと日本語も出ます。"};
+$$(".seg button").forEach(b=>b.onclick=()=>{
+  $$(".seg button").forEach(x=>x.setAttribute("aria-pressed",x===b));
+  $("#srcs").dataset.mode=b.dataset.mode; hideTip(true);
+  $("#hint").textContent=HINT[b.dataset.mode]; $("#hint").classList.toggle("hide",!HINT[b.dataset.mode]);
+});
+
+// 語学：単語ごとの訳。[単語, 英語, 日本語, 読み]。英語の原文は日本語だけ。
+const WORDS={
+  en1:[["Russia"],["and"],["Kazakhstan"],["signed","","署名した"],["an"],["agreement","","協定"],["on"],["Tuesday","","火曜"],["to"],["jointly","","共同で"],["upgrade","","改修する"],["a"],["900-km"],["rail line.","","鉄道の路線"]],
+  en2:[["Kazakhstan"],["will"],["cover","","（費用を）負担する"],["about","","約"],["60 percent"],["of"],["the"],["cost,","","費用"],["officials","","当局者"],["said."]],
+  ru1:[["Россия","Russia","ロシア"],["и","and","と"],["Казахстан","Kazakhstan","カザフスタン"],["подписали","signed","署名した"],["соглашение","agreement","協定"],["о","on, about","〜についての"],["совместной","joint","共同の"],["модернизации","modernisation","近代化"],["железной","iron (железная дорога = railway)","鉄の（鉄道）"],["дороги.","road","道"]],
+  ru2:[["Стороны","the sides, the parties","両者"],["назвали","called","呼んだ"],["проект","project","事業"],["символом","a symbol","象徴"],["дружбы","of friendship","友好の"],["и","and","と"],["доверия","of trust","信頼の"],["между","between","〜の間の"],["двумя","two","2つの"],["народами.","peoples","国民"]],
+  zh1:[["俄罗斯","Russia","ロシア","Éluósī"],["与","and, with","と","yǔ"],["哈萨克斯坦","Kazakhstan","カザフスタン","Hāsàkèsītǎn"],["签署","to sign","署名する","qiānshǔ"],["铁路","railway","鉄道","tiělù"],["联合","joint","共同の","liánhé"],["改造","upgrade, renovation","改修","gǎizào"],["协议。","agreement","協定","xiéyì"]],
+  zh2:[["分析人士","analysts","専門家","fēnxī rénshì"],["认为，","to think, to believe","〜とみる","rènwéi"],["这条","this (line)","この","zhè tiáo"],["线路","route, line","路線","xiànlù"],["可能","may","〜しうる","kěnéng"],["与","with","〜と","yǔ"],["中欧班列","China–Europe freight trains","中国と欧州を結ぶ貨物列車","Zhōng-Ōu bānliè"],["形成","to form","形づくる","xíngchéng"],["竞争。","competition","競争","jìngzhēng"]]
+};
+$$("[data-w]").forEach(el=>{
+  const zh=el.lang==="zh";
+  WORDS[el.dataset.w].forEach(([w,en,ja,py],i)=>{
+    if(i&&!zh)el.append(" ");
+    const s=document.createElement("span"); s.className="w"; s.textContent=w;
+    if(en||ja){s.classList.add("has"); s.tabIndex=0; s.dataset.en=en||""; s.dataset.ja=ja||""; s.dataset.py=py||"";}
+    el.append(s);
+  });
+});
+const tip=$("#tip"); let pinned=null;
+function showTip(w,withJa){
+  const {en,ja,py}=w.dataset; tip.textContent="";
+  const add=(c,t)=>{if(!t)return; const x=document.createElement("span"); x.className=c; x.textContent=t; tip.append(x)};
+  add("py",py); add("en",en||ja); if(withJa&&en)add("ja",ja);
+  tip.style.display="block";
+  const r=w.getBoundingClientRect(), pad=8;
+  let x=Math.min(Math.max(r.left,pad),innerWidth-tip.offsetWidth-pad), y=r.top-tip.offsetHeight-6;
+  if(y<pad)y=r.bottom+6;
+  tip.style.left=x+"px"; tip.style.top=y+"px";
+}
+function hideTip(force){ if(pinned&&!force)return; if(pinned){pinned.classList.remove("pin");pinned=null} tip.style.display="none" }
+$$(".w.has").forEach(w=>{
+  w.onmouseenter=w.onfocus=()=>{ if(!pinned)showTip(w,false) };
+  w.onmouseleave=w.onblur=()=>hideTip(false);
+  w.onclick=e=>{ e.stopPropagation(); const same=pinned===w; hideTip(true); if(!same){pinned=w; w.classList.add("pin"); showTip(w,true)} };
+});
+document.addEventListener("click",()=>hideTip(true));
+addEventListener("scroll",()=>hideTip(true),{passive:true});
+$$(".ja-btn").forEach(b=>b.onclick=()=>{
+  const on=b.closest(".src").classList.toggle("showja");
+  b.textContent=on?"日本語を隠す":"日本語を見る";
+});
+
+// 4 予想を直す：前との差を履歴に足す
+let last=60;
+$("#pr").oninput=e=>{$("#pv").textContent=e.target.value+"%"};
+$("#fix").onclick=()=>{
+  const v=+$("#pr").value; if(v===last)return;
+  const d=v-last, li=document.createElement("li");
+  li.innerHTML=`<span>11月5日</span><span class="num">${v}%</span><span></span>`;
+  li.lastChild.textContent=(d>0?"+":"")+d+"　"+($("#pwhy").value.trim()||"理由なし");
+  $("#hist").prepend(li); last=v; $("#pwhy").value="";
+};
+
+// 5 保存と、何が変わったか（見本）
+$("#save").onclick=()=>$("#saved").classList.remove("hide");
+$$("#changed .btn").forEach(b=>b.onclick=()=>{
+  $$("#changed .btn").forEach(x=>x.setAttribute("aria-pressed",x===b));
+  $("#taskbox").classList.toggle("hide",b.dataset.k!=="task");
+});
+$("#tadd").onclick=()=>$("#tadded").classList.remove("hide");
+</script>
+</body>
+</html>
