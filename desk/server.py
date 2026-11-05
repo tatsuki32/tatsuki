@@ -29,6 +29,7 @@ import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, unquote, urlsplit
 
+import netspeed
 import screentime_sync
 import wise_analysis
 import wise_goals
@@ -619,6 +620,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, core.desk_view()) if core else self.send(404, {"error": "not found"})
         if path == "/api/whatsapp":
             return self.send(200, whatsapp_view())
+        if path == "/api/netspeed":
+            return self.send(200, netspeed.view())
         if path == "/api/screentime":
             q = parse_qs(urlsplit(self.path).query)
             return self.send(200, screentime_sync.view(q.get("period", ["week"])[0], q.get("device", ["mac"])[0]))
@@ -697,6 +700,11 @@ class Handler(BaseHTTPRequestHandler):
             return self.claude(rec)
         if method == "POST" and urlsplit(self.path).path in ("/api/focus/start", "/api/focus/stop"):
             return self.focus(urlsplit(self.path).path.rsplit("/", 1)[1], rec)
+        if method == "POST" and urlsplit(self.path).path == "/api/netspeed/run":
+            if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+                return self.send(415, {"error": "json only"})
+            netspeed.start()
+            return self.send(200, netspeed.view())
         if method == "POST" and urlsplit(self.path).path == "/api/memolink/run":
             if not (self.headers.get("Content-Type") or "").startswith("application/json"):
                 return self.send(415, {"error": "json only"})

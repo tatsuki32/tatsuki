@@ -509,6 +509,13 @@ button.hname:hover{color:var(--ink)}
 .strow .nsv{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
 .strow .nsv.wt{font-weight:700}
 .strow .nsn{grid-column:1/-1;font-size:var(--t1);color:var(--muted);overflow-wrap:anywhere}
+.strow .nsv{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.strow .nsv.wt{font-weight:700}
+.strow .nsn{grid-column:1/-1;font-size:var(--t1);color:var(--muted);overflow-wrap:anywhere}
+.nsp{max-width:640px}
+.nsp .sub a{color:var(--accent)}
+.nsgo{display:flex;flex-wrap:wrap;gap:var(--s2);align-items:center}
+.nsu{font-size:var(--t2);font-weight:400}
 .stbar{grid-column:1/-1;height:4px;background:var(--line)}
 .stbar i{display:block;height:100%;background:var(--v3)}
 .mchart{display:block;max-width:100%;height:auto;margin-top:var(--s2)}
@@ -907,6 +914,7 @@ const LOCALAPI=/^https?:$/.test(location.protocol)&&/^(localhost|127\.0\.0\.1)$/
 if(LOCALAPI) VIEWS.splice(4,0,{id:"focus",e:"🎯",label:"集中",g:"today"}); // blocks apps on this Mac, so the Mac version only
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="memolink")+1,0,{id:"money",e:"💰",label:"お金",g:"write"}); // statements stay on this Mac
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="money")+1,0,{id:"screentime",e:"📱",label:"スクリーンタイム",g:"write"});
+if(LOCALAPI) VIEWS.push({id:"netspeed",e:"📶",label:"回線の速さ",g:"tool"}); // opened from ツール and the / list, so no row in the menu
 async function api(method,path,body){const r=await fetch(path,{method,headers:{"Content-Type":"application/json"},body:body?JSON.stringify(body):undefined});if(!r.ok)throw new Error(r.status);return r.json()}
 async function loadApiMemos(){try{
   const [memos,dues,tasks,prompts,notes,habits,wins,wlog,presents,hlog]=await Promise.all([api("GET","/api/memos"),api("GET","/api/dues"),api("GET","/api/tasks"),api("GET","/api/prompts").catch(()=>[]),api("GET","/api/notes").catch(()=>[]),api("GET","/api/habits").catch(()=>[]),api("GET","/api/wins").catch(()=>[]),api("GET","/api/worldlog").catch(()=>[]),api("GET","/api/presents").catch(()=>[]),api("GET","/api/heritagelog").catch(()=>[])]);
@@ -2585,6 +2593,7 @@ function toolsView(){
   const tools=S.tools.filter(t=>!t.deleted), groups=GROUPS.filter(([g])=>tools.some(t=>t.group===g));
   return `<header class="head"><div><p class="eyebrow">ツール</p><h1>ツールとフォルダ</h1></div></header>
   ${notesHere("tools")}
+  ${LOCALAPI?`<section><div class="section-title"><span class="e">🖥️</span>この Mac</div><div class="tiles"><a class="tile" href="#netspeed"><span class="ico">📶</span><span class="t">回線の速さ</span><span class="d">今の Wi-Fi の速さを測って、何ができるかを見る</span></a></div></section>`:""}
   ${groups.length?groups.map(([g,e,l])=>`<section><div class="section-title"><span class="e">${e}</span>${l}</div><div class="tiles">${tools.filter(t=>t.group===g).sort((a,b)=>(a.order??99)-(b.order??99)).map(tile).join("")}</div></section>`).join(""):`<div class="card empty"><b>ツールを読み込み中</b>ツールとフォルダがここに並びます。</div>`}`;
 }
 /* a tile whose URL changes (a Cloudflare quick tunnel) gets ✏️ to paste the new one; online only, the Mac opens t.local */
@@ -2897,6 +2906,7 @@ function render(){
   if(viewId()==="followups"){fuLoad();$("#view").innerHTML=searchResults()+fuView();wire();wireFu();return}
   if(viewId()==="money"){moneyLoad();$("#view").innerHTML=searchResults()+moneyView();wire();wireMoney();return}
   if(viewId()==="screentime"){stLoad();$("#view").innerHTML=searchResults()+stView();wire();wireSt();return}
+  if(viewId()==="netspeed"){nsLoad();$("#view").innerHTML=searchResults()+nsView();wire();wireNs();return}
   const v=viewId();
   $("#view").innerHTML=searchResults()+(v==="focus"?focusView():v==="notes"?notesView():v==="watch"?watch():v==="heritage"?heritageView():v==="tasks"?tasks():v==="calendar"?calendar():v==="news"?news():v==="wins"?winsView():v==="presents"?presentsView():v==="habits"?habitsView():v==="log"?log():v==="tools"?toolsView():home());
   if(v==="news"||v==="watch") linkSources($("#view"));
@@ -2908,6 +2918,54 @@ function render(){
    Totals are in USD; each tab answers one question. Numbers come from desk/wise_analysis.py and nothing here blames. */
 const WISETYPE={CARD_PAYMENT:"カード決済",TRANSFER:"送金",CARD_CHECK:"カードの確認",BALANCE_DEPOSIT:"入金",CASH_WITHDRAWAL:"ATM の引き出し",INTERBALANCE:"両替",CARD_ORDER:"カードの注文"};
 const monthJa=m=>m?`${m.slice(0,4)}年${Number(m.slice(5,7))}月`:"";
+/* 回線の速さ: measured only when asked. Numbers and verdicts come from desk/netspeed.py; a run keeps going when the page moves on. */
+const NSWORD={ok:"足りる",tight:"ぎりぎり",short:"足りない"};
+const nsMbps=v=>v>=100?String(Math.round(v)):Number(v).toFixed(1);
+const nsTime=s=>s<120?`約${s}秒`:s<7200?`約${Math.round(s/60)}分`:`約${Math.round(s/3600)}時間`;
+const nsWhen=ms=>ms?new Date(ms).toLocaleString("ja-JP",{month:"long",day:"numeric",hour:"2-digit",minute:"2-digit"}):"";
+const nsWait=()=>`約45秒かかります。他の画面に移っても続きます（${Math.round((Date.now()-(S.ns?.startedAt||Date.now()))/1000)}秒経過）。`;
+const nsDiff=(now,was)=>{if(was==null)return "";const d=now-was;return Math.abs(d)<was*.05?"前回とほぼ同じ":`前回より ${nsMbps(Math.abs(d))} Mbps ${d>0?"速い":"遅い"}`};
+async function nsLoad(force){
+  if(!LOCALAPI||S.nsBusy||(!force&&S.ns&&Date.now()-(S.nsAt||0)<60000))return;
+  S.nsBusy=true;S.nsAt=Date.now();
+  try{const v=await api("GET","/api/netspeed"),same=JSON.stringify(v)===JSON.stringify(S.ns);S.ns=v;S.nsErr=false;S.nsBusy=false;if(!same&&viewId()==="netspeed")render();nsWatch()}
+  catch(e){const was=S.nsErr;S.nsErr=true;S.nsBusy=false;if(!was&&viewId()==="netspeed")render()}
+}
+function nsWatch(){
+  clearTimeout(S.nsTimer);if(!S.ns?.running)return;
+  S.nsTimer=setTimeout(async()=>{
+    try{const v=await api("GET","/api/netspeed");S.ns=v;S.nsAt=Date.now();
+      if(!v.running){if(viewId()==="netspeed")render();else toast(v.error?"回線の計測が止まりました":"回線を測り終わりました")}
+      else{const el=$("#nsWait");if(el)el.textContent=nsWait()}}
+    catch(e){}
+    nsWatch();
+  },2000);
+}
+async function nsStart(){
+  try{S.ns=await api("POST","/api/netspeed/run",{});S.nsAt=Date.now();S.nsErr=false;render();nsWatch()}
+  catch(e){toast("始められませんでした。サーバーを再起動すると直ることがあります")}
+}
+const nsRow=(name,value,note,strong)=>`<div class="strow"><span>${esc(name)}</span><span class="nsv${strong?" wt":""}">${esc(value)}</span>${note?`<span class="nsn">${note}</span>`:""}</div>`;
+function nsView(){
+  const d=S.ns,head=`<h1>回線の速さ</h1>`;
+  if(S.nsErr)return `<div class="money">${head}<p class="due">読み込めませんでした。サーバーを再起動すると直ることがあります。</p></div>`;
+  if(!d)return `<div class="money">${head}<p class="due">読み込み中です。</p></div>`;
+  const l=d.latest;
+  const go=!d.available?`<p class="due">この Mac では計測できません。</p>`:d.running?`<div class="nsgo"><button class="btn primary" disabled>測っています</button><span class="due" id="nsWait" role="status">${esc(nsWait())}</span></div>`:`<div class="nsgo"><button class="btn primary" id="nsRun">${l?"もう一度測る":"測る"}</button><span class="due">約45秒・約500 MB 使います</span></div>`;
+  const big=(label,v,was)=>`<div class="mbig"><span class="sub">${label}</span><b>${nsMbps(v)} <span class="nsu">Mbps</span></b>${was!=null?`<span class="due">${esc(nsDiff(v,was))}</span>`:""}</div>`;
+  const main=`<section class="card mfocus" aria-label="今の回線"><p class="mtalk">${l?esc(l.sentence):"まだ測っていません。ボタンを押すと、今の回線の速さが分かります。"}</p>${l?`<div class="mbigs two">${big("ダウンロード",l.down,l.before?.down)}${big("アップロード",l.up,l.before?.up)}</div>`:""}${go}${d.error?`<p class="due" role="alert">${esc(d.error)}</p>`:""}${l?`<p class="due">${esc(l.place)} ・ ${esc(nsWhen(l.at))}に測定</p>`:""}</section>`;
+  if(!l)return `<div class="money nsp" data-noauto>${head}${main}</div>`;
+  const srcs=[...new Map(l.uses.map(u=>[u.source,u.url])).entries()].map(([n,u])=>`<a href="${esc(u)}" target="_blank" rel="noopener">${esc(n)}</a>`).join("・");
+  const need=u=>[u.down?`下り ${u.down<1?u.down*1000+" kbps":u.down+" Mbps"}`:"",u.up?`上り ${u.up<1?u.up*1000+" kbps":u.up+" Mbps"}`:""].filter(Boolean).join("・");
+  const can=mpanel("この速さでできること","",l.uses.map(u=>nsRow(u.name,NSWORD[u.verdict],`目安 ${esc(need(u))}`,u.verdict==="short")).join("")+nsRow("1 GB の受信",nsTime(l.oneGbDown))+nsRow("1 GB の送信",nsTime(l.oneGbUp))+`<p class="sub">目安は ${srcs} の公表値です。目安の2倍あれば「足りる」としています。</p>`);
+  const worst=Math.max(l.waitDown||0,l.waitUp||0),busy=l.rttMs&&worst*1000>=l.rttMs*5;
+  const reply=l.rttMs?mpanel("応答の速さ","短いほど、通話の遅れを感じにくい",nsRow("空いているとき",`${Math.round(l.rttMs)} ms`)+(l.waitDown?nsRow("ダウンロード中",`${l.waitDown} 秒`):"")+(l.waitUp?nsRow("アップロード中",`${l.waitUp} 秒`):"")+(busy?`<p class="sub">通信が混むと応答が遅くなります。大きいファイルの送受信中は、通話が遅れやすくなります。</p>`:"")):"";
+  const link=l.wifi?mpanel("Wi-Fi の状態",esc(l.ssid||"名前なし"),(l.signal!=null?nsRow("電波",`${l.signalWord} ${l.signal} dBm`):"")+(l.band?nsRow("周波数帯",l.width?`${l.band}・${l.width}MHz`:l.band):"")+(l.phy?nsRow("規格",l.phy):"")+(l.rate?nsRow("リンク速度",`${l.rate} Mbps`):"")+`<p class="sub">電波の言葉は一般的な目安です。計測の結果は、Wi-Fi だけでなく Apple のサーバーまでの回線全体で決まります。</p>`):"";
+  const places=mpanel("場所ごと","下り / 上りの中央値（Mbps）",d.places.map(p=>nsRow(p.name,`${nsMbps(p.down)} / ${nsMbps(p.up)}`,`${p.count}回 ・ 最後は ${esc(nsWhen(p.at))}`)).join(""));
+  const past=d.count>1?mpanel("これまで","下り / 上り（Mbps）",d.history.map(h=>nsRow(nsWhen(h.at),`${nsMbps(h.down)} / ${nsMbps(h.up)}`,esc(h.place))).join("")):"";
+  return `<div class="money nsp" data-noauto>${head}${main}${can}${reply}${link}${places}${past}</div>`;
+}
+function wireNs(){const b=$("#nsRun");if(b)b.onclick=nsStart}
 /* Screen Time: where the hours went, against the period before. Numbers come from desk/screentime_sync.py and nothing here blames. */
 const stFmt=s=>{const m=Math.round((s||0)/60);return m<60?`${m}分`:`${Math.floor(m/60)}時間${m%60?`${m%60}分`:""}`};
 const stDiff=(now,prev)=>{const d=now-prev;return Math.abs(d)<60?"同じくらい":d<0?`${stFmt(-d)}減った`:`${stFmt(d)}増えた`};

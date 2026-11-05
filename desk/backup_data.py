@@ -15,7 +15,7 @@ import time
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(ROOT, "data")
-IGNORE = "*.lock\n.*.tmp\n.published\n.DS_Store\n__pycache__/\nwise/\nwhatsapp/\npresents.json\nheritage/\nscreentime/\n"  # wise/, whatsapp/, presents.json, screentime/: statements, messages and sites visited stay on this Mac, even out of the private copy. heritage/: public photos, large and fetched again from Commons
+IGNORE = "*.lock\n.*.tmp\n.published\n.DS_Store\n__pycache__/\nwise/\nwhatsapp/\npresents.json\nheritage/\nscreentime/\nnetspeed/\n"  # wise/, whatsapp/, presents.json, screentime/, netspeed/: statements, messages, sites visited and Wi-Fi names stay on this Mac, even out of the private copy. heritage/: public photos, large and fetched again from Commons
 BRANCH = "main"
 # things that must not leave this Mac even privately: keys and passwords in the clear
 SECRETS = re.compile(
