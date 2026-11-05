@@ -595,6 +595,24 @@ def meal_scores(series, targets):
     return {d: round(sum(min(1, series.get(k, {}).get(d, 0) / targets[k]["target"]) for k in keys) / len(keys) * 100, 1) for d in days} if keys else {}
 
 
+NEAR = 0.03  # within this share of a target counts as on target when the target has no direction
+
+
+def verdict(val, target, direction):
+    """A word about a number and its target, as the sheet's 以上・未満 mean it. Only the facts: nothing here scolds."""
+    if val is None or not target:
+        return None
+    if direction == "above":
+        return "ok" if val >= target else "low"
+    if direction == "below":
+        return "ok" if val <= target else "high"
+    return "ok" if abs(val - target) <= abs(target) * NEAR else "high" if val > target else "low"
+
+
+def _meal_row(r):
+    return {"id": r["id"], "kind": r["kind"], "label": r.get("label", ""), "items": r.get("items") or [], "values": r["values"], "estimated": r.get("estimated", False), "photo": r.get("photo"), "note": r.get("note", "") if not r.get("photo") else "", "at": r.get("at", 0), "source": r.get("source")}
+
+
 def metric_row(key, label, unit, series, target, day):
     days = sorted(series)
     latest = days[-1] if days else None
@@ -610,10 +628,17 @@ def metric_row(key, label, unit, series, target, day):
         avgs[str(n)] = round(sum(vals) / len(vals), 2) if vals else None
     met = None
     if t and val is not None:
-        met = val >= t if direction == "above" else val <= t if direction == "below" else abs(val - t) <= abs(t) * 0.02
+        met = val >= t if direction == "above" else val <= t if direction == "below" else abs(val - t) <= abs(t) * NEAR
+    def mean(a, b):
+        vals = [series[d] for d in days if (base - timedelta(days=b)).isoformat() <= d <= (base - timedelta(days=a)).isoformat()]
+        return round(sum(vals) / len(vals), 2) if vals else None
+    now_week, last_week = mean(0, 6), mean(7, 13)
     return {"key": key, "label": label, "unit": unit, "target": t, "dir": direction, "value": val, "date": latest,
             "rate": round(val / t * 100, 1) if t and val is not None else None, "diff": round(val - t, 2) if t and val is not None else None,
-            "change": round(val - series[prev], 2) if prev else None, "avg": avgs, "met": met, "history": [[d, series[d]] for d in days][-90:]}
+            "change": round(val - series[prev], 2) if prev else None, "prevDate": prev, "avg": avgs, "met": met,
+            "verdict": verdict(val, t, direction), "week": now_week, "lastWeek": last_week,
+            "trend": None if now_week is None or last_week is None else "flat" if abs(now_week - last_week) <= abs(last_week) * 0.02 else "up" if now_week > last_week else "down",
+            "history": [[d, series[d]] for d in days][-400:]}
 
 
 def view(day=None):
@@ -636,7 +661,18 @@ def view(day=None):
     shown = sorted((r for r in records if r.get("source") != "sheet" and r.get("status") == "confirmed"), key=lambda r: -r.get("at", 0))[:12]
     nights = sorted((r for r in records if r["kind"] == "sleep" and r.get("status") == "confirmed" and r["values"].get("bedtime")), key=lambda r: r["date"])
     last_night = dict(nights[-1]["values"], date=nights[-1]["date"]) if nights else None
-    return {"recent": shown, "lastNight": last_night, "groups": groups, "windows": [[n, l] for n, l in WINDOWS], "review": sorted(review, key=lambda r: -r.get("at", 0)), "kinds": _kinds_for_page(),
+    meals, sleeps, sessions = {}, [], []
+    for r in sorted((x for x in records if x.get("status") == "confirmed"), key=lambda x: (x["date"], x.get("at", 0))):
+        if r["kind"] in ("meal_photo", "meal_screen"):
+            meals.setdefault(r["date"], []).append(_meal_row(r))
+        elif r["kind"] == "sleep":
+            sleeps.append({"date": r["date"], **{k: r["values"].get(k) for k in ("bedtime", "wake_time")}})
+        elif r["kind"] == "workout":
+            sessions.append({"date": r["date"], **_meal_row(r)})
+    apps = [{"date": r["date"], "items": r.get("items") or [], "peak": r["values"].get("peak_hour"), "genre": r["values"].get("top_genre")} for r in records if r["kind"] == "screen_time" and r.get("status") == "confirmed"]
+    studied = [{"date": r["date"], "label": r.get("label", ""), "minutes": r["values"].get("minutes")} for r in records if r["kind"] == "study" and r.get("status") == "confirmed"]
+    return {"today": day, "meals": meals, "nights": sleeps[-30:], "sessions": sessions[-60:], "apps": sorted(apps, key=lambda r: r["date"])[-14:], "studied": sorted(studied, key=lambda r: r["date"])[-30:],
+            "recent": shown, "lastNight": last_night, "groups": groups, "windows": [[n, l] for n, l in WINDOWS], "review": sorted(review, key=lambda r: -r.get("at", 0)), "kinds": _kinds_for_page(),
             "estimatedDays": sorted(estimated), "waiting": sum(1 for e in q if e.get("status") == "pending"),
             "failed": sum(1 for e in q if e.get("status") == "failed"), "usage": month_usage(), "limit": sett.get("monthlyLimitUsd"), "model": sett.get("model"),
             "keyReady": bool(api_key()), "lastRecord": max((r["date"] for r in records), default=None)}

@@ -412,6 +412,33 @@ details.draft .sent-as summary{cursor:pointer;display:block;padding:var(--s2) 0;
 .bdpairs{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:var(--s1) var(--s3);margin-top:var(--s2)}
 .bdhelp summary{cursor:pointer;color:var(--muted);font-size:var(--t1)}
 .bdhelp p{max-width:40em}
+.bdfacts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:var(--s3)}
+.bdfacts>div{display:grid;gap:var(--s1);align-content:start}
+.bdfacts b{font-size:var(--t4)}
+.bdfacts .bdhero,.bdhero{font-size:var(--t5);line-height:1.2}
+.bdverdict{font-weight:700;color:var(--ink)}
+.bdcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:var(--s3)}
+.bdcard{display:grid;gap:var(--s1);padding:var(--s3);text-align:left;color:var(--ink);font:inherit;cursor:pointer}
+.bdcard:hover{border-color:var(--line-2)}
+.bdspark{display:block;margin-top:var(--s1)}
+.bdfood{display:grid;grid-template-columns:72px minmax(0,1fr);gap:var(--s3);padding:var(--s2) 0;border-bottom:1px solid var(--line);align-items:start}
+.bdthumb{width:72px;height:72px;object-fit:cover;border-radius:var(--r-s);display:block}
+.bdnophoto{background:var(--surface-2)}
+.bdfoodtext{display:grid;gap:var(--s1);min-width:0}
+.bdnut{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr) minmax(0,1.6fr) minmax(0,1.8fr);gap:var(--s2);align-items:center;padding:var(--s1) 0}
+.bdnutname{min-width:0}
+.bdbar{position:relative;display:block;height:8px;background:var(--surface-2);border-radius:4px}
+.bdfill{position:absolute;left:0;top:0;bottom:0;background:var(--v1);border-radius:4px}
+.bdmark{position:absolute;left:50%;top:-3px;bottom:-3px;width:2px;background:var(--ink)}
+.bdlegend{display:flex;flex-wrap:wrap;gap:var(--s3);font-size:var(--t1);color:var(--ink-2)}
+.bdlegend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:var(--s1)}
+.bdlist{display:grid;max-width:720px}
+.bdlist .rcrow{grid-template-columns:44px minmax(0,1fr)}
+@media (max-width:640px){
+  .bdnut{grid-template-columns:minmax(0,1fr) auto;row-gap:var(--s1);padding:var(--s2) 0}
+  .bdbar{grid-column:1/-1}
+  .bdnutword{grid-column:1/-1}
+}
 /* ---------- 朝夜ルーティン ---------- */
 .rtwrap{display:grid;gap:var(--s5)}
 .rtbar{display:flex;flex-wrap:wrap;gap:var(--s2);align-items:center;justify-content:space-between}
@@ -1585,26 +1612,113 @@ function bdReview(rec,d){
     ${shown.map(x=>`<label class="${(rec.doubts||[]).includes(x)?"doubt":""}">${esc(k.values[x].label)}${k.values[x].unit?`（${esc(k.values[x].unit)}）`:""}<input ${k.values[x].text?"":'type="number" step="any" inputmode="decimal"'} data-bdval="${esc(x)}" value="${esc(rec.values[x]??"")}"></label>`).join("")}
     <div class="bdacts"><button class="btn primary sm" data-bdact="confirm">確定する</button><button class="btn sm" type="button" data-bdact="discard">捨てる</button></div></form></article>`;
 }
-function bodyView(){
-  const d=S.body,head=`<header class="head"><div><p class="eyebrow">写真から記録</p><h1>体</h1></div></header>`;
-  if(!d)return head+`<div class="card empty"><b>${S.bodyErr?"読み込めませんでした":"読み込んでいます"}</b>${S.bodyErr?"Desk のサーバーを再起動すると直ることがあります。":""}</div>`;
-  const w=S.bodyWin||"7",rows=d.groups.flatMap(g=>g.rows);
-  const info=[d.waiting?`読み取り待ち ${d.waiting}枚`:"",d.failed?`読めなかった写真 ${d.failed}枚`:"",!d.keyReady?"API キーが未登録なので、写真の読み取りは止まっています":""].filter(Boolean).join(" · ");
-  const review=d.review.length?`<section class="bdsec"><h2>要確認 <span class="sub">${d.review.length}件</span></h2>${d.review.map(r=>bdReview(r,d)).join("")}</section>`:"";
-  const label=(d.windows.find(x=>String(x[0])===w)||[0,""])[1];
-  const est=new Set(d.estimatedDays||[]);
-  const table=g=>g.rows.length?`<section class="bdsec"><h2>${esc(g.name)} <span class="sub">最新の記録 ${esc(g.rows.map(r=>r.date||"").sort().pop().slice(5).replace("-","/"))}${g.id==="sleep"&&d.lastNight?` · 就寝 ${esc(d.lastNight.bedtime)}${d.lastNight.wake_time?` · 起床 ${esc(d.lastNight.wake_time)}`:""}`:""}</span></h2><div class="bdtable"><div class="bdrow bdhead"><span>項目</span><span class="bdv">最新</span><span class="bdv bdt">目標</span><span class="bdv">達成率</span><span class="bdv bdc">前回比</span><span class="bdv bda">${esc(label)}平均</span></div>${g.rows.map(r=>bdRow(r,w,g.id==="meal"&&est.has(r.date))).join("")}</div></section>`:"";
-  const send=`<details class="bdhelp"><summary>写真の送り先と費用</summary><p>Telegram のボットに送るか、Drive の Daily_Photos_Inbox に置きます。キャプションに一言書くと、読み取りの手がかりになります。Telegram の写真は最大24時間まで Telegram 側に残り、Drive の取り込みは Claude アプリが開いている間に毎時動きます。</p><p class="sub">今月 ${d.usage.photos}枚 · 約 $${Number(d.usage.usd).toFixed(2)} · モデル ${esc(d.model)}</p><form id="bdLimit" class="bdtarget"><label>今月の上限（USD）<input type="number" min="0" step="1" id="bdLimitV" value="${d.limit??""}" placeholder="なし"></label><button class="btn sm">保存</button></form></details>`;
+const BDTABS=[["overview","概要"],["weight","体重"],["meal","食事"],["sleep","睡眠"],["workout","筋トレ"],["activity","歩数"],["habits","スクリーンタイムと学習"]];
+const BDGROUP={weight:"body",meal:"meal",sleep:"sleep",workout:"workout",activity:"activity",habits:"habits"};
+const BDWORD={ok:"目標どおり",high:"目標より多い",low:"目標より少ない"};
+const BDTREND={up:"増えている",down:"減っている",flat:"横ばい"};
+const bdShort=d=>d?`${+d.slice(5,7)}/${+d.slice(8)}`:"–";
+const bdHist=r=>Object.fromEntries(r.history||[]);
+const bdYesterday=(d,x)=>new Date(Date.parse(d+"T12:00:00Z")-864e5*(x||1)).toISOString().slice(0,10);
+const bdMins=v=>v==null?"–":v>=60?`${Math.floor(v/60)}時間${Math.round(v%60)}分`:`${Math.round(v)}分`;
+function bdChart(r,days){
+  const hist=(r.history||[]).slice(-(days||60));
+  if(hist.length<2)return `<p class="sub">グラフは記録が2日分たまると出ます。</p>`;
+  const labels=hist.map(h=>bdShort(h[0])),series=[{name:r.label,c:"var(--v1)",values:hist.map(h=>h[1])}];
+  if(r.target)series.push({name:"目標",c:"var(--muted)",values:hist.map(()=>r.target)});
+  const cap=`<p class="sub">${esc(r.label)}${r.unit?`（${esc(r.unit)}）`:""}の推移${r.target?` · 灰色の線が目標 ${bdNum(r.target)}`:""}</p>`;
+  return cap+mlines({labels,series,height:190,label:`${r.label}の推移`});
+}
+function bdColumns(r,days){
+  const hist=(r.history||[]).slice(-(days||30));
+  if(!hist.length)return "";
+  return `<p class="sub">${esc(r.label)}${r.unit?`（${esc(r.unit)}）`:""}を日ごとに</p>`+mcolumns({slots:hist.map(h=>({label:bdShort(h[0]),tip:`${h[0]} ${bdNum(h[1])}${r.unit}`,parts:[{v:h[1],c:"var(--v1)"}]})),height:180,label:`${r.label}の日ごとの棒グラフ`,line:r.target||0,lineName:"目標"});
+}
+function bdFacts(r){
+  const verdict=r.verdict?`<span class="bdverdict">${BDWORD[r.verdict]}${r.diff!=null&&r.verdict!=="ok"?`（${bdSigned(r.diff)}${esc(r.unit)}）`:""}</span>`:"";
+  return `<div class="bdfacts"><div><span class="sub">最新 ${esc(bdShort(r.date))}</span><b class="bdhero">${bdNum(r.value)}<span class="sub"> ${esc(r.unit)}</span></b>${verdict}</div>
+    <div><span class="sub">目標</span><b>${r.target==null?"–":bdNum(r.target)}</b><span class="sub">${r.target?esc(BDDIR[r.dir]||""):""}</span></div>
+    <div><span class="sub">前回比${r.prevDate?`（${esc(bdShort(r.prevDate))}）`:""}</span><b>${bdSigned(r.change)}</b></div>
+    <div><span class="sub">この7日の平均</span><b>${bdNum(r.week)}</b><span class="sub">${r.trend?`前の7日より${BDTREND[r.trend]}`:"比べる記録がまだありません"}</span></div></div>`;
+}
+function bdMetricTable(g,w){
+  const est=new Set(S.body.estimatedDays||[]),label=(S.body.windows.find(x=>String(x[0])===w)||[0,""])[1];
+  return `<div class="bdtable"><div class="bdrow bdhead"><span>項目</span><span class="bdv">最新</span><span class="bdv bdt">目標</span><span class="bdv">達成率</span><span class="bdv bdc">前回比</span><span class="bdv bda">${esc(label)}平均</span></div>${g.rows.map(r=>bdRow(r,w,g.id==="meal"&&est.has(r.date))).join("")}</div>`;
+}
+function bdPeriods(d,w){return `<div class="chips" role="group" aria-label="平均の期間">${d.windows.map(([n,l])=>`<button class="chip" data-bdwin="${n}" aria-pressed="${String(n)===w}">${esc(l)}</button>`).join("")}</div>`}
+function bdGroupTab(d,id,w,first,extra,why){
+  const g=d.groups.find(x=>x.id===id);
+  if(!g||!g.rows.length)return (extra||"")+`<div class="card empty"><b>まだ記録がありません</b>${esc(why)}</div>`;
+  const pick=g.rows.find(r=>r.key===S.bodyPick)||g.rows.find(r=>r.key===first)||g.rows[0];
+  return `${bdFacts(pick)}${bdChart(pick)}${bdColumns(pick)}${extra||""}<section class="bdsec"><h2>全項目</h2>${bdPeriods(d,w)}${bdMetricTable(g,w)}</section>`;
+}
+/* 食事: one day. What was eaten, then each nutrient against the sheet's target, then the days around it. */
+function bdMealTab(d,w){
+  const g=d.groups.find(x=>x.id==="meal");
+  if(!g||!g.rows.length)return `<div class="card empty"><b>まだ記録がありません</b>食事の写真や文字を送ると、食べたものと栄養がここに並びます。</div>`;
+  const days=Object.keys(d.meals||{}).sort(),day=S.bodyDay&&days.includes(S.bodyDay)?S.bodyDay:days[days.length-1],i=days.indexOf(day),older=days[i-1],newer=days[i+1];
+  const yesterday=bdYesterday(day),rows=g.rows,at=(r,x)=>bdHist(r)[x],kcal=rows.find(r=>r.key==="energy_kcal"),score=rows.find(r=>r.key==="meal_score"),est=(d.estimatedDays||[]).includes(day);
+  const total=kcal&&at(kcal,day),ty=kcal&&at(kcal,yesterday),left=kcal&&kcal.target&&total!=null?kcal.target-total:null;
+  const nav=`<div class="mmonth"><h2>${esc(new Date(day+"T12:00:00").toLocaleDateString("ja-JP",{month:"long",day:"numeric",weekday:"short"}))}</h2><button class="btn sm" data-bdday="${esc(older||"")}" ${older?"":"disabled"}>前の日</button><button class="btn sm" data-bdday="${esc(newer||"")}" ${newer?"":"disabled"}>次の日</button></div>`;
+  const sum=`<div class="bdfacts"><div><span class="sub">摂取カロリー${est?"（推定を含む）":""}</span><b class="bdhero">${bdNum(total)}<span class="sub"> kcal</span></b><span class="bdverdict">${total!=null&&kcal.target?BDWORD[verdict(total,kcal)]:""}</span></div><div><span class="sub">目標</span><b>${kcal&&kcal.target?bdNum(kcal.target):"–"}</b><span class="sub">${left==null?"":left>=0?`あと ${bdNum(left)} kcal`:`${bdNum(-left)} kcal 多い`}</span></div><div><span class="sub">昨日比</span><b>${total!=null&&ty!=null?bdSigned(total-ty):"–"}</b><span class="sub">${ty==null?"昨日の記録なし":`昨日 ${bdNum(ty)} kcal`}</span></div><div><span class="sub">完璧度</span><b>${score&&at(score,day)!=null?Math.round(at(score,day))+"%":"–"}</b><span class="sub">シートと同じ計算</span></div></div>`;
+  const foods=(d.meals[day]||[]).map(m=>{const v=m.values,name=m.label||(m.kind==="meal_screen"?"1日の栄養":"食事");return `<article class="bdfood">${m.photo&&!/\.pdf$/.test(m.photo)?`<img class="bdthumb" src="/lifelog-photos/${esc(m.photo)}" alt="${esc(name)}" loading="lazy">`:`<span class="bdthumb bdnophoto"></span>`}<div class="bdfoodtext"><b>${esc(name)}</b>${m.estimated?` <span class="sub">推定</span>`:""}<span class="sub">${bdNum(v.energy_kcal)} kcal · たんぱく質 ${bdNum(v.protein_g)}g · 脂質 ${bdNum(v.fat_g)}g · 炭水化物 ${bdNum(v.carb_g)}g</span>${m.items.length?`<span class="sub">${m.items.map(esc).join("、")}</span>`:""}${m.note?`<span class="sub">${esc(m.note)}</span>`:""}</div></article>`}).join("");
+  const bar=r=>{const v=at(r,day),y=at(r,yesterday),t=r.target,pct=t&&v!=null?v/t*100:null,vd=v==null?null:verdict(v,r);return `<div class="bdnut"><span class="bdnutname">${esc(r.label)}</span><span class="bdv"><b>${bdNum(v)}</b><span class="sub"> / ${t?bdNum(t):"–"}${esc(r.unit)}</span></span><span class="bdbar" role="img" aria-label="${esc(r.label)} 目標の ${pct==null?"不明":Math.round(pct)+"%"}"><span class="bdfill" style="width:${pct==null?0:Math.min(100,pct/2)}%"></span><span class="bdmark"></span></span><span class="sub bdnutword">${vd?BDWORD[vd]:""}${pct!=null?` ${Math.round(pct)}%`:""}${v!=null&&y!=null?` · 昨日比 ${bdSigned(v-y)}`:""}</span></div>`};
+  return `${nav}${sum}<section class="bdsec"><h2>食べたもの <span class="sub">${(d.meals[day]||[]).length}件</span></h2>${foods||`<p class="sub">この日の記録はありません。</p>`}</section><section class="bdsec"><h2>栄養素と目標 <span class="sub">棒の線が目標。線の右は目標より多い</span></h2>${rows.filter(r=>r.key!=="meal_score").map(bar).join("")}</section><section class="bdsec"><h2>カロリーの推移</h2>${kcal?bdColumns(kcal)+bdChart(kcal):""}${rows.find(r=>r.key==="protein_g")?bdChart(rows.find(r=>r.key==="protein_g")):""}</section><section class="bdsec"><h2>全項目の平均</h2>${bdPeriods(d,w)}${bdMetricTable(g,w)}</section>`;
+  function verdict(val,r){return !r.target?null:r.dir==="above"?(val>=r.target?"ok":"low"):r.dir==="below"?(val<=r.target?"ok":"high"):(Math.abs(val-r.target)<=Math.abs(r.target)*.03?"ok":val>r.target?"high":"low")}
+}
+function bdSleepExtra(d){
+  const g=d.groups.find(x=>x.id==="sleep"),keys=[["deep_min","深い睡眠","var(--v1)"],["light_min","浅い睡眠","var(--v6)"],["rem_min","レム睡眠","var(--v3)"],["awake_min","覚醒","var(--v4)"]];
+  const parts=keys.map(k=>[...k,g.rows.find(r=>r.key===k[0])]).filter(k=>k[3]);
+  const days=[...new Set(parts.flatMap(k=>k[3].history.map(h=>h[0])))].sort().slice(-14);
+  const stages=parts.length&&days.length?`<section class="bdsec"><h2>睡眠の段階</h2><div class="bdlegend">${parts.map(k=>`<span><i style="background:${k[2]}"></i>${k[1]}</span>`).join("")}</div>${mcolumns({slots:days.map(x=>({label:bdShort(x),tip:`${x} ${parts.map(k=>`${k[1]} ${bdMins(bdHist(k[3])[x])}`).join(" · ")}`,parts:parts.map(k=>({v:bdHist(k[3])[x]||0,c:k[2]}))})),height:180,label:"睡眠の段階の棒グラフ"})}</section>`:"";
+  const nights=(d.nights||[]).filter(n=>n.bedtime||n.wake_time).slice(-14).reverse();
+  return stages+(nights.length?`<section class="bdsec"><h2>寝た時刻と起きた時刻</h2><div class="bdlist">${nights.map(n=>`<div class="rcrow"><span class="sub rcdate">${esc(bdShort(n.date))}</span><span>就寝 ${esc(n.bedtime||"–")} · 起床 ${esc(n.wake_time||"–")}</span></div>`).join("")}</div></section>`:"");
+}
+function bdWorkoutExtra(d){
+  const list=(d.sessions||[]).slice().reverse();
+  return list.length?`<section class="bdsec"><h2>これまでのトレーニング</h2><div class="bdlist">${list.map(s=>`<div class="rcrow"><span class="sub rcdate">${esc(bdShort(s.date))}</span><div class="rctext"><span>${esc(s.label||"トレーニング")}${s.values.workout_min?` <span class="sub">${esc(bdMins(s.values.workout_min))}</span>`:""}</span>${s.items.length?`<span class="sub">${s.items.map(esc).join("<br>")}</span>`:""}</div></div>`).join("")}</div></section>`:"";
+}
+function bdHabitsExtra(d){
+  const apps=(d.apps||[]).slice().reverse()[0],studied=(d.studied||[]).slice().reverse();
+  return (apps?`<section class="bdsec"><h2>${esc(bdShort(apps.date))} のスクリーンタイム</h2><p class="sub">${apps.peak?`多い時間帯 ${esc(apps.peak)}`:""}${apps.genre?` · 多い分類 ${esc(apps.genre)}`:""}</p>${apps.items.length?`<p class="sub">${apps.items.map(esc).join("<br>")}</p>`:""}</section>`:"")+(studied.length?`<section class="bdsec"><h2>学習の記録</h2><div class="bdlist">${studied.map(s=>`<div class="rcrow"><span class="sub rcdate">${esc(bdShort(s.date))}</span><span>${esc(s.label||"学習")} <span class="sub">${esc(bdMins(s.minutes))}</span></span></div>`).join("")}</div></section>`:"");
+}
+/* 概要: the latest of everything on one screen. Each card opens its own tab. */
+function bdOverview(d){
+  const find=k=>d.groups.flatMap(g=>g.rows).find(r=>r.key===k);
+  const spark=r=>{const h=(r.history||[]).slice(-30);if(h.length<2)return "";const vs=h.map(x=>x[1]),lo=Math.min(...vs),hi=Math.max(...vs),X=i=>i/(h.length-1)*120,Y=v=>hi===lo?16:30-(v-lo)/(hi-lo)*28;return `<svg class="bdspark" viewBox="0 0 120 32" width="120" height="32" aria-hidden="true"><polyline points="${vs.map((v,i)=>`${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(" ")}" fill="none" stroke="var(--v1)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg>`};
+  const card=(tab,title,key)=>{const r=find(key);if(!r||r.value==null)return `<button class="card bdcard" data-bdtab="${tab}"><span class="sub">${esc(title)}</span><b class="bdhero">–</b><span class="sub">まだ記録がありません</span></button>`;return `<button class="card bdcard" data-bdtab="${tab}"><span class="sub">${esc(title)} · ${esc(bdShort(r.date))}</span><b class="bdhero">${key==="total_min"?esc(bdMins(r.value)):bdNum(r.value)}${key==="total_min"?"":`<span class="sub"> ${esc(r.unit)}</span>`}</b><span class="sub">${r.verdict?BDWORD[r.verdict]:r.target?"":"目標なし"}${r.change!=null?` · 前回比 ${bdSigned(r.change)}`:""}</span>${spark(r)}</button>`};
+  const cards=[["weight","体重","weight_kg"],["meal","摂取カロリー","energy_kcal"],["meal","食事の完璧度","meal_score"],["sleep","睡眠","total_min"],["activity","歩数","steps"],["workout","筋トレ","workout_min"]].map(c=>card(...c)).join("");
+  const items=(d.recent||[]).slice(0,8);
   const valueText=rec=>{const k=d.kinds[rec.kind]||{values:{}};return Object.entries(rec.values).map(([x,v])=>{const f=k.values[x]||{label:x,unit:""};return `<span class="bdpair"><span class="sub">${esc(f.label)}</span> ${esc(typeof v==="number"?bdNum(v):v)}${f.unit?`<span class="sub"> ${esc(f.unit)}</span>`:""}</span>`}).join("")};
-  const recent=(d.recent||[]).length?`<section class="bdsec"><h2>最近の記録</h2>${d.recent.map(r=>`<details class="bdrec"><summary><span class="sub">${esc(r.date.slice(5).replace("-","/"))}</span> ${esc((d.kinds[r.kind]||{}).label||r.kind)}${r.label?` · ${esc(r.label)}`:""}${r.estimated?` <span class="sub">推定</span>`:""}</summary>${!r.photo&&r.note?`<p class="sub">${esc(r.note)}</p>`:""}<div class="bdpairs">${valueText(r)}</div>${(r.items||[]).length?`<p class="sub">${r.items.map(esc).join("<br>")}</p>`:""}<div class="bdacts">${r.photo?`<a class="btn sm" href="/lifelog-photos/${esc(r.photo)}" target="_blank" rel="noopener">元の写真</a>`:""}<button class="btn sm" data-bdreopen="${esc(r.id)}">直す</button></div></details>`).join("")}</section>`:"";
-  const none=!rows.length&&!d.review.length?`<div class="card empty"><b>まだ記録がありません</b>睡眠のスクショ、レシート、食事の写真を送ると、ここに並びます。</div>`:"";
-  return head+`<div class="money bd">${info?`<p class="sub" role="status">${esc(info)}</p>`:""}${review}${none}${rows.length?`<div class="chips" role="group" aria-label="平均の期間">${d.windows.map(([n,l])=>`<button class="chip" data-bdwin="${n}" aria-pressed="${String(n)===w}">${esc(l)}</button>`).join("")}</div>`:""}${d.groups.map(table).join("")}${recent}${send}</div>`;
+  const recent=items.length?`<section class="bdsec"><h2>最近の記録</h2>${items.map(r=>`<details class="bdrec"><summary><span class="sub">${esc(bdShort(r.date))}</span> ${esc((d.kinds[r.kind]||{}).label||r.kind)}${r.label?` · ${esc(r.label)}`:""}${r.estimated?` <span class="sub">推定</span>`:""}</summary>${!r.photo&&r.note?`<p class="sub">${esc(r.note)}</p>`:""}<div class="bdpairs">${valueText(r)}</div>${(r.items||[]).length?`<p class="sub">${r.items.map(esc).join("<br>")}</p>`:""}<div class="bdacts">${r.photo?`<a class="btn sm" href="/lifelog-photos/${esc(r.photo)}" target="_blank" rel="noopener">元の写真</a>`:""}<button class="btn sm" data-bdreopen="${esc(r.id)}">直す</button></div></details>`).join("")}</section>`:"";
+  return `<div class="bdcards">${cards}</div>${recent}`;
+}
+function bodyView(){
+  const d=S.body,head=`<header class="head"><div><p class="eyebrow">写真と文字から記録</p><h1>体</h1></div></header>`;
+  if(!d)return head+`<div class="card empty"><b>${S.bodyErr?"読み込めませんでした":"読み込んでいます"}</b>${S.bodyErr?"Desk のサーバーを再起動すると直ることがあります。":""}</div>`;
+  const w=S.bodyWin||"7",tab=S.bodyTab||"overview";
+  const info=[d.waiting?`読み取り待ち ${d.waiting}件`:"",d.failed?`読めなかったもの ${d.failed}件`:"",!d.keyReady?"API キーが未登録なので、読み取りは止まっています":""].filter(Boolean).join(" · ");
+  const tabs=`<div class="mtabs" role="tablist" aria-label="体の画面">${BDTABS.map(([k,l])=>`<button role="tab" class="mtab" data-bdtab="${k}" aria-selected="${k===tab}">${esc(l)}</button>`).join("")}</div>`;
+  const review=d.review.length?`<section class="bdsec"><h2>要確認 <span class="sub">${d.review.length}件</span></h2>${d.review.map(r=>bdReview(r,d)).join("")}</section>`:"";
+  const send=`<details class="bdhelp"><summary>送り先と費用</summary><p>Telegram のボットに写真か文字を送るか、Drive の Daily_Photos_Inbox に写真を置きます。キャプションに一言書くと、読み取りの手がかりになります。古い写真は「11/3 の夕食」のように日付も書いてください。Telegram の写真は最大24時間まで Telegram 側に残り、Drive の取り込みは Claude アプリが開いている間に毎時動きます。</p><p class="sub">今月 ${d.usage.photos}件 · 約 $${Number(d.usage.usd).toFixed(2)} · モデル ${esc(d.model)}</p><form id="bdLimit" class="bdtarget"><label>今月の上限（USD）<input type="number" min="0" step="1" id="bdLimitV" value="${d.limit??""}" placeholder="なし"></label><button class="btn sm">保存</button></form></details>`;
+  const panel=tab==="overview"?bdOverview(d):tab==="meal"?bdMealTab(d,w):tab==="sleep"?bdGroupTab(d,"sleep",w,"total_min",bdSleepExtra(d),"睡眠のスクショか「7時間寝た」のような文字を送ると、ここに並びます。"):tab==="workout"?bdGroupTab(d,"workout",w,"workout_min",bdWorkoutExtra(d),"アプリの画面か「ベンチ60kg 10回3セット」のような文字を送ると、ここに並びます。"):tab==="habits"?bdGroupTab(d,"habits",w,"screen_min",bdHabitsExtra(d),"スクリーンタイムや学習アプリの画面を送ると、ここに並びます。"):bdGroupTab(d,BDGROUP[tab],w,tab==="activity"?"steps":"weight_kg","","体重計のアプリの画面か「体重65.2」のような文字を送ると、ここに並びます。");
+  return head+`<div class="money bd">${tabs}${info?`<p class="sub" role="status">${esc(info)}</p>`:""}${review}${panel}${send}</div>`;
+}
+function bdWireTips(){
+  const tip=document.getElementById("mTip")||Object.assign(document.body.appendChild(document.createElement("div")),{id:"mTip",className:"mtip"});
+  tip.hidden=true;
+  document.querySelectorAll(".bd [data-tip]").forEach(h=>{
+    h.onmousemove=e=>{tip.textContent=h.dataset.tip;tip.hidden=false;tip.style.left=Math.min(e.clientX+12,window.innerWidth-tip.offsetWidth-8)+"px";tip.style.top=(e.clientY-tip.offsetHeight-8)+"px"};
+    h.onmouseleave=()=>{tip.hidden=true};
+  });
 }
 function wireBody(){
   const put=async(path,rec,msg)=>{try{await api("PUT",path,rec);if(msg)toast(msg);bodyLoad(true);return true}catch(e){toast("保存できませんでした。値を確かめてください");return false}};
   document.querySelectorAll("[data-bdwin]").forEach(b=>b.onclick=()=>{S.bodyWin=b.dataset.bdwin;render()});
+  document.querySelectorAll("[data-bdtab]").forEach(b=>b.onclick=()=>{S.bodyTab=b.dataset.bdtab;S.bodyPick=null;S.bodyOpen=null;render();window.scrollTo(0,0)});
+  document.querySelectorAll("[data-bdday]").forEach(b=>b.onclick=()=>{if(b.dataset.bdday){S.bodyDay=b.dataset.bdday;render()}});
+  bdWireTips();
   document.querySelectorAll("[data-bdreopen]").forEach(b=>b.onclick=()=>put("/api/body/records/"+encodeURIComponent(b.dataset.bdreopen),{action:"reopen"},"要確認に移しました"));
-  document.querySelectorAll("[data-bdopen]").forEach(b=>b.onclick=()=>{S.bodyOpen=S.bodyOpen===b.dataset.bdopen?null:b.dataset.bdopen;render()});
+  document.querySelectorAll("[data-bdopen]").forEach(b=>b.onclick=()=>{S.bodyOpen=S.bodyOpen===b.dataset.bdopen?null:b.dataset.bdopen;S.bodyPick=b.dataset.bdopen;render()});
   document.querySelectorAll("[data-bdtarget]").forEach(f=>f.onsubmit=e=>{e.preventDefault();put("/api/body/targets/"+encodeURIComponent(f.dataset.bdtarget),{target:f.querySelector("[data-bdt]").value,dir:f.querySelector("[data-bdd]").value},"目標を保存しました")});
   $("#bdLimit")&&($("#bdLimit").onsubmit=e=>{e.preventDefault();put("/api/body/settings",{monthlyLimitUsd:$("#bdLimitV").value},"上限を保存しました")});
   document.querySelectorAll("[data-bdrec]").forEach(card=>{

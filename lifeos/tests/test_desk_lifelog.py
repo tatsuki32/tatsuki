@@ -214,6 +214,25 @@ class Detail(View):
         self.assertIn("ごはん 約150g", text)
         self.assertNotIn("ほか", text)
 
+    def test_verdict_follows_the_sheets_direction(self):
+        self.assertEqual(ll.verdict(2000, 1850, "below"), "high")
+        self.assertEqual(ll.verdict(1500, 1850, "below"), "ok")
+        self.assertEqual(ll.verdict(100, 130, "above"), "low")
+        self.assertEqual(ll.verdict(140, 130, "above"), "ok")
+        self.assertEqual(ll.verdict(65, 62, "near"), "high")
+        self.assertEqual(ll.verdict(62.5, 62, "near"), "ok")
+        self.assertIsNone(ll.verdict(1, None, "near"))
+
+    def test_trend_compares_this_week_with_the_last(self):
+        self.save(stored("2026-10-28", "body", {"weight_kg": 70}), stored("2026-11-05", "body", {"weight_kg": 65}))
+        r = self.row("weight_kg")
+        self.assertEqual((r["week"], r["lastWeek"], r["trend"]), (65, 70, "down"))
+
+    def test_meals_of_a_day_list_what_was_eaten(self):
+        self.save(stored("2026-11-05", "meal_photo", {"energy_kcal": 500}, at=1, items=["ごはん 約150g"], estimated=True))
+        v = ll.view("2026-11-05")
+        self.assertEqual(v["meals"]["2026-11-05"][0]["items"], ["ごはん 約150g"])
+
     def test_meal_score_follows_the_sheet(self):
         ll.write_json(ll.bp("targets.json"), {"energy_kcal": {"target": 2000}, "protein_g": {"target": 100}})
         self.save(stored("2026-11-05", "meal_screen", {"energy_kcal": 1000, "protein_g": 150}))
