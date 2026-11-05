@@ -1095,7 +1095,7 @@ function openQuestions(onlyId){
     const t=latest[cur.id]||findTask(cur.id), q=t?.clear?.questions?.find(x=>x.id===cur.q);if(!q||q.state!=="open")return next();
     $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop qa" role="dialog" aria-modal="true" aria-label="聞かれていること">
       <div class="top"><span class="sub">残り ${queue.length+1}件</span><button class="ibtn" id="qX" aria-label="閉じる">✕</button></div>
-      <p class="sub">${esc(taskName(t))}</p><h2>${esc(q.q)}</h2>
+      <p class="sub" data-noauto>${esc(taskName(t))}</p><h2>${esc(q.q)}</h2>
       <textarea id="qA" class="tnote" placeholder="短くて大丈夫です" aria-label="答え"></textarea>
       <div class="row"><button class="btn primary" id="qGo">答える <kbd>⌘ + Enter</kbd></button><button class="btn" id="qNo">分からない</button><button class="btn" id="qLater">あと回し</button></div></div></div>`;
     const ta=$("#qA");ta.focus();$("#qX").onclick=close;$("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};
@@ -1110,8 +1110,8 @@ function openQuestions(onlyId){
 }
 function taskCard(t,ps){
   const [ic,src]=TSRC[t.source]||TSRC.manual, open=TOPEN.has(t.status), est=estOf(t), ai=open&&aiPlanOf(t);
-  return `<article class="task ${open?"":"closed"}" draggable="true" data-task="${esc(t.id)}">
-    <button class="tt" data-topen="${esc(t.id)}">${esc(taskName(t))}</button>
+  return `<article class="task ${open?"":"closed"}" data-noauto draggable="true" data-task="${esc(t.id)}">
+    <button class="tt" data-topen="${esc(t.id)}" data-noauto>${esc(taskName(t))}</button>
     ${open&&clearOn(t)&&t.clear.first?`<p class="tfirstline">まず：${esc(t.clear.first)}</p>`:""}
     <div class="tm">${t.url&&okUrl(t.url)?`<a href="${esc(t.url)}" target="_blank" rel="noopener" title="${src}で開く" aria-label="${src}で開く">${ic}</a>`:`<span title="${src}" aria-label="${src}">${ic}</span>`}${t.mail?`<span class="from">${esc(t.mail.sub)}</span>`:t.due!=null?`<span>期日 ${esc(fmtDue(t.due))}</span>`:""}${open&&t.deadline!=null?dlChip(t):""}${open&&est!=null?`<span>${t.estMin!=null?"":"目安 "}${fmtMin(est)}</span>`:""}${ai?`<button class="chip aiplan" data-taiplan="${esc(t.id)}" title="Claude の案。押すと決まります">案：${tPeriodOf(ai,ps)[1]}</button>`:""}
       <span class="tsel">${open?`<select data-tplan="${esc(t.id)}" aria-label="いつやる">${planSel(t,ps)}</select>`:""}<select data-tstatus="${esc(t.id)}" aria-label="ステータス">${TSTATUS.map(([k,l])=>`<option value="${k}" ${k===t.status?"selected":""}>${l}</option>`).join("")}</select></span></div>
@@ -1160,7 +1160,7 @@ function openTriage(){
   const card=t=>{const linked=LINKED.has(t.source), ai=aiPlanOf(t), aiKey=ai&&tPeriodOf(ai,ps)[0], est=String(estOf(t)??"");cur={t,ai,est};
     draw(`<div class="pop tri" id="triCard" tabindex="-1" role="dialog" aria-modal="true" aria-label="未分類の仕分け">
       <div class="top"><span class="sub">${seen+1}/${TRI_BATCH} · 残り ${queue.length+1}件</span><span class="trhint" id="trHint" aria-live="polite"></span><button class="ibtn" id="trClose" aria-label="閉じる">✕</button></div>
-      ${linked?`<h2 class="trtitle">${esc(taskName(t))}</h2>`:`<textarea class="trtitle" id="trTitle" rows="1" aria-label="タイトル">${esc(taskName(t))}</textarea>`}
+      ${linked?`<h2 class="trtitle" data-noauto>${esc(taskName(t))}</h2>`:`<textarea class="trtitle" id="trTitle" rows="1" aria-label="タイトル">${esc(taskName(t))}</textarea>`}
       <textarea id="trNote" class="trnote" placeholder="メモ" aria-label="メモ">${esc(t.note||"")}</textarea>
       <div class="trps" role="group" aria-label="いつやる">${ps.map(([k,l],i)=>`<button class="btn trp ${k===aiKey?"primary":""}" data-trp="${k}"><kbd>${i+1}</kbd>${l}</button>`).join("")}<button class="btn trp" id="trByDue" hidden>期日どおり</button></div>
       <div class="tduein"><div><label class="sub" for="trEst">かかる時間（分）${t.estMin==null&&t.estAi!=null?" · 目安":""}</label><input type="number" id="trEst" min="1" step="5" inputmode="numeric" value="${est}"></div>${linked?"":`<div><label class="sub" for="trDue">期日（任意）</label><input type="date" id="trDue"></div>`}</div>
@@ -1234,7 +1234,7 @@ function topThree(){
   const r=rankedTasks(), list=r.list.slice(0,3);
   const slot=freeSlot(30);
   const why=t=>whyText(t,r);
-  const row=(t,i)=>`<div class="t3row ${i?"":"first"}"><span class="t3n">${i+1}</span><div style="min-width:0"><button class="tt" data-topen="${esc(t.id)}">${esc(taskName(t))}</button><div class="due">${esc(why(t))}${t.deadline!=null?` · ${dlChip(t)}`:""}</div>
+  const row=(t,i)=>`<div class="t3row ${i?"":"first"}"><span class="t3n">${i+1}</span><div style="min-width:0"><button class="tt" data-topen="${esc(t.id)}" data-noauto>${esc(taskName(t))}</button><div class="due">${esc(why(t))}${t.deadline!=null?` · ${dlChip(t)}`:""}</div>
     <div class="t3acts">${t.status==="notyet"?`<button class="btn ${i?"sm":"primary"}" data-t3="doing" data-id="${esc(t.id)}">始める</button>`:""}${mailUrl(t)?`<a class="btn ${i?"sm":""}" href="${esc(mailUrl(t))}" target="_blank" rel="noopener">返信する</a>`:""}${slot&&!i?`<a class="btn" href="${esc(calLink(t.title,slot))}" target="_blank" rel="noopener" title="${esc(fmtDue(slot))} から30分">予定を確保</a>`:""}<button class="btn ${i?"sm":""}" data-t3="done" data-id="${esc(t.id)}">完了</button></div></div></div>`;
   return `<section class="card t3" aria-label="今日の3つ">${list.length?list.map(row).join(""):`<div class="empty"><b>今日の3つはありません</b>のんびりどうぞ。T キーでタスクを足せます。</div>`}</section>`;
 }
@@ -1268,7 +1268,7 @@ function openNext(){
   $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop nextpop" role="dialog" aria-modal="true" aria-label="何していたかと、次にやること">
     <div class="top"><h2>🧭 次は？</h2><button class="ibtn" id="xNext" aria-label="閉じる">✕</button></div>
     <section class="nsec pick"><h3>👉 次はこれ</h3>
-      ${pick?`<button class="tt big" data-topen="${esc(pick.id)}">${esc(taskName(pick))}</button>
+      ${pick?`<button class="tt big" data-topen="${esc(pick.id)}" data-noauto>${esc(taskName(pick))}</button>
         <p class="hint">理由：${esc(whyText(pick,r))}${pick.deadline!=null?` · 期日 ${esc(fmtDue(pick.deadline))}`:""}</p>
         <p class="hint">⏱ ${nextLine}${r.short?"（短いので、すぐ終わる部分だけ）":""}</p>
         <p class="hint" id="nextStep"></p>
@@ -1282,7 +1282,7 @@ function openNext(){
           :`<p class="hint">Claude の作業記録はまだ届いていません。${S.local?"":"Mac の毎時同期で届きます。"}</p>`})()}
       ${(()=>{const tl=timeline(),hr=tl.filter(x=>x.at>=Date.now()-HOUR),list=hr.length?hr:tl.slice(0,5);
         return list.length?`<b class="nlab">🕘 ${hr.length?"この1時間にやったこと（"+hr.length+"件）":"この1時間は作業なし。最後の作業"}</b><ol class="tline">${list.map(x=>`<li><time>${esc(hm(x.at))}</time><span class="sub">${esc(minsAgo(x.at))}</span><span>${x.k} ${esc(x.t)}</span></li>`).join("")}</ol>`:""})()}
-      ${doing.length?`<p class="hint">🗂️ 進行中 ${doing.length}件（<button class="tt" data-topen="${esc(doing[0].id)}">${esc(short(doing[0].title))}</button>${doing.length>1?" ほか":""}）</p>`:""}
+      ${doing.length?`<p class="hint">🗂️ 進行中 ${doing.length}件（<button class="tt" data-topen="${esc(doing[0].id)}" data-noauto>${esc(short(doing[0].title))}</button>${doing.length>1?" ほか":""}）</p>`:""}
     </section>
   </div></div>`;
   const close=()=>{$("#modal").innerHTML="";$("#nextBtn").focus()};
@@ -1369,7 +1369,7 @@ function todayPanel(skip){
   const MAX=5, skipIds=new Set(skip||[]);
   const doing=S.board.filter(t=>t.status==="doing"&&!skipIds.has(t.id)).sort(byDeadline), notyet=S.board.filter(t=>t.status==="notyet"&&!skipIds.has(t.id)).sort(byDeadline);
   const list=[...doing,...notyet], n=list.length, rest=n-Math.min(n,MAX);
-  const row=t=>`<div class="drow"><span class="e" aria-hidden="true">${(TSRC[t.source]||TSRC.manual)[0]}</span><div style="min-width:0"><button class="tt" data-topen="${esc(t.id)}">${esc(t.title)}</button><div class="due">${t.mail?`${esc(t.mail.sub)} · ${dueLine(t.mail)}`:t.due!=null?"期日 "+esc(fmtDue(t.due)):""}</div></div><div class="dacts">${t.deadline!=null?dlChip(t):""}<select class="tsel ${t.status}" data-tstatus="${esc(t.id)}" aria-label="ステータス">${TSTATUS.map(([k,l])=>`<option value="${k}" ${k===t.status?"selected":""}>${l}</option>`).join("")}</select></div></div>`;
+  const row=t=>`<div class="drow"><span class="e" aria-hidden="true">${(TSRC[t.source]||TSRC.manual)[0]}</span><div style="min-width:0"><button class="tt" data-topen="${esc(t.id)}" data-noauto>${esc(t.title)}</button><div class="due">${t.mail?`${esc(t.mail.sub)} · ${dueLine(t.mail)}`:t.due!=null?"期日 "+esc(fmtDue(t.due)):""}</div></div><div class="dacts">${t.deadline!=null?dlChip(t):""}<select class="tsel ${t.status}" data-tstatus="${esc(t.id)}" aria-label="ステータス">${TSTATUS.map(([k,l])=>`<option value="${k}" ${k===t.status?"selected":""}>${l}</option>`).join("")}</select></div></div>`;
   return `<section class="card dpanel" aria-label="ほかのやること">
     <div class="dhead"><h2><span class="e">🗂️</span>ほかのやること</h2><span class="sub">進行中 ${doing.length} · 未着手 ${notyet.length}</span><a class="more" href="#tasks">ボード →</a></div>
     ${n?`<div>${list.slice(0,MAX).map(row).join("")}</div>${rest?`<button class="dmore" data-gonotyet>ほか ${rest}件を見る →</button>`:""}`:`<div class="empty"><b>ほかにやることはありません</b>T キーでタスクを足せます。</div>`}
@@ -1609,7 +1609,7 @@ function watch(){
   const x=S.watch.find(w=>w.id===S.watchId)||S.watch[0];
   if(!x) return head(null)+`<div class="card empty"><b>まだ号がありません</b>毎週火曜と金曜の朝に、バルカン・コーカサス・中央アジア・南米内陸・南アジア・東南アジアから2地域ずつ届きます。</div>`;
   return head(x)+notesHere("watch")+`${(x.regions||[]).length?`<div class="chips">${x.regions.map(r=>`<span class="pill">${esc(r)}</span>`).join("")}</div>`:""}
-  <article class="card md" data-src="${esc(x.docUrl||"")}" data-srclabel="マイナー国ウォッチ ${esc(x.date||"")}">${md(x.body)}</article>
+  <article class="card md" data-noauto data-src="${esc(x.docUrl||"")}" data-srclabel="マイナー国ウォッチ ${esc(x.date||"")}">${md(x.body)}</article>
   ${okUrl(x.docUrl)?`<p class="sub"><a href="${esc(x.docUrl)}" target="_blank" rel="noopener">Googleドキュメントで開く ↗</a></p>`:""}`;
 }
 
@@ -1759,22 +1759,37 @@ function sentencesOf(raw){
   });
 }
 let SX=null;
+const sentDeps=()=>[S.editions,S.watch,S.wnotes,S.memos,S.board,S.wa,S.cal,S.habits,S.wins,S.reports,S.tools,S.lifeos,S.fu,S.money,S.memory];
 function sentIndex(){
-  if(SX&&SX.e===S.editions&&SX.w===S.watch&&SX.n===S.wnotes&&SX.m===S.memos&&SX.t===S.tasks) return SX;
-  const all=[], add=(kind,raw,label,at,go)=>sentencesOf(raw).forEach(text=>all.push({kind,text,plain:plain(text).trim(),label,at,go}));
-  S.editions.forEach(e=>{const at=Date.parse(e.id)||0;(e.data.stories||[]).forEach((x,i)=>[x.title,x.summary,x.lens].forEach(r=>add("news",r,e.id,at,{ed:e.id,story:i})))});
-  S.watch.filter(w=>!w.deleted).forEach(w=>add("watch",w.body,w.date||w.id,Date.parse(w.date)||0,{watch:w.id}));
+  const deps=sentDeps(); if(SX&&deps.every((d,i)=>d===SX.deps[i])) return SX;
+  const all=[], add=(kind,raw,label,at,go,url)=>sentencesOf(Array.isArray(raw)?raw.join("\n"):raw).forEach(text=>all.push({kind,text,plain:plain(text).trim(),label,at,go,url}));
+  const day=ms=>ms?hcmcDay(ms):"";
+  S.editions.forEach(e=>{const at=Date.parse(e.id)||0;(e.data.stories||[]).forEach((x,i)=>[x.title,x.summary,x.lens].forEach(r=>add("news",r,e.id,at,{ed:e.id,story:i},(x.sources||[])[0]?.url||"")))});
+  S.watch.filter(w=>!w.deleted).forEach(w=>add("watch",w.body,w.date||w.id,Date.parse(w.date)||0,{watch:w.id},w.docUrl||""));
   noteList().forEach(n=>add("note",n.body,n.title,n.updatedAt||n.createdAt||0,{note:n.id}));
   S.memos.filter(m=>!m.deleted).forEach(m=>add("memo",m.text,"",m.updatedAt||m.createdAt||0,{memo:m.id}));
-  S.tasks.filter(t=>!t.deleted).forEach(t=>add("task",t.note,t.title,t.updatedAt||t.createdAt||0,{task:t.id}));
-  return SX={e:S.editions,w:S.watch,n:S.wnotes,m:S.memos,t:S.tasks,all,hits:new Map()};
+  S.board.filter(t=>!t.deleted).forEach(t=>{const wa=(S.wa||{})[t.id];
+    [t.title,taskName(t),t.clear?.first,t.note,t.mail?.sum,wa?.summary,wa?.texts].forEach(r=>add("task",r,taskName(t),t.updatedAt||t.createdAt||0,{task:t.id}))});
+  calEvents().forEach(e=>[e.title,e.location].forEach(r=>add("event",r,day(e.startMs),e.startMs||0,{cal:1})));
+  S.habits.filter(h=>!h.deleted).forEach(h=>add("habit",h.name,"",h.updatedAt||h.createdAt||0,{view:"habits"}));
+  winList().forEach(w=>[w.title,w.sub].forEach(r=>add("win",r,w.date||"",w.at||Date.parse(w.date)||0,{wins:1})));
+  S.reports.forEach(r=>{const at=Date.parse(r.date)||0;add("log",r.summary,r.date,at,{log:r.id});
+    ["done","improved","pending","failed"].forEach(k=>(r[k]||[]).forEach(x=>[x.text,x.detail].forEach(v=>add("log",v,r.date,at,{log:r.id}))))});
+  S.tools.filter(t=>!t.deleted).forEach(t=>[t.name,t.desc].forEach(r=>add("tool",r,t.name,0,{view:"tools"})));
+  (S.lifeos||window.LIFEOS||[]).filter(t=>!t.deleted).forEach(t=>[t.name,t.oneline,t.usage,t.howToCheck,t.blockers].forEach(r=>add("lifeos",r,t.name,0,{view:"lifeos",los:String(t.id)})));
+  (S.fu?.items||[]).forEach(i=>[i.subject,i.subject_ja,i.title,i.name,i.toName,i.summary].forEach(r=>add("followup",r,"",0,{view:"followups"})));
+  (S.money?.items||[]).forEach(i=>[i.title,i.description].forEach(r=>add("money",r,i.date||"",Date.parse(i.date)||0,{view:"money"})));
+  (S.money?.advice?.items||[]).forEach(i=>Object.values(i).filter(v=>typeof v==="string").forEach(r=>add("money",r,"助言",Date.parse(S.money.advice.at)||0,{view:"money"})));
+  (S.memory?.sessions||[]).forEach(x=>Object.values(x.sections?.["ひとこと"]||x.sections||{}).forEach(r=>add("memory",r,x.title||"",x.updatedAt||0,{next:1})));
+  return SX={deps,all,hits:new Map()};
 }
 /* Same rule as auto-links. 1-character words and notes switched off match only where they are written in [ ]. */
 const pageWord=n=>{const t=String(n.title||"").normalize("NFKC").trim();return !n.noAuto&&[...t].length>=2?wordPat(t):null};
 function sentencesFor(n){
   const ix=sentIndex(), key=n.id+"\n"+n.title+"\n"+(n.noAuto?1:0); if(ix.hits.has(key)) return ix.hits.get(key);
   const t=normTitle(n.title), pat=pageWord(n), re=pat&&wordRe([pat],"iu"), seen=new Set();
-  const out=ix.all.filter(x=>x.go.note!==n.id&&(linksIn(x.text).some(y=>normTitle(y)===t)||re&&re.test(x.plain)))
+  const mine=x=>!(x.kind==="news"||x.kind==="watch")||(x.url&&String(n.body||"").includes("["+x.url)); // news and Minor Countries only where you linked them
+  const out=ix.all.filter(x=>x.go.note!==n.id&&mine(x)&&(linksIn(x.text).some(y=>normTitle(y)===t)||re&&re.test(x.plain)))
     .sort((a,b)=>b.at-a.at).filter(x=>{const k=normTitle(x.plain);if(seen.has(k))return false;seen.add(k);return true});
   ix.hits.set(key,out); return out;
 }
@@ -1792,10 +1807,11 @@ function sentHtml(x,n){
 const sentMeta=x=>SKIND[x.kind][1]+(x.label?" · "+x.label:"");
 const noteSnip=x=>(noteMain(x.body).replace(/[\[\]#]/g,"")||sentencesFor(x)[0]?.plain||"").slice(0,90);
 function sentCards(n){
+  if(LOCALAPI&&!S.sentFetched){S.sentFetched=true;Promise.all([fuLoad(),moneyLoad()]).then(()=>{if(viewId()==="notes"&&!document.querySelector(".inedit"))render()})}
   const xs=sentencesFor(n), max=S.sentNote===n.id?S.sentMax:12, shown=xs.slice(0,max);
   S.sentShown=shown;
   return `<section class="sents"><h2>🔗 この言葉が出てくる文 <span class="count">${xs.length}</span></h2>
-    ${xs.length?`<div class="sgrid">${shown.map((x,i)=>`<button class="card scard" data-sent="${i}"><span class="smeta">${esc(sentMeta(x))}</span><span class="stext">${sentHtml(x,n)}</span></button>`).join("")}</div>
+    ${xs.length?`<div class="sgrid">${shown.map((x,i)=>`<button class="card scard" data-sent="${i}"><span class="smeta" data-noauto>${esc(sentMeta(x))}</span><span class="stext"${x.kind==="news"||x.kind==="watch"||x.kind==="task"?" data-noauto":""}>${sentHtml(x,n)}</span></button>`).join("")}</div>
       ${xs.length>max?`<button class="btn" id="sentMore">もっと見る（あと ${xs.length-max}件）</button>`:""}`
     :`<p class="sub">まだありません。ニュースやメモにこの言葉が出てくると、ここに並びます。</p>`}</section>`;
 }
@@ -1812,7 +1828,7 @@ function flashSentence(){
   const f=S.flash; if(!f) return; S.flash=null;
   setTimeout(()=>{
     const story=f.kind==="news"&&document.getElementById("story-"+f.story);
-    const root=story||(f.kind==="task"?$("#modal"):f.kind==="note"?document.querySelector(".wiki"):f.kind==="watch"?document.querySelector(".md"):$("#view"));
+    const root=story||(f.kind==="task"||f.kind==="memory"?$("#modal"):f.kind==="note"?document.querySelector(".wiki"):f.kind==="watch"?document.querySelector(".md"):$("#view"));
     const m=root&&markText(root,f.text); if(!m) return;
     if(story) story.classList.remove("flash");
     m.scrollIntoView({block:"center"});
@@ -1821,8 +1837,9 @@ function flashSentence(){
 }
 function openSentence(x){
   S.flash={kind:x.kind,text:x.plain,story:x.go.story};
-  goHit({kind:x.kind,go:x.go});
-  if(x.kind==="task") flashSentence();
+  if(x.go.los) (S.losOpen=S.losOpen||{})[x.go.los]=true;
+  goHit({kind:"card",go:x.go});
+  setTimeout(flashSentence,250); // screens that draw late, and pop-ups, get here after render
 }
 async function openWiki(title){
   title=String(title||"").trim().slice(0,80); if(!title) return;
@@ -1840,7 +1857,7 @@ function notesView(){
     <article class="card wiki" data-edit="note:${esc(n.id)}">${main?wikiBlock(main):`<p class="sub">まだ何も書いていません。「編集」か、ここを選んで書き始めてください。[言葉] で別のノートにつながります。</p>`}</article>
     ${sentCards(n)}
     ${(h=>h.length?`<section class="card hop"><h2>🕸️ つながり <span class="sub">同じ言葉でつながるノート</span></h2>${h.map(g=>`<div class="grp"><h3>${wlink(g.word)} 経由</h3><div class="ngrid">${[g.page,...g.others].filter(Boolean).map(x=>`<button class="card ncard" data-nopen="${esc(x.id)}"><b>${esc(x.title)}</b><span>${esc(noteSnip(x))}</span></button>`).join("")}</div></div>`).join("")}</section>`:"")(twoHop(n))}
-    ${src.length?`<p class="sub nsrc">出典 ${src.map(l=>wikiInline(l.replace(SRC_LINE,"").trim())).join(" ")}</p>`:""}`;
+    ${src.length?`<p class="sub nsrc">出典 ${src.map((l,i)=>`<span>${wikiInline(l.replace(SRC_LINE,"").trim())} <button class="btn sm" data-srcdel="${i}">外す</button></span>`).join("")}</p>`:""}`;
   }
   const list=noteList().sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
   return `<header class="head"><div><p class="eyebrow">ノート</p><h1>ノート</h1></div><button class="btn primary" id="newNote">＋ 新しいノート</button></header>
@@ -1886,7 +1903,8 @@ function showSelMenu(){
   hideSelMenu();
   selMenu=document.createElement("div");selMenu.className="selmenu";selMenu.setAttribute("role","menu");
   const [kind,id]=(own?.dataset.edit||"").split(/:(.*)/s);
-  const linkBtn=has&&!own?`<button data-sel="open">ノートを開く</button>`:`<button data-sel="${own?"link":src?"srclink":"anylink"}">リンクにする</button>`;
+  const srcUrl=src?.dataset.src||"", canLink=src&&/^https:\/\//.test(srcUrl)&&!String(noteByTitle(word)?.body||"").includes("["+srcUrl);
+  const linkBtn=has&&!own&&!canLink?`<button data-sel="open">ノートを開く</button>`:`<button data-sel="${own?"link":src?"srclink":"anylink"}">リンクにする</button>`;
   selMenu.innerHTML=own?`<button data-sel="edit">編集</button>${kind!=="notetitle"?linkBtn:""}`:linkBtn;
   document.body.appendChild(selMenu);
   const tabs=$("#tabs"), floor=innerHeight-(tabs&&tabs.offsetParent?tabs.offsetHeight:0)-8; // phones: under the selection (the system menu sits above it), clear of the bottom tabs
@@ -1992,7 +2010,7 @@ function searchIndex(){
   calEvents().forEach(e=>add("event",e.title,[e.location,e.description].join(" "),{cal:1},{at:e.startMs}));
   return out;
 }
-const SKIND={tool:["🧩","ツール"],note:["📒","ノート"],memo:["📝","メモ"],task:["🗂️","タスク"],news:["🌍","ニュース"],watch:["🗺️","マイナー国"],mail:["✉️","メール"],event:["📅","予定"],win:["✨","できたこと"]};
+const SKIND={tool:["🧩","ツール"],note:["📒","ノート"],memo:["📝","メモ"],task:["🗂️","タスク"],news:["🌍","ニュース"],watch:["🗺️","マイナー国"],mail:["✉️","メール"],event:["📅","予定"],win:["✨","できたこと"],habit:["🌱","習慣"],log:["🤖","Claudeの記録"],lifeos:["🧰","Life OS"],followup:["⏳","返信待ち"],money:["💰","お金"],memory:["🧭","次は？"]};
 function runSearch(q){
   const terms=q.trim().split(/\s+/).filter(Boolean); if(!terms.length) return {hits:[],via:[]};
   const ai=(S.aiExp||{})[norm(q)]||[];
@@ -2027,7 +2045,7 @@ function searchResults(){
     <div class="rhead"><b>「${esc(q)}」 ${hits.length}件</b>${via.length?`<span class="sub">「${via.map(esc).join("」「")}」でも探しました</span>`:""}${aiWords?`<span class="sub">🤖 ${aiWords.map(esc).join("・")}</span>`:""}${aiState}</div>
     ${kinds.map(k=>{const xs=hits.filter(h=>h.kind===k), all=S.qAll===k, shown=all?xs:xs.slice(0,5);
       return `<div class="rgroup"><div class="section-title"><span class="e">${SKIND[k][0]}</span>${SKIND[k][1]} <span class="count">${xs.length}</span></div>
-      ${shown.map((h,i)=>`<button class="rrow" data-hit="${k}:${hits.indexOf(h)}"><b>${esc(h.title)}</b>${h.date?`<span class="sub"> · ${esc(h.date)}</span>`:""}<span class="snip">${snippet(h)}</span></button>`).join("")}
+      ${shown.map((h,i)=>`<button class="rrow" data-hit="${k}:${hits.indexOf(h)}"${k==="news"||k==="watch"||k==="task"?" data-noauto":""}><b>${esc(h.title)}</b>${h.date?`<span class="sub"> · ${esc(h.date)}</span>`:""}<span class="snip">${snippet(h)}</span></button>`).join("")}
       ${xs.length>5&&!all?`<button class="dmore" data-qall="${k}">もっと見る（${xs.length}件）</button>`:""}</div>`}).join("")||`<p class="sub" style="padding:4px 12px 10px;margin:0">見つかりませんでした。${S.sampleOk?"「AIで広げて探す」を試してください。":"別の言葉で試してください。"}</p>`}
   </section>`;
 }
@@ -2041,6 +2059,9 @@ function goHit(h){
   if(g.ed!=null){S.ed=g.ed;S.region="All";S.focus=g.story;if(location.hash==="#news")render();else location.hash="news";return}
   if(g.watch){S.watchId=g.watch;location.hash="watch";return}
   if(g.wins){location.hash="wins";return}
+  if(g.log){S.logDay=g.log;location.hash="log";return}
+  if(g.next) return openNext();
+  if(g.view){location.hash=g.view;return}
   if(g.cal){location.hash="calendar"}
 }
 async function aiSearch(){
@@ -2127,8 +2148,8 @@ function inflow(){
   return `<section aria-label="届いたもの"><div class="section-title"><span class="e">📬</span>届いたもの</div><div class="card inflow">
     <a class="irow" href="#tasks" data-gonotyet><span class="e">✉️</span>返信するメール${n(act,true)}</a>
     <a class="irow" href="#inbox"><span class="e">📥</span>受信箱のメモ${n(inbox)}</a>
-    ${e?`<details class="digest" ${S.digestOpen?"open":""} id="digest"><summary class="irow"><span class="e">📰</span>今日のニュース<span class="s">${esc(e.data.headline||"")}</span>${n(st.length)}</summary>
-      <ol>${st.map((x,i)=>`<li><button class="tt" data-story="${i}" data-ed="${esc(e.id)}">${esc(x.title)}</button></li>`).join("")}</ol></details>`:""}
+    ${e?`<details class="digest" ${S.digestOpen?"open":""} id="digest"><summary class="irow"><span class="e">📰</span>今日のニュース<span class="s" data-noauto>${esc(e.data.headline||"")}</span>${n(st.length)}</summary>
+      <ol data-noauto>${st.map((x,i)=>`<li><button class="tt" data-story="${i}" data-ed="${esc(e.id)}">${esc(x.title)}</button></li>`).join("")}</ol></details>`:""}
     ${actx?"":`<button class="irow" id="soundBtn"><span class="e">🔈</span>新着のときに音を鳴らす<span class="n zero">オフ</span></button>`}
   </div></section>`;
 }
@@ -2184,9 +2205,9 @@ function news(){
   <header class="head"><div><p class="eyebrow">世界ニュース · ${esc(e.id)}</p><h1>今日の世界</h1></div>
   <label class="sub">号 <select id="ed">${S.editions.map(x=>`<option value="${esc(x.id)}" ${x.id===e.id?"selected":""}>${esc(x.id)}</option>`).join("")}</select></label></header>
   ${notesHere("news")}
-  <section class="card lead"><p class="eyebrow">全体像</p><h2>${esc(d.headline)}</h2><p>${esc(d.lead)}</p></section>
+  <section class="card lead" data-noauto><p class="eyebrow">全体像</p><h2>${esc(d.headline)}</h2><p>${esc(d.lead)}</p></section>
   <div class="chips" role="group" aria-label="地域で絞り込む">${regions.map(r=>`<button class="chip" data-region="${esc(r)}" aria-pressed="${r===S.region}">${r==="All"?"🧭":REG[r]} ${esc(REGJA[r]||r)}</button>`).join("")}</div>
-  <div class="world">
+  <div class="world" data-noauto>
     <section class="card stories">${shown.map(s=>`<article class="story" id="story-${stories.indexOf(s)}" data-src="${esc((s.sources||[])[0]?.url||"")}" data-srclabel="${esc((s.sources||[])[0]?.name||"元の記事")}"><span class="e">${REG[s.region]||"🌐"}</span><div style="min-width:0"><h3>${esc(s.title)}</h3><p>${esc(s.summary)}</p>${s.lens?`<div class="lens"><b>視点の違い：</b> ${esc(s.lens)}</div>`:""}<div class="srcs">${(s.sources||[]).map(x=>`<a href="${esc(okUrl(x.url)?x.url:"#")}" target="_blank" rel="noopener">${esc(x.name)} ↗</a>`).join("")}</div></div></article>`).join("")||`<div class="empty">この地域のニュースはありません。</div>`}</section>
     <aside class="side">
       <section class="card"><h2>🏛️ シンクタンク</h2><ul class="list">${(d.thinktank||[]).map(t=>`<li><span class="o">${esc(t.org)} · ${esc(t.date||"")}</span><a href="${esc(okUrl(t.url)?t.url:"#")}" target="_blank" rel="noopener">${esc(t.title)}</a></li>`).join("")||'<li class="sub">新着はありません。</li>'}</ul></section>
@@ -2205,7 +2226,7 @@ function winsView(){
   const ended=calEvents().filter(e=>!e.allDay&&e.endMs<=now&&e.startMs>=d0&&!MARK.test(e.title)&&!S.wins.some(w=>w.id===evWinId(e)));
   const dayLabel=d=>(d===today?"今日 · ":d===dayOff(today,-1)?"きのう · ":"")+new Date(d+"T12:00:00").toLocaleDateString("ja-JP",{month:"long",day:"numeric",weekday:"short"});
   const tm=w=>w.kind==="claude"||!w.at?"":hm(w.at);
-  const row=w=>{const [e,l]=WKIND[w.kind]||WKIND.self;return `<div class="drow wrow"><span class="e" aria-hidden="true">${e}</span><div style="min-width:0"><span class="wt">${wikiInline(w.title)}</span><div class="due">${esc(l)}${w.sub?" · "+esc(w.sub):""}${tm(w)?" · "+tm(w):""}</div></div>${w.kind==="self"||w.kind==="event"?`<div class="dacts"><button class="ibtn" data-windel="${esc(w.id)}" aria-label="「${esc(w.title)}」を消す" title="消す">✕</button></div>`:""}</div>`};
+  const row=w=>{const [e,l]=WKIND[w.kind]||WKIND.self;return `<div class="drow wrow"${w.kind==="task"||w.kind==="mail"?" data-noauto":""}><span class="e" aria-hidden="true">${e}</span><div style="min-width:0"><span class="wt">${wikiInline(w.title)}</span><div class="due">${esc(l)}${w.sub?" · "+esc(w.sub):""}${tm(w)?" · "+tm(w):""}</div></div>${w.kind==="self"||w.kind==="event"?`<div class="dacts"><button class="ibtn" data-windel="${esc(w.id)}" aria-label="「${esc(w.title)}」を消す" title="消す">✕</button></div>`:""}</div>`};
   return `<header class="head"><div><p class="eyebrow">できたこと</p><h1>やってきたこと</h1></div></header>
   <section class="card wstats" aria-label="できたことの数">
     <div class="wst focus"><span class="wn">${nT}</span><span class="sub">今日</span></div>
@@ -2750,6 +2771,9 @@ function wire(){
   document.querySelectorAll("[data-nopen]").forEach(b=>b.onclick=()=>{S.noteId=b.dataset.nopen;render();window.scrollTo(0,0)});
   document.querySelectorAll("[data-notelist]").forEach(a=>a.onclick=e=>{e.preventDefault();S.noteId=null;render()});
   document.querySelectorAll("[data-editnow]").forEach(b=>b.onclick=()=>startEdit(document.querySelector(`[data-edit="${b.dataset.editnow}"]`)));
+  document.querySelectorAll("[data-srcdel]").forEach(b=>b.onclick=async()=>{const n=noteList().find(x=>x.id===S.noteId);if(!n)return;
+    const src=noteSrc(n.body);src.splice(+b.dataset.srcdel,1);const main=noteMain(n.body);
+    try{await store.putNote({...n,body:main+(src.length?(main?"\n":"")+src.join("\n")+"\n":"")});toast("リンクを外しました")}catch(err){toast("保存できませんでした")}});
   document.querySelectorAll("[data-sent]").forEach(b=>b.onclick=()=>openSentence(S.sentShown[+b.dataset.sent]));
   $("#sentMore")&&($("#sentMore").onclick=()=>{S.sentMax=(S.sentNote===S.noteId?S.sentMax:12)+12;S.sentNote=S.noteId;render()});
   $("#newNote")&&($("#newNote").onclick=newNotePrompt);

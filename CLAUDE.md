@@ -14,7 +14,7 @@ Tatsuki の個人ダッシュボード。**Mac だけで使う**（2026-11-04 �
 - ビュー（メニューは4つのまとまり）: 今日＝Home（焦点は「今日の3つ」）/ Tasks / Calendar / 習慣、届いたもの＝できたこと / 返信待ち / Inbox（朝のメールの画面はなくし、返信が要るメール＝要対応・返信案ありはタスクに入る。下書き・送信はタスクの詳細から）、読む＝World Desk / マイナー国、書く・振り返る＝ノート / Claude Log / ツール。
   iPhone は下にタブ（ホーム・タスク・カレンダー・ノート・その他）、メモは右下の丸ボタン。検索はどの画面でも `/`。
 - データの置き場（すべて `desk/data/`）：
-  `memos`, `tasks`, `dues`, `prompts`（毎日の求人チェックの Claude プロンプト。経歴入りなのでリポジトリに入れない）, `notes`（Scrapbox 風のノート。[言葉] でつながる。ノートのタイトルは Desk 全体で自動リンクになる。`noAuto:true` で止める。ページにはその言葉を含む文がカードで並ぶ（`sentencesFor`。保存しない）。「出典：」の行は表示と編集から外してページの下に出す）, `habits`（罰を与えない習慣。doc ごとに `done` に日付の配列）, `wins`（できたこと。完了したタスクは `task-<id>`、✓した予定は `event-<id>`、自分で書いたものは `self-…`。`kind`・`title`・`date`（ホーチミンの日付）。Claude の作業は `reports` の `done` から読む）, `lifemap` は `<名前>.json`。
+  `memos`, `tasks`, `dues`, `prompts`（毎日の求人チェックの Claude プロンプト。経歴入りなのでリポジトリに入れない）, `notes`（Scrapbox 風のノート。[言葉] でつながる。ノートのタイトルは Desk 全体で自動リンクになる。`noAuto:true` で止める。ページにはその言葉を含む文がカードで並ぶ（`sentencesFor`。全ページが対象で、保存しない）。ニュースとマイナー国は自動リンクせず、文字を選んでリンクした記事の文だけがカードになる。タスクの表示も自動リンクしない（`data-noauto`）。「出典：」の行は表示と編集から外してページの下に出し、「外す」で消せる）, `habits`（罰を与えない習慣。doc ごとに `done` に日付の配列）, `wins`（できたこと。完了したタスクは `task-<id>`、✓した予定は `event-<id>`、自分で書いたものは `self-…`。`kind`・`title`・`date`（ホーチミンの日付）。Claude の作業は `reports` の `done` から読む）, `lifemap` は `<名前>.json`。
   `tools`, `calendar`(doc `upcoming`), `gtasks`(doc `current`), `reports`, `editions`, `days`, `watch`（マイナー国ウォッチの号。doc id は日付、本文はマークダウン）は `docs/<名前>/<id>.json` が正本で、ページ用の `*.js` はそこから作る（`server.py` の `FEEDS`）。
 - `desk/server.py`（Python標準ライブラリのみ）が
   `http://localhost:4747` で配信し、`desk/data/*.js`（`window.TOOLS` 等）をページに差し込む。
