@@ -210,7 +210,7 @@ select{background:var(--surface);color:var(--ink);border:1px solid var(--line-2)
 .wd-list{display:grid;gap:var(--s5);min-width:0}
 .wd-cat{display:grid;gap:var(--s3)}
 .wd-cat h2,.wd-sec h2{font-size:var(--t4);line-height:1.4}
-.wd-items{display:grid;max-width:40em}
+.wd-items{display:grid;max-width:640px}
 .wd-item{display:grid;gap:var(--s1);width:100%;padding:var(--s3) 0;border:0;border-top:1px solid var(--line);background:none;color:inherit;font:inherit;text-align:left;cursor:pointer;scroll-margin-top:72px}
 div.wd-item{cursor:default}
 .wd-item:first-child{border-top:0;padding-top:0}
@@ -236,11 +236,15 @@ button.wd-item:hover .wd-q{color:var(--ink)}
 .wd-read.locked>.wd-sec:not(#wd1){opacity:.3;pointer-events:none}
 .wd-read .btn{min-height:40px}
 .wd-read .btn[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
-.wd-field{width:100%;max-width:40em;min-height:40px;padding:var(--s2) var(--s3);border-radius:var(--r-s);border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font:inherit;font-size:var(--t3)}
+.wd-field{width:100%;max-width:640px;min-height:40px;padding:var(--s2) var(--s3);border-radius:var(--r-s);border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font:inherit;font-size:var(--t3)}
 textarea.wd-field{min-height:96px;line-height:1.75;resize:vertical}
 .wd-field::placeholder{color:var(--muted)}
 .wd-row{display:flex;flex-wrap:wrap;gap:var(--s2);align-items:center}
-.wd-opts{display:grid;gap:var(--s2);width:100%;max-width:40em}
+/* ひとまとまりのもの（ラベルとその中身、入力とそのボタン）は近づける。まとまりどうしは .wd-sec の空きで離す */
+.wd-g{display:grid;gap:var(--s2);justify-items:start;width:100%;min-width:0}
+.wd-g.t{gap:var(--s1)}
+.wd-g>*{min-width:0}
+.wd-opts{display:grid;gap:var(--s2);width:100%;max-width:640px}
 .wd-opts label{display:flex;gap:var(--s2);align-items:center;min-height:40px;padding:var(--s2) var(--s3);border:1px solid var(--line);border-radius:var(--r-s);font-size:var(--t3);cursor:pointer}
 .wd-opts input{accent-color:var(--accent);margin:0}
 .wd-opts label:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
@@ -248,7 +252,7 @@ textarea.wd-field{min-height:96px;line-height:1.75;resize:vertical}
 .wd-seg{display:flex;border:1px solid var(--line-2);border-radius:var(--r-s);overflow:hidden}
 .wd-seg button{min-height:40px;padding:0 var(--s3);border:0;background:transparent;color:var(--ink-2);font:inherit;cursor:pointer}
 .wd-seg button+button{border-left:1px solid var(--line-2)}
-.wd-seg button[aria-pressed="true"]{color:var(--ink);font-weight:700;background:var(--accent-soft);box-shadow:inset 0 -2px 0 var(--accent)}
+.wd-seg button[aria-pressed="true"]{color:var(--ink);font-weight:700;background:var(--accent-soft);box-shadow:inset 0 -3px 0 var(--accent)}
 /* 同じ項目が同じ高さにそろうように、媒体の行を親の行に合わせる */
 .wd-srcs{display:grid;grid-template-columns:repeat(var(--wn,3),minmax(0,1fr));grid-template-rows:repeat(4,auto);gap:var(--s3) var(--s4);width:100%}
 .wd-src{display:grid;grid-row:span 4;grid-template-rows:subgrid;align-content:start}
@@ -256,7 +260,7 @@ textarea.wd-field{min-height:96px;line-height:1.75;resize:vertical}
 .wd-src header a.ext{font-size:var(--t1)}
 .wd-axes{display:grid;grid-template-columns:6em minmax(0,1fr);gap:var(--s1) var(--s2);align-content:start}
 .wd-axes dt{font-size:var(--t1);color:var(--muted);line-height:1.9}
-.wd-axes dd{color:var(--ink-2)}
+.wd-axes dd{color:var(--ink)}
 .wd-gist,.wd-full,.wd-lang{display:none}
 .wd-srcs[data-mode="gist"] .wd-gist{display:block}
 .wd-srcs[data-mode="full"] .wd-full{display:grid;gap:var(--s3)}
@@ -279,16 +283,23 @@ textarea.wd-field{min-height:96px;line-height:1.75;resize:vertical}
 .wd-tbtn:hover{color:var(--ink)}
 .wd-why{display:grid;gap:var(--s4)}
 .wd-why li{display:grid;gap:var(--s1)}
+.wd-why h3{display:flex;gap:var(--s2);align-items:baseline}
+.wd-why h3 .k{color:var(--muted);font-weight:400}
 .wd-root{display:grid;gap:var(--s1)}
 .wd-root b{font-size:var(--t3);line-height:1.75;max-width:40em}
 .wd-pred{display:grid;grid-template-columns:auto minmax(0,240px);gap:var(--s3);align-items:center}
 .wd-pred output{font-size:var(--t5);font-weight:700;line-height:1.2;min-width:3.2em}
-.wd-pred input{width:100%;accent-color:var(--accent)}
-.wd-hist{display:grid;gap:var(--s1);width:100%;max-width:40em}
+/* つまみだけ金。線まで金にすると、暖色の面積が増えて焦点がぼける */
+.wd-pred input{width:100%;height:24px;margin:0;background:transparent;-webkit-appearance:none;appearance:none;cursor:pointer}
+.wd-pred input::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:var(--line-2)}
+.wd-pred input::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;margin-top:-6px;border:0;border-radius:50%;background:var(--accent)}
+.wd-pred input::-moz-range-track{height:4px;border-radius:2px;background:var(--line-2)}
+.wd-pred input::-moz-range-thumb{width:16px;height:16px;border:0;border-radius:50%;background:var(--accent)}
+.wd-hist{display:grid;gap:var(--s1);width:100%;max-width:640px}
 .wd-hist li{display:grid;grid-template-columns:5em 3em minmax(0,1fr);gap:var(--s3);color:var(--ink-2)}
 .wd-hist .num{text-align:right;color:var(--ink)}
-.wd-quote{padding-left:var(--s3);border-left:1px solid var(--line-2);color:var(--ink-2);font-size:var(--t3);line-height:1.75;max-width:40em}
-.wd-task{display:grid;gap:var(--s2);width:100%;max-width:40em;justify-items:start}
+.wd-read .wd-quote{padding-left:var(--s3);border-left:1px solid var(--line-2);color:var(--ink-2);font-size:var(--t3);line-height:1.75;max-width:40em}
+.wd-task{display:grid;gap:var(--s2);width:100%;max-width:640px;justify-items:start}
 @media (max-width:860px){
   .wd-srcs{grid-template-columns:minmax(0,1fr);grid-template-rows:none;gap:var(--s4)}
   .wd-src{grid-row:auto;grid-template-rows:none;gap:var(--s3)}
@@ -2325,35 +2336,35 @@ function worldRead(e,i){
     <header class="wd-top"><p class="sub"><a href="#news" id="wdback">← 今日の一覧</a> ・ ${esc(e.id)} ・ ${esc(WCAT[s.cat]||s.cat||"")} ・ ${i+1}本目（全${e.data.stories.length}本）</p><h1>${esc(s.title)}</h1></header>
     <section class="wd-sec" id="wd1"><h2><span class="n">1</span>読む前に予想する</h2><p class="wd-p">${esc(q.text)}</p>
       ${done?`<div class="wd-answer"><p class="sub">あなたの予想：${esc(q.options[L.pick]||"")}${L.why?`（${esc(L.why)}）`:""}</p><h3>答え：${esc(q.result||q.options[q.answer]||"")}</h3><p class="sub">${L.pick===q.answer?"予想どおりでした。":"予想と違いました。どこで見方が分かれたか、下で確かめます。"}</p></div>`
-      :`<div class="wd-opts" role="radiogroup" aria-label="予想">${q.options.map((o,k)=>`<label><input type="radio" name="wdq" value="${k}">${esc(o)}</label>`).join("")}</div>
+      :`<div class="wd-g"><div class="wd-opts" role="radiogroup" aria-label="予想">${q.options.map((o,k)=>`<label><input type="radio" name="wdq" value="${k}">${esc(o)}</label>`).join("")}</div>
       <input class="wd-field" id="wdwhy" type="text" placeholder="そう思う理由を一言" aria-label="そう思う理由">
-      <div class="wd-row"><button class="btn primary" id="wdgo" disabled>予想を記録して読む</button><span class="sub">予想を記録すると、下の記事が開きます。</span></div>`}
+      <div class="wd-row"><button class="btn primary" id="wdgo" disabled>予想を記録して読む</button><span class="sub">予想を記録すると、下の記事が開きます。</span></div></div>`}
     </section>
     <section class="wd-sec"><h2><span class="n">2</span>${n}${WSTUDY.has(s.cat)?"本の研究を並べる":"つの媒体で読む"}</h2>
-      <div class="wd-seg" role="group" aria-label="読み方">${[["gist","要点"],["full","詳しく"],...(hasLang?[["study","語学"]]:[])].map(([k,l])=>`<button data-wmode="${k}" aria-pressed="${k===mode}">${l}</button>`).join("")}</div>
-      <p class="sub${mode==="study"?"":" wd-hide"}" id="wdhint">単語にカーソルを合わせると訳が出ます。押すと日本語も出ます。</p>
+      <div class="wd-g"><div class="wd-seg" role="group" aria-label="読み方">${[["gist","要点"],["full","詳しく"],...(hasLang?[["study","語学"]]:[])].map(([k,l])=>`<button data-wmode="${k}" aria-pressed="${k===mode}">${l}</button>`).join("")}</div>
+      <p class="sub${mode==="study"?"":" wd-hide"}" id="wdhint">単語にカーソルを合わせると訳が出ます。押すと日本語も出ます。</p></div>
       <div class="wd-srcs" id="wdsrcs" data-mode="${mode}" style="--wn:${n}">${s.media.map(wMedia).join("")}</div>
     </section>
     ${whys.length?`<section class="wd-sec"><h2><span class="n">3</span>なぜを${whys.length}回たどる</h2>
-      <ol class="wd-why">${whys.map((w,k)=>`<li><p class="sub">なぜ ${k+1}</p><h3>${esc(w.q)}</h3><p class="wd-p">${esc(w.a)}</p><p class="sub">${w.src&&okUrl(w.src.url)?`出典あり：<a class="ext" href="${esc(w.src.url)}" target="_blank" rel="noopener">${esc(w.src.name||"出典")} ↗</a>`:"推測：出典なし"}</p></li>`).join("")}</ol>
+      <ol class="wd-why">${whys.map((w,k)=>`<li><h3><span class="k">${k+1}</span>${esc(w.q)}</h3><p class="wd-p">${esc(w.a)}</p><p class="sub">${w.src&&okUrl(w.src.url)?`出典：<a class="ext" href="${esc(w.src.url)}" target="_blank" rel="noopener">${esc(w.src.name||"記事")} ↗</a>`:"推測（出典なし）"}</p></li>`).join("")}</ol>
       ${s.root?`<p class="wd-root"><span class="sub">水面下の原因</span><b>${esc(s.root)}</b></p>`:""}
     </section>`:""}
-    ${s.forecast?`<section class="wd-sec"><h2><span class="n">4</span>予想を小さく直す</h2><p class="wd-p">「${esc(s.forecast)}」</p>
-      <div class="wd-pred"><output id="wdpv" for="wdpr">${last}%</output><input id="wdpr" type="range" min="0" max="100" step="5" value="${last}" aria-label="予想の確率"></div>
-      <input class="wd-field" id="wdpwhy" type="text" placeholder="${fc.length?"直した理由を一言":"そう思う理由を一言"}" aria-label="理由">
-      <button class="btn" id="wdfix">${fc.length?"予想を直す":"予想を記録する"}</button>
-      <ul class="wd-hist">${hist}</ul>
-      <p class="sub">続報が出たら、ここに戻って直します。</p>
+    ${s.forecast?`<section class="wd-sec"><h2><span class="n">4</span>予想を小さく直す</h2><div class="wd-g"><p class="wd-p">「${esc(s.forecast)}」</p>
+      <div class="wd-pred"><output id="wdpv" for="wdpr">${last}%</output><input id="wdpr" type="range" min="0" max="100" step="5" value="${last}" aria-label="予想の確率"></div></div>
+      <div class="wd-g"><input class="wd-field" id="wdpwhy" type="text" placeholder="${fc.length?"直した理由を一言":"そう思う理由を一言"}" aria-label="理由">
+      <button class="btn" id="wdfix">${fc.length?"予想を直す":"予想を記録する"}</button></div>
+      <div class="wd-g"><ul class="wd-hist">${hist}</ul>
+      <p class="sub">続報が出たら、ここに戻って直します。</p></div>
     </section>`:""}
     <section class="wd-sec"><h2><span class="n">5</span>自分の意見を書く</h2>
-      <p class="sub">読む前に書いたこと</p>
-      <p class="wd-quote">${done?esc((q.options[L.pick]||"")+(L.why?"。"+L.why:"")):"（まだ書いていません）"}</p>
-      <textarea class="wd-field" id="wdop" placeholder="読んだあとの意見。どの見方に近いか、何が足りないと思うか。" aria-label="読んだあとの意見">${esc(draft)}</textarea>
-      <div class="wd-row"><button class="btn primary" id="wdsave">ノートに保存</button>${L.noteId?`<span class="sub">ノートに保存済みです。もう一度押すと上書きします。</span>`:""}</div>
-      <p class="sub">このニュースで何か変わりましたか</p>
+      <div class="wd-g t"><p class="sub">読む前に書いたこと</p>
+      <p class="wd-quote">${done?esc((q.options[L.pick]||"")+(L.why?"。"+L.why:"")):"（まだ書いていません）"}</p></div>
+      <div class="wd-g"><textarea class="wd-field" id="wdop" placeholder="読んだあとの意見。どの見方に近いか、何が足りないと思うか。" aria-label="読んだあとの意見">${esc(draft)}</textarea>
+      <div class="wd-row"><button class="btn primary" id="wdsave">ノートに保存</button>${L.noteId?`<span class="sub">ノートに保存済みです。もう一度押すと上書きします。</span>`:""}</div></div>
+      <div class="wd-g"><p class="sub">このニュースで何か変わりましたか</p>
       <div class="wd-row" id="wdchanged">${[["task","タスクを作る"],["pred","予想を直しただけ"],["none","何も変わらない"]].map(([k,l])=>`<button class="btn" data-wch="${k}" aria-pressed="${L.changed===k}">${l}</button>`).join("")}</div>
       <div class="wd-task${L.changed==="task"&&!L.taskId?"":" wd-hide"}" id="wdtask"><input class="wd-field" id="wdtname" type="text" value="${esc(s.title)}：" aria-label="タスクの名前"><div class="wd-row"><button class="btn" id="wdtadd">Desk のタスクに足す</button></div></div>
-      ${L.taskId?`<p class="sub">タスクに足しました。</p>`:""}
+      ${L.taskId?`<p class="sub">タスクに足しました。</p>`:""}</div>
     </section>
   </div>`;
 }
