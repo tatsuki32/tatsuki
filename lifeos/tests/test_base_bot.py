@@ -163,7 +163,7 @@ class TestUpdates(BotCase):
         voice.set_transcriber(lambda path: "しゃべった内容")
         c = Fake()
         run.handle_update(self.msg(voice={"file_id": "f"}), c, "7")
-        self.assertEqual(c.sent, [(7, "音声:しゃべった内容"), (7, "文字起こし：\nしゃべった内容")])
+        self.assertEqual(c.sent, [(7, "文字起こし：\nしゃべった内容"), (7, "音声:しゃべった内容")])
 
     def test_stickers_and_the_like(self):
         c = Fake()

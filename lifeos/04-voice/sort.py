@@ -8,7 +8,8 @@ import re
 from collections import namedtuple
 from datetime import datetime, timedelta
 
-Part = namedtuple("Part", "kind text unsure")
+# title, at (ISO time) and timed are filled by the language model, or by core.py from the rules
+Part = namedtuple("Part", "kind text unsure title at timed", defaults=("", "", False))
 
 LABELS = {"task": "タスク", "event": "予定", "expense": "支出", "idea": "アイデア", "diary": "日記"}
 
@@ -168,6 +169,10 @@ def judge(sentence, now):
 
 # several tasks are several things to do; several diary sentences are one entry
 _JOIN_SAME = ("idea", "diary")
+
+
+def names_its_kind(text):
+    return bool(_PREFIX.match(text.strip()))
 
 
 def split(text, now=None):
