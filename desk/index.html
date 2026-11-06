@@ -3848,6 +3848,7 @@ function wireUt(){
     zone.ondragleave=e=>{if(!zone.contains(e.relatedTarget))drop?.classList.remove("on")};
     zone.ondrop=e=>{e.preventDefault();drop?.classList.remove("on");utPdfFile(e.dataTransfer.files[0])};
   }
+}
 /* お知らせ: what desk/notify.py showed on this Mac or held back, and its settings. The page decides nothing. */
 const NTHELD={quiet:"静かな時間",paused:"止めていた",cap:"1日の上限"};
 const ntHM=m=>String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0");
