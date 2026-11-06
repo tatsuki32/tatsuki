@@ -23,7 +23,7 @@
 - Web履歴（`desk/chrome_web_sync.py`、`desk/chrome-extension/`）：実装済み・未コミット。履歴は本物で取り込み済み。拡張は Tatsuki の読み込み待ちで、実物の Chrome では未確認。
 - Life Dashboard を Desk へ（`desk/lifelog.py`、体の画面、朝夜ルーティン、ご褒美カード、領収書）：最初の版を実装（未コミット）。睡眠と食事は本番で確認済み。レシートと Drive は確認待ち。
 - 秘書ボット（`lifeos/21-assistant/`。Cloudflare Workers、写真のボットとは別）：実装・未コミット。テストは偽物の通信で成功。本物の API と本番は導入待ち。
-- メール整理（`desk/gmail_clean.py`）：`desk/page-cards` にコミット済み。main に未マージ。本物で12件停止済み。OAuth はテスト中で、接続が7日で切れる可能性あり。使い方の計測と週1回の並び替え（`desk/usage.py`）：実装済み。数え始めは 2026-11-06、最初の並び替えは 11-23。 小さな道具（`desk/utilities.py`）：`claude/desk-utilities-a3a168` にコミット。アプリの窓で使うには再ビルドが要る。
+- メール整理（`desk/gmail_clean.py`）：`desk/page-cards` にコミット済み。main に未マージ。本物で12件停止済み。OAuth はテスト中で、接続が7日で切れる可能性あり。 見せる素材（`desk/showcase.py`）：`desk/page-cards` に統合済み。main に未マージ。 小さな道具（`desk/utilities.py`）：`claude/desk-utilities-a3a168` にコミット。アプリの窓で使うには再ビルドが要る。
 - LINE の返信タスク化（`desk/line_sync.py`）：実装・未コミット。流れは本番で確認。未読のあるトークはまだ本番で未確認。お知らせ（Mac の通知。`desk/notify.py`）：実装・未コミット。本番で動作中。実際の音と表示、まとめの実走、`urgent` の印は確認待ち。使い方の計測と週1回の並び替え（`desk/usage.py`）：実装・未コミット。数え始めは 2026-11-06、最初の並び替えは 11-23。
 ## 決定済みの事項
 - UI/UX を作るときは毎回、本を全文読んでから（`.claude/rules/design-ui.md`）。Drive の文字変換は p.136 まで。後半は Tatsuki のまとめで補っている。
