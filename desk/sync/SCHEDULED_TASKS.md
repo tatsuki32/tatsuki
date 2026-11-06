@@ -38,5 +38,6 @@ python3 desk/write_feed.py gtasks <raw.json>                 # Google タスク�
 | `desk-money-learn` | 毎日 8:35 | FP の6分野と金融機関のレポートから解説とクイズを1本 | `desk/data/wise/lessons.json` |
 | `desk-money-review` | 3日ごと 8:10 | お金の助言と、新しい明細の種類・分類の案（`/money-review`） | `desk/data/wise/`（`advice.json`・`guess.json`） |
 | `desk-sunday-mirror` | 日曜 17:08 | 日曜の鏡 | `memos` |
+| `desk-idea-suggest` | 月曜 6:30 | 提案。Drive と Cosense に本人が書いたものから、作れるものを5件まで。本人の言葉の引用と出典つき（`desk/ideas.py`。読む範囲は `desk/data/ideas/sources.json` だけ。引用が原文にないと保存しない。読んだ本文は残さない） | `ideas` |
 
 各タスクの手順は Mac の `~/.claude/scheduled-tasks/<ID>/SKILL.md` にあります。経歴やドキュメントの ID を含むので、このリポジトリには入れません。

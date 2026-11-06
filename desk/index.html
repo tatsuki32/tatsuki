@@ -532,6 +532,21 @@ details.draft .sent-as summary{cursor:pointer;display:block;padding:var(--s2) 0;
 /* 毎日世界遺産: the photo's edge and the text share one left line; gaps grow from inside a site to between sites */
 .hhome{display:flex;align-items:center;gap:var(--s3);width:100%;padding:var(--s2);text-align:left;cursor:pointer;color:var(--ink)}
 .hhome:hover{border-color:var(--line-2)}
+.ilist{display:grid;gap:var(--s3)}
+.idea{display:grid;gap:var(--s3);padding:var(--s3);overflow-wrap:anywhere}
+.idea h2{margin:0;font-size:var(--t3);font-weight:700;color:var(--ink);text-wrap:balance}
+.iwords{display:grid;gap:var(--s2)}
+.iq{margin:0;padding-left:var(--s3);border-left:2px solid var(--line-2);display:grid;gap:var(--s1)}
+.iq p{margin:0;color:var(--ink);max-width:40em}
+.iq cite{font-style:normal;font-size:var(--t1);color:var(--muted)}
+.ia{margin:0;color:var(--ink-2);max-width:40em}
+.ilab{display:block;font-size:var(--t1);color:var(--muted)}
+.idone{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s2);padding:12px var(--s3);overflow-wrap:anywhere}
+.idone b{flex:1 1 14em;min-width:0}
+.ihome{display:grid;gap:var(--s1);padding:var(--s3);color:var(--ink);text-decoration:none;overflow-wrap:anywhere}
+.ihome:hover{border-color:var(--line-2)}
+.iold summary{padding:12px var(--s3);cursor:pointer;color:var(--ink-2)}
+.iold .ilist{padding:0 var(--s3) var(--s3)}
 .hhome img{width:96px;height:64px;object-fit:cover;border-radius:var(--r-s);flex:none}
 .hhomet{display:grid;gap:var(--s1);min-width:0;padding-left:var(--s2);overflow-wrap:anywhere}
 .hcountry{overflow:hidden;display:grid;gap:var(--s5);padding-bottom:var(--s4)}
@@ -1054,6 +1069,7 @@ function toast(t){const el=document.createElement("div");el.className="toast";el
 const LOCALAPI=/^https?:$/.test(location.protocol)&&/^(localhost|127\.0\.0\.1)$/.test(location.hostname);
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="habits")+1,0,{id:"body",e:"🫀",label:"まとめ",g:"body"},{id:"bodysleep",e:"😴",label:"睡眠",g:"body"},{id:"bodymeal",e:"🍽️",label:"食事・カロリー",g:"body"},{id:"bodyweight",e:"⚖️",label:"体重",g:"body"},{id:"bodysteps",e:"👟",label:"歩数",g:"body"},{id:"bodyworkout",e:"💪",label:"筋トレ",g:"body"},{id:"bodyhabits",e:"📚",label:"学習と画面時間",g:"body"}); // photos and health records stay on this Mac
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="followups")+1,0,{id:"mailclean",e:"🧹",label:"メール整理",g:"in"});
+if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="presents")+1,0,{id:"ideas",e:"💡",label:"提案",g:"in"}); // once a week, from what was already written (desk/ideas.py)
 if(LOCALAPI) VIEWS.splice(4,0,{id:"focus",e:"🎯",label:"集中",g:"today"}); // blocks apps on this Mac, so the Mac version only
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="memolink")+1,0,{id:"money",e:"💰",label:"お金",g:"write"}); // statements stay on this Mac
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="money")+1,0,{id:"screentime",e:"📱",label:"スクリーンタイム",g:"write"});
@@ -3053,7 +3069,7 @@ function home(){
   const top=topThreeIds();
   const cards={triage:triHome(),focus:focusHomeCard(),body:homeBodyStrip(),
     today:`<div class="duo">${todayEvents()}${habitStrip()||`<section class="card"><div class="dhead"><h2><span class="e">🌱</span>今日の習慣</h2><a class="more" href="#habits">足す →</a></div><div class="empty">続けたいことを「習慣」で足せます。</div></section>`}</div>`,
-    heritage:heritageCard(),claude:ccCard(),panel:todayPanel(top),wins:winsMini(),inflow:inflow(),notes:notesHere("home"),
+    heritage:heritageCard(),ideas:ideasCard(),claude:ccCard(),panel:todayPanel(top),wins:winsMini(),inflow:inflow(),notes:notesHere("home"),
     tools:daily.length?`<section><div class="section-title"><span class="e">☀️</span>毎日のツール<a href="#tools">すべてのツール →</a></div><div class="tiles mini">${daily.map(tile).join("")}</div></section>`:`<p class="sub" style="margin:0"><a href="#tools" class="more">ツールを開く →</a></p>`};
   return `
   <header class="head"><div><p class="eyebrow">${d.toLocaleDateString("ja-JP",{month:"long",day:"numeric",weekday:"long"})} · ${greet} · ${t3Mode()}</p><h1>今日の3つ</h1></div><button class="btn" data-opennext>次は？</button></header>
@@ -3330,6 +3346,51 @@ async function addPresent(){
   try{await store.putPresent({id:"self-"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),kind:"self",title,source:"self"});toast("🎁 入れました")}catch(e){toast("保存できませんでした。入力はそのまま残っています");return}
   setTimeout(()=>$("#presentText")&&$("#presentText").focus(),0);
 }
+/* 提案: once a week, what could be built from what was already written. desk/ideas.py checks and writes the issues; the page only keeps 「やる」「見送る」. */
+const ideaIssues=()=>(window.IDEAS||[]).filter(d=>!d.deleted);
+const ideaState=i=>S.ideaLog?.[i.id]?.status||"open";
+async function ideasLoad(force){
+  if(!LOCALAPI||(!force&&Date.now()-(S.ideaAt||0)<30000)) return;
+  S.ideaAt=Date.now();
+  try{const rows=await api("GET","/api/ideaslog"),v=Object.fromEntries(rows.filter(x=>x&&x.id&&!x.deleted).map(x=>[x.id,x])),same=JSON.stringify(v)===JSON.stringify(S.ideaLog);S.ideaLog=v;if(!same)render()}catch(e){}
+}
+function ideasCard(){
+  const d=ideaIssues()[0]; if(!d||!LOCALAPI) return "";
+  ideasLoad();
+  const open=(d.items||[]).filter(i=>ideaState(i)==="open"), first=open[0]; if(!first) return "";
+  return `<section aria-label="今週の提案"><div class="section-title"><span class="e">💡</span>今週の提案<a href="#ideas">${open.length}件 →</a></div>
+  <a class="card ihome" href="#ideas" data-noauto><b>${esc(first.title)}</b><span class="due">${esc(first.quotes?.[0]?.title||"")}</span></a></section>`;
+}
+const ideaDay=d=>new Date(d+"T12:00:00").toLocaleDateString("ja-JP",{month:"long",day:"numeric"});
+function ideaItem(i,main){
+  const st=ideaState(i), log=S.ideaLog?.[i.id];
+  if(st!=="open") return `<div class="card idone"><b>${esc(i.title)}</b><span class="due">${st==="doing"?"やる":"見送り"}</span>${st==="doing"&&findTask(log?.taskId)?`<button class="btn" data-ideatask="${esc(log.taskId)}">タスクを開く</button>`:""}<button class="btn" data-ideaundo="${esc(i.id)}">戻す</button></div>`;
+  return `<article class="card idea"><h2>${esc(i.title)}</h2>
+    <div class="iwords">${(i.quotes||[]).map(q=>`<blockquote class="iq"><p>${esc(q.text)}</p><cite>${okUrl(q.url)?`<a class="ext" href="${esc(q.url)}" target="_blank" rel="noopener">${esc(q.title)}</a>`:esc(q.title)} ・ ${esc(q.date||"")}</cite></blockquote>`).join("")}</div>
+    <p class="ia"><span class="ilab">Claude の考え</span>${esc(i.advice)}</p>
+    <p class="ia"><span class="ilab">次の一歩 ・ 目安 ${esc(i.effort)}</span>${esc(i.next)}</p>
+    <div class="row"><button class="btn${main?" primary":""}" data-ideado="${esc(i.id)}">やる</button><button class="btn" data-ideapass="${esc(i.id)}">見送る</button></div></article>`;
+}
+function ideasView(){
+  const docs=ideaIssues(), head=sub=>`<header class="head"><div><p class="eyebrow">${sub}</p><h1>提案</h1></div></header>`;
+  if(!docs.length) return head("届いたもの")+`<div class="card empty"><b>月曜の朝に届きます</b>Drive と Cosense に書いたものから、作れるものを5件まで出します。</div>`;
+  const [now,...old]=docs, firstOpen=(now.items||[]).find(i=>ideaState(i)==="open");
+  return head(`${esc(ideaDay(now.date))}の提案 ・ ${(now.items||[]).length}件`)+`<div class="ilist" data-noauto>${(now.items||[]).map(i=>ideaItem(i,i===firstOpen)).join("")}</div>
+  ${old.length?`<section class="ilist" style="margin-top:var(--s5)" data-noauto><div class="section-title">これまでの提案</div>${old.map(d=>`<details class="card iold" data-ideaold="${esc(d.id)}" ${S.ideaOpen?.[d.id]?"open":""}><summary>${esc(ideaDay(d.date))} ・ ${(d.items||[]).length}件</summary><div class="ilist">${(d.items||[]).map(i=>ideaItem(i,false)).join("")}</div></details>`).join("")}</section>`:""}`;
+}
+async function ideaMark(id,rec){const out={...rec,updatedAt:Date.now()};await api("PUT","/api/ideaslog/"+encodeURIComponent(id),out);S.ideaLog={...S.ideaLog};if(rec.deleted)delete S.ideaLog[id];else S.ideaLog[id]={id,...out};render()}
+function wireIdeas(){
+  const item=id=>ideaIssues().flatMap(d=>d.items||[]).find(i=>i.id===id), fail=()=>toast("保存できませんでした。もう一度お試しください");
+  document.querySelectorAll("[data-ideado]").forEach(b=>b.onclick=async()=>{const i=item(b.dataset.ideado);if(!i)return;
+    const t={id:newTaskId(),title:"作る："+i.title,source:"idea",sourceRef:i.id,status:"notyet",createdAt:Date.now(),
+      note:[i.advice,"次の一歩："+i.next,"目安："+i.effort,...(i.quotes||[]).map(q=>`「${q.text}」 ${q.title} ${q.url}`)].join("\n")};
+    try{await store.putTask(t);await ideaMark(i.id,{status:"doing",taskId:t.id});toast("🗂️ タスクに入れました")}catch(e){fail()}});
+  document.querySelectorAll("[data-ideapass]").forEach(b=>b.onclick=async()=>{try{await ideaMark(b.dataset.ideapass,{status:"passed"});toast("見送りました。同じ案は次から出ません")}catch(e){fail()}});
+  document.querySelectorAll("[data-ideaundo]").forEach(b=>b.onclick=async()=>{const id=b.dataset.ideaundo,t=findTask(S.ideaLog?.[id]?.taskId);
+    try{if(t&&t.status==="notyet")await store.putTask({...t,deleted:true});await ideaMark(id,{deleted:true})}catch(e){fail()}});
+  document.querySelectorAll("[data-ideatask]").forEach(b=>b.onclick=()=>openTask(b.dataset.ideatask));
+  document.querySelectorAll("[data-ideaold]").forEach(d=>d.ontoggle=()=>{S.ideaOpen={...S.ideaOpen,[d.dataset.ideaold]:d.open}});
+}
 /* 毎日世界遺産: three countries a day (desk/heritage.py writes the issues; the page only marks what was read). One country at a time, photo first. */
 const HREGION={asia:"アジア",mideast:"中東",europe:"ヨーロッパ",africa:"アフリカ",namerica:"北中米・カリブ",samerica:"南米",oceania:"オセアニア"};
 const HKIND={cultural:"文化遺産",natural:"自然遺産",mixed:"複合遺産"};
@@ -3394,6 +3455,7 @@ function render(){
   if(viewId().startsWith("body")){bodyLoad();$("#view").innerHTML=searchResults()+bodyView();wire();wireBody();return}
   if(viewId()==="mailclean"){mcLoad();$("#view").innerHTML=searchResults()+mcView();wire();wireMc();return}
   if(viewId()==="netspeed"){nsLoad();$("#view").innerHTML=searchResults()+nsView();wire();wireNs();return}
+  if(viewId()==="ideas"){ideasLoad();$("#view").innerHTML=searchResults()+ideasView();wire();wireIdeas();return}
   if(viewId()==="usage"){uLoad();$("#view").innerHTML=searchResults()+usageView();wire();return}
   const v=viewId();
   $("#view").innerHTML=searchResults()+(v==="focus"?focusView():v==="notes"?notesView():v==="watch"?watch():v==="heritage"?heritageView():v==="tasks"?tasks():v==="calendar"?calendar():v==="news"?news():v==="wins"?winsView():v==="presents"?presentsView():v==="habits"?habitsView():v==="log"?log():v==="tools"?toolsView():home());
@@ -4290,7 +4352,7 @@ document.addEventListener("keydown",e=>{const t=e.target.tagName;if(t==="INPUT"|
    Seconds are added only while the window is showing and something was touched in the last two minutes.
    The arrangement is two lists of screen ids and an order of card ids; every screen and card is drawn whatever they say. ---------- */
 S.layout=window.LAYOUT||null;
-const HOMECARDS=[["triage","仕分けと質問"],["focus","集中"],["pc","PC の1行"],["body","体のまとめ"],["today","今日の予定と習慣"],["heritage","毎日世界遺産"],["claude","Claude に頼む"],["panel","今日のタスク"],["wins","今日できたこと"],["inflow","届いたもの"],["notes","ホームのノート"],["tools","毎日のツール"]];
+const HOMECARDS=[["triage","仕分けと質問"],["focus","集中"],["pc","PC の1行"],["body","体のまとめ"],["today","今日の予定と習慣"],["heritage","毎日世界遺産"],["ideas","今週の提案"],["claude","Claude に頼む"],["panel","今日のタスク"],["wins","今日できたこと"],["inflow","届いたもの"],["notes","ホームのノート"],["tools","毎日のツール"]];
 function homeOrder(){
   const all=HOMECARDS.map(c=>c[0]), out=(S.layout?.home||[]).filter((id,i,xs)=>all.includes(id)&&xs.indexOf(id)===i);
   all.forEach((id,k)=>{if(out.includes(id))return;const prev=all.slice(0,k).filter(x=>out.includes(x)).pop();out.splice(prev?out.indexOf(prev)+1:0,0,id)});
