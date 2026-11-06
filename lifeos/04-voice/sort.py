@@ -85,14 +85,35 @@ def amount(text):
 
 _WEEKDAYS = "月火水木金土日"
 _DIGITS = re.compile(r"[〇一二三四五六七八九十]+(?=時|月|日|分)")
+_LATER = re.compile(r"(\d+)\s*(分|時間半|時間)後")
+JAPAN_TIME = "日本時間"
+_PLAN = re.compile(r"明日|あした|明後日|あさって|来週|再来週|今夜|今晩|\d+\s*(分|時間半?)後|日本時間|カレンダー|予定|予約"
+                   r"|\d{1,2}\s*時(半|\d{1,2}\s*分)?\s*(に|から|まで)|\d{1,2}:\d{2}\s*(に|から)|[月火水木金土日]曜")
+
+
+def _plain(text):
+    s = _DIGITS.sub(lambda m: str(int(number(m.group()))), text)
+    return s.translate(str.maketrans("０１２３４５６７８９：／", "0123456789:/"))
+
+
+def looks_like_plan(text):
+    """Whether any sentence talks about a time still to come. Other tools use this to leave a plan to this tool."""
+    for sentence in _SPLIT.split(_plain(text)):
+        s = sentence.strip(" 　、,")
+        if s and not _PAST_END.search(s) and not _PAST_WORD.search(s) and _PLAN.search(s):
+            return True
+    return False
 
 
 def when(text, now):
     """(datetime, has_clock_time) said in the text, or (None, False). Past words give nothing."""
     if _PAST_WORD.search(text):
         return None, False
-    s = _DIGITS.sub(lambda m: str(int(number(m.group()))), text)
-    s = s.translate(str.maketrans("０１２３４５６７８９：／", "0123456789:/"))
+    s = _plain(text)
+    m = _LATER.search(s)
+    if m:
+        amount = int(m.group(1)) * (60 if m.group(2).startswith("時間") else 1) + (30 if m.group(2).endswith("半") else 0)
+        return (now + timedelta(minutes=amount)).replace(second=0, microsecond=0), True
     day = _day(s, now)
     clock = _clock(s)
     if day is None and clock is None:
@@ -103,6 +124,8 @@ def when(text, now):
     at = base.replace(hour=clock[0] % 24, minute=clock[1], second=0, microsecond=0)
     if clock[0] == 24:
         at += timedelta(days=1)
+    if JAPAN_TIME in s:
+        at -= timedelta(hours=2)  # Japan is always two hours ahead of Ho Chi Minh City
     if day is None and at <= now:
         at += timedelta(days=1)
     return at, True

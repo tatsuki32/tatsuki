@@ -24,8 +24,17 @@ def _another_tool_wants(text):
     return False
 
 
+def _is_plan(text):
+    """A plan said while a question is open is a plan, not the answer. Tool 04 decides what counts."""
+    d = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "04-voice")
+    try:
+        return load_file(d, "sort").looks_like_plan(text)
+    except (OSError, ImportError, AttributeError):
+        return False
+
+
 def match(text):
-    return bool(_core.pending()) and not text.startswith("/") and not _another_tool_wants(text)
+    return bool(_core.pending()) and not text.startswith("/") and not _is_plan(text) and not _another_tool_wants(text)
 
 
 def handle(text, ctx):

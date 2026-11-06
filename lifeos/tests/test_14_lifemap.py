@@ -178,6 +178,7 @@ class TestAnswer(SandboxCase):
         s = ask_just_now()
         self.assertTrue(handler.match("今日のメモ"))
         self.assertFalse(handler.match("/help"))
+        self.assertFalse(handler.match("5分後にグラブに乗る予定をカレンダーに入れて"))  # a plan, not the answer
         route = router.Route("14-lifemap", "14", "人生マップ", handler.PRIORITY, handler.match, handler.handle)
         reply = router.dispatch("よく眠れた", router.Ctx(), [route])
         self.assertIn(core.AREAS[s["area"]], reply)
