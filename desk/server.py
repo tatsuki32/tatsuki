@@ -29,9 +29,12 @@ import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, unquote, urlsplit
 
+import netspeed
+import notify
+import pc_monitor
+import chrome_web_sync
 import gmail_clean
 import lifelog
-import netspeed
 import screentime_sync
 import usage
 import wise_analysis
@@ -191,6 +194,18 @@ def whatsapp_view():
             return json.load(f)
     except (OSError, ValueError):
         return {}
+
+
+def line_view():
+    """Drafts of the open LINE tasks and how the last check went (desk/line_sync.py writes them; the page only reads)."""
+    out = {}
+    for key, name in (("items", "items.json"), ("status", "status.json")):
+        try:
+            with open(os.path.join(DATA, "line", name), encoding="utf-8") as f:
+                out[key] = json.load(f)
+        except (OSError, ValueError):
+            out[key] = {}
+    return out
 
 
 def keep_clear(old, new):
@@ -668,6 +683,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, core.desk_view()) if core else self.send(404, {"error": "not found"})
         if path == "/api/whatsapp":
             return self.send(200, whatsapp_view())
+        if path == "/api/line":
+            return self.send(200, line_view())
         if path == "/api/netspeed":
             return self.send(200, netspeed.view())
         if path == "/api/mailclean":
@@ -678,6 +695,13 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, lifelog.receipts_view(parse_qs(urlsplit(self.path).query).get("month", [None])[0]))
         if path.startswith("/lifelog-photos/"):
             return self.lifelog_photo(path.rsplit("/", 1)[1])
+        if path == "/api/notify":
+            return self.send(200, notify.view())
+        if path == "/api/pc":
+            brief = "summary" in parse_qs(urlsplit(self.path).query)
+            return self.send(200, pc_monitor.summary() if brief else pc_monitor.snapshot())
+        if path.startswith("/api/web/"):
+            return self.web_get(path.rsplit("/", 1)[1], parse_qs(urlsplit(self.path).query))
         if path == "/api/usage":
             return self.send(200, {**usage.view(parse_qs(urlsplit(self.path).query).get("period", ["14"])[0]), "on": usage.enabled(PORT)})
         if path == "/api/layout":
@@ -746,7 +770,55 @@ class Handler(BaseHTTPRequestHandler):
         except OSError:
             return self.send(500, {"error": "保存できませんでした"})
 
+    def web_get(self, what, q):
+        one = lambda k, default="": q.get(k, [default])[0]
+        num = lambda k: float(one(k)) if re.fullmatch(r"\d+(\.\d+)?", one(k)) else None
+        scope = (one("period", "week"), one("from") or None, one("to") or None)
+        moment = (num("after"), num("before"))
+        offset = int(num("offset") or 0)
+        if what == "sites":
+            return self.send(200, chrome_web_sync.sites_view(*scope, one("q")))
+        if what == "visits":
+            return self.send(200, chrome_web_sync.visits_view(*scope, one("q"), one("site"), *moment, offset))
+        if what == "searches":
+            return self.send(200, chrome_web_sync.searches_view(*scope, one("q"), offset))
+        if what == "export":
+            data = chrome_web_sync.export_csv(one("tab", "sites"), *scope, one("q"), one("site"), *moment).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "text/csv; charset=utf-8")
+            self.send_header("Content-Length", str(len(data)))
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("Content-Disposition", 'attachment; filename="web-history.csv"')
+            self.end_headers()
+            return self.wfile.write(data)
+        return self.send(404, {"error": "not found"})
+
+    def web_time(self):
+        # the one write that comes from outside localhost: only this Desk's own extension, by its fixed id
+        host = (self.headers.get("Host") or "").split(":")[0]
+        if host not in ("localhost", "127.0.0.1") or self.headers.get("Origin") != "chrome-extension://" + chrome_web_sync.EXTENSION_ID:
+            return self.send(403, {"error": "forbidden"})
+        if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+            return self.send(415, {"error": "json only"})
+        try:
+            rec = self.body()
+            added = chrome_web_sync.add_spans(rec.get("spans"), rec.get("diag"))
+        except (ValueError, json.JSONDecodeError):
+            return self.send(400, {"error": "bad json"})
+        return self.send(400, {"error": "bad spans"}) if added is None else self.send(200, {"added": added})
+
+    def web_put(self, parts, rec):
+        if parts == ["exclude"]:
+            out = chrome_web_sync.set_excluded(rec.get("site"), rec.get("on") is not False)
+            return self.send(400, {"error": "bad site"}) if out is None else self.send(200, {"excluded": out})
+        if len(parts) == 2 and parts[0] in ("visits", "searches"):
+            ok = chrome_web_sync.hide(parts[0], unquote(parts[1]))
+            return self.send(200, {"ok": True}) if ok else self.send(404, {"error": "not found"})
+        return self.send(404, {"error": "not found"})
+
     def write(self, method):
+        if method == "POST" and urlsplit(self.path).path == "/api/web/time":
+            return self.web_time()
         if not self.allowed():
             return self.send(403, {"error": "forbidden"})
         if method == "POST" and urlsplit(self.path).path == "/api/uploads":
@@ -756,6 +828,8 @@ class Handler(BaseHTTPRequestHandler):
             rec = self.body()
         except (ValueError, json.JSONDecodeError):
             return self.send(400, {"error": "bad json"})
+        if method == "PUT" and urlsplit(self.path).path.startswith("/api/web/"):
+            return self.web_put(urlsplit(self.path).path.split("/")[3:], rec)
         if method == "POST" and urlsplit(self.path).path == "/api/usage":
             # counts only; a test server on another port answers and keeps nothing
             return self.send(200, {"ok": usage.enabled(PORT) and usage.record(rec)})
@@ -787,6 +861,23 @@ class Handler(BaseHTTPRequestHandler):
             if not (self.headers.get("Content-Type") or "").startswith("application/json"):
                 return self.send(415, {"error": "json only"})
             return self.send(*lifelog_put(urlsplit(self.path).path.split("/")[2:], rec))
+        if urlsplit(self.path).path.startswith("/api/notify/"):
+            # same protection as claude(): Host/Origin checked, and JSON from another origin needs a preflight
+            if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+                return self.send(415, {"error": "json only"})
+            step = (method, urlsplit(self.path).path.rsplit("/", 1)[1])
+            if step == ("PUT", "settings"):
+                return self.send(*notify.put_settings(rec))
+            if step == ("POST", "pause"):
+                return self.send(*notify.pause(rec))
+            if step == ("POST", "test"):
+                return self.send(*notify.test())
+            return self.send(404, {"error": "not found"})
+        if method == "POST" and urlsplit(self.path).path == "/api/pc/close":
+            # same protection as claude(): Host/Origin checked, and JSON from another origin needs a preflight
+            if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+                return self.send(415, {"error": "json only"})
+            return self.send(*pc_monitor.close(rec.get("pid"), rec.get("started"), rec.get("force") is True))
         if method == "POST" and urlsplit(self.path).path == "/api/memolink/run":
             if not (self.headers.get("Content-Type") or "").startswith("application/json"):
                 return self.send(415, {"error": "json only"})
@@ -877,6 +968,9 @@ if __name__ == "__main__":
     srv = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
     print(f"Tatsuki's Desk: http://localhost:{PORT}", flush=True)
     threading.Thread(target=lifemap_ticks, daemon=True).start()
+    threading.Thread(target=pc_monitor.watch, daemon=True).start()
+    if PORT == 4747:  # a test server on another port shows nothing
+        threading.Thread(target=notify.watch, daemon=True).start()
     try:
         srv.serve_forever()
     except KeyboardInterrupt:

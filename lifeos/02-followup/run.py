@@ -6,6 +6,9 @@
   run.py whatsapp                 reads the Mac's WhatsApp store: chats waiting on them, a task at 3 days
   run.py pending-drafts           the drafts to create, as JSON
   run.py drafted NO ID [URL]      records a draft that now exists in Gmail
+  run.py needs-detail             mail follow-ups without a summary, as JSON
+  run.py detail FILE.json         [{"no", "topic", "summary", "body"?}]: what the task shows; renames it
+  run.py retitle                  renames the open tasks to the current form
   run.py today                    prints the morning list
   run.py list                     prints every open follow-up
   run.py stop | start             turns the tool off and on
@@ -85,6 +88,14 @@ def main(argv=None):
     elif cmd == "drafted" and len(a) >= 3:
         core().record_draft(int(a[1]), a[2], a[3] if len(a) > 3 else "")
         print("記録しました")
+    elif cmd == "needs-detail":
+        print(json.dumps(core().needs_detail(), ensure_ascii=False, indent=1))
+    elif cmd == "detail" and len(a) == 2:
+        with open(a[1], encoding="utf-8") as f:
+            print(f"{core().save_details(json.load(f))}件を保存しました")
+    elif cmd == "retitle":
+        core().retitle_open()
+        print("直しました")
     elif cmd == "today":
         print("\n".join(core().today_lines()))
     elif cmd == "list":
