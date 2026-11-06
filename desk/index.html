@@ -224,10 +224,10 @@ button.wd-item:hover .wd-q{color:var(--ink)}
 .wd-read ol,.wd-read ul{list-style:none}
 .wd-read p,.wd-read li,.wd-read dd{overflow-wrap:anywhere}
 .wd-read h3{font-size:var(--t3);line-height:1.6}
-.wd-top{display:grid;gap:var(--s2)}
+.wd-top{display:grid;gap:var(--s2);justify-items:start}
 .wd-top h1{line-height:1.4}
-.wd-top a{color:inherit;text-decoration:none}
-.wd-top a:hover{color:var(--ink)}
+/* 戻るボタンは移動のためのもの。号・欄・何本目と見出しのまとまりから離す */
+.wd-top .btn{margin-bottom:var(--s2)}
 .wd-sec{display:grid;gap:var(--s3);justify-items:start}
 .wd-sec>*{min-width:0;max-width:100%}
 .wd-sec h2{display:flex;gap:var(--s2);align-items:baseline}
@@ -629,10 +629,20 @@ button.hname:hover{color:var(--ink)}
 .strow .nsv{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
 .strow .nsv.wt{font-weight:700}
 .strow .nsn{grid-column:1/-1;font-size:var(--t1);color:var(--muted);overflow-wrap:anywhere}
-.strow .nsv{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
-.strow .nsv.wt{font-weight:700}
-.strow .nsn{grid-column:1/-1;font-size:var(--t1);color:var(--muted);overflow-wrap:anywhere}
 .nsp{max-width:640px}
+.bkp{max-width:640px}
+.bkcard{display:grid;gap:var(--s3);padding:var(--s3)}
+.bkhead{display:flex;align-items:baseline;gap:var(--s2);min-width:0}
+.bkhead h2{margin:0;font-size:var(--t4);overflow-wrap:anywhere}
+.bkall{display:flex;flex-wrap:wrap;gap:var(--s2)}
+.bkrow{display:grid;grid-template-columns:7em minmax(0,1fr) auto;gap:var(--s1) var(--s2);align-items:center;padding:var(--s1) 0;border-top:1px solid var(--line)}
+.bkl{font-size:var(--t1);color:var(--muted)}
+.bkv{overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.bkbtns{display:flex;gap:var(--s1)}
+.bkmemo{margin:0;overflow-wrap:anywhere}
+.bkf{display:grid;gap:var(--s1)}
+.pop.bkp{max-height:90vh;overflow-y:auto}
+@media(max-width:520px){.bkrow{grid-template-columns:minmax(0,1fr) auto}.bkl{grid-column:1/-1}}
 .nsp .sub a{color:var(--accent)}
 .scp{gap:var(--s5);max-width:960px}
 .scsec{display:grid;gap:var(--s2);min-width:0}
@@ -654,8 +664,26 @@ button.hname:hover{color:var(--ink)}
 .mccode{display:block;max-width:100%;overflow-wrap:anywhere;font-size:var(--t1);color:var(--ink);background:var(--line);padding:var(--s2);border-radius:var(--r-s)}
 .nsgo{display:flex;flex-wrap:wrap;gap:var(--s2);align-items:center}
 .nsu{font-size:var(--t2);font-weight:400}
+.strow a{color:inherit;text-decoration:none}
+.strow a:hover{text-decoration:underline}
+.ntgrp{margin:var(--s3) 0 0;font-size:var(--t1);color:var(--muted)}
+.ntgrp:first-of-type{margin-top:0}
+.nttimes{display:flex;flex-wrap:wrap;gap:var(--s2) var(--s3);padding:0}
+.nttimes input{width:auto}
 .stbar{grid-column:1/-1;height:4px;background:var(--line)}
 .stbar i{display:block;height:100%;background:var(--v3)}
+.webrow{align-items:baseline;padding:var(--s2) 0}
+.webrow>a,.webname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.webname{background:none;border:0;padding:0;color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+.webname:hover{text-decoration:underline}
+.webmeta{text-align:left!important;white-space:normal!important;overflow-wrap:anywhere;min-width:0}
+.webask{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:var(--s2)}
+.webtools{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s2)}
+.webtools input{border:1px solid var(--line-2);background:transparent;color:var(--ink);border-radius:6px;min-height:36px;padding:0 var(--s2);font:inherit;font-size:var(--t2)}
+.webtools input[type=search],.webtools input:not([type]){flex:1 1 160px;min-width:0}
+.webrow .btn{justify-self:end}
+.webext{margin:var(--s2) 0 0;padding-left:var(--s4);font-size:var(--t2);color:var(--ink-2)}
+.pcalert{display:block;max-width:960px;margin:0 auto var(--s3);padding:var(--s2) var(--s3);border-left:3px solid var(--red);background:var(--red-soft);color:var(--ink);font-size:var(--t2);text-decoration:none}
 .urow{display:grid;grid-template-columns:minmax(0,1fr) 3.5em 3.5em 5.5em 4.5em 4em minmax(0,10em) 5em;gap:var(--s1) var(--s2);align-items:center;padding:var(--s2) 0;border-top:1px solid var(--line)}
 .urow.ucards{grid-template-columns:minmax(0,1fr) 3.5em 6.5em 5em}
 .urow.ubtns{grid-template-columns:minmax(0,1fr) 3.5em 6.5em}
@@ -673,6 +701,23 @@ button.hname:hover{color:var(--ink)}
 .unote>span:first-child{flex:1 1 20em;min-width:0}
 .unacts{display:flex;gap:var(--s2)}
 @media (max-width:760px){.urow{grid-template-columns:minmax(0,1fr) 3em 5em 4.5em}.urow .uw{display:none}.urow.ucards{grid-template-columns:minmax(0,1fr) 3em 5.5em 4.5em}.urow.ubtns{grid-template-columns:minmax(0,1fr) 3em 5.5em}}
+.pcline{justify-self:start;text-decoration:none}
+.pcline:hover{color:var(--ink)}
+.pcrow{display:grid;grid-template-columns:minmax(0,1fr) 72px 48px 96px;gap:var(--s1) var(--s2);align-items:center;padding:var(--s2) 0;border-top:1px solid var(--line)}
+.pcrow.pchead{border-top:0;padding:0}
+.pcrow>span:nth-child(2),.pcrow>span:nth-child(3){text-align:right;font-variant-numeric:tabular-nums}
+.pcact{justify-self:end;display:flex;align-items:center;min-height:32px}
+.pcname{min-width:0;overflow-wrap:anywhere;background:none;border:0;padding:0;color:inherit;font:inherit;text-align:left}
+button.pcname{cursor:pointer}
+.pcpath{grid-column:1/-1;overflow-wrap:anywhere}
+@media(max-width:600px){
+  .pcrow{grid-template-columns:minmax(0,1fr) 72px 88px}
+  .pcrow.pchead>span:nth-child(3){display:none}
+  .pcrow>span:nth-child(3):not(.pcact){grid-column:1;grid-row:2;text-align:left}
+  .pcrow>.pcact{grid-column:3;grid-row:1}
+  .pcrow>.pcname{grid-column:1;grid-row:1}
+  .pcrow>span:nth-child(2){grid-column:2;grid-row:1}
+}
 .mchart{display:block;max-width:100%;height:auto;margin-top:var(--s2)}
 .mtick{font-size:12px;fill:var(--muted);font-variant-numeric:tabular-nums}
 .mhit{cursor:pointer}
@@ -841,6 +886,10 @@ button .awl,.nav .awl,#tabs .awl{border-bottom:0}
 .wtable{margin:var(--s2) 0;overflow-x:auto}.wtable p{margin:0 0 var(--s1)}.wtable table{border-collapse:collapse;font-size:var(--t2)}.wtable th,.wtable td{padding:var(--s1) var(--s2);border:1px solid var(--line);text-align:left;vertical-align:top}.wtable th{color:var(--ink)}
 .whtml{margin:var(--s2) 0;overflow-x:auto}.whtml img{max-width:100%}
 .edbar{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s2);margin-top:var(--s2)}.edbar label{cursor:pointer}
+.wiki[data-edit]{cursor:text}.wiki a,.wiki button{cursor:pointer}
+.edrow{background:var(--surface-2);border-radius:4px}
+.edline{display:block;width:100%;margin:0;padding:0;border:0;outline:0;resize:none;overflow:hidden;background:transparent;color:var(--ink);font:inherit;line-height:inherit}
+.notefile{margin-top:calc(var(--s2) * -1)}
 .nthumb{width:100%;height:96px;object-fit:cover;border-radius:var(--r-s)}
 .ngrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:var(--s2)}
 .ncard{display:grid;gap:var(--s1);text-align:left;padding:12px;cursor:pointer;color:var(--ink);align-content:start}
@@ -1028,7 +1077,7 @@ h1 .inedit{font-size:var(--t4);font-weight:700}
       <p class="hint"><kbd>T</kbd> タスクを足す · <kbd>/</kbd><kbd>/</kbd> コマンド</p>
     </div>
   </aside>
-  <main><div class="wrap" id="view"></div></main>
+  <main><a class="pcalert" id="pcAlert" href="#pc" style="display:none">メモリがひっ迫しています。PC 画面で確かめる</a><p class="pcalert" id="lineAlert" style="display:none"></p><div class="wrap" id="view"></div></main>
 </div>
 <nav id="tabs" aria-label="よく使う画面"></nav>
 <div id="modal"></div>
@@ -1069,10 +1118,14 @@ const LOCALAPI=/^https?:$/.test(location.protocol)&&/^(localhost|127\.0\.0\.1)$/
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="habits")+1,0,{id:"body",e:"🫀",label:"まとめ",g:"body"},{id:"bodysleep",e:"😴",label:"睡眠",g:"body"},{id:"bodymeal",e:"🍽️",label:"食事・カロリー",g:"body"},{id:"bodyweight",e:"⚖️",label:"体重",g:"body"},{id:"bodysteps",e:"👟",label:"歩数",g:"body"},{id:"bodyworkout",e:"💪",label:"筋トレ",g:"body"},{id:"bodyhabits",e:"📚",label:"学習と画面時間",g:"body"}); // photos and health records stay on this Mac
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="followups")+1,0,{id:"mailclean",e:"🧹",label:"メール整理",g:"in"});
 if(LOCALAPI) VIEWS.splice(4,0,{id:"focus",e:"🎯",label:"集中",g:"today"}); // blocks apps on this Mac, so the Mac version only
+if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="focus")+1,0,{id:"notices",e:"🔔",label:"お知らせ",g:"today"}); // Mac notifications: desk/notify.py decides, this page lists and sets
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="memolink")+1,0,{id:"money",e:"💰",label:"お金",g:"write"}); // statements stay on this Mac
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="money")+1,0,{id:"screentime",e:"📱",label:"スクリーンタイム",g:"write"});
+if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="screentime")+1,0,{id:"webhistory",e:"🌐",label:"Web履歴",g:"write"});
+if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="screentime")+1,0,{id:"netspeed",e:"📶",label:"回線の速さ",g:"write"});
+if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="screentime")+1,0,{id:"pc",e:"🖥️",label:"PC",g:"write"});
 if(LOCALAPI) VIEWS.push({id:"usage",e:"📊",label:"使い方",g:"write"}); // which parts of Desk get used, and the weekly re-arrangement (desk/usage.py)
-if(LOCALAPI) VIEWS.push({id:"netspeed",e:"📶",label:"回線の速さ",g:"tool"}); // opened from ツール and the / list, so no row in the menu
+if(LOCALAPI) VIEWS.push({id:"bank",e:"🏦",label:"送金先の口座",g:"tool"}); // same: from ツール and the / list. Details stay on this Mac (desk/bank.py)
 if(LOCALAPI) VIEWS.push({id:"showcase",e:"🖼️",label:"見せる素材",g:"tool"}); // same: opened from ツール and the / list
 async function api(method,path,body){const r=await fetch(path,{method,headers:{"Content-Type":"application/json"},body:body?JSON.stringify(body):undefined});if(!r.ok)throw new Error(r.status);return r.json()}
 async function loadApiMemos(){try{
@@ -1080,6 +1133,8 @@ async function loadApiMemos(){try{
   S.wlog=Object.fromEntries(wlog.filter(x=>x&&x.id&&!x.deleted).map(x=>[x.id,x]));
   S.hlog=Object.fromEntries(hlog.filter(x=>x&&x.id&&!x.deleted).map(x=>[x.id,x]));
   S.wa=await api("GET","/api/whatsapp").catch(()=>({}));
+  S.fu=await api("GET","/api/followups").catch(()=>S.fu);
+  S.line=await api("GET","/api/line").catch(()=>({}));lineAlert();
   S.habits=habits.filter(h=>!h.deleted);S.wins=wins.filter(w=>!w.deleted);S.presents=presents.filter(p=>!p.deleted);S.memos=memos.filter(m=>!m.deleted&&!m.movedTo);S.dues=duesById(dues);S.tasks=tasks.filter(t=>!t.deleted);S.prompts=promptsById(prompts);S.wnotes=notes.filter(n=>!n.deleted);render();absorbMemos()}catch(e){toast("Desk サーバーにつながりません。起動していますか？")}}
 const promptsById=list=>Object.fromEntries(list.filter(p=>p&&p.id&&!p.deleted).map(p=>[p.id,p]));
 const duesById=list=>Object.fromEntries(list.filter(v=>v&&v.uid).map(v=>[v.uid,v]));
@@ -1157,7 +1212,7 @@ function deadlines(){
     if((i.status||"pending")!=="pending"){closed.add(uid);return}
     if(byUid.has(uid)) return;
     const who=(i.from||"").replace(/\s*[<(（].*$/,"").trim();
-    byUid.set(uid,{uid,kind:"mail",title:i.priority==="Reply drafted"&&who?"連絡返信："+who:i.subject_ja||i.subject||"（件名なし）",sub:i.from||"",sum:i.summary||"",day:d.id,key:i.key,
+    byUid.set(uid,{uid,kind:"mail",title:(i.priority==="Reply drafted"||i.draft)&&who?`メール返信 ${i.topic||(i.subject_ja||i.subject||"").replace(/^((re|fwd?)[:：]\s*)+/i,"")}について（${who}）`:i.subject_ja||i.subject||"（件名なし）",sub:i.from||"",sum:i.summary||"",day:d.id,key:i.key,
       base:toMs(i.receivedAt)??parseReceived(i.received,d.id),auto:toMs(i.dueAt),manual:toMs(S.dues[uid]?.at)});
   }));
   const list=[...byUid.values()].filter(x=>!closed.has(x.uid));
@@ -1255,8 +1310,8 @@ const toLocalInput=ms=>{const d=new Date(ms);return `${d.getFullYear()}-${pad(d.
    A task's due date is the real one; like mail, its countdown runs to it. */
 const TSTATUS=[["notyet","未着手"],["doing","進行中"],["done","完了"],["paused","一旦中止"],["archived","アーカイブ"]];
 const TCOLS=["notyet","doing","done"], TSHELF=["paused","archived"], TOPEN=new Set(["notyet","doing"]);
-const TSRC={manual:["✍️","手入力"],memo:["📝","ノートから"],mail:["✉️","メールから"],whatsapp:["💬","WhatsApp"],calendar:["📅","カレンダーから"],gtasks:["☑️","Googleタスク"],claude:["🤖","Claude"],daily:["☀️","毎日"]};
-const LINKED=new Set(["mail","whatsapp","calendar","gtasks","claude","daily"]); // these come from elsewhere: their title and due date live at the source
+const TSRC={manual:["✍️","手入力"],memo:["📝","ノートから"],mail:["✉️","メールから"],whatsapp:["💬","WhatsApp"],line:["💬","LINE"],calendar:["📅","カレンダーから"],gtasks:["☑️","Googleタスク"],claude:["🤖","Claude"],daily:["☀️","毎日"]};
+const LINKED=new Set(["mail","whatsapp","line","calendar","gtasks","claude","daily"]); // these come from elsewhere: their title and due date live at the source
 const tLabel=k=>(TSTATUS.find(s=>s[0]===k)||[k,k])[1];
 const mailTaskId=uid=>"t"+dueDocId(uid);
 const newTaskId=()=>"t"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
@@ -1286,7 +1341,7 @@ function boardTasks(mails){
   const byUid=Object.fromEntries(mails.map(x=>[x.uid,x])), linked=Object.fromEntries(linkedTasks().map(x=>[x.id,x]));
   const out=S.tasks.filter(t=>!t.deleted).map(t=>{
     const x=t.source==="mail"?byUid[t.sourceRef]:null, l=linked[t.id];
-    if(x) return {...t,mail:x,due:x.due,deadline:x.deadline,planDate:t.planDate||x.day};
+    if(x) return {...t,title:x.title,mail:x,due:x.due,deadline:x.deadline,planDate:t.planDate||x.day};
     // completed in Google Tasks wins over an open status on the desk
     if(l) return withDeadline({...l,...t,due:l.due,url:l.url,gdone:l.gdone,status:l.gdone&&TOPEN.has(t.status)?"done":t.status});
     return withDeadline(t);
@@ -2057,8 +2112,8 @@ const MAILERR={needs_reauth:"Gmail の再接続が必要です。claude.ai の �
 function mailItem(t){const m=t?.mail;if(!m)return null;return ((S.days.find(d=>d.id===m.day)||{}).data?.items||[]).find(i=>i.key===m.key)||null}
 function mailOps(t,i){
   const dr=i?.draft, gm=okUrl(i?.gmail_url)?i.gmail_url:mailUrl(t), done=TOPEN.has(t.status)?`<button class="btn" id="mDone">返信済みにする</button>`:"";
-  if(dr&&LOCALAPI&&TOPEN.has(t.status)) return `<button class="btn primary" id="mClaude">Claude に送信を頼む</button><button class="btn" id="mSkip">送らない</button>${okUrl(dr.view_url)?`<a class="btn" href="${esc(dr.view_url)}" target="_blank" rel="noopener">Gmail で編集 ↗</a>`:""}${done}`;
-  if(dr&&!S.local&&TOPEN.has(t.status)) return `<button class="btn primary" id="mAsk">送信…</button><button class="btn" id="mSkip">送らない</button>${okUrl(dr.view_url)?`<a class="btn" href="${esc(dr.view_url)}" target="_blank" rel="noopener">Gmail で編集 ↗</a>`:""}${done}`;
+  if(dr&&LOCALAPI&&TOPEN.has(t.status)) return `<button class="btn primary" id="mClaude">Claude に送信を頼む</button><button class="btn" id="mSkip">送らない</button>${okUrl(dr.view_url)?`<a class="btn" href="${esc(dr.view_url)}" target="_blank" rel="noopener">Gmail で下書きを開く ↗</a>`:""}${done}`;
+  if(dr&&!S.local&&TOPEN.has(t.status)) return `<button class="btn primary" id="mAsk">送信…</button><button class="btn" id="mSkip">送らない</button>${okUrl(dr.view_url)?`<a class="btn" href="${esc(dr.view_url)}" target="_blank" rel="noopener">Gmail で下書きを開く ↗</a>`:""}${done}`;
   const link=dr&&okUrl(dr.view_url)?`<a class="btn" href="${esc(dr.view_url)}" target="_blank" rel="noopener">Gmail で下書きを開く ↗</a>`:gm?`<a class="btn" href="${esc(gm)}" target="_blank" rel="noopener">Gmail で開く ↗</a>`:"";
   return link+done;
 }
@@ -2070,7 +2125,7 @@ function mailBlock(t){
     ${i.subject_ja||i.subject?`<p class="due">件名：${esc(i.subject_ja||i.subject)}</p>`:""}${i.subject_ja&&i.subject&&i.subject_ja!==i.subject?`<p class="due">原文の件名：${esc(i.subject)}</p>`:""}
     ${i.summary?`<p class="msum">${esc(i.summary)}</p>`:""}
     ${i.action?`<div class="todo">${esc(i.action)}</div>`:""}
-    ${dr?`<details class="draft"><summary><span>返信の下書き</span><span class="sub">Gmail の下書きに保存済み</span></summary><div class="meta">宛先：${esc((dr.to||[]).join(", "))}<br>件名：${esc(dr.subject)}</div>${dr.body_ja&&dr.body_ja!==dr.body?`<pre>${esc(dr.body_ja)}</pre><details class="sent-as"><summary>実際に送られる文面（原文）</summary><pre>${esc(dr.body)}</pre></details>`:`<pre>${esc(dr.body)}</pre>`}</details>`:""}
+    ${dr?`<details class="draft" open><summary><span>返信の下書き</span><span class="sub">Gmail の下書きに保存済み</span></summary><div class="meta">宛先：${esc((dr.to||[]).join(", "))}<br>件名：${esc(dr.subject)}</div>${dr.body_ja&&dr.body_ja!==dr.body?`<pre>${esc(dr.body_ja)}</pre><details class="sent-as" open><summary>実際に送られる文面（原文）</summary><pre>${esc(dr.body)}</pre></details>`:`<pre>${esc(dr.body)}</pre>`}</details>`:""}
     <div class="row" id="mOps">${mailOps(t,i)}</div><p class="msg" id="mMsg" hidden></p>
   </div>`;
 }
@@ -2081,10 +2136,39 @@ function waBlock(t){
   return `<div class="mailbox">
     <p class="due">${esc(i.name||"")}${i.unknown?" · 登録なし":""}${at?" · "+esc(at):""}</p>
     ${i.summary?`<p class="msum">${esc(i.summary)}</p>`:""}
-    ${(i.texts||[]).length?`<details class="draft"><summary><span>届いたメッセージ</span></summary><pre>${esc(i.texts.join("\n"))}</pre></details>`:""}
-    ${i.body?`<details class="draft" open><summary><span>返信案</span></summary>${i.body_ja&&i.body_ja!==i.body?`<pre>${esc(i.body_ja)}</pre><details class="sent-as"><summary>送る文面（原文）</summary><pre>${esc(i.body)}</pre></details>`:`<pre>${esc(i.body)}</pre>`}</details>`:i.kind&&i.kind!=="text"?`<p class="hint">${esc(i.kind)}が届いています。中身を読めないので、返信案はありません。</p>`:`<p class="hint">返信案は次の取り込みで作ります。</p>`}
-    <div class="row">${i.body?`<button class="btn primary" id="waCopy">返信案をコピー</button>`:""}<a class="btn" href="${i.phone?"https://wa.me/"+esc(i.phone):"whatsapp://"}" target="_blank" rel="noopener">WhatsApp を開く ↗</a></div>
+    ${(i.texts||[]).length?`<details class="draft" open><summary><span>${i.nudge?"これまでのやりとり":"届いたメッセージ"}</span></summary><pre>${esc(i.texts.join("\n"))}</pre></details>`:""}
+    ${i.body?`<details class="draft" open><summary><span>${i.nudge?"催促の案":"返信案"}</span></summary>${i.body_ja&&i.body_ja!==i.body?`<pre>${esc(i.body_ja)}</pre><details class="sent-as" open><summary>送る文面（原文）</summary><pre>${esc(i.body)}</pre></details>`:`<pre>${esc(i.body)}</pre>`}</details>`:i.kind&&i.kind!=="text"?`<p class="hint">${esc(i.kind)}が届いています。中身を読めないので、返信案はありません。</p>`:`<p class="hint">${i.nudge?"催促の案":"返信案"}は次の取り込みで作ります。</p>`}
+    <div class="row">${i.body?`<button class="btn primary" id="waCopy">${i.nudge?"催促の案":"返信案"}をコピー</button>`:""}<a class="btn" href="${i.phone?"https://wa.me/"+esc(i.phone):"whatsapp://"}" target="_blank" rel="noopener">WhatsApp を開く ↗</a></div>
   </div>`;
+}
+function fuBlock(t){
+  if((S.wa||{})[t.id]) return waBlock(t);
+  const f=(S.fu?.items||[]).find(x=>x.taskId===t.id); if(!f) return "";
+  return `<div class="mailbox">
+    <p class="due">${f.source==="whatsapp"?"WhatsApp":"Gmail · "+esc((f.to||[]).join(", "))}</p>
+    ${f.source==="whatsapp"?"":`<p class="due">件名：${esc(f.subject)}</p>`}
+    ${f.summary?`<p class="msum">${esc(f.summary)}</p>`:""}
+    ${f.draftBody?`<details class="draft" open><summary><span>催促の下書き</span><span class="sub">Gmail の下書きに保存済み</span></summary><pre>${esc(f.draftBody)}</pre></details>`:""}
+    ${okUrl(f.draftUrl)?`<div class="row"><a class="btn" href="${esc(f.draftUrl)}" target="_blank" rel="noopener">${f.hasDraft?"Gmail で下書きを開く":"Gmail で開く"} ↗</a></div>`:""}
+  </div>`;
+}
+function lineBlock(t){
+  const i=((S.line||{}).items||{})[t.id];
+  if(!i) return `<p class="hint">💬 LINE</p>`;
+  const at=i.lastAt?new Date(i.lastAt*1000).toLocaleString("ja-JP",{timeZone:"Asia/Ho_Chi_Minh",month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"}):"";
+  return `<div class="mailbox">
+    <p class="due">LINE · ${esc(i.name||"")}${i.kind==="group"?" · グループ":""}${at?" · "+esc(at):""}</p>
+    ${i.summary?`<p class="msum">${esc(i.summary)}</p>`:""}
+    ${(i.texts||[]).length?`<details class="draft" open><summary><span>届いたメッセージ（${i.texts.length}件）</span></summary><pre>${esc(i.texts.join("\n"))}</pre></details>`:""}
+    ${i.needsReply===false?`<p class="hint">返信は要らないかもしれません。</p>`:""}
+    ${i.body?`<details class="draft" open><summary><span>返信案</span></summary>${i.body_ja?`<pre>${esc(i.body_ja)}</pre><details class="sent-as"><summary>送る文面（原文）</summary><pre>${esc(i.body)}</pre></details>`:`<pre>${esc(i.body)}</pre>`}</details>`:""}
+    <p class="hint">画面から読んだ文字です。送る前に LINE で原文を確かめてください。</p>
+    ${i.body?`<div class="row"><button class="btn primary" id="lineCopy">返信案をコピー</button></div>`:""}
+  </div>`;
+}
+function wireLine(t){
+  const b=$("#lineCopy"), i=((S.line||{}).items||{})[t?.id]; if(!b||!i) return;
+  b.onclick=async()=>toast(await copyText(i.body)?"📋 コピーしました":"コピーできませんでした");
 }
 function wireWa(t){
   const b=$("#waCopy"), i=(S.wa||{})[t?.id]; if(!b||!i) return;
@@ -2123,8 +2207,8 @@ function openTask(id){
   $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop" role="dialog" aria-modal="true" aria-label="${t?"タスクを編集":"新しいタスク"}">
     <div class="top"><h2>🗂️ ${t?"タスク":"新しいタスク"}</h2><button class="ibtn" id="xTask" aria-label="閉じる">✕</button></div>
     <label class="sub" for="tTitle">タイトル</label><input type="text" id="tTitle" value="${esc(taskName(t))}" placeholder="例：FWOに書類を送る" autocomplete="off">
-    ${clearBlock(t)}
-    ${t?.source==="daily"&&t.sourceRef==="jobs"?jobsBlock():isMail?mailBlock(t):t?.source==="whatsapp"?waBlock(t)
+    ${clearBlock(t)}${t?.source==="lifeos-02"?fuBlock(t):""}
+    ${t?.source==="daily"&&t.sourceRef==="jobs"?jobsBlock():isMail?mailBlock(t):t?.source==="whatsapp"?waBlock(t):t?.source==="line"?lineBlock(t)
       :isLinked?`<p class="hint">${TSRC[t.source][0]} ${TSRC[t.source][1]}${t.due!=null?" · 期日 "+esc(fmtDue(t.due)):""} · 期日とタイトルは元の場所で変更${okUrl(t.url)?` · <a href="${esc(t.url)}" target="_blank" rel="noopener">開く ↗</a>`:""}${t.source==="gtasks"?"<br>「完了」にすると、次の更新で Google タスク側も完了になります。":""}</p>`
       :`<div class="tduein"><div><label class="sub" for="tDue">期日（任意）</label><input type="date" id="tDue" value="${dueParts(t?.due)[0]}"></div><div><label class="sub" for="tDueT">時刻（任意）</label><input type="time" id="tDueT" value="${dueParts(t?.due)[1]}"></div></div><p class="hint" id="tDueHint"></p>`}
     <div class="tduein"><div><label class="sub" for="tPlan">いつやる</label><select id="tPlan">${planSel(t||{},tPeriods())}</select></div><div><label class="sub" for="tEst">かかる時間（分）</label><input type="number" id="tEst" min="1" step="5" inputmode="numeric" value="${t?.estMin??""}" placeholder="${t?.estAi?"目安 "+t.estAi:""}"></div></div>
@@ -2133,7 +2217,7 @@ function openTask(id){
     <div class="row"><button class="btn primary" id="tSave">保存 <kbd>⌘/Ctrl + Enter</kbd></button><button class="btn" id="tCancel">キャンセル</button>${t&&!isLinked?`<button class="btn" id="tDel" style="margin-left:auto;color:var(--red)">削除</button>`:""}</div>
   </div></div>`;
   const ti=$("#tTitle");ti.focus();ti.setSelectionRange(ti.value.length,ti.value.length);
-  wireWa(t);
+  wireWa(t);wireLine(t);
   const close=()=>{$("#modal").innerHTML=""}, plan0=$("#tPlan").value;
   wireJobs(t);wireMail(t,close);wireClear(t,close);
   const dueIn=$("#tDue"), dueT=$("#tDueT"), dueHint=()=>{$("#tDueHint").textContent=dueT.value?"3日前の同じ時刻にカレンダーへ入ります":""};
@@ -2387,10 +2471,10 @@ function codeBlock(raw,name){
   return i<0?"":blockBody(lines,i).body.join("\n");
 }
 /* a whole body. Each piece remembers its first line (data-l), so a double click can put the cursor there. */
-function wikiBlock(raw){
+function wikiBlock(raw,base=0){
   const lines=String(raw||"").split("\n"), out=[]; let i=0;
   while(i<lines.length){
-    const l=lines[i], at=`data-l="${i}"`, t=l.trim(); let m;
+    const l=lines[i], at=`data-l="${i+base}"`, t=l.trim(); let m;
     if(m=/^(code|table|html):(.*)$/.exec(t)){
       const {body,next}=blockBody(lines,i), name=m[2].trim();
       if(m[1]==="code") out.push(`<figure class="wcode" ${at}>${name?`<figcaption>${esc(name)}</figcaption>`:""}<pre><code>${esc(body.join("\n"))}</code></pre></figure>`);
@@ -2632,11 +2716,11 @@ function openSentence(x){
   goHit({kind:"card",go:x.go});
   setTimeout(flashSentence,250); // screens that draw late, and pop-ups, get here after render
 }
-async function openWiki(title){
+async function openWiki(title,edit){
   title=String(title||"").trim().slice(0,80); if(!title) return;
   let n=noteByTitle(title);
   if(!n){n={id:newNoteId(),title,body:"",createdAt:Date.now()};try{await store.putNote(n)}catch(e){toast("ノートを作れませんでした");return}toast("📒 「"+title+"」を作りました")}
-  S.noteId=n.id;S.noteEditNew=!noteMain(n.body)&&!sentencesFor(n).length;S.noteKeep=true;
+  S.noteId=n.id;S.noteEditNew=edit||!noteMain(n.body)&&!sentencesFor(n).length;S.noteKeep=true;
   if(location.hash==="#notes")render();else location.hash="notes";
 }
 /* The day's note: quick writes land here as one time-stamped line each, so nothing has to be sorted first.
@@ -2651,7 +2735,7 @@ async function addToDayNote(text,ms=Date.now(),done=false){
 function dayLines(main){
   return main.split("\n").map((l,i)=>{ if(!l.trim()) return "";
     const done=l.startsWith(DONE_MARK);
-    return `<div class="dline ${done?"done":""}"><p>${wikiInline(l)}</p><div class="dlacts">${done?"":`<button class="btn sm" data-dline="task" data-i="${i}">タスクにする</button>`}<button class="btn sm" data-dline="done" data-i="${i}">${done?"戻す":"完了にする"}</button></div></div>`}).join("");
+    return `<div class="dline ${done?"done":""}" data-l="${i}"><p>${wikiInline(l)}</p><div class="dlacts">${done?"":`<button class="btn sm" data-dline="task" data-i="${i}">タスクにする</button>`}<button class="btn sm" data-dline="done" data-i="${i}">${done?"戻す":"完了にする"}</button></div></div>`}).join("");
 }
 async function dayLineAct(n,act,i){
   const lines=noteMain(n.body).split("\n"), line=lines[i]; if(line==null) return;
@@ -2693,8 +2777,9 @@ function notesView(){
   if(n){
     const main=noteMain(n.body), src=noteSrc(n.body);
     return `<header class="head"><div><p class="eyebrow"><a href="#notes" data-notelist>📒 ノート</a> · 更新 ${esc(ago(n.updatedAt||n.createdAt||0))}</p><h1 class="ntitle" data-edit="notetitle:${esc(n.id)}">${esc(n.title)}</h1></div>
-      <div class="row">${normTitle(n.title)==="settings"?`<button class="btn" id="noteCssToggle" aria-pressed="${!noteCssOff()}">${noteCssOff()?"CSS を入れる":"CSS を切る"}</button>`:""}<button class="btn" id="noteAuto" aria-pressed="${!n.noAuto}" title="${n.noAuto?"[ ] で囲んだ所だけリンクになります":"Desk のどこに出てきても、この言葉はリンクになります"}">自動リンク：${n.noAuto?"オフ":"オン"}</button><button class="btn" data-editnow="note:${esc(n.id)}">編集</button><button class="btn" id="noteDel" style="color:var(--red)">削除</button></div></header>
-    <article class="card wiki" data-edit="note:${esc(n.id)}">${main?(isDayNote(n)?dayLines(main):wikiBlock(main)):`<p class="sub">まだ何も書いていません。「編集」か、ここを選んで書き始めてください。[言葉] で別のノートにつながります。</p>`}</article>
+      <div class="row">${normTitle(n.title)==="settings"?`<button class="btn" id="noteCssToggle" aria-pressed="${!noteCssOff()}">${noteCssOff()?"CSS を入れる":"CSS を切る"}</button>`:""}<button class="btn" id="noteAuto" aria-pressed="${!n.noAuto}" title="${n.noAuto?"[ ] で囲んだ所だけリンクになります":"Desk のどこに出てきても、この言葉はリンクになります"}">自動リンク：${n.noAuto?"オフ":"オン"}</button><button class="btn" id="newNote">＋ 新しいノート</button><button class="btn" data-editnow="note:${esc(n.id)}">全文を編集</button><button class="btn" id="noteDel" style="color:var(--red)">削除</button></div></header>
+    <article class="card wiki" data-edit="note:${esc(n.id)}">${main?(isDayNote(n)?dayLines(main):wikiBlock(main)):`<p class="sub">ここを押して書き始めてください。[言葉] で別のノートにつながります。</p>`}</article>
+    ${LOCALAPI?`<div class="edbar notefile"><label class="btn sm" id="noteFileBtn">ファイルを置く<input type="file" id="noteFile" hidden multiple accept="image/*,application/pdf"></label><span class="sub" id="noteFileStatus" role="status"></span></div>`:""}
     ${sentCards(n)}
     ${(h=>h.length?`<section class="card hop"><h2>🕸️ つながり <span class="sub">同じ言葉でつながるノート</span></h2>${h.map(g=>`<div class="grp"><h3>${wlink(g.word)} 経由</h3><div class="ngrid">${[g.page,...g.others].filter(Boolean).map(x=>`<button class="card ncard" data-nopen="${esc(x.id)}">${noteThumb(x)}<b>${esc(x.title)}</b><span>${esc(noteSnip(x))}</span></button>`).join("")}</div></div>`).join("")}</section>`:"")(twoHop(n))}
     ${src.length?`<p class="sub nsrc">出典 ${src.map((l,i)=>`<span>${wikiInline(l.replace(SRC_LINE,"").trim())} <button class="btn sm" data-srcdel="${i}">外す</button></span>`).join("")}</p>`:""}`;
@@ -2705,7 +2790,7 @@ function notesView(){
     :`<div class="card empty"><b>まだノートがありません</b>「＋ 新しいノート」か、N キーで書き始められます。</div>`}`;
 }
 async function newNotePrompt(){
-  const t=((await askText("📒 新しいノート","ノートのタイトル","",80))||"").trim(); if(t) openWiki(t);
+  const t=((await askText("📒 新しいノート","ノートのタイトル","",80))||"").trim(); if(t) openWiki(t,true);
 }
 async function renameNote(n,title){
   title=title.trim().slice(0,80); if(!title||title===n.title) return;
@@ -2733,11 +2818,11 @@ async function saveRaw(kind,id,val){
 let selMenu=null;
 function hideSelMenu(){selMenu?.remove();selMenu=null}
 function showSelMenu(){
-  if(document.querySelector(".inedit")) return hideSelMenu();
+  if(document.querySelector(".inedit,.edline")) return hideSelMenu();
   const s=window.getSelection(); const txt=s&&!s.isCollapsed?s.toString().trim():"";
   if(!txt||txt.length>200||txt.includes("\n")&&txt.length>80) return hideSelMenu();
   const node=s.anchorNode&&(s.anchorNode.nodeType===1?s.anchorNode:s.anchorNode.parentElement);
-  if(!node||node.closest("input,textarea,select,.selmenu,[contenteditable]")||/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName||"")) return hideSelMenu();
+  if(!node||node.closest("input,textarea,select,.selmenu,[contenteditable],.bkp")||/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName||"")) return hideSelMenu();
   const own=node.closest("[data-edit]"), src=node.closest("[data-src]"), word=txt.replace(/[\[\]\n]/g," ").replace(/\s+/g," ").trim().slice(0,80), has=!!noteByTitle(word);
   const r=s.getRangeAt(0).getBoundingClientRect();
   hideSelMenu();
@@ -2860,7 +2945,8 @@ function startEdit(el,near,line){
   ta.setSelectionRange(pos,pos);
   let done=false;
   const finish=async save=>{if(done)return;done=true;hideSuggest();
-    if(save){try{await saveRaw(kind,id,single?ta.value:ta.value.replace(/\s+$/,""));}catch(e){toast("保存できませんでした")}}
+    const val=ta.value;ta.remove();
+    if(save){try{await saveRaw(kind,id,single?val:val.replace(/\s+$/,""));}catch(e){toast("保存できませんでした")}}
     render()};
   const put=async files=>{
     busy++;
@@ -2891,10 +2977,196 @@ function startEdit(el,near,line){
 /* double click: edit what you own, with the cursor on that line */
 document.addEventListener("dblclick",e=>{
   const el=e.target.closest?.("[data-edit]");
-  if(!el||e.target.closest("a,button,input,textarea,iframe,summary,.awl")||el.querySelector(".inedit")) return;
+  if(!el||el.matches(".wiki")||e.target.closest("a,button,input,textarea,iframe,summary,.awl")||el.querySelector(".inedit")) return;
   window.getSelection()?.removeAllRanges();hideSelMenu();
   const l=e.target.closest("[data-l]")?.dataset.l; startEdit(el,null,l==null?null:+l);
 });
+/* ---------- writing in a note, Scrapbox style ----------
+   Click a line and that line turns into text; the rest stays rendered. code:, table: and html: blocks open whole.
+   The body lives in S.ed while you write, is saved shortly after each change, and render() leaves it alone. */
+function edExtent(lines,line){
+  for(let i=0;i<lines.length;){
+    if(/^\s*(code|table|html):/.test(lines[i])){const n=blockBody(lines,i).next;if(line>=i&&line<n)return [i,n];i=Math.max(n,i+1)}
+    else i++;
+  }
+  return [line,line+1];
+}
+function edCommit(){
+  const d=S.ed; if(!d||!d.ta) return;
+  const next=d.multi?d.ta.value.split("\n"):[d.ind+d.ta.value];
+  d.lines.splice(d.a,d.b-d.a,...next); d.b=d.a+next.length; d.ta=null;
+}
+function edSaveNow(){
+  const d=S.ed; if(!d) return Promise.resolve();
+  clearTimeout(d.timer);
+  const v=(d.ta?(()=>{const l=[...d.lines];l.splice(d.a,d.b-d.a,...(d.multi?d.ta.value.split("\n"):[d.ind+d.ta.value]));return l})():d.lines).join("\n").replace(/\s+$/,"");
+  const id=d.id;
+  return d.saving=d.saving.then(()=>saveRaw("note",id,v)).catch(()=>toast("保存できませんでした"));
+}
+const edSaveSoon=()=>{const d=S.ed;if(!d)return;clearTimeout(d.timer);d.timer=setTimeout(edSaveNow,500)};
+async function edClose(){
+  const d=S.ed; if(!d) return;
+  edCommit();const saved=edSaveNow();S.ed=null;hideSuggest();
+  await saved; render();
+}
+function edRow(){
+  const d=S.ed,row=d.row,n=d.ind.length;
+  row.className="edrow "+(!d.multi&&n?"li":"ln");
+  row.style.marginLeft=!d.multi&&n?Math.min(n-1,8)*16+"px":"";
+}
+function edFit(){const t=S.ed?.ta;if(!t)return;t.style.height="auto";t.style.height=t.scrollHeight+"px"}
+/* which visual row the cursor is on, and how many there are: arrows only leave the line from its edges */
+function edRows(ta){
+  const m=document.createElement("div"),c=getComputedStyle(ta);m.setAttribute("data-noauto","");
+  m.style.cssText=`position:absolute;visibility:hidden;white-space:pre-wrap;overflow-wrap:anywhere;width:${ta.clientWidth}px;font:${c.font};line-height:${c.lineHeight}`;
+  document.body.append(m);
+  const h=x=>{m.textContent=x;return m.offsetHeight},lh=h("x"),out=[Math.round(h(ta.value.slice(0,ta.selectionStart)+"x")/lh),Math.round(h(ta.value+"x")/lh)];
+  m.remove();return out;
+}
+/* show the body with `line` open, cursor at raw column `col` of that line */
+function edGo(line,col=Infinity){
+  const d=S.ed; if(!d) return;
+  edCommit();
+  line=Math.max(0,Math.min(line,d.lines.length-1));
+  [d.a,d.b]=edExtent(d.lines,line); d.multi=d.b-d.a>1;
+  d.ind=d.multi?"":/^[ \t　]*/.exec(d.lines[d.a])[0];
+  const before=d.lines.slice(0,d.a), after=d.lines.slice(d.b);
+  d.art.innerHTML=(before.length?wikiBlock(before.join("\n")):"")+`<div class="edrow"></div>`+(after.length?wikiBlock(after.join("\n"),d.b):"");
+  d.row=d.art.querySelector(".edrow");
+  const ta=document.createElement("textarea");ta.className="edline";ta.rows=1;ta.setAttribute("aria-label","本文");
+  ta.value=d.multi?d.lines.slice(d.a,d.b).join("\n"):d.lines[d.a].slice(d.ind.length);
+  d.row.append(ta);d.ta=ta;edRow();edFit();
+  let pos;
+  if(d.multi){const pre=d.lines.slice(d.a,line).join("\n");pos=(line>d.a?pre.length+1:0)+Math.min(col,d.lines[line].length)}
+  else pos=Math.max(0,Math.min(col,d.lines[line].length)-d.ind.length);
+  ta.focus({preventScroll:true});ta.setSelectionRange(pos,pos);
+  const r=ta.getBoundingClientRect();if(r.top<70||r.bottom>innerHeight-70)ta.scrollIntoView({block:"center"});
+  ta.oninput=()=>{edFit();edSaveSoon();suggest(ta)};
+  ta.onkeydown=e=>edKey(e,ta);
+  ta.onblur=()=>{edSaveNow();setTimeout(()=>{const x=S.ed;if(x&&x.ta===ta&&!x.busy&&document.activeElement!==ta&&!suggestBox?.matches(":hover"))edClose()},150)};
+  ta.onpaste=e=>edPaste(e,ta);
+  ta.ondragover=e=>e.preventDefault();
+  ta.ondrop=e=>{const fs=[...(e.dataTransfer?.files||[])];if(fs.length){e.preventDefault();edFiles(fs)}};
+}
+function edStart(id,line,col){
+  const n=noteList().find(x=>x.id===id),art=document.querySelector(`.wiki[data-edit="note:${CSS.escape(id)}"]`);
+  if(!n||!art) return;
+  S.ed={id,art,lines:noteMain(n.body).split("\n"),a:0,b:0,ind:"",multi:false,ta:null,row:null,timer:0,busy:0,saving:Promise.resolve()};
+  edGo(line??S.ed.lines.length-1,col);
+}
+function edMove(dir,withChildren){
+  const d=S.ed; edCommit();
+  const L=d.lines, ind=indentOf(L[d.a]); let e=d.b;
+  if(withChildren) while(e<L.length&&L[e].trim()&&indentOf(L[e])>ind) e++;
+  const moved=e-d.a; let to;
+  if(dir<0){
+    if(d.a===0) return edGo(d.a);
+    to=d.a-1; if(withChildren) while(to>0&&L[to].trim()&&indentOf(L[to])>ind) to--;
+  }else{
+    if(e>=L.length) return edGo(d.a);
+    let q=e+1; if(withChildren) while(q<L.length&&L[q].trim()&&indentOf(L[q])>indentOf(L[e])) q++;
+    to=q-moved;
+  }
+  L.splice(to,0,...L.splice(d.a,moved)); d.b=d.a=to; edSaveSoon(); edGo(to);
+}
+function edKey(e,ta){
+  const d=S.ed; if(!d||e.isComposing||e.keyCode===229) return;
+  const a=ta.selectionStart,b=ta.selectionEnd,v=ta.value,plainKey=!e.shiftKey&&!e.metaKey&&!e.ctrlKey&&!e.altKey,stop=()=>{e.preventDefault();hideSuggest()};
+  if(e.key==="Escape"||(e.key==="Enter"&&(e.metaKey||e.ctrlKey))){stop();return edClose()}
+  if((e.ctrlKey||e.altKey)&&!e.metaKey&&(e.key==="ArrowUp"||e.key==="ArrowDown")){stop();return edMove(e.key==="ArrowUp"?-1:1,e.altKey)}
+  if(a===b&&plainKey){
+    const line=d.multi?d.a+v.slice(0,a).split("\n").length-1:d.a;
+    const col=d.multi?a-(v.lastIndexOf("\n",a-1)+1):d.ind.length+a;
+    if(e.key==="ArrowUp"&&d.a>0&&edRows(ta)[0]===1){stop();return edGo(d.a-1,col)}
+    if(e.key==="ArrowDown"&&d.b<d.lines.length){const [r,n]=edRows(ta);if(r===n){stop();return edGo(d.b,col)}}
+    if(e.key==="ArrowLeft"&&a===0&&d.a>0){stop();return edGo(d.a-1)}
+    if(e.key==="ArrowRight"&&a===v.length&&d.b<d.lines.length){stop();return edGo(d.b,indentOf(d.lines[d.b]))}
+    void line;
+  }
+  if(d.multi){
+    if(e.key==="Tab"&&!e.shiftKey&&a===b&&/^\s*table:/.test(v)&&a>v.lastIndexOf("\n",a-1)+1+indentOf(v.slice(v.lastIndexOf("\n",a-1)+1))){stop();taPut(ta,a,b,"\t");}
+    else if(editKeys(e,ta)) stop(); else return;
+    edFit();edSaveSoon();return;
+  }
+  if(e.key==="Tab"){stop();
+    if(e.shiftKey)d.ind=d.ind.slice(1);else d.ind+=" ";
+    edRow();edFit();edSaveSoon();return;
+  }
+  if(e.key==="Enter"&&!e.metaKey&&!e.ctrlKey&&!e.altKey){stop();
+    if(!v&&d.ind){d.ind=d.ind.slice(1);edRow();edSaveSoon();return}
+    const head=v.slice(0,a),tail=v.slice(b),extra=/^(code|table|html):/.test(head.trim())?" ":"",ind=d.ind+extra;
+    d.lines[d.a]=d.ind+head;d.ta=null;d.lines.splice(d.a+1,0,ind+tail);edSaveSoon();
+    return edGo(d.a+1,ind.length);
+  }
+  if(e.key==="Backspace"&&a===0&&b===0&&plainKey){
+    if(d.ind){stop();d.ind=d.ind.slice(1);edRow();edFit();edSaveSoon();return}
+    if(d.a>0){stop();const prev=d.lines[d.a-1],at=d.a-1;d.ta=null;d.lines.splice(at,2,prev+v);edSaveSoon();return edGo(at,prev.length)}
+    return;
+  }
+  if(e.key==="Delete"&&a===v.length&&b===a&&d.a+1<d.lines.length&&plainKey){
+    stop();const next=d.lines[d.a+1],at=d.a;d.ta=null;d.lines.splice(at,2,d.ind+v+next.trimStart());edSaveSoon();return edGo(at,d.ind.length+a);
+  }
+  if(editKeys(e,ta)){stop();edFit();edSaveSoon()}
+}
+function edPaste(e,ta){
+  const d=S.ed,fs=[...(e.clipboardData?.files||[])];
+  if(fs.length&&LOCALAPI){e.preventDefault();return edFiles(fs)}
+  const t=e.clipboardData?.getData("text")||"";
+  if(isUrlTok(t.trim())&&IMG_RE.test(t.trim())){e.preventDefault();taPut(ta,ta.selectionStart,ta.selectionEnd,`[${t.trim()}]`);edFit();edSaveSoon();return}
+  if(d.multi||!t.includes("\n")){setTimeout(()=>{edFit();edSaveSoon()},0);return}
+  e.preventDefault(); // several lines become several lines, each under this one's indent
+  const v=ta.value,a=ta.selectionStart,b=ta.selectionEnd,parts=t.replace(/\r\n?/g,"\n").replace(/\n+$/,"").split("\n");
+  const last=parts[parts.length-1],at=d.a;
+  const out=parts.map((p,i)=>(i?d.ind:d.ind+v.slice(0,a))+p);out[out.length-1]+=v.slice(b);
+  d.ta=null;d.lines.splice(at,1,...out);edSaveSoon();
+  edGo(at+out.length-1,out[out.length-1].length-v.slice(b).length);void last;
+}
+async function edFiles(files){
+  const d=S.ed;if(!d)return;
+  d.busy++;const st=$("#noteFileStatus");
+  for(const f of files){
+    if(st)st.textContent=`${f.name||"ファイル"} を保存しています`;
+    try{const url=await uploadFile(f);if(S.ed===d&&d.ta){taPut(d.ta,d.ta.selectionStart,d.ta.selectionEnd,`[${url}]`);edFit();edSaveSoon()}if(st)st.textContent=""}
+    catch(err){if(st)st.textContent=err.message;toast(err.message)}
+  }
+  d.busy--;d.ta?.focus();
+}
+/* a click on a note body: links open; anywhere else puts the cursor there */
+function edLocate(e,art){
+  const blocks=[...art.querySelectorAll(":scope>[data-l]")];
+  let el=e.target.closest("[data-l]");
+  if(!el) el=blocks.find(x=>e.clientY<=x.getBoundingClientRect().bottom);
+  const lines=noteMain(noteList().find(x=>art.dataset.edit==="note:"+x.id)?.body).split("\n");
+  if(!el) return {line:lines.length-1};
+  const line=+el.dataset.l;
+  let col;
+  const r=document.caretRangeFromPoint?.(e.clientX,e.clientY);
+  if(r&&el.contains(r.startContainer)){
+    const pre=document.createRange();pre.selectNodeContents(el);pre.setEnd(r.startContainer,r.startOffset);
+    const tail=pre.toString().slice(-12),at=tail?(lines[line]||"").indexOf(tail):-1;
+    if(!tail) col=indentOf(lines[line]||"");else if(at>=0) col=at+tail.length;
+  }
+  return {line,col};
+}
+document.addEventListener("click",e=>{
+  const art=e.target.closest?.('.wiki[data-edit^="note:"]'); if(!art||e.button) return;
+  if(e.target.closest(".edrow,.inedit,.edbar")||art.querySelector(".inedit")) return;
+  const w=e.target.closest("a[data-wiki]"); if(w){e.preventDefault();openWiki(w.dataset.wiki);return}
+  if(e.target.closest("a,button,iframe,summary,input,select")) return;
+  const s=window.getSelection(); if(s&&!s.isCollapsed&&s.toString().trim()) return;
+  hideSelMenu();
+  const {line,col}=edLocate(e,art), id=art.dataset.edit.slice(5);
+  if(S.ed&&S.ed.id===id) edGo(line,col); else edStart(id,line,col);
+});
+document.addEventListener("dragover",e=>{if(e.target.closest?.(".wiki[data-edit]")&&LOCALAPI)e.preventDefault()});
+document.addEventListener("drop",e=>{
+  const art=e.target.closest?.('.wiki[data-edit^="note:"]'),fs=[...(e.dataTransfer?.files||[])];
+  if(!art||!fs.length||!LOCALAPI||e.target.closest(".edline,.inedit")) return;
+  e.preventDefault();
+  if(!S.ed) edStart(art.dataset.edit.slice(5));
+  edFiles(fs);
+});
+window.addEventListener("pagehide",()=>{if(S.ed)edSaveNow()});
 /* typing "[" suggests note titles */
 let suggestBox=null;
 function hideSuggest(){suggestBox?.remove();suggestBox=null}
@@ -3066,7 +3338,7 @@ function home(){
   const d=new Date();const h=d.getHours();const greet=h<11?"おはようございます":h<18?"こんにちは":"こんばんは";
   const tools=S.tools.filter(t=>!t.deleted), daily=tools.filter(t=>t.group==="Daily").sort((a,b)=>(a.order??99)-(b.order??99));
   const top=topThreeIds();
-  const cards={triage:triHome(),focus:focusHomeCard(),body:homeBodyStrip(),
+  const cards={triage:triHome(),focus:focusHomeCard(),pc:LOCALAPI?`<a class="sub pcline" id="pcLine" href="#pc">${pcLineText()}</a>`:"",body:homeBodyStrip(),
     today:`<div class="duo">${todayEvents()}${habitStrip()||`<section class="card"><div class="dhead"><h2><span class="e">🌱</span>今日の習慣</h2><a class="more" href="#habits">足す →</a></div><div class="empty">続けたいことを「習慣」で足せます。</div></section>`}</div>`,
     heritage:heritageCard(),claude:ccCard(),panel:todayPanel(top),wins:winsMini(),inflow:inflow(),notes:notesHere("home"),
     tools:daily.length?`<section><div class="section-title"><span class="e">☀️</span>毎日のツール<a href="#tools">すべてのツール →</a></div><div class="tiles mini">${daily.map(tile).join("")}</div></section>`:`<p class="sub" style="margin:0"><a href="#tools" class="more">ツールを開く →</a></p>`};
@@ -3093,7 +3365,7 @@ function toolsView(){
   const tools=S.tools.filter(t=>!t.deleted), groups=GROUPS.filter(([g])=>tools.some(t=>t.group===g));
   return `<header class="head"><div><p class="eyebrow">ツール</p><h1>ツールとフォルダ</h1></div></header>
   ${notesHere("tools")}
-  ${LOCALAPI?`<section><div class="section-title"><span class="e">🖥️</span>この Mac</div><div class="tiles"><a class="tile" href="#netspeed"><span class="ico">📶</span><span class="t">回線の速さ</span><span class="d">今の Wi-Fi の速さを測って、何ができるかを見る</span></a></div></section>`:""}
+  ${LOCALAPI?`<section><div class="section-title"><span class="e">🖥️</span>この Mac</div><div class="tiles"><a class="tile" href="#netspeed"><span class="ico">📶</span><span class="t">回線の速さ</span><span class="d">今の Wi-Fi の速さを測って、何ができるかを見る</span></a><a class="tile" href="#bank"><span class="ico">🏦</span><span class="t">送金先の口座</span><span class="d">人に伝える口座をすぐコピーする</span></a></div></section>`:""}
   ${LOCALAPI?`<section><div class="section-title"><span class="e">🌐</span>外に見せるもの</div><div class="tiles"><a class="tile" href="#showcase"><span class="ico">🖼️</span><span class="t">見せる素材</span><span class="d">ポートフォリオのサイトと PR の写真を見る</span></a></div></section>`:""}
   ${groups.length?groups.map(([g,e,l])=>`<section><div class="section-title"><span class="e">${e}</span>${l}</div><div class="tiles">${tools.filter(t=>t.group===g).sort((a,b)=>(a.order??99)-(b.order??99)).map(tile).join("")}</div></section>`).join(""):`<div class="card empty"><b>ツールを読み込み中</b>ツールとフォルダがここに並びます。</div>`}`;
 }
@@ -3189,7 +3461,7 @@ function worldRead(e,i){
   const hist=[...fc].reverse().map((f,k,a)=>{const prev=a[k+1],d=prev?f.p-prev.p:0;return `<li><span>${esc(wDay(f.at))}</span><span class="num">${f.p}%</span><span>${prev?(d>0?"+":"")+d+"　":""}${esc(f.why||(prev?"理由なし":"最初の予想"))}</span></li>`}).join("");
   return `
   <div class="wd-read${done?"":" locked"}" data-noauto data-ed="${esc(e.id)}" data-i="${i}">
-    <header class="wd-top"><p class="sub"><a href="#news" id="wdback">← 今日の一覧</a> ・ ${esc(e.id)} ・ ${esc(WCAT[s.cat]||s.cat||"")} ・ ${i+1}本目（全${e.data.stories.length}本）</p><h1>${esc(s.title)}</h1></header>
+    <header class="wd-top"><a class="btn" href="#news" id="wdback">← 今日の一覧</a><p class="sub">${esc(e.id)} ・${esc(WCAT[s.cat]||s.cat||"")} ・ ${i+1}本目（全${e.data.stories.length}本）</p><h1>${esc(s.title)}</h1></header>
     <section class="wd-sec" id="wd1"><h2><span class="n">1</span>読む前に予想する</h2><p class="wd-p">${esc(q.text)}</p>
       ${done?`<div class="wd-answer"><p class="sub">あなたの予想：${esc(q.options[L.pick]||"")}${L.why?`（${esc(L.why)}）`:""}</p><h3>答え：${esc(q.result||q.options[q.answer]||"")}</h3><p class="sub">${L.pick===q.answer?"予想どおりでした。":"予想と違いました。どこで見方が分かれたか、下で確かめます。"}</p></div>`
       :`<div class="wd-g"><div class="wd-opts" role="radiogroup" aria-label="予想">${q.options.map((o,k)=>`<label><input type="radio" name="wdq" value="${k}">${esc(o)}</label>`).join("")}</div>
@@ -3396,6 +3668,8 @@ async function heritageMark(code){
   render();
 }
 function render(){
+  if(S.ed){if(viewId()==="notes"&&S.noteId===S.ed.id)return;edClose();return}
+  if($("#view .inedit"))return;
   applyNoteCss();
   const mails=deadlines();S.board=boardTasks(mails);S.dlMap=Object.fromEntries(mails.map(x=>[x.uid,x]));
   const closed=new Set(S.board.filter(t=>t.source==="mail"&&!TOPEN.has(t.status)).map(t=>t.sourceRef));
@@ -3407,9 +3681,13 @@ function render(){
   if(viewId()==="followups"){fuLoad();$("#view").innerHTML=searchResults()+fuView();wire();wireFu();return}
   if(viewId()==="money"){moneyLoad();$("#view").innerHTML=searchResults()+moneyView();wire();wireMoney();return}
   if(viewId()==="screentime"){stLoad();$("#view").innerHTML=searchResults()+stView();wire();wireSt();return}
+  if(viewId()==="webhistory"){webLoad();$("#view").innerHTML=searchResults()+webView();wire();wireWeb();return}
+  if(viewId()==="pc"){pcLoad();$("#view").innerHTML=searchResults()+pcView();wire();wirePc();return}
   if(viewId().startsWith("body")){bodyLoad();$("#view").innerHTML=searchResults()+bodyView();wire();wireBody();return}
   if(viewId()==="mailclean"){mcLoad();$("#view").innerHTML=searchResults()+mcView();wire();wireMc();return}
   if(viewId()==="netspeed"){nsLoad();$("#view").innerHTML=searchResults()+nsView();wire();wireNs();return}
+  if(viewId()==="notices"){ntLoad();$("#view").innerHTML=searchResults()+ntView();wire();wireNt();return}
+  if(viewId()==="bank"){bkLoad();$("#view").innerHTML=searchResults()+bkView();wire();wireBk();return}
   if(viewId()==="showcase"){scLoad();$("#view").innerHTML=searchResults()+scView();wire();wireSc();return}
   if(viewId()==="usage"){uLoad();$("#view").innerHTML=searchResults()+usageView();wire();return}
   const v=viewId();
@@ -3471,6 +3749,114 @@ function nsView(){
   return `<div class="money nsp" data-noauto>${head}${main}${can}${reply}${link}${places}${past}</div>`;
 }
 function wireNs(){const b=$("#nsRun");if(b)b.onclick=nsStart}
+/* お知らせ: what desk/notify.py showed on this Mac or held back, and its settings. The page decides nothing. */
+const NTHELD={quiet:"静かな時間",paused:"止めていた",cap:"1日の上限"};
+const ntHM=m=>String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0");
+const ntClock=sec=>new Date(sec*1000).toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"});
+const ntDay=sec=>new Date(sec*1000).toLocaleDateString("ja-JP",{month:"numeric",day:"numeric",weekday:"short"});
+async function ntLoad(force){
+  if(!LOCALAPI||S.ntBusy||(!force&&S.nt&&Date.now()-(S.ntAt||0)<60000))return;
+  S.ntBusy=true;S.ntAt=Date.now();
+  try{const v=await api("GET","/api/notify"),same=JSON.stringify(v)===JSON.stringify(S.nt);S.nt=v;S.ntErr=false;S.ntBusy=false;if(!same&&viewId()==="notices")render()}
+  catch(e){const was=S.ntErr;S.ntErr=true;S.ntBusy=false;if(!was&&viewId()==="notices")render()}
+}
+async function ntSend(method,path,body,done){
+  try{const v=await api(method,path,body);if(v&&v.settings){S.nt=v;S.ntAt=Date.now()}if(done)toast(done);render()}
+  catch(e){toast("保存できませんでした");ntLoad(true)}
+}
+function ntRow(e,withDay){
+  const text=(e.lines&&e.lines.length?e.lines:[e.body]).filter(Boolean).join("\n"),held=e.shown?"":NTHELD[e.held]||"出していません";
+  const title=e.link?`<a href="${esc(e.link)}">${esc(e.title||"")}</a>`:esc(e.title||"");
+  return `<div class="strow"><span>${title}</span><span class="nsv">${withDay?esc(ntDay(e.at))+" ":""}${esc(ntClock(e.at))}</span><span class="nsn">${esc(text).replace(/\n/g,"<br>")}${held?`${text?"<br>":""}鳴らしていません（${esc(held)}）`:""}</span></div>`;
+}
+function ntView(){
+  const d=S.nt,head=`<h1>お知らせ</h1>`;
+  if(S.ntErr)return `<div class="money">${head}<p class="due">読み込めませんでした。サーバーを再起動すると直ることがあります。</p></div>`;
+  if(!d)return `<div class="money">${head}<p class="due">読み込み中です。</p></div>`;
+  const s=d.settings,paused=s.pauseUntil>d.now,ring=`${ntHM(s.ringFrom)}〜${ntHM(s.ringTo)}`;
+  const talk=paused?`${ntClock(s.pauseUntil)} まで止めています。`:d.ringing?`今は鳴ります。鳴るのは Mac の時計で ${ring} です。`:`今は鳴りません。鳴るのは Mac の時計で ${ring} です。`;
+  const stop=paused?`<button class="btn primary" data-ntpause="0">再開する</button>`:`<button class="btn" data-ntpause="60">1時間止める</button><button class="btn" data-ntpause="today">今日は止める</button>`;
+  const main=`<section class="card mfocus" aria-label="今の状態"><p class="mtalk">${esc(talk)}</p><div class="nsgo">${stop}</div>${d.problem?`<p class="due" role="status">${esc(d.problem)}</p>`:""}</section>`;
+  const start=new Date();start.setHours(0,0,0,0);const cut=start.getTime()/1000;
+  const today=d.log.filter(e=>e.at>=cut),past=d.log.filter(e=>e.at<cut);
+  const now=mpanel("今日","",today.length?today.map(e=>ntRow(e)).join(""):`<p class="due">今日のお知らせはまだありません。</p>`);
+  const old=past.length?mpanel("これまで","7日分",past.map(e=>ntRow(e,true)).join("")):"";
+  const box=k=>`<label class="mcheck"><input type="checkbox" data-nton="${k.id}" ${s.on[k.id]?"checked":""}><span>${esc(k.label)}</span></label>`;
+  const grp=(label,tier)=>`<p class="ntgrp">${label}</p><div class="mchecks">${d.kinds.filter(k=>k.tier===tier).map(box).join("")}</div>`;
+  const time=(key,label,v)=>`<label>${label}<input type="time" data-nttime="${key}" value="${ntHM(v)}"></label>`;
+  const set=mpanel("設定","変えるとすぐ保存します",
+    `<p class="ntgrp">鳴る時間（Mac の時計）</p><div class="mform nttimes">${time("ringFrom","ここから",s.ringFrom)}${time("ringTo","ここまで",s.ringTo)}</div>`+
+    grp("今すぐ（音あり）","now")+grp("予告（音なし）","heads")+grp("まとめ（小さい音で1枚）","digest")+
+    `<div class="mform nttimes">${time("morning","朝",s.digests.morning)}${time("noon","昼",s.digests.noon)}${time("evening","夕方",s.digests.evening)}</div>`+
+    grp("まとめに入れるもの","line")+
+    `<p class="ntgrp">鳴らし方</p><div class="mchecks"><label class="mcheck"><input type="checkbox" data-ntflag="sound" ${s.sound?"checked":""}><span>音を鳴らす</span></label><label class="mcheck"><input type="checkbox" data-ntflag="focusOnlyNow" ${s.focusOnlyNow?"checked":""}><span>集中（FocusBlock）中は「今すぐ」だけ出す</span></label></div><button class="btn" id="ntTest">試しに鳴らす</button>`);
+  return `<div class="money nsp" data-noauto>${head}${main}${now}${old}${set}</div>`;
+}
+function wireNt(){
+  document.querySelectorAll("[data-ntpause]").forEach(b=>b.onclick=()=>{const v=b.dataset.ntpause;ntSend("POST","/api/notify/pause",v==="today"?{today:true}:{minutes:+v},v==="0"?"再開しました":"止めました")});
+  document.querySelectorAll("[data-nton]").forEach(c=>c.onchange=()=>ntSend("PUT","/api/notify/settings",{on:{[c.dataset.nton]:c.checked}}));
+  document.querySelectorAll("[data-ntflag]").forEach(c=>c.onchange=()=>ntSend("PUT","/api/notify/settings",{[c.dataset.ntflag]:c.checked}));
+  document.querySelectorAll("[data-nttime]").forEach(i=>i.onchange=()=>{if(!i.value)return;const [h,m]=i.value.split(":").map(Number),k=i.dataset.nttime,v=h*60+m;ntSend("PUT","/api/notify/settings",["ringFrom","ringTo"].includes(k)?{[k]:v}:{digests:{[k]:v}})});
+  const t=$("#ntTest");if(t)t.onclick=async()=>{try{await api("POST","/api/notify/test",{});toast("通知を1枚出しました")}catch(e){toast("通知を出せませんでした")}};
+}
+/* 送金先の口座: details for people who send money. S.bk holds hidden fields as their last four characters only, and is
+   not part of search. A copy goes from the server to the clipboard (desk/bank.py); the whole number reaches the page only for 表示 and 直す. */
+const BKROWS=[["holder","受取人"],["bank","銀行"],["branch","支店"],["kind","種別"],["number","口座番号"],["iban","IBAN"],["swift","SWIFT"],["routing","ルーティング番号"],["address","住所"]];
+const BKHIDE=new Set(["number","iban"]);
+async function bkLoad(force){
+  if(!LOCALAPI||S.bkBusy||(!force&&S.bk))return;
+  S.bkBusy=true;
+  try{S.bk=await api("GET","/api/bank");S.bkErr=false;S.bkBusy=false;if(viewId()==="bank")render()}
+  catch(e){const was=S.bkErr;S.bkErr=true;S.bkBusy=false;if(!was&&viewId()==="bank")render()}
+}
+function bkView(){
+  const head=`<h1>送金先の口座</h1>`;
+  if(S.bkErr)return `<div class="money bkp" data-noauto>${head}<p class="due">読み込めませんでした。サーバーを再起動すると直ることがあります。</p></div>`;
+  if(!S.bk)return `<div class="money bkp" data-noauto>${head}<p class="due">読み込み中です。</p></div>`;
+  const add=first=>`<button class="btn${first?" primary":""}" id="bkAdd">口座を足す</button>`, xs=S.bk.accounts;
+  if(!xs.length)return `<div class="money bkp" data-noauto>${head}<section class="card mfocus"><p class="mtalk">人に伝える口座を入れておくと、ここからすぐコピーできます。</p>${add(true)}<p class="due">この Mac だけに保存します。保管先の GitHub にも送りません。</p></section></div>`;
+  const row=(a,k,l)=>`<div class="bkrow"><span class="bkl">${esc(l)}</span><span class="bkv" data-bkval="${k}">${esc(a[k])}</span><span class="bkbtns">${BKHIDE.has(k)?`<button class="btn sm" data-bkshow="${k}" aria-pressed="false" aria-label="${esc(l)}を表示">表示</button>`:""}<button class="btn sm" data-bkcopy="${k}" aria-label="${esc(l)}をコピー">コピー</button></span></div>`;
+  const card=a=>`<section class="card bkcard" data-bkacct="${esc(a.id)}"><div class="bkhead"><h2>${esc(a.label)}</h2>${a.currency?`<span class="sub">${esc(a.currency)}</span>`:""}</div>
+    <div class="bkall"><button class="btn primary" data-bkcopy="all">全部コピー</button><button class="btn" data-bkcopy="en">英語でコピー</button><button class="btn" data-bkedit>直す</button></div>
+    <div>${BKROWS.filter(([k])=>a[k]).map(([k,l])=>row(a,k,l)).join("")}</div>${a.memo?`<p class="due bkmemo">${esc(a.memo)}</p>`:""}</section>`;
+  return `<div class="money bkp" data-noauto>${head}${xs.map(card).join("")}<div>${add(false)}</div><p class="sub">この Mac だけに保存します。「全部コピー」に、名前とメモは入りません。</p></div>`;
+}
+function wireBk(){
+  const add=$("#bkAdd");if(add)add.onclick=()=>bkOpen(null);
+  document.querySelectorAll("[data-bkacct]").forEach(card=>{
+    const id=card.dataset.bkacct,url="/api/bank/"+encodeURIComponent(id);
+    card.querySelectorAll("[data-bkcopy]").forEach(b=>b.onclick=async()=>{
+      try{await api("POST",url+"/copy",{what:b.dataset.bkcopy});toast("コピーしました")}catch(e){toast("コピーできませんでした")}});
+    card.querySelectorAll("[data-bkshow]").forEach(b=>b.onclick=async()=>{
+      const k=b.dataset.bkshow,val=card.querySelector(`[data-bkval="${k}"]`),on=b.getAttribute("aria-pressed")==="true",hide=()=>{val.textContent=S.bk.accounts.find(x=>x.id===id)?.[k]||"";b.setAttribute("aria-pressed","false");b.textContent="表示"};
+      clearTimeout(b.bkT);
+      if(on)return hide();
+      try{const r=await api("POST",url+"/reveal",{});val.textContent=r[k]||"";b.setAttribute("aria-pressed","true");b.textContent="隠す";b.bkT=setTimeout(hide,60000)}catch(e){toast("表示できませんでした")}});
+    card.querySelector("[data-bkedit]").onclick=async()=>{try{bkOpen(await api("POST",url+"/reveal",{}))}catch(e){toast("開けませんでした")}};
+  });
+}
+function bkOpen(a){
+  const F=[["label","名前（用途）","例：海外からの入金用"],["currency","通貨","例：USD"],...BKROWS.map(([k,l])=>[k,l,""]),["memo","メモ（コピーされません）",""]];
+  const input=([k,l,ph])=>`<div class="bkf"><label class="sub" for="bkF-${k}">${esc(l)}</label><input type="text" id="bkF-${k}" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" data-1p-ignore placeholder="${esc(ph)}" value="${esc(a?.[k]||"")}"></div>`;
+  $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop bkp" role="dialog" aria-modal="true" aria-label="${a?"口座を直す":"口座を足す"}" data-noauto>
+    <div class="top"><h2>${a?"口座を直す":"口座を足す"}</h2><button class="ibtn" id="bkX" aria-label="閉じる">✕</button></div>
+    <p class="hint">要るものだけ入れてください。空の項目は出ません。</p>
+    ${F.map(input).join("")}
+    <button class="btn primary" id="bkSave" style="justify-content:center">保存</button>
+    ${a?`<button class="btn" id="bkDel" style="justify-content:center">この口座を消す</button>`:""}
+  </div></div>`;
+  const close=()=>{$("#modal").innerHTML=""},url="/api/bank/"+encodeURIComponent(a?.id||"a"+Date.now().toString(36));
+  $("#bkX").onclick=close;$("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};
+  $("#scrim").onkeydown=e=>{if(e.key==="Escape")close()};
+  $("#bkF-label").focus();
+  $("#bkSave").onclick=async()=>{
+    const rec=Object.fromEntries(F.map(([k])=>[k,$("#bkF-"+k).value]));
+    if(!rec.label.trim()){toast("名前を入れてください");$("#bkF-label").focus();return}
+    try{S.bk=await api("PUT",url,rec);close();render();toast("保存しました")}catch(e){toast("保存できませんでした。入れた内容はそのままです")}};
+  const del=$("#bkDel");if(del)del.onclick=async()=>{
+    if(!del.dataset.sure){del.dataset.sure="1";del.textContent="本当に消す（元に戻せません）";return}
+    try{S.bk=await api("POST",url+"/remove",{});close();render();toast("消しました")}catch(e){toast("消せませんでした")}};
+}
 /* 見せる素材: look only. Where to look is in desk/data/showcase.json; the list and the opening are in desk/showcase.py. */
 async function scLoad(){
   if(!LOCALAPI||S.scBusy||(S.sc&&Date.now()-(S.scAt||0)<60000))return;
@@ -3591,6 +3977,133 @@ function stView(){
   return `<div class="money">${head}${chips("period",[["today","今日"],["week","7日"],["month","30日"],["all","全部"]])}${d.hasOther?chips("device",[["mac","この Mac"],["other","他の端末"],["all","合計"]]):""}${mpanel("合計",d.status?.at?`${esc(d.status.at.slice(0,16).replace("T"," "))} に取り込み`:"",sum)}${daily}${mpanel("よく見るサイト",d.tabWatch==="denied"?"Chrome と Brave は許可待ち。Safari の分だけです":"Chrome と Brave は1分ごとの記録。シークレットの窓は数えません",stRows(d.sites,has))}${mpanel("よく使うアプリ","",stRows(d.apps,has))}${mpanel("時間帯","",stCols(d.hours,d.hours.map((_,i)=>`${i}時`),"0時","23時"))}</div>`;
 }
 function wireSt(){document.querySelectorAll("[data-st]").forEach(b=>b.onclick=()=>{const [k,v]=b.dataset.st.split(":");S.stQ={...(S.stQ||{period:"week",device:"mac"}),[k]:v};stLoad(true)})}
+/* PC: what runs on this Mac and the memory it holds (desk/pc_monitor.py). Nothing is saved. Closing is a normal quit; forcing appears only after 5 seconds. */
+const pcSize=b=>b==null?"–":b>=1073741824?`${(b/1073741824).toFixed(1)} GB`:`${Math.round(b/1048576)} MB`;
+const PCLEVEL={normal:"余裕あり",warn:"注意",critical:"ひっ迫"};
+const pcLineText=()=>{const s=S.pc||S.pcSum;return s&&s.used!=null?`メモリ ${(s.used/1073741824).toFixed(1)} / ${Math.round(s.total/1073741824)} GB${s.pressure&&s.pressure!=="normal"?` ・ ${PCLEVEL[s.pressure]}`:""}`:"メモリを見る"};
+function lineAlert(){const el=$("#lineAlert"),p=S.line?.status?.problem;if(el){el.textContent=p||"";el.style.display=p?"block":"none"}}
+function pcSumApply(){const line=$("#pcLine"),alert=$("#pcAlert"),s=S.pc||S.pcSum;if(line)line.textContent=pcLineText();if(alert)alert.style.display=s?.alert?"block":"none"}
+async function pcSum(){try{S.pcSum=await api("GET","/api/pc?summary=1");S.pc=null;pcSumApply()}catch(e){}}
+async function pcLoad(force){
+  if(!LOCALAPI||S.pcBusy||(!force&&S.pc&&Date.now()-(S.pcAt||0)<4500))return;
+  clearTimeout(S.pcTimer);S.pcBusy=true;S.pcAt=Date.now();
+  try{if(!document.hidden){const v=await api("GET","/api/pc"),same=JSON.stringify(v)===JSON.stringify(S.pc);S.pc=v;S.pcErr=false;pcSumApply();if(!same&&viewId()==="pc")render()}}
+  catch(e){const was=S.pcErr;S.pcErr=true;if(!was&&viewId()==="pc")render()}
+  S.pcBusy=false;S.pcTimer=setTimeout(()=>{if(viewId()==="pc")pcLoad(true)},5000);
+}
+function pcRow(it){
+  const open=S.pcOpen===it.pid;
+  const act=it.protected?"":it.canForce?`<button class="btn sm" data-pcclose="${it.pid}" data-pcforce="1">強制終了</button>`:it.closing?`<span class="sub">閉じています</span>`:`<button class="btn sm" data-pcclose="${it.pid}">閉じる</button>`;
+  const name=it.kind==="tool"?`<button class="pcname" data-pcopen="${it.pid}" aria-expanded="${open}">${esc(it.name)}</button>`:`<span class="pcname">${esc(it.name)}</span>`;
+  return `<div class="pcrow">${name}<span>${pcSize(it.mem)}</span><span class="sub">${it.cpu.toFixed(0)}%</span><span class="pcact">${act}</span>${open?`<span class="sub pcpath">${esc(it.path)} ・ ${new Date(it.started*1000).toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})} に開始</span>`:""}</div>`;
+}
+const pcList=items=>`<div class="pcrow pchead"><span></span><span class="sub">メモリの目安</span><span class="sub">CPU</span><span></span></div>${items.map(pcRow).join("")}`;
+function pcView(){
+  const d=S.pc,head=`<h1>PC</h1>`;
+  if(S.pcErr)return `<div class="money">${head}<p class="due">読み取れません。サーバーを再起動すると直ることがあります。</p></div>`;
+  if(!d)return `<div class="money">${head}<p class="due">読み込み中です。</p></div>`;
+  const known=d.used!=null&&d.total,closing=[...d.apps,...d.tools,...d.small.items].some(i=>i.closing);
+  const sum=known?`<p class="wt" style="font-size:var(--t5)">${(d.used/1073741824).toFixed(1)} / ${Math.round(d.total/1073741824)} GB</p><span class="stbar"><i style="width:${Math.min(100,Math.round(d.used/d.total*100))}%"></i></span><p class="sub">${esc(PCLEVEL[d.pressure]||"")}${d.swap!=null?` ・ スワップ ${pcSize(d.swap)}`:""}${d.cpu!=null?` ・ CPU ${d.cpu.toFixed(0)}%`:""}</p>`:`<p class="due">メモリの量を読み取れません。</p>`;
+  const small=d.small.items.length?`<details id="pcSmall" ${S.pcSmall?"open":""}><summary class="sub">小さいもの ${d.small.items.length} 個 ・ 合計 ${pcSize(d.small.mem)}</summary>${d.small.items.map(pcRow).join("")}</details>`:"";
+  return `<div class="money">${head}${mpanel("メモリ","",sum)}${closing?`<p class="sub">アプリに保存の確認が出ていたら、そちらで答えてください。</p>`:""}${mpanel("アプリ","",d.apps.length?pcList(d.apps):`<p class="due">開いているアプリはありません。</p>`)}${mpanel("裏で動くツール","押すと実行しているファイルが出ます",(d.tools.length?pcList(d.tools):`<p class="due">大きなものは動いていません。</p>`)+small)}${mpanel("システム",`<span>${pcSize(d.system.mem)} ・ CPU ${d.system.cpu.toFixed(0)}%</span>`,"")}</div>`;
+}
+function pcConfirm(title,text,ok){
+  return new Promise(res=>{
+    if($("#modal").firstChild)return res(false);
+    $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div class="top"><h2>${esc(title)}</h2></div><p class="hint">${esc(text)}</p><div class="row"><button class="btn primary" id="pcYes">${esc(ok)}</button><button class="btn" id="pcNo">やめる</button></div></div></div>`;
+    const done=v=>{$("#modal").innerHTML="";res(v)};
+    $("#pcYes").onclick=()=>done(true);$("#pcNo").onclick=()=>done(false);$("#pcNo").focus();
+    $("#scrim").onclick=e=>{if(e.target.id==="scrim")done(false)};
+  });
+}
+async function pcClose(it,force){
+  if(force&&!await pcConfirm(`${it.name} を強制終了しますか`,"保存していない内容は消えます。","強制終了"))return;
+  if(!force&&it.warn&&!await pcConfirm(`${it.name} を閉じますか`,it.warn,"閉じる"))return;
+  try{await api("POST","/api/pc/close",{pid:it.pid,started:it.started,force:!!force})}
+  catch(e){toast({403:"これは閉じられません",404:"もう終わっています",409:"状態が変わりました。もう一度お試しください"}[e.message]||"閉じられませんでした")}
+  pcLoad(true);
+}
+function wirePc(){
+  const find=pid=>[...S.pc.apps,...S.pc.tools,...S.pc.small.items].find(i=>i.pid===Number(pid));
+  $("#pcSmall")&&($("#pcSmall").ontoggle=e=>{S.pcSmall=e.target.open});
+  document.querySelectorAll("[data-pcclose]").forEach(b=>b.onclick=()=>{const it=find(b.dataset.pcclose);if(it)pcClose(it,!!b.dataset.pcforce)});
+  document.querySelectorAll("[data-pcopen]").forEach(b=>b.onclick=()=>{const pid=Number(b.dataset.pcopen);S.pcOpen=S.pcOpen===pid?null:pid;render()});
+}
+if(LOCALAPI){pcSum();setInterval(()=>{if(viewId()!=="pc")pcSum()},60000)}
+/* Web履歴: pages, search words and time from desk/chrome_web_sync.py. Time is shown as a fact and nothing here blames. */
+const webFmt=s=>!s?"—":s<60?"1分未満":stFmt(s);
+const webQuery=(extra={})=>{const q=S.webQ||{},p=new URLSearchParams({period:q.period||"week",...extra});if(q.period==="custom"){p.set("from",q.from||"");p.set("to",q.to||"")}if(q.q)p.set("q",q.q);if(q.site)p.set("site",q.site);if(q.around){p.set("after",q.around-1800);p.set("before",q.around+1800)}return p};
+async function webLoad(force,more){
+  if(!LOCALAPI||(!force&&S.web&&Date.now()-(S.webAt||0)<60000))return;
+  const tab=(S.webQ||{}).tab||"sites",turn=(S.webTurn||0)+1;
+  S.webTurn=turn;S.webAt=Date.now();
+  try{
+    const v=await api("GET",`/api/web/${tab}?`+webQuery(more?{offset:S.web.rows.length}:{}));
+    if(turn!==S.webTurn)return;
+    if(more)v.rows=[...S.web.rows,...v.rows];
+    const same=JSON.stringify(v)===JSON.stringify(S.web);
+    S.web={...v,tab};S.webErr=false;
+    if((!same||more)&&viewId()==="webhistory")render();
+  }catch(e){if(turn!==S.webTurn)return;const was=S.webErr;S.webErr=true;if(!was&&viewId()==="webhistory")render()}
+}
+const webGo=change=>{S.webQ={...(S.webQ||{tab:"sites",period:"week"}),...change};S.webAsk=null;webLoad(true)};
+function webSites(d){
+  const has=d.prev!=null,est=d.total-d.measured;
+  const sum=`<p class="wt" style="font-size:var(--t5)">${stFmt(d.total)}</p><p class="sub">1日平均 ${stFmt(d.avg)}${has?` ・ 前の同じ期間より ${stDiff(d.total,d.prev)}`:""}${est>=60?` ・ うち推定 ${stFmt(est)}`:""}</p>`;
+  const dates=d.days.map(x=>x.date),daily=d.days.length>1?mpanel("日ごと","",stCols(d.days.map(x=>x.sec),dates,dates[0].slice(5).replace("-","/"),dates[dates.length-1].slice(5).replace("-","/"))):"";
+  const top=Math.max(1,...d.sites.map(r=>r.sec));
+  const row=r=>{const kind=r.measured?(r.estimated?"一部は推定":""):"推定",ask=S.webAsk===r.site;
+    return `<div class="strow webrow"><button class="webname" data-website="${esc(r.site)}">${esc(r.site)}</button><span class="sub">${webFmt(r.sec)}</span><span class="stbar"><i style="width:${Math.round(r.sec/top*100)}%"></i></span><span class="sub webmeta">${r.visits}回${has&&r.prev?` ・ ${stDiff(r.sec,r.prev)}`:""}${kind?` ・ ${kind}`:""}</span>${ask?`<span class="webask"><span class="sub">このサイトの記録を消し、以後は残しません。</span><button class="btn sm" data-webexclude="${esc(r.site)}">消して除外</button><button class="btn sm" data-webask="">やめる</button></span>`:`<button class="btn sm" data-webask="${esc(r.site)}">除外</button>`}</div>`};
+  return `${(S.webQ||{}).q?"":mpanel("合計","Chrome の Default だけ",sum)+daily}${mpanel("サイトごと","押すとそのサイトの履歴",d.sites.length?d.sites.map(row).join(""):`<p class="due">この期間の記録はありません。</p>`)}`;
+}
+function webVisits(d){
+  const row=r=>`<div class="strow webrow"><a class="ext" href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.title||r.url)} ↗</a><span class="sub">${webFmt(r.sec)}${r.kind==="estimated"&&r.sec?" 推定":""}</span><span class="sub webmeta">${esc(r.time.slice(5).replace("-","/"))} ・ ${esc(r.site)}</span><button class="btn sm" data-webhide="visits:${esc(r.id)}">非表示</button></div>`;
+  return mpanel("ページ",`${d.total}件`,(d.rows.length?d.rows.map(row).join(""):`<p class="due">見つかりません。</p>`)+(d.rows.length<d.total?`<button class="btn sm" data-webmore="1">もっと見る</button>`:""));
+}
+function webSearches(d){
+  const row=r=>`<div class="strow webrow"><button class="webname" data-webaround="${esc(r.at)}">${esc(r.term)}</button><span class="sub">${esc(r.time.slice(5).replace("-","/"))}</span><span class="sub webmeta">${esc(r.site)}</span><button class="btn sm" data-webhide="searches:${esc(r.id)}">非表示</button></div>`;
+  return mpanel("検索語",`${d.total}件。押すと前後30分の履歴`,(d.rows.length?d.rows.map(row).join(""):`<p class="due">見つかりません。</p>`)+(d.rows.length<d.total?`<button class="btn sm" data-webmore="1">もっと見る</button>`:""));
+}
+function webView(){
+  const head=`<h1>Web履歴</h1>`,d=S.web,q=S.webQ||{tab:"sites",period:"week"},tab=q.tab||"sites";
+  if(S.webErr)return `<div class="money">${head}<p class="due">読み込めませんでした。サーバーを再起動すると直ることがあります。</p></div>`;
+  if(!d)return `<div class="money">${head}<p class="due">読み込み中です。</p></div>`;
+  const st=d.status||{},when=x=>x?esc(x.slice(5,16).replace("-","/").replace("T"," ")):"";
+  const line=st.importOk===false?`Chrome の履歴を読めませんでした（${when(st.importAt)}）`:st.importAt?`${when(st.importAt)} に取り込み${st.firstDate?` ・ ${esc(st.firstDate.replaceAll("-","/"))} から`:""}`:"まだ取り込んでいません";
+  const tabs=`<div class="mtabs" role="tablist" aria-label="Web履歴の画面">${[["sites","サイト別"],["visits","履歴"],["searches","検索語"]].map(([k,l])=>`<button role="tab" class="mtab" data-webtab="${k}" aria-selected="${k===tab}">${l}</button>`).join("")}</div>`;
+  const chips=`<div class="chips" role="group" aria-label="期間">${[["today","今日"],["week","7日"],["month","30日"],["all","全部"],["custom","指定"]].map(([k,l])=>`<button class="chip" data-webperiod="${k}" aria-pressed="${k===q.period&&!q.around}">${l}</button>`).join("")}</div>`;
+  const custom=q.period==="custom"&&!q.around?`<div class="webtools"><label class="sub">開始 <input type="date" id="webFrom" value="${esc(q.from||"")}"></label><label class="sub">終了 <input type="date" id="webTo" value="${esc(q.to||"")}"></label></div>`:"";
+  const place=tab==="sites"?"サイト名で探す":tab==="visits"?"題名や URL で探す":"検索語で探す";
+  const tools=`<div class="webtools"><input type="search" id="webSearch" aria-label="${place}" placeholder="${place}" value="${esc(q.q||"")}"><a class="btn sm" href="/api/web/export?${esc(webQuery({tab}).toString())}" download>CSV</a></div>`;
+  const filters=tab==="visits"&&(q.site||q.around)?`<div class="chips">${q.site?`<button class="chip" data-webclear="site" aria-pressed="true">${esc(q.site)} ✕</button>`:""}${q.around?`<button class="chip" data-webclear="around" aria-pressed="true">検索の前後30分 ✕</button>`:""}</div>`:"";
+  const stale=d.tab!==tab?`<p class="due">読み込み中です。</p>`:tab==="sites"?webSites(d):tab==="visits"?webVisits(d):webSearches(d);
+  const ex=st.excluded||[];
+  const excluded=`<details class="mtable"><summary>除外するサイト（${ex.length}）</summary>${ex.map(s=>`<div class="strow webrow"><span>${esc(s)}</span><button class="btn sm" data-webinclude="${esc(s)}">戻す</button></div>`).join("")}<form class="webtools" id="webExForm"><input id="webExSite" aria-label="除外するサイト" placeholder="example.com"><button class="btn sm">消して除外</button></form><p class="due">過去の記録を消し、以後は残しません。戻すと Chrome にまだある分だけ次の取り込みで入ります。</p></details>`;
+  const ext=st.extensionAt?`<p class="due">時間の計測：${when(st.extensionAt)} に受信</p>`:`<details class="mtable" open><summary>実際に見ていた時間を測る</summary><p class="due">今の時間は履歴からの推定です。拡張を入れると実測に変わります。Chrome の Default で次の順に進めてください。</p><ol class="webext"><li>アドレス欄に chrome://extensions と入れて開く</li><li>右上のデベロッパーモードをオンにする</li><li>「パッケージ化されていない拡張機能を読み込む」を押す</li><li>~/TatsukiDesk/desk/chrome-extension を選ぶ</li></ol></details>`;
+  return `<div class="money" data-noauto>${head}<p class="sub">${line}</p>${chips}${custom}${tools}${tabs}${filters}${stale}${ext}${excluded}</div>`;
+}
+function wireWeb(){
+  const on=(sel,fn)=>document.querySelectorAll(sel).forEach(b=>b.onclick=()=>fn(b.dataset));
+  on("[data-webtab]",x=>{S.web=null;webGo({tab:x.webtab,q:"",...(x.webtab==="visits"?{}:{site:"",around:null})});render()});
+  on("[data-webperiod]",x=>webGo({period:x.webperiod,around:null}));
+  on("[data-website]",x=>{S.web=null;webGo({tab:"visits",site:x.website,q:""});render()});
+  on("[data-webaround]",x=>{S.web=null;webGo({tab:"visits",around:Number(x.webaround),site:"",q:""});render()});
+  on("[data-webclear]",x=>webGo({[x.webclear]:x.webclear==="site"?"":null}));
+  on("[data-webmore]",()=>webLoad(true,true));
+  on("[data-webask]",x=>{S.webAsk=x.webask||null;render()});
+  on("[data-webhide]",async x=>{const [kind,id]=x.webhide.split(":");await api("PUT",`/api/web/${kind}/${encodeURIComponent(id)}`,{});webLoad(true)});
+  const exclude=async(site,on)=>{await api("PUT","/api/web/exclude",{site,on});S.webAsk=null;webLoad(true)};
+  on("[data-webexclude]",x=>exclude(x.webexclude,true));
+  on("[data-webinclude]",x=>exclude(x.webinclude,false));
+  const form=$("#webExForm");if(form)form.onsubmit=e=>{e.preventDefault();const v=$("#webExSite").value.trim();if(v)exclude(v,true).catch(()=>{})};
+  const day=(id,key)=>{const el=$(id);if(el)el.onchange=()=>{const q={...(S.webQ||{}),[key]:el.value};S.webQ=q;if(q.from&&q.to&&q.from<=q.to)webLoad(true)}};
+  day("#webFrom","from");day("#webTo","to");
+  const box=$("#webSearch");
+  if(box){
+    box.oninput=()=>{S.webTyped=Date.now();S.webCaret=box.selectionStart;clearTimeout(S.webTimer);S.webTimer=setTimeout(()=>webGo({q:box.value}),300)};
+    if(Date.now()-(S.webTyped||0)<1500){box.focus();box.setSelectionRange(S.webCaret,S.webCaret)}
+  }
+}
 const moneyQuery=()=>{const q=S.moneyQ||{period:"month"},p=new URLSearchParams({period:q.period});if(q.period==="month"&&q.month)p.set("month",q.month);if(q.period==="custom"){p.set("from",q.from||"");p.set("to",q.to||"")}return p};
 async function moneyLoad(force){
   if(!LOCALAPI||S.moneyBusy||(!force&&S.money&&Date.now()-(S.moneyAt||0)<60000))return;
@@ -4088,6 +4601,8 @@ function wire(){
   document.querySelectorAll("[data-notelist]").forEach(a=>a.onclick=e=>{e.preventDefault();S.noteId=null;render()});
   document.querySelectorAll("[data-editnow]").forEach(b=>b.onclick=()=>startEdit(document.querySelector(`[data-edit="${b.dataset.editnow}"]`)));
   $("#noteSettings")&&($("#noteSettings").onclick=openSettings);
+  $("#noteFileBtn")&&($("#noteFileBtn").onclick=()=>{if(!S.ed)edStart(S.noteId);const d=S.ed;if(!d)return;d.busy++;addEventListener("focus",()=>setTimeout(()=>{d.busy--;d.ta?.focus()},400),{once:true})});
+  $("#noteFile")&&($("#noteFile").onchange=e=>{const fs=[...e.target.files];e.target.value="";if(fs.length)edFiles(fs)});
   $("#noteCssToggle")&&($("#noteCssToggle").onclick=()=>{try{localStorage.setItem("desk-note-css-off",noteCssOff()?"0":"1")}catch(e){}render()});
   document.querySelectorAll("[data-srcdel]").forEach(b=>b.onclick=async()=>{const n=noteList().find(x=>x.id===S.noteId);if(!n)return;
     const src=noteSrc(n.body);src.splice(+b.dataset.srcdel,1);const main=noteMain(n.body);
@@ -4099,7 +4614,7 @@ function wire(){
     try{await store.putNote({...n,noAuto:!n.noAuto});toast(n.noAuto?"🔗 自動リンクをオンにしました":"自動リンクをオフにしました（[ ] で囲んだ所はリンクのまま）")}catch(err){toast("保存できませんでした")}});
   $("#noteDel")&&($("#noteDel").onclick=async e=>{const b=e.currentTarget;if(!b.dataset.sure){b.dataset.sure="1";b.textContent="本当に削除？";return}
     const n=noteList().find(x=>x.id===S.noteId);if(!n)return;try{await store.putNote({...n,deleted:true});S.noteId=null;toast("🗑️ 削除しました")}catch(err){toast("削除できませんでした")}});
-  if(S.noteEditNew&&viewId()==="notes"){S.noteEditNew=false;setTimeout(()=>startEdit(document.querySelector(".wiki[data-edit]")),0)}
+  if(S.noteEditNew&&viewId()==="notes"){S.noteEditNew=false;const id=S.noteId;setTimeout(()=>{if(S.noteId===id&&!S.ed)edStart(id)},0)}
   $("#ed")&&($("#ed").onchange=e=>{S.ed=e.target.value;S.region="All";S.wread=null;render()});
   wireWorld();
   $("#logDay")&&($("#logDay").onchange=e=>{S.logDay=e.target.value;render()});
@@ -4299,6 +4814,7 @@ function palItems(){
   const cc=CC.map(c=>({g:"Claude コマンド",e:c.e,name:c.name,sub:c.cmd+(c.arg?" "+c.arg:""),kw:c.cmd+" "+c.kw,run:()=>openCC(c.id)}));
   const set=[
     {e:S.mute?"🔕":"🔔",name:S.mute?"通知音をオンにする":"通知音をオフにする",kw:"つうちおん おと sound mute 設定 せってい",run:()=>{S.mute=!S.mute;try{localStorage.setItem("desk-mute",S.mute?"1":"0")}catch(e){}toast(S.mute?"🔕 通知音をオフにしました":"🔔 通知音をオンにしました")}},
+    ...(LOCALAPI?[{e:"🔔",name:"Mac の通知を1時間止める",kw:"つうち とめる おしらせ pause 設定 せってい",run:()=>ntSend("POST","/api/notify/pause",{minutes:60},"通知を1時間止めました")}]:[]),
   ].map(x=>({...x,g:"設定"}));
   return [...cc,...act,...nav,...set]; // Claude commands first: they are the ones to learn
 }

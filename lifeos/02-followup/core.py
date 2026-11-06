@@ -5,6 +5,7 @@ Answers only change this tool's state and add a Desk task. Nothing here sends ma
 import fcntl
 import json
 import os
+import re
 import tempfile
 from contextlib import contextmanager
 from datetime import datetime, timedelta
@@ -149,13 +150,21 @@ def _who(item):
     return (item["to"][0].split("<")[0].strip(' "') or item["to"][0]) if item.get("to") else item["subject"]
 
 
+def task_title(item):
+    """「メール催促 用件について（名前）」. A chat has no subject: its topic comes once Claude has read it."""
+    kind = "WhatsApp催促" if _is_chat(item) else "メール催促"
+    subject = "" if _is_chat(item) or "件名なし" in item["subject"] else re.sub(r"^((re|fwd?)[:：]\s*)+", "", item["subject"], flags=re.I)
+    topic = item.get("topic") or subject
+    return f"{kind} {topic}について（{_who(item)}）" if topic else f"{kind}（{_who(item)}）"
+
+
 def _queue_tasks(s, day, cfg):
     """A Desk task for today once someone has not answered for draftDays. It closes when they answer (ingest)."""
     due = sorted((i for i in s["threads"].values() if i["state"] == "waiting" and not i.get("taskId")
                   and age_days(i, day) >= cfg["draftDays"]), key=lambda i: i["waitingAt"])
     for item in due[:MAX_TASKS_PER_RUN]:
-        note = "返信待ちの画面で文面をコピーして、WhatsApp で自分で送る。" if _is_chat(item) else "Gmail の下書きを開いて、自分で送る。Life OS は送信しません。"
-        rec = tasks.add("催促：" + _who(item), source="lifeos-02", source_ref=item["threadId"], note=note)
+        note = "この画面の文面をコピーして、WhatsApp で自分で送る。" if _is_chat(item) else "Gmail の下書きを開いて、自分で送る。Life OS は送信しません。"
+        rec = tasks.add(task_title(item), source="lifeos-02", source_ref=item["threadId"], note=note)
         tasks._put({**rec, "planDate": day})
         item["taskId"] = rec["id"]
     return len(due[:MAX_TASKS_PER_RUN])
@@ -259,6 +268,42 @@ def record_draft(no, draft_id, view_url="", day=None):
         item["draft"] = {"id": draft_id, "viewUrl": view_url, "on": day or paths.today()}
 
 
+def needs_detail():
+    """Open mail follow-ups Claude has not summed up yet."""
+    return [{"no": i["no"], "threadId": i["threadId"], "subject": i["subject"], "to": i["to"], "lang": i.get("lang") or ""}
+            for i in open_items() if not _is_chat(i) and not i.get("summary")]
+
+
+def save_details(rows):
+    """What the Desk shows inside the task: [{"no", "topic", "summary", "body"?}]. Renames the task to match."""
+    count = 0
+    with state() as s:
+        for row in rows:
+            item = find(s, row.get("no"))
+            if item is None:
+                continue
+            for field, key, size in (("topic", "topic", 40), ("summary", "summary", 400), ("body", "draftBody", 4000)):
+                text = str(row.get(field) or "").strip()[:size]
+                if text:
+                    item[key] = text
+            _retitle(item)
+            count += 1
+    return count
+
+
+def _retitle(item):
+    t = tasks.get(item["taskId"]) if item.get("taskId") else None
+    if t and t.get("status") in tasks.OPEN and t.get("title") != task_title(item):
+        tasks.update(item["taskId"], title=task_title(item))
+
+
+def retitle_open():
+    with state() as s:
+        for item in s["threads"].values():
+            if item["state"] in OPEN:
+                _retitle(item)
+
+
 def open_items(s=None):
     s = s or read_state()
     return sorted((i for i in s["threads"].values() if i["state"] in OPEN), key=lambda i: i["waitingAt"])
@@ -302,10 +347,13 @@ def answer(no, choice, day=None):
 
 
 def _public(item, day, cfg):
-    """One follow-up as the Desk shows it. Never holds mail text."""
+    """One follow-up as the Desk shows it: a one-line summary and the draft, never the mail itself."""
     draft = item.get("draft") or {}
+    thread = item.get("viewUrl") or ""
+    lang = "ja" if item.get("lang") == "ja" else "en"
     return {"id": f"f{item['no']}", "no": item["no"], "subject": item["subject"], "to": item["to"], "state": item["state"],
-            "waitingAt": item["waitingAt"], "hasDraft": bool(draft), "draftUrl": draft.get("viewUrl") or item.get("viewUrl") or "",
+            "waitingAt": item["waitingAt"], "hasDraft": bool(draft), "draftUrl": draft.get("viewUrl") or (thread.split("#")[0] + "#drafts" if draft and thread else thread),
+            "taskId": item.get("taskId") or "", "summary": item.get("summary") or "", "draftBody": item.get("draftBody") or (BODY[lang] if draft else ""),
             "source": item.get("source") or "gmail", "copyText": CHAT_BODY["ja" if item.get("lang") == "ja" else "en"] if _is_chat(item) else "",
             "holdUntil": item.get("holdUntil"),
             "asking": item["state"] == "waiting" and bool(draft) and age_days(item, day) >= cfg["askDays"]}

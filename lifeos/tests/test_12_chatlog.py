@@ -296,3 +296,13 @@ class TestStandalone(Chat):
         with open(os.path.join(d, "tool.json"), "w", encoding="utf-8") as f:
             json.dump({"name": "チャット記録", "status": "stopped"}, f)
         self.assertEqual(router.discover().routes, [])
+
+
+class TestSpokenMemo(SandboxCase):
+    def test_one_line_is_still_taken(self):
+        self.assertTrue(load_tool("12-chatlog", "handler").match("ランチ 3万ドン"))
+
+    def test_several_sentences_are_left_for_the_voice_memo_tool(self):
+        h = load_tool("12-chatlog", "handler")
+        self.assertFalse(h.match("牛乳を買う。ランチは3万ドンだった。"))
+        self.assertFalse(h.match("ランチ 3万ドン\n明日 資料 締切"))

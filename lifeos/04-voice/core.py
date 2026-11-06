@@ -16,8 +16,6 @@ sort = tools.load_file(os.path.dirname(os.path.abspath(__file__)), "sort")
 
 LOG = "voice"
 SOURCE = "lifeos-04"
-REPLY_LINES = 6
-REPLY_CHARS = 40
 SUMMARY_MAX = 10   # the longest morning summary, header included
 SUMMARY_CHARS = 36
 _ORDER = ("task", "event", "expense", "idea", "diary")
@@ -50,6 +48,8 @@ def _file_part(memo_id, n, part, is_voice):
         at, timed = sort.when(part.text, paths.now())
         due = int(at.timestamp() * 1000) if at else None
         note = f"種類:{sort.LABELS[part.kind]} 元:{origin}メモ" + ("" if at or part.kind == "task" else " 日時は聞き取れませんでした")
+        if len(part.text) > tasks.TITLE_MAX:  # the title gets cut there: the rest of the words stay in the note
+            note += "\n" + part.text
         t = tasks.add(part.text, due=due, note=note, source=SOURCE, source_ref=memo_id)
         extra = at.strftime("%-m/%-d %H:%M" if timed else "%-m/%-d") if at else ""
         return "tasks:" + t["id"], extra
@@ -77,7 +77,7 @@ def _file_memo(memo_id, text, is_voice, done=()):
             continue
         logs.append(LOG, {"memo": memo_id, "part": n, "kind": part.kind, "text": part.text, "where": where,
                           "voice": is_voice, "unsure": part.unsure})
-        lines.append(f"・{sort.LABELS[part.kind]}：{_short(part.text, REPLY_CHARS)}" + (f"（{extra}）" if extra else ""))
+        lines.append(f"・{sort.LABELS[part.kind]}：{part.text}" + (f"（{extra}）" if extra else ""))
         unsure = unsure or part.unsure
     if not failed:
         try:
@@ -91,9 +91,7 @@ def _reply(lines, failed, unsure):
     out = []
     if lines:
         out.append("仕分けました")
-        out += lines[:REPLY_LINES]
-        if len(lines) > REPLY_LINES:
-            out.append(f"ほか{len(lines) - REPLY_LINES}件")
+        out += lines
     if unsure:
         out.append("迷ったのでアイデアに置きました。違うときは「タスク：」のように種類を先頭に付けて送り直せます。")
     if failed:

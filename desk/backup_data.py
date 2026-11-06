@@ -15,7 +15,7 @@ import time
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(ROOT, "data")
-IGNORE = "*.lock\n.*.tmp\n.published\n.DS_Store\n__pycache__/\nwise/\nwhatsapp/\npresents.json\nheritage/\nscreentime/\nnetspeed/\nmailclean/\nlifelog/\nbody/\npeople/\nlifeos/secrets/\n"  # mailclean/: unsubscribe links carry a personal key. wise/, whatsapp/, presents.json, screentime/, netspeed/: statements, messages, sites visited and Wi-Fi names stay on this Mac, even out of the private copy. lifelog/, body/, people/: photos, health records and other people's contacts stay here too. lifeos/secrets/: settings of the bot. heritage/: public photos, large and fetched again from Commons
+IGNORE = "*.lock\n.*.tmp\n.published\n.DS_Store\n__pycache__/\nwise/\nwhatsapp/\nline/\npresents.json\nheritage/\nscreentime/\nnetspeed/\nmailclean/\nbank/\nnotify/\nwebhistory/\nlifelog/\nbody/\npeople/\nlifeos/secrets/\n"  # bank/: bank details never leave this Mac, even privately (the folder also ignores itself). notify/: names of people in the notification log. mailclean/: unsubscribe links carry a personal key. wise/, whatsapp/, presents.json, screentime/, netspeed/: statements, messages, sites visited and Wi-Fi names stay on this Mac, even out of the private copy. lifelog/, body/, people/: photos, health records and other people's contacts stay here too. lifeos/secrets/: settings of the bot. heritage/: public photos, large and fetched again from Commons
 BRANCH = "main"
 # things that must not leave this Mac even privately: keys and passwords in the clear
 SECRETS = re.compile(
