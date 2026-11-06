@@ -4,6 +4,8 @@ The token comes from the environment or the macOS keychain (service tatsuki-desk
 backed up. The chat id is not a secret: the environment or <data>/secrets/telegram.json.
     LIFEOS_TELEGRAM_TOKEN    / keychain
     LIFEOS_TELEGRAM_CHAT_ID  / "chat_id"   (the only chat the bot serves)
+A second bot, the secretary, has its own token: LIFEOS_TELEGRAM_SECRETARY_TOKEN / keychain service tatsuki-desk-telegram-secretary.
+Telegram gives the owner the same chat id with every bot, so it stays one setting.
 """
 import json
 import os
@@ -21,12 +23,14 @@ class TelegramError(Exception):
     pass
 
 
-KEYCHAIN = ("tatsuki-desk-telegram", "telegram")
+RECORDS, SECRETARY = "records", "secretary"
+KEYCHAIN = {RECORDS: ("tatsuki-desk-telegram", "telegram"), SECRETARY: ("tatsuki-desk-telegram-secretary", "telegram")}
+TOKEN_ENV = {RECORDS: "LIFEOS_TELEGRAM_TOKEN", SECRETARY: "LIFEOS_TELEGRAM_SECRETARY_TOKEN"}
 
 
-def keychain_token():
+def keychain_token(bot=RECORDS):
     try:
-        out = subprocess.run(["security", "find-generic-password", "-s", KEYCHAIN[0], "-a", KEYCHAIN[1], "-w"],
+        out = subprocess.run(["security", "find-generic-password", "-s", KEYCHAIN[bot][0], "-a", KEYCHAIN[bot][1], "-w"],
                              capture_output=True, text=True, timeout=30)
     except (OSError, subprocess.SubprocessError):
         return None
@@ -46,8 +50,8 @@ def set_chat_id(chat_id):
         json.dump(saved, f)
 
 
-def config():
-    """(token, chat_id). Either may be None."""
+def config(bot=RECORDS):
+    """(token, chat_id) for that bot. Either may be None."""
     saved = {}
     if not paths.is_sandbox():
         try:
@@ -55,7 +59,7 @@ def config():
                 saved = json.load(f)
         except (OSError, ValueError):
             saved = {}
-    token = os.environ.get("LIFEOS_TELEGRAM_TOKEN") or saved.get("token") or (None if paths.is_sandbox() else keychain_token())
+    token = os.environ.get(TOKEN_ENV[bot]) or (saved.get("token") if bot == RECORDS else None) or (None if paths.is_sandbox() else keychain_token(bot))
     chat = os.environ.get("LIFEOS_TELEGRAM_CHAT_ID") or saved.get("chat_id") or None
     return token, chat
 
@@ -100,12 +104,13 @@ class Client:
         return dest
 
 
-def notify(text):
-    """Sends a message to the owner. True if sent.
+def notify(text, bot=RECORDS):
+    """Sends a message to the owner. True if sent. Without that bot's token the records bot sends it.
 
     In a sandbox, without settings, or on failure the text goes to logs/outbox.jsonl instead.
     """
-    token, chat = config()
+    token, chat = config(bot)
+    token = token or config()[0]
     if token and chat and not paths.is_sandbox():
         try:
             Client(token).send_message(chat, text)

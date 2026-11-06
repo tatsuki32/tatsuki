@@ -15,6 +15,8 @@ from typing import Any, Callable, List, Optional
 from lifeos.lib import logs, md, paths, tasks, tools
 
 DEFAULT_PRIORITY = 50
+# the secretary bot's tools. Every other tool stays with the records bot, new ones included.
+SECRETARY_TOOLS = ("04-voice", "03-task", "02-followup")
 UNROUTED = "受け取りました。振り分け先のツールがまだないので、未整理に残しました。"
 EMPTY = "文字を受け取れませんでした。"
 
@@ -30,6 +32,7 @@ class Ctx:
     logs: Any = logs
     md: Any = md
     paths: Any = paths
+    routes: Any = None                     # this bot's tools, when a tool passes a message on
 
 
 @dataclass
@@ -69,6 +72,11 @@ def discover(root=None):
         found.routes.append(Route(slug, slug[:2], meta.get("name") or slug, priority, mod.match, mod.handle))
     found.routes.sort(key=lambda r: (r.priority, r.slug))
     return found
+
+
+def for_bot(routes, bot):
+    """The routes one bot serves: "secretary" or "records"."""
+    return [r for r in routes if (r.slug in SECRETARY_TOOLS) == (bot == "secretary")]
 
 
 def which(text, routes):

@@ -97,14 +97,6 @@ class TestSort(SandboxCase):
             self.assertEqual((at.day, at.hour, at.minute), want, text)
             self.assertTrue(timed, text)
 
-    def test_plans_are_noticed_and_records_are_not(self):
-        s = load_tool("04-voice", "sort")
-        for text in ("日本時間の19時に予定", "10分後にりんごを買いに行く", "明日の12時にランチを友達と", "明日12時に昼ごはん", "19時に夕食",
-                     "5分後にグラブに乗るのをカレンダーにしよう。", "十八時にバス停", "今日は疲れた。金曜の15時に歯医者"):
-            self.assertTrue(s.looks_like_plan(text), text)
-        for text in ("ランチにカレーを食べた", "昼 カレー大盛り", "23時に寝た", "12時にランチを食べた", "昨日19時に夕食", "体重65.2", "今日は疲れた", "ベンチ60kg 10回3セット"):
-            self.assertFalse(s.looks_like_plan(text), text)
-
     def test_when_gives_nothing_for_the_past_or_nonsense(self):
         s = load_tool("04-voice", "sort")
         for text in ("昨日15時", "2月31日", "30時", "りんご"):

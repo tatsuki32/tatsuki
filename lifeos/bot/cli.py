@@ -20,8 +20,11 @@ def main(argv=None):
     ap.add_argument("--which", action="store_true", help="どのツールが受けるかだけ出す")
     ap.add_argument("--voice", metavar="FILE", help="音声ファイルを送ったことにする")
     ap.add_argument("--list", action="store_true", help="振り分け順を出す")
+    ap.add_argument("--bot", choices=("records", "secretary"), help="そのボットのツールだけで試す")
     a = ap.parse_args(argv)
     found = router.discover()
+    if a.bot:
+        found.routes = router.for_bot(found.routes, a.bot)
     if a.list:
         for r in found.routes:
             print(f"{r.priority:>3}  {r.slug}  {r.name}")

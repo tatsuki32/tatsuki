@@ -95,6 +95,16 @@ tasks.delete(t["id"])                # deleted:true にするだけ
 
 ## ボット（Telegram）
 
+ボットは2つあり、1つの常駐プロセス（`lifeos/bot/run.py`）で動きます。秘書のトークンがなければ、今までどおり1つで全部を受けます。
+
+| ボット | 受けるもの |
+| --- | --- |
+| 記録（今のボット） | 下の `SECRETARY_TOOLS` 以外の全部。写真も受ける |
+| 秘書 | `router.py` の `SECRETARY_TOOLS`（04・03・02） |
+
+秘書のトークンはキーチェーンに入れます：`security add-generic-password -a telegram -s tatsuki-desk-telegram-secretary -w`
+こちらから秘書ボットで送るときは `notify("文", telegram.SECRETARY)` です。`python3 lifeos/bot/cli.py --bot secretary "文"` で試せます。
+
 `lifeos/NN-slug/handler.py` を置くと自動で読み込まれます。ボット本体は触りません。
 
 ```python

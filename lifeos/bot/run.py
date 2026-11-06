@@ -12,6 +12,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -28,6 +29,9 @@ NO_TOKEN = """Telegram のトークンがないので起動しません。
 トークンなしで試すには：python3 lifeos/bot/cli.py "テキスト\""""
 TRANSCRIPT = "文字起こし：\n"
 NOT_TEXT = "文字と音声と写真を受け取れます。"
+PHOTO_ELSEWHERE = "写真は記録ボットに送ってください。"
+TO_SECRETARY = "記録として受け取れませんでした。内容は未整理に残しました。予定やタスクは秘書ボットに送ってください。"
+OFFSET_FILES = {telegram.RECORDS: "offset.json", telegram.SECRETARY: "offset-secretary.json"}
 PHOTO_TYPES = ("image/", "application/pdf")
 
 
@@ -62,8 +66,11 @@ def handle_photo(file_id, caption, client, chat):
     client.send_message(chat, lifelog.reply_text(lifelog.process()))
 
 
-def handle_update(update, client, owner, routes=None):
-    """Handles one update from Telegram. client needs send_message and download."""
+def handle_update(update, client, owner, routes=None, photos=True, unrouted=None):
+    """Handles one update from Telegram. client needs send_message and download.
+
+    photos: whether this bot takes photos. unrouted: its reply, if any, when none of its tools wants the message.
+    """
     msg = update.get("message") or {}
     chat = (msg.get("chat") or {}).get("id")
     if chat is None:
@@ -75,9 +82,12 @@ def handle_update(update, client, owner, routes=None):
         return
     photo = photo_file(msg)
     if photo:
-        handle_photo(photo, msg.get("caption"), client, chat)
+        if photos:
+            handle_photo(photo, msg.get("caption"), client, chat)
+        else:
+            client.send_message(chat, PHOTO_ELSEWHERE)
         return
-    ctx = router.Ctx(source="telegram", chat_id=chat, send=lambda t: client.send_message(chat, t))
+    ctx = router.Ctx(source="telegram", chat_id=chat, send=lambda t: client.send_message(chat, t), routes=routes)
     audio = msg.get("voice") or msg.get("audio")
     if audio:
         if not voice.connected():
@@ -101,33 +111,61 @@ def handle_update(update, client, owner, routes=None):
     if ctx.is_voice and (text or "").strip():  # the words as heard come first, whichever tool takes them
         client.send_message(chat, TRANSCRIPT + text.strip())
     reply = router.dispatch(text, ctx, routes)
+    if reply == router.UNROUTED and unrouted:
+        reply = unrouted
     if reply:
         client.send_message(chat, reply)
 
 
-def read_offset():
+def read_offset(bot=telegram.RECORDS):
     try:
-        with open(paths.data_path("bot", "offset.json"), encoding="utf-8") as f:
+        with open(paths.data_path("bot", OFFSET_FILES[bot]), encoding="utf-8") as f:
             return json.load(f).get("offset")
     except (OSError, ValueError):
         return None
 
 
-def save_offset(offset):
-    with open(paths.data_path("bot", "offset.json"), "w", encoding="utf-8") as f:
+def save_offset(offset, bot=telegram.RECORDS):
+    with open(paths.data_path("bot", OFFSET_FILES[bot]), "w", encoding="utf-8") as f:
         json.dump({"offset": offset}, f)
 
 
-def poll_once(client, owner, offset, routes=None):
+def poll_once(client, owner, offset, routes=None, bot=telegram.RECORDS, photos=True, unrouted=None):
     """One getUpdates round. Returns the next offset."""
     for u in client.get_updates(offset):
         try:
-            handle_update(u, client, owner, routes)
+            handle_update(u, client, owner, routes, photos, unrouted)
         except Exception as e:  # one bad message must not stop the bot or repeat forever
             logs.append("bot-errors", {"where": "update", "error": type(e).__name__})
         offset = u["update_id"] + 1
-        save_offset(offset)
+        save_offset(offset, bot)
     return offset
+
+
+def serve(bot, token, owner, routes, photos=True, unrouted=None):
+    """Polls one bot for good. One bot's trouble never stops the other."""
+    client = telegram.Client(token)
+    offset, wait = read_offset(bot), 5
+    while True:
+        try:
+            offset = poll_once(client, owner, offset, routes, bot, photos, unrouted)
+            wait = 5
+        except telegram.TelegramError as e:
+            print(f"Telegram エラー（{bot}）: {e}。{wait}秒後にやり直します", file=sys.stderr, flush=True)
+            time.sleep(wait)
+            wait = min(wait * 2, 300)
+        except Exception as e:
+            logs.append("bot-errors", {"where": "serve", "bot": bot, "error": type(e).__name__})
+            time.sleep(wait)
+            wait = min(wait * 2, 300)
+
+
+def plan_bots(token, secretary_token, routes):
+    """[(bot, token, routes, photos, unrouted)]. Without a secretary token one bot serves every tool, as before."""
+    if not secretary_token or secretary_token == token:
+        return [(telegram.RECORDS, token, routes, True, None)]
+    return [(telegram.RECORDS, token, router.for_bot(routes, telegram.RECORDS), True, TO_SECRETARY),
+            (telegram.SECRETARY, secretary_token, router.for_bot(routes, telegram.SECRETARY), False, None)]
 
 
 def main():
@@ -152,20 +190,16 @@ def main():
     except OSError:
         print("ボットはすでに動いています。")
         return 1
-    client = telegram.Client(token)
     found = router.discover()
     for slug, err in found.errors:
         print(f"読み込めません  {slug}  {err}", file=sys.stderr)
-    print(f"ボットを起動しました（ツール {len(found.routes)} 個）" + ("" if owner else "。chat_id が未設定です"), flush=True)
-    offset, wait = read_offset(), 5
-    while True:
-        try:
-            offset = poll_once(client, owner, offset, found.routes)
-            wait = 5
-        except telegram.TelegramError as e:
-            print(f"Telegram エラー: {e}。{wait}秒後にやり直します", file=sys.stderr, flush=True)
-            time.sleep(wait)
-            wait = min(wait * 2, 300)
+    bots = plan_bots(token, telegram.config(telegram.SECRETARY)[0], found.routes)
+    shown = "、".join(f"{b[0]} {len(b[2])}個" for b in bots)
+    print(f"ボットを起動しました（{shown}）" + ("" if owner else "。chat_id が未設定です"), flush=True)
+    for bot, bot_token, routes, photos, unrouted in bots[1:]:
+        threading.Thread(target=serve, args=(bot, bot_token, owner, routes, photos, unrouted), daemon=True).start()
+    bot, bot_token, routes, photos, unrouted = bots[0]
+    serve(bot, bot_token, owner, routes, photos, unrouted)
 
 
 if __name__ == "__main__":
