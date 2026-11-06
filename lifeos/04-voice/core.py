@@ -164,7 +164,8 @@ def answer(query):
             due.setdefault(day, []).append(t["title"])
     out = [trouble] if trouble else []
     for day in days:
-        here = [e for e in found if isinstance(e, dict) and e.get("date") == day]
+        # an event that began earlier and is still going counts on the first day asked about
+        here = [e for e in found if isinstance(e, dict) and (e.get("date") == day or (day == days[0] and str(e.get("date")) < day))]
         lines = [f"・{'終日' if e.get('allDay') else str(e.get('start')) + '〜' + str(e.get('end'))} {e.get('title')}"
                  for e in sorted(here, key=lambda e: (not e.get("allDay"), str(e.get("start"))))]
         lines += [f"・期日のタスク：{title}" for title in due.get(day, [])]

@@ -367,6 +367,10 @@ class TestAnalysis(SandboxCase):
         self.assertEqual(logs.read("voice"), [])
         self.assertEqual(self.core.leftovers(), [])
 
+    def test_an_event_still_going_from_an_earlier_day_counts(self):
+        reply = self.ask(self.TODAY, [{"title": "旅行", "allDay": True, "date": "2026-11-02", "start": "00:00", "end": "00:00"}])
+        self.assertIn("・終日 旅行", reply)
+
     def test_an_empty_day_says_so(self):
         self.assertEqual(self.ask(self.TODAY, []), "11/4(水)の予定（0件）\n予定はありません")
 
