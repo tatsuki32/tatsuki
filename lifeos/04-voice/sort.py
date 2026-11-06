@@ -9,7 +9,7 @@ from collections import namedtuple
 from datetime import datetime, timedelta
 
 # title, at (ISO time) and timed are filled by the language model, or by core.py from the rules
-Part = namedtuple("Part", "kind text unsure title at timed", defaults=("", "", False))
+Part = namedtuple("Part", "kind text unsure title at timed minutes", defaults=("", "", False, 0))
 
 LABELS = {"task": "タスク", "event": "予定", "expense": "支出", "idea": "アイデア", "diary": "日記"}
 

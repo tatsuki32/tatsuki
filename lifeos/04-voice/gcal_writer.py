@@ -12,6 +12,7 @@ from lifeos.lib import paths
 
 KEYCHAIN = ("tatsuki-desk-gcal", "webhook")
 TIMEOUT = 20
+DEFAULT_MINUTES = 15  # a calendar stays readable when nothing said how long it takes
 
 
 class CalendarError(Exception):
@@ -34,12 +35,13 @@ def connected():
     return bool(url())
 
 
-def add(title, at, timed, ref, note=""):
+def add(title, at, timed, ref, note="", minutes=0):
     """at is a datetime. Without a clock time it becomes an all-day event. ref keeps a retry from adding it twice."""
     target = url()
     if not target:
         raise CalendarError("not connected")
-    body = {"title": title, "ref": ref, "note": note, "start": at.isoformat() if timed else "", "date": at.strftime("%Y-%m-%d")}
+    body = {"title": title, "ref": ref, "note": note, "start": at.isoformat() if timed else "", "date": at.strftime("%Y-%m-%d"),
+            "minutes": minutes or DEFAULT_MINUTES}
     req = urllib.request.Request(target, data=json.dumps(body, ensure_ascii=False).encode("utf-8"), method="POST",
                                  headers={"Content-Type": "application/json", "User-Agent": "tatsuki-desk-lifeos"})
     try:
