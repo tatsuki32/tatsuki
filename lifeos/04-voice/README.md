@@ -47,6 +47,10 @@ security add-generic-password -a webhook -s tatsuki-desk-gcal -w
 
 入るのは既定のカレンダーです。予定を足すだけで、読むことも消すこともできません。
 
+予定の長さは15分です。話に長さや終わりの時刻があれば、その長さにします。
+
+`calendar-webhook.gs` を変えたら、Apps Script に貼り直して「デプロイ」→「デプロイを管理」→ 鉛筆 → バージョン「新バージョン」→「デプロイ」とします。URL は変わりません。
+
 ## つなぐもの
 
 - Telegram：設定済みです。

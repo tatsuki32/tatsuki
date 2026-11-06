@@ -303,9 +303,31 @@ class TestAnalysis(SandboxCase):
         self.assertEqual([t["title"] for t in tasks.open_tasks()], ["ウェブサイトを作る"])
         self.assertEqual([d["title"] for d in sent], ["バス停", "請求書を出す"])
         self.assertEqual(sent[0]["start"], "2026-11-06T18:00:00+07:00")
+        self.assertEqual(sent[0]["minutes"], 15)
+        self.assertIn("18:00 15分 → カレンダー", reply)
         self.assertEqual((sent[1]["start"], sent[1]["date"]), ("", "2026-11-13"))  # all day
         self.assertIn("→ カレンダー", reply)
         self.assertIn("→ タスク", reply)
+
+    def test_a_spoken_length_is_used(self):
+        os.environ["LIFEOS_GCAL_URL"] = "https://example.com/exec"
+        sent = []
+        items = {"items": [{"kind": "event", "title": "打ち合わせ", "text": "明日10時から1時間半", "date": "2026-11-05", "time": "10:00", "minutes": 90}]}
+
+        def answer(req, timeout):
+            if req.full_url == self.an.URL:
+                return FakeResponse(model_answer(items))
+            sent.append(json.loads(req.data.decode("utf-8")))
+            return FakeResponse(b'{"ok": true}')
+
+        with mock.patch("urllib.request.urlopen", side_effect=answer):
+            reply = self.core.take("明日10時から1時間半", True)
+        self.assertEqual(sent[0]["minutes"], 90)
+        self.assertIn("90分", reply)
+
+    def test_only_sensible_lengths_are_kept(self):
+        for v, want in [(20, 20), (90, 90), (None, 0), (0, 0), (-5, 0), (5000, 0), ("20", 0), (True, 0), (1.5, 0)]:
+            self.assertEqual(self.an._minutes({"minutes": v}), want, v)
 
     def test_a_calendar_failure_loses_nothing(self):
         os.environ["LIFEOS_GCAL_URL"] = "https://example.com/exec"

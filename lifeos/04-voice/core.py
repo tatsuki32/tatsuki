@@ -68,8 +68,10 @@ def _file_task(memo_id, n, part, is_voice):
     trouble = ""
     if at and gcal.connected():
         try:
-            gcal.add(title, at, part.timed, f"{memo_id}-{n}", part.text)
-            return "calendar", f"{_clock(at, part.timed)} → カレンダー"
+            minutes = part.minutes or gcal.DEFAULT_MINUTES
+            gcal.add(title, at, part.timed, f"{memo_id}-{n}", part.text, minutes)
+            length = f" {minutes}分" if part.timed else ""
+            return "calendar", f"{_clock(at, part.timed)}{length} → カレンダー"
         except gcal.CalendarError as e:
             logs.append("bot-errors", {"tool": "04-voice", "where": "calendar", "error": str(e)})
             trouble = "カレンダーに入らず"
