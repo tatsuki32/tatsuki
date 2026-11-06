@@ -49,7 +49,7 @@ import wise_sync
 ROOT = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(ROOT, "data")
 PORT = int(os.environ.get("DESK_PORT", "4747"))
-COLLECTIONS = ("memos", "dues", "tasks", "prompts", "notes", "habits", "lifemap", "wins", "worldlog", "presents", "heritagelog", "routines", "routinelog", "rewards")
+COLLECTIONS = ("memos", "dues", "tasks", "prompts", "notes", "habits", "lifemap", "wins", "worldlog", "presents", "heritagelog", "routines", "routinelog", "rewards", "ideaslog")
 # file in data/, global the page reads, value when the file is missing
 DATA_JS = [
     ("tools.js", "TOOLS", "[]"),
@@ -60,6 +60,7 @@ DATA_JS = [
     ("reports.js", "REPORTS", "[]"),
     ("watch.js", "WATCH", "[]"),
     ("heritage.js", "HERITAGE", "[]"),
+    ("ideas.js", "IDEAS", "[]"),
 ]
 # what the scheduled tasks and the tools view write: one file per doc in data/docs/<collection>/, joined into the page's
 # data/*.js. collection -> (file, global, newest docs kept in the page; the docs stay on disk)
@@ -70,6 +71,7 @@ FEEDS = {
     "reports": ("reports.js", "REPORTS", 30),
     "watch": ("watch.js", "WATCH", 30),
     "heritage": ("heritage.js", "HERITAGE", None),
+    "ideas": ("ideas.js", "IDEAS", 52),
     "calendar": ("calendar.js", "CAL", "upcoming"),
     "gtasks": ("gtasks.js", "GTASKS", "current"),
 }
