@@ -524,6 +524,34 @@ details.draft .sent-as summary{cursor:pointer;display:block;padding:var(--s2) 0;
 .wadd input{flex:1;min-width:0;min-height:44px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:var(--r-s);padding:0 12px;font:inherit;font-size:var(--t3)}
 .wadd input:focus{outline:none;border-color:var(--accent)}
 .wadd .btn{min-height:44px}
+/* 今日の進捗: the count is the one big thing in this card. The popup is centered on purpose: it is a moment, not a layout. */
+.prog{display:grid;grid-template-columns:minmax(0,1fr);gap:var(--s3);padding:var(--s3)}
+.pgtop{display:grid;grid-template-columns:auto minmax(0,1fr);gap:var(--s3) var(--s4);align-items:center}
+.pgnum{display:flex;align-items:baseline;gap:var(--s1);text-decoration:none;white-space:nowrap}
+.pgnum b{font-size:56px;line-height:1.1;color:var(--accent)}
+.pgnum span{font-size:var(--t2);color:var(--ink-2)}
+.pgnum:hover span{color:var(--ink)}
+.pgside{display:grid;gap:var(--s1);min-width:0}
+.pgline{display:flex;justify-content:space-between;gap:var(--s2);font-size:var(--t1);color:var(--muted)}
+.pgline b{color:var(--ink)}
+.pgbar{height:8px;border-radius:999px;background:var(--surface-2);overflow:hidden}
+.pgbar i{display:block;height:100%;border-radius:999px;background:var(--accent);transition:width .3s}
+.pgmsg{margin:var(--s1) 0 0;font-size:var(--t2);color:var(--ink-2)}
+.pgchips{display:flex;flex-wrap:wrap;gap:var(--s1) var(--s2)}
+.pgchip{display:inline-block;max-width:min(18em,100%);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--t1);line-height:1.5;padding:2px var(--s2);border-radius:999px;background:var(--surface-2);color:var(--ink-2);text-decoration:none}
+a.pgchip{background:transparent;color:var(--muted)}
+a.pgchip:hover{color:var(--ink)}
+.pgfoot{display:flex;align-items:center;justify-content:space-between;gap:var(--s2);margin:calc(-1 * var(--s2)) 0 calc(-1 * var(--s2))}
+#cheerHost{position:fixed;inset:0;z-index:70;display:grid;place-items:center;padding:var(--s3);pointer-events:none;overflow:hidden}
+.cheer{position:relative;z-index:1;pointer-events:auto;cursor:pointer;max-width:min(420px,100%);padding:var(--s4) var(--s5);border:1px solid var(--accent-2);border-radius:16px;background:var(--surface);box-shadow:0 24px 60px rgba(0,0,0,.6);text-align:center;animation:cheerin .22s ease-out}
+.cheer b{display:block;font-size:var(--t5);line-height:1.3;color:var(--accent)}
+.cheer span{display:block;margin-top:var(--s1);font-size:var(--t3);color:var(--ink)}
+.cheer.out{opacity:0;transition:opacity .2s}
+.cf{position:absolute;left:50%;top:50%;width:8px;height:12px;border-radius:2px;opacity:0;animation:cheerfly var(--d) cubic-bezier(.15,.7,.35,1) var(--w) forwards}
+@keyframes cheerin{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
+@keyframes cheerfly{0%{opacity:1;transform:translate(-50%,-50%) rotate(0)}75%{opacity:1}100%{opacity:0;transform:translate(calc(-50% + var(--x)),calc(-50% + var(--y))) rotate(var(--r))}}
+@media (prefers-reduced-motion:reduce){.cheer{animation:none}.cf{display:none}}
+@media (max-width:560px){.pgnum b{font-size:var(--t5)}.pgtop{gap:var(--s2) var(--s3)}}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .wdays{display:grid;gap:var(--s3)}
 .wday .dhead .count{margin-left:auto}
@@ -1110,7 +1138,7 @@ const okUrl=u=>/^(https:\/\/|file:\/\/|#)/.test(u||"");
 const viewId=()=>{const h=(location.hash||"").slice(1);if(h==="mail")return "tasks";if(h==="inbox")return "presents";return VIEWS.some(v=>v.id===h)?h:"home"}; // 朝のメール moved into the tasks
 const viewLabel=id=>(VIEWS.find(v=>v.id===id)||{}).label||id;
 const ago=ms=>{const d=(Date.now()-ms)/6e4;if(d<1)return"たった今";if(d<60)return Math.round(d)+"分前";if(d<1440)return Math.round(d/60)+"時間前";return new Date(ms).toLocaleDateString("ja-JP",{month:"long",day:"numeric"})};
-function toast(t){const el=document.createElement("div");el.className="toast";el.textContent=t;$("#toastHost").replaceChildren(el);setTimeout(()=>el.remove(),2200)}
+function toast(t){if(t.startsWith("✨")&&$("#cheerHost .cheer"))return;const el=document.createElement("div");el.className="toast";el.textContent=t;$("#toastHost").replaceChildren(el);setTimeout(()=>el.remove(),2200)}
 
 /* ---------- store: claude db online, browser storage on the PC ---------- */
 /* Notes are never hard-deleted: deleted:true + updatedAt lets the hourly sync merge the Mac and the cloud safely. */
@@ -1363,7 +1391,7 @@ async function taskWin(t,status){
   const id=winId("task-"+t.id), had=S.wins.find(w=>w.id===id), was=t.status||"notyet";
   if(status==="done"&&!had) return store.putWin({id,kind:t.source==="mail"?"mail":"task",title:t.title,sub:t.mail?.sub||"",ref:t.id});
   if(TOPEN.has(status)&&had) return store.putWin({...had,deleted:true});
-  if(was==="done"&&!TOPEN.has(status)&&!had){const at=t.updatedAt||t.createdAt||Date.now();return store.putWin({id,kind:t.source==="mail"?"mail":"task",title:t.title,sub:t.mail?.sub||"",ref:t.id,at,date:hcmcDay(at)})}
+  if(was==="done"&&!TOPEN.has(status)&&!had){const at=t.updatedAt||t.createdAt||Date.now();return store.putWin({quiet:true,id,kind:t.source==="mail"?"mail":"task",title:t.title,sub:t.mail?.sub||"",ref:t.id,at,date:hcmcDay(at)})}
 }
 const WKIND={task:["🗂️","タスク"],mail:["✉️","メール返信"],event:["📅","予定"],claude:["🤖","Claudeと"],self:["✍️","自分で"]};
 function winList(){
@@ -3340,13 +3368,14 @@ function home(){
   const top=topThreeIds();
   const cards={triage:triHome(),focus:focusHomeCard(),pc:LOCALAPI?`<a class="sub pcline" id="pcLine" href="#pc">${pcLineText()}</a>`:"",body:homeBodyStrip(),
     today:`<div class="duo">${todayEvents()}${habitStrip()||`<section class="card"><div class="dhead"><h2><span class="e">🌱</span>今日の習慣</h2><a class="more" href="#habits">足す →</a></div><div class="empty">続けたいことを「習慣」で足せます。</div></section>`}</div>`,
-    heritage:heritageCard(),claude:ccCard(),panel:todayPanel(top),wins:winsMini(),inflow:inflow(),notes:notesHere("home"),
+    heritage:heritageCard(),claude:ccCard(),panel:todayPanel(top),inflow:inflow(),notes:notesHere("home"),
     tools:daily.length?`<section><div class="section-title"><span class="e">☀️</span>毎日のツール<a href="#tools">すべてのツール →</a></div><div class="tiles mini">${daily.map(tile).join("")}</div></section>`:`<p class="sub" style="margin:0"><a href="#tools" class="more">ツールを開く →</a></p>`};
   return `
+  ${uTag(progressCard(),"wins")}
   <header class="head"><div><p class="eyebrow">${d.toLocaleDateString("ja-JP",{month:"long",day:"numeric",weekday:"long"})} · ${greet} · ${t3Mode()}</p><h1>今日の3つ</h1></div><button class="btn" data-opennext>次は？</button></header>
   ${uNotice()}
   ${topThree()}
-  ${homeOrder().map(id=>uTag(cards[id]||"",id)).join("\n  ")}`;
+  ${homeOrder().filter(id=>id!=="wins").map(id=>uTag(cards[id]||"",id)).join("\n  ")}`;
 }
 const topThreeIds=()=>topList().map(t=>t.id);
 /* what came in: mail that needs action, good news, today's news, each count on one right-hand line */
@@ -3590,13 +3619,106 @@ function winsView(){
   :`<div class="card empty"><b>ここに積み上がっていきます</b>タスクを完了にする・メールを返す・終わった予定に「できた」を押す・上の欄に書く。どれでも入ります。</div>`}`;
 }
 async function addWin(){
-  const inp=$("#winText"), title=(inp.value||"").trim().slice(0,120); if(!title){inp.focus();return}
-  try{await store.putWin({id:"self-"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),kind:"self",title});toast(["✨ 入れました","✨ ひとつ増えました","✨ いいですね"][Math.floor(Math.random()*3)])}catch(e){toast("保存できませんでした。入力はそのまま残っています");return}
+  const inp=$("#winText"), raw=inp.value||"", title=raw.trim().slice(0,120); if(!title){inp.focus();return}
+  inp.value="";inp.blur(); // render() leaves the box alone while it has focus
+  try{await store.putWin({id:"self-"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),kind:"self",title});toast(["✨ 入れました","✨ ひとつ増えました","✨ いいですね"][Math.floor(Math.random()*3)])}catch(e){toast("保存できませんでした。入力はそのまま残っています");const b=$("#winText");if(b){b.value=raw;b.focus()}return}
   setTimeout(()=>$("#winText")&&$("#winText").focus(),0);
 }
-/* Home: one quiet line, today's count and the latest thing */
-function winsMini(){const xs=winsToday().sort((a,b)=>(b.at||0)-(a.at||0));
-  return `<div class="card inflow"><a class="irow" href="#wins"><span class="e">✨</span>今日できたこと<span class="s">${xs[0]?esc(xs[0].title):"終わったら、ここに入ります"}</span><span class="n ${xs.length?"":"zero"}">${xs.length}</span></a></div>`}
+/* ---------- 今日の進捗 + the celebration when something gets done ---------- */
+/* Everything is counted from wins, nothing new is stored. Claude's own report lines are left out: they would make the best day out of reach.
+   A gap never turns red and never shows 0: the total number of days stays on screen, and the streak can be switched off. */
+const PG={goal:3,sound:true,pop:true,streak:true};
+try{Object.assign(PG,JSON.parse(localStorage.getItem("desk-progress")||"{}"))}catch(e){}
+const pgSave=()=>{try{localStorage.setItem("desk-progress",JSON.stringify(PG))}catch(e){}};
+function pgStats(extraId){
+  const list=winList().filter(w=>w.kind!=="claude"), today=hcmcDate(), by=new Map();
+  list.forEach(w=>by.set(w.date,(by.get(w.date)||0)+1));
+  if(extraId&&!list.some(w=>w.id===extraId))by.set(today,(by.get(today)||0)+1);
+  const n=by.get(today)||0;let best=0,wk=0,streak=0;
+  by.forEach((v,d)=>{if(d!==today&&v>best)best=v});
+  for(let i=0;i<7;i++)wk+=by.get(dayOff(today,-i))||0;
+  for(let d=n?today:dayOff(today,-1);by.has(d);d=dayOff(d,-1))streak++;
+  return {n,best,wk,streak,days:by.size,lastWeek:by.get(dayOff(today,-7))||0,items:list.filter(w=>w.date===today).sort((a,b)=>(b.at||0)-(a.at||0))};
+}
+const pgMsg=s=>!s.n?"最初の1個は、なんでもOKです":s.n>s.best&&s.best?"自己ベストを更新中です":s.n>=PG.goal?"今日の目標に届いています":s.lastWeek&&s.n>s.lastWeek?`先週の同じ曜日より${s.n-s.lastWeek}個多いです`:`この7日で${s.wk}個できました`;
+function progressCard(){
+  const s=pgStats(), left=PG.goal-s.n, MAX=5, foot=[PG.streak&&s.streak?`🔥 ${s.streak}日連続`:"",s.days?`通算${s.days}日`:"",Math.max(s.best,s.n)?`自己ベスト${Math.max(s.best,s.n)}個`:""].filter(Boolean).join(" · ");
+  return `<section class="card prog" aria-label="今日の進捗">
+    <div class="pgtop"><a class="pgnum" href="#wins" aria-label="今日できたこと ${s.n}個。一覧を開く"><b>${s.n}</b><span>個できた</span></a>
+      <div class="pgside"><div class="pgline"><span>今日の目標 ${PG.goal}個</span><b>${left>0?`あと${left}個`:left<0?`達成 +${-left}`:"達成"}</b></div>
+        <div class="pgbar" role="progressbar" aria-valuemin="0" aria-valuemax="${PG.goal}" aria-valuenow="${Math.min(s.n,PG.goal)}" aria-label="今日の目標"><i style="width:${Math.min(100,s.n/PG.goal*100)}%"></i></div>
+        <p class="pgmsg">${esc(pgMsg(s))}</p></div></div>
+    ${s.n?`<div class="pgchips" data-noauto>${s.items.slice(0,MAX).map(w=>`<span class="pgchip" title="${esc(w.title)}">${(WKIND[w.kind]||WKIND.self)[0]} ${esc(w.title)}</span>`).join("")}${s.n>MAX?`<a class="pgchip" href="#wins">ほか${s.n-MAX}個 →</a>`:""}</div>`:""}
+    <form class="wadd" id="winAdd" autocomplete="off"><label class="sr" for="winText">できたことを書く</label><input type="text" id="winText" maxlength="120" placeholder="できたことを書く（例：洗濯した）"><button class="btn" type="submit">足す</button></form>
+    <div class="pgfoot"><span class="sub">${esc(foot)}</span><button class="ibtn" id="pgSet" aria-label="お祝いと目標の設定" title="お祝いと目標の設定">⚙️</button></div>
+  </section>`;
+}
+/* words: real numbers first, so they stay true and keep changing; never the same line twice in a row */
+const PGMILE={1:"最初の1個ができました",3:"3個目。流れができてきました",5:"5個目。いいペースです",10:"10個目。すごいです",15:"15個目。今日はよく動いています",20:"20個目。すごい日です",30:"30個目。休憩も入れてください",50:"50個目。すごい記録です"};
+const PGLINES=["小さくても1個は1個です","ちゃんと進んでいます","次も1個だけでOKです","終わらせたのがえらいです","すごい、また増えました","この調子です"];
+let pgLast="";
+function cheerWords(s){
+  let tier=0,sub;
+  if(s.best&&s.n===s.best+1){tier=2;sub=`自己ベスト更新。これまでは${s.best}個でした`}
+  else if(s.n===PG.goal){tier=1;sub="今日の目標に届きました"}
+  else if(PGMILE[s.n]){tier=s.n>1?1:0;sub=PGMILE[s.n]}
+  else{const pool=[...PGLINES,`この7日で${s.wk}個`,...(s.lastWeek&&s.n>s.lastWeek?[`先週の同じ曜日より${s.n-s.lastWeek}個多いです`]:[]),...(s.streak>1?[`${s.streak}日続いています`]:[]),...(s.best&&s.n>s.best?["自己ベストを更新中です"]:[])].filter(x=>x!==pgLast);
+    sub=pool[Math.floor(Math.random()*pool.length)]}
+  pgLast=sub;
+  return {tier,head:`できた！ 今日${s.n}個目`,sub};
+}
+function cheerSound(tier){
+  if(!PG.sound||S.mute||!actx)return;
+  try{if(actx.state==="suspended")actx.resume();const t0=actx.currentTime+.01;
+    [[[784,0],[1047,.09]],[[659,0],[784,.09],[1047,.18],[1319,.27]],[[523,0],[659,.08],[784,.16],[1047,.24],[1319,.34],[1568,.44],[2093,.54]]][tier].forEach(([f,d])=>{const o=actx.createOscillator(),v=actx.createGain();o.type="triangle";o.frequency.value=f;
+      v.gain.setValueAtTime(0,t0+d);v.gain.linearRampToValueAtTime(.2,t0+d+.012);v.gain.exponentialRampToValueAtTime(.0001,t0+d+.5);
+      o.connect(v).connect(actx.destination);o.start(t0+d);o.stop(t0+d+.55)})}catch(e){}
+}
+let cheerT=0;
+function cheerHide(){clearTimeout(cheerT);$("#cheerHost")?.remove()}
+function cheerShow(c){
+  cheerHide();
+  const host=document.createElement("div");host.id="cheerHost";host.setAttribute("role","status");host.dataset.noauto="";
+  const n=[36,70,120][c.tier], colors=["var(--accent)","var(--green)","var(--blue)","var(--red)","var(--ink)"], rnd=(a,b)=>a+Math.random()*(b-a);
+  const bits=Array.from({length:n},(_,i)=>{const a=rnd(0,6.283),r=rnd(140,Math.max(innerWidth,innerHeight)*.6);
+    return `<i class="cf" aria-hidden="true" style="background:${colors[i%5]};--x:${Math.round(Math.cos(a)*r)}px;--y:${Math.round(Math.sin(a)*r+120)}px;--r:${Math.round(rnd(-540,540))}deg;--d:${Math.round(rnd(900,1500))}ms;--w:${Math.round(rnd(0,120))}ms"></i>`}).join("");
+  host.innerHTML=`${bits}<div class="cheer"><b>${esc(c.head)}</b><span>${esc(c.sub)}</span></div>`;
+  document.body.appendChild(host);
+  host.querySelector(".cheer").onclick=cheerHide;
+  cheerT=setTimeout(()=>{host.querySelector(".cheer")?.classList.add("out");cheerT=setTimeout(cheerHide,200)},c.tier?2200:1400);
+}
+/* once per thing per day: undoing and redoing the same task does not celebrate again. Only what you do here counts, never what the sync brings in. */
+function pgCheered(){let v={};try{v=JSON.parse(localStorage.getItem("desk-cheered")||"{}")}catch(e){}return v.d===hcmcDate()&&Array.isArray(v.ids)?v.ids:[]}
+const pgMark=ids=>{try{localStorage.setItem("desk-cheered",JSON.stringify({d:hcmcDate(),ids}))}catch(e){}};
+function cheer(id){
+  const seen=pgCheered(); if(seen.includes(id))return false;
+  pgMark([...seen,id]);
+  const c=cheerWords(pgStats(id));
+  cheerSound(c.tier);
+  if(PG.pop)cheerShow(c);
+  return true;
+}
+const putWinBare=store.putWin;
+store.putWin=async w=>{
+  const fresh=!w.deleted&&!w.quiet&&(w.date||hcmcDate())===hcmcDate()&&!S.wins.some(x=>x.id===w.id), on=fresh&&cheer(w.id);
+  try{return await putWinBare(w)}catch(e){if(on){cheerHide();pgMark(pgCheered().filter(x=>x!==w.id))}throw e}
+};
+function openPg(){
+  if($("#modal").firstChild)return;
+  const row=(k,l)=>`<button class="chip" data-pgt="${k}" aria-pressed="${!!PG[k]}">${l}</button>`;
+  $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop" role="dialog" aria-modal="true" aria-label="お祝いと目標の設定">
+    <div class="top"><h2>⚙️ お祝いと目標</h2><button class="ibtn" id="xPg" aria-label="閉じる">✕</button></div>
+    <label class="sub" for="pgGoal">今日の目標（個）</label><input type="text" id="pgGoal" inputmode="numeric" maxlength="3" autocomplete="off" value="${PG.goal}">
+    <div class="chips" role="group" aria-label="表示と音">${row("sound","音")}${row("pop","ポップ")}${row("streak","連続日数")}</div>
+    <div class="row"><button class="btn primary" id="pgOk">閉じる</button><button class="btn" id="pgTry">お祝いを試す</button></div>
+  </div></div>`;
+  const inp=$("#pgGoal"), keep=()=>{const v=parseInt(String(inp.value).normalize("NFKC"),10);if(v>=1&&v<=999)PG.goal=v;pgSave()}, close=()=>{keep();$("#modal").innerHTML="";render()};
+  document.querySelectorAll("[data-pgt]").forEach(b=>b.onclick=()=>{const k=b.dataset.pgt;PG[k]=!PG[k];b.setAttribute("aria-pressed",PG[k]);pgSave()});
+  $("#pgTry").onclick=()=>{keep();const s=pgStats(),c={tier:1,head:`できた！ 今日${s.n+1}個目`,sub:"これは試しの表示です"};cheerSound(c.tier);if(PG.pop)cheerShow(c)};
+  $("#pgOk").onclick=close;$("#xPg").onclick=close;$("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};
+  inp.onkeydown=e=>{if(e.key==="Enter"&&!e.isComposing){e.preventDefault();close()}if(e.key==="Escape")close()};
+  inp.focus();inp.select();
+}
 /* ---------- プレゼント ---------- */
 /* Good news only: awards, offers, money in, kind words. None of it asks anything of you, so it is not a task. */
 const PKIND={award:["🏆","受賞"],hired:["🤝","採用"],payment:["💰","入金"],invoice:["🧾","請求書"],praise:["💬","褒められた"],self:["🎁","自分で"]};
@@ -3670,6 +3792,7 @@ async function heritageMark(code){
 function render(){
   if(S.ed){if(viewId()==="notes"&&S.noteId===S.ed.id)return;edClose();return}
   if($("#view .inedit"))return;
+  if(document.activeElement?.id==="winText"&&S.winView===viewId())return; // a background refresh must not wipe what is being typed
   applyNoteCss();
   const mails=deadlines();S.board=boardTasks(mails);S.dlMap=Object.fromEntries(mails.map(x=>[x.uid,x]));
   const closed=new Set(S.board.filter(t=>t.source==="mail"&&!TOPEN.has(t.status)).map(t=>t.sourceRef));
@@ -4628,7 +4751,8 @@ function wire(){
   document.querySelectorAll("[data-hdel]").forEach(b=>b.onclick=async()=>{if(!b.dataset.sure){b.dataset.sure="1";b.textContent="やめる？";b.setAttribute("aria-label","もう一度押すとやめます。記録は残りません");return}
     const h=S.habits.find(x=>x.id===b.dataset.hdel);if(h)try{await store.putHabit({...h,deleted:true})}catch(e){toast("保存できませんでした")}});
   $("#newHabit")&&($("#newHabit").onclick=()=>newHabit());
-  $("#winAdd")&&($("#winAdd").onsubmit=e=>{e.preventDefault();addWin()});
+  if($("#winAdd")){S.winView=viewId();$("#winAdd").onsubmit=e=>{e.preventDefault();addWin()}}
+  $("#pgSet")&&($("#pgSet").onclick=openPg);
   $("#winMore")&&($("#winMore").onclick=()=>{S.winsDays+=30;render()});
   document.querySelectorAll("[data-winev]").forEach(b=>b.onclick=()=>{const e=calEvents().find(x=>String(x.id)===b.dataset.winev);if(e){b.disabled=true;eventWin(e)}});
   document.querySelectorAll("[data-windel]").forEach(b=>b.onclick=async()=>{if(!b.dataset.sure){b.dataset.sure="1";b.textContent="消す？";return}
