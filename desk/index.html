@@ -639,6 +639,19 @@ button.hname:hover{color:var(--ink)}
 .btn.mcgo{color:var(--accent);border-color:var(--accent)}
 .mccode{display:block;max-width:100%;overflow-wrap:anywhere;font-size:var(--t1);color:var(--ink);background:var(--line);padding:var(--s2);border-radius:var(--r-s)}
 .nsgo{display:flex;flex-wrap:wrap;gap:var(--s2);align-items:center}
+/* 小さな道具: one tool per tab, each with one focus */
+.utp{max-width:640px}
+.utp .mfocus>*{max-width:100%}
+.utp textarea.wd-field{min-height:200px}
+.utcode{display:block;width:240px;max-width:100%;height:auto;border-radius:var(--r-s)}
+.utlink{font-size:var(--t4);font-weight:700;color:var(--accent);overflow-wrap:anywhere}
+.utchoice{display:grid;gap:var(--s2);width:100%}
+.utchoice label{display:grid;grid-template-columns:auto minmax(0,1fr);gap:0 var(--s2);align-items:baseline;cursor:pointer}
+.utchoice .due{grid-column:2}
+.utchoice input{accent-color:var(--accent)}
+.utdrop{display:grid;gap:var(--s2);justify-items:start;width:100%}
+.utdrop.on{outline:2px dashed var(--accent);outline-offset:8px}
+.utdrop label{cursor:pointer}
 .nsu{font-size:var(--t2);font-weight:400}
 .stbar{grid-column:1/-1;height:4px;background:var(--line)}
 .stbar i{display:block;height:100%;background:var(--v3)}
@@ -1058,6 +1071,7 @@ if(LOCALAPI) VIEWS.splice(4,0,{id:"focus",e:"🎯",label:"集中",g:"today"}); /
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="memolink")+1,0,{id:"money",e:"💰",label:"お金",g:"write"}); // statements stay on this Mac
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="money")+1,0,{id:"screentime",e:"📱",label:"スクリーンタイム",g:"write"});
 if(LOCALAPI) VIEWS.push({id:"usage",e:"📊",label:"使い方",g:"write"}); // which parts of Desk get used, and the weekly re-arrangement (desk/usage.py)
+if(LOCALAPI) VIEWS.push({id:"utilities",e:"🧰",label:"小さな道具",g:"write"}); // QR, character count, is.gd and PDF compression (desk/utilities.py)
 if(LOCALAPI) VIEWS.push({id:"netspeed",e:"📶",label:"回線の速さ",g:"tool"}); // opened from ツール and the / list, so no row in the menu
 async function api(method,path,body){const r=await fetch(path,{method,headers:{"Content-Type":"application/json"},body:body?JSON.stringify(body):undefined});if(!r.ok)throw new Error(r.status);return r.json()}
 async function loadApiMemos(){try{
@@ -3078,7 +3092,7 @@ function toolsView(){
   const tools=S.tools.filter(t=>!t.deleted), groups=GROUPS.filter(([g])=>tools.some(t=>t.group===g));
   return `<header class="head"><div><p class="eyebrow">ツール</p><h1>ツールとフォルダ</h1></div></header>
   ${notesHere("tools")}
-  ${LOCALAPI?`<section><div class="section-title"><span class="e">🖥️</span>この Mac</div><div class="tiles"><a class="tile" href="#netspeed"><span class="ico">📶</span><span class="t">回線の速さ</span><span class="d">今の Wi-Fi の速さを測って、何ができるかを見る</span></a></div></section>`:""}
+  ${LOCALAPI?`<section><div class="section-title"><span class="e">🖥️</span>この Mac</div><div class="tiles"><a class="tile" href="#netspeed"><span class="ico">📶</span><span class="t">回線の速さ</span><span class="d">今の Wi-Fi の速さを測って、何ができるかを見る</span></a><a class="tile" href="#utilities"><span class="ico">🧰</span><span class="t">小さな道具</span><span class="d">QRコード、文字数、URL短縮、PDF圧縮</span></a></div></section>`:""}
   ${groups.length?groups.map(([g,e,l])=>`<section><div class="section-title"><span class="e">${e}</span>${l}</div><div class="tiles">${tools.filter(t=>t.group===g).sort((a,b)=>(a.order??99)-(b.order??99)).map(tile).join("")}</div></section>`).join(""):`<div class="card empty"><b>ツールを読み込み中</b>ツールとフォルダがここに並びます。</div>`}`;
 }
 /* a tile whose URL changes (a Cloudflare quick tunnel) gets ✏️ to paste the new one; online only, the Mac opens t.local */
@@ -3394,6 +3408,7 @@ function render(){
   if(viewId().startsWith("body")){bodyLoad();$("#view").innerHTML=searchResults()+bodyView();wire();wireBody();return}
   if(viewId()==="mailclean"){mcLoad();$("#view").innerHTML=searchResults()+mcView();wire();wireMc();return}
   if(viewId()==="netspeed"){nsLoad();$("#view").innerHTML=searchResults()+nsView();wire();wireNs();return}
+  if(viewId()==="utilities"){if(!document.activeElement?.closest?.(".utfield")||!$("#utView"))utDraw();return} // a redraw from elsewhere never takes the text being typed
   if(viewId()==="usage"){uLoad();$("#view").innerHTML=searchResults()+usageView();wire();return}
   const v=viewId();
   $("#view").innerHTML=searchResults()+(v==="focus"?focusView():v==="notes"?notesView():v==="watch"?watch():v==="heritage"?heritageView():v==="tasks"?tasks():v==="calendar"?calendar():v==="news"?news():v==="wins"?winsView():v==="presents"?presentsView():v==="habits"?habitsView():v==="log"?log():v==="tools"?toolsView():home());
@@ -3454,6 +3469,123 @@ function nsView(){
   return `<div class="money nsp" data-noauto>${head}${main}${can}${reply}${link}${places}${past}</div>`;
 }
 function wireNs(){const b=$("#nsRun");if(b)b.onclick=nsStart}
+/* 小さな道具: QR, character count, is.gd and PDF compression. Typed text is never saved; only 短縮する sends anything out (desk/utilities.py). */
+const UTTABS=[["qr","QRコード"],["count","文字数"],["short","URL短縮"],["pdf","PDF圧縮"]];
+const UTLEVELS=[["high","高画質","印刷してもきれい"],["standard","標準","メールや共有に"],["small","最小","画面で読むだけなら"]];
+const ut=()=>S.ut||(S.ut={tab:"qr",qrText:"",count:"",url:"",level:"standard"});
+const utSize=n=>n>=1048576?`${(n/1048576).toFixed(1)} MB`:n>=1024?`${Math.round(n/1024)} KB`:`${n} バイト`;
+async function utPost(path,body){
+  const r=await fetch(path,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body||{})});
+  let v={};try{v=await r.json()}catch(e){}
+  if(!r.ok)throw new Error(v.error||"サーバーを再起動すると直ることがあります");
+  return v;
+}
+function utCounts(raw){
+  const t=raw.replace(/\r\n?/g,"\n"), chars=s=>{if(window.Intl&&Intl.Segmenter)return [...new Intl.Segmenter("ja",{granularity:"grapheme"}).segment(s)].length;return [...s].length};
+  const n=re=>(t.match(re)||[]).length;
+  const words=(t.match(/[\p{Script=Latin}\p{N}]+(?:['’\-][\p{Script=Latin}\p{N}]+)*/gu)||[]).filter(w=>/\p{Script=Latin}/u.test(w)).length;
+  return {all:chars(t),bare:chars(t.replace(/\s/gu,"")),ja:n(/[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}ー々〆]/gu),en:n(/\p{Script=Latin}/gu),words,digits:n(/\p{N}/gu),lines:t.trim()?t.split("\n").filter(l=>l.trim()).length:0};
+}
+function utCountHtml(text){
+  const c=utCounts(text),big=(l,v,u,note)=>`<div class="mbig"><span class="sub">${l}</span><b>${v.toLocaleString("ja-JP")} <span class="nsu">${u}</span></b>${note?`<span class="due">${note}</span>`:""}</div>`;
+  return `<div class="mbigs">${big("全部",c.all,"字",`空白と改行を除くと ${c.bare.toLocaleString("ja-JP")} 字`)}${big("日本語",c.ja,"字")}${big("英語",c.words,"語",`英字 ${c.en.toLocaleString("ja-JP")} 字`)}</div><p class="due">数字 ${c.digits.toLocaleString("ja-JP")} 字・${c.lines.toLocaleString("ja-JP")} 行。絵文字は1字で数えます。</p>`;
+}
+function utQrSvg(rows){
+  const n=rows.length,q=4,size=n+q*2;let d="";
+  rows.forEach((r,y)=>{for(let x=0;x<n;x++)if(r[x]==="1")d+=`M${x+q} ${y+q}h1v1h-1z`});
+  return `<svg class="utcode" viewBox="0 0 ${size} ${size}" role="img" aria-label="QRコード" shape-rendering="crispEdges"><rect width="${size}" height="${size}" fill="#fff"/><path d="${d}" fill="#000"/></svg>`;
+}
+function utQrBody(){
+  const u=ut();
+  if(u.qrErr)return `<p class="due" role="alert">${esc(u.qrErr)}</p>`;
+  if(!u.qr)return `<p class="due">リンクを貼ると、ここに出ます。作るのはこの Mac の中で、外には送りません。</p>`;
+  return `${utQrSvg(u.qr.rows)}<a class="btn primary" href="/api/utilities/file/${esc(u.qr.file)}" download>画像を保存</a><p class="due">既定のブラウザが、ダウンロードに PNG で保存します。</p>`;
+}
+function utQrRun(){
+  const u=ut();clearTimeout(u.qrTimer);
+  const paint=()=>{const el=$("#utQr");if(el)el.innerHTML=utQrBody()};
+  if(!u.qrText.trim()){u.qr=null;u.qrErr="";paint();return}
+  u.qrTimer=setTimeout(async()=>{
+    const asked=u.qrText;
+    try{const v=await utPost("/api/utilities/qr",{text:asked});if(asked!==u.qrText)return;u.qr=v;u.qrErr=""}
+    catch(e){if(asked!==u.qrText)return;u.qr=null;u.qrErr=e.message}
+    paint();
+  },200);
+}
+function utPane(){
+  const u=ut();
+  if(u.tab==="count")return `<section class="card mfocus">${`<textarea class="wd-field utfield" id="utCountIn" placeholder="文章を貼る" aria-label="数える文章">${esc(u.count)}</textarea>`}<div id="utCount" role="status">${utCountHtml(u.count)}</div></section><p class="due">数えるのはこの画面の中だけです。文章は保存しません。</p>`;
+  if(u.tab==="short")return `<section class="card mfocus"><input class="wd-field utfield" id="utUrl" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://" aria-label="短縮するアドレス" value="${esc(u.url)}">
+    <button class="btn primary" id="utShorten" ${u.shortBusy?"disabled":""}>${u.shortBusy?"短縮しています":"短縮する"}</button>
+    ${u.shortErr?`<p class="due" role="alert">${esc(u.shortErr)}</p>`:""}
+    ${u.short?`<a class="utlink" href="${esc(u.short)}" target="_blank" rel="noopener">${esc(u.short)}</a><div class="nsgo"><button class="btn" id="utCopy">コピー</button><button class="btn" id="utToQr">QRコードにする</button></div>`:""}</section>
+    <p class="due">押すと、行き先のアドレスが is.gd（外部の無料サービス）に渡ります。is.gd が終わると、短いリンクは使えなくなることがあります。履歴は残しません。</p>`;
+  if(u.tab==="pdf"){
+    const d=u.pdf,saved=d&&d.before?Math.round((1-d.after/d.before)*100):0;
+    const choice=`<fieldset class="utchoice" style="border:0;padding:0;margin:0" ${u.pdfBusy?"disabled":""}><legend class="sub" style="padding:0;margin-bottom:var(--s2)">画質</legend>${UTLEVELS.map(([k,l,n])=>`<label><input type="radio" name="utLevel" value="${k}" ${u.level===k?"checked":""}><span>${l}</span><span class="due">${n}</span></label>`).join("")}</fieldset>`;
+    const pick=`<div class="utdrop" id="utDrop"><label class="btn ${d?"":"primary"}">${d?"別の PDF を選ぶ":"PDF を選ぶ"}<input type="file" id="utFile" hidden accept="application/pdf,.pdf" ${u.pdfBusy?"disabled":""}></label><span class="due">ここへドラッグしても入れられます（500MB まで）。</span></div>`;
+    const body=u.pdfBusy?`<p class="due" role="status">圧縮しています。初めてのときは準備に1分ほどかかります。他の画面に移っても続きます。</p>`
+      :d?`<p class="mtalk" data-noauto>${esc(d.name)}.pdf${d.pages?`（${d.pages}ページ）`:""}</p><div class="mbigs two"><div class="mbig"><span class="sub">圧縮前</span><b>${utSize(d.before)}</b></div><div class="mbig"><span class="sub">圧縮後</span><b>${utSize(d.after)}</b>${d.smaller?`<span class="due">${saved}% 小さくなりました</span>`:""}</div></div>
+        ${d.smaller?`<a class="btn primary" href="/api/utilities/file/${esc(d.file)}" download>ダウンロードに保存</a><p class="due">既定のブラウザが「${esc(d.name)}-圧縮.pdf」の名前で保存します。元のファイルは変えません。</p>`:`<p class="due">小さくなりませんでした。元のファイルをそのまま使えます。別の画質なら変わることがあります。</p>`}`:"";
+    return `<section class="card mfocus">${choice}${pick}${u.pdfErr?`<p class="due" role="alert">${esc(u.pdfErr)}</p>`:""}${body}</section><p class="due">文字は文字のまま残し、画像だけ軽くします。処理はこの Mac の中だけで、1時間以内に消します。</p>`;
+  }
+  return `<section class="card mfocus"><input class="wd-field utfield" id="utQrIn" type="text" autocomplete="off" spellcheck="false" placeholder="https://" aria-label="QRコードにするリンク" value="${esc(u.qrText)}"><div class="utdrop" id="utQr">${utQrBody()}</div></section>`;
+}
+function utView(){
+  const t=ut().tab;
+  return `<div class="money utp" id="utView" data-noauto><h1>小さな道具</h1><div class="mtabs" role="tablist" aria-label="道具">${UTTABS.map(([k,l])=>`<button role="tab" class="mtab" data-uttab="${k}" aria-selected="${k===t}">${l}</button>`).join("")}</div>${utPane()}</div>`;
+}
+function utDraw(){$("#view").innerHTML=searchResults()+utView();wire();wireUt()}
+const utRefresh=()=>{if(viewId()==="utilities")utDraw()};
+async function utPdfFile(file){
+  const u=ut();
+  if(!file||u.pdfBusy)return;
+  if(file.size>500*1024*1024){u.pdfErr="500MB までです";utRefresh();return}
+  if(u.pdf?.id)utPost(`/api/utilities/pdf/${encodeURIComponent(u.pdf.id)}/clear`).catch(()=>{});
+  u.pdf=null;u.pdfErr="";u.pdfBusy=true;utRefresh();
+  try{
+    const r=await fetch(`/api/utilities/pdf?${new URLSearchParams({level:u.level,name:file.name})}`,{method:"POST",headers:{"Content-Type":"application/pdf","X-Desk-Upload":"1"},body:file});
+    let v={};try{v=await r.json()}catch(e){}
+    if(!r.ok)throw new Error(v.error||"サーバーを再起動すると直ることがあります");
+    u.pdf=v;if(viewId()!=="utilities")toast("PDF を圧縮しました");
+  }catch(e){u.pdfErr=e.message;if(viewId()!=="utilities")toast("PDF を圧縮できませんでした")}
+  u.pdfBusy=false;utRefresh();
+}
+async function utPdfLevel(level){
+  const u=ut();u.level=level;
+  if(!u.pdf?.id||u.pdfBusy)return;
+  u.pdfErr="";u.pdfBusy=true;utRefresh();
+  try{u.pdf=await utPost(`/api/utilities/pdf/${encodeURIComponent(u.pdf.id)}/run`,{level})}
+  catch(e){u.pdf=null;u.pdfErr=e.message}
+  u.pdfBusy=false;utRefresh();
+}
+async function utShorten(){
+  const u=ut(),el=$("#utUrl");if(el)u.url=el.value;
+  if(u.shortBusy)return;
+  u.shortBusy=true;u.short="";u.shortErr="";utRefresh();
+  try{u.short=(await utPost("/api/utilities/shorten",{url:u.url})).short}catch(e){u.shortErr=e.message}
+  u.shortBusy=false;utRefresh();
+}
+function wireUt(){
+  const u=ut(),on=(id,ev,fn)=>{const el=$(id);if(el)el[ev]=fn};
+  document.querySelectorAll("[data-uttab]").forEach(b=>b.onclick=()=>{u.tab=b.dataset.uttab;utDraw()});
+  on("#utQrIn","oninput",e=>{u.qrText=e.target.value;utQrRun()});
+  on("#utCountIn","oninput",e=>{u.count=e.target.value;$("#utCount").innerHTML=utCountHtml(u.count)});
+  on("#utUrl","oninput",e=>{u.url=e.target.value});
+  on("#utUrl","onkeydown",e=>{if(e.key==="Enter"){e.preventDefault();utShorten()}});
+  on("#utShorten","onclick",utShorten);
+  on("#utCopy","onclick",async()=>toast(await copyText(u.short)?"コピーしました":"コピーできませんでした"));
+  on("#utToQr","onclick",()=>{u.qrText=u.short;u.tab="qr";utDraw();utQrRun()});
+  on("#utFile","onchange",e=>utPdfFile(e.target.files[0]));
+  document.querySelectorAll('input[name="utLevel"]').forEach(r=>r.onchange=()=>utPdfLevel(r.value));
+  const zone=u.tab==="pdf"?$("#view").querySelector(".mfocus"):null;
+  if(zone){
+    const drop=$("#utDrop");
+    zone.ondragover=e=>{e.preventDefault();drop?.classList.add("on")};
+    zone.ondragleave=e=>{if(!zone.contains(e.relatedTarget))drop?.classList.remove("on")};
+    zone.ondrop=e=>{e.preventDefault();drop?.classList.remove("on");utPdfFile(e.dataTransfer.files[0])};
+  }
+}
 /* メール整理: one press per sender. desk/gmail_clean.py does the work; nothing happens until a button is pressed. */
 const mcWhen=ms=>ms?new Date(ms).toLocaleString("ja-JP",{month:"long",day:"numeric",hour:"2-digit",minute:"2-digit"}):"";
 async function mcLoad(force){

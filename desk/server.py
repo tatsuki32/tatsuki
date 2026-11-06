@@ -19,6 +19,7 @@ import os
 import re
 import secrets
 import shlex
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -32,6 +33,7 @@ from urllib.parse import parse_qs, unquote, urlsplit
 import gmail_clean
 import lifelog
 import netspeed
+import utilities
 import screentime_sync
 import usage
 import wise_analysis
@@ -626,6 +628,55 @@ class Handler(BaseHTTPRequestHandler):
             raise ValueError("object expected")
         return v
 
+    def utility_file(self, token):
+        entry = utilities.get_file(token)
+        if not entry:
+            return self.send(404, {"error": "not found"})
+        try:
+            size = len(entry["data"]) if "data" in entry else os.path.getsize(entry["path"])
+            self.send_response(200)
+            self.send_header("Content-Type", entry["ctype"])
+            self.send_header("Content-Length", str(size))
+            self.send_header("Content-Disposition", utilities.disposition(entry["name"]))
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+            if "data" in entry:
+                self.wfile.write(entry["data"])
+            else:
+                with open(entry["path"], "rb") as f:
+                    shutil.copyfileobj(f, self.wfile)
+        except OSError:
+            self.close_connection = True
+
+    def utilities_post(self, path):
+        """小さな道具: QR, is.gd and the PDF. Same protection as uploads and the other JSON posts: another site cannot send these."""
+        step = path.split("/")[3:]
+        if step == ["pdf"]:
+            if self.headers.get("X-Desk-Upload") != "1":
+                return self.send(415, {"error": "upload header required"})
+            n = int(self.headers.get("Content-Length") or 0)
+            if n > utilities.PDF_MAX:
+                self.close_connection = True
+                return self.send(413, {"error": "500MB までです"})
+            q = parse_qs(urlsplit(self.path).query)
+            return self.send(*utilities.start_pdf(self.rfile, n, q.get("name", [""])[0], q.get("level", [""])[0]))
+        if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+            return self.send(415, {"error": "json only"})
+        try:
+            rec = self.body()
+        except (ValueError, json.JSONDecodeError):
+            return self.send(400, {"error": "bad json"})
+        if step == ["qr"]:
+            return self.send(*utilities.qr(rec.get("text")))
+        if step == ["shorten"]:
+            return self.send(*utilities.shorten(rec.get("url")))
+        if len(step) == 3 and step[0] == "pdf" and step[2] == "run":
+            return self.send(*utilities.run_pdf(step[1], rec.get("level")))
+        if len(step) == 3 and step[0] == "pdf" and step[2] == "clear":
+            return self.send(*utilities.clear_pdf(step[1]))
+        return self.send(404, {"error": "not found"})
+
     def lifelog_photo(self, name):
         p = lifelog.photo_path(name)
         if not p:
@@ -670,6 +721,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, whatsapp_view())
         if path == "/api/netspeed":
             return self.send(200, netspeed.view())
+        if path.startswith("/api/utilities/file/"):
+            return self.utility_file(path.rsplit("/", 1)[1])
         if path == "/api/mailclean":
             return self.send(200, gmail_clean.view())
         if path == "/api/body":
@@ -751,6 +804,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(403, {"error": "forbidden"})
         if method == "POST" and urlsplit(self.path).path == "/api/uploads":
             return self.upload_post()
+        if method == "POST" and urlsplit(self.path).path.startswith("/api/utilities/"):
+            return self.utilities_post(urlsplit(self.path).path)
         col, doc_id = self.route()
         try:
             rec = self.body()
