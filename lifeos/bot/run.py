@@ -64,11 +64,11 @@ def handle_update(update, client, owner, routes=None):
         if not text:
             client.send_message(chat, NOT_TEXT)
             return
+    if ctx.is_voice and (text or "").strip():  # the words as heard come first, whichever tool takes them
+        client.send_message(chat, TRANSCRIPT + text.strip())
     reply = router.dispatch(text, ctx, routes)
     if reply:
         client.send_message(chat, reply)
-    if ctx.is_voice and (text or "").strip():  # the words as heard, whichever tool took them
-        client.send_message(chat, TRANSCRIPT + text.strip())
 
 
 def read_offset():
