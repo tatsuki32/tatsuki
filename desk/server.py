@@ -32,6 +32,7 @@ from urllib.parse import parse_qs, unquote, urlsplit
 import gmail_clean
 import lifelog
 import netspeed
+import showcase
 import screentime_sync
 import usage
 import wise_analysis
@@ -670,6 +671,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, whatsapp_view())
         if path == "/api/netspeed":
             return self.send(200, netspeed.view())
+        if path == "/api/showcase":
+            return self.send(200, showcase.view())
         if path == "/api/mailclean":
             return self.send(200, gmail_clean.view())
         if path == "/api/body":
@@ -770,6 +773,10 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(415, {"error": "json only"})
             netspeed.start()
             return self.send(200, netspeed.view())
+        if method == "POST" and urlsplit(self.path).path == "/api/showcase/open-local":
+            if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+                return self.send(415, {"error": "json only"})
+            return self.send(200, {"ok": showcase.open_local()})
         if method == "POST" and urlsplit(self.path).path.startswith("/api/mailclean/"):
             # same protection as claude(): Host/Origin checked, and JSON from another origin needs a preflight
             if not (self.headers.get("Content-Type") or "").startswith("application/json"):
