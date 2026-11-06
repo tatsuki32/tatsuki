@@ -19,13 +19,22 @@ _SETS = re.compile(r"\d\s*[x×]\s*\d")
 _NOT_A_RECORD = re.compile(r"[?？]\s*$|したい|しよう|する予定|アイデア|どう(すれば|したら)|タスク")
 
 
+def _is_plan(text):
+    """「明日12時にランチ」 is a plan for the calendar, not a meal. Tool 04 decides what counts."""
+    from lifeos.lib import tools
+    try:
+        return tools.load_file(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "04-voice"), "sort").looks_like_plan(text)
+    except (OSError, ImportError, AttributeError):
+        return False
+
+
 def match(text):
     t = (text or "").strip()
     if not t or t.startswith("/") or len(t) > 500:
         return False
     if _PREFIX.match(t):
         return True
-    if _NOT_A_RECORD.search(t):
+    if _NOT_A_RECORD.search(t) or _is_plan(t):
         return False
     return bool(_FOOD.search(t) or _SETS.search(t) or (_MEASURED.search(t) and _NUMBER.search(t)))
 
