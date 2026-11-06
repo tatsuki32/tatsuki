@@ -26,8 +26,8 @@ NO_TOKEN = """Telegram のトークンがないので起動しません。
 3. もう一度起動し、ボットに何か送ると、チャット ID を返します
 4. 登録する：python3 lifeos/bot/run.py set-chat <チャット ID>
 トークンなしで試すには：python3 lifeos/bot/cli.py "テキスト\""""
-NOT_TEXT = "文字と音声と写真を受け取れます。"
-PHOTO_TYPES = ("image/", "application/pdf")
+TRANSCRIPT = "文字起こし：\n"
+NOT_TEXT = "文字と音声を受け取れます。"
 
 
 def ask_for_chat_id(chat_id):
@@ -100,6 +100,8 @@ def handle_update(update, client, owner, routes=None):
     reply = router.dispatch(text, ctx, routes)
     if reply:
         client.send_message(chat, reply)
+    if ctx.is_voice and (text or "").strip():  # the words as heard, whichever tool took them
+        client.send_message(chat, TRANSCRIPT + text.strip())
 
 
 def read_offset():
