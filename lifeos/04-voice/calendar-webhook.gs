@@ -13,7 +13,7 @@ function doPost(e) {
     var ev;
     if (d.start) {
       var start = new Date(d.start);
-      ev = cal.createEvent(d.title, start, new Date(start.getTime() + 60 * 60 * 1000), options);
+      ev = cal.createEvent(d.title, start, new Date(start.getTime() + (d.minutes || 15) * 60 * 1000), options);
     } else {
       ev = cal.createAllDayEvent(d.title, from, options);
     }

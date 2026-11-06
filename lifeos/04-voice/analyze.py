@@ -28,6 +28,7 @@ title: 20字くらいの短い名前。話した言葉を使い、言い換え�
 text: その項目にあたる元の言葉
 date: 話に日付や「明日」「金曜」があれば YYYY-MM-DD。なければ null。推測で入れない
 time: 話に時刻があれば HH:MM。なければ null
+minutes: 話に長さや終わりの時刻があれば分の数（「20分」は 20、「1時間半」は 90、「10時から11時半」は 90）。なければ null。推測で入れない
 ルール: 話題が変われば別の項目にする。言葉を捨てない。やることが複数あれば別々にする。「〜までに」は date にその日を入れ、kind は task にする。"""
 
 
@@ -54,6 +55,12 @@ def _when(item, now):
     return day.replace(hour=23, minute=59).isoformat(), False  # as the Desk does for a date alone
 
 
+def _minutes(item):
+    """A spoken length in minutes, or 0 when there is none or it is not sensible."""
+    v = item.get("minutes")
+    return v if isinstance(v, int) and not isinstance(v, bool) and 0 < v <= 1440 else 0
+
+
 def to_parts(items, now):
     """Keeps only what can be trusted from the model's answer. None if nothing is left."""
     if not isinstance(items, list):
@@ -69,7 +76,7 @@ def to_parts(items, now):
             continue
         kind = item.get("kind") if item.get("kind") in _KINDS else "idea"
         at, timed = _when(item, now) if kind in ("task", "event") else ("", False)
-        parts.append(sort.Part(kind, text or title, False, title or text, at, timed))
+        parts.append(sort.Part(kind, text or title, False, title or text, at, timed, _minutes(item) if timed else 0))
     return parts or None
 
 
