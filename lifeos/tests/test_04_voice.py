@@ -2,6 +2,7 @@ import json
 import os
 import shutil
 import time
+import urllib.error
 from datetime import datetime
 from unittest import mock
 
@@ -229,6 +230,125 @@ class TestSummary(SandboxCase):
     def test_the_brief_part_is_found(self):
         self.said("2026-11-03", "idea", "案")
         self.assertIn("04-voice", [slug for slug, _ in tools.brief_parts("2026-11-04")])
+
+
+class FakeResponse:
+    def __init__(self, body):
+        self.body = body
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a):
+        return False
+
+    def read(self):
+        return self.body
+
+
+class TestGroq(SandboxCase):
+    KEY = "test-key-not-real"
+
+    def setUp(self):
+        super().setUp()
+        os.environ.pop("LIFEOS_GROQ_API_KEY", None)
+        self.addCleanup(voice.set_transcriber, None)
+        self.t = load_tool("04-voice", "transcribe")
+        self.path = os.path.join(self.tmp, "voice")
+        with open(self.path, "wb") as f:
+            f.write(b"OggS audio bytes")
+
+    def send(self, answer):
+        os.environ["LIFEOS_GROQ_API_KEY"] = self.KEY
+        with mock.patch("urllib.request.urlopen", side_effect=answer if callable(answer) else None,
+                        return_value=None if callable(answer) else FakeResponse(answer)) as m:
+            text = self.t.transcribe(self.path)
+        return text, m.call_args[0][0]
+
+    def test_without_a_key_nothing_is_connected_and_the_keychain_is_not_read(self):
+        with mock.patch("subprocess.run") as run:
+            self.assertIsNone(self.t.key())
+            self.assertFalse(voice.connected())
+        run.assert_not_called()
+        with self.assertRaises(self.t.TranscribeError):
+            self.t.transcribe(self.path)
+
+    def test_saving_the_key_connects_it_without_a_restart(self):
+        self.assertFalse(voice.connected())
+        os.environ["LIFEOS_GROQ_API_KEY"] = self.KEY
+        self.assertTrue(voice.connected())
+
+    def test_the_request_groq_needs(self):
+        text, req = self.send(b'{"text": "\u8cc7\u6599\u3092\u9001\u308b"}')
+        self.assertEqual(text, "資料を送る")
+        self.assertEqual(req.full_url, self.t.URL)
+        self.assertEqual(req.get_header("Authorization"), "Bearer " + self.KEY)
+        self.assertNotIn("Python", req.get_header("User-agent"))
+        for part in (b'name="model"\r\n\r\nwhisper-large-v3-turbo', b'name="language"\r\n\r\nja',
+                     b'filename="voice.ogg"', b"OggS audio bytes"):
+            self.assertIn(part, req.data)
+
+    def test_the_model_can_be_changed(self):
+        with open(paths.data_path("tools", "04-voice", "settings.json"), "w", encoding="utf-8") as f:
+            json.dump({"model": "whisper-large-v3"}, f)
+        _, req = self.send(b'{"text": "x"}')
+        self.assertIn(b'name="model"\r\n\r\nwhisper-large-v3\r\n', req.data)
+
+    def test_the_file_name_follows_the_audio(self):
+        for head, suffix in ((b"OggS", "ogg"), (b"ID3x", "mp3"), (b"\0\0\0\x20ftypM4A", "m4a"), (b"RIFF", "wav"), (b"????", "ogg")):
+            self.assertEqual(self.t._suffix(head), suffix, head)
+
+    def test_a_refusal_names_the_status_and_never_the_key(self):
+        def limit(req, timeout):
+            raise urllib.error.HTTPError(req.full_url, 429, "limit", {}, None)
+        with self.assertRaises(self.t.TranscribeError) as e:
+            self.send(limit)
+        self.assertEqual(str(e.exception), "groq 429")
+        self.assertNotIn(self.KEY, repr(e.exception))
+
+    def test_a_lost_connection_and_a_broken_answer_are_errors(self):
+        def down(req, timeout):
+            raise urllib.error.URLError("down")
+        for answer in (down, b"<html>", b"[]"):
+            with self.assertRaises(self.t.TranscribeError):
+                self.send(answer)
+
+    def test_a_file_too_large_is_not_sent(self):
+        os.environ["LIFEOS_GROQ_API_KEY"] = self.KEY
+        with mock.patch.object(self.t, "MAX_BYTES", 3), mock.patch("urllib.request.urlopen") as m:
+            with self.assertRaises(self.t.TranscribeError):
+                self.t.transcribe(self.path)
+        m.assert_not_called()
+
+    def test_a_voice_from_telegram_is_sorted_through_groq(self):
+        os.environ["LIFEOS_GROQ_API_KEY"] = self.KEY
+        client = FakeClient()
+        h = load_tool("04-voice", "handler")
+        route = router.Route("04-voice", "04", "音声メモ整理", h.PRIORITY, h.match, h.handle)
+        answer = FakeResponse('{"text": "今日は疲れた。資料を送らないと。"}'.encode())
+        with mock.patch("urllib.request.urlopen", return_value=answer):
+            run.handle_update({"update_id": 2, "message": {"chat": {"id": 5}, "voice": {"file_id": "f"}}}, client, 5, [route])
+        self.assertIn("日記", client.sent[0])
+        self.assertIn("タスク", client.sent[0])
+
+    def test_a_voice_over_the_limit_stays_and_can_be_tried_again(self):
+        os.environ["LIFEOS_GROQ_API_KEY"] = self.KEY
+        client = FakeClient()
+        def limit(req, timeout):
+            raise urllib.error.HTTPError(req.full_url, 429, "limit", {}, None)
+        with mock.patch("urllib.request.urlopen", side_effect=limit):
+            run.handle_update({"update_id": 3, "message": {"chat": {"id": 5}, "voice": {"file_id": "f"}}}, client, 5, [])
+        self.assertIn("失敗", client.sent[0])
+        kept = paths.data_path("inbox", "audio", "3")
+        self.assertTrue(os.path.exists(kept))
+        memo = load_tool("04-voice", "voice_memo")
+        with mock.patch("urllib.request.urlopen", side_effect=limit):
+            self.assertEqual(memo.retry_audio(), (0, 1))
+        self.assertTrue(os.path.exists(kept))
+        with mock.patch("urllib.request.urlopen", return_value=FakeResponse('{"text": "資料を送る"}'.encode())):
+            self.assertEqual(memo.retry_audio(), (1, 0))
+        self.assertFalse(os.path.exists(kept))
+        self.assertEqual(tasks.open_tasks()[0]["title"], "資料を送る")
 
 
 class FakeClient:
