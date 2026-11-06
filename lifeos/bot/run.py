@@ -27,7 +27,8 @@ NO_TOKEN = """Telegram のトークンがないので起動しません。
 4. 登録する：python3 lifeos/bot/run.py set-chat <チャット ID>
 トークンなしで試すには：python3 lifeos/bot/cli.py "テキスト\""""
 TRANSCRIPT = "文字起こし：\n"
-NOT_TEXT = "文字と音声を受け取れます。"
+NOT_TEXT = "文字と音声と写真を受け取れます。"
+PHOTO_TYPES = ("image/", "application/pdf")
 
 
 def ask_for_chat_id(chat_id):
