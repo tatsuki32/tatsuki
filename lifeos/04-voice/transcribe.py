@@ -18,6 +18,8 @@ MODEL = "whisper-large-v3-turbo"
 KEYCHAIN = ("tatsuki-desk-groq", "groq")
 MAX_BYTES = 25 * 1024 * 1024  # the most a direct upload may hold
 TIMEOUT = 45  # the reply has to arrive within a minute of sending
+# Whisper copies the style of its prompt. Without one it often leaves out 。, and sorting goes sentence by sentence.
+PROMPT = "今日は疲れました。明日までに資料を送ります。アイデアを思いつきました。"
 # Telegram's download has no file name, and Groq goes by the name's extension
 _SUFFIXES = ((b"OggS", "ogg"), (b"ID3", "mp3"), (b"RIFF", "wav"), (b"fLaC", "flac"), (b"\xff\xfb", "mp3"), (b"\xff\xf3", "mp3"))
 
@@ -54,7 +56,7 @@ def _suffix(audio):
 
 def _body(audio, boundary):
     parts = []
-    for name, value in (("model", model()), ("language", "ja"), ("response_format", "json")):
+    for name, value in (("model", model()), ("language", "ja"), ("prompt", PROMPT), ("response_format", "json")):
         parts.append(f'--{boundary}\r\nContent-Disposition: form-data; name="{name}"\r\n\r\n{value}\r\n'.encode())
     parts.append(f'--{boundary}\r\nContent-Disposition: form-data; name="file"; filename="voice.{_suffix(audio)}"\r\n'
                  "Content-Type: application/octet-stream\r\n\r\n".encode())
