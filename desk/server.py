@@ -30,6 +30,7 @@ import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, unquote, urlsplit
 
+import bank
 import netspeed
 import notify
 import pc_monitor
@@ -736,6 +737,11 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, whatsapp_view())
         if path == "/api/line":
             return self.send(200, line_view())
+        if path == "/api/bank":
+            try:
+                return self.send(200, bank.view())
+            except bank.BankError:
+                return self.send(500, {"error": "read"})
         if path == "/api/netspeed":
             return self.send(200, netspeed.view())
         if path.startswith("/api/utilities/file/"):
@@ -885,6 +891,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(400, {"error": "bad json"})
         if method == "PUT" and urlsplit(self.path).path.startswith("/api/web/"):
             return self.web_put(urlsplit(self.path).path.split("/")[3:], rec)
+        if urlsplit(self.path).path.startswith("/api/bank/"):
+            return self.bank_write(method, rec)
         if method == "POST" and urlsplit(self.path).path == "/api/usage":
             # counts only; a test server on another port answers and keeps nothing
             return self.send(200, {"ok": usage.enabled(PORT) and usage.record(rec)})
@@ -1007,6 +1015,33 @@ class Handler(BaseHTTPRequestHandler):
         except (OSError, subprocess.SubprocessError):
             return self.send(500, {"error": "could not open Terminal"})
         return self.send(200, {"ok": True})
+
+    def bank_write(self, method, rec):
+        # same protection as claude(): Host/Origin checked, and JSON from another origin needs a preflight.
+        # The answers and errors carry no value; only reveal returns a whole number.
+        if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+            return self.send(415, {"error": "json only"})
+        p = urlsplit(self.path).path.split("/")[3:]  # <id> or <id>/<action>
+        acct = unquote(p[0]) if p else ""
+        action = p[1] if len(p) == 2 else None
+        try:
+            if method == "PUT" and len(p) == 1:
+                return self.send(200, bank.put(acct, rec))
+            if method != "POST" or not action:
+                return self.send(404, {"error": "not found"})
+            if action == "reveal":
+                r = bank.reveal(acct)
+                return self.send(200, r) if r else self.send(404, {"error": "not found"})
+            if action == "copy":
+                ok = bank.copy(acct, rec.get("what") if isinstance(rec.get("what"), str) else "")
+                return self.send(200, {"ok": True}) if ok else self.send(404, {"error": "not found"})
+            if action == "remove":
+                return self.send(200, bank.view()) if bank.remove(acct) else self.send(404, {"error": "not found"})
+            return self.send(404, {"error": "not found"})
+        except ValueError as e:
+            return self.send(400, {"error": str(e)})
+        except bank.BankError:
+            return self.send(500, {"error": "storage"})
 
     def do_POST(self):
         self.write("POST")
