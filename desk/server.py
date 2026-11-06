@@ -33,6 +33,7 @@ import gmail_clean
 import lifelog
 import netspeed
 import screentime_sync
+import usage
 import wise_analysis
 import wise_goals
 import wise_report
@@ -463,6 +464,11 @@ def page():
             parts.append("window.HERITAGE_COUNTRIES=" + json.dumps(json.load(f), ensure_ascii=False).replace("</", "<\\/") + ";")
     except (OSError, ValueError):
         parts.append("window.HERITAGE_COUNTRIES=[];")
+    try:  # how the menu and the Home cards are arranged this week (desk/usage.py); the page shows the first arrangement without it
+        lay = json.dumps(usage.public(usage.read_layout(), usage.enabled(PORT)), ensure_ascii=False).replace("</", "<\\/")
+    except Exception:
+        lay = "null"
+    parts.append(f"window.LAYOUT={lay};")
     inject = "<script>\n" + "\n".join(parts) + "\n</script>\n"
     i = html.find("<script>")
     return html[:i] + inject + html[i:] if i >= 0 else html + inject
@@ -672,6 +678,10 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, lifelog.receipts_view(parse_qs(urlsplit(self.path).query).get("month", [None])[0]))
         if path.startswith("/lifelog-photos/"):
             return self.lifelog_photo(path.rsplit("/", 1)[1])
+        if path == "/api/usage":
+            return self.send(200, {**usage.view(parse_qs(urlsplit(self.path).query).get("period", ["14"])[0]), "on": usage.enabled(PORT)})
+        if path == "/api/layout":
+            return self.send(200, usage.public(usage.read_layout(), usage.enabled(PORT)))
         if path == "/api/screentime":
             q = parse_qs(urlsplit(self.path).query)
             return self.send(200, screentime_sync.view(q.get("period", ["week"])[0], q.get("device", ["mac"])[0]))
@@ -746,6 +756,11 @@ class Handler(BaseHTTPRequestHandler):
             rec = self.body()
         except (ValueError, json.JSONDecodeError):
             return self.send(400, {"error": "bad json"})
+        if method == "POST" and urlsplit(self.path).path == "/api/usage":
+            # counts only; a test server on another port answers and keeps nothing
+            return self.send(200, {"ok": usage.enabled(PORT) and usage.record(rec)})
+        if method == "PUT" and urlsplit(self.path).path == "/api/layout":
+            return self.send(200, usage.change(rec, usage.enabled(PORT)))
         if method == "POST" and urlsplit(self.path).path == "/api/claude":
             return self.claude(rec)
         if method == "POST" and urlsplit(self.path).path in ("/api/focus/start", "/api/focus/stop"):

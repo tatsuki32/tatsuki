@@ -642,6 +642,23 @@ button.hname:hover{color:var(--ink)}
 .nsu{font-size:var(--t2);font-weight:400}
 .stbar{grid-column:1/-1;height:4px;background:var(--line)}
 .stbar i{display:block;height:100%;background:var(--v3)}
+.urow{display:grid;grid-template-columns:minmax(0,1fr) 3.5em 3.5em 5.5em 4.5em 4em minmax(0,10em) 5em;gap:var(--s1) var(--s2);align-items:center;padding:var(--s2) 0;border-top:1px solid var(--line)}
+.urow.ucards{grid-template-columns:minmax(0,1fr) 3.5em 6.5em 5em}
+.urow.ubtns{grid-template-columns:minmax(0,1fr) 3.5em 6.5em}
+.urow.uhead{border-top:0;padding:0 0 var(--s1);color:var(--muted);font-size:var(--t1)}
+.urow .n{text-align:right;white-space:nowrap}
+.urow .uname{min-width:0;overflow-wrap:anywhere}
+.urow .uname small{margin-left:var(--s2);white-space:nowrap}
+.urow .uname code{font-family:var(--code);font-size:var(--t1);color:var(--ink-2)}
+.urow.zero .uname,.urow.zero .n{color:var(--muted)}
+.urow .upin{justify-self:end}
+.btn.upin{border-color:transparent;color:var(--muted)}
+.btn.upin:hover{border-color:var(--line-2);color:var(--ink)}
+.btn.upin[aria-pressed="true"]{border-color:var(--ink);color:var(--ink);font-weight:700}
+.unote{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--s2) var(--s3);margin:0;padding:var(--s2) var(--s3);border-left:3px solid var(--line-2);background:var(--surface);font-size:var(--t2)}
+.unote>span:first-child{flex:1 1 20em;min-width:0}
+.unacts{display:flex;gap:var(--s2)}
+@media (max-width:760px){.urow{grid-template-columns:minmax(0,1fr) 3em 5em 4.5em}.urow .uw{display:none}.urow.ucards{grid-template-columns:minmax(0,1fr) 3em 5.5em 4.5em}.urow.ubtns{grid-template-columns:minmax(0,1fr) 3em 5.5em}}
 .mchart{display:block;max-width:100%;height:auto;margin-top:var(--s2)}
 .mtick{font-size:12px;fill:var(--muted);font-variant-numeric:tabular-nums}
 .mhit{cursor:pointer}
@@ -1040,6 +1057,7 @@ if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="followups")+1,0,{id:"mailcl
 if(LOCALAPI) VIEWS.splice(4,0,{id:"focus",e:"🎯",label:"集中",g:"today"}); // blocks apps on this Mac, so the Mac version only
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="memolink")+1,0,{id:"money",e:"💰",label:"お金",g:"write"}); // statements stay on this Mac
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="money")+1,0,{id:"screentime",e:"📱",label:"スクリーンタイム",g:"write"});
+if(LOCALAPI) VIEWS.push({id:"usage",e:"📊",label:"使い方",g:"write"}); // which parts of Desk get used, and the weekly re-arrangement (desk/usage.py)
 if(LOCALAPI) VIEWS.push({id:"netspeed",e:"📶",label:"回線の速さ",g:"tool"}); // opened from ツール and the / list, so no row in the menu
 async function api(method,path,body){const r=await fetch(path,{method,headers:{"Content-Type":"application/json"},body:body?JSON.stringify(body):undefined});if(!r.ok)throw new Error(r.status);return r.json()}
 async function loadApiMemos(){try{
@@ -2993,8 +3011,13 @@ function navCount(id){
   return id==="presents"&&fresh?`<span class="count" title="新着">${fresh}</span>`:id==="wins"&&winsN?`<span class="count" title="今日">${winsN}</span>`:id==="tasks"&&taskN?`<span class="count" title="進行中">${taskN}</span>`:id==="log"&&S.reports[0]?.pending?.length?`<span class="count" title="ペンディング">${S.reports[0].pending.length}</span>`:"";
 }
 function navHtml(){
-  const cur=viewId();
-  return NAVGROUPS.map(([g,l])=>`<div class="gh">${l}</div>`+VIEWS.filter(v=>v.g===g).map(v=>`<a href="#${v.id}" ${cur===v.id?'aria-current="page"':''}><span class="e">${v.e}</span><span class="label">${v.label}</span>${navCount(v.id)}</a>`).join("")).join("");
+  const cur=viewId(), has=id=>id!=="home"&&VIEWS.some(v=>v.id===id);
+  const fav=(S.layout?.nav?.fav||[]).filter(has), rare=(S.layout?.nav?.rare||[]).filter(id=>has(id)&&!fav.includes(id)), out=new Set([...fav,...rare]);
+  const link=v=>`<a href="#${v.id}" ${cur===v.id?'aria-current="page"':''}><span class="e">${v.e}</span><span class="label">${v.label}</span>${navCount(v.id)}</a>`;
+  const list=(l,ids)=>ids.length?`<div class="gh">${l}</div>`+ids.map(id=>link(VIEWS.find(v=>v.id===id))).join(""):"";
+  return (fav.length?link(VIEWS[0])+list("よく使う",fav):"")
+    +NAVGROUPS.map(([g,l])=>list(l,VIEWS.filter(v=>v.g===g&&!out.has(v.id)&&!(fav.length&&v.id==="home")).map(v=>v.id))).join("")
+    +list("あまり使っていない",rare);
 }
 function renderNav(){
   $("#nav").innerHTML=navHtml();
@@ -3028,20 +3051,15 @@ function home(){
   const d=new Date();const h=d.getHours();const greet=h<11?"おはようございます":h<18?"こんにちは":"こんばんは";
   const tools=S.tools.filter(t=>!t.deleted), daily=tools.filter(t=>t.group==="Daily").sort((a,b)=>(a.order??99)-(b.order??99));
   const top=topThreeIds();
+  const cards={triage:triHome(),focus:focusHomeCard(),body:homeBodyStrip(),
+    today:`<div class="duo">${todayEvents()}${habitStrip()||`<section class="card"><div class="dhead"><h2><span class="e">🌱</span>今日の習慣</h2><a class="more" href="#habits">足す →</a></div><div class="empty">続けたいことを「習慣」で足せます。</div></section>`}</div>`,
+    heritage:heritageCard(),claude:ccCard(),panel:todayPanel(top),wins:winsMini(),inflow:inflow(),notes:notesHere("home"),
+    tools:daily.length?`<section><div class="section-title"><span class="e">☀️</span>毎日のツール<a href="#tools">すべてのツール →</a></div><div class="tiles mini">${daily.map(tile).join("")}</div></section>`:`<p class="sub" style="margin:0"><a href="#tools" class="more">ツールを開く →</a></p>`};
   return `
   <header class="head"><div><p class="eyebrow">${d.toLocaleDateString("ja-JP",{month:"long",day:"numeric",weekday:"long"})} · ${greet} · ${t3Mode()}</p><h1>今日の3つ</h1></div><button class="btn" data-opennext>次は？</button></header>
+  ${uNotice()}
   ${topThree()}
-  ${triHome()}
-  ${focusHomeCard()}
-  ${homeBodyStrip()}
-  <div class="duo">${todayEvents()}${habitStrip()||`<section class="card"><div class="dhead"><h2><span class="e">🌱</span>今日の習慣</h2><a class="more" href="#habits">足す →</a></div><div class="empty">続けたいことを「習慣」で足せます。</div></section>`}</div>
-  ${heritageCard()}
-  ${ccCard()}
-  ${todayPanel(top)}
-  ${winsMini()}
-  ${inflow()}
-  ${notesHere("home")}
-  ${daily.length?`<section><div class="section-title"><span class="e">☀️</span>毎日のツール<a href="#tools">すべてのツール →</a></div><div class="tiles mini">${daily.map(tile).join("")}</div></section>`:`<p class="sub" style="margin:0"><a href="#tools" class="more">ツールを開く →</a></p>`}`;
+  ${homeOrder().map(id=>uTag(cards[id]||"",id)).join("\n  ")}`;
 }
 const topThreeIds=()=>topList().map(t=>t.id);
 /* what came in: mail that needs action, good news, today's news, each count on one right-hand line */
@@ -3376,6 +3394,7 @@ function render(){
   if(viewId().startsWith("body")){bodyLoad();$("#view").innerHTML=searchResults()+bodyView();wire();wireBody();return}
   if(viewId()==="mailclean"){mcLoad();$("#view").innerHTML=searchResults()+mcView();wire();wireMc();return}
   if(viewId()==="netspeed"){nsLoad();$("#view").innerHTML=searchResults()+nsView();wire();wireNs();return}
+  if(viewId()==="usage"){uLoad();$("#view").innerHTML=searchResults()+usageView();wire();return}
   const v=viewId();
   $("#view").innerHTML=searchResults()+(v==="focus"?focusView():v==="notes"?notesView():v==="watch"?watch():v==="heritage"?heritageView():v==="tasks"?tasks():v==="calendar"?calendar():v==="news"?news():v==="wins"?winsView():v==="presents"?presentsView():v==="habits"?habitsView():v==="log"?log():v==="tools"?toolsView():home());
   if(v==="news"||v==="watch") linkSources($("#view"));
@@ -4265,7 +4284,142 @@ document.addEventListener("keydown",e=>{const t=e.target.tagName;if(t==="INPUT"|
   if(e.key==="t"||e.key==="T"){if(e.metaKey||e.ctrlKey)return;e.preventDefault();openTask(null)}
   if(e.key==="g"||e.key==="G"){if(e.metaKey||e.ctrlKey)return;e.preventDefault();S.nextSkip=0;openNext()}
   if(e.key==="/"){e.preventDefault();$("#q").focus()}});
-window.addEventListener("hashchange",()=>{S.confirm=null;hideSelMenu();if(location.hash==="#notes"&&!S.noteKeep)S.noteId=null;S.noteKeep=false;const f=S.focus!=null;if(!f)window.scrollTo(0,0);render()});
+/* ---------- 使い方: which screens, Home cards and buttons get used, and the weekly re-arrangement (desk/usage.py). Mac only.
+   Counting keeps totals only. A button's name is built from the code (a camelCase id, the name of a data- attribute, the screen a
+   link goes to, class names) and never from text on screen or from an attribute's value, so no title, name or id of a task gets in.
+   Seconds are added only while the window is showing and something was touched in the last two minutes.
+   The arrangement is two lists of screen ids and an order of card ids; every screen and card is drawn whatever they say. ---------- */
+S.layout=window.LAYOUT||null;
+const HOMECARDS=[["triage","仕分けと質問"],["focus","集中"],["pc","PC の1行"],["body","体のまとめ"],["today","今日の予定と習慣"],["heritage","毎日世界遺産"],["claude","Claude に頼む"],["panel","今日のタスク"],["wins","今日できたこと"],["inflow","届いたもの"],["notes","ホームのノート"],["tools","毎日のツール"]];
+function homeOrder(){
+  const all=HOMECARDS.map(c=>c[0]), out=(S.layout?.home||[]).filter((id,i,xs)=>all.includes(id)&&xs.indexOf(id)===i);
+  all.forEach((id,k)=>{if(out.includes(id))return;const prev=all.slice(0,k).filter(x=>out.includes(x)).pop();out.splice(prev?out.indexOf(prev)+1:0,0,id)});
+  return out;
+}
+const uTag=(html,id)=>html.replace(/^(\s*<[a-zA-Z][\w-]*)/,`$1 data-ucard="${id}"`);
+const UON=LOCALAPI&&!!window.LAYOUT?.on;
+const U={view:null,sec:0,tick:0,act:0,sentAt:0,via:"other",next:null,hits:{},cards:{},sent:new Set(),cont:false};
+const USKIP=new Set(["data-noauto","data-ucard"]);
+function uKey(el){
+  if(/^[a-z]+[A-Z][A-Za-z]{0,20}$/.test(el.id||"")) return "#"+el.id;
+  const d=el.getAttributeNames().find(n=>n.startsWith("data-")&&!USKIP.has(n)&&/^[a-z-]{6,40}$/.test(n));
+  if(d) return d;
+  if(el.tagName==="A"){const h=el.getAttribute("href")||"";return h.startsWith("#")?(VIEWS.some(v=>v.id===h.slice(1))?"go:"+h.slice(1):"go"):"ext"}
+  const c=[...el.classList].filter(x=>/^[a-z][a-z0-9-]{0,15}$/.test(x)).slice(0,2).join(".");
+  return (el.tagName.toLowerCase()+(c?"."+c:"")).slice(0,40);
+}
+function uTick(){
+  const now=Date.now();
+  if(U.view&&document.visibilityState==="visible"&&now-U.act<120000) U.sec+=Math.min(now-U.tick,10000)/1000;
+  U.tick=now;
+}
+function uSend(){
+  if(!UON||!U.view) return;
+  uTick();
+  const fresh=Object.keys(U.hits).filter(k=>!U.sent.has(k)), freshC=Object.keys(U.cards).filter(k=>!U.sent.has("c:"+k));
+  const body={view:U.view,sec:Math.round(U.sec),via:U.via,cont:U.cont,hits:U.hits,cards:U.cards,new:fresh,newCards:freshC};
+  if(U.cont&&!body.sec&&!Object.keys(U.hits).length&&!Object.keys(U.cards).length) return;
+  fresh.forEach(k=>U.sent.add(k));freshC.forEach(k=>U.sent.add("c:"+k));
+  U.sec-=body.sec;U.hits={};U.cards={};U.cont=true;U.sentAt=Date.now();
+  try{navigator.sendBeacon("/api/usage",JSON.stringify(body))}catch(e){}
+}
+function uEnter(){
+  if(!UON) return;
+  const v=viewId(); if(v===U.view) return;
+  uSend();
+  const n=U.next;
+  Object.assign(U,{view:v,sec:0,hits:{},cards:{},sent:new Set(),cont:false,tick:Date.now(),act:Date.now(),sentAt:Date.now(),via:n&&Date.now()-n.at<1500?n.via:"other",next:null});
+}
+if(UON){
+  document.addEventListener("click",e=>{
+    U.act=Date.now(); if(!U.view||!e.target.closest) return;
+    const nav=e.target.closest("#nav,#tabs,.sheet .nav"), inView=e.target.closest("#view");
+    U.next={via:nav?"nav":e.target.closest(".results")?"search":inView?(U.view==="home"?"home":"link"):"search",at:Date.now()};
+    const t=e.target.closest("button,a,summary,select,[role=button],[data-hit],.card[data-open],input[type=checkbox],input[type=radio]");
+    if(!t||nav) return;
+    const name=(inView?U.view:t.closest("#modal")?"_pop":"_bar")+"|"+uKey(t);
+    U.hits[name]=(U.hits[name]||0)+1;
+    const c=inView&&U.view==="home"&&t.closest("[data-ucard]");
+    if(c) U.cards[c.dataset.ucard]=(U.cards[c.dataset.ucard]||0)+1;
+  },true);
+  document.addEventListener("keydown",e=>{U.act=Date.now();U.next={via:e.target.id==="q"?"search":"key",at:Date.now()}},true);
+  ["pointermove","wheel","scroll","touchstart"].forEach(k=>document.addEventListener(k,()=>{U.act=Date.now()},{capture:true,passive:true}));
+  setInterval(()=>{uTick();if(Date.now()-U.sentAt>60000)uSend()},5000);
+  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")uSend();else{U.tick=Date.now()}});
+  window.addEventListener("pagehide",uSend);
+}
+async function uSync(){
+  if(!LOCALAPI) return; S.uSyncAt=Date.now();
+  try{const v=await api("PUT","/api/layout",{op:"sync",views:VIEWS.map(v=>({id:v.id,g:v.g})),cards:HOMECARDS.map(c=>c[0])}),same=JSON.stringify(v)===JSON.stringify(S.layout);S.layout=v;if(!same)render()}catch(e){}
+}
+if(LOCALAPI) window.addEventListener("focus",()=>{if(Date.now()-(S.uSyncAt||0)>3600000)uSync()}); // the window stays open for days: Monday still arrives
+const UVIA={nav:"メニュー",home:"ホーム",link:"リンク",key:"キー",search:"検索",other:"その他"};
+const UNAME={"#noteBtn":"ノートを開く","#aiBtn":"Claude に頼む","#nextBtn":"次は？","#moreBtn":"その他の画面","#pcLine":"PC の1行","#soundBtn":"新着の音","data-opennext":"次は？","data-ttriage":"仕分ける","data-tqs":"質問に答える","data-topen":"タスクを開く","data-tstatus":"タスクの状態","data-story":"ニュースの記事","data-pal":"コマンド一覧","data-gonotyet":"返信するメール","data-ulay":"使い方の操作",ext:"外部リンク",go:"ページ内のリンク"};
+const uLabel=id=>VIEWS.find(v=>v.id===id)?.label||({_bar:"どの画面でも",_pop:"ポップアップ"})[id]||id;
+const uCard=id=>HOMECARDS.find(c=>c[0]===id)?.[1]||id;
+const uSec=s=>{const m=Math.round(s/60);return s<60?`${Math.round(s)}秒`:m<60?`${m}分`:`${Math.floor(m/60)}時間${m%60?m%60+"分":""}`};
+const uDay=d=>d?`${+d.slice(5,7)}/${+d.slice(8,10)}`:"";
+const uPct=(a,b)=>b?`${Math.min(100,Math.round(a/b*100))}%`:"—";
+/* one sentence per destination, so six moves still read as one line */
+function uMoves(ms){
+  ms=ms||[];
+  const of=f=>ms.filter(f).map(m=>m.kind==="home"?uCard(m.id):uLabel(m.id)).join("・"), nav=to=>of(m=>m.kind==="nav"&&m.to===to);
+  return esc([nav("fav")&&`${nav("fav")}を「よく使う」へ`,nav("rare")&&`${nav("rare")}を「あまり使っていない」へ`,nav("group")&&`${nav("group")}を元のまとまりへ`,of(m=>m.kind==="home")&&`ホームの ${of(m=>m.kind==="home")} を上へ`].filter(Boolean).join("。"));
+}
+function uNotice(){
+  const n=S.layout?.notice;
+  return n?.moves?.length?`<p class="unote"><span>今週の並び替え：${uMoves(n.moves)}。</span><span class="unacts"><button class="btn sm" data-ulay="undo">元に戻す</button><button class="btn sm" data-ulay="seen">閉じる</button></span></p>`:"";
+}
+async function uLoad(force){
+  if(!LOCALAPI||S.uBusy||(!force&&S.usage&&Date.now()-(S.uAt||0)<30000))return;
+  S.uBusy=true;S.uAt=Date.now();
+  try{const v=await api("GET","/api/usage?period="+(S.uq||"14")),same=JSON.stringify(v)===JSON.stringify(S.usage);S.usage=v;S.uErr=false;S.uBusy=false;if(!same&&viewId()==="usage")render()}
+  catch(e){const was=S.uErr;S.uErr=true;S.uBusy=false;if(!was&&viewId()==="usage")render()}
+}
+function usageView(){
+  const d=S.usage, L=S.layout||{}, q=S.uq||"14";
+  if(S.uErr)return `<div class="money"><h1>使い方</h1><p class="due">読み込めませんでした。サーバーを再起動すると直ることがあります。</p></div>`;
+  if(!d)return `<div class="money"><h1>使い方</h1><p class="due">読み込み中です。</p></div>`;
+  const span={7:"この7日",14:"この14日",30:"この30日",all:"これまで"}[q]||"この14日";
+  const fav=L.nav?.fav||[], rare=L.nav?.rare||[], pins=L.pins||{nav:[],home:[]}, zero={n:0,days:0,sec:0,via:{}};
+  const rows=VIEWS.map(v=>({v,a:d.views[v.id]||zero})).sort((x,y)=>y.a.days-x.a.days||y.a.sec-x.a.sec), used=rows.filter(r=>r.a.n), top=Math.max(1,...rows.map(r=>r.a.sec));
+  const pin=(kind,id)=>{const on=(pins[kind]||[]).includes(id);return `<button class="btn sm upin" data-ulay="pin:${kind}:${id}" aria-pressed="${on}" aria-label="${esc(kind==="nav"?uLabel(id):uCard(id))} を今の場所に固定">${on?"固定中":"固定"}</button>`};
+  const bar=w=>`<span class="stbar"><i style="width:${Math.round(w*100)}%"></i></span>`;
+  const via=a=>Object.entries(a.via||{}).sort((x,y)=>y[1]-x[1]).slice(0,2).map(([k,n])=>`${UVIA[k]||k} ${n}`).join("・");
+  const screens=`<div class="urow uhead"><span></span><span class="n">回数</span><span class="n uw">日数</span><span class="n">滞在</span><span class="n uw">1回</span><span class="n uw">最後</span><span class="uw">入口</span><span></span></div>`
+    +rows.map(({v,a})=>`<div class="urow ${a.n?"":"zero"}"><span class="uname">${esc(v.label)}${fav.includes(v.id)?`<small class="sub">よく使う</small>`:rare.includes(v.id)?`<small class="sub">あまり使っていない</small>`:""}</span><span class="n">${a.n||"—"}</span><span class="n uw">${a.days||"—"}</span><span class="n">${a.n?uSec(a.sec):"—"}</span><span class="n uw">${a.n?uSec(a.sec/a.n):"—"}</span><span class="n uw">${uDay(d.lastOpen?.[v.id])||"—"}</span><span class="uw sub">${esc(via(a))}</span>${v.id==="home"?`<span class="sub upin">いつも先頭</span>`:pin("nav",v.id)}${a.n?bar(a.sec/top):""}</div>`).join("");
+  const cards=`<div class="urow ucards uhead"><span></span><span class="n">回数</span><span class="n">押した割合</span><span></span></div>`
+    +homeOrder().map(id=>{const a=d.cards[id]||{n:0,v:0};return `<div class="urow ucards ${a.n?"":"zero"}"><span class="uname">${esc(uCard(id))}</span><span class="n">${a.n||"—"}</span><span class="n">${a.n?uPct(a.v,d.homeN):"—"}</span>${pin("home",id)}${a.n&&d.homeN?bar(Math.min(1,a.v/d.homeN)):""}</div>`}).join("");
+  const bname=r=>{const n=UNAME[r.key]||(r.key.startsWith("go:")?uLabel(r.key.slice(3))+"へ":null);return `${esc(uLabel(r.view))} ・ ${n?esc(n):`<code>${esc(r.key)}</code>`}`};
+  const hot=d.hits.slice(0,20), brow=r=>`<div class="urow ubtns"><span class="uname">${bname(r)}</span><span class="n">${r.n}</span><span class="n">${uPct(r.v,r.view.startsWith("_")?d.allN:d.views[r.view]?.n)}</span></div>`;
+  const buttons=(hot.length?`<details class="bdfold"><summary>よく押す ${hot.length}個</summary><div class="urow ubtns uhead"><span>画面 ・ ボタン</span><span class="n">回数</span><span class="n">押した割合</span></div>${hot.map(brow).join("")}</details>`:`<p class="due">${span}に押したボタンの記録はありません。</p>`)
+    +(d.stale.length?`<details class="bdfold"><summary>14日押していない ${d.stale.length}個</summary>${d.stale.map(r=>`<div class="urow ubtns"><span class="uname">${bname(r)}</span><span class="n sub">最後</span><span class="n">${uDay(r.last)}</span></div>`).join("")}</details>`:"");
+  const hist=L.history||[], week=hist.find(h=>h.week===L.week&&!h.reset);
+  const when=!L.on?"この窓は試験用なので、数えることも並び替えることもしません。":!L.auto?"自動の並び替えは止めてあります。数えるのは続きます。":d.nextRun?`次の並び替えは ${uDay(d.nextRun)}（月）。${d.ready?"":"記録が14日たまってから始まります。"}`:"記録が入ると、14日たったあとの月曜から始まります。";
+  const arrange=`<p style="margin:0">${when}</p>${week?`<p class="wt" style="margin:0">今週：${uMoves(week.moves)}${week.undone?"（元に戻しました）":""}</p>`:""}
+    <div class="nsgo">${L.canUndo?`<button class="btn sm" data-ulay="undo">前の週の並びに戻す</button>`:""}${L.changed?`<button class="btn sm" data-ulay="reset">最初の並びに戻す</button>`:""}<button class="btn sm" data-ulay="auto:${L.auto?"off":"on"}">${L.auto?"自動の並び替えを止める":"自動の並び替えを始める"}</button></div>
+    ${hist.filter(h=>h!==week).map(h=>`<p class="due" style="margin:0">${uDay(h.week)} の週：${h.reset?"最初の並びに戻した":uMoves(h.moves)}${h.undone?"（元に戻しました）":""}</p>`).join("")}`;
+  const often=used.filter(r=>r.v.id!=="home").slice(0,3), lead=often.length?`よく使うのは ${often.map(r=>r.v.label).join("・")}`:"まだ記録がありません";
+  const sub=d.first?`${span}に開いた画面は ${used.length}、開いていない画面は ${rows.length-used.length}。${uDay(d.first)} から数えています。`:"画面を移るたびに記録が入ります。入力した文字や本文は記録しません。";
+  const chips=`<div class="chips" role="group" aria-label="期間">${[["7","7日"],["14","14日"],["30","30日"],["all","全部"]].map(([k,l])=>`<button class="chip" data-ulay="period:${k}" aria-pressed="${k===q}">${l}</button>`).join("")}</div>`;
+  return `<div class="money"><div><p class="eyebrow">使い方</p><h1>${esc(lead)}</h1><p class="sub" style="margin:var(--s1) 0 0">${esc(sub)}</p></div>${chips}
+    ${mpanel("画面","開いた日数の多い順。棒は滞在の長さ",screens)}
+    ${mpanel("ホームのカード",d.homeN?`ホームを開いた ${d.homeN}回のうち、そのカードを押した回の割合`:"",cards)}
+    ${mpanel("ボタン","その画面を開いた回のうち、押した回の割合",buttons)}
+    ${mpanel("並び替え","週に1回、画面3つとカード3枚まで",arrange)}</div>`;
+}
+document.addEventListener("click",async e=>{
+  const b=e.target.closest?.("[data-ulay]"); if(!b||!LOCALAPI) return;
+  const [op,kind,id]=b.dataset.ulay.split(":");
+  if(op==="period"){S.uq=kind;S.usage=null;render();uLoad(true);return}
+  if(!S.layout?.on){toast("この窓は試験用なので、並びは変えられません");return}
+  const on=op==="pin"?b.getAttribute("aria-pressed")!=="true":kind==="on";
+  try{S.layout=await api("PUT","/api/layout",op==="pin"?{op,kind,id,on}:op==="auto"?{op,on}:{op});render();
+    const say={undo:"前の週の並びに戻しました",reset:"最初の並びに戻しました",pin:on?"今の場所に固定しました":"固定を外しました",auto:on?"自動の並び替えを始めました":"自動の並び替えを止めました"}[op];if(say)toast(say)}
+  catch(err){toast("保存できませんでした。サーバーを確かめてください")}
+});
+
+window.addEventListener("hashchange",()=>{uEnter();S.confirm=null;hideSelMenu();if(location.hash==="#notes"&&!S.noteKeep)S.noteId=null;S.noteKeep=false;const f=S.focus!=null;if(!f)window.scrollTo(0,0);render()});
 
 /* ---------- focus: starts and lifts FocusBlock on this Mac, through desk/server.py. Mac only; nothing is stored in Desk. ---------- */
 S.fb={state:null,err:null,min:25,until:"",apps:true,web:true};
@@ -4360,7 +4514,7 @@ autoLinkStart();
   if(Array.isArray(window.TOOLS)){ // PC version
     try{S.dues=JSON.parse(localStorage.getItem("desk-dues")||"{}")||{}}catch(e){S.dues={}}
     S.loaded=true;S.local=true;S.tools=window.TOOLS;S.editions=window.WORLD||[];S.days=window.MAIL||[];S.cal=window.CAL||null;S.gtasks=window.GTASKS||null;S.reports=window.REPORTS||[];S.watch=window.WATCH||[];S.heritage=(window.HERITAGE||[]).filter(h=>!h.deleted);S.hcountries=(window.HERITAGE_COUNTRIES||[]).map(([code,name,region])=>({code,name,region}));S.memory=window.MEMORY||null;
-    if(LOCALAPI){fbLoad();setInterval(fbLoad,5000);await loadApiMemos();setInterval(loadApiMemos,30000);window.addEventListener("focus",loadApiMemos);return}
+    if(LOCALAPI){uEnter();uSync();fbLoad();setInterval(fbLoad,5000);await loadApiMemos();setInterval(loadApiMemos,30000);window.addEventListener("focus",loadApiMemos);return}
     try{S.memos=JSON.parse(localStorage.getItem("desk-memos")||"[]")}catch(e){S.memos=[]}
     try{S.tasks=JSON.parse(localStorage.getItem("desk-tasks")||"[]")}catch(e){S.tasks=[]}
     try{S.prompts=JSON.parse(localStorage.getItem("desk-prompts")||"{}")||{}}catch(e){S.prompts={}}
