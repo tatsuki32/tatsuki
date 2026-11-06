@@ -33,9 +33,17 @@ python3 lifeos/04-voice/voice_memo.py sweep          # inbox/ に残った分を
 
 ## つなぐもの
 
-- Telegram：`lifeos/README.md` の「ボット」のとおり `secrets/telegram.json` にトークンとチャット ID を入れ、`python3 lifeos/bot/run.py` を動かします。
-- 文字起こし：音声ファイルのパスを受け取って文字を返す関数を作り、環境変数 `LIFEOS_TRANSCRIBER="パッケージ.モジュール:関数"` で指定します。ここを変えるだけで、Whisper API でも Mac での実行でも同じように動きます。
-- 完了条件の「1分以内」は、文字起こしにかかる時間で決まります。仕分けと保存は1秒かかりません。
+- Telegram：設定済みです。
+- 文字起こし：Groq の Whisper（`whisper-large-v3-turbo`、日本語指定）を使います。声は Groq に送られます。
+  キーはキーチェーンに入れます。ボットを起動し直さなくても、入れた次の音声から動きます。
+
+```sh
+security add-generic-password -a groq -s tatsuki-desk-groq -w
+```
+
+- モデルを変えるときは、データ置き場の `tools/04-voice/settings.json` に `{"model": "whisper-large-v3"}` と書きます。
+- 別の方法にするときは、音声ファイルのパスを受け取って文字を返す関数を作り、環境変数 `LIFEOS_TRANSCRIBER="パッケージ.モジュール:関数"` で指定します。
+- 回数の上限を超えたときや Groq が止まっているときは、音声を `inbox/audio/` に残して返事します。あとで `python3 lifeos/04-voice/voice_memo.py audio` でやり直せます。
 
 ## 止め方
 
