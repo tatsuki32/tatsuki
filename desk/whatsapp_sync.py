@@ -2,7 +2,8 @@
 """Turns one-to-one WhatsApp chats waiting for a reply into Desk tasks. Only reads the Mac app's store; never sends.
 
   python3 desk/whatsapp_sync.py scan            # closes answered tasks, adds new ones, prints the chats that need a draft
-  python3 desk/whatsapp_sync.py save FILE.json  # [{"ref": "<task id>", "summary": "...", "body": "...", "body_ja": "..."}]
+  python3 desk/whatsapp_sync.py nudges          # open 催促 tasks (Life OS 02): the chats that need a draft
+  python3 desk/whatsapp_sync.py save FILE.json  # [{"ref": "<task id>", "topic": "...", "summary": "...", "body": "...", "body_ja": "...", "urgent": false, "urgentWhy": ""}]
                                                 # or {"ref": "<task id>", "noreply": true}: nothing to answer, the task is put away
 
 A task is one turn of a chat: the messages since your last one. Replying closes it; their next message makes a new one.
@@ -29,6 +30,7 @@ WINDOW = 48 * 3600  # older than this is not a new message, also when a run was 
 SYSTEM = (6, 10)  # group and security notices
 KINDS = {0: "text", 1: "画像", 2: "動画", 3: "音声", 4: "連絡先", 5: "位置情報", 7: "text", 8: "ファイル", 15: "スタンプ"}
 RECENT = 12  # messages given to Claude for one draft
+NUDGE_LINES = 6  # of the talk so far, shown in a 催促 task
 BODY_MAX = 4000
 WAIT_WINDOW = 30 * 86400  # how far back an unanswered chat of yours still counts
 CLOSERS = re.compile(r"(ありがと(う|うございます|うございました)?|了解(です|しました)?|りょうかい|ok|okay|おっけー?|thanks?( you)?|thx|👍|おやすみ(なさい)?|またね)[!！。.ー〜~\s]*", re.IGNORECASE)
@@ -151,6 +153,13 @@ def phone_of(jid):
     return m.group(1) if m else ""
 
 
+def title_of(it):
+    """「WhatsApp返信 用件について（名前）」. The topic comes once Claude has read the chat."""
+    kind = "WhatsApp催促" if it.get("nudge") else "WhatsApp返信"
+    topic = it.get("topic")
+    return tasks._clean_title(f"{kind} {topic}について（{it['name']}）" if topic else f"{kind}（{it['name']}）")
+
+
 def today():
     return datetime.fromtimestamp(time.time(), paths.HCMC).strftime("%Y-%m-%d")
 
@@ -171,6 +180,8 @@ def scan(now=None):
             if not t or t.get("deleted") or t.get("status") not in tasks.OPEN:
                 del items[tid]  # finished by hand: the text has no further use
                 continue
+            if it.get("nudge"):
+                continue  # Life OS 02 closes these when they answer; your own last word is the point
             session = session_of(db, it["jid"])
             if session and answered(recent(db, session), it["lastAt"]):
                 rec = {**t, "status": "done", "updatedAt": paths.now_ms()}
@@ -192,7 +203,7 @@ def scan(now=None):
             name = clean_name(c["name"]) or "（名前なし）"
             if not t:
                 ms = paths.now_ms()
-                tasks._put({"id": tid, "title": tasks._clean_title("連絡返信：" + name), "status": "notyet", "source": "whatsapp",
+                tasks._put({"id": tid, "title": title_of({"name": name}), "status": "notyet", "source": "whatsapp",
                             "sourceRef": "wa:" + tid[3:], "due": None, "note": "", "planDate": today(),
                             "createdAt": turn[-1]["at"] * 1000, "deleted": False, "updatedAt": ms})
                 created += 1
@@ -205,6 +216,36 @@ def scan(now=None):
                                "messages": [{"from": "自分" if m["me"] else name, "text": line(m), "at": m["at"]} for m in msgs[:RECENT][::-1]]})
         save_items(items)
         return {"closed": closed, "created": created, "open": len(items), "drafts": drafts}
+    finally:
+        db.close()
+
+
+def nudges():
+    """Open 催促 tasks on chats get the same store as replies: the talk so far, and a draft to copy."""
+    db = connect()
+    try:
+        chats = {}
+        for session, jid, name in db.execute("SELECT Z_PK, ZCONTACTJID, ZPARTNERNAME FROM ZWACHATSESSION WHERE ZSESSIONTYPE=0 AND COALESCE(ZREMOVED,0)=0"):
+            if jid:
+                chats["wa" + hashlib.sha1(jid.encode()).hexdigest()[:16]] = (session, jid, clean_name(name) or "（名前なし）")
+        items, drafts = load_items(), []
+        for t in tasks._load():
+            chat = chats.get(t.get("sourceRef"))
+            if t.get("source") != "lifeos-02" or t.get("deleted") or t.get("status") not in tasks.OPEN or not chat:
+                continue
+            session, jid, name = chat
+            msgs = recent(db, session, RECENT)
+            if not msgs:
+                continue
+            it = items.get(t["id"], {})
+            talk = msgs[::-1]
+            items[t["id"]] = {**it, "nudge": True, "jid": jid, "phone": phone_of(jid), "name": name, "unknown": is_unknown(name), "lastId": msgs[0]["id"],
+                              "lastAt": msgs[0]["at"], "kind": "text", "texts": [("自分：" if m["me"] else name + "：") + line(m) for m in talk if m["kind"] != "other"][-NUDGE_LINES:]}
+            if it.get("draftFor") != msgs[0]["id"]:
+                drafts.append({"ref": t["id"], "name": name, "unknown": is_unknown(name),
+                               "messages": [{"from": "自分" if m["me"] else name, "text": line(m), "at": m["at"]} for m in talk if m["kind"] != "other"]})
+        save_items(items)
+        return {"open": sum(1 for i in items.values() if i.get("nudge")), "drafts": drafts}
     finally:
         db.close()
 
@@ -226,6 +267,14 @@ def save(rows):
             continue
         it.update(summary=str(row.get("summary") or "").strip()[:400], body=body,
                   body_ja=str(row.get("body_ja") or "").strip()[:BODY_MAX], draftFor=it.get("lastId"))
+        # Desk rings for a reply only when the intake marked it (desk/notify.py); a new draft clears an old mark
+        it["urgent"] = row.get("urgent") is True
+        it["urgentWhy"] = str(row.get("urgentWhy") or "").strip()[:80] if it["urgent"] else ""
+        topic = str(row.get("topic") or "").strip()[:40]
+        t = tasks.get(row["ref"]) if topic else None
+        if t:
+            it["topic"] = topic
+            tasks.update(row["ref"], title=title_of(it))
         count += 1
     save_items(items)
     return count
@@ -235,6 +284,8 @@ if __name__ == "__main__":
     args = sys.argv[1:]
     if args == ["scan"]:
         print(json.dumps(scan(), ensure_ascii=False, indent=1))
+    elif args == ["nudges"]:
+        print(json.dumps(nudges(), ensure_ascii=False, indent=1))
     elif args[:1] == ["save"] and len(args) == 2:
         with open(args[1], encoding="utf-8") as f:
             print(json.dumps({"saved": save(json.load(f))}))

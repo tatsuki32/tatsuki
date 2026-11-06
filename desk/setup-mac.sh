@@ -8,6 +8,9 @@
 #   com.tatsuki.desk.backup  every 15 minutes, desk/data goes to its private repository (backup_data.py)
 #   com.tatsuki.desk.wise    every morning and at login, Wise activity comes to desk/data/wise (wise_sync.py, read only)
 #   com.tatsuki.desk.screentime  every hour, Screen Time totals come to desk/data/screentime (screentime_sync.py, read only)
+#   com.tatsuki.desk.line        every 5 minutes, once a day from 3:00: unread LINE chats become reply tasks (line_sync.py, never sends)
+#   com.tatsuki.desk.linenight   21:00 to 3:30, on mains power only: keeps the Mac awake so the 3:00 check finds it unlocked
+#   com.tatsuki.desk.webhistory  every hour, Chrome history comes to desk/data/webhistory (chrome_web_sync.py, read only)
 #   com.tatsuki.desk.telegram    the Telegram bot: photos and messages reach this Mac (lifeos/bot/run.py). Without a token it waits and tries again
 # Run it again any time; it replaces the old jobs. Remove with: bash desk/setup-mac.sh --uninstall
 set -euo pipefail
@@ -25,7 +28,7 @@ UID_="$(id -u)"
 unload() { launchctl bootout "gui/$UID_/$1" 2>/dev/null || true; rm -f "$AGENTS/$1.plist"; }
 
 if [[ "${1:-}" == "--uninstall" ]]; then
-  unload com.tatsuki.desk.server; unload com.tatsuki.desk.pull; unload com.tatsuki.desk.backup; unload com.tatsuki.desk.wise; unload com.tatsuki.desk.screentime; unload com.tatsuki.desk.tabwatch; unload com.tatsuki.desk.telegram
+  unload com.tatsuki.desk.server; unload com.tatsuki.desk.pull; unload com.tatsuki.desk.backup; unload com.tatsuki.desk.wise; unload com.tatsuki.desk.screentime; unload com.tatsuki.desk.tabwatch; unload com.tatsuki.desk.webhistory; unload com.tatsuki.desk.line; unload com.tatsuki.desk.linenight; unload com.tatsuki.desk.telegram
   rm -f "$HOME/Desktop/Tatsuki's Desk.html" "$HOME/Desktop/Tatsuki's Desk.app"
   echo "Desk の常駐ジョブを削除しました。$DESK/data のデータはそのまま残っています。"; exit 0
 fi
@@ -44,7 +47,7 @@ case "$REPO/" in
 esac
 
 # stop our own jobs first, then make sure nothing else holds the port (the old Desk server)
-unload com.tatsuki.desk.server; unload com.tatsuki.desk.pull; unload com.tatsuki.desk.backup; unload com.tatsuki.desk.wise; unload com.tatsuki.desk.screentime; unload com.tatsuki.desk.tabwatch; unload com.tatsuki.desk.telegram
+unload com.tatsuki.desk.server; unload com.tatsuki.desk.pull; unload com.tatsuki.desk.backup; unload com.tatsuki.desk.wise; unload com.tatsuki.desk.screentime; unload com.tatsuki.desk.tabwatch; unload com.tatsuki.desk.webhistory; unload com.tatsuki.desk.line; unload com.tatsuki.desk.linenight; unload com.tatsuki.desk.telegram
 if lsof -nP -iTCP:"$PORT" -sTCP:LISTEN >/dev/null 2>&1; then
   echo "ポート $PORT を別のプログラムが使っています（古い Desk サーバーの可能性）："
   lsof -nP -iTCP:"$PORT" -sTCP:LISTEN
@@ -108,6 +111,7 @@ cat > "$AGENTS/com.tatsuki.desk.wise.plist" <<PLIST
 </dict></plist>
 PLIST
 
+mkdir -p "$HOME/Applications"; swiftc -O -framework Cocoa "$DESK/app/appctl.swift" -o "$HOME/Applications/TatsukiAppCtl"
 [[ -x "$HOME/Applications/TatsukiScreenTime" ]] || { mkdir -p "$HOME/Applications"; swiftc -O "$DESK/app/screentime-helper.swift" -o "$HOME/Applications/TatsukiScreenTime"; }
 cat > "$AGENTS/com.tatsuki.desk.screentime.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
@@ -138,6 +142,46 @@ PLIST
 
 launchctl bootstrap "gui/$UID_" "$AGENTS/com.tatsuki.desk.tabwatch.plist"
 launchctl bootstrap "gui/$UID_" "$AGENTS/com.tatsuki.desk.screentime.plist"
+[[ -x "$HOME/Applications/TatsukiLineWatch" ]] || { swiftc -O -framework Cocoa "$DESK/app/linewatch.swift" -o "$HOME/Applications/TatsukiLineWatch" && codesign -f -s - -i com.tatsuki.desk.linewatch "$HOME/Applications/TatsukiLineWatch"; }
+cat > "$AGENTS/com.tatsuki.desk.line.plist" <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>com.tatsuki.desk.line</string>
+  <key>ProgramArguments</key><array><string>$HOME/Applications/TatsukiLineWatch</string><string>run</string></array>
+  <key>StartInterval</key><integer>300</integer>
+  <key>StandardOutPath</key><string>$LOGS/tatsuki-desk-line.log</string>
+  <key>StandardErrorPath</key><string>$LOGS/tatsuki-desk-line.log</string>
+</dict></plist>
+PLIST
+cat > "$AGENTS/com.tatsuki.desk.linenight.plist" <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>com.tatsuki.desk.linenight</string>
+  <key>ProgramArguments</key><array><string>$PY</string><string>$DESK/line_sync.py</string><string>night</string></array>
+  <key>StartCalendarInterval</key><dict><key>Hour</key><integer>21</integer><key>Minute</key><integer>0</integer></dict>
+  <key>RunAtLoad</key><true/>
+  <key>StandardOutPath</key><string>$LOGS/tatsuki-desk-line.log</string>
+  <key>StandardErrorPath</key><string>$LOGS/tatsuki-desk-line.log</string>
+</dict></plist>
+PLIST
+launchctl bootstrap "gui/$UID_" "$AGENTS/com.tatsuki.desk.line.plist"
+launchctl bootstrap "gui/$UID_" "$AGENTS/com.tatsuki.desk.linenight.plist"
+cat > "$AGENTS/com.tatsuki.desk.webhistory.plist" <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>com.tatsuki.desk.webhistory</string>
+  <key>ProgramArguments</key><array><string>$PY</string><string>$DESK/chrome_web_sync.py</string></array>
+  <key>WorkingDirectory</key><string>$DESK</string>
+  <key>StartInterval</key><integer>3600</integer>
+  <key>RunAtLoad</key><true/>
+  <key>StandardOutPath</key><string>$LOGS/tatsuki-desk-webhistory.log</string>
+  <key>StandardErrorPath</key><string>$LOGS/tatsuki-desk-webhistory.log</string>
+</dict></plist>
+PLIST
+launchctl bootstrap "gui/$UID_" "$AGENTS/com.tatsuki.desk.webhistory.plist"
 cat > "$AGENTS/com.tatsuki.desk.telegram.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">

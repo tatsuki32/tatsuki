@@ -1,5 +1,6 @@
 """Records one line of chat and returns the one-line reply. Used by handler.py and chatlog.py."""
 import os
+import re
 
 from lifeos.lib import logs, md, paths, tasks, tools
 
@@ -11,6 +12,7 @@ SOURCE = "lifeos-12"
 HABIT_TOOL = "07-habits"
 PENDING_HABITS = "habits-pending"
 LIST_MAX = 10
+_SENTENCE_BREAK = re.compile(r"[。．！？!?\n]")
 
 
 def habit_tool():
@@ -66,6 +68,8 @@ def deadline_list(now=None):
 
 def takes(text):
     """Whether this tool should take the line. A habit stays with tool 07 whenever 07 is running."""
+    if _SENTENCE_BREAK.search(text.strip().rstrip("。．！？!?")):
+        return False  # several sentences are a spoken memo: 04 sorts them one by one
     kind, _ = parse.classify(text, paths.now())
     return kind in ("list", "deadline", "expense") or (kind == "habit" and habit_tool() is None)
 
