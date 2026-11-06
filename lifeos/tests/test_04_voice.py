@@ -89,6 +89,22 @@ class TestSort(SandboxCase):
             self.assertEqual((at.year, at.month, at.day, at.hour, at.minute), want, text)
             self.assertEqual(t, timed, text)
 
+    def test_when_reads_times_from_now_and_japan_time(self):
+        s = load_tool("04-voice", "sort")
+        for text, want in [("5分後", (4, 10, 5)), ("十分後", (4, 10, 10)), ("1時間後", (4, 11, 0)), ("1時間半後", (4, 11, 30)),
+                           ("日本時間の19時", (4, 17, 0)), ("明日の日本時間10時", (5, 8, 0)), ("日本時間の11時", (5, 9, 0))]:
+            at, timed = s.when(text, NOW)
+            self.assertEqual((at.day, at.hour, at.minute), want, text)
+            self.assertTrue(timed, text)
+
+    def test_plans_are_noticed_and_records_are_not(self):
+        s = load_tool("04-voice", "sort")
+        for text in ("日本時間の19時に予定", "10分後にりんごを買いに行く", "明日の12時にランチを友達と", "明日12時に昼ごはん", "19時に夕食",
+                     "5分後にグラブに乗るのをカレンダーにしよう。", "十八時にバス停", "今日は疲れた。金曜の15時に歯医者"):
+            self.assertTrue(s.looks_like_plan(text), text)
+        for text in ("ランチにカレーを食べた", "昼 カレー大盛り", "23時に寝た", "12時にランチを食べた", "昨日19時に夕食", "体重65.2", "今日は疲れた", "ベンチ60kg 10回3セット"):
+            self.assertFalse(s.looks_like_plan(text), text)
+
     def test_when_gives_nothing_for_the_past_or_nonsense(self):
         s = load_tool("04-voice", "sort")
         for text in ("昨日15時", "2月31日", "30時", "りんご"):
@@ -361,12 +377,27 @@ class TestAnalysis(SandboxCase):
                                   ("2026-11-07", None, ("2026-11-07T23:59:00+07:00", False)),
                                   ("2026-11-07", "25:00", ("2026-11-07T23:59:00+07:00", False)),
                                   ("2026-11-03", "09:00", ("", False)), ("2026-02-31", None, ("", False)),
-                                  ("来週", None, ("", False)), (None, "09:00", ("", False))]:
+                                  ("来週", None, ("", False)), (None, None, ("", False)), (None, "25:00", ("", False)),
+                                  (None, "09:00", ("2026-11-05T09:00:00+07:00", True)),  # already past today
+                                  (None, "19:00", ("2026-11-04T19:00:00+07:00", True))]:
             self.assertEqual(self.an._when({"date": date, "time": clock}, NOW), want, (date, clock))
+
+    def test_the_time_arithmetic_is_done_here(self):
+        for item, want in [({"in_minutes": 5}, "2026-11-04T10:05:00+07:00"), ({"in_minutes": 90}, "2026-11-04T11:30:00+07:00"),
+                           ({"time": "19:00", "tz": "JST"}, "2026-11-04T17:00:00+07:00"),
+                           ({"date": "2026-11-05", "time": "01:00", "tz": "JST"}, "2026-11-04T23:00:00+07:00"),
+                           ({"time": "11:00", "tz": "JST"}, "2026-11-05T09:00:00+07:00")]:
+            self.assertEqual(self.an._when(item, NOW), (want, True), item)
+        for bad in (0, -5, "5", True, 10 ** 9):
+            self.assertEqual(self.an._when({"in_minutes": bad}, NOW), ("", False), bad)
 
     def test_only_tasks_and_events_carry_a_date(self):
         p = self.an.to_parts([{"kind": "diary", "text": "疲れた", "date": "2026-11-07"}, {"kind": "謎", "text": "x"}], NOW)
         self.assertEqual([(x.kind, x.at) for x in p], [("diary", ""), ("idea", "")])
+
+    def test_an_idea_with_a_time_to_come_is_a_plan(self):
+        p = self.an.to_parts([{"kind": "idea", "title": "りんご", "text": "10分後にりんご", "in_minutes": 10}], NOW)
+        self.assertEqual((p[0].kind, p[0].timed), ("event", True))
 
     def test_a_memo_that_names_its_kind_skips_the_model(self):
         self.take("日記：明日は資料を送る")
