@@ -285,6 +285,7 @@ class TestGroq(SandboxCase):
         self.assertEqual(req.get_header("Authorization"), "Bearer " + self.KEY)
         self.assertNotIn("Python", req.get_header("User-agent"))
         for part in (b'name="model"\r\n\r\nwhisper-large-v3-turbo', b'name="language"\r\n\r\nja',
+                     ('name="prompt"\r\n\r\n' + self.t.PROMPT).encode(),
                      b'filename="voice.ogg"', b"OggS audio bytes"):
             self.assertIn(part, req.data)
 
