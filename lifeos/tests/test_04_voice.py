@@ -139,10 +139,20 @@ class TestFiling(SandboxCase):
     def test_an_unsure_memo_says_so(self):
         self.assertIn("迷った", self.core().take("りんご"))
 
-    def test_a_long_reply_is_cut(self):
-        reply = self.core().take("。".join(f"資料{i}を送る" for i in range(9)))
-        self.assertIn("ほか3件", reply)
-        self.assertEqual(len(tasks.open_tasks()), 9)
+    def test_the_reply_is_never_cut(self):
+        long = "資料を" + "とても" * 40 + "送る"
+        reply = self.core().take("。".join(f"資料{i}を送る" for i in range(9)) + "。" + long)
+        for i in range(9):
+            self.assertIn(f"資料{i}を送る", reply)
+        self.assertIn(long, reply)
+        self.assertEqual(len(tasks.open_tasks()), 10)
+
+    def test_words_past_the_task_title_limit_stay_in_the_note(self):
+        long = "資料を" + "とても" * 60 + "送る"
+        self.core().take(long)
+        t = tasks.open_tasks()[0]
+        self.assertLess(len(t["title"]), len(long))
+        self.assertIn(long, t["note"])
 
     def test_a_failed_store_keeps_the_memo_then_sweep_files_only_what_is_missing(self):
         c = self.core()
@@ -396,9 +406,10 @@ class TestBot(SandboxCase):
         start = time.monotonic()
         run.handle_update(self.update(voice={"file_id": "f"}), client, 5, [route])
         self.assertLess(time.monotonic() - start, 60)
-        self.assertEqual(len(client.sent), 1)
+        self.assertEqual(len(client.sent), 2)
         self.assertIn("日記", client.sent[0])
         self.assertIn("タスク", client.sent[0])
+        self.assertEqual(client.sent[1], "文字起こし：\n今日は疲れた。資料を送らないと。")
         self.assertTrue(logs.read("voice")[0]["voice"])
         self.assertIn("音声メモ", tasks.open_tasks()[0]["note"])
 
@@ -406,6 +417,7 @@ class TestBot(SandboxCase):
         client = FakeClient()
         run.handle_update(self.update(text="牛乳を買う"), client, 5)
         self.assertIn("タスク", client.sent[0])
+        self.assertEqual(len(client.sent), 1)  # typed words need no transcript
         self.assertEqual(tasks.open_tasks()[0]["title"], "牛乳を買う")
 
     def test_without_a_transcriber_it_says_so(self):
