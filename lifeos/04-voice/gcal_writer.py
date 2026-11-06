@@ -1,4 +1,4 @@
-"""Writes an event to Google Calendar through the owner's Apps Script web app (calendar-webhook.gs).
+"""Adds and lists events on Google Calendar through the owner's Apps Script web app (calendar-webhook.gs).
 
 The web app's URL is the secret. It stays in the keychain:
     security add-generic-password -a webhook -s tatsuki-desk-gcal -w
@@ -35,13 +35,10 @@ def connected():
     return bool(url())
 
 
-def add(title, at, timed, ref, note="", minutes=0):
-    """at is a datetime. Without a clock time it becomes an all-day event. ref keeps a retry from adding it twice."""
+def _post(body):
     target = url()
     if not target:
         raise CalendarError("not connected")
-    body = {"title": title, "ref": ref, "note": note, "start": at.isoformat() if timed else "", "date": at.strftime("%Y-%m-%d"),
-            "minutes": minutes or DEFAULT_MINUTES}
     req = urllib.request.Request(target, data=json.dumps(body, ensure_ascii=False).encode("utf-8"), method="POST",
                                  headers={"Content-Type": "application/json", "User-Agent": "tatsuki-desk-lifeos"})
     try:
@@ -51,3 +48,18 @@ def add(title, at, timed, ref, note="", minutes=0):
         raise CalendarError(type(e).__name__) from None
     if not (isinstance(answer, dict) and answer.get("ok")):
         raise CalendarError("refused")
+    return answer
+
+
+def events(first, last):
+    """The events from one day to another (YYYY-MM-DD), oldest first: [{title, allDay, date, start, end}]."""
+    found = _post({"action": "list", "from": first, "to": last}).get("events")
+    if not isinstance(found, list):
+        raise CalendarError("refused")
+    return found
+
+
+def add(title, at, timed, ref, note="", minutes=0):
+    """at is a datetime. Without a clock time it becomes an all-day event. ref keeps a retry from adding it twice."""
+    _post({"title": title, "ref": ref, "note": note, "start": at.isoformat() if timed else "", "date": at.strftime("%Y-%m-%d"),
+           "minutes": minutes or DEFAULT_MINUTES})

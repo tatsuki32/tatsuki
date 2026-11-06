@@ -9,7 +9,8 @@ from collections import namedtuple
 from datetime import datetime, timedelta
 
 # title, at (ISO time) and timed are filled by the language model, or by core.py from the rules
-Part = namedtuple("Part", "kind text unsure title at timed minutes", defaults=("", "", False, 0))
+# for a question (kind "query"), at is the first day asked about and until the last, both YYYY-MM-DD
+Part = namedtuple("Part", "kind text unsure title at timed minutes until", defaults=("", "", False, 0, ""))
 
 LABELS = {"task": "タスク", "event": "予定", "expense": "支出", "idea": "アイデア", "diary": "日記"}
 
@@ -85,6 +86,7 @@ def amount(text):
 
 _WEEKDAYS = "月火水木金土日"
 _DIGITS = re.compile(r"[〇一二三四五六七八九十]+(?=時|月|日|分)")
+_ASKS = re.compile(r"(予定|スケジュール|タスク|やること).{0,12}(教えて|見せて|ある[?？か]?$|は[?？]?$|何|なに)|空いて(る|ます|い)|入って(る|ます|い)")
 _LATER = re.compile(r"(\d+)\s*(分|時間半|時間)後")
 JAPAN_TIME = "日本時間"
 
@@ -181,6 +183,11 @@ def judge(sentence, now):
 
 # several tasks are several things to do; several diary sentences are one entry
 _JOIN_SAME = ("idea", "diary")
+
+
+def asks_about_plans(text):
+    """Used when the language model is away, so a question never becomes a task."""
+    return bool(_ASKS.search(text.strip()))
 
 
 def names_its_kind(text):

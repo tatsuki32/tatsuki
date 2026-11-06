@@ -141,6 +141,39 @@ def _reply(lines, failed, unsure, by_rules=False):
     return "\n".join(out)
 
 
+def _day_label(day):
+    d = datetime.strptime(day, "%Y-%m-%d")
+    return f"{d.month}/{d.day}({'月火水木金土日'[d.weekday()]})"
+
+
+def answer(query):
+    """What is on the days a question asks about: the calendar, then Desk tasks due then. The model never sees these."""
+    days, cur = [], datetime.strptime(query.at, "%Y-%m-%d")
+    while cur.strftime("%Y-%m-%d") <= query.until:
+        days.append(cur.strftime("%Y-%m-%d"))
+        cur += timedelta(days=1)
+    try:
+        found, trouble = gcal.events(query.at, query.until), ""
+    except gcal.CalendarError as e:
+        logs.append("bot-errors", {"tool": "04-voice", "where": "calendar-read", "error": str(e)})
+        found, trouble = [], "カレンダーを読めませんでした。"
+    due = {}
+    for t in tasks.open_tasks():
+        if isinstance(t.get("due"), (int, float)):
+            day = datetime.fromtimestamp(t["due"] / 1000, paths.HCMC).strftime("%Y-%m-%d")
+            due.setdefault(day, []).append(t["title"])
+    out = [trouble] if trouble else []
+    for day in days:
+        here = [e for e in found if isinstance(e, dict) and e.get("date") == day]
+        lines = [f"・{'終日' if e.get('allDay') else str(e.get('start')) + '〜' + str(e.get('end'))} {e.get('title')}"
+                 for e in sorted(here, key=lambda e: (not e.get("allDay"), str(e.get("start"))))]
+        lines += [f"・期日のタスク：{title}" for title in due.get(day, [])]
+        if lines or len(days) == 1:
+            out.append(f"{_day_label(day)}の予定（{len(lines)}件）")
+            out += lines or ["予定はありません"]
+    return "\n".join(out) or f"{_day_label(days[0])}〜{_day_label(days[-1])}の予定はありません"
+
+
 def _split(text):
     """(parts, whether the rules did it). A memo that names its kind (「日記：…」) needs no model."""
     if sort.names_its_kind(text):
@@ -148,6 +181,10 @@ def _split(text):
     parts = analyze.parts(text, paths.now())
     if parts:
         return parts, False
+    if sort.asks_about_plans(text):
+        at, _ = sort.when(text, paths.now())
+        day = (at or paths.now()).strftime("%Y-%m-%d")
+        return [sort.Part("query", text, False, text, day, False, 0, day)], False
     return _rule_parts(text), bool(analyze.transcribe.key())
 
 
@@ -156,8 +193,11 @@ def take(text, is_voice=False):
     memo_id = paths.now().strftime("%Y%m%d-%H%M%S-") + uuid.uuid4().hex[:4]
     _save_inbox(memo_id, text, is_voice)
     parts, by_rules = _split(text)
+    answers = [answer(p) for p in parts if p.kind == "query"]
+    parts = [p for p in parts if p.kind != "query"]
     _save_inbox(memo_id, text, is_voice, parts)
-    return _reply(*_file_memo(memo_id, parts, is_voice), by_rules)
+    filed = _reply(*_file_memo(memo_id, parts, is_voice), by_rules)
+    return "\n\n".join(answers + ([filed] if filed else []))
 
 
 def leftovers():
@@ -177,7 +217,7 @@ def sweep():
             left += 1
             continue
         saved = meta.get("parts")
-        parts = [sort.Part(**p) for p in saved] if saved else _split(text)[0]
+        parts = [sort.Part(**p) for p in saved] if saved else [p for p in _split(text)[0] if p.kind != "query"]
         _, failed, _ = _file_memo(memo_id, parts, bool(meta.get("voice")), done.get(memo_id, ()))
         left += failed
         filed += not failed

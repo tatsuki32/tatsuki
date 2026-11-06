@@ -337,6 +337,78 @@ class TestAnalysis(SandboxCase):
         for v, want in [(20, 20), (90, 90), (None, 0), (0, 0), (-5, 0), (5000, 0), ("20", 0), (True, 0), (1.5, 0)]:
             self.assertEqual(self.an._minutes({"minutes": v}), want, v)
 
+    def ask(self, items, events):
+        os.environ["LIFEOS_GCAL_URL"] = "https://example.com/exec"
+        self.asked = []
+
+        def respond(req, timeout):
+            if req.full_url == self.an.URL:
+                return FakeResponse(model_answer(items))
+            self.asked.append(json.loads(req.data.decode("utf-8")))
+            if isinstance(events, Exception):
+                raise events
+            return FakeResponse(json.dumps({"ok": True, "events": events}).encode("utf-8"))
+
+        with mock.patch("urllib.request.urlopen", side_effect=respond):
+            return self.core.take("今日の予定教えて", True)
+
+    TODAY = {"items": [{"kind": "query", "title": "今日の予定", "text": "今日の予定教えて", "date": "2026-11-04", "date_to": None}]}
+
+    def test_a_question_is_answered_and_filed_nowhere(self):
+        tasks.add("資料を送る", due=int(NOW.replace(hour=23, minute=59).timestamp() * 1000))
+        tasks.add("来週の仕事", due=int(NOW.replace(day=11).timestamp() * 1000))
+        reply = self.ask(self.TODAY, [
+            {"title": "歯医者", "allDay": False, "date": "2026-11-04", "start": "14:00", "end": "14:15"},
+            {"title": "打ち合わせ", "allDay": False, "date": "2026-11-04", "start": "10:00", "end": "11:30"},
+            {"title": "誕生日", "allDay": True, "date": "2026-11-04", "start": "00:00", "end": "00:00"}])
+        self.assertEqual(self.asked[0], {"action": "list", "from": "2026-11-04", "to": "2026-11-04"})
+        self.assertEqual(reply.split("\n"), ["11/4(水)の予定（4件）", "・終日 誕生日", "・10:00〜11:30 打ち合わせ", "・14:00〜14:15 歯医者", "・期日のタスク：資料を送る"])
+        self.assertEqual(sorted(t["title"] for t in tasks.open_tasks()), ["来週の仕事", "資料を送る"])
+        self.assertEqual(logs.read("voice"), [])
+        self.assertEqual(self.core.leftovers(), [])
+
+    def test_an_empty_day_says_so(self):
+        self.assertEqual(self.ask(self.TODAY, []), "11/4(水)の予定（0件）\n予定はありません")
+
+    def test_a_span_lists_only_days_with_something(self):
+        items = {"items": [{"kind": "query", "text": "今週", "date": "2026-11-04", "date_to": "2026-11-08"}]}
+        reply = self.ask(items, [{"title": "会議", "allDay": False, "date": "2026-11-06", "start": "10:00", "end": "10:15"}])
+        self.assertEqual(reply, "11/6(金)の予定（1件）\n・10:00〜10:15 会議")
+        self.assertEqual(self.ask(items, []), "11/4(水)〜11/8(日)の予定はありません")
+
+    def test_when_the_calendar_cannot_be_read_it_says_so_and_still_gives_tasks(self):
+        tasks.add("資料を送る", due=int(NOW.replace(hour=23, minute=59).timestamp() * 1000))
+        reply = self.ask(self.TODAY, urllib.error.URLError("down"))
+        self.assertIn("カレンダーを読めませんでした", reply)
+        self.assertIn("資料を送る", reply)
+
+    def test_a_question_and_a_plan_in_one_message(self):
+        items = {"items": [self.TODAY["items"][0], {"kind": "task", "title": "牛乳を買う", "text": "牛乳を買う"}]}
+        reply = self.ask(items, [])
+        self.assertIn("予定はありません", reply)
+        self.assertIn("牛乳を買う", reply)
+        self.assertEqual([t["title"] for t in tasks.open_tasks()], ["牛乳を買う"])
+
+    def test_the_range_of_a_question_is_kept_sane(self):
+        for item, want in [({}, ("2026-11-04", "2026-11-04")), ({"date": "x"}, ("2026-11-04", "2026-11-04")),
+                           ({"date": "2026-11-05"}, ("2026-11-05", "2026-11-05")),
+                           ({"date": "2026-11-05", "date_to": "2026-11-01"}, ("2026-11-05", "2026-11-05")),
+                           ({"date": "2026-11-01", "date_to": "2027-11-01"}, ("2026-11-01", "2026-12-01"))]:
+            self.assertEqual(self.an._range(item, NOW), want, item)
+
+    def test_when_the_model_is_away_a_question_is_still_not_a_task(self):
+        os.environ["LIFEOS_GCAL_URL"] = "https://example.com/exec"
+
+        def respond(req, timeout):
+            if req.full_url == self.an.URL:
+                raise urllib.error.URLError("down")
+            return FakeResponse(b'{"ok": true, "events": []}')
+
+        for text, day in (("今日の予定を教えて", "11/4"), ("明日のタスクは？", "11/5")):
+            with mock.patch("urllib.request.urlopen", side_effect=respond):
+                self.assertIn(day, self.core.take(text, True))
+        self.assertEqual(tasks.open_tasks(), [])
+
     def test_a_calendar_failure_loses_nothing(self):
         os.environ["LIFEOS_GCAL_URL"] = "https://example.com/exec"
 
