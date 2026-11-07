@@ -293,6 +293,10 @@ details.draft .sent-as summary{cursor:pointer;display:block;padding:var(--s2) 0;
 .gform .g2{display:grid;grid-template-columns:1fr 1fr;gap:var(--s2)}
 .gform input[type=number],.gform input[type=url]{width:100%;min-height:44px;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:0 12px;font:inherit;font-size:var(--t3)}
 .gform label{display:block;margin-top:var(--s1)}
+.gpick{display:grid;grid-template-columns:88px minmax(0,1fr);gap:var(--s2) var(--s3);align-items:center}
+.gimg.big{width:88px;height:88px;font-size:32px}
+.gimg[data-gzoom]{cursor:zoom-in}
+.gzoom img{width:100%;height:auto;border-radius:var(--r-s);display:block}
 @media (max-width:560px){.grow{grid-template-columns:32px minmax(0,1fr) auto 40px;gap:2px 8px;padding:10px 12px}.grow .gimg{width:32px;height:32px;font-size:15px}.grow .gchk{width:40px;height:40px}}
 /* ---------- できたこと: the numbers first (contrast), then one card per day (repetition of the day card) ---------- */
 .wstats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:var(--s3) 0}
@@ -1006,12 +1010,14 @@ const GSRC={spec:"公称",measured:"実測",est:"推定"};
 const gearList=()=>S.gear.filter(g=>!g.deleted).sort((a,b)=>(+a.order||0)-(+b.order||0)||(a.createdAt||0)-(b.createdAt||0));
 const gW=g=>g.grams==null||g.grams===""?null:Math.round(+g.grams*(+g.qty||1));
 const fmtG=n=>n==null?"—":n>=1000?(n/1000).toFixed(2).replace(/\.?0+$/,"")+" kg":n+" g";
+/* a photo is either an uploaded asset id (served at /_blob/<id>, online only) or an https URL */
+const gImg=g=>/^[0-9a-f]{32}$/.test(g.img||"")?(db?"/_blob/"+g.img:""):okUrl(g.img)&&/^https:/.test(g.img)?g.img:"";
 function gearView(){
   const all=gearList(), have=all.filter(g=>!g.gone), gone=all.filter(g=>g.gone);
   const total=have.reduce((s,g)=>s+(gW(g)||0),0), unknown=have.filter(g=>gW(g)==null).length, est=have.filter(g=>g.gsrc==="est"&&gW(g)!=null).length;
   const packed=have.filter(g=>g.packed).length, left=have.filter(g=>!g.packed);
   const row=g=>{const w=gW(g),c=GCAT[g.cat]||GCAT.other,q=+g.qty||1;
-    return `<div class="grow ${g.packed?"on":""}">${okUrl(g.img)?`<img class="gimg" src="${esc(g.img)}" alt="" loading="lazy">`:`<span class="gimg e" aria-hidden="true">${c[1]}</span>`}
+    return `<div class="grow ${g.packed?"on":""}">${gImg(g)?`<img class="gimg" src="${esc(gImg(g))}" alt="" loading="lazy" data-gzoom="${esc(g.id)}">`:`<span class="gimg e" aria-hidden="true">${c[1]}</span>`}
       <div style="min-width:0"><button class="tt" data-gedit="${esc(g.id)}">${esc(g.name)}</button><div class="due">${[q>1?q+"個":"",g.note?esc(g.note):"",g.gsrc&&w!=null?GSRC[g.gsrc]||"":"",okUrl(g.url)?`<a href="${esc(g.url)}" target="_blank" rel="noopener">商品ページ ↗</a>`:""].filter(Boolean).join(" · ")}</div></div>
       <span class="gw ${w==null?"none":""}">${fmtG(w)}</span>
       <button class="gchk ${g.packed?"on":""}" data-gpack="${esc(g.id)}" aria-pressed="${!!g.packed}" aria-label="${esc(g.name)}を${g.packed?"まだにする":"入れた"}">${g.packed?"✓":""}</button></div>`};
@@ -1042,12 +1048,21 @@ function gearForm(g){
       <div><label class="sub" for="gSrc">重さの根拠</label><select id="gSrc"><option value="">—</option>${Object.entries(GSRC).map(([k,l])=>`<option value="${k}" ${g?.gsrc===k?"selected":""}>${l}</option>`).join("")}</select></div></div>
       <label class="sub" for="gNote">メモ（型番・色など）</label><input type="text" id="gNote" maxlength="120" value="${v("note")}" autocomplete="off">
       <label class="sub" for="gUrl">商品ページの URL</label><input type="url" id="gUrl" value="${v("url")}" placeholder="https://" autocomplete="off">
-      <label class="sub" for="gImg">写真の URL</label><input type="url" id="gImg" value="${v("img")}" placeholder="https://" autocomplete="off">
+      <label class="sub">写真</label>
+      <div class="gpick">${gImg(g||{})?`<img class="gimg big" src="${esc(gImg(g))}" alt="">`:`<span class="gimg big e" aria-hidden="true">📷</span>`}
+        <div class="row">${S.assets?`<label class="btn" for="gFile">写真を選ぶ</label><input type="file" id="gFile" accept="image/*" class="sr">`:""}${g?.img?`<button class="btn sm" id="gImgClear" type="button">写真を外す</button>`:""}<span class="sub" id="gImgMsg">${S.assets?"":"写真の追加はオンライン版で"}</span></div>
+        <input type="hidden" id="gImg" value="${v("img")}"></div>
+      <label class="sub" for="gUrl2">写真の URL（任意）</label><input type="url" id="gUrl2" value="${/^[0-9a-f]{32}$/.test(g?.img||"")?"":v("img")}" placeholder="https://" autocomplete="off">
       <div class="row"><button class="btn primary" id="gOk">${g?"保存":"足す"}</button><button class="btn" id="gCancel">やめる</button>${g?`<span style="flex:1"></span><button class="btn" id="gGone">${g.gone?"また持つ":"手放した"}</button><button class="ibtn" id="gDel" aria-label="消す" title="消す">🗑️</button>`:""}</div>
     </div></div>`;
     const done=v=>{$("#modal").innerHTML="";res(v)};
-    const read=()=>({name:$("#gName").value.trim().slice(0,80),cat:$("#gCat").value,qty:Math.max(1,Math.min(99,+$("#gQty").value||1)),grams:$("#gGrams").value===""?null:Math.max(0,Math.round(+$("#gGrams").value)),gsrc:$("#gSrc").value,note:$("#gNote").value.trim().slice(0,120),url:$("#gUrl").value.trim(),img:$("#gImg").value.trim()});
+    const read=()=>({name:$("#gName").value.trim().slice(0,80),cat:$("#gCat").value,qty:Math.max(1,Math.min(99,+$("#gQty").value||1)),grams:$("#gGrams").value===""?null:Math.max(0,Math.round(+$("#gGrams").value)),gsrc:$("#gSrc").value,note:$("#gNote").value.trim().slice(0,120),url:$("#gUrl").value.trim(),img:$("#gImg").value.trim()||$("#gUrl2").value.trim()});
     $("#gName").focus();
+    const fi=$("#gFile");if(fi)fi.onchange=async()=>{const f=fi.files&&fi.files[0];if(!f)return;$("#gImgMsg").textContent="送っています…";
+      try{const blob=await shrinkImage(f);const r=await S.assets.upload(blob,{type:"image/jpeg"});$("#gImg").value=r.id;$("#gUrl2").value="";
+        const im=document.createElement("img");im.className="gimg big";im.src=r.url;im.alt="";$(".gpick").firstElementChild.replaceWith(im);$("#gImgMsg").textContent="写真を受け取りました。保存を押してください"}
+      catch(e){$("#gImgMsg").textContent=e?.code==="quota_or_state"?"保存先がいっぱいです":"写真を送れませんでした"}};
+    $("#gImgClear")&&($("#gImgClear").onclick=()=>{$("#gImg").value="";$("#gUrl2").value="";$("#gImgMsg").textContent="保存を押すと写真が外れます"});
     $("#gOk").onclick=()=>{const r=read();if(!r.name){$("#gName").focus();return}done(r)};
     $("#gCancel").onclick=()=>done(null);$("#xG").onclick=()=>done(null);
     $("#scrim").onclick=e=>{if(e.target.id==="scrim")done(null)};
@@ -1055,6 +1070,11 @@ function gearForm(g){
     if(g){$("#gGone").onclick=()=>done({...read(),gone:!g.gone,packed:false});$("#gDel").onclick=()=>done({...read(),deleted:true})}
   });
 }
+/* phones send 3–5 MB photos; a 900px JPEG is plenty for a list and keeps the artifact's storage small */
+function shrinkImage(file){return new Promise((res,rej)=>{const url=URL.createObjectURL(file),im=new Image();im.onload=()=>{URL.revokeObjectURL(url);const M=900,r=Math.min(1,M/Math.max(im.width,im.height)),c=document.createElement("canvas");c.width=Math.round(im.width*r);c.height=Math.round(im.height*r);c.getContext("2d").drawImage(im,0,0,c.width,c.height);c.toBlob(b=>b?res(b):rej(new Error("blob")),"image/jpeg",.85)};im.onerror=()=>{URL.revokeObjectURL(url);rej(new Error("img"))};im.src=url})}
+function zoomGear(id){const g=S.gear.find(x=>x.id===id),src=g&&gImg(g);if(!src||$("#modal").firstChild)return;
+  $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop gzoom" role="dialog" aria-modal="true" aria-label="${esc(g.name)}"><div class="top"><h2>${esc(g.name)}</h2><button class="ibtn" id="xZ" aria-label="閉じる">✕</button></div><img src="${esc(src)}" alt=""></div></div>`;
+  const done=()=>{$("#modal").innerHTML=""};$("#xZ").onclick=done;$("#scrim").onclick=e=>{if(e.target.id==="scrim")done()}}
 async function editGear(g){
   const r=await gearForm(g); if(!r) return;
   const rec=g?{...g,...r}:{id:"g"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),createdAt:Date.now(),packed:false,gone:false,...r};
@@ -2030,6 +2050,7 @@ function wire(){
   document.querySelectorAll("[data-gpack]").forEach(b=>b.onclick=()=>toggleGearPack(b.dataset.gpack));
   document.querySelectorAll("[data-gedit]").forEach(b=>b.onclick=()=>editGear(S.gear.find(x=>x.id===b.dataset.gedit)));
   $("#gearNew")&&($("#gearNew").onclick=()=>editGear(null));
+  document.querySelectorAll("[data-gzoom]").forEach(i=>i.onclick=()=>zoomGear(i.dataset.gzoom));
   $("#gearReset")&&($("#gearReset").onclick=resetGearPack);
   document.querySelectorAll("[data-hdel]").forEach(b=>b.onclick=async()=>{if(!b.dataset.sure){b.dataset.sure="1";b.textContent="やめる？";b.setAttribute("aria-label","もう一度押すとやめます。記録は残りません");return}
     const h=S.habits.find(x=>x.id===b.dataset.hdel);if(h)try{await store.putHabit({...h,deleted:true})}catch(e){toast("保存できませんでした")}});
@@ -2355,6 +2376,7 @@ autoLinkStart();
   sub("wins",d=>S.wins=d.map(x=>({id:x.id,...x.data()})).filter(w=>!w.deleted));
   sub("gear",d=>S.gear=d.map(x=>({id:x.id,...x.data()})).filter(g=>!g.deleted));
   claude.use("sample").then(x=>{S.sampleOk=!!x;render()});
+  claude.use("assets").then(a=>{S.assets=a||null}); // 持ち物の写真。編集できる人だけ非 null
   sub("prompts",d=>S.prompts=promptsById(d.map(x=>({id:x.id,...x.data()}))));
   sub("calendar",d=>S.cal=d.find(x=>x.id==="upcoming")?.data()||null);
   sub("gtasks",d=>S.gtasks=d.find(x=>x.id==="current")?.data()||null);
