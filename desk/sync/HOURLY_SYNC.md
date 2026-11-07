@@ -22,10 +22,10 @@ python3 "$DESK/../lifeos/11-notes/cli.py" run
 
 失敗したら内容を報告して手順 2 に進む。
 
-## 2. データを同期する（memos / dues / tasks / prompts / notes / habits / lifemap / wins は双方向、lifeos は Mac → オンライン、それ以外はオンライン → Mac）
+## 2. データを同期する（memos / dues / tasks / prompts / notes / habits / lifemap / wins / gear は双方向、lifeos は Mac → オンライン、それ以外はオンライン → Mac）
 
 1. ArtifactData でオンライン版の次のコレクションを全件読む（`list`、ページがあれば最後まで）:
-   `memos`, `dues`, `tasks`, `prompts`, `notes`, `habits`, `lifemap`, `wins`, `lifeos`, `followups`, `tools`, `calendar`, `gtasks`, `reports`, `watch`, `editions`, `days`
+   `memos`, `dues`, `tasks`, `prompts`, `notes`, `habits`, `lifemap`, `wins`, `gear`, `lifeos`, `followups`, `tools`, `calendar`, `gtasks`, `reports`, `watch`, `editions`, `days`
    - `editions` と `days` は新しい順に 60 件 / 30 件あれば十分
 2. 読めたものだけを、スクラッチの一時ファイル `remote.json` に次の形で書く
    （読めなかったコレクションはキーごと省く。空配列にしない。空にすると Mac 側だけのデータが消えたように見えるため）:
