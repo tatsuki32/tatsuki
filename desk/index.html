@@ -439,6 +439,80 @@ h1 .inedit{font-size:var(--t4);font-weight:700}
 .fbclock{font-size:56px;line-height:1.1}
 @media (max-width:760px){.nav a[href="#focus"]{display:none}}
 
+/* ---------- projects: one card per box, one row per task. The box colour is a dot and a thin left line, never a fill; gold stays for today and the focus. ---------- */
+.nav .label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nav .pnew{display:flex;align-items:center;gap:10px;width:100%;padding:6px var(--s2);font-size:var(--t2);border:0;background:none;color:var(--muted);cursor:pointer;text-align:left;border-radius:var(--r-s)}
+.nav .pnew:hover{background:var(--surface);color:var(--ink)}
+.ptag{display:inline-flex;align-items:center;gap:4px;font-size:var(--t1);color:var(--muted);white-space:nowrap;max-width:14em;overflow:hidden;text-overflow:ellipsis;vertical-align:bottom}
+.ptiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:var(--s2)}
+.ptile{display:grid;gap:2px;padding:10px 12px;border-radius:var(--r);background:var(--surface);border:1px solid var(--line);text-align:left;color:var(--ink);min-width:0;cursor:pointer}
+.ptile:hover{border-color:var(--line-2)}
+.ptile i{display:block;height:3px;border-radius:2px;margin-bottom:4px}
+.ptile b{font-size:var(--t2);line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ptile span{font-size:var(--t1);color:var(--muted)}
+.pbar{display:flex;flex-wrap:wrap;gap:var(--s2);align-items:center;justify-content:space-between}
+.secs{display:grid;gap:var(--s3)}
+.sec{scroll-margin-top:72px;transition:background .15s}
+.sec.over{background:var(--accent-soft)}
+.sec .dhead{align-items:center}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;flex:0 0 auto}
+.sec .dhead h2{min-width:0;overflow-wrap:anywhere}
+.sec .dhead .when{font-size:var(--t1);color:var(--muted)}
+.sec .dhead .acts{margin-left:auto;display:flex;gap:2px}
+.snote{margin:0;padding:0 var(--s3) var(--s2);font-size:var(--t1);color:var(--muted);max-width:40em}
+.ghd{padding:var(--s2) var(--s3) 0;font-size:var(--t1);color:var(--ink-2);font-weight:700}
+.srow{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:2px 12px;align-items:start;padding:10px var(--s3);border-top:1px solid var(--line)}
+.srow.dragging{opacity:.4}
+.srow.before{box-shadow:inset 0 2px 0 var(--accent)}
+.srow .tt{font-size:var(--t2)}
+.srow.on .tt{color:var(--muted);text-decoration:line-through}
+.srow .d{font-size:var(--t1);color:var(--muted);overflow-wrap:anywhere;display:flex;flex-wrap:wrap;gap:4px 6px;align-items:center}
+.srow .est{font-size:var(--t1);color:var(--muted);white-space:nowrap;padding-top:4px;text-align:right}
+.srow .pill{margin-left:6px}
+.pchk{width:28px;height:28px;border-radius:var(--r-s);border:1px solid var(--line-2);background:transparent;color:var(--green);font-size:14px;font-weight:700;cursor:pointer;padding:0;margin-top:1px}
+.pchk.on{background:var(--green-soft);border-color:transparent}
+.pchk:hover{border-color:var(--ink-2)}
+.sdate{display:inline-block;font-size:var(--t1);font-weight:700;border-radius:4px;padding:0 6px;margin-right:6px;background:var(--surface-2);color:var(--ink);font-variant-numeric:tabular-nums;vertical-align:1px}
+.sdate.hot{background:var(--red-soft);color:var(--red)}
+.csw i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
+.pop .g2{display:grid;grid-template-columns:1fr 1fr;gap:var(--s2)}
+.pop input[type=date]{width:100%;min-height:44px;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:0 12px;font:inherit;font-size:var(--t3);color-scheme:dark}
+.pop .chk{display:flex;align-items:center;gap:8px;min-height:44px;font-size:var(--t2);cursor:pointer}
+.pop .chk input{width:20px;height:20px;accent-color:var(--accent);margin:0}
+@media (max-width:560px){.srow{grid-template-columns:28px minmax(0,1fr)}.srow .est{grid-column:2;text-align:left;padding-top:0}.pop .g2{grid-template-columns:1fr}}
+/* month calendar; on a phone the same month is a list, one card a week */
+.pcal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border-left:1px solid var(--line);border-top:1px solid var(--line);margin:0 var(--s3) var(--s3)}
+.pcal .wd{padding:4px 6px;font-size:var(--t1);color:var(--muted);border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+.pcd{min-height:84px;padding:4px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);display:grid;gap:2px;align-content:start;min-width:0}
+.pcd.out{opacity:.4}
+.pcd.today .n{color:var(--accent);font-weight:700}
+.pcd .n{font-size:var(--t1);color:var(--muted);font-variant-numeric:tabular-nums;padding:0 2px}
+.pcev{display:block;width:100%;text-align:left;border:0;border-left:3px solid var(--ink-2);background:var(--surface-2);border-radius:4px;padding:1px 6px;font-size:var(--t1);line-height:1.5;color:var(--ink);cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pcev:hover{background:var(--line)}
+.pcev.on{color:var(--muted);text-decoration:line-through}
+.pweek{display:none}
+.pwrow{display:grid;grid-template-columns:64px minmax(0,1fr);gap:var(--s2);padding:8px var(--s3);border-top:1px solid var(--line)}
+.pwrow .n{font-size:var(--t1);color:var(--muted);padding-top:2px}
+.pwrow .pcev{white-space:normal}
+.pwrow .pcev+.pcev{margin-top:4px}
+@media (max-width:560px){.pcal{display:none}.pweek{display:grid;gap:var(--s3)}}
+/* gantt: boxes as groups, days across. The page never scrolls sideways; only this strip does. */
+.gtwrap{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;padding-bottom:var(--s2)}
+.gt{position:relative}
+.gtr{display:grid;grid-template-columns:180px auto;min-height:32px;border-top:1px solid var(--line)}
+.gth{border-top:0;min-height:40px}
+.gtl{position:sticky;left:0;z-index:2;background:var(--surface);padding:6px 12px;font-size:var(--t1);display:flex;align-items:center;gap:6px;min-width:0;border-right:1px solid var(--line)}
+.gtg .gtl{font-weight:700;font-size:var(--t2);color:var(--ink)}
+.gtl .tt{font-size:var(--t1);font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;width:100%}
+.gtt{position:relative}
+.gtm{position:absolute;top:4px;height:34px;font-size:var(--t1);color:var(--ink);font-weight:700;padding-left:4px;border-left:1px solid var(--line-2);white-space:nowrap}
+.gtd{position:absolute;top:22px;font-size:10px;color:var(--muted);padding-left:3px;border-left:1px solid var(--line);height:14px}
+.gtb{position:absolute;top:8px;height:16px;border-radius:4px;opacity:.9}
+.gtb.dot{border-radius:50%;width:12px!important;height:12px;top:10px;margin-left:2px}
+.gtb.on{opacity:.3}
+.gtnow{position:absolute;top:0;bottom:0;width:2px;background:var(--accent);z-index:1;pointer-events:none}
+@media (max-width:560px){.gtr{grid-template-columns:120px auto}}
+
 /* ---------- popups ---------- */
 .scrim{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.6);display:flex;align-items:flex-start;justify-content:center;padding:calc(64px + env(safe-area-inset-top,0px)) max(var(--s3),env(safe-area-inset-right,0px)) var(--s3) max(var(--s3),env(safe-area-inset-left,0px))}
 .pop{width:min(460px,100%);background:var(--surface);border:1px solid var(--line-2);border-radius:16px;box-shadow:0 24px 60px rgba(0,0,0,.5);padding:var(--s4) var(--s3) var(--s3);display:grid;gap:12px;max-height:calc(100vh - 80px);overflow-y:auto}
@@ -575,6 +649,7 @@ const VIEWS=[{id:"home",e:"🏠",label:"ホーム",g:"today"},{id:"tasks",e:"�
 const TABS=["home","tasks","calendar","notes"]; // phone tab bar; the rest is under その他
 VIEWS.push({id:"lifeos",e:"🧩",label:"Life OS",g:"write"});
 VIEWS.push({id:"gear",e:"🎒",label:"持ち物",g:"write"});
+VIEWS.push({id:"project",e:"📁",label:"プロジェクト",g:"hidden"}); // #project/<id>; the rail lists each project under its own heading
 VIEWS.splice(VIEWS.findIndex(v=>v.id==="wins")+1,0,{id:"followups",e:"⏳",label:"返信待ち",g:"in"});
 VIEWS.splice(VIEWS.findIndex(v=>v.id==="notes")+1,0,{id:"memolink",e:"🔗",label:"メモ連携",g:"write"});
 /* Stored values (group, region, priority, status) stay in English so sync and older data keep working; only the labels shown are Japanese. */
@@ -588,10 +663,11 @@ const PRIO={"Action needed":0,"Reply drafted":1,"FYI":2};
 const S={tools:[],editions:[],days:[],memos:[],ed:null,day:null,region:"All",q:"",confirm:null,busy:null,notes:{},local:false,dues:{},dl:[],dlMap:{},dlAll:false,quietUntil:0,tasks:[],board:[],taskCol:"notyet",cal:null,gtasks:null,reports:[],logDay:null,prompts:{},watch:[],watchId:null,focus:null,wnotes:[],noteId:null,habits:[],memory:null,nextSkip:0,wins:[],winsDays:14};
 let db=null;
 S.gear=[]; // 持ち物: everything owned, grams, packing check
+S.projects=[];S.sections=[];S.projFilter="all";S.pDone=false; // projects: lists split into boxes; every project task is still an ordinary task
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const okUrl=u=>/^(https:\/\/|file:\/\/|#)/.test(u||"");
-const viewId=()=>{const h=(location.hash||"").slice(1);if(h==="mail")return "tasks";return VIEWS.some(v=>v.id===h)?h:"home"}; // 朝のメール moved into the tasks
+const viewId=()=>{const h=(location.hash||"").slice(1);if(h==="mail")return "tasks";if(/^project\//.test(h))return "project";return VIEWS.some(v=>v.id===h&&v.g!=="hidden")?h:"home"}; // 朝のメール moved into the tasks
 const viewLabel=id=>(VIEWS.find(v=>v.id===id)||{}).label||id;
 const ago=ms=>{const d=(Date.now()-ms)/6e4;if(d<1)return"たった今";if(d<60)return Math.round(d)+"分前";if(d<1440)return Math.round(d/60)+"時間前";return new Date(ms).toLocaleDateString("ja-JP",{month:"long",day:"numeric"})};
 function toast(t){const el=document.createElement("div");el.className="toast";el.textContent=t;$("#toastHost").replaceChildren(el);setTimeout(()=>el.remove(),2200)}
@@ -602,8 +678,8 @@ const LOCALAPI=/^https?:$/.test(location.protocol)&&/^(localhost|127\.0\.0\.1)$/
 if(LOCALAPI) VIEWS.splice(4,0,{id:"focus",e:"🎯",label:"集中",g:"today"}); // blocks apps on this Mac, so the Mac version only
 async function api(method,path,body){const r=await fetch(path,{method,headers:{"Content-Type":"application/json"},body:body?JSON.stringify(body):undefined});if(!r.ok)throw new Error(r.status);return r.json()}
 async function loadApiMemos(){try{
-  const [memos,dues,tasks,prompts,notes,habits,wins,gear]=await Promise.all([api("GET","/api/memos"),api("GET","/api/dues"),api("GET","/api/tasks"),api("GET","/api/prompts").catch(()=>[]),api("GET","/api/notes").catch(()=>[]),api("GET","/api/habits").catch(()=>[]),api("GET","/api/wins").catch(()=>[]),api("GET","/api/gear").catch(()=>[])]);
-  S.gear=gear.filter(g=>!g.deleted);S.habits=habits.filter(h=>!h.deleted);S.wins=wins.filter(w=>!w.deleted);S.memos=memos.filter(m=>!m.deleted);S.dues=duesById(dues);S.tasks=tasks.filter(t=>!t.deleted);S.prompts=promptsById(prompts);S.wnotes=notes.filter(n=>!n.deleted);render()}catch(e){toast("Desk サーバーにつながりません。起動していますか？")}}
+  const [memos,dues,tasks,prompts,notes,habits,wins,gear,projects,sections]=await Promise.all([api("GET","/api/memos"),api("GET","/api/dues"),api("GET","/api/tasks"),api("GET","/api/prompts").catch(()=>[]),api("GET","/api/notes").catch(()=>[]),api("GET","/api/habits").catch(()=>[]),api("GET","/api/wins").catch(()=>[]),api("GET","/api/gear").catch(()=>[]),api("GET","/api/projects").catch(()=>[]),api("GET","/api/sections").catch(()=>[])]);
+  S.projects=projects.filter(p=>!p.deleted);S.sections=sections.filter(x=>!x.deleted);S.gear=gear.filter(g=>!g.deleted);S.habits=habits.filter(h=>!h.deleted);S.wins=wins.filter(w=>!w.deleted);S.memos=memos.filter(m=>!m.deleted);S.dues=duesById(dues);S.tasks=tasks.filter(t=>!t.deleted);S.prompts=promptsById(prompts);S.wnotes=notes.filter(n=>!n.deleted);render()}catch(e){toast("Desk サーバーにつながりません。起動していますか？")}}
 const promptsById=list=>Object.fromEntries(list.filter(p=>p&&p.id&&!p.deleted).map(p=>[p.id,p]));
 const duesById=list=>Object.fromEntries(list.filter(v=>v&&v.uid).map(v=>[v.uid,v]));
 const store={
@@ -646,6 +722,14 @@ const store={
     if(db){await db.collection("gear").doc(g.id).set(rec)}
     else if(LOCALAPI){await api("PUT","/api/gear/"+encodeURIComponent(g.id),rec);await loadApiMemos()}
     else {S.gear=[...S.gear.filter(x=>x.id!==g.id),{id:g.id,...rec}].filter(x=>!x.deleted);try{localStorage.setItem("desk-gear",JSON.stringify(S.gear))}catch(e){}render()} },
+  async putProject(p){ const rec={name:p.name||"",emoji:p.emoji||"📁",color:p.color||"#2f6fd0",order:+p.order||0,archived:!!p.archived,lastView:p.lastView||"sections",createdAt:p.createdAt||Date.now(),updatedAt:Date.now(),deleted:!!p.deleted};
+    if(db){await db.collection("projects").doc(p.id).set(rec)}
+    else if(LOCALAPI){await api("PUT","/api/projects/"+encodeURIComponent(p.id),rec);await loadApiMemos()}
+    else {S.projects=[...S.projects.filter(x=>x.id!==p.id),{id:p.id,...rec}].filter(x=>!x.deleted);try{localStorage.setItem("desk-projects",JSON.stringify(S.projects))}catch(e){}render()} },
+  async putSection(x){ const rec={projectId:x.projectId||"",name:x.name||"",color:x.color||"#8a8a93",order:+x.order||0,when:x.when||"",note:x.note||"",groups:(x.groups||[]).map(g=>String(g).trim()).filter(Boolean),createdAt:x.createdAt||Date.now(),updatedAt:Date.now(),deleted:!!x.deleted};
+    if(db){await db.collection("sections").doc(x.id).set(rec)}
+    else if(LOCALAPI){await api("PUT","/api/sections/"+encodeURIComponent(x.id),rec);await loadApiMemos()}
+    else {S.sections=[...S.sections.filter(y=>y.id!==x.id),{id:x.id,...rec}].filter(y=>!y.deleted);try{localStorage.setItem("desk-sections",JSON.stringify(S.sections))}catch(e){}render()} },
   async setMailStatus(key,status,day){ if(!db)return; const ref=db.collection("days").doc(day||S.day);const s=await ref.get();if(!s.exists)return;const items=(s.data().items||[]).map(x=>x.key===key?{...x,status}:x);await ref.update({items}) }
 };
 function saveLocal(){try{localStorage.setItem("desk-memos",JSON.stringify(S.memos))}catch(e){}}
@@ -779,7 +863,10 @@ const LINKED=new Set(["mail","calendar","gtasks","claude","daily"]); // these co
 const tLabel=k=>(TSTATUS.find(s=>s[0]===k)||[k,k])[1];
 const mailTaskId=uid=>"t"+dueDocId(uid);
 const newTaskId=()=>"t"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
-const taskRecord=t=>({id:t.id,title:t.title,status:t.status||"notyet",source:t.source||"manual",sourceRef:t.sourceRef||"",due:LINKED.has(t.source)?null:(t.due??null),note:t.note||"",createdAt:t.createdAt||Date.now(),deleted:!!t.deleted});
+/* project fields are written only when set, so a task outside any project is stored exactly as before */
+const taskRecord=t=>{const r={id:t.id,title:t.title,status:t.status||"notyet",source:t.source||"manual",sourceRef:t.sourceRef||"",due:LINKED.has(t.source)?null:(t.due??null),note:t.note||"",createdAt:t.createdAt||Date.now(),deleted:!!t.deleted};
+  ["projectId","sectionId","group","desc","estimate","start","dateLabel"].forEach(k=>{if(t[k])r[k]=String(t[k])});
+  if(t.urgent)r.urgent=true; if(t.order!=null&&t.order!==""&&!isNaN(+t.order))r.order=+t.order; return r};
 const byDeadline=(a,b)=>(a.deadline??Infinity)-(b.deadline??Infinity)||(b.createdAt||0)-(a.createdAt||0);
 const withDeadline=t=>({...t,deadline:t.due!=null?t.due-LEAD:null});
 /* Calendar events whose title starts with a mark become tasks: "TODO 書類を送る", "【やる】…", "☑ …" */
@@ -851,20 +938,26 @@ function taskCard(t){
   const [ic,src]=TSRC[t.source]||TSRC.manual, open=TOPEN.has(t.status);
   return `<article class="task ${open?"":"closed"}" draggable="true" data-task="${esc(t.id)}">
     <button class="tt" data-topen="${esc(t.id)}">${esc(t.title)}</button>
-    <div class="tm">${t.url&&okUrl(t.url)?`<a href="${esc(t.url)}" target="_blank" rel="noopener" title="${src}で開く" aria-label="${src}で開く">${ic}</a>`:`<span title="${src}" aria-label="${src}">${ic}</span>`}${t.mail?`<span class="from">${esc(t.mail.sub)}</span>`:t.due!=null?`<span>期日 ${esc(fmtDue(t.due))}</span>`:""}${open&&t.deadline!=null?dlChip(t):""}
+    <div class="tm">${t.url&&okUrl(t.url)?`<a href="${esc(t.url)}" target="_blank" rel="noopener" title="${src}で開く" aria-label="${src}で開く">${ic}</a>`:`<span title="${src}" aria-label="${src}">${ic}</span>`}${t.projectId?projTag(t):""}${t.mail?`<span class="from">${esc(t.mail.sub)}</span>`:t.due!=null?`<span>期日 ${esc(fmtDue(t.due))}</span>`:""}${open&&t.deadline!=null?dlChip(t):""}
       <select data-tstatus="${esc(t.id)}" aria-label="ステータス">${TSTATUS.map(([k,l])=>`<option value="${k}" ${k===t.status?"selected":""}>${l}</option>`).join("")}</select></div>
   </article>`;
 }
+/* the three columns, for the whole desk or for one project */
+function boardHtml(list,hint){
+  const col=k=>list.filter(t=>t.status===k).sort(k==="done"?(a,b)=>(b.updatedAt||0)-(a.updatedAt||0):byDeadline);
+  hint=hint||{notyet:"新しいタスクと対応が必要なメール",doing:"ここにドラッグして着手",done:"終わったらここへ"};
+  return `<div class="chips colTabs" role="group" aria-label="表示する列">${TCOLS.map(k=>`<button class="chip" data-tcol="${k}" aria-pressed="${S.taskCol===k}">${tLabel(k)} ${col(k).length}</button>`).join("")}</div>
+  <div class="board">${TCOLS.map(k=>{const items=col(k);return `<section class="col ${S.taskCol===k?"show":""}" data-col="${k}" aria-label="${tLabel(k)}">
+    <h2>${tLabel(k)}<span class="count">${items.length}</span></h2>${items.map(taskCard).join("")||`<p class="hint">${hint[k]}</p>`}</section>`}).join("")}</div>`;
+}
 function tasks(){
-  const col=k=>S.board.filter(t=>t.status===k).sort(k==="done"?(a,b)=>(b.updatedAt||0)-(a.updatedAt||0):byDeadline);
-  const shelf=S.board.filter(t=>t.status==="archived"||t.status==="dropped").sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
-  const hint={notyet:"新しいタスクと対応が必要なメール",doing:"ここにドラッグして着手",done:"終わったらここへ"};
+  const f=projActive().some(p=>p.id===S.projFilter)?S.projFilter:"all", list=f==="all"?S.board:S.board.filter(t=>t.projectId===f);
+  const shelf=list.filter(t=>t.status==="archived"||t.status==="dropped").sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
   return `
   <header class="head"><div><p class="eyebrow">タスク</p><h1>やること</h1></div><div class="row"><a class="btn" href="https://tasks.google.com/" target="_blank" rel="noopener">Googleタスク ↗</a><button class="btn primary" id="newTask">＋ 新しいタスク <kbd>T</kbd></button></div></header>
   ${notesHere("tasks")}
-  <div class="chips colTabs" role="group" aria-label="表示する列">${TCOLS.map(k=>`<button class="chip" data-tcol="${k}" aria-pressed="${S.taskCol===k}">${tLabel(k)} ${col(k).length}</button>`).join("")}</div>
-  <div class="board">${TCOLS.map(k=>{const items=col(k);return `<section class="col ${S.taskCol===k?"show":""}" data-col="${k}" aria-label="${tLabel(k)}">
-    <h2>${tLabel(k)}<span class="count">${items.length}</span></h2>${items.map(taskCard).join("")||`<p class="hint">${hint[k]}</p>`}</section>`}).join("")}</div>
+  ${projChips(f)}
+  ${boardHtml(list)}
   ${shelf.length?`<details class="card shelf"><summary>🗃️ アーカイブ・やめた <span class="count">${shelf.length}</span></summary><div class="list2">${shelf.map(taskCard).join("")}</div></details>`:""}
   ${S.local&&!LOCALAPI?'<p class="sub">ファイルとして開いているので、タスクはこのブラウザにだけ保存されます。「Start Desk」を実行すると Mac に保存されます。</p>':""}`;
 }
@@ -1143,7 +1236,7 @@ function todayPanel(skip){
   const MAX=5, skipIds=new Set(skip||[]);
   const doing=S.board.filter(t=>t.status==="doing"&&!skipIds.has(t.id)).sort(byDeadline), notyet=S.board.filter(t=>t.status==="notyet"&&!skipIds.has(t.id)).sort(byDeadline);
   const list=[...doing,...notyet], n=list.length, rest=n-Math.min(n,MAX);
-  const row=t=>`<div class="drow"><span class="e" aria-hidden="true">${(TSRC[t.source]||TSRC.manual)[0]}</span><div style="min-width:0"><button class="tt" data-topen="${esc(t.id)}">${esc(t.title)}</button><div class="due">${t.mail?`${esc(t.mail.sub)} · ${dueLine(t.mail)}`:t.due!=null?"期日 "+esc(fmtDue(t.due)):""}</div></div><div class="dacts">${t.deadline!=null?dlChip(t):""}<select class="tsel ${t.status}" data-tstatus="${esc(t.id)}" aria-label="ステータス">${TSTATUS.map(([k,l])=>`<option value="${k}" ${k===t.status?"selected":""}>${l}</option>`).join("")}</select></div></div>`;
+  const row=t=>`<div class="drow"><span class="e" aria-hidden="true">${(TSRC[t.source]||TSRC.manual)[0]}</span><div style="min-width:0"><button class="tt" data-topen="${esc(t.id)}">${esc(t.title)}</button><div class="due">${[t.projectId?projTag(t):"",t.mail?`${esc(t.mail.sub)} · ${dueLine(t.mail)}`:t.due!=null?"期日 "+esc(fmtDue(t.due)):""].filter(Boolean).join(" · ")}</div></div><div class="dacts">${t.deadline!=null?dlChip(t):""}<select class="tsel ${t.status}" data-tstatus="${esc(t.id)}" aria-label="ステータス">${TSTATUS.map(([k,l])=>`<option value="${k}" ${k===t.status?"selected":""}>${l}</option>`).join("")}</select></div></div>`;
   return `<section class="card dpanel" aria-label="ほかのやること">
     <div class="dhead"><h2><span class="e">🗂️</span>ほかのやること</h2><span class="sub">進行中 ${doing.length} · 未着手 ${notyet.length}</span><a class="more" href="#tasks">ボード →</a></div>
     ${n?`<div>${list.slice(0,MAX).map(row).join("")}</div>${rest?`<button class="dmore" data-gonotyet>ほか ${rest}件を見る →</button>`:""}`:`<div class="empty"><b>ほかにやることはありません</b>T キーでタスクを足せます。</div>`}
@@ -1194,9 +1287,9 @@ function wireMail(t,close){
   };
   wire();
 }
-function openTask(id){
+function openTask(id,preset){
   if($("#modal").firstChild) return;
-  const t=id?findTask(id):null, isMail=t?.source==="mail", isLinked=LINKED.has(t?.source);
+  const t=id?findTask(id):null, pre=preset||{}, isMail=t?.source==="mail", isLinked=LINKED.has(t?.source);
   $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop" role="dialog" aria-modal="true" aria-label="${t?"タスクを編集":"新しいタスク"}">
     <div class="top"><h2>🗂️ ${t?"タスク":"新しいタスク"}</h2><button class="ibtn" id="xTask" aria-label="閉じる">✕</button></div>
     <label class="sub" for="tTitle">タイトル</label><input type="text" id="tTitle" value="${esc(t?.title||"")}" placeholder="例：FWOに書類を送る" autocomplete="off">
@@ -1204,17 +1297,18 @@ function openTask(id){
       :isLinked?`<p class="hint">${TSRC[t.source][0]} ${TSRC[t.source][1]}${t.due!=null?" · 期日 "+esc(fmtDue(t.due)):""} · 期日とタイトルは元の場所で変更${okUrl(t.url)?` · <a href="${esc(t.url)}" target="_blank" rel="noopener">開く ↗</a>`:""}${t.source==="gtasks"?"<br>「完了」にすると、次の更新で Google タスク側も完了になります。":""}</p>`
       :`<label class="sub" for="tDue">期日（任意）</label><input type="datetime-local" id="tDue" value="${t?.due!=null?toLocalInput(t.due):""}">`}
     <label class="sub" for="tStatus">ステータス</label><select id="tStatus">${TSTATUS.map(([k,l])=>`<option value="${k}" ${k===(t?.status||"notyet")?"selected":""}>${l}</option>`).join("")}</select>
+    ${isLinked?"":projFields(t||pre)}
     <label class="sub" for="tNote">メモ</label><textarea id="tNote" class="tnote" placeholder="必要なら詳細を。[言葉] でノートにつながります">${esc(t?.note||"")}</textarea>${t&&linksIn(t.note).length?`<p class="hint">🔗 ${linksIn(t.note).map(x=>wlink(x)).join(" ")}</p>`:""}
     <div class="row"><button class="btn primary" id="tSave">保存 <kbd>⌘/Ctrl + Enter</kbd></button><button class="btn" id="tCancel">キャンセル</button>${t&&!isLinked?`<button class="btn" id="tDel" style="margin-left:auto;color:var(--red)">削除</button>`:""}</div>
   </div></div>`;
   const ti=$("#tTitle");ti.focus();ti.setSelectionRange(ti.value.length,ti.value.length);
   const close=()=>{$("#modal").innerHTML=""};
-  wireJobs(t);wireMail(t,close);
+  wireJobs(t);wireMail(t,close);wireProjFields(t||pre);
   const save=async()=>{const title=ti.value.trim();if(!title){ti.focus();toast("タイトルを入れてください");return}
     const dueIn=$("#tDue"), due=dueIn&&dueIn.value?new Date(dueIn.value).getTime():null;
     const base=t||{id:newTaskId(),source:"manual",createdAt:Date.now()};
     const st=$("#tStatus").value;
-    try{await store.putTask({...base,title,due:isNaN(due)?null:due,status:st,note:$("#tNote").value.trim()});await taskWin({...base,title},st);close();toast(st==="done"&&base.status!=="done"?"✨ 完了。できたことに入れました":t?"🗂️ 保存しました":"🗂️ タスクを追加しました")}
+    try{await store.putTask({...base,...readProjFields(t||pre),title,due:isNaN(due)?null:due,status:st,note:$("#tNote").value.trim()});await taskWin({...base,title},st);close();toast(st==="done"&&base.status!=="done"?"✨ 完了。できたことに入れました":t?"🗂️ 保存しました":"🗂️ タスクを追加しました")}
     catch(e){toast("保存できませんでした。入力はそのまま残っています")}};
   $("#tSave").onclick=save;$("#tCancel").onclick=close;$("#xTask").onclick=close;
   $("#tDel")&&($("#tDel").onclick=async e=>{const b=e.currentTarget;if(!b.dataset.sure){b.dataset.sure="1";b.textContent="本当に削除？";return}
@@ -1222,6 +1316,250 @@ function openTask(id){
   $("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};
   $("#scrim").onkeydown=e=>{if(e.key==="Enter"&&(e.metaKey||e.ctrlKey||e.target===ti)){e.preventDefault();save()} if(e.key==="Escape")close()};
 }
+
+/* ---------- projects: a list split into boxes (sections). Stored in "projects" and "sections" (Mac: data/projects.json, data/sections.json);
+   a task carries projectId / sectionId / group and a few display fields. Every project task is still an ordinary task:
+   Home, the board, the countdown and できたこと see it exactly as before. Nothing here is ever hard-deleted. ---------- */
+const PCOLORS=[["#2f6fd0","青"],["#d64f8a","ピンク"],["#d9453f","赤"],["#1f9d6b","緑"],["#4f7f2a","オリーブ"],["#7c6bd6","紫"],["#8a8a93","グレー"]];
+const PVIEWS=[["sections","箱"],["list","リスト"],["board","ボード"],["calendar","カレンダー"],["gantt","ガント"]];
+const WD=["日","月","火","水","木","金","土"];
+const byOrder=(a,b)=>(+a.order||0)-(+b.order||0)||(+a.createdAt||0)-(+b.createdAt||0);
+const projList=()=>S.projects.filter(p=>!p.deleted).sort(byOrder);
+const projActive=()=>projList().filter(p=>!p.archived);
+const projById=id=>id?S.projects.find(p=>p.id===id&&!p.deleted)||null:null;
+const secList=pid=>S.sections.filter(s=>!s.deleted&&s.projectId===pid).sort(byOrder);
+const secById=id=>id?S.sections.find(s=>s.id===id&&!s.deleted)||null:null;
+const projTasks=pid=>S.board.filter(t=>t.projectId===pid);
+const projOpen=pid=>projTasks(pid).filter(t=>TOPEN.has(t.status)).length;
+const okColor=c=>/^#[0-9a-f]{6}$/i.test(c||"")?c:"#8a8a93";
+const newProjId=()=>"p"+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+const newSecId=()=>"s"+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+const projTag=t=>{const p=projById(t.projectId);return p?`<span class="ptag" title="${esc(p.name)}">${esc(p.emoji||"📁")} ${esc(p.name)}</span>`:""};
+/* days: a deadline is the task's due (ms); a start is a day "YYYY-MM-DD". Days are read in the device's own time zone. */
+const dayOf=ms=>{const d=new Date(ms);return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`};
+const dayMs=s=>Date.parse(s+"T12:00:00");
+const isDay=s=>/^\d{4}-\d\d-\d\d$/.test(s||"");
+const mdLabel=s=>isDay(s)?(+s.slice(5,7))+"/"+(+s.slice(8,10)):"";
+const dueDay=t=>t.due!=null?dayOf(t.due):null;
+const addDays=(s,n)=>dayOf(dayMs(s)+n*DAY);
+/* "11/9〜11/30" in a box's when → two days; the year is the one that brings the day nearest to today */
+function nearYear(m,d){const now=Date.now(),y=new Date().getFullYear();return [y-1,y,y+1].map(yy=>`${yy}-${pad(m)}-${pad(d)}`).filter(s=>!isNaN(dayMs(s))).sort((a,b)=>Math.abs(dayMs(a)-now)-Math.abs(dayMs(b)-now))[0]||null}
+function whenRange(w){const m=/(\d{1,2})\/(\d{1,2})\s*[〜~～\-–]\s*(\d{1,2})\/(\d{1,2})/.exec(w||"");if(!m)return null;const a=nearYear(+m[1],+m[2]);let b=nearYear(+m[3],+m[4]);if(!a||!b)return null;if(b<a)b=String(+b.slice(0,4)+1)+b.slice(4);return [a,b]}
+const dateChip=t=>{const s=t.dateLabel||mdLabel(dueDay(t)||"");return s?`<span class="sdate ${t.urgent?"hot":""}">${esc(s)}</span>`:""};
+const pchk=t=>`<button class="pchk ${t.status==="done"?"on":""}" data-pdone="${esc(t.id)}" aria-pressed="${t.status==="done"}" aria-label="${esc(t.title)}を${t.status==="done"?"未完了に戻す":"完了にする"}">${t.status==="done"?"✓":""}</button>`;
+/* ----- the rail: one line per project, under its own heading ----- */
+function projNavHtml(){
+  const cur=(location.hash||"").slice(1), ps=projActive();
+  return `<div class="gh">プロジェクト</div>`+ps.map(p=>{const n=projOpen(p.id);return `<a href="#project/${esc(p.id)}" ${cur==="project/"+p.id?'aria-current="page"':""}><span class="e">${esc(p.emoji||"📁")}</span><span class="label">${esc(p.name)}</span>${n?`<span class="count">${n}</span>`:""}</a>`}).join("")
+    +`<button class="pnew" data-pnew><span class="e">＋</span><span class="label">プロジェクト</span></button>`;
+}
+function projChips(f){const ps=projActive();if(!ps.length)return "";
+  return `<div class="chips" role="group" aria-label="プロジェクトで絞り込む"><button class="chip" data-pfilter="all" aria-pressed="${f==="all"}">すべて</button>${ps.map(p=>`<button class="chip" data-pfilter="${esc(p.id)}" aria-pressed="${f===p.id}">${esc(p.emoji||"📁")} ${esc(p.name)}</button>`).join("")}</div>`}
+/* ----- the project page: heading → box tiles → view chips → the view ----- */
+function projectView(){
+  const p=projById(S.projectId);
+  if(!p) return `<header class="head"><div><p class="eyebrow">プロジェクト</p><h1>見つかりません</h1></div></header><div class="card empty"><b>このプロジェクトはありません</b>左のメニューから選ぶか、「＋ プロジェクト」で作れます。</div>`;
+  if(S.pviewFor!==p.id){S.pviewFor=p.id;S.pview=PVIEWS.some(v=>v[0]===p.lastView)?p.lastView:"sections";S.pcalMonth=null}
+  const secs=secList(p.id), all=projTasks(p.id), open=all.filter(t=>TOPEN.has(t.status)).length, done=all.filter(t=>t.status==="done").length, v=S.pview;
+  const tiles=secs.map(s=>{const xs=all.filter(t=>t.sectionId===s.id),o=xs.filter(t=>TOPEN.has(t.status)).length;
+    return `<button class="ptile" data-jump="sec-${esc(s.id)}"><i style="background:${okColor(s.color)}"></i><b>${esc(s.name)}</b><span>${o?`残り ${o}`:xs.length?"全部できた":"まだ空"}${s.when?" · "+esc(s.when):""}</span></button>`}).join("");
+  const body=v==="list"?projListView(p,all):v==="board"?boardHtml(all,{notyet:"まだのもの",doing:"ここにドラッグして着手",done:"終わったらここへ"}):v==="calendar"?projCalView(p,all):v==="gantt"?projGanttView(p,all):projSecView(p,all,secs);
+  return `<header class="head"><div><p class="eyebrow">プロジェクト${p.archived?" · アーカイブ":""}</p><h1>${esc(p.emoji||"📁")} ${esc(p.name)}</h1><p class="sub" style="margin:var(--s1) 0 0">残り ${open} · 完了 ${done} · 箱 ${secs.length}</p></div>
+    <div class="row"><button class="btn primary" data-padd="${esc(p.id)}">＋ タスク</button><button class="btn" data-secnew="${esc(p.id)}">＋ 箱</button><button class="ibtn" data-pedit="${esc(p.id)}" aria-label="プロジェクトを編集" title="プロジェクトを編集">✏️</button></div></header>
+  ${tiles&&v==="sections"?`<div class="ptiles">${tiles}</div>`:""}
+  <div class="pbar"><div class="chips" role="group" aria-label="見方">${PVIEWS.map(([k,l])=>`<button class="chip" data-pview="${k}" aria-pressed="${v===k}">${l}</button>`).join("")}</div>${v==="board"?"":`<button class="chip" data-pdonetoggle aria-pressed="${!!S.pDone}">完了も表示</button>`}</div>
+  ${notesHere("project")}
+  ${body}`;
+}
+/* 箱: the reference layout. A box = one card; small headings inside it; one row per task with a check, the date, the title, a quiet line, the time on the right. */
+function projSecView(p,all,secs){
+  const loose=all.filter(t=>!secById(t.sectionId));
+  const cards=secs.map(s=>secCard(s,all.filter(t=>t.sectionId===s.id),p)).join("")+(loose.length?secCard({id:"",name:"箱なし",color:"#8a8a93",groups:[]},loose,p):"");
+  return cards?`<div class="secs">${cards}</div>`:`<div class="card empty"><b>まだ箱がありません</b>「＋ 箱」で作ります。たとえば「今月ネットでやる」「親に頼む」「現地で」のように、どこでやるかで分けると見やすくなります。</div>`;
+}
+function secCard(s,tasks,p){
+  const done=tasks.filter(t=>t.status==="done").length, shown=S.pDone?tasks:tasks.filter(t=>t.status!=="done"), listed=(s.groups||[]);
+  const groups=[...listed,...shown.map(t=>t.group||"").filter(g=>g&&!listed.includes(g))].filter((g,i,a)=>a.indexOf(g)===i);
+  const rows=xs=>xs.sort(byOrder).map(secRow).join("");
+  const body=groups.map(g=>{const xs=shown.filter(t=>t.group===g);return xs.length?`<div class="ghd">${esc(g)}</div>${rows(xs)}`:""}).join("")+rows(shown.filter(t=>!t.group||!groups.includes(t.group)));
+  return `<section class="card sec" id="sec-${esc(s.id)}" data-sec="${esc(s.id)}"><div class="dhead"><span class="dot" style="background:${okColor(s.color)}"></span><h2>${esc(s.name)}</h2>${s.when?`<span class="when">${esc(s.when)}</span>`:""}<span class="sub">${tasks.length-done} 件${done?` · 完了 ${done}`:""}</span>
+      ${s.id?`<span class="acts"><button class="ibtn" data-secup="${esc(s.id)}" aria-label="上へ" title="上へ">↑</button><button class="ibtn" data-secdown="${esc(s.id)}" aria-label="下へ" title="下へ">↓</button><button class="ibtn" data-secedit="${esc(s.id)}" aria-label="箱を編集" title="箱を編集">✏️</button></span>`:""}</div>
+    ${s.note?`<p class="snote">${esc(s.note)}</p>`:""}
+    <div data-secbody="${esc(s.id)}">${body||`<p class="snote">${tasks.length?"全部できました":"まだありません"}</p>`}</div>
+    <button class="dmore" data-padd="${esc(p.id)}" data-padd-sec="${esc(s.id)}">＋ 足す</button></section>`;
+}
+function secRow(t){const open=TOPEN.has(t.status);
+  return `<div class="srow ${t.status==="done"?"on":""}" draggable="true" data-prow="${esc(t.id)}">${pchk(t)}
+    <div style="min-width:0">${dateChip(t)}<button class="tt" data-topen="${esc(t.id)}">${esc(t.title)}</button>${t.status==="doing"?`<span class="pill live">進行中</span>`:""}${open&&t.deadline!=null&&t.deadline-Date.now()<2*DAY?` ${dlChip(t)}`:""}${t.desc?`<div class="d">${esc(t.desc)}</div>`:""}</div>
+    <span class="est">${esc(t.estimate||"")}</span></div>`;
+}
+/* リスト: every task of the project by its deadline, undated last */
+function projListView(p,all){
+  const xs=(S.pDone?all:all.filter(t=>t.status!=="done")).sort((a,b)=>byDeadline(a,b)||byOrder(a,b));
+  const row=t=>{const s=secById(t.sectionId), open=TOPEN.has(t.status);
+    return `<div class="srow ${t.status==="done"?"on":""}">${pchk(t)}<div style="min-width:0">${dateChip(t)}<button class="tt" data-topen="${esc(t.id)}">${esc(t.title)}</button>${t.status==="doing"?`<span class="pill live">進行中</span>`:""}${open&&t.deadline!=null?` ${dlChip(t)}`:""}
+      <div class="d">${s?`<span class="dot" style="background:${okColor(s.color)}"></span>${esc(s.name)}`:""}${t.group?`<span>${esc(t.group)}</span>`:""}${t.desc?`<span>${esc(t.desc)}</span>`:""}</div></div><span class="est">${esc(t.estimate||"")}</span></div>`};
+  return `<section class="card">${xs.map(row).join("")||`<div class="empty"><b>${all.length?"全部できました":"まだタスクがありません"}</b>${all.length?"":"「＋ タスク」か、箱の「＋ 足す」から。"}</div>`}</section>`;
+}
+/* カレンダー: a month, tasks on their deadline day. On a phone: the same month as a list, one card a week, only days with tasks. */
+function projCalView(p,all){
+  const xs=(S.pDone?all:all.filter(t=>t.status!=="done")).filter(t=>t.due!=null), today=dayOf(Date.now()), ym=S.pcalMonth||today.slice(0,7);
+  const [Y,M]=ym.split("-").map(Number), first=new Date(Y,M-1,1), start=new Date(Y,M-1,1-first.getDay());
+  const byDay=new Map(); xs.forEach(t=>{const d=dueDay(t);if(!byDay.has(d))byDay.set(d,[]);byDay.get(d).push(t)});
+  const cells=[...Array(42)].map((_,i)=>{const d=new Date(start);d.setDate(start.getDate()+i);return dayOf(d.getTime())});
+  const days=cells.slice(35).every(d=>d.slice(0,7)!==ym)?cells.slice(0,35):cells;
+  const ev=t=>{const s=secById(t.sectionId);return `<button class="pcev ${t.status==="done"?"on":""}" data-topen="${esc(t.id)}" style="border-left-color:${okColor(s?.color)}" title="${esc(t.title)}">${esc(t.title)}</button>`};
+  const cell=d=>`<div class="pcd ${d.slice(0,7)!==ym?"out":""} ${d===today?"today":""}"><span class="n">${+d.slice(8)}</span>${(byDay.get(d)||[]).sort(byOrder).map(ev).join("")}</div>`;
+  const mv=n=>{const d=new Date(Y,M-1+n,1);return `${d.getFullYear()}-${pad(d.getMonth()+1)}`};
+  const n=xs.filter(t=>dueDay(t).slice(0,7)===ym).length;
+  const head=`<div class="dhead"><h2>${Y}年${M}月</h2><span class="sub">${n?n+" 件":"期日のあるタスクはありません"}</span><span class="acts" style="margin-left:auto;display:flex;gap:2px"><button class="ibtn" data-pcal="${mv(-1)}" aria-label="前の月">‹</button><button class="ibtn" data-pcal="${today.slice(0,7)}">今月</button><button class="ibtn" data-pcal="${mv(1)}" aria-label="次の月">›</button></span></div>`;
+  const weeks=[];for(let i=0;i<days.length;i+=7)weeks.push(days.slice(i,i+7));
+  const list=weeks.map(ds=>{const hit=ds.filter(d=>byDay.has(d)&&d.slice(0,7)===ym);if(!hit.length)return "";
+    return `<section class="card"><div class="dhead"><h2>${mdLabel(ds[0])}〜${mdLabel(ds[6])}</h2></div>${hit.map(d=>`<div class="pwrow"><span class="n ${d===today?"today":""}">${+d.slice(8)}日（${WD[new Date(dayMs(d)).getDay()]}）</span><div style="min-width:0">${(byDay.get(d)||[]).sort(byOrder).map(ev).join("")}</div></div>`).join("")}</section>`}).join("");
+  return `<section class="card">${head}<div class="pcal">${WD.map(w=>`<div class="wd">${w}</div>`).join("")}${days.map(cell).join("")}</div></section><div class="pweek">${list}</div>`;
+}
+/* ガント: boxes as groups, one bar per task from its start to its deadline. No start → the box's period (its when); none readable → a dot on the deadline. */
+function projGanttView(p,all){
+  const xs=S.pDone?all:all.filter(t=>t.status!=="done"), secs=secList(p.id), W=16, LW=innerWidth<=560?120:180, today=dayOf(Date.now());
+  const span=t=>{const s=secById(t.sectionId), wr=s?whenRange(s.when):null, st=isDay(t.start)?t.start:null, due=dueDay(t);
+    let a=st||(wr?wr[0]:null), b=due||(wr?wr[1]:null)||st; if(!a&&!b)return null; if(!a)a=b; if(b<a){a=b}; return {a,b}};
+  const spans=new Map(); xs.forEach(t=>{const sp=span(t);if(sp)spans.set(t.id,sp)});
+  const groups=[...secs.map(s=>({s,xs:xs.filter(t=>t.sectionId===s.id).sort(byOrder)})),{s:{id:"",name:"箱なし",color:"#8a8a93"},xs:xs.filter(t=>!secById(t.sectionId)).sort(byOrder)}].filter(g=>g.xs.some(t=>spans.has(t.id)));
+  const nodate=xs.filter(t=>!spans.has(t.id));
+  const noneHtml=nodate.length?`<section class="card"><div class="dhead"><h2>日付なし</h2><span class="sub">${nodate.length} 件 · 日付が決まったら開始日か期日を入れると棒になります</span></div>${nodate.map(t=>`<div class="srow"><span></span><div style="min-width:0">${dateChip(t)}<button class="tt" data-topen="${esc(t.id)}">${esc(t.title)}</button><div class="d">${esc(secById(t.sectionId)?.name||"")}</div></div><span class="est">${esc(t.estimate||"")}</span></div>`).join("")}</section>`:"";
+  if(!spans.size) return `<div class="card empty"><b>日付のあるタスクがまだありません</b>開始日や期日を入れると、ここに棒で出ます。</div>${noneHtml}`;
+  const all_=[...spans.values()].flatMap(x=>[x.a,x.b]).concat([today]);
+  const a0=addDays(all_.reduce((m,d)=>d<m?d:m),-3), b0=addDays(all_.reduce((m,d)=>d>m?d:m),4);
+  const n=Math.round((dayMs(b0)-dayMs(a0))/DAY)+1, x=d=>Math.round((dayMs(d)-dayMs(a0))/DAY)*W;
+  const marks=[];for(let i=0;i<n;i++){const d=addDays(a0,i),dd=+d.slice(8);if(i===0||dd===1)marks.push(`<span class="gtm" style="left:${i*W}px">${+d.slice(5,7)}月${dd===1&&d.slice(5,7)==="01"||i===0?" "+d.slice(0,4):""}</span>`);else if((dd-1)%7===0)marks.push(`<span class="gtd" style="left:${i*W}px">${dd}</span>`)}
+  const track=inner=>`<div class="gtt" style="width:${n*W}px">${inner||""}</div>`;
+  const row=(t,s)=>{const sp=spans.get(t.id), dot=sp.a===sp.b;
+    return `<div class="gtr"><div class="gtl"><button class="tt" data-topen="${esc(t.id)}">${esc(t.title)}</button></div>${track(`<span class="gtb ${dot?"dot":""} ${t.status==="done"?"on":""}" style="left:${x(sp.a)}px;width:${dot?W:x(sp.b)-x(sp.a)+W}px;background:${okColor(s.color)}" title="${esc(mdLabel(sp.a))}${dot?"":"〜"+esc(mdLabel(sp.b))}"></span>`)}</div>`};
+  const grp=g=>`<div class="gtr gtg"><div class="gtl"><span class="dot" style="background:${okColor(g.s.color)}"></span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(g.s.name)}</span></div>${track()}</div>${g.xs.filter(t=>spans.has(t.id)).map(t=>row(t,g.s)).join("")}`;
+  return `<section class="card"><div class="dhead"><h2>ガント</h2><span class="sub">${esc(mdLabel(a0))}〜${esc(mdLabel(b0))} · 棒は開始日〜期日。開始日がなければ箱の期間</span></div>
+    <div class="gtwrap"><div class="gt" style="width:${LW+n*W}px"><div class="gtr gth"><div class="gtl"></div>${track(marks.join(""))}</div>${groups.map(grp).join("")}<div class="gtnow" style="left:${LW+x(today)+Math.round(W/2)}px" title="今日"></div></div></div></section>${noneHtml}`;
+}
+/* ----- the task dialog's project fields: shown once any project exists; the rest appears when a project is chosen ----- */
+function projFields(x){const pid=x.projectId||"";if(!projList().length&&!pid)return "";
+  return `<label class="sub" for="tProj">プロジェクト</label><select id="tProj"><option value="">なし</option>${projList().filter(p=>!p.archived||p.id===pid).map(p=>`<option value="${esc(p.id)}" ${p.id===pid?"selected":""}>${esc(p.emoji||"📁")} ${esc(p.name)}</option>`).join("")}</select><div id="tProjMore">${projMore(x,pid)}</div>`}
+function projMore(x,pid){if(!pid)return "";const secs=secList(pid), sec=secById(x.sectionId), groups=sec?.groups||[];
+  return `<div class="g2"><div><label class="sub" for="tSec">箱</label><select id="tSec"><option value="">箱なし</option>${secs.map(s=>`<option value="${esc(s.id)}" ${s.id===x.sectionId?"selected":""}>${esc(s.name)}</option>`).join("")}</select></div>
+    <div><label class="sub" for="tGroup">小見出し</label><input type="text" id="tGroup" list="tGroups" maxlength="40" value="${esc(x.group||"")}" placeholder="例：お金・年金" autocomplete="off"><datalist id="tGroups">${groups.map(g=>`<option value="${esc(g)}">`).join("")}</datalist></div></div>
+    <label class="sub" for="tDesc">説明（一覧に出る1行）</label><input type="text" id="tDesc" maxlength="200" value="${esc(x.desc||"")}" autocomplete="off">
+    <div class="g2"><div><label class="sub" for="tEst">所要時間</label><input type="text" id="tEst" maxlength="20" value="${esc(x.estimate||"")}" placeholder="例：30分" autocomplete="off"></div>
+    <div><label class="sub" for="tStart">開始日</label><input type="date" id="tStart" value="${esc(isDay(x.start)?x.start:"")}"></div></div>
+    <div class="g2"><div><label class="sub" for="tDl">日付ラベル（期日の代わりに出す文字）</label><input type="text" id="tDl" maxlength="20" value="${esc(x.dateLabel||"")}" placeholder="例：3か月前" autocomplete="off"></div>
+    <div><span class="sub">印</span><label class="chk"><input type="checkbox" id="tUrg" ${x.urgent?"checked":""}> 重要（日付を赤く）</label></div></div>`}
+function wireProjFields(x){const sel=$("#tProj");if(!sel)return;
+  const wireSec=()=>{const ss=$("#tSec");if(ss)ss.onchange=()=>{const g=secById(ss.value)?.groups||[];$("#tGroups").innerHTML=g.map(v=>`<option value="${esc(v)}">`).join("")}};
+  sel.onchange=()=>{$("#tProjMore").innerHTML=projMore({...x,sectionId:sel.value===x.projectId?x.sectionId:""},sel.value);wireSec()};
+  wireSec();
+}
+function readProjFields(x){const sel=$("#tProj");if(!sel)return {};const pid=sel.value;
+  if(!pid)return {projectId:"",sectionId:"",group:"",desc:"",estimate:"",start:"",dateLabel:"",urgent:false,order:null};
+  const secId=$("#tSec")?.value||"";
+  return {projectId:pid,sectionId:secId,group:($("#tGroup")?.value||"").trim(),desc:($("#tDesc")?.value||"").trim(),estimate:($("#tEst")?.value||"").trim(),start:$("#tStart")?.value||"",dateLabel:($("#tDl")?.value||"").trim(),urgent:!!$("#tUrg")?.checked,
+    order:x.order!=null&&x.sectionId===secId?x.order:Math.max(-1,...S.board.filter(t=>t.projectId===pid&&t.sectionId===secId).map(t=>+t.order||0))+1};
+}
+/* ----- project and box dialogs ----- */
+const colorChips=cur=>`<div class="chips" data-colors>${PCOLORS.map(([c,l])=>`<button type="button" class="chip csw" data-color="${c}" aria-pressed="${cur===c}"><i style="background:${c}"></i>${l}</button>`).join("")}</div>`;
+function wireColors(root){root.querySelectorAll("[data-color]").forEach(b=>b.onclick=()=>root.querySelectorAll("[data-color]").forEach(x=>x.setAttribute("aria-pressed",x===b)))}
+const pickedColor=root=>root.querySelector('[data-color][aria-pressed="true"]')?.dataset.color||PCOLORS[0][0];
+function projForm(p){
+  return new Promise(res=>{
+    if($("#modal").firstChild) return res(null);
+    $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop" role="dialog" aria-modal="true" aria-label="${p?"プロジェクトを編集":"新しいプロジェクト"}">
+      <div class="top"><h2>${p?"✏️ プロジェクトを編集":"📁 新しいプロジェクト"}</h2><button class="ibtn" id="xPf" aria-label="閉じる">✕</button></div>
+      <label class="sub" for="pfName">名前</label><input type="text" id="pfName" maxlength="60" value="${esc(p?.name||"")}" placeholder="例：出発前やることリスト" autocomplete="off">
+      <label class="sub" for="pfEmoji">絵文字</label><input type="text" id="pfEmoji" maxlength="4" value="${esc(p?.emoji||"📁")}" style="width:5em" autocomplete="off">
+      <span class="sub">色</span>${colorChips(p?.color||PCOLORS[0][0])}
+      <div class="row"><button class="btn primary" id="pfOk">${p?"保存":"作る"}</button><button class="btn" id="pfCancel">やめる</button>${p?`<span style="flex:1"></span><button class="btn" id="pfArch">${p.archived?"アーカイブから戻す":"アーカイブ"}</button><button class="ibtn" id="pfDel" aria-label="削除" title="削除">🗑️</button>`:""}</div>
+    </div></div>`;
+    const done=v=>{$("#modal").innerHTML="";res(v)}, read=()=>({name:$("#pfName").value.trim().slice(0,60),emoji:$("#pfEmoji").value.trim().slice(0,4)||"📁",color:pickedColor($("#modal"))});
+    wireColors($("#modal"));$("#pfName").focus();
+    $("#pfOk").onclick=()=>{const r=read();if(!r.name){$("#pfName").focus();return}done(r)};
+    $("#pfCancel").onclick=()=>done(null);$("#xPf").onclick=()=>done(null);
+    $("#scrim").onclick=e=>{if(e.target.id==="scrim")done(null)};
+    $("#scrim").onkeydown=e=>{if(e.key==="Escape")done(null);if(e.key==="Enter"&&!e.isComposing&&e.target.tagName==="INPUT"){e.preventDefault();$("#pfOk").click()}};
+    if(p){$("#pfArch").onclick=()=>done({...read(),archived:!p.archived});
+      $("#pfDel").onclick=e=>{const b=e.currentTarget;if(!b.dataset.sure){b.dataset.sure="1";b.textContent="本当に削除？";b.style.color="var(--red)";return}done({...read(),deleted:true})}}
+  });
+}
+async function editProject(p){
+  const r=await projForm(p); if(!r) return;
+  const rec=p?{...p,...r}:{id:newProjId(),createdAt:Date.now(),order:Math.max(-1,...projList().map(x=>+x.order||0))+1,lastView:"sections",...r};
+  try{await store.putProject(rec);
+    if(rec.deleted){toast("🗑️ 削除しました（タスクはそのまま残ります）");if(S.projectId===rec.id)location.hash="tasks"}
+    else if(!p){toast("📁 プロジェクトを作りました");location.hash="project/"+rec.id}
+    else toast(rec.archived&&!p.archived?"アーカイブしました":"保存しました")}
+  catch(e){toast("保存できませんでした")}
+}
+function secForm(s,pid){
+  return new Promise(res=>{
+    if($("#modal").firstChild) return res(null);
+    $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop" role="dialog" aria-modal="true" aria-label="${s?"箱を編集":"新しい箱"}">
+      <div class="top"><h2>${s?"✏️ 箱を編集":"＋ 新しい箱"}</h2><button class="ibtn" id="xSf" aria-label="閉じる">✕</button></div>
+      <label class="sub" for="sfName">名前</label><input type="text" id="sfName" maxlength="60" value="${esc(s?.name||"")}" placeholder="例：今月ネットでやる" autocomplete="off">
+      <span class="sub">色</span>${colorChips(s?.color||PCOLORS[Math.min(secList(pid).length,PCOLORS.length-1)][0])}
+      <label class="sub" for="sfWhen">期間のメモ（例：11/9〜11/30。ガントの棒にも使います）</label><input type="text" id="sfWhen" maxlength="40" value="${esc(s?.when||"")}" autocomplete="off">
+      <label class="sub" for="sfNote">説明</label><input type="text" id="sfNote" maxlength="200" value="${esc(s?.note||"")}" autocomplete="off">
+      <label class="sub" for="sfGroups">小見出し（「、」で区切る）</label><input type="text" id="sfGroups" maxlength="200" value="${esc((s?.groups||[]).join("、"))}" placeholder="例：トビタテ、お金・年金" autocomplete="off">
+      <div class="row"><button class="btn primary" id="sfOk">${s?"保存":"作る"}</button><button class="btn" id="sfCancel">やめる</button>${s?`<span style="flex:1"></span><button class="ibtn" id="sfDel" aria-label="削除" title="削除">🗑️</button>`:""}</div>
+    </div></div>`;
+    const done=v=>{$("#modal").innerHTML="";res(v)}, read=()=>({name:$("#sfName").value.trim().slice(0,60),color:pickedColor($("#modal")),when:$("#sfWhen").value.trim(),note:$("#sfNote").value.trim(),groups:$("#sfGroups").value.split(/[、,，]/).map(g=>g.trim()).filter(Boolean)});
+    wireColors($("#modal"));$("#sfName").focus();
+    $("#sfOk").onclick=()=>{const r=read();if(!r.name){$("#sfName").focus();return}done(r)};
+    $("#sfCancel").onclick=()=>done(null);$("#xSf").onclick=()=>done(null);
+    $("#scrim").onclick=e=>{if(e.target.id==="scrim")done(null)};
+    $("#scrim").onkeydown=e=>{if(e.key==="Escape")done(null);if(e.key==="Enter"&&!e.isComposing&&e.target.tagName==="INPUT"){e.preventDefault();$("#sfOk").click()}};
+    if(s)$("#sfDel").onclick=e=>{const b=e.currentTarget;if(!b.dataset.sure){b.dataset.sure="1";b.textContent="本当に削除？";b.style.color="var(--red)";return}done({...read(),deleted:true})};
+  });
+}
+async function editSection(s,pid){
+  pid=pid||s?.projectId; const r=await secForm(s,pid); if(!r) return;
+  const rec=s?{...s,...r}:{id:newSecId(),projectId:pid,createdAt:Date.now(),order:Math.max(-1,...secList(pid).map(x=>+x.order||0))+1,...r};
+  try{await store.putSection(rec);toast(rec.deleted?"🗑️ 箱を消しました（タスクは「箱なし」に残ります）":s?"保存しました":"箱を作りました")}catch(e){toast("保存できませんでした")}
+}
+async function moveSection(id,dir){
+  const s=secById(id);if(!s)return;const xs=secList(s.projectId),i=xs.findIndex(x=>x.id===id),j=i+dir;if(j<0||j>=xs.length)return;
+  const want=xs.map((x,k)=>[x,k]);want[i][1]=j;want[j][1]=i;
+  try{for(const [x,o] of want)if((+x.order||0)!==o)await store.putSection({...x,order:o})}catch(e){toast("保存できませんでした")}
+}
+/* drop a task before another row, or at the end of a box; only its own order changes (fractions keep the others still) */
+async function moveTask(id,secId,beforeId){
+  const t=findTask(id);if(!t)return;
+  const sib=S.board.filter(x=>x.sectionId===secId&&x.projectId===t.projectId&&x.id!==id).sort(byOrder);
+  let order,group;
+  if(beforeId){const i=sib.findIndex(x=>x.id===beforeId),b=sib[i],a=sib[i-1];group=b?.group||"";order=a?((+a.order||0)+(+b.order||0))/2:(+b?.order||0)-1}
+  else{const last=sib[sib.length-1];group=last?.group||"";order=last?(+last.order||0)+1:0}
+  if(t.sectionId===secId&&(t.group||"")===group&&+t.order===order)return;
+  try{await store.putTask({...t,sectionId:secId,group,order})}catch(e){toast("保存できませんでした")}
+}
+let pdrag=null;
+document.addEventListener("dragstart",e=>{const r=e.target.closest?.("[data-prow]");if(!r)return;pdrag=r.dataset.prow;e.dataTransfer.setData("text/plain","prow:"+pdrag);e.dataTransfer.effectAllowed="move";r.classList.add("dragging")});
+document.addEventListener("dragend",e=>{const r=e.target.closest?.("[data-prow]");if(r)r.classList.remove("dragging");pdrag=null;document.querySelectorAll(".srow.before,.sec.over").forEach(x=>x.classList.remove("before","over"))});
+document.addEventListener("dragover",e=>{if(!pdrag)return;const sec=e.target.closest?.("[data-sec]");if(!sec)return;e.preventDefault();e.dataTransfer.dropEffect="move";
+  document.querySelectorAll(".srow.before").forEach(x=>x.classList.remove("before"));document.querySelectorAll(".sec.over").forEach(x=>{if(x!==sec)x.classList.remove("over")});sec.classList.add("over");
+  const r=e.target.closest("[data-prow]");if(r&&r.dataset.prow!==pdrag)r.classList.add("before")});
+document.addEventListener("drop",e=>{if(!pdrag)return;const sec=e.target.closest?.("[data-sec]");if(!sec)return;e.preventDefault();const r=e.target.closest("[data-prow]"),id=pdrag;pdrag=null;
+  document.querySelectorAll(".srow.before,.sec.over").forEach(x=>x.classList.remove("before","over"));moveTask(id,sec.dataset.sec,r&&r.dataset.prow!==id?r.dataset.prow:null)});
+/* one listener for every project button; the rail, the sheet and the page all go through here */
+document.addEventListener("click",e=>{
+  const h=sel=>e.target.closest?.(sel); let b;
+  if(b=h("[data-pnew]")){e.preventDefault();if($("#modal").firstChild)$("#modal").innerHTML="";return editProject(null)}
+  if(b=h("[data-pedit]"))return editProject(projById(b.dataset.pedit));
+  if(b=h("[data-secnew]"))return editSection(null,b.dataset.secnew);
+  if(b=h("[data-secedit]"))return editSection(secById(b.dataset.secedit));
+  if(b=h("[data-secup]"))return moveSection(b.dataset.secup,-1);
+  if(b=h("[data-secdown]"))return moveSection(b.dataset.secdown,1);
+  if(b=h("[data-padd]"))return openTask(null,{projectId:b.dataset.padd,sectionId:b.dataset.paddSec||""});
+  if(b=h("[data-pdone]")){const t=findTask(b.dataset.pdone);if(t)setTaskStatus(t.id,t.status==="done"?"notyet":"done");return}
+  if(b=h("[data-pview]")){S.pview=b.dataset.pview;const p=projById(S.projectId);render();if(p&&p.lastView!==S.pview)store.putProject({...p,lastView:S.pview}).catch(()=>{});return}
+  if(h("[data-pdonetoggle]")){S.pDone=!S.pDone;return render()}
+  if(b=h("[data-pcal]")){S.pcalMonth=b.dataset.pcal;return render()}
+  if(b=h("[data-jump]")){const el=document.getElementById(b.dataset.jump);if(el)el.scrollIntoView({behavior:"smooth",block:"start"});return}
+  if(b=h("[data-pfilter]")){S.projFilter=b.dataset.pfilter;return render()}
+});
 
 /* ---------- daily job check: Claude prompts to paste into Claude in Chrome ---------- */
 /* The prompts hold career facts, so they live in the desk's data ("prompts", Mac: data/prompts.json), never in this file.
@@ -1655,7 +1993,7 @@ function searchIndex(){
   S.tools.filter(t=>!t.deleted).forEach(t=>add("tool",t.name,[t.desc,(t.tags||[]).join(" "),t.path,GROUPJA[t.group]].join(" "),{href:S.local&&t.local?t.local:(t.url||t.local||"")}));
   noteList().forEach(n=>add("note",n.title,n.body,{note:n.id},{at:n.updatedAt}));
   S.memos.forEach(m=>add("memo",m.text.split("\n")[0],m.text,{memo:m.id},{at:m.createdAt}));
-  S.board.forEach(t=>add("task",t.title,[t.note,t.mail?.sub,t.mail?.sum].join(" "),{task:t.id},{at:t.createdAt}));
+  S.board.forEach(t=>add("task",t.title,[t.note,t.desc,t.group,t.dateLabel,projById(t.projectId)?.name,secById(t.sectionId)?.name,t.mail?.sub,t.mail?.sum].join(" "),{task:t.id},{at:t.createdAt}));
   winList().forEach(w=>add("win",w.title,w.sub||"",{wins:1},{date:w.date}));
   gearList().forEach(g=>add("gear",g.name,[g.note,(GCAT[g.cat]||GCAT.other)[2],g.gone?"手放した":""].join(" "),{gear:1},{at:g.updatedAt}));
   S.editions.forEach(e=>(e.data.stories||[]).forEach((s,i)=>add("news",s.title,[s.summary,s.lens,REGJA[s.region],(s.sources||[]).map(x=>x.name).join(" ")].join(" "),{ed:e.id,story:i},{date:e.id})));
@@ -1736,7 +2074,7 @@ function navCount(id){
 }
 function navHtml(){
   const cur=viewId();
-  return NAVGROUPS.map(([g,l])=>`<div class="gh">${l}</div>`+VIEWS.filter(v=>v.g===g).map(v=>`<a href="#${v.id}" ${cur===v.id?'aria-current="page"':''}><span class="e">${v.e}</span><span class="label">${v.label}</span>${navCount(v.id)}</a>`).join("")).join("");
+  return NAVGROUPS.map(([g,l])=>`<div class="gh">${l}</div>`+VIEWS.filter(v=>v.g===g).map(v=>`<a href="#${v.id}" ${cur===v.id?'aria-current="page"':''}><span class="e">${v.e}</span><span class="label">${v.label}</span>${navCount(v.id)}</a>`).join("")+(g==="today"?projNavHtml():"")).join("");
 }
 function renderNav(){
   $("#nav").innerHTML=navHtml();
@@ -1917,7 +2255,8 @@ function render(){
   if(viewId()==="memolink"){mlLoad();$("#view").innerHTML=searchResults()+mlView();wire();wireMl();return}
   if(viewId()==="followups"){fuLoad();$("#view").innerHTML=searchResults()+fuView();wire();wireFu();return}
   const v=viewId();
-  $("#view").innerHTML=searchResults()+(v==="focus"?focusView():v==="notes"?notesView():v==="watch"?watch():v==="tasks"?tasks():v==="calendar"?calendar():v==="news"?news():v==="wins"?winsView():v==="inbox"?inbox():v==="habits"?habitsView():v==="gear"?gearView():v==="log"?log():v==="tools"?toolsView():home());
+  if(v==="project")S.projectId=decodeURIComponent(location.hash.slice(9));
+  $("#view").innerHTML=searchResults()+(v==="focus"?focusView():v==="notes"?notesView():v==="watch"?watch():v==="tasks"?tasks():v==="calendar"?calendar():v==="news"?news():v==="wins"?winsView():v==="inbox"?inbox():v==="habits"?habitsView():v==="gear"?gearView():v==="project"?projectView():v==="log"?log():v==="tools"?toolsView():home());
   if(v==="news"||v==="watch") linkSources($("#view"));
   wire();
   if(v==="news"&&S.focus!=null){const el=document.getElementById("story-"+S.focus);S.focus=null;if(el){el.classList.add("flash");setTimeout(()=>el.scrollIntoView({block:"start"}),0)}}
@@ -2281,7 +2620,8 @@ function palItems(){
     {e:"🌱",name:"習慣を足す",kw:"しゅうかん habit",run:()=>newHabit()},
     {e:"📒",name:"新しいノート",kw:"のーと note",run:()=>newNotePrompt()},
   ].map(x=>({...x,g:"Desk の操作"}));
-  const nav=VIEWS.map(v=>({g:"移動",e:v.e,name:v.label+"へ",kw:v.id,run:()=>{location.hash=v.id}}));
+  act.push({e:"📁",name:"新しいプロジェクト",kw:"ぷろじぇくと project",g:"Desk の操作",run:()=>editProject(null)});
+  const nav=[...VIEWS.filter(v=>v.g!=="hidden").map(v=>({g:"移動",e:v.e,name:v.label+"へ",kw:v.id,run:()=>{location.hash=v.id}})),...projActive().map(p=>({g:"移動",e:p.emoji||"📁",name:p.name+"へ",kw:"project ぷろじぇくと "+p.name,run:()=>{location.hash="project/"+p.id}}))];
   const cc=CC.map(c=>({g:"Claude コマンド",e:c.e,name:c.name,sub:c.cmd+(c.arg?" "+c.arg:""),kw:c.cmd+" "+c.kw,run:()=>openCC(c.id)}));
   const set=[
     {e:S.mute?"🔕":"🔔",name:S.mute?"通知音をオンにする":"通知音をオフにする",kw:"つうちおん おと sound mute 設定 せってい",run:()=>{S.mute=!S.mute;try{localStorage.setItem("desk-mute",S.mute?"1":"0")}catch(e){}toast(S.mute?"🔕 通知音をオフにしました":"🔔 通知音をオンにしました")}},
@@ -2422,6 +2762,8 @@ autoLinkStart();
     try{S.habits=JSON.parse(localStorage.getItem("desk-habits")||"[]")||[]}catch(e){S.habits=[]}
     try{S.wins=JSON.parse(localStorage.getItem("desk-wins")||"[]")||[]}catch(e){S.wins=[]}
     try{S.gear=JSON.parse(localStorage.getItem("desk-gear")||"[]")||[]}catch(e){S.gear=[]}
+    try{S.projects=JSON.parse(localStorage.getItem("desk-projects")||"[]")||[]}catch(e){S.projects=[]}
+    try{S.sections=JSON.parse(localStorage.getItem("desk-sections")||"[]")||[]}catch(e){S.sections=[]}
     return render();
   }
   db=window.claude?await claude.use("db"):null;
@@ -2435,6 +2777,8 @@ autoLinkStart();
   sub("habits",d=>S.habits=d.map(x=>({id:x.id,...x.data()})).filter(h=>!h.deleted));
   sub("wins",d=>S.wins=d.map(x=>({id:x.id,...x.data()})).filter(w=>!w.deleted));
   sub("gear",d=>S.gear=d.map(x=>({id:x.id,...x.data()})).filter(g=>!g.deleted));
+  sub("projects",d=>S.projects=d.map(x=>({id:x.id,...x.data()})).filter(p=>!p.deleted));
+  sub("sections",d=>S.sections=d.map(x=>({id:x.id,...x.data()})).filter(x=>!x.deleted));
   claude.use("sample").then(x=>{S.sampleOk=!!x;render()});
   claude.use("assets").then(a=>{S.assets=a||null}); // 持ち物の写真。編集できる人だけ非 null
   sub("prompts",d=>S.prompts=promptsById(d.map(x=>({id:x.id,...x.data()}))));
