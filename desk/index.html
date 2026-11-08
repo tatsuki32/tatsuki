@@ -642,7 +642,7 @@ const store={
     if(db){await db.collection("wins").doc(w.id).set(rec)}
     else if(LOCALAPI){await api("PUT","/api/wins/"+encodeURIComponent(w.id),rec);await loadApiMemos()}
     else {S.wins=[...S.wins.filter(x=>x.id!==w.id),{id:w.id,...rec}].filter(x=>!x.deleted);try{localStorage.setItem("desk-wins",JSON.stringify(S.wins))}catch(e){}render()} },
-  async putGear(g){ const rec={name:g.name||"",cat:g.cat||"other",qty:+g.qty||1,grams:g.grams==null||g.grams===""?null:+g.grams,gsrc:g.gsrc||"",price:g.price==null||g.price===""?null:+g.price,note:g.note||"",url:g.url||"",img:g.img||"",gone:!!g.gone,packed:!!g.packed,packedAt:g.packedAt||null,order:+g.order||0,createdAt:g.createdAt||Date.now(),updatedAt:Date.now(),deleted:!!g.deleted};
+  async putGear(g){ const rec={name:g.name||"",cat:g.cat||"other",qty:+g.qty||1,grams:g.grams==null||g.grams===""?null:+g.grams,gsrc:g.gsrc||"",price:g.price==null||g.price===""?null:+g.price,psrc:g.psrc||"",note:g.note||"",url:g.url||"",img:g.img||"",gone:!!g.gone,packed:!!g.packed,packedAt:g.packedAt||null,order:+g.order||0,createdAt:g.createdAt||Date.now(),updatedAt:Date.now(),deleted:!!g.deleted};
     if(db){await db.collection("gear").doc(g.id).set(rec)}
     else if(LOCALAPI){await api("PUT","/api/gear/"+encodeURIComponent(g.id),rec);await loadApiMemos()}
     else {S.gear=[...S.gear.filter(x=>x.id!==g.id),{id:g.id,...rec}].filter(x=>!x.deleted);try{localStorage.setItem("desk-gear",JSON.stringify(S.gear))}catch(e){}render()} },
@@ -1035,7 +1035,7 @@ const gImg=g=>/^[0-9a-f]{32}$/.test(g.img||"")?(db?"/_blob/"+g.img:""):okUrl(g.i
 const GSORT=[["cat","種類ごと"],["w","重い順"],["p","高い順"]];
 function gearRow(g){const w=gW(g),pr=gP(g),c=GCAT[g.cat]||GCAT.other,q=+g.qty||1;
   return `<div class="grow ${g.packed?"on":""}">${gImg(g)?`<img class="gimg" src="${esc(gImg(g))}" alt="" loading="lazy" data-gzoom="${esc(g.id)}">`:`<span class="gimg e" aria-hidden="true">${c[1]}</span>`}
-    <div style="min-width:0"><button class="tt" data-gedit="${esc(g.id)}">${esc(g.name)}</button><div class="due">${[q>1?q+"個":"",g.note?esc(g.note):"",g.gsrc&&w!=null?GSRC[g.gsrc]||"":"",pr!=null?fmtY(pr):"",okUrl(g.url)?`<a href="${esc(g.url)}" target="_blank" rel="noopener">商品ページ ↗</a>`:""].filter(Boolean).join(" · ")}</div></div>
+    <div style="min-width:0"><button class="tt" data-gedit="${esc(g.id)}">${esc(g.name)}</button><div class="due">${[q>1?q+"個":"",g.note?esc(g.note):"",g.gsrc&&w!=null?GSRC[g.gsrc]||"":"",pr!=null?fmtY(pr)+(g.psrc==="est"?"（推定）":""):"",okUrl(g.url)?`<a href="${esc(g.url)}" target="_blank" rel="noopener">商品ページ ↗</a>`:""].filter(Boolean).join(" · ")}</div></div>
     <span class="gw ${w==null?"none":""}">${fmtG(w)}</span>
     <button class="gchk ${g.packed?"on":""}" data-gpack="${esc(g.id)}" aria-pressed="${!!g.packed}" aria-label="${esc(g.name)}を${g.packed?"まだにする":"入れた"}">${g.packed?"✓":""}</button></div>`}
 /* one measure per chart (weight or money), one quiet hue, every bar labeled: the list below is the table view */
@@ -1050,7 +1050,7 @@ function gearChart(have){
 function gearView(){
   const all=gearList(), have=all.filter(g=>!g.gone), gone=all.filter(g=>g.gone), sort=S.gearSort||"cat";
   const total=have.reduce((s,g)=>s+(gW(g)||0),0), unknown=have.filter(g=>gW(g)==null).length, est=have.filter(g=>g.gsrc==="est"&&gW(g)!=null).length;
-  const money=have.reduce((s,g)=>s+(gP(g)||0),0), noPrice=have.filter(g=>gP(g)==null).length;
+  const money=have.reduce((s,g)=>s+(gP(g)||0),0), noPrice=have.filter(g=>gP(g)==null).length, estP=have.filter(g=>g.psrc==="est"&&gP(g)!=null).length;
   const packed=have.filter(g=>g.packed).length, left=have.filter(g=>!g.packed);
   const section=c=>{const xs=have.filter(g=>(g.cat||"other")===c[0]);if(!xs.length)return"";const sub=xs.reduce((s,g)=>s+(gW(g)||0),0);
     return `<section class="card gcat"><div class="dhead"><h2><span class="e">${c[1]}</span>${c[2]}</h2><span class="sub">${xs.length}点</span><span class="gw">${fmtG(sub)}</span></div><div>${xs.map(gearRow).join("")}</div></section>`};
@@ -1059,7 +1059,7 @@ function gearView(){
   return `<header class="head"><div><p class="eyebrow">持ち物</p><h1>持っているもの全部</h1></div><button class="btn primary" id="gearNew">＋ 足す</button></header>
   <section class="card wstats gstats" aria-label="持ち物の重さと数">
     <div class="wst focus"><span class="wn">${fmtG(total)}</span><span class="sub">合計${unknown?` · 重さ不明 ${unknown}点を除く`:""}${est?` · うち推定 ${est}点`:""}</span></div>
-    <div class="wst"><span class="wn">${fmtY(money)}</span><span class="sub">${noPrice?`値段あり ${have.length-noPrice}点の合計`:"値段の合計"}</span></div>
+    <div class="wst"><span class="wn">${fmtY(money)}</span><span class="sub">${noPrice?`値段あり ${have.length-noPrice}点の合計`:"値段の合計"}${estP?` · うち推定 ${estP}点`:""}</span></div>
     <div class="wst"><span class="wn">${packed}</span><span class="sub">入れた / ${have.length}</span></div>
   </section>
   ${have.length?`<section class="card gpack" aria-label="パッキング"><div class="dhead"><h2><span class="e">✓</span>パッキング</h2><span class="sub">${left.length?`まだ ${left.length}点：${left.slice(0,6).map(g=>esc(g.name)).join("、")}${left.length>6?" …":""}`:"全部入れました"}</span>${packed?`<button class="btn sm" id="gearReset">全部もどす</button>`:""}</div></section>`:""}
@@ -1071,11 +1071,11 @@ function gearView(){
   ${gone.length?`<details class="card shelf"><summary><span class="e">🕊️</span>手放したもの<span class="count">${gone.length}</span></summary><div class="list2">${gone.map(g=>`<div class="grow gone"><span class="gimg e" aria-hidden="true">${(GCAT[g.cat]||GCAT.other)[1]}</span><div style="min-width:0"><button class="tt" data-gedit="${esc(g.id)}">${esc(g.name)}</button><div class="due">${g.note?esc(g.note):""}</div></div><span class="gw">${fmtG(gW(g))}</span><span></span></div>`).join("")}</div></details>`:""}`;
 }
 /* 書き出し: CSV (with a BOM so Excel reads the Japanese), plain text by category, or the browser's print → PDF */
-function gearCsv(){const H=["名前","種類","数","重さ(g・1個)","重さの根拠","値段(円・1個)","メモ","商品ページ","写真","手放した","入れた"];
+function gearCsv(){const H=["名前","種類","数","重さ(g・1個)","重さの根拠","値段(円・1個)","値段の根拠","メモ","商品ページ","写真","手放した","入れた"];
   const q=v=>`"${String(v??"").replace(/"/g,'""')}"`;
-  return "\ufeff"+[H,...gearList().map(g=>[g.name,(GCAT[g.cat]||GCAT.other)[2],+g.qty||1,g.grams??"",GSRC[g.gsrc]||"",g.price??"",g.note||"",g.url||"",gImg(g)||g.img||"",g.gone?"はい":"",g.packed?"はい":""])].map(r=>r.map(q).join(",")).join("\r\n")+"\r\n"}
+  return "\ufeff"+[H,...gearList().map(g=>[g.name,(GCAT[g.cat]||GCAT.other)[2],+g.qty||1,g.grams??"",GSRC[g.gsrc]||"",g.price??"",g.psrc==="est"?"推定":g.psrc==="spec"?"定価・買値":"",g.note||"",g.url||"",gImg(g)||g.img||"",g.gone?"はい":"",g.packed?"はい":""])].map(r=>r.map(q).join(",")).join("\r\n")+"\r\n"}
 function gearText(){const have=gearList().filter(g=>!g.gone),gone=gearList().filter(g=>g.gone),tot=have.reduce((s,g)=>s+(gW(g)||0),0);
-  const line=g=>`- ${g.name}${(+g.qty||1)>1?` ×${+g.qty}`:""}  ${fmtG(gW(g))}${g.gsrc?"（"+GSRC[g.gsrc]+"）":""}${gP(g)!=null?"  "+fmtY(gP(g)):""}${g.note?"  "+g.note:""}`;
+  const line=g=>`- ${g.name}${(+g.qty||1)>1?` ×${+g.qty}`:""}  ${fmtG(gW(g))}${g.gsrc?"（"+GSRC[g.gsrc]+"）":""}${gP(g)!=null?"  "+fmtY(gP(g))+(g.psrc==="est"?"（推定）":""):""}${g.note?"  "+g.note:""}`;
   const out=[`持ち物 ${hcmcDate()}  合計 ${fmtG(tot)}  ${have.length}点`,""];
   GCATS.forEach(c=>{const xs=have.filter(g=>(g.cat||"other")===c[0]);if(!xs.length)return;out.push(`${c[1]} ${c[2]}  ${fmtG(xs.reduce((s,g)=>s+(gW(g)||0),0))}`);xs.forEach(g=>out.push(line(g)));out.push("")});
   if(gone.length){out.push("🕊️ 手放したもの");gone.forEach(g=>out.push(line(g)))}
@@ -1102,7 +1102,7 @@ function gearForm(g){
       <div><label class="sub" for="gQty">数</label><input type="number" id="gQty" min="1" max="99" value="${+g?.qty||1}"></div></div>
       <div class="g2"><div><label class="sub" for="gGrams">重さ（1個・g）</label><input type="number" id="gGrams" min="0" step="1" value="${g?.grams??""}" placeholder="不明なら空欄"></div>
       <div><label class="sub" for="gSrc">重さの根拠</label><select id="gSrc"><option value="">—</option>${Object.entries(GSRC).map(([k,l])=>`<option value="${k}" ${g?.gsrc===k?"selected":""}>${l}</option>`).join("")}</select></div></div>
-      <div class="g2"><div><label class="sub" for="gPrice">値段（円・1個）</label><input type="number" id="gPrice" min="0" step="1" value="${g?.price??""}" placeholder="分かれば"></div><div></div></div>
+      <div class="g2"><div><label class="sub" for="gPrice">値段（円・1個）</label><input type="number" id="gPrice" min="0" step="1" value="${g?.price??""}" placeholder="分かれば"></div><div><label class="sub" for="gPsrc">値段の根拠</label><select id="gPsrc"><option value="">—</option><option value="spec" ${g?.psrc==="spec"?"selected":""}>定価・買値</option><option value="est" ${g?.psrc==="est"?"selected":""}>推定</option></select></div></div>
       <label class="sub" for="gNote">メモ（型番・色など）</label><input type="text" id="gNote" maxlength="120" value="${v("note")}" autocomplete="off">
       <label class="sub" for="gUrl">商品ページの URL</label><input type="url" id="gUrl" value="${v("url")}" placeholder="https://" autocomplete="off">
       <label class="sub">写真</label>
@@ -1113,7 +1113,7 @@ function gearForm(g){
       <div class="row"><button class="btn primary" id="gOk">${g?"保存":"足す"}</button><button class="btn" id="gCancel">やめる</button>${g?`<span style="flex:1"></span><button class="btn" id="gGone">${g.gone?"また持つ":"手放した"}</button><button class="ibtn" id="gDel" aria-label="消す" title="消す">🗑️</button>`:""}</div>
     </div></div>`;
     const done=v=>{$("#modal").innerHTML="";res(v)};
-    const read=()=>({name:$("#gName").value.trim().slice(0,80),cat:$("#gCat").value,qty:Math.max(1,Math.min(99,+$("#gQty").value||1)),grams:$("#gGrams").value===""?null:Math.max(0,Math.round(+$("#gGrams").value)),gsrc:$("#gSrc").value,price:$("#gPrice").value===""?null:Math.max(0,Math.round(+$("#gPrice").value)),note:$("#gNote").value.trim().slice(0,120),url:$("#gUrl").value.trim(),img:$("#gImg").value.trim()||$("#gUrl2").value.trim()});
+    const read=()=>({name:$("#gName").value.trim().slice(0,80),cat:$("#gCat").value,qty:Math.max(1,Math.min(99,+$("#gQty").value||1)),grams:$("#gGrams").value===""?null:Math.max(0,Math.round(+$("#gGrams").value)),gsrc:$("#gSrc").value,price:$("#gPrice").value===""?null:Math.max(0,Math.round(+$("#gPrice").value)),psrc:$("#gPsrc").value,note:$("#gNote").value.trim().slice(0,120),url:$("#gUrl").value.trim(),img:$("#gImg").value.trim()||$("#gUrl2").value.trim()});
     $("#gName").focus();
     const fi=$("#gFile");if(fi)fi.onchange=async()=>{const f=fi.files&&fi.files[0];if(!f)return;$("#gImgMsg").textContent="送っています…";
       try{const blob=await shrinkImage(f);const r=await S.assets.upload(blob,{type:"image/jpeg"});$("#gImg").value=r.id;$("#gUrl2").value="";
