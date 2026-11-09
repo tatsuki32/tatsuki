@@ -38,5 +38,12 @@
 - ロゴは Google の favicon 取得（s2/favicons）と各サイトの apple-touch-icon。SNS は Simple Icons（CC0）のマークをブランド色の角丸に載せた。元サイトの SNS 画像は格子模様が焼き込まれていて使えない。
 - Baseme と CENTER RIVER は公式サイトが見つからず、文字のロゴのまま。
 
+## 追記5：会社名とロゴ（同じ日）
+- 株式会社高校生（kokosei）は休眠中でも創業者なので、名前を戻した（「on hiatus since Jun 2026」と添える）。
+- 「チャットボット」は「AI 開発」と書く。越境 EC は載せない。
+- 3店のロゴは、Drive にロゴ画像が見つからず、手元の写真から切り出した（Cebu χ はポスターの右上、CYBER は店の看板、ROYAL STAND は CAMPFIRE の画像）。
+- BaseMe は baseme.co.jp（AI のキャリア支援、HR）。CENTER RIVER はロゴなしで会社マーク。
+- Instagram のプロフィール画像の取得は自動モードで止められた（ボット対策の回避とみなされる）。
+
 ## 次の一手
-- 本人に見てもらう。Baseme・CENTER RIVER のサイトを聞く。よければ手元の HTML（Netlify / Cloudflare）に反映する。
+- 本人から「アイデアの扉」と株式会社高校生のロゴのファイルをもらう。よければ手元の HTML（Netlify / Cloudflare）に反映する。
