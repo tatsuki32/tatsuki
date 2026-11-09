@@ -5,6 +5,7 @@
 Tatsuki の個人ダッシュボード。**Mac だけで使う**（2026-11-04 にローカル中心へ組み替え）。正本は `desk/index.html`（このリポジトリ）と Mac の `desk/data/`。
 入口は「Tatsuki's Desk.app」（`desk/app/`。`~/Applications` に入り、デスクトップに別名）。Desk の専用窓で、外部リンクは既定のブラウザで開く。
 
+- **作ったものは必ず main へ**（2026-11-09 の Tatsuki の指示）。どの Claude の作業も、最後は main への PR をマージするか main に push する。Mac（メインのコンピューター）は main だけを5分ごとに取り込むので、ほかのブランチに置いたものは届かない。手順は `.claude/rules/main-branch.md`。
 - オンライン版（claude.ai の Artifact）は同期も公開もしない。ページとデータは消さずに残してある。`index.html` の `db` / `window.claude` の分岐はその名残で、次フェーズで消す。
 - 要件定義（ローカル中心化）: https://claude.ai/artifact/AY3dYUjuxPTpnBjjcqDdFq
 
