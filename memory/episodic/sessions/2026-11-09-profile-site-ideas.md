@@ -56,5 +56,12 @@
 - 最初の言語は ?lang=（本物のサイト用）→ 前回の選択（localStorage）→ 端末の言語の順。
 - 日本語の文は職務経歴書の言い回しに合わせた。
 
+## 追記8：9言語と保存（同じ日）
+- 英・日は index.html の中に [英語, 日本語] の組で持つ。ほかの7言語（ar zh es de ru vi eo）は i18n/<code>.json（キーは英語の文）を fetch する。訳はサブエージェント7つで並行に作った。
+- 右上の「LANG」ボタンで下から言語の一覧が出る。アラビア語は dir="rtl"。CSS は padding-inline-start などの論理プロパティにした。
+- 名前の衝突に注意：話せる言語の一覧が const LANGS なので、表示言語の一覧は UILANGS。
+- 元ファイルは /Applications/programming/my_profile_linkedin（index.html は doctype と head 付きの完全版、img・i18n・README）。
+- PC に node・wrangler がない。Cloudflare Pages へはダッシュボードからドラッグ＆ドロップ、または wrangler の導入が要る。
+
 ## 次の一手
-- 本人に CYBER と株式会社高校生のロゴの場所を聞く。「アイデアの扉」のロゴも。よければ手元の HTML（Netlify / Cloudflare）に反映する。
+- Cloudflare Pages に上げる（本人の操作か wrangler の導入）。CYBER と株式会社高校生、「アイデアの扉」のロゴの場所を聞く。
