@@ -32,5 +32,11 @@
 - 資料の間で年が違う所がある（MAKERS U18：サイト2019／CV2021、逗子小：サイト2020–2022／CV2021-11〜）。両方を書いて残した。
 - オーストラリアの電話・ビザなど CV の連絡先と在留情報は入れていない。
 
+## 追記4：ロゴと SNS（同じ日）
+- 本人の会社（株式会社高校生＝kokosei と判断）は休眠中なので、会社名を出さず「Founder & CEO · My own company」にした。
+- Education は ZEN大学と N高だけ。トビタテ・JETRO・武蔵野 EMC GLOBAL・MAKERS U18・N高起業部は「Selected programs & communities」に分けた。
+- ロゴは Google の favicon 取得（s2/favicons）と各サイトの apple-touch-icon。SNS は Simple Icons（CC0）のマークをブランド色の角丸に載せた。元サイトの SNS 画像は格子模様が焼き込まれていて使えない。
+- Baseme と CENTER RIVER は公式サイトが見つからず、文字のロゴのまま。
+
 ## 次の一手
-- 本人に見てもらい、年の食い違いを決める。よければ手元の HTML（Netlify / Cloudflare）に反映する。
+- 本人に見てもらう。Baseme・CENTER RIVER のサイトを聞く。よければ手元の HTML（Netlify / Cloudflare）に反映する。
