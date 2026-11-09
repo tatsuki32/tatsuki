@@ -21,7 +21,7 @@ claude.ai のチャットで直接編集しない。変更は必ずここで行�
   API: `GET /api/memos|dues|tasks|prompts|notes|habits|lifemap|wins|gear|projects|sections`、`POST /api/memos`、`PATCH /api/memos/<id>`、`PUT /api/dues/<id>`、`PUT /api/tasks/<id>`、`PUT /api/prompts/<id>`、`PUT /api/notes/<id>`、`PUT /api/habits/<id>`、`PUT /api/lifemap/<id>`（Life OS 14）、`PUT /api/wins/<id>`、`PUT /api/gear/<id>`、`PUT /api/projects/<id>`、`PUT /api/sections/<id>`、`GET /api/followups`、`POST /api/followups/<番号>/answer`（Life OS 02。送信はしない）、`POST /api/claude`（`{cmd,arg}`。決めた13個のコマンドだけ。Terminal を開いて `claude "<コマンド>"` を始める。macOS のみ）、`GET /api/focus/state`・`POST /api/focus/start|stop`（FocusBlock への中継。パスワードは保存もログもしない）。
   データは `desk/data/*.json`（`.gitignore` 済み。個人データは絶対にコミットしない）。
 - Mac の置き場所は `~/TatsukiDesk`（Documents などの保護フォルダは自動起動から読めないので不可）。
-- Mac の導入: `bash desk/setup-mac.sh`（サーバー常駐＋5分ごとの `git pull origin main`）。
+- Mac の導入: `bash desk/setup-mac.sh`（サーバー常駐＋5分ごとの `desk/pull.sh`＝`git pull origin main`、`server.py` が変わっていればサーバーを再起動）。
   ローカルから開く入口は `desk/launcher.html`（setup がデスクトップに `Tatsuki's Desk.html` としてコピー）。サーバーが動いていれば localhost:4747 へ飛び、止まっていればオンライン版を選べる。
   旧版 `~/Documents/ClaudeTools` は使わない（初回だけ memos/dues/tasks を取り込む）。
 - 同期: `desk/sync/HOURLY_SYNC.md` を Mac の Claude スケジュールタスクで毎時実行。
