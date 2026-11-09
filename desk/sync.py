@@ -12,7 +12,7 @@ The Mac's desk/data/ is the only source. The scheduled tasks (sync/SCHEDULED_TAS
   python3 sync.py mail-replied DAY KEY             -> you answered in Gmail: closes the item and its task
   python3 sync.py merge REMOTE.json                -> imports an export: {"tasks": [{"id": ..., ...fields}], "days": [...], ...}
 
-Rule for memos / dues / tasks / prompts / notes / habits / lifemap / wins: per id, the record with the larger updatedAt wins;
+Rule for memos / dues / tasks / prompts / notes / habits / lifemap / wins / gear / projects / sections: per id, the record with the larger updatedAt wins;
 a missing updatedAt counts as 0; nothing is removed (deleted:true is a record too).
 """
 import json
@@ -27,7 +27,7 @@ sys.path.insert(0, ROOT)
 sys.path.insert(0, os.path.dirname(ROOT))
 from server import FEEDS, LOCK, doc_path, feed_docs, followup_core, lifeos_tools, load, put_doc, rebuild_feed, save, upsert  # noqa: E402
 
-TWO_WAY = ("memos", "dues", "tasks", "prompts", "notes", "habits", "lifemap", "wins", "presents")
+TWO_WAY = ("memos", "dues", "tasks", "prompts", "notes", "habits", "lifemap", "wins", "presents", "gear", "projects", "sections")
 
 
 def ts(x):

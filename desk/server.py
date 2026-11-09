@@ -2,7 +2,7 @@
 """Tatsuki's Desk — Mac server.
 
 Serves desk/index.html at http://localhost:4747 and keeps memos, due dates,
-tasks and Claude prompts in desk/data/*.json. Only the Python standard library is used.
+tasks (with their projects and sections) and Claude prompts in desk/data/*.json. Only the Python standard library is used.
 POST /api/claude opens Terminal with a Claude Code command (Desk's ⌨️ buttons, macOS only).
 /api/focus/* relays to FocusBlock (focusblock/, 127.0.0.1:47800); the password only passes through.
 
@@ -40,7 +40,7 @@ import wise_sync
 ROOT = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(ROOT, "data")
 PORT = int(os.environ.get("DESK_PORT", "4747"))
-COLLECTIONS = ("memos", "dues", "tasks", "prompts", "notes", "habits", "lifemap", "wins", "worldlog", "presents", "heritagelog", "routines", "routinelog", "rewards")
+COLLECTIONS = ("memos", "dues", "tasks", "prompts", "notes", "habits", "lifemap", "wins", "worldlog", "presents", "heritagelog", "routines", "routinelog", "rewards", "gear", "projects", "sections")
 # file in data/, global the page reads, value when the file is missing
 DATA_JS = [
     ("tools.js", "TOOLS", "[]"),
