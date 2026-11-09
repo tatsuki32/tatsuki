@@ -1,0 +1,8 @@
+name = "reply-helper"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+compatibility_flags = ["nodejs_compat"]
+
+# 秘密の値はここに書かない。次のコマンドで入れる:
+#   npx wrangler secret put ANTHROPIC_API_KEY
+#   npx wrangler secret put APP_PASSWORD
