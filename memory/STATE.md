@@ -1,10 +1,10 @@
 # 今の状態（STATE）
 
-最終更新：2026-11-09（ブランチ `desk/page-cards` に main を取り込み）
+最終更新：2026-11-09（main に一本化）
 
 ## 進行中の作業
 - Desk の Mac 専用化：実装はブランチ `desk/local-first`。データは非公開リポジトリに15分ごとに保管中。クラウド定期タスクの停止は Mac 側の試運転のあと。
-- プロジェクト（📁 `projects`・`sections`）と持ち物（🎒 `gear`）：main から `desk/page-cards` に取り込んだ（`claude/ecstatic-turing-hp7fh9`）。Mac で pull と初期データの取り込み（`sync.py merge`）待ち。
+- 本線は main に一本化（2026-11-09）。`desk/page-cards` の全部＋プロジェクト・持ち物を main に入れた。Mac は main に戻して `setup-mac.sh` を入れ直す（`desk/pull.sh`）。Mac だけにある未コミットの変更（Web 履歴・身体・お知らせ など）は Mac から main へ push 待ち。
 - 作りたい機能リスト（全11件）を順番に作っている。Desk のタスク「作りたい機能①〜⑪」で進み具合を見る。
   - ① CLAUDE.md＋memory/（外付けメモリ）… 完了
   - ②〜⑪ もすべて最小版を実装し main にマージ済み（tatsuki32/tatsuki#9）。使ってみて直す段階。

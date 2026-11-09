@@ -20,3 +20,9 @@
 
 ## 次の一手
 - Mac の Claude Code で、未コミットの変更をコミット → pull → 初期データの取り込み。
+
+## 追記：main に一本化
+- Tatsuki の方針：今後は main だけで更新する。Mac の localhost:4747 の版がいちばん新しい。
+- 全ブランチを調べた。Desk の作業は `desk/page-cards` にほぼ全部入っていた。残りは別のツール（reply-helper・vinepro）と、記録だけのブランチ。
+- `claude/zen-darwin-tlps0q`（5分ごとの pull を `desk/pull.sh` にして、`server.py` が変わったら再起動・失敗の理由をログに書く）は古い main から分かれていたので、中身だけを Mac の版の `setup-mac.sh` に移植した。
+- `desk/page-cards` を main に入れる。Mac に残る未コミットの変更は、Mac の Claude がコミットして main に push する。

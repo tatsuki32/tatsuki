@@ -21,7 +21,7 @@ Tatsuki の個人ダッシュボード。**Mac だけで使う**（2026-11-04 �
   API: `GET /api/memos|dues|tasks|prompts|notes|habits|lifemap|wins|worldlog|presents`、`PUT /api/presents/<id>`、`GET|PUT /api/projects|sections|gear/<id>`（プロジェクトの箱と持ち物）、`POST /api/memos`、`PATCH|PUT /api/memos/<id>`、`PUT /api/tools/<id>`（`urlEditable` のツールの URL だけ）、`PUT /api/dues/<id>`、`PUT /api/tasks/<id>`、`PUT /api/prompts/<id>`、`PUT /api/notes/<id>`、`PUT /api/habits/<id>`、`PUT /api/lifemap/<id>`（Life OS 14）、`PUT /api/wins/<id>`、`PUT /api/worldlog/<id>`、`GET|PUT /api/heritagelog`、`GET /heritage-photos/<名前>`、`GET /api/whatsapp`、`GET /api/followups`、`POST /api/followups/<番号>/answer`（Life OS 02。送信はしない）、`POST /api/claude`（`{cmd,arg}`。決めた17個のコマンドだけ。Terminal を開いて `claude "<コマンド>"` を始める。macOS のみ）、`GET /api/focus/state`・`POST /api/focus/start|stop`（FocusBlock への中継。パスワードは保存もログもしない）、`GET /api/wise?period=week|month|3m|6m|all|custom`・`GET /api/wise/export?format=csv|pdf&kind=list|report`・`PUT /api/wise/category|kind|recurring|seen|upcoming-hide|direct|budget|trips/<id>|goals|sims|learn/<id>|close/<月>|limits|recon/<月>`・`POST /api/wise/subs`（「お金」の画面。Wise には問い合わせずファイルを読む）。
   データは `desk/data/*.json`（`.gitignore` 済み。個人データは絶対にコミットしない）。
 - Mac の置き場所は `~/TatsukiDesk`（Documents などの保護フォルダは自動起動から読めないので不可）。
-- Mac の導入: `bash desk/setup-mac.sh`（アプリのビルド＋サーバー常駐＋5分ごとの `git pull origin main`＋15分ごとのデータ保管）。
+- Mac の導入: `bash desk/setup-mac.sh`（アプリのビルド＋サーバー常駐＋5分ごとの `desk/pull.sh`＝`git pull origin main`（main にいるときだけ。`server.py` が変わったらサーバーを再起動、失敗の理由は `~/Library/Logs/tatsuki-desk-pull.log`）＋15分ごとのデータ保管）。
   ブラウザで開くときの入口は `desk/launcher.html`。
   旧版 `~/Documents/ClaudeTools` は使わない。
 - 画像と PDF は `desk/data/uploads/`（`POST /api/uploads`、`GET /uploads/<名前>`、1個20MB。非公開リポジトリにも保管）。
