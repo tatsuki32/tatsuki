@@ -31,6 +31,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, unquote, urlsplit
 
 import bank
+import accounts
 import netspeed
 import notify
 import pc_monitor
@@ -748,6 +749,11 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(200, bank.view())
             except bank.BankError:
                 return self.send(500, {"error": "read"})
+        if path == "/api/accounts":
+            try:
+                return self.send(200, accounts.view())
+            except accounts.AccountsError:
+                return self.send(500, {"error": "read"})
         if path == "/api/netspeed":
             return self.send(200, netspeed.view())
         if path.startswith("/api/utilities/file/"):
@@ -901,6 +907,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.web_put(urlsplit(self.path).path.split("/")[3:], rec)
         if urlsplit(self.path).path.startswith("/api/bank/"):
             return self.bank_write(method, rec)
+        if urlsplit(self.path).path.startswith("/api/accounts/"):
+            return self.accounts_write(method, rec)
         if method == "POST" and urlsplit(self.path).path == "/api/usage":
             # counts only; a test server on another port answers and keeps nothing
             return self.send(200, {"ok": usage.enabled(PORT) and usage.record(rec)})
@@ -1027,6 +1035,23 @@ class Handler(BaseHTTPRequestHandler):
         except (OSError, subprocess.SubprocessError):
             return self.send(500, {"error": "could not open Terminal"})
         return self.send(200, {"ok": True})
+
+    def accounts_write(self, method, rec):
+        # the same guard as bank_write: JSON only, so another origin needs a preflight. Errors carry no value.
+        if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+            return self.send(415, {"error": "json only"})
+        p = urlsplit(self.path).path.split("/")[3:]  # <id> or <id>/remove
+        acct = unquote(p[0]) if p else ""
+        try:
+            if method == "PUT" and len(p) == 1:
+                return self.send(200, accounts.put(acct, rec))
+            if method == "POST" and len(p) == 2 and p[1] == "remove":
+                return self.send(200, accounts.view()) if accounts.remove(acct) else self.send(404, {"error": "not found"})
+            return self.send(404, {"error": "not found"})
+        except ValueError as e:
+            return self.send(400, {"error": str(e)})
+        except accounts.AccountsError:
+            return self.send(500, {"error": "storage"})
 
     def bank_write(self, method, rec):
         # same protection as claude(): Host/Origin checked, and JSON from another origin needs a preflight.

@@ -1361,6 +1361,7 @@ if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="screentime")+1,0,{id:"pc",e
 if(LOCALAPI) VIEWS.push({id:"usage",e:"📊",label:"Usage",g:"write"}); // which parts of Desk get used, and the weekly re-arrangement (desk/usage.py)
 if(LOCALAPI) VIEWS.push({id:"utilities",e:"🧰",label:"Small Utilities",g:"write"}); // QR, character count, is.gd and PDF compression (desk/utilities.py)
 if(LOCALAPI) VIEWS.push({id:"bank",e:"🏦",label:"Bank Accounts",g:"tool"}); // same: from Tools and the / list. Details stay on this Mac (desk/bank.py)
+if(LOCALAPI) VIEWS.push({id:"accounts",e:"🔑",label:"Accounts",g:"tool"}); // where you have accounts and how you sign in; no passwords yet (desk/accounts.py)
 if(LOCALAPI) VIEWS.push({id:"showcase",e:"🖼️",label:"Showcase",g:"tool"}); // same: opened from Tools and the / list
 async function api(method,path,body){const r=await fetch(path,{method,headers:{"Content-Type":"application/json"},body:body?JSON.stringify(body):undefined});if(!r.ok)throw new Error(r.status);return r.json()}
 async function loadApiMemos(){try{
@@ -4223,7 +4224,7 @@ function toolsView(){
   const tools=S.tools.filter(t=>!t.deleted), groups=GROUPS.filter(([g])=>tools.some(t=>t.group===g));
   return `<header class="head"><div><p class="eyebrow">Tools</p><h1>Tools & folders</h1></div></header>
   ${notesHere("tools")}
-  ${LOCALAPI?`<section><div class="section-title"><span class="e">🖥️</span>This Mac</div><div class="tiles"><a class="tile" href="#netspeed"><span class="ico">📶</span><span class="t">Internet Speed</span><span class="d">Test your Wi-Fi speed and see what it can handle</span></a><a class="tile" href="#bank"><span class="ico">🏦</span><span class="t">Bank Accounts</span><span class="d">Copy account details to share</span></a><a class="tile" href="#utilities"><span class="ico">🧰</span><span class="t">Small Utilities</span><span class="d">QR codes, character count, URL shortener, PDF compression</span></a></div></section>`:""}
+  ${LOCALAPI?`<section><div class="section-title"><span class="e">🖥️</span>This Mac</div><div class="tiles"><a class="tile" href="#netspeed"><span class="ico">📶</span><span class="t">Internet Speed</span><span class="d">Test your Wi-Fi speed and see what it can handle</span></a><a class="tile" href="#bank"><span class="ico">🏦</span><span class="t">Bank Accounts</span><span class="d">Copy account details to share</span></a><a class="tile" href="#accounts"><span class="ico">🔑</span><span class="t">Accounts</span><span class="d">Which sites you use, what for, and how you sign in</span></a><a class="tile" href="#utilities"><span class="ico">🧰</span><span class="t">Small Utilities</span><span class="d">QR codes, character count, URL shortener, PDF compression</span></a></div></section>`:""}
   ${LOCALAPI?`<section><div class="section-title"><span class="e">🌐</span>For others to see</div><div class="tiles"><a class="tile" href="#showcase"><span class="ico">🖼️</span><span class="t">Showcase</span><span class="d">View your portfolio site and PR photos</span></a></div></section>`:""}
   ${groups.length?groups.map(([g,e,l])=>`<section><div class="section-title"><span class="e">${e}</span>${l}</div><div class="tiles">${tools.filter(t=>t.group===g).sort((a,b)=>(a.order??99)-(b.order??99)).map(tile).join("")}</div></section>`).join(""):`<div class="card empty"><b>Loading tools</b>Your tools and folders will appear here.</div>`}`;
 }
@@ -4685,6 +4686,7 @@ function render(){
   if(viewId()==="netspeed"){nsLoad();$("#view").innerHTML=searchResults()+nsView();wire();wireNs();return}
   if(viewId()==="utilities"){if(!document.activeElement?.closest?.(".utfield")||!$("#utView"))utDraw();return} // a redraw from elsewhere never takes the text being typed
   if(viewId()==="notices"){ntLoad();$("#view").innerHTML=searchResults()+ntView();wire();wireNt();return}
+  if(viewId()==="accounts"){acLoad();$("#view").innerHTML=searchResults()+acView();wire();wireAc();return}
   if(viewId()==="bank"){bkLoad();$("#view").innerHTML=searchResults()+bkView();wire();wireBk();return}
   if(viewId()==="showcase"){scLoad();$("#view").innerHTML=searchResults()+scView();wire();wireSc();return}
   if(viewId()==="ideas"){ideasLoad();$("#view").innerHTML=searchResults()+ideasView();wire();wireIdeas();return}
@@ -4973,6 +4975,55 @@ function bkOpen(a){
   const del=$("#bkDel");if(del)del.onclick=async()=>{
     if(!del.dataset.sure){del.dataset.sure="1";del.textContent="Delete for good (cannot be undone)";return}
     try{S.bk=await api("POST",url+"/remove",{});close();render();toast("Deleted")}catch(e){toast("Could not delete")}};
+}
+/* Accounts: the sites you have accounts on, what each is for and how you sign in. No passwords in this version:
+   desk/accounts.py refuses anything that looks like one. Kept on this Mac only and not part of search. */
+const ACROWS=[["purpose","What it's for"],["login","Sign in with"],["account","Account used"]];
+async function acLoad(force){
+  if(!LOCALAPI||S.acBusy||(!force&&S.ac))return;
+  S.acBusy=true;
+  try{S.ac=await api("GET","/api/accounts");S.acErr=false;S.acBusy=false;if(viewId()==="accounts")render()}
+  catch(e){const was=S.acErr;S.acErr=true;S.acBusy=false;if(!was&&viewId()==="accounts")render()}
+}
+function acView(){
+  const head=`<h1>Accounts</h1>`,note=`<p class="sub">Saved only on this Mac. Not sent to the GitHub backup. Passwords are not kept here yet.</p>`;
+  if(S.acErr)return `<div class="money bkp" data-noauto>${head}<p class="due">Could not load. Restarting the server may help.</p></div>`;
+  if(!S.ac)return `<div class="money bkp" data-noauto>${head}<p class="due">Loading…</p></div>`;
+  const add=first=>`<button class="btn${first?" primary":""}" id="acAdd">Add account</button>`,xs=S.ac.accounts;
+  if(!xs.length)return `<div class="money bkp" data-noauto>${head}<section class="card mfocus"><p class="mtalk">Note each site you sign up for, what it is for, and how you sign in.</p>${add(true)}${note}</section></div>`;
+  const host=u=>{try{return new URL(u).host}catch(e){return u}};
+  const card=a=>`<section class="card bkcard" data-acid="${esc(a.id)}"><div class="bkhead"><h2>${esc(a.label)}</h2>${a.url&&okUrl(a.url)?`<a class="sub" href="${esc(a.url)}" target="_blank" rel="noopener">${esc(host(a.url))} ↗</a>`:""}</div>
+    <div>${ACROWS.filter(([k])=>a[k]).map(([k,l])=>`<div class="bkrow"><span class="bkl">${esc(l)}</span><span class="bkv">${esc(a[k])}</span></div>`).join("")}</div>${a.memo?`<p class="due bkmemo">${esc(a.memo)}</p>`:""}
+    <div class="bkall"><button class="btn sm" data-acedit>Edit</button></div></section>`;
+  return `<div class="money bkp" data-noauto>${head}${xs.map(card).join("")}<div>${add(false)}</div>${note}</div>`;
+}
+function wireAc(){
+  const add=$("#acAdd");if(add)add.onclick=()=>acOpen(null);
+  document.querySelectorAll("[data-acid]").forEach(card=>{const a=S.ac.accounts.find(x=>x.id===card.dataset.acid);card.querySelector("[data-acedit]").onclick=()=>acOpen(a)});
+}
+function acOpen(a){
+  const F=[["label","Site or service","e.g., Cloudflare"],["url","Address","e.g., dash.cloudflare.com"],["purpose","What it's for","e.g., hosts the portfolio site"],["login","Sign in with","e.g., Google"],["account","Account used","e.g., which Google account"],["memo","Memo",""]];
+  const input=([k,l,ph])=>`<div class="bkf"><label class="sub" for="acF-${k}">${esc(l)}</label><input type="text" id="acF-${k}" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" data-1p-ignore${k==="login"?' list="acLogins"':""} placeholder="${esc(ph)}" value="${esc(a?.[k]||"")}"></div>`;
+  $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop bkp" role="dialog" aria-modal="true" aria-label="${a?"Edit account":"Add account"}" data-noauto>
+    <div class="top"><h2>${a?"Edit account":"Add account"}</h2><button class="ibtn" id="acX" aria-label="Close">✕</button></div>
+    <p class="hint">Do not type passwords here. Anything that looks like one is refused.</p>
+    ${F.map(input).join("")}<datalist id="acLogins"><option value="Google"><option value="Apple"><option value="GitHub"><option value="Microsoft"><option value="Email and password"><option value="Phone number"></datalist>
+    <button class="btn primary" id="acSave" style="justify-content:center">Save</button>
+    ${a?`<button class="btn" id="acDel" style="justify-content:center">Delete this entry</button>`:""}
+  </div></div>`;
+  const close=()=>{$("#modal").innerHTML=""},url="/api/accounts/"+encodeURIComponent(a?.id||"a"+Date.now().toString(36));
+  $("#acX").onclick=close;$("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};
+  $("#scrim").onkeydown=e=>{if(e.key==="Escape")close()};
+  $("#acF-label").focus();
+  $("#acSave").onclick=async()=>{
+    const rec=Object.fromEntries(F.map(([k])=>[k,$("#acF-"+k).value]));
+    if(!rec.label.trim()){toast("Enter the site or service");$("#acF-label").focus();return}
+    try{const r=await fetch(url,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(rec)});
+      if(!r.ok){const e=await r.json().catch(()=>({}));toast(e.error==="looks like a password or key"?"That looks like a password or key, so it was not saved":"Could not save. Your entries are still there");return}
+      S.ac=await r.json();close();render();toast("Saved")}catch(e){toast("Could not save. Your entries are still there")}};
+  const del=$("#acDel");if(del)del.onclick=async()=>{
+    if(!del.dataset.sure){del.dataset.sure="1";del.textContent="Delete for good (cannot be undone)";return}
+    try{S.ac=await api("POST",url+"/remove",{});close();render();toast("Deleted")}catch(e){toast("Could not delete")}};
 }
 /* Showcase: look only. Where to look is in desk/data/showcase.json; the list and the opening are in desk/showcase.py. */
 async function scLoad(){

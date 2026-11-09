@@ -1,6 +1,6 @@
 # 今の状態（STATE）
 
-最終更新：2026-11-09（main に一本化）
+最終更新：2026-11-09（アカウント一覧の仮の版）
 
 ## 進行中の作業
 - Desk の画面とボットをアメリカ英語にした（2026-11-09、main。今あるタスクとメモは日本語のまま。記録 `memory/episodic/sessions/2026-11-09-english-ui.md`）。
@@ -30,6 +30,7 @@
 - 秘書ボット（`lifeos/21-assistant/`。Cloudflare Workers、写真のボットとは別）：実装・未コミット。テストは偽物の通信で成功。本物の API と本番は導入待ち。
 - メール整理（`desk/gmail_clean.py`）：`desk/page-cards` にコミット済み。main に未マージ。本物で12件停止済み。OAuth はテスト中で、接続が7日で切れる可能性あり。 見せる素材（`desk/showcase.py`）：`desk/page-cards` に統合済み。main に未マージ。 小さな道具（`desk/utilities.py`）：`claude/desk-utilities-a3a168` にコミット。アプリの窓で使うには再ビルドが要る。
 - LINE の返信タスク化（`desk/line_sync.py`）：実装・未コミット。流れは本番で確認。未読のあるトークはまだ本番で未確認。お知らせ（Mac の通知。`desk/notify.py`）：実装・未コミット。本番で動作中。実際の音と表示、まとめの実走、`urgent` の印は確認待ち。使い方の計測と週1回の並び替え（`desk/usage.py`）：実装・未コミット。数え始めは 2026-11-06、最初の並び替えは 11-23。 週1回の提案（`desk/ideas.py`、`desk-idea-suggest`）：`desk/page-cards` に統合。
+- アカウント一覧（`desk/accounts.py`、🔑 Accounts）：仮の版を実装。パスワードは持たない。鍵つきのパスワード欄は次の段階（要件定義から）。ポートフォリオは Cloudflare Pages に移した。
 ## 決定済みの事項
 - UI/UX を作るときは毎回、本を全文読んでから（`.claude/rules/design-ui.md`）。Drive の文字変換は p.136 まで。後半は Tatsuki のまとめで補っている。
 - Desk の見た目：文字 12/14/16/20/28px・太さ 400/700・余白 4/8/16/24/40px。金は今いる場所・焦点・主ボタン・外部リンクだけ。ボタンに絵文字を付けない。
