@@ -3,7 +3,7 @@
 #   bash desk/setup-mac.sh
 # Installs two background jobs for this user (no sudo):
 #   com.tatsuki.desk.server  keeps http://localhost:4747 running (starts at login)
-#   com.tatsuki.desk.pull    git pull every 5 minutes, so GitHub changes reach the Mac
+#   com.tatsuki.desk.pull    desk/pull.sh every 5 minutes: git pull main, and restart the server when server.py changed
 # Run it again any time; it replaces the old jobs. Remove with: bash desk/setup-mac.sh --uninstall
 set -euo pipefail
 
@@ -79,8 +79,8 @@ cat > "$AGENTS/com.tatsuki.desk.pull.plist" <<PLIST
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
   <key>Label</key><string>com.tatsuki.desk.pull</string>
-  <key>ProgramArguments</key><array><string>/bin/sh</string><string>-c</string>
-    <string>cd "$REPO" &amp;&amp; [ "\$("$GIT" rev-parse --abbrev-ref HEAD)" = "$BRANCH" ] &amp;&amp; "$GIT" pull --ff-only -q origin "$BRANCH"; echo "\$(date '+%F %T') pull exit \$?"</string></array>
+  <key>ProgramArguments</key><array><string>/bin/bash</string><string>$DESK/pull.sh</string></array>
+  <key>EnvironmentVariables</key><dict><key>DESK_BRANCH</key><string>$BRANCH</string><key>PATH</key><string>/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin</string></dict>
   <key>RunAtLoad</key><true/>
   <key>StartInterval</key><integer>300</integer>
   <key>StandardOutPath</key><string>$LOGS/tatsuki-desk-pull.log</string>
