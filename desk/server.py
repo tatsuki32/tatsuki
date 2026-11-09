@@ -2,7 +2,7 @@
 """Tatsuki's Desk — Mac server.
 
 Serves desk/index.html at http://localhost:4747 and keeps memos, due dates,
-tasks and Claude prompts in desk/data/*.json. Only the Python standard library is used.
+tasks (with their projects and sections) and Claude prompts in desk/data/*.json. Only the Python standard library is used.
 POST /api/claude opens Terminal with a Claude Code command (Desk's ⌨️ buttons, macOS only).
 /api/focus/* relays to FocusBlock (focusblock/, 127.0.0.1:47800); the password only passes through.
 
@@ -30,7 +30,7 @@ from urllib.parse import unquote, urlsplit
 ROOT = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(ROOT, "data")
 PORT = int(os.environ.get("DESK_PORT", "4747"))
-COLLECTIONS = ("memos", "dues", "tasks", "prompts", "notes", "habits", "lifemap", "wins", "gear")
+COLLECTIONS = ("memos", "dues", "tasks", "prompts", "notes", "habits", "lifemap", "wins", "gear", "projects", "sections")
 # file in data/, global the page reads, value when the file is missing
 DATA_JS = [
     ("tools.js", "TOOLS", "[]"),
@@ -331,7 +331,7 @@ class Handler(BaseHTTPRequestHandler):
         if method == "POST" and col == "memos" and doc_id is None:
             doc_id = "m" + str(int(time.time() * 1000)) + secrets.token_hex(2)
             return self.send(200, upsert(col, doc_id, rec, merge=False))
-        if method == "PUT" and col in ("dues", "tasks", "prompts", "notes", "habits", "lifemap", "wins", "gear") and doc_id:
+        if method == "PUT" and col in ("dues", "tasks", "prompts", "notes", "habits", "lifemap", "wins", "gear", "projects", "sections") and doc_id:
             return self.send(200, upsert(col, doc_id, rec, merge=False))
         if method == "PATCH" and col == "memos" and doc_id:
             out = upsert(col, doc_id, rec, merge=True)
