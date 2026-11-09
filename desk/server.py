@@ -689,6 +689,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(400, {"error": "bad json"})
         if step == ["qr"]:
             return self.send(*utilities.qr(rec.get("text")))
+        if step == ["file"]:
+            return self.send(*utilities.text_file(rec.get("name"), rec.get("text"), rec.get("kind")))
         if step == ["shorten"]:
             return self.send(*utilities.shorten(rec.get("url")))
         if len(step) == 3 and step[0] == "pdf" and step[2] == "run":

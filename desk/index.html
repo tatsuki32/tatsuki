@@ -1702,6 +1702,28 @@ async function copyText(text){
   const ta=document.createElement("textarea");ta.value=text;ta.style.cssText="position:fixed;opacity:0";($("#scrim")||document.body).append(ta);ta.select();
   let ok=false;try{ok=document.execCommand("copy")}catch(e){}ta.remove();return ok;
 }
+/* Copy as text: every filled field of the open task dialog, "Label: value", in the order it is shown. Empty fields are left out. */
+function taskFormText(root){const out=[];
+  root.querySelectorAll("input,select,textarea").forEach(el=>{
+    if(el.type==="checkbox"){if(el.checked){const l=el.closest("label");if(l)out.push(l.textContent.trim())}return}
+    const lab=el.id&&root.querySelector(`label[for="${el.id}"]`);if(!lab)return;
+    const v=el.tagName==="SELECT"?(el.selectedOptions[0]?.textContent||""):el.value;if(!String(v).trim())return;
+    const name=lab.textContent.replace(/\s*\(optional\)/i,"").trim();
+    out.push(el.tagName==="TEXTAREA"?`${name}:\n${v.trim()}`:`${name}: ${String(v).trim()}`)});
+  return out.join("\n")}
+/* Export CSV: all of a project's tasks, box by box (Excel and Sheets read the BOM as UTF-8). */
+function projCsv(p){const H=["Box","Subheading","Title","Status","Due date","Due time","Date label","Start date","Time needed","Time needed (min)","Description","Important","Notes","ID"];
+  const q=v=>`"${String(v??"").replace(/"/g,'""')}"`, st=Object.fromEntries(TSTATUS), secs=secList(p.id), rank=new Map(secs.map((x,i)=>[x.id,i]));
+  const xs=projTasks(p.id).filter(t=>!t.deleted).sort((a,b)=>(rank.get(a.sectionId)??1e9)-(rank.get(b.sectionId)??1e9)||byOrder(a,b));
+  const rows=xs.map(t=>{const [d,tm]=dueParts(t.due);return [secById(t.sectionId)?.name||"",t.group,t.title,st[t.status]||t.status,d,tm,t.dateLabel,isDay(t.start)?t.start:"",t.estimate,t.estMin,t.desc,t.urgent?"Yes":"",t.note,t.id]});
+  return "\ufeff"+[H,...rows].map(r=>r.map(q).join(",")).join("\r\n")}
+/* Saving a file: the Desk window cannot save by itself, so the server holds it for an hour and the default browser downloads it. */
+async function saveFile(name,text,kind){
+  if(!LOCALAPI) return saveText(`${name}.${kind}`,text,kind==="csv"?"text/csv":"text/plain");
+  try{const r=await fetch("/api/utilities/file",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name,text,kind})});if(!r.ok)throw 0;
+    const a=document.createElement("a");a.href="/api/utilities/file/"+(await r.json()).file;a.download=`${name}.${kind}`;document.body.append(a);a.click();a.remove();toast("Saving to Downloads")}
+  catch(e){toast("Couldn't save. Please try again")}}
+function exportProjCsv(id){const p=projById(id);if(!p)return;saveFile(`${p.name} tasks ${hcmcDate()}`,projCsv(p),"csv")}
 const ccStart=async(cmd,arg)=>{try{await api("POST","/api/claude",{cmd,arg});toast("⌨️ Opened in Terminal")}catch(e){toast("Could not open Terminal")}};
 function wireClear(t,close){
   if(!t) return;
@@ -2801,7 +2823,7 @@ function openTask(id,preset){
     <label class="sub" for="tStatus">Status</label><select id="tStatus">${TSTATUS.map(([k,l])=>`<option value="${k}" ${k===(t?.status||"notyet")?"selected":""}>${l}</option>`).join("")}</select>
     ${isLinked?"":projFields(t||pre)}
     <label class="sub" for="tNote">Notes</label><textarea id="tNote" class="tnote" placeholder="Details if needed. [word] links to a note">${esc(t?.note||"")}</textarea>${t&&linksIn(t.note).length?`<p class="hint">🔗 ${linksIn(t.note).map(x=>wlink(x)).join(" ")}</p>`:""}
-    <div class="row"><button class="btn primary" id="tSave">Save <kbd>⌘/Ctrl + Enter</kbd></button><button class="btn" id="tCancel">Cancel</button>${t&&!isLinked?`<button class="btn" id="tDel" style="margin-left:auto;color:var(--red)">Delete</button>`:""}</div>
+    <div class="row"><button class="btn primary" id="tSave">Save <kbd>⌘/Ctrl + Enter</kbd></button><button class="btn" id="tCancel">Cancel</button>${t?`<button class="btn" id="tCopy">Copy as text</button>`:""}${t&&!isLinked?`<button class="btn" id="tDel" style="margin-left:auto;color:var(--red)">Delete</button>`:""}</div>
   </div></div>`;
   const ti=$("#tTitle");ti.focus();ti.setSelectionRange(ti.value.length,ti.value.length);
   wireWa(t);wireLine(t);
@@ -2819,6 +2841,7 @@ function openTask(id,preset){
     try{await store.putTask({...base,...readProjFields(t||pre),...named,due:isNaN(due)?null:due,status:st,note:$("#tNote").value.trim(),planDate,estMin:est>0?est:null});await taskWin({...base,...named},st);close();toast(st==="done"&&base.status!=="done"?"✨ Done. Added to Wins":t?"🗂️ Saved":"🗂️ Task added")}
     catch(e){toast("Couldn't save. Your input is still here")}};
   $("#tSave").onclick=save;$("#tCancel").onclick=close;$("#xTask").onclick=close;
+  $("#tCopy")&&($("#tCopy").onclick=async()=>{toast(await copyText(taskFormText($("#scrim .pop")))?"📋 Copied as text":"Couldn't copy")});
   $("#tDel")&&($("#tDel").onclick=async e=>{const b=e.currentTarget;if(!b.dataset.sure){b.dataset.sure="1";b.textContent="Really delete?";return}
     try{await store.putTask({...t,deleted:true});close();toast("🗑️ Deleted")}catch(err){toast("Couldn't delete")}});
   $("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};
@@ -2873,7 +2896,7 @@ function projectView(){
     return `<button class="ptile" data-jump="sec-${esc(s.id)}"><i style="background:${okColor(s.color)}"></i><b>${esc(s.name)}</b><span>${o?`${o} left`:xs.length?"All done":"Empty"}${s.when?" · "+esc(s.when):""}</span></button>`}).join("");
   const body=v==="list"?projListView(p,all):v==="board"?boardHtml(all,{notyet:"Not done yet",doing:"Drag here to start",done:"Finished things go here"}):v==="calendar"?projCalView(p,all):v==="gantt"?projGanttView(p,all):projSecView(p,all,secs);
   return `<header class="head"><div><p class="eyebrow">Projects${p.archived?" · Archived":""}</p><h1>${esc(p.emoji||"📁")} ${esc(p.name)}</h1><p class="sub" style="margin:var(--s1) 0 0">Remaining ${open} · Done ${done} · Boxes ${secs.length}</p></div>
-    <div class="row"><button class="btn primary" data-padd="${esc(p.id)}">+ Task</button><button class="btn" data-secnew="${esc(p.id)}">+ Box</button><button class="ibtn" data-pedit="${esc(p.id)}" aria-label="Edit project" title="Edit project">✏️</button></div></header>
+    <div class="row"><button class="btn primary" data-padd="${esc(p.id)}">+ Task</button><button class="btn" data-secnew="${esc(p.id)}">+ Box</button><button class="btn" data-pcsv="${esc(p.id)}">Export CSV</button><button class="ibtn" data-pedit="${esc(p.id)}" aria-label="Edit project" title="Edit project">✏️</button></div></header>
   ${tiles&&v==="sections"?`<div class="ptiles">${tiles}</div>`:""}
   <div class="pbar"><div class="chips" role="group" aria-label="View">${PVIEWS.map(([k,l])=>`<button class="chip" data-pview="${k}" aria-pressed="${v===k}">${l}</button>`).join("")}</div>${v==="board"?"":`<button class="chip" data-pdonetoggle aria-pressed="${!!S.pDone}">Show done</button>`}</div>
   ${notesHere("project")}
@@ -3060,6 +3083,7 @@ document.addEventListener("click",e=>{
   if(b=h("[data-secedit]"))return editSection(secById(b.dataset.secedit));
   if(b=h("[data-secup]"))return moveSection(b.dataset.secup,-1);
   if(b=h("[data-secdown]"))return moveSection(b.dataset.secdown,1);
+  if(b=h("[data-pcsv]"))return exportProjCsv(b.dataset.pcsv);
   if(b=h("[data-padd]"))return openTask(null,{projectId:b.dataset.padd,sectionId:b.dataset.paddSec||""});
   if(b=h("[data-pdone]")){const t=findTask(b.dataset.pdone);if(t)setTaskStatus(t.id,t.status==="done"?"notyet":"done");return}
   if(b=h("[data-pview]")){S.pview=b.dataset.pview;const p=projById(S.projectId);render();if(p&&p.lastView!==S.pview)store.putProject({...p,lastView:S.pview}).catch(()=>{});return}

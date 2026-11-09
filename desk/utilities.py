@@ -486,6 +486,21 @@ def clear_pdf(job_id):
     return 200, {"ok": True}
 
 
+TEXT_MAX = 5 * 1024 * 1024
+TEXT_TYPES = {"csv": "text/csv; charset=utf-8", "txt": "text/plain; charset=utf-8"}
+
+
+def text_file(name, text, kind):
+    """A CSV or text the page made (a project's tasks): kept in memory for an hour so the default browser can save it."""
+    if kind not in TEXT_TYPES or not isinstance(text, str):
+        return 400, {"error": "csv or txt only"}
+    data = text.encode("utf-8")
+    if len(data) > TEXT_MAX:
+        return 413, {"error": "too large"}
+    base = re.sub(r'[\\/:*?"<>|\x00-\x1f]', "_", str(name or "").strip())[:80] or "export"
+    return 200, {"file": _token({"data": data, "name": f"{base}.{kind}", "ctype": TEXT_TYPES[kind]})}
+
+
 def get_file(token):
     with _lock:
         return _files.get(token)
