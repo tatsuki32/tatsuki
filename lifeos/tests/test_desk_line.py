@@ -284,7 +284,7 @@ class Queue(Base):
         self.queue_one()
         self.assertEqual(ln.read_queue(reader=lambda *a: READING), 1)
         task = next(iter(self.store.values()))
-        self.assertEqual((task["source"], task["title"], task["status"]), ("line", "LINE reply: 相手 — 明日の予定", "notyet"))
+        self.assertEqual((task["source"], task["title"], task["status"]), ("line", "LINE返信 相手 明日の予定", "notyet"))
         self.assertNotIn("明日どう", json.dumps(task, ensure_ascii=False))
         self.assertEqual(ln.load_items()[task["id"]]["body"], "行けるよ")
         self.assertEqual(os.listdir(ln.lp("shots")), [])
@@ -362,7 +362,7 @@ class Queue(Base):
         self.queue_one()
         ln.read_queue(reader=lambda *a: {**READING, "topic": "集合場所について"})
         self.assertEqual(next(iter(ln.load_items().values()))["texts"], ["明日どう？"])
-        self.assertEqual(next(iter(self.store.values()))["title"], "LINE reply: 相手 — 集合場所")
+        self.assertEqual(next(iter(self.store.values()))["title"], "LINE返信 相手 集合場所")
 
     def test_finished_task_takes_its_text(self):
         self.queue_one()

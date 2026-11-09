@@ -56,8 +56,16 @@ def _rule_parts(text):
     return out
 
 
+MONTHS_EN = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+WEEK_EN = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+# the kind names in replies. sort.LABELS keeps the Japanese ones the task notes are written with
+LABELS_EN = {"task": "Task", "event": "Event", "expense": "Expense", "idea": "Idea", "diary": "Diary"}
+
+
 def _clock(at, timed):
-    return at.strftime("%-m/%-d %H:%M" if timed else "%-m/%-d")
+    """en-US: "Nov 4" or "Nov 4, 6:00 PM"."""
+    day = f"{MONTHS_EN[at.month - 1]} {at.day}"
+    return day + f", {at.hour % 12 or 12}:{at.minute:02d} {'AM' if at.hour < 12 else 'PM'}" if timed else day
 
 
 def _file_task(memo_id, n, part, is_voice):
@@ -70,13 +78,13 @@ def _file_task(memo_id, n, part, is_voice):
         try:
             minutes = part.minutes or gcal.DEFAULT_MINUTES
             gcal.add(title, at, part.timed, f"{memo_id}-{n}", part.text, minutes)
-            length = f" {minutes}分" if part.timed else ""
-            return "calendar", f"{_clock(at, part.timed)}{length} → カレンダー"
+            length = f", {minutes} min" if part.timed else ""
+            return "calendar", f"{_clock(at, part.timed)}{length} → calendar"
         except gcal.CalendarError as e:
             logs.append("bot-errors", {"tool": "04-voice", "where": "calendar", "error": str(e)})
-            trouble = "カレンダーに入らず"
+            trouble = "could not add it to the calendar"
     elif at:
-        trouble = "カレンダー未接続"
+        trouble = "calendar not connected"
     note = f"種類:{sort.LABELS[part.kind]} 元:{origin}メモ"
     if part.kind == "event" and not at:
         note += " 日時は聞き取れませんでした"
@@ -84,8 +92,8 @@ def _file_task(memo_id, n, part, is_voice):
         note += "\n" + part.text
     t = tasks.add(title, due=int(at.timestamp() * 1000) if at else None, note=note, source=SOURCE, source_ref=memo_id)
     if not at:
-        return "tasks:" + t["id"], "→ タスク"
-    return "tasks:" + t["id"], f"{_clock(at, part.timed)} → タスク（{trouble}）"
+        return "tasks:" + t["id"], "→ task"
+    return "tasks:" + t["id"], f"{_clock(at, part.timed)} → task; {trouble}"
 
 
 def _file_part(memo_id, n, part, is_voice):
@@ -117,7 +125,7 @@ def _file_memo(memo_id, parts, is_voice, done=()):
             continue
         logs.append(LOG, {"memo": memo_id, "part": n, "kind": part.kind, "title": part.title, "text": part.text,
                           "where": where, "voice": is_voice, "unsure": part.unsure})
-        lines.append(f"・{sort.LABELS[part.kind]}：{part.title or part.text}" + (f"（{extra}）" if extra else ""))
+        lines.append(f"- {LABELS_EN[part.kind]}: {part.title or part.text}" + (f" ({extra})" if extra else ""))
         unsure = unsure or part.unsure
     if not failed:
         try:
@@ -130,20 +138,20 @@ def _file_memo(memo_id, parts, is_voice, done=()):
 def _reply(lines, failed, unsure, by_rules=False):
     out = []
     if lines:
-        out.append("仕分けました")
+        out.append("Sorted:")
         out += lines
     if by_rules:
-        out.append("AI が使えなかったので、簡単な規則で仕分けました。")
+        out.append("The AI was not available, so I sorted it with simple rules.")
     if unsure:
-        out.append("迷ったのでアイデアに置きました。違うときは「タスク：」のように種類を先頭に付けて送り直せます。")
+        out.append('I was not sure, so I filed it as an idea. If that is wrong, send it again with the kind first, like "task: ...".')
     if failed:
-        out.append("保存できなかった分は未整理に残しました。内容は消えていません。")
+        out.append("What could not be saved is in the unsorted list. Nothing was lost.")
     return "\n".join(out)
 
 
 def _day_label(day):
     d = datetime.strptime(day, "%Y-%m-%d")
-    return f"{d.month}/{d.day}({'月火水木金土日'[d.weekday()]})"
+    return f"{WEEK_EN[d.weekday()]}, {MONTHS_EN[d.month - 1]} {d.day}"
 
 
 def answer(query):
@@ -156,7 +164,7 @@ def answer(query):
         found, trouble = gcal.events(query.at, query.until), ""
     except gcal.CalendarError as e:
         logs.append("bot-errors", {"tool": "04-voice", "where": "calendar-read", "error": str(e)})
-        found, trouble = [], "カレンダーを読めませんでした。"
+        found, trouble = [], "I could not read the calendar."
     due = {}
     for t in tasks.open_tasks():
         if isinstance(t.get("due"), (int, float)):
@@ -166,13 +174,13 @@ def answer(query):
     for day in days:
         # an event that began earlier and is still going counts on the first day asked about
         here = [e for e in found if isinstance(e, dict) and (e.get("date") == day or (day == days[0] and str(e.get("date")) < day))]
-        lines = [f"・{'終日' if e.get('allDay') else str(e.get('start')) + '〜' + str(e.get('end'))} {e.get('title')}"
+        lines = [f"- {'All day' if e.get('allDay') else str(e.get('start')) + '–' + str(e.get('end'))} {e.get('title')}"
                  for e in sorted(here, key=lambda e: (not e.get("allDay"), str(e.get("start"))))]
-        lines += [f"・期日のタスク：{title}" for title in due.get(day, [])]
+        lines += [f"- Task due: {title}" for title in due.get(day, [])]
         if lines or len(days) == 1:
-            out.append(f"{_day_label(day)}の予定（{len(lines)}件）")
-            out += lines or ["予定はありません"]
-    return "\n".join(out) or f"{_day_label(days[0])}〜{_day_label(days[-1])}の予定はありません"
+            out.append(f"{_day_label(day)} ({len(lines)} {'item' if len(lines) == 1 else 'items'})")
+            out += lines or ["Nothing scheduled."]
+    return "\n".join(out) or f"Nothing scheduled from {_day_label(days[0])} to {_day_label(days[-1])}."
 
 
 def _split(text):
@@ -231,9 +239,9 @@ def _expense_line(recs):
         found = sort.amount(r.get("text") or "")
         if found:
             totals[found[1]] = totals.get(found[1], 0) + found[0]
-    names = {"JPY": "円", "VND": "ドン", "USD": "ドル"}
-    sums = "、".join(f"{v:,}{names[c]}" for c, v in totals.items())
-    return f"・支出 {len(recs)}件" + (f"（{sums}）" if sums else "")
+    shown = {"JPY": "¥{:,}", "VND": "{:,} VND", "USD": "${:,}"}
+    sums = ", ".join(shown[c].format(v) for c, v in totals.items())
+    return f"- Expenses: {len(recs)}" + (f" ({sums})" if sums else "")
 
 
 def summary(day=None):
@@ -250,10 +258,10 @@ def summary(day=None):
         if kind == "expense" and same:
             body.append(_expense_line(same))
             continue
-        body += [f"・{sort.LABELS[kind]}：{_short(r.get('title') or r.get('text') or '', SUMMARY_CHARS)}" for r in same]
-    tail = [f"未整理 {waiting}件が残っています"] if waiting else []
+        body += [f"- {LABELS_EN[kind]}: {_short(r.get('title') or r.get('text') or '', SUMMARY_CHARS)}" for r in same]
+    tail = [f"{waiting} still in the unsorted list"] if waiting else []
     room = SUMMARY_MAX - 1 - len(tail)
     if len(body) > room:
         hidden = len(body) - (room - 1)
-        body = body[:room - 1] + [f"ほか{hidden}件"]
-    return [f"昨日しゃべったこと（{len(recs)}件）"] + body + tail
+        body = body[:room - 1] + [f"and {hidden} more"]
+    return [f"What you said yesterday ({len(recs)})"] + body + tail

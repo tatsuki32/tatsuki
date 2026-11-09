@@ -23,5 +23,28 @@
   "blockers": [],
   "commands": [],
   "updated": "2026-11-05",
-  "stoppedNote": "2026-11-05 に本人の判断で一旦停止。戻すときは status を元に戻す。コードは残している。"
+  "stoppedNote": "2026-11-05 に本人の判断で一旦停止。戻すときは status を元に戻す。コードは残している。",
+  "_en": {
+    "name": "2-minute tidy",
+    "oneline": "Tidy for 2 minutes, one place at a time",
+    "usage": [
+      "Send \"tidy\" and you get one place for today's 2 minutes",
+      "When finished, send \"done\". To do another, send \"tidy\" again",
+      "Places come up in order, starting with the one tidied longest ago",
+      "See the list with \"tidy places\". It starts with desk, kitchen and bathroom",
+      "Add one with \"tidy add Bedroom Nightstand\". Remove one with \"tidy remove Nightstand\" (adding it again brings it back)"
+    ],
+    "howToCheck": [
+      "Until Telegram is connected, you can try it in Terminal",
+      "Type cd ~/TatsukiDesk",
+      "Type python3 lifeos/bot/cli.py \"tidy\" and check that one place appears",
+      "Type python3 lifeos/bot/cli.py \"done\"",
+      "Type \"tidy\" again and check that a different place appears",
+      "Type python3 lifeos/bot/cli.py \"tidy places\" and look at the list",
+      "Check that no reply shows a messiness score or comparison",
+      "Once Telegram is connected, send \"tidy\" and \"done\" to the bot and check the same things"
+    ],
+    "blockers": [],
+    "stoppedNote": "Paused on 2026-11-05 by Tatsuki's choice. To bring it back, set status back. The code is kept."
+  }
 }

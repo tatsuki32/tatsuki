@@ -68,8 +68,8 @@ Tatsuki の個人ダッシュボード。**Mac だけで使う**（2026-11-04 �
 - 機能追加は `/desk-feature` の流れ（質問 → 要件定義 → 承認 → 実装）で行う。
 - UI/UX を作る・変えるときは、毎回『ノンデザイナーズ・デザインブック』を全文読んでから（`.claude/rules/design-ui.md`、ルールは `memory/semantic/patterns/design-nondesigner.md`）。
 - iPhone 幅 375px で横スクロールが出ないこと。
-- 画面に出る文字はすべてアメリカ英語（2026-11-09 に日本語から切り替え。ノート・メモの本文はそのまま）。既存のデータは日本語のままなので、題名の前置き（`メール返信`→`Email reply:` など）を見分けるコードは両方を受ける。データに保存する判定用の値（`priority` の `Action needed`、`region`、ツールの `group`、タスクの `status` など）は英語のままにして、表示だけ日本語にする（`PRIJA` / `REGJA` / `GROUPS`）。
-  スケジュールタスク（World Desk morning brief / Morning Mail check など全部）が Desk に書く文も英語（各 SKILL.md の先頭に「Language (changed 2026-11-09)」の段落）。メールの `subject_ja`・`draft.body_ja` は名前はそのままで中身は英語、Gmail の下書き本体は相手の言語のまま。
+- 画面に出る文字はすべてアメリカ英語（2026-11-09 に日本語から切り替え。ノート・メモの本文はそのまま）。既存のデータは日本語のままなので、題名の前置き（`メール返信`→`Email reply:` など）を見分けるコードは両方を受ける。データに保存する判定用の値（`priority` の `Action needed`、`region`、ツールの `group`、タスクの `status` など）は英語のまま。表示用の名前は `PRIJA` / `REGJA` / `GROUPS`（中身は英語）。
+  スケジュールタスク（World Desk morning brief / Morning Mail check など全部）が Desk に書く文も英語（各 SKILL.md の先頭に「Language (changed 2026-11-09)」の段落）。メールの `subject_ja`・`draft.body_ja` は名前はそのままで中身は英語、Gmail の下書き本体は相手の言語のまま。 メールと連絡は原文を残して英語訳を添え、返信の下書きは相手の言語（日本語のメールには日本語）。日本語の文を直すときは日本語のまま。カレンダーの予定は訳さずそのまま出す。今あるタスクの題は日本語のまま（改名しない）で、これから作るタスクは英語。
 
 ## Life OS（`lifeos/`）
 

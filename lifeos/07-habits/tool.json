@@ -24,5 +24,29 @@
     }
   ],
   "commands": [],
-  "updated": "2026-11-05"
+  "updated": "2026-11-05",
+  "_en": {
+    "name": "No-penalty habits",
+    "oneline": "A habit log that counts the days you did it. A plant grows with your total",
+    "usage": [
+      "Send something like \"did workout\" or \"reading 30 min\" on Telegram, and it goes into Desk habits",
+      "It grows with your total (a sprout at 10, a flower at 30, a tree at 100). Each card on the Desk Habits screen shows it too",
+      "Once a week, you get an update on how it is growing",
+      "To stop it, set status in this tool.json to stopped"
+    ],
+    "howToCheck": [
+      "In Terminal, open the Desk folder",
+      "Run LIFEOS_DATA=/tmp/try07 python3 lifeos/bot/cli.py \"reading 30 min\"",
+      "Check that the reply says it was recorded and shows the plant",
+      "See the weekly message with LIFEOS_DATA=/tmp/try07 python3 lifeos/07-habits/weekly.py --preview",
+      "Check that even after skipping a few days, Telegram replies never blame you (once the bot is connected)"
+    ],
+    "blockers": [
+      {
+        "what": "Weekly automatic send",
+        "why": "The scheduled run for the weekly report is not set up yet.",
+        "needs": "Tell Claude whether it is OK to turn on automatic sending (steps in INTEGRATION.md)"
+      }
+    ]
+  }
 }

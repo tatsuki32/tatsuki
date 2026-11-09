@@ -25,7 +25,7 @@ func isDesk(_ url: URL?) -> Bool {
 
 func failurePage(_ reason: String) -> String {
     return """
-    <!doctype html><html lang="ja"><meta charset="utf-8"><title>Tatsuki's Desk</title>
+    <!doctype html><html lang="en"><meta charset="utf-8"><title>Tatsuki's Desk</title>
     <style>
       body{margin:0;min-height:100vh;display:flex;align-items:center;padding:40px;box-sizing:border-box;
            background:#0d0d0d;color:#ece8df;font:14px/1.6 -apple-system,"Hiragino Sans",sans-serif}
@@ -33,7 +33,7 @@ func failurePage(_ reason: String) -> String {
       p{margin:0 0 24px;color:#9a958a;max-width:40em}
       a{display:inline-block;padding:8px 16px;border-radius:8px;background:#d4af37;color:#111;text-decoration:none;font-weight:700}
     </style>
-    <div><h1>Desk を起動できませんでした</h1><p>\(reason)</p><a href="\(retryURL.absoluteString)">もう一度試す</a></div></html>
+    <div><h1>Desk could not start</h1><p>\(reason)</p><a href="\(retryURL.absoluteString)">Try again</a></div></html>
     """
 }
 
@@ -110,7 +110,7 @@ final class DeskController: NSObject, NSApplicationDelegate, WKNavigationDelegat
                     self.waitForServer(tries: tries - 1)
                 } else {
                     self.web.loadHTMLString(
-                        failurePage("サーバーが応答しません。ターミナルで <code>bash ~/TatsukiDesk/desk/setup-mac.sh</code> を実行すると直ることがあります。"),
+                        failurePage("The server is not responding. Running <code>bash ~/TatsukiDesk/desk/setup-mac.sh</code> in Terminal may fix it."),
                         baseURL: nil)
                 }
             }
@@ -168,36 +168,36 @@ final class DeskController: NSObject, NSApplicationDelegate, WKNavigationDelegat
 
         let appItem = NSMenuItem()
         let app = NSMenu()
-        app.addItem(withTitle: "Tatsuki's Desk を隠す", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
+        app.addItem(withTitle: "Hide Tatsuki's Desk", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
         app.addItem(.separator())
-        app.addItem(withTitle: "Tatsuki's Desk を終了", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        app.addItem(withTitle: "Quit Tatsuki's Desk", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         appItem.submenu = app
         main.addItem(appItem)
 
         let editItem = NSMenuItem()
-        let edit = NSMenu(title: "編集")
-        edit.addItem(withTitle: "取り消す", action: Selector(("undo:")), keyEquivalent: "z")
-        let redo = edit.addItem(withTitle: "やり直す", action: Selector(("redo:")), keyEquivalent: "z")
+        let edit = NSMenu(title: "Edit")
+        edit.addItem(withTitle: "Undo", action: Selector(("undo:")), keyEquivalent: "z")
+        let redo = edit.addItem(withTitle: "Redo", action: Selector(("redo:")), keyEquivalent: "z")
         redo.keyEquivalentModifierMask = [.command, .shift]
         edit.addItem(.separator())
-        edit.addItem(withTitle: "カット", action: #selector(NSText.cut(_:)), keyEquivalent: "x")
-        edit.addItem(withTitle: "コピー", action: #selector(NSText.copy(_:)), keyEquivalent: "c")
-        edit.addItem(withTitle: "ペースト", action: #selector(NSText.paste(_:)), keyEquivalent: "v")
-        edit.addItem(withTitle: "すべてを選択", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
+        edit.addItem(withTitle: "Cut", action: #selector(NSText.cut(_:)), keyEquivalent: "x")
+        edit.addItem(withTitle: "Copy", action: #selector(NSText.copy(_:)), keyEquivalent: "c")
+        edit.addItem(withTitle: "Paste", action: #selector(NSText.paste(_:)), keyEquivalent: "v")
+        edit.addItem(withTitle: "Select All", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
         editItem.submenu = edit
         main.addItem(editItem)
 
         let viewItem = NSMenuItem()
-        let view = NSMenu(title: "表示")
-        let reload = view.addItem(withTitle: "再読み込み", action: #selector(reloadDesk), keyEquivalent: "r")
+        let view = NSMenu(title: "View")
+        let reload = view.addItem(withTitle: "Reload", action: #selector(reloadDesk), keyEquivalent: "r")
         reload.target = self
         viewItem.submenu = view
         main.addItem(viewItem)
 
         let windowItem = NSMenuItem()
-        let win = NSMenu(title: "ウインドウ")
-        win.addItem(withTitle: "閉じる", action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
-        win.addItem(withTitle: "しまう", action: #selector(NSWindow.performMiniaturize(_:)), keyEquivalent: "m")
+        let win = NSMenu(title: "Window")
+        win.addItem(withTitle: "Close", action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w")
+        win.addItem(withTitle: "Minimize", action: #selector(NSWindow.performMiniaturize(_:)), keyEquivalent: "m")
         windowItem.submenu = win
         main.addItem(windowItem)
         NSApp.windowsMenu = win

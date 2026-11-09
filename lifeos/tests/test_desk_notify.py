@@ -41,7 +41,7 @@ class Events(unittest.TestCase):
         show, log, st = run(at(13, 30), data(events=[EVENT]))
         self.assertEqual([x["kind"] for x in show], ["event30"])
         self.assertEqual(show[0]["tier"], "now")
-        self.assertIn("14:00 打ち合わせ", show[0]["body"])
+        self.assertIn("2:00 PM 打ち合わせ", show[0]["body"])
         again, _, _ = run(at(13, 31), data(events=[EVENT]), st=st)
         self.assertEqual(again, [])
 
@@ -65,7 +65,7 @@ class Events(unittest.TestCase):
         ev = {**EVENT, "start": iso(10)}
         show, _, _ = run(at(8), data(events=[ev]))
         self.assertEqual([x["kind"] for x in show], ["morning"])
-        self.assertIn("10:00 打ち合わせ", show[0]["lines"][0])
+        self.assertIn("10:00 AM 打ち合わせ", show[0]["lines"][0])
 
 
 class Tasks(unittest.TestCase):

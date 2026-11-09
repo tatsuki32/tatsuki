@@ -29,9 +29,9 @@ NO_LINE = (-1001, -1003, -1004, -1005, -1009)
 ZOOM = "https://support.zoom.com/hc/en/article?id=zm_kb&sysparm_article=KB0060748"
 NETFLIX = "https://help.netflix.com/en/node/306"
 USES = (
-    {"id": "voice", "name": "音声通話", "down": 0.08, "up": 0.08, "source": "Zoom", "url": ZOOM},
-    {"id": "meeting", "name": "ビデオ会議（1080p）", "down": 3.0, "up": 3.8, "source": "Zoom", "url": ZOOM},
-    {"id": "video", "name": "4K 動画", "down": 15.0, "up": 0, "source": "Netflix", "url": NETFLIX},
+    {"id": "voice", "name": "Voice call", "down": 0.08, "up": 0.08, "source": "Zoom", "url": ZOOM},
+    {"id": "meeting", "name": "Video meeting (1080p)", "down": 3.0, "up": 3.8, "source": "Zoom", "url": ZOOM},
+    {"id": "video", "name": "4K video", "down": 15.0, "up": 0, "source": "Netflix", "url": NETFLIX},
 )
 ROOM = 2  # twice the published figure counts as enough; between one and two is tight
 
@@ -61,11 +61,11 @@ def parse_result(raw):
     code = raw.get("error_code")
     if code:
         if code in NO_LINE:
-            return None, "インターネットにつながりませんでした。接続を確かめて、もう一度お試しください。"
-        return None, "計測が途中で止まりました。この回は記録していません。もう一度お試しください。"
+            return None, "Could not connect to the internet. Check the connection and try again."
+        return None, "The test stopped partway. This run was not saved. Please try again."
     down, up = raw.get("dl_throughput"), raw.get("ul_throughput")
     if not down or not up:
-        return None, "結果を読み取れませんでした。この回は記録していません。もう一度お試しください。"
+        return None, "Could not read the result. This run was not saved. Please try again."
     return {
         "down": round(down / 1e6, 1),
         "up": round(up / 1e6, 1),
@@ -129,9 +129,9 @@ def measure():
         done = subprocess.run([TOOL, "-c", "-s"], capture_output=True, text=True, timeout=RUN_TIMEOUT)
         raw = json.loads(done.stdout)
     except subprocess.TimeoutExpired:
-        return None, "時間がかかりすぎたので止めました。この回は記録していません。"
+        return None, "It took too long, so it stopped. This run was not saved."
     except (OSError, ValueError, subprocess.SubprocessError):
-        return None, "計測を始められませんでした。この回は記録していません。"
+        return None, "Could not start the test. This run was not saved."
     row, error = parse_result(raw)
     if error:
         return None, error
@@ -169,11 +169,11 @@ def signal_word(dbm):
     """A rule of thumb, not a published limit; the page says so."""
     if dbm is None:
         return None
-    return "強い" if dbm >= -60 else "ふつう" if dbm >= -70 else "弱い"
+    return "Strong" if dbm >= -60 else "Fair" if dbm >= -70 else "Weak"
 
 
 def place_name(row):
-    return row.get("ssid") or ("名前なし" if row.get("wifi") else "Wi-Fi 以外")
+    return row.get("ssid") or ("No name" if row.get("wifi") else "Not Wi-Fi")
 
 
 def wait_seconds(rpm):
@@ -186,22 +186,22 @@ def sentence(row, uses):
     left = {u["id"]: u["verdict"] for u in uses}
     if all(v == "ok" for v in left.values()):
         times = row["down"] / USES[2]["down"]
-        text = "通話も会議も動画も、余裕をもって使えます。"
-        text += f"下りは 4K 動画の目安の約{times:.0f}倍です。" if times >= 3 else ""
+        text = "Calls, meetings and video all have room to spare."
+        text += f" Download is about {times:.0f}x what 4K video needs." if times >= 3 else ""
         return text
     if left["voice"] == "short":
-        text = "通話にも足りない速さです。"
+        text = "Too slow even for a voice call."
     elif left["meeting"] == "short":
-        text = "音声通話はできますが、ビデオ会議には足りません。"
+        text = "Fine for voice calls, not enough for video meetings."
     elif left["video"] == "short":
-        text = "通話と会議はできますが、4K 動画には足りません。"
+        text = "Fine for calls and meetings, not enough for 4K video."
     else:
-        text = "使えますが、余裕は少なめです。"
+        text = "Usable, with little room to spare."
     word = signal_word(row.get("signal"))
-    if word == "弱い":
-        text += "電波が弱いので、ルーターに近づくと速くなるかもしれません。"
+    if word == "Weak":
+        text += " The signal is weak, so moving closer to the router may help."
     elif word:
-        text += "電波は届いているので、回線の側が混んでいるのかもしれません。"
+        text += " The signal is fine, so the line itself may be busy."
     return text
 
 

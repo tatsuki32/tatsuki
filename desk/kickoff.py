@@ -191,7 +191,7 @@ def memory_doc():
         for line in out.splitlines():
             ts, _, subj = line.partition("\t")
             m = re.match(r"Merge pull request #(\d+)", subj)
-            text = f"変更を main に取り込んだ（Mac に届く）" if m else re.sub(r"`[^`]*`", "", subj).strip()
+            text = "Merged the changes into main (they reach the Mac)" if m else re.sub(r"`[^`]*`", "", subj).strip()
             log.append({"at": int(ts) * 1000, "text": text[:80], "kind": "merge" if m else "commit"})
     except (OSError, subprocess.SubprocessError, ValueError):
         pass

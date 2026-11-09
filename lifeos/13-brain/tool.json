@@ -34,5 +34,39 @@
   ],
   "commands": [],
   "updated": "2026-11-05",
-  "stoppedNote": "2026-11-05 に本人の判断で一旦停止。戻すときは status を元に戻す。コードは残している。"
+  "stoppedNote": "2026-11-05 に本人の判断で一旦停止。戻すときは status を元に戻す。コードは残している。",
+  "_en": {
+    "name": "Second brain",
+    "oneline": "Client notes from your conversations, and matching invoices with payments. Money actions need approval",
+    "usage": [
+      "Make a client note: python3 lifeos/13-brain/brain.py contact add --name name --addr address",
+      "Match invoices and payments: python3 lifeos/13-brain/brain.py reconcile --invoices invoices.csv --payments payments.csv",
+      "See what is waiting for approval: python3 lifeos/13-brain/brain.py pending",
+      "Approve: python3 lifeos/13-brain/brain.py approve number (type the amount in a regular Terminal)",
+      "Stop: python3 lifeos/13-brain/brain.py stop (start resumes it)"
+    ],
+    "howToCheck": [
+      "After this tool is merged, open Terminal",
+      "Type cd ~/TatsukiDesk",
+      "Type python3 lifeos/13-brain/brain.py demo",
+      "Check that the sample client note has one conversation",
+      "Check that the match results show matches and items to review separately",
+      "Check that before approval it says it stopped and the run count is 0",
+      "Check that the run count becomes 1 only after approval",
+      "This is a sample, so no real data changes"
+    ],
+    "blockers": [
+      {
+        "what": "Which accounting and client tools to connect, and which companies",
+        "why": "The services and scope are not decided, so matching runs only on local CSV files. It does not connect to real accounting.",
+        "needs": "Choose the accounting and client services and the companies to include, and say so in the next session. Do not paste credentials in chat. Put them where you are told at that time"
+      },
+      {
+        "what": "Automatic updates from mail and WhatsApp",
+        "why": "It is not connected to anything outside, so client notes only include conversations you hand over. How to connect WhatsApp is not decided either.",
+        "needs": "Decide whether to connect WhatsApp through the official route or export chat history by hand. Also say whether it is OK to start regular Gmail imports"
+      }
+    ],
+    "stoppedNote": "Paused on 2026-11-05 by Tatsuki's choice. To bring it back, set status back. The code is kept."
+  }
 }

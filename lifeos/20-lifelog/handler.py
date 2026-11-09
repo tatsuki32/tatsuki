@@ -1,4 +1,4 @@
-"""Typed records: 「体重65.2」「昼 カレー大盛り」「ベンチ60kg 10回3セット」 go the same way as a photo (desk/lifelog.py).
+"""Typed records: "weight 65.2", "lunch curry", "bench 60kg 10x3" (or 「体重65.2」「昼 カレー大盛り」「ベンチ60kg 10回3セット」) go the same way as a photo (desk/lifelog.py).
 
 match() only looks at the words, so an idea or a question never costs an API call. A message that Claude finds records
 nothing is passed on to the other tools, so it is not lost.
@@ -11,12 +11,13 @@ PRIORITY = 25  # before 07-habits: 「筋トレ30分」 has numbers worth keepin
 
 _REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 _SLUG = "20-lifelog"
-_PREFIX = re.compile(r"^\s*(記録|ログ|食事|睡眠|体重|歩数|筋トレ|運動|学習|支出|血糖値?)\s*[:：]")
-_FOOD = re.compile(r"朝食|昼食|夕食|夜食|間食|朝ご?飯|昼ご?飯|夜ご?飯|晩ご?飯|朝ごはん|昼ごはん|夜ごはん|晩ごはん|ランチ|食べた|飲んだ|\d\s*kcal", re.I)
-_MEASURED = re.compile(r"寝た|睡眠|昼寝|就寝|起床|起きた|体重|体脂肪|BMI|歩数|歩いた|筋トレ|ベンチ|スクワット|デッドリフト|懸垂|腕立て|腹筋|ランニング|ジョギング|ジム|プレス|カール|ロウ|レイズ|レッグ|ラット|血糖|スクリーンタイム", re.I)
+_PREFIX = re.compile(r"^\s*(記録|ログ|食事|睡眠|体重|歩数|筋トレ|運動|学習|支出|血糖値?|record|log|meal|food|sleep|weight|steps|workout|exercise|study|spending|glucose)\s*[:：]", re.I)
+_FOOD = re.compile(r"朝食|昼食|夕食|夜食|間食|朝ご?飯|昼ご?飯|夜ご?飯|晩ご?飯|朝ごはん|昼ごはん|夜ごはん|晩ごはん|ランチ|食べた|飲んだ|\d\s*kcal|\b(breakfast|lunch|dinner|supper|snack|ate|drank)\b", re.I)
+_MEASURED = re.compile(r"寝た|睡眠|昼寝|就寝|起床|起きた|体重|体脂肪|BMI|歩数|歩いた|筋トレ|ベンチ|スクワット|デッドリフト|懸垂|腕立て|腹筋|ランニング|ジョギング|ジム|プレス|カール|ロウ|レイズ|レッグ|ラット|血糖|スクリーンタイム"
+                       r"|\b(slept|sleep|nap|bedtime|woke|weight|body fat|bmi|steps|walked|workout|bench|squats?|deadlifts?|pull-?ups?|push-?ups?|sit-?ups?|plank|running|ran|jog(ged|ging)?|gym|press|curls?|rows?|raises?|glucose|screen time)\b", re.I)
 _NUMBER = re.compile(r"\d")
 _SETS = re.compile(r"\d\s*[x×]\s*\d")
-_NOT_A_RECORD = re.compile(r"[?？]\s*$|したい|しよう|する予定|アイデア|どう(すれば|したら)|タスク")
+_NOT_A_RECORD = re.compile(r"[?？]\s*$|したい|しよう|する予定|アイデア|どう(すれば|したら)|タスク|\b(want to|going to|plan to|idea|how (do|can|should)|task)\b", re.I)
 
 
 def match(text):

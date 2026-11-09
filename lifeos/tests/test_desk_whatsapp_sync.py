@@ -171,7 +171,7 @@ class Titles(Scan):
         self.s.msg(1, False, "来週どう？")
         ref = wa.scan(NOW)["drafts"][0]["ref"]
         wa.save([{"ref": ref, "topic": "来週の予定", "summary": "予定を聞かれた", "body": "Hi"}])
-        self.assertEqual(tasks.get(ref)["title"], "WhatsApp reply: 来週の予定 (相手)")
+        self.assertEqual(tasks.get(ref)["title"], "WhatsApp返信 来週の予定について（相手）")
 
     def nudge_task(self, jid="81901" + PERSON_HOST):
         ref = "wa" + hashlib.sha1(jid.encode()).hexdigest()[:16]
@@ -186,7 +186,7 @@ class Titles(Scan):
         self.assertEqual(r["drafts"][0]["ref"], t["id"])
         self.assertEqual(wa.load_items()[t["id"]]["texts"], ["相手: こんにちは", "Me: どうですか？"])
         wa.save([{"ref": t["id"], "topic": "前の件", "body": "その後どう？"}])
-        self.assertEqual(tasks.get(t["id"])["title"], "WhatsApp nudge: 前の件 (相手)")
+        self.assertEqual(tasks.get(t["id"])["title"], "WhatsApp催促 前の件について（相手）")
         self.assertEqual(wa.scan(NOW)["closed"], 0)
         self.assertEqual(tasks.get(t["id"])["status"], "notyet")
         self.assertEqual(wa.nudges()["drafts"], [])
@@ -249,3 +249,15 @@ class NoReply(Scan):
         self.s.chat(3, "みんな", kind=GROUP, jid="1" + GROUP_HOST)
         self.s.msg(3, True, "集まりませんか？")
         self.assertEqual(wa.waiting_threads(NOW), [])
+
+
+class EnglishTitles(SandboxCase):
+    """New topics are read in English; old Japanese topics keep their Japanese title."""
+
+    def test_english_topic_gets_an_english_title(self):
+        self.assertEqual(wa.title_of({"name": "Ana", "topic": "next week"}), "WhatsApp reply: next week (Ana)")
+        self.assertEqual(wa.title_of({"name": "Ana", "topic": "the invoice", "nudge": True}), "WhatsApp nudge: the invoice (Ana)")
+        self.assertEqual(wa.title_of({"name": "Ana"}), "WhatsApp reply (Ana)")
+
+    def test_japanese_topic_keeps_the_japanese_title(self):
+        self.assertEqual(wa.title_of({"name": "相手", "topic": "来週の予定"}), "WhatsApp返信 来週の予定について（相手）")

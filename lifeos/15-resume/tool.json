@@ -25,5 +25,27 @@
     "/tsuzuki",
     "/split"
   ],
-  "updated": "2026-11-04"
+  "updated": "2026-11-04",
+  "_en": {
+    "name": "Pick up where you left off",
+    "oneline": "/tsuzuki shows where you left off in 3 lines, and /split breaks a big task into steps of 15 minutes or less",
+    "usage": [
+      "Type /tsuzuki to see where you stopped, what is in progress, and the next step in 3 lines (a different name because the built-in /resume uses that one)",
+      "/tsuzuki 全部 (all) shows your 5 most recent pieces of work, one line each",
+      "/split and a task name breaks it into steps of 15 minutes or less and adds them to Desk tasks",
+      "At the end of a session, what you did and the next step are saved automatically (read-only sessions are not saved)",
+      "To stop it, set status in tool.json to stopped. Only the automatic saving stops"
+    ],
+    "howToCheck": [
+      "Type /tsuzuki",
+      "Check that 3 lines appear and the last one has the next step",
+      "Type /split and a fairly big task name",
+      "Check that numbered steps were added to Desk tasks",
+      "Check in the task notes that every new step is estimated at 15 minutes or less",
+      "Finish a session in which you changed something",
+      "In a new session, type /tsuzuki and check that that work shows as the last one",
+      "After a few days away, type /tsuzuki and check that the next step is clear"
+    ],
+    "blockers": []
+  }
 }

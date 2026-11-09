@@ -28,6 +28,7 @@ RECENT_AREAS = 3                # do not repeat the areas of the last few questi
 RECENT_QUESTIONS = 30
 MAX_PATTERNS = 3
 
+# the Japanese names head the area files (life/<area>.md), which stay as they are
 AREAS = {
     "work": "仕事",
     "money": "お金",
@@ -36,63 +37,73 @@ AREAS = {
     "learning": "学び",
     "home": "住まい・移動",
 }
+# the names in messages
+AREAS_EN = {
+    "work": "Work",
+    "money": "Money",
+    "health": "Health",
+    "people": "People",
+    "learning": "Learning",
+    "home": "Home and travel",
+}
 
 QUESTIONS = {
     "work": [
-        "最近の仕事で、時間を忘れた場面はありましたか？",
-        "今の仕事で、やめられるならやめたいことは何ですか？",
-        "この1週間の仕事で、いちばん気になっていることは何ですか？",
-        "仕事で、最近うまくいったことを1つ挙げるなら？",
-        "1年後も続けていたい仕事はどれですか？",
+        "Was there a moment at work lately when you lost track of time?",
+        "If you could drop one part of your work, what would it be?",
+        "What is on your mind most about work this week?",
+        "What is one thing that went well at work lately?",
+        "Which work would you like to still be doing a year from now?",
     ],
     "money": [
-        "最近、払ってよかったと思ったお金は何ですか？",
-        "お金のことで、頭の片隅にずっとあることは何ですか？",
-        "今の暮らしに、毎月いくらあれば落ち着きますか？",
-        "最近、なくても困らなかった出費はありましたか？",
-        "お金が今の倍あったら、最初に何を変えますか？",
+        "What did you spend money on lately that felt worth it?",
+        "What money thing keeps sitting in the back of your mind?",
+        "How much a month would feel calm for the way you live now?",
+        "Was there a recent expense you did not really need?",
+        "If you had twice the money, what would you change first?",
     ],
     "health": [
-        "この1週間で、体が軽かった日は何をしていましたか？",
-        "最近の眠りはどんな感じですか？",
-        "最近、体を動かして気持ちよかったことはありますか？",
-        "最近、疲れがたまるのはどんなときですか？",
-        "食事で、最近おいしかったものは何ですか？",
+        "On a day this week when your body felt light, what had you been doing?",
+        "How has your sleep been lately?",
+        "Did moving your body feel good at some point lately?",
+        "When does tiredness build up for you lately?",
+        "What did you eat lately that tasted good?",
     ],
     "people": [
-        "最近、話してよかったと思った人はいますか？",
-        "しばらく会っていないけれど、気になる人はいますか？",
-        "最近、人づきあいで引っかかっていることはありますか？",
-        "最近、誰かに助けられたことは何ですか？",
-        "もっと時間を一緒に過ごしたいのはどんな人ですか？",
+        "Is there someone you were glad you talked to lately?",
+        "Is there someone you have not seen in a while and keep thinking of?",
+        "Is anything about the people around you bothering you lately?",
+        "When did someone help you lately?",
+        "Who would you like to spend more time with?",
     ],
     "learning": [
-        "最近、知って面白かったことは何ですか？",
-        "いま、少しでも上手になりたいことは何ですか？",
-        "最近読んだり聞いたりしたもので、残っている言葉はありますか？",
-        "やってみたいけれど、まだ手を付けていないことは何ですか？",
-        "最近、前よりできるようになったことは何ですか？",
+        "What did you learn lately that you found interesting?",
+        "What would you like to get a little better at right now?",
+        "Is there a line from something you read or heard lately that stayed with you?",
+        "What would you like to try but have not started yet?",
+        "What can you do now that you could not do before?",
     ],
     "home": [
-        "今の住まいで、気に入っている場所はどこですか？",
-        "住まいで、小さく変えたいところはありますか？",
-        "最近の移動で、楽しかったのはどこですか？",
-        "最近の移動で、面倒に感じたのはどこですか？",
-        "次に暮らしてみたい場所はありますか？",
+        "Which spot in your home do you like most right now?",
+        "Is there a small thing you would like to change at home?",
+        "Where did you enjoy going lately?",
+        "Which trip or commute felt like a hassle lately?",
+        "Is there a place you would like to live next?",
     ],
 }
 
 # Feelings found in answers. "heavy" pairs make the 仕事のストレスとお金の不安 kind of pattern.
+# The name of each feeling is what the monthly message shows. Japanese and English answers both count.
 FEELINGS = {
     "heavy": {
-        "不安": ("不安", "心配", "怖"),
-        "ストレス": ("ストレス", "イライラ", "しんど", "きつ", "つら", "辛"),
-        "疲れ": ("疲", "だる", "眠れ", "寝不足"),
-        "焦り": ("焦", "間に合わ", "追われ"),
+        "worry": ("不安", "心配", "怖", "worr", "anxi", "scared", "afraid"),
+        "stress": ("ストレス", "イライラ", "しんど", "きつ", "つら", "辛", "stress", "annoy", "frustrat"),
+        "tiredness": ("疲", "だる", "眠れ", "寝不足", "tired", "exhaust", "sleepless"),
+        "rush": ("焦", "間に合わ", "追われ", "rush", "behind schedule", "hurry"),
     },
     "light": {
-        "楽しさ": ("楽し", "嬉し", "うれし", "わくわく", "面白"),
-        "安心": ("落ち着", "安心", "ほっと"),
+        "fun": ("楽し", "嬉し", "うれし", "わくわく", "面白", "fun", "enjoy", "happy", "excit"),
+        "calm": ("落ち着", "安心", "ほっと", "calm", "relax", "relief", "relieved"),
     },
 }
 MIN_WEEKS = 2  # one shared week could be chance
@@ -226,7 +237,8 @@ def _pick(asks, rng):
 
 
 def format_question(area, question):
-    return f"{AREAS[area]}について：{question}\n（答えるなら{ANSWER_HOURS}時間以内にそのまま返信を。答えなくても大丈夫です）"
+    return (f"About {AREAS_EN[area].lower()}: {question}\n"
+            f"(To answer, just reply within {ANSWER_HOURS} hours. It is fine not to answer.)")
 
 
 def _ask(state, now, send, rng):
@@ -316,7 +328,7 @@ def _write_answer(area, question, text, when, doc_id):
 def add_answer(text, now=None, is_voice=False):
     """Appends a reply from the bot to the area's file and closes the question. Returns the area or None."""
     now = now or paths.now()
-    text = text.strip() + ("（音声）" if is_voice else "")
+    text = text.strip() + ("（音声）" if is_voice else "")  # the marker is stored with the answer
     with _locked():
         state = load_state()
         q = pending(state, now)
@@ -388,7 +400,8 @@ def entries(month):
 
 
 def _feelings(text, tone):
-    return [name for name, words in FEELINGS[tone].items() if any(w in text for w in words)]
+    low = text.lower()  # English feeling words are written in lowercase
+    return [name for name, words in FEELINGS[tone].items() if any(w in low for w in words)]
 
 
 def _week(day):
@@ -413,8 +426,9 @@ def _feeling_patterns(items):
                     p["b"] |= names_b
         for (a, b), p in pairs.items():
             if len(p["weeks"]) >= MIN_WEEKS:
-                found.append((len(p["weeks"]), f"{AREAS[a]}の「{'・'.join(sorted(p['a']))}」と、"
-                              f"{AREAS[b]}の「{'・'.join(sorted(p['b']))}」が、同じ週に{len(p['weeks'])}回出ています。"))
+                n = len(p["weeks"])
+                found.append((n, f"{AREAS_EN[a]} ({', '.join(sorted(p['a']))}) and {AREAS_EN[b].lower()} "
+                              f"({', '.join(sorted(p['b']))}) came up in the same week {n} times."))
     return [t for _, t in sorted(found, key=lambda x: -x[0])]
 
 
@@ -426,7 +440,8 @@ def _word_patterns(items):
             seen[w][e["area"]] += 1
     shared = [(w, a) for w, a in seen.items() if len(a) >= 2]
     shared.sort(key=lambda x: (-len(x[1]), -sum(x[1].values()), x[0]))
-    return [f"「{w}」という言葉が、{'と'.join(AREAS[k] for k in AREAS if k in a)}に出ています。" for w, a in shared]
+    return [f"The word \"{w}\" comes up in " + " and ".join(AREAS_EN[k].lower() for k in AREAS if k in a) + "."
+            for w, a in shared]
 
 
 def find_patterns(items):
@@ -444,8 +459,8 @@ def insight(month, finder=find_patterns):
     found = list(finder(items))[:MAX_PATTERNS]
     if not found:
         return None
-    lines = [f"{month} の人生マップ（答え {len(items)} 件）"] + ["・" + p for p in found]
-    lines.append("言葉の一致で拾ったものです。当てはまらなければ流してください。")
+    lines = [f"Life map for {month} ({len(items)} answers)"] + ["- " + p for p in found]
+    lines.append("These come from matching words. If one does not fit, let it go.")
     return "\n".join(lines)
 
 
@@ -459,7 +474,7 @@ def _monthly(state, now, send):
     text = insight(month)
     if not text:
         return None
-    md.save(f"life/insights/{month}.md", f"# {month} の気づき\n\n{text}\n")
+    md.save(f"life/insights/{month}.md", f"# Insights for {month}\n\n{text}\n")
     _desk_put({"id": "insight-" + month, "month": month, "text": text, "deleted": False})
     (send or telegram.notify)(text)
     return text

@@ -15,7 +15,8 @@ HERE = os.path.join(paths.REPO, "lifeos", "07-habits")
 # words that blame, warn or point at missed days. None may appear in anything the tool says
 HARSH = ("サボ", "さぼ", "途切", "連続", "ストリーク", "リセット", "記録なし", "記録がない", "未達", "失敗", "できなかった",
          "やらなかった", "してない", "していません", "忘れ", "残念", "怠", "遅れ", "枯れ", "しおれ", "減り", "減っ",
-         "ゼロ", "空い", "ぶり", "⚠", "❌", "🥀", "🔴", "もっと", "べき", "頑張")
+         "ゼロ", "空い", "ぶり", "⚠", "❌", "🥀", "🔴", "もっと", "べき", "頑張",
+         "miss", "streak", "reset", "fail", "broke", "behind", "only", "should", "forgot", "wilt", "lost", "!")
 
 
 def ctx():
@@ -45,11 +46,11 @@ class Base(SandboxCase):
 class TestPlant(Base):
     def test_grows_at_ten_and_thirty(self):
         names = {n: self.core.stage(n)[2] for n in (0, 9, 10, 29, 30, 99, 100, 500)}
-        self.assertEqual(names, {0: "種", 9: "種", 10: "芽", 29: "芽", 30: "花", 99: "花", 100: "木", 500: "木"})
+        self.assertEqual(names, {0: "Seed", 9: "Seed", 10: "Sprout", 29: "Sprout", 30: "Flower", 99: "Flower", 100: "Tree", 500: "Tree"})
 
     def test_status_line(self):
-        self.assertEqual(self.core.status_line(12), "🌱 芽 · これまで 12回（花まであと18回）")
-        self.assertEqual(self.core.status_line(120), "🌳 木 · これまで 120回")
+        self.assertEqual(self.core.status_line(12), "🌱 Sprout · 12 so far · 18 more to Flower")
+        self.assertEqual(self.core.status_line(120), "🌳 Tree · 120 so far")
 
     def test_desk_uses_the_same_table_and_shows_it_on_the_card(self):
         with open(os.path.join(paths.REPO, "desk", "index.html"), encoding="utf-8") as f:
@@ -85,6 +86,20 @@ class TestMatch(Base):
             f.write("{壊れた")
         self.assertTrue(self.h.match("筋トレした"))
 
+    def test_english_forms(self):
+        cases = {"did workout": ("筋トレ", None, 0), "Did reading 30 min yesterday": ("読書", "30 min", 1),
+                 "reading 30 min": ("読書", "30 min", 0), "yesterday I did yoga": ("ヨガ", None, 1),
+                 "done meditation.": ("瞑想", None, 0), "habit: walk 5 min": ("walk", "5 min", 0)}
+        for t, want in cases.items():
+            p = self.core.parse(t)
+            self.assertEqual((p["name"], p["amount"], p["days_ago"]), want, t)
+        for t in ("did the dishes", "reading", "workout", "done", "did", "habit:"):
+            self.assertIsNone(self.core.parse(t), t)
+
+    def test_an_english_desk_habit_is_known_by_its_name(self):
+        self.seed({"id": "h1", "name": "Push-ups", "done": []})
+        self.assertEqual(self.core.parse("did push-ups 20 times")["name"], "Push-ups")
+
     def test_the_bot_routes_here(self):
         routes = router.discover().routes
         self.assertEqual(router.which("読書30分", routes).slug, "07-habits")
@@ -94,7 +109,7 @@ class TestMatch(Base):
 class TestRecord(Base):
     def test_writes_a_desk_habit_and_no_new_log(self):
         reply = self.h.handle("読書30分", ctx())
-        self.assertIn("読書 30分、記録しました", reply)
+        self.assertIn("Recorded 読書 30分.", reply)
         rec = self.desk()[0]
         self.assertEqual(rec["name"], "読書")
         self.assertEqual(rec["done"], [paths.today()])
@@ -105,12 +120,18 @@ class TestRecord(Base):
     def test_same_day_counts_once(self):
         self.h.handle("読書30分", ctx())
         reply = self.h.handle("読書した", ctx())
-        self.assertIn("もう入っています", reply)
+        self.assertIn("is already in for today", reply)
         self.assertEqual(len(self.desk()[0]["done"]), 1)
+
+    def test_english_command_lands_on_the_japanese_habit(self):
+        self.seed({"id": "h1", "name": "筋トレ", "done": []})
+        reply = router.dispatch("did workout", ctx())
+        self.assertTrue(reply.startswith("Recorded 筋トレ."), reply)
+        self.assertEqual((len(self.desk()), self.desk()[0]["id"]), (1, "h1"))
 
     def test_yesterday_goes_on_yesterday(self):
         reply = self.h.handle("昨日筋トレした", ctx())
-        self.assertIn("昨日の分", reply)
+        self.assertIn("for yesterday", reply)
         self.assertEqual(self.desk()[0]["done"], [self.core.day_before(paths.today(), 1)])
 
     def test_uses_the_existing_habit_and_keeps_its_fields(self):
@@ -125,14 +146,14 @@ class TestRecord(Base):
         old = self.days(12, "2020-03-01")
         self.seed({"id": "h1", "name": "読書", "done": old})
         reply = self.h.handle("読書した", ctx())
-        self.assertIn("これまで 13回", reply)
+        self.assertIn("13 so far", reply)
         self.assertEqual(set(self.desk()[0]["done"]), set(old) | {paths.today()})
 
     def test_says_when_the_plant_grows(self):
         self.seed({"id": "h1", "name": "読書", "done": self.days(9, "2020-03-01")})
-        self.assertIn("🌱 読書：芽が出ました", self.h.handle("読書した", ctx()))
+        self.assertIn("🌱 読書: it sprouted.", self.h.handle("読書した", ctx()))
         self.seed({"id": "h1", "name": "読書", "done": self.days(29, "2020-03-01")})
-        self.assertIn("🌸 読書：花が咲きました", self.h.handle("読書した", ctx()))
+        self.assertIn("🌸 読書: it flowered.", self.h.handle("読書した", ctx()))
 
     def test_a_stopped_habit_comes_back_with_its_days(self):
         self.seed({"id": "h1", "name": "読書", "done": ["2026-01-01"], "deleted": True})
@@ -142,7 +163,7 @@ class TestRecord(Base):
         self.assertEqual(rec["done"], ["2026-01-01", paths.today()])
 
     def test_explicit_form_adds_any_habit(self):
-        self.assertIn("新しい習慣", self.h.handle("習慣: 5分歩く", ctx()))
+        self.assertIn("new habit", self.h.handle("習慣: 5分歩く", ctx()))
         self.assertEqual(self.desk()[0]["name"], "5分歩く")
         self.assertTrue(self.h.match("5分歩くした"))
 
@@ -152,7 +173,7 @@ class TestRecord(Base):
         with open(path, "w") as f:
             f.write("{壊れた")
         reply = router.dispatch("筋トレした", ctx())
-        self.assertIn("未整理に残しました", reply)
+        self.assertIn("unsorted list", reply)
         with open(path) as f:
             self.assertEqual(f.read(), "{壊れた")
         self.assertEqual(logs.read("unrouted")[0]["failedTool"], "07-habits")
@@ -194,9 +215,9 @@ class TestWeekly(Base):
                   {"id": "b", "name": "筋トレ", "createdAt": 2, "done": self.days(3, "2026-01-01")},
                   {"id": "c", "name": "やめた", "done": ["2026-01-01"], "deleted": True})
         text = self.core.week_report(self.DAY)
-        self.assertIn("読書：🌱 芽 · これまで 12回（花まであと18回） · この7日で +7", text)
-        self.assertIn("筋トレ：🌰 種 · これまで 3回（芽まであと7回）", text)
-        self.assertNotIn("筋トレ：🌰 種 · これまで 3回（芽まであと7回） ·", text)
+        self.assertIn("読書: 🌱 Sprout · 12 so far · 18 more to Flower · +7 in the last 7 days", text)
+        self.assertIn("筋トレ: 🌰 Seed · 3 so far · 7 more to Sprout", text)
+        self.assertNotIn("筋トレ: 🌰 Seed · 3 so far · 7 more to Sprout ·", text)
         self.assertNotIn("やめた", text)
 
     def test_sends_once_a_week_into_the_outbox_without_telegram(self):
@@ -204,7 +225,7 @@ class TestWeekly(Base):
         self.assertEqual(self.weekly.run(self.DAY), "outbox")
         self.assertEqual(self.weekly.run(self.DAY), "already")
         self.assertEqual(len(logs.read("outbox")), 1)
-        self.assertIn("今週の育ち具合", logs.read("outbox")[0]["text"])
+        self.assertIn("How your habits grew this week", logs.read("outbox")[0]["text"])
         self.assertEqual(self.weekly.run(self.DAY, force=True), "outbox")
         self.assertEqual(self.weekly.run("2026-11-09"), "outbox")
         self.assertEqual(len(logs.read("outbox")), 3)
@@ -236,7 +257,7 @@ class TestNeverBlames(Base):
     def assertGentle(self, text):
         for w in HARSH:
             self.assertNotIn(w, text)
-        self.assertNotRegex(text, r"(?<!\d)0回")
+        self.assertNotRegex(text, r"(?<!\d)0回|(?<![\d.])0 (?:so far|more|in)")
 
     def test_every_message_after_missed_days(self):
         day = "2026-11-04"
@@ -260,7 +281,7 @@ class TestNeverBlames(Base):
     def test_the_week_with_nothing_new_reads_the_same_as_any_other(self):
         self.seed({"id": "a", "name": "読書", "done": self.days(12, "2020-01-01")})
         lines = self.core.week_report("2026-11-04").split("\n")
-        self.assertEqual(lines, ["🌿 今週の育ち具合", "読書：🌱 芽 · これまで 12回（花まであと18回）", "育った分はこのまま残ります。"])
+        self.assertEqual(lines, ["🌿 How your habits grew this week", "読書: 🌱 Sprout · 12 so far · 18 more to Flower", "Everything that grew stays."])
 
     def test_tool_screen_text_is_gentle(self):
         with open(os.path.join(HERE, "tool.json"), encoding="utf-8") as f:

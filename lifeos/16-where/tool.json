@@ -25,5 +25,27 @@
     "/where",
     "/lowenergy"
   ],
-  "updated": "2026-11-04"
+  "updated": "2026-11-04",
+  "_en": {
+    "name": "Project recall",
+    "oneline": "Brings a stalled project back in 5 lines. On low-energy days, you only react",
+    "usage": [
+      "/where and a project name show how far it got, what is left, and the next step in 5 lines (it only reads Drive, Gmail and Desk tasks)",
+      "With just /where, it shows up to 3 stalled projects",
+      "/lowenergy lets you just react to Claude's draft with \"OK\", \"fix\" plus a word, or \"stop\"",
+      "/lowenergy only goes as far as a Gmail draft for mail. You do the sending",
+      "You can also start from \"Recall a project\" or \"Low-energy day\" under \"Ask Claude\" in the Desk"
+    ],
+    "howToCheck": [
+      "Check that the two buttons are in \"Ask Claude\" on the Desk Home",
+      "Press \"Recall a project\", enter the name of a stalled project, and open it in Terminal",
+      "Check that 5 lines appear and the time on line 5 is 5 minutes or less",
+      "Check whether you can start the next step on line 4 right away",
+      "Press \"Low-energy day\" and check that a draft appears without questions",
+      "Reply \"fix shorter\" and check that a revised draft appears",
+      "Reply \"stop\" and check that nothing was added",
+      "Ask for an email draft, reply \"OK\", and check that it is in Gmail drafts and was not sent"
+    ],
+    "blockers": []
+  }
 }

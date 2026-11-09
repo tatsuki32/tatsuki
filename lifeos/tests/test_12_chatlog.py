@@ -123,11 +123,11 @@ class TestDeadlineReading(SandboxCase):
             self.assertEqual(parse.classify(text, NOW)[0], "list", text)
 
     def test_countdown(self):
-        self.assertEqual(parse.countdown(ms(2026, 11, 7), NOW), "あと3日")
-        self.assertEqual(parse.countdown(ms(2026, 11, 4), NOW), "今日まで")
-        self.assertEqual(parse.countdown(ms(2026, 11, 2), NOW), "2日過ぎ")
-        self.assertEqual(parse.when(ms(2026, 11, 5)), "11/5(木)")
-        self.assertEqual(parse.when(ms(2026, 11, 5, 15, 0)), "11/5(木) 15:00")
+        self.assertEqual(parse.countdown(ms(2026, 11, 7), NOW), "in 3 days")
+        self.assertEqual(parse.countdown(ms(2026, 11, 4), NOW), "due today")
+        self.assertEqual(parse.countdown(ms(2026, 11, 2), NOW), "2 days ago")
+        self.assertEqual(parse.when(ms(2026, 11, 5)), "Thu, Nov 5")
+        self.assertEqual(parse.when(ms(2026, 11, 5, 15, 0)), "Thu, Nov 5, 3:00 PM")
 
 
 class Chat(SandboxCase):
@@ -158,45 +158,47 @@ class Chat(SandboxCase):
 class TestRecording(Chat):
     def test_expense_goes_to_log_and_markdown_in_one_line(self):
         reply = self.say("ランチ 3万ドン")
-        self.assertEqual(reply, "支出：ランチ 30,000ドン")
+        self.assertEqual(reply, "Expense: ランチ 30,000 VND")
         rec = logs.read("expenses")[0]
         self.assertEqual((rec["item"], rec["amount"], rec["currency"]), ("ランチ", 30000, "VND"))
         self.assertIn("ランチ 30,000ドン", md.read("logs/expenses.md"))
         self.assertTrue(paths.data_path("logs", "expenses.md").startswith(os.environ["LIFEOS_DATA"]))
 
     def test_guess_is_said_out_loud(self):
-        self.assertEqual(self.say("ランチ 1500"), "支出：ランチ 1,500円（通貨は推定）")
+        self.assertEqual(self.say("ランチ 1500"), "Expense: ランチ ¥1,500 (currency guessed)")
 
     def test_deadline_is_a_desk_task_with_due(self):
         reply = self.say("明日 資料 締切")
-        self.assertEqual(reply, "締切：資料 11/5(木) あと1日・カレンダー待ち")
+        self.assertEqual(reply, "Deadline: 資料, Thu, Nov 5, in 1 day · calendar pending")
         self.assertNotIn("\n", reply)
         t = tasks.open_tasks()[0]
         self.assertEqual((t["title"], t["due"], t["status"], t["source"]), ("資料", ms(2026, 11, 5), "notyet", "lifeos-12"))
 
     def test_same_deadline_twice_is_one_task(self):
         self.say("明日 資料 締切")
-        self.assertIn("登録済み", self.say("明日 資料 締切"))
+        self.assertIn("already on the Desk", self.say("明日 資料 締切"))
         self.assertEqual(len(tasks.open_tasks()), 1)
         self.assertEqual(len(gcal.pending()), 1)
 
     def test_no_date_is_kept_and_said(self):
-        self.assertIn("日付なし", self.say("資料 締切"))
+        self.assertIn("without a date", self.say("資料 締切"))
         self.assertIsNone(tasks.open_tasks()[0]["due"])
         self.assertEqual(gcal.pending(), [])
 
     def test_list_counts_down(self):
-        self.assertEqual(self.say("締切"), "締切はありません")
+        self.assertEqual(self.say("締切"), "No deadlines.")
         self.say("3日後 資料 締切")
         self.say("明日 見積 締切")
-        self.assertEqual(self.say("締切一覧"), "11/5(木) あと1日　見積\n11/7(土) あと3日　資料")
+        self.assertEqual(self.say("deadlines"), self.say("締切一覧"))
+        self.assertEqual(self.say("Deadlines?"), self.say("締切"))
+        self.assertEqual(self.say("締切一覧"), "Thu, Nov 5, in 1 day: 見積\nSat, Nov 7, in 3 days: 資料")
 
     def test_brief_shows_three_within_a_week(self):
         self.assertEqual(brief.lines("2026-11-04"), [])
         for i, title in enumerate(("甲", "乙", "丙", "丁"), 1):
             self.say(f"{i}日後 {title} 締切")
         self.say("11/30 遠い 締切")
-        self.assertEqual(brief.lines("2026-11-04"), ["締切：甲 あと1日", "締切：乙 あと2日", "締切：丙 あと3日"])
+        self.assertEqual(brief.lines("2026-11-04"), ["Deadline: 甲, in 1 day", "Deadline: 乙, in 2 days", "Deadline: 丙, in 3 days"])
 
     def test_other_lines_are_left_alone(self):
         self.assertFalse(handler.match("今日はいい天気"))
@@ -214,7 +216,7 @@ class TestCalendar(Chat):
         self.say("明日 古い 締切")
         calls = []
         gcal.set_writer(lambda title, due, ref: calls.append((title, due, ref)))
-        self.assertEqual(self.say("明日 資料 締切"), "締切：資料 11/5(木) あと1日・カレンダー記入済み")
+        self.assertEqual(self.say("明日 資料 締切"), "Deadline: 資料, Thu, Nov 5, in 1 day · on the calendar")
         self.assertEqual([c[0] for c in calls], ["古い", "資料"])
         self.assertEqual(gcal.pending(), [])
         self.assertEqual(calls[1][2], [t for t in tasks.open_tasks() if t["title"] == "資料"][0]["id"])
@@ -223,7 +225,7 @@ class TestCalendar(Chat):
         def boom(*a):
             raise OSError("no network")
         gcal.set_writer(boom)
-        self.assertIn("カレンダー待ち", self.say("明日 資料 締切"))
+        self.assertIn("calendar pending", self.say("明日 資料 締切"))
         self.assertEqual(len(tasks.open_tasks()), 1)
         self.assertEqual(len(gcal.pending()), 1)
 
@@ -241,7 +243,7 @@ class TestCalendar(Chat):
 
 class TestHabits(Chat):
     def test_held_while_07_is_absent(self):
-        self.assertIn("預かりました", self.say("読書30分"))
+        self.assertIn("until tool 07 is running", self.say("読書30分"))
         self.assertEqual(logs.read("habits-pending")[0]["text"], "読書30分")
         self.assertEqual(logs.read("habits"), [])
 
@@ -271,10 +273,10 @@ class TestStandalone(Chat):
         return code, out.getvalue().strip()
 
     def test_cli(self):
-        self.assertEqual(self.run_cli("ランチ", "3万ドン"), (0, "支出：ランチ 30,000ドン"))
-        self.assertEqual(self.run_cli("今日はいい天気")[1], "記録する形として読めませんでした。何も記録していません")
+        self.assertEqual(self.run_cli("ランチ", "3万ドン"), (0, "Expense: ランチ 30,000 VND"))
+        self.assertEqual(self.run_cli("今日はいい天気")[1], "I could not read that as something to record. Nothing was recorded.")
         self.run_cli("3日後 資料 締切")
-        self.assertIn("あと3日　資料", self.run_cli("--list")[1])
+        self.assertIn("in 3 days: 資料", self.run_cli("--list")[1])
         ref = json.loads(self.run_cli("--calendar-pending")[1])[0]["ref"]
         self.run_cli("--calendar-done", ref)
         self.assertEqual(json.loads(self.run_cli("--calendar-pending")[1]), [])
@@ -287,7 +289,7 @@ class TestStandalone(Chat):
         found = router.discover()
         self.assertEqual([r.slug for r in found.routes], ["12-chatlog"])
         self.assertEqual(found.routes[0].priority, 40)
-        self.assertEqual(router.dispatch("ランチ 3万ドン", router.Ctx(), found.routes), "支出：ランチ 30,000ドン")
+        self.assertEqual(router.dispatch("ランチ 3万ドン", router.Ctx(), found.routes), "Expense: ランチ 30,000 VND")
         self.assertEqual(router.dispatch("今日はいい天気", router.Ctx(), found.routes), router.UNROUTED)
 
     def test_stopped_tool_is_not_loaded(self):

@@ -15,5 +15,20 @@
   ],
   "blockers": [],
   "commands": [],
-  "updated": "2026-11-05"
+  "updated": "2026-11-05",
+  "_en": {
+    "name": "Log by text",
+    "oneline": "Send meals, sleep, weight, steps or workouts as text, and they go into the Desk body screen just like photos",
+    "usage": [
+      "On Telegram, send something like \"weight 65.2\", \"lunch curry, large\", or \"bench 60kg 10x3\"",
+      "To be sure it is logged, start with \"meal:\", \"workout:\" or \"record:\"",
+      "Meals described in text are logged as estimates. Values it cannot read show under Needs review in the Desk",
+      "Lines it decides are not records are passed on to the other tools, as before"
+    ],
+    "howToCheck": [
+      "Send \"weight 65.2\" to the bot",
+      "Check that a reply comes and the value shows on the Desk body screen"
+    ],
+    "blockers": []
+  }
 }

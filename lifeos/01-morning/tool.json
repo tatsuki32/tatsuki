@@ -21,5 +21,24 @@
   "commands": [
     "/morning"
   ],
-  "updated": "2026-11-05"
+  "updated": "2026-11-05",
+  "_en": {
+    "name": "Morning command",
+    "oneline": "/morning shows the 3 things to do today. To pick up work again, use /tsuzuki (No. 15) or /recap",
+    "usage": [
+      "Type /morning in Claude Code. Only 3 things for today appear, each with a one-line reason",
+      "The same list is saved as today's briefing",
+      "Once Telegram is connected, the same list is sent there. The same list is sent only once a day",
+      "To see where you left off, use /tsuzuki or /recap"
+    ],
+    "howToCheck": [
+      "Type /morning in Claude Code",
+      "Check that 3 items appear within 30 seconds",
+      "Check that no more than 3 items appear",
+      "Check that the 3 picks and their reasons match how today feels",
+      "If a morning summary from another screen appears, type python3 lifeos/01-morning/morning.py",
+      "After connecting Telegram, type /morning again and check that it arrives"
+    ],
+    "blockers": []
+  }
 }

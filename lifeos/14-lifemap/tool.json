@@ -20,5 +20,25 @@
   ],
   "blockers": [],
   "commands": [],
-  "updated": "2026-11-05"
+  "updated": "2026-11-05",
+  "_en": {
+    "name": "Life map",
+    "oneline": "Asks one question a day for your notes by life area",
+    "usage": [
+      "At a random time between 9 a.m. and 9 p.m., one question comes for one area. You do not have to answer",
+      "Write in this field and press \"Write\", and it goes into that area's file",
+      "Press \"Pass\" to close without writing. You can still answer later the same day",
+      "Choose an area to read your past answers",
+      "Once a month, up to 3 patterns across areas appear here. Months with none show nothing",
+      "To stop it, run python3 lifeos/14-lifemap/lifemap.py pause"
+    ],
+    "howToCheck": [
+      "Open the Desk between 9 a.m. and 9 p.m. and look at \"Life map\" in Life OS",
+      "If a question is there, write an answer and press \"Write\"",
+      "Check that the question field goes away and that pressing an area button shows the answer",
+      "About 15 minutes later, check that the answer is in the area's file in desk/data/lifeos/life/",
+      "The next day, do not answer, and check that no reminder comes"
+    ],
+    "blockers": []
+  }
 }

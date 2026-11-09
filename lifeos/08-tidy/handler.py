@@ -1,12 +1,15 @@
 """08 2-minute tidy: one place at a time, the place tidied longest ago first.
 
 The list of places and their last dates live in <data>/tools/08-tidy/places.json:
-    {"places": [{"room": "", "name": "机", "last": "2026-11-04", "seq": 1, "off": false}],
-     "seq": 1, "current": {"room": "", "name": "机", "day": "2026-11-04"}}
+    {"places": [{"room": "", "name": "Desk", "last": "2026-11-04", "seq": 1, "off": false}],
+     "seq": 1, "current": {"room": "", "name": "Desk", "day": "2026-11-04"}}
 "seq" only breaks ties between places tidied on the same day.
 
 Replies never score anything: no before/after, no clutter rating, no counts, no days since.
 "Removing" a place only sets off:true, so sending the add command brings it back with its date.
+Commands work in English and Japanese: "tidy" 片付け, "done" 済, "tidy places" 片付け場所,
+"tidy add Bedroom Nightstand" 片付け追加 寝室 枕元, "tidy remove Nightstand" 片付け外す 枕元.
+Replies are in English. Names already in places.json stay as they are.
 """
 import fcntl
 import json
@@ -19,14 +22,15 @@ from contextlib import contextmanager
 from lifeos.lib import logs, paths
 
 PRIORITY = 10
-DEFAULT_PLACES = ("机", "キッチン", "洗面所")
-USAGE_ADD = "「片付け追加 机」か「片付け追加 寝室 枕元」のように送ってください。"
-USAGE_OFF = "「片付け外す 机」のように送ってください。"
+DEFAULT_PLACES = ("Desk", "Kitchen", "Bathroom")  # only for a new places.json
+USAGE_ADD = 'Send it like "tidy add Desk" or "tidy add Bedroom Nightstand".'
+USAGE_OFF = 'Send it like "tidy remove Desk".'
 
-_ASK = "片付け"
-_DONE = ("済", "済み")
-_LIST = "片付け場所"
-_EDIT = re.compile(r"^片付け(追加|外す)(?:\s+(.*))?$")
+_ASK = ("片付け", "tidy", "tidy up")
+_DONE = ("済", "済み", "done", "tidied")
+_LIST = ("片付け場所", "tidy places", "tidy list")
+_EDIT = re.compile(r"^(?:片付け(追加|外す)|tidy\s+(add|remove))(?:\s+(.*))?$", re.I)
+_ADD = ("追加", "add")
 
 
 class PlacesError(Exception):
@@ -38,9 +42,14 @@ def _clean(text):
     return text.replace("片づけ", "片付け").replace("かたづけ", "片付け")
 
 
+def _cmd(text):
+    """The text with English words lowercased and spaces folded, for comparing to a command."""
+    return " ".join(text.split()).lower()
+
+
 def match(text):
-    t = _clean(text)
-    return t == _ASK or t == _LIST or t in _DONE or bool(_EDIT.match(t))
+    t = _cmd(_clean(text))
+    return t in _ASK or t in _LIST or t in _DONE or bool(_EDIT.match(t))
 
 
 def _file():
@@ -62,9 +71,9 @@ def _read():
     except FileNotFoundError:
         return _fresh()
     except ValueError as e:
-        raise PlacesError("places.json を読めません") from e
+        raise PlacesError("cannot read places.json") from e
     if not isinstance(v, dict) or not isinstance(v.get("places"), list):
-        raise PlacesError("places.json の形が違います")
+        raise PlacesError("places.json has the wrong shape")
     places = []
     for p in v["places"]:  # the file may have been edited by hand
         if isinstance(p, str):
@@ -92,11 +101,16 @@ def _state():
 
 
 def _label(p):
-    return p["room"] + "の" + p["name"] if p.get("room") else p["name"]
+    return p["room"] + " " + p["name"] if p.get("room") else p["name"]
+
+
+def _fold(s):
+    return (s or "").casefold()
 
 
 def _same(p, q):
-    return p["room"] == (q.get("room") or "") and p["name"] == q.get("name")
+    """"tidy add desk" finds "Desk": English names compare without case."""
+    return _fold(p["room"]) == _fold(q.get("room")) and _fold(p["name"]) == _fold(q.get("name"))
 
 
 def _active(state):
@@ -117,13 +131,13 @@ def _ask():
     with _state() as state:
         places = _in_order(state)
         if not places:
-            return "場所がありません。" + USAGE_ADD
+            return "There are no places yet. " + USAGE_ADD
         cur = _current(state)
         today = paths.today()
         if not (cur and state["current"].get("day") == today):
             cur = places[0]
             state["current"] = {"room": cur["room"], "name": cur["name"], "day": today}
-        return "今日の2分：" + _label(cur) + "\n終わったら「済」と送ってください。"
+        return "Two minutes today: " + _label(cur) + '\nSend "done" when you finish.'
 
 
 def _done():
@@ -131,27 +145,27 @@ def _done():
         cur = _current(state)
         if not cur:
             state["current"] = None
-            return "いま出ている場所はありません。「片付け」と送ると1つ出ます。"
+            return 'No place is out right now. Send "tidy" to get one.'
         state["seq"] += 1
         cur["last"], cur["seq"] = paths.today(), state["seq"]
         state["current"] = None
         logs.append("tidy", {"place": _label(cur)})
-        return _label(cur) + "を記録しました。もう1つやるなら「片付け」と送ってください。"
+        return _label(cur) + ' is recorded. Send "tidy" for another one.'
 
 
 def _list():
     with _state() as state:
         on = [_label(p) for p in _in_order(state)]
         off = [_label(p) for p in state["places"] if p["off"]]
-    lines = ["次に出る順：" + ("、".join(on) if on else "なし")]
+    lines = ["Next up, in order: " + (", ".join(on) if on else "none")]
     if off:
-        lines.append("外した場所：" + "、".join(off))
-    lines.append("足す：片付け追加 寝室 枕元　外す：片付け外す 枕元")
+        lines.append("Removed: " + ", ".join(off))
+    lines.append("Add: tidy add Bedroom Nightstand   Remove: tidy remove Nightstand")
     return "\n".join(lines)
 
 
 def _split(arg):
-    """"机" is a place on its own; "寝室 枕元" is a room and a place."""
+    """"Desk" is a place on its own; "Bedroom Nightstand" (寝室 枕元) is a room and a place."""
     words = (arg or "").split()
     if len(words) < 2:
         return "", "".join(words)
@@ -166,12 +180,12 @@ def _add(arg):
         for p in state["places"]:
             if _same(p, {"room": room, "name": name}):
                 if not p["off"]:
-                    return _label(p) + "はもう入っています。"
+                    return _label(p) + " is already on the list."
                 p["off"] = False
-                return _label(p) + "を戻しました。"
+                return "Put " + _label(p) + " back on the list."
         p = _place(room, name)
         state["places"].append(p)
-        return _label(p) + "を足しました。"
+        return "Added " + _label(p) + "."
 
 
 def _remove(arg):
@@ -179,24 +193,26 @@ def _remove(arg):
     if not name:
         return USAGE_OFF
     with _state() as state:
-        found = [p for p in _active(state) if p["name"] == name and (not room or p["room"] == room)]
+        found = [p for p in _active(state) if _fold(p["name"]) == _fold(name) and (not room or _fold(p["room"]) == _fold(room))]
         if not found:
-            return name + "は一覧にありません。「片付け場所」で確かめられます。"
+            return name + ' is not on the list. Send "tidy places" to check.'
         if len(found) > 1:
-            return name + "は複数あります。「片付け外す " + found[0]["room"] + " " + name + "」のように部屋も書いてください。"
+            return ("There is more than one " + name + '. Add the room, like "tidy remove '
+                    + found[0]["room"] + " " + name + '".')
         found[0]["off"] = True
         if _current(state) is None:
             state["current"] = None
-        return _label(found[0]) + "を外しました。「片付け追加」で戻せます。"
+        return "Removed " + _label(found[0]) + '. Send "tidy add ' + _label(found[0]) + '" to bring it back.'
 
 
 def handle(text, ctx):
     t = _clean(text)
-    if t == _ASK:
+    cmd = _cmd(t)
+    if cmd in _ASK:
         return _ask()
-    if t in _DONE:
+    if cmd in _DONE:
         return _done()
-    if t == _LIST:
+    if cmd in _LIST:
         return _list()
-    verb, arg = _EDIT.match(t).groups()
-    return _add(arg) if verb == "追加" else _remove(arg)
+    ja, en, arg = _EDIT.match(t).groups()
+    return _add(arg) if (ja or en.lower()) in _ADD else _remove(arg)

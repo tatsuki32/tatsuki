@@ -26,5 +26,26 @@
     "/done",
     "/save"
   ],
-  "updated": "2026-11-05"
+  "updated": "2026-11-05",
+  "_en": {
+    "name": "Quick capture",
+    "oneline": "Add and pick tasks with /task /next /done /save",
+    "usage": [
+      "Add one with /task followed by the text. Priority and project are set for you. You can also set them with !高 (high) or #project",
+      "/next shows the next task. It does not change any task's state",
+      "/done marks the /next task as done. You can also pick one with /done and part of its title",
+      "/save saves what you did and your next step",
+      "Sending \"task: buy milk\" on Telegram adds the same kind of task (once the bot is connected)"
+    ],
+    "howToCheck": [
+      "In Claude Code on the Mac, type /task Trial #test",
+      "Reopen the Tasks screen in the Desk and check that \"Trial\" appears",
+      "Type /next and check that only one task appears",
+      "If \"Trial\" appears, type /done. If something else appears, type /done Trial",
+      "Check that \"Trial\" moves to Done on the Desk Tasks screen",
+      "Type /save and check that it says it was saved",
+      "See the change history with python3 lifeos/03-task/cli.py history"
+    ],
+    "blockers": []
+  }
 }

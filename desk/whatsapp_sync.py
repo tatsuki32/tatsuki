@@ -157,6 +157,9 @@ def title_of(it):
     """"WhatsApp reply: <topic> (<name>)". The topic comes once Claude has read the chat."""
     kind = "WhatsApp nudge" if it.get("nudge") else "WhatsApp reply"
     topic = it.get("topic")
+    if topic and re.search(r"[ぁ-んァ-ン一-龥]", topic):  # old chats were read in Japanese: keep their Japanese title
+        ja = "WhatsApp催促" if it.get("nudge") else "WhatsApp返信"
+        return tasks._clean_title(f"{ja} {topic}について（{it['name']}）")
     return tasks._clean_title(f"{kind}: {topic} ({it['name']})" if topic else f"{kind} ({it['name']})")
 
 

@@ -62,7 +62,7 @@ class TestServer(DeskCase):
         self.morning(self.thread())
         code, out = server.followup_answer("1", {"choice": "送る"})
         self.assertEqual(code, 200)
-        self.assertIn("送信はしていません", out["message"])
+        self.assertIn("Nothing was sent", out["message"])
         self.assertEqual(out["view"]["items"][0]["state"], "send")
         self.assertEqual(len(tasks.open_tasks()), 1)
 
@@ -133,9 +133,9 @@ class TestPage(SandboxCase):
 
     def test_view_has_no_way_to_send_mail(self):
         html = self.source()
-        block = html[html.index("/* 返信待ち: Life OS 02"):html.index("/* Life OS: one section per tool")]
+        block = html[html.index("/* Awaiting Reply: Life OS 02"):html.index("/* Life OS: one section per tool")]
         self.assertTrue(block)
         self.assertIsNone(re.search(r"send_message|callTool|mcp\.", block))
 
     def test_view_is_in_the_menu_next_to_mail(self):
-        self.assertIn('{id:"followups",e:"⏳",label:"返信待ち",g:"in"}', self.source())
+        self.assertIn('{id:"followups",e:"⏳",label:"Awaiting Reply",g:"in"}', self.source())

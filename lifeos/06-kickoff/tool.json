@@ -24,5 +24,27 @@
   "commands": [
     "/kickoff"
   ],
-  "updated": "2026-11-04"
+  "updated": "2026-11-04",
+  "_en": {
+    "name": "Kickoff handoff",
+    "oneline": "Claude takes the first step on work that is stuck",
+    "usage": [
+      "Type /kickoff and the task name. Claude actually does only the first step",
+      "Then one \"5-minute step for you next\" appears",
+      "With just /kickoff, it asks about the task that has been stuck the longest",
+      "You can also start it from \"Hand off the first step\" under \"Ask Claude\" in the Desk",
+      "Tasks stuck for 7 days or more are suggested in the morning briefing, up to 3",
+      "To stop the suggestions: python3 lifeos/06-kickoff/cli.py suggest off"
+    ],
+    "howToCheck": [
+      "Look at your Desk tasks and pick one that is stuck",
+      "In Claude Code, type /kickoff and that task's name",
+      "Open the place named in the report and check that a draft or template is there",
+      "Check that exactly one next 5-minute step appears",
+      "Check that the task's note in the Desk has what was done and the next 5 minutes",
+      "Try actually starting that 5-minute step",
+      "Check that \"Hand off the first step?\" appears in the morning briefing (once No. 01 is done)"
+    ],
+    "blockers": []
+  }
 }

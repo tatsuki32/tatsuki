@@ -47,5 +47,50 @@
   "commands": [
     "/followup"
   ],
-  "updated": "2026-11-05"
+  "updated": "2026-11-05",
+  "_en": {
+    "name": "Follow-up nudges",
+    "oneline": "Builds an action list from your calendar and mail, and nudges replies you are waiting on (it never sends)",
+    "usage": [
+      "Open \"Waiting for reply\" in the Desk menu and choose Send, Hold, or Drop (Mac and iPhone)",
+      "The morning briefing includes today's events, what you owe others, and replies you are waiting on",
+      "After 3 days of waiting, it makes a task for today, \"Email follow-up: topic (name)\", and a follow-up draft in Gmail. It never sends",
+      "One-to-one WhatsApp chats show on the same screen. Read them with python3 lifeos/02-followup/run.py whatsapp. Copy the text and send it yourself",
+      "After 14 days it asks on Telegram. Answer with \"催促 送る 3\" (send), \"催促 保留 3\" (hold), or \"催促 捨てる 3\" (drop)",
+      "\"催促 送る\" only makes a task for you to send it yourself. It does not send any mail",
+      "\"催促 一覧\" lists the replies you are waiting on, with numbers",
+      "To stop it, run python3 lifeos/02-followup/run.py stop"
+    ],
+    "howToCheck": [
+      "Open \"Waiting for reply\" in the Desk menu",
+      "In Terminal, type python3 lifeos/02-followup/run.py demo",
+      "Check that a sample list and question appear",
+      "Ask Claude Code to \"run it with the steps in lifeos/02-followup/MORNING_RUN.md\"",
+      "Check that the follow-up text is in your Gmail drafts",
+      "Check that no new follow-ups appear in Gmail Sent",
+      "Type python3 lifeos/02-followup/run.py today and check that the list is right"
+    ],
+    "blockers": [
+      {
+        "what": "Daily morning run",
+        "why": "Claude reads Gmail and makes the drafts. The daily schedule is not set up yet, and it has not been tried on real data.",
+        "needs": "Have Claude Code run the steps in MORNING_RUN.md once and check the drafts. If they look right, add it as a daily scheduled task as described in INTEGRATION.md"
+      },
+      {
+        "what": "Source data for events and \"what you owe\"",
+        "why": "calendar.js and mail.js are not on the Mac. Until they arrive, the list shows \"Not here yet\".",
+        "needs": "Check that the Mac's scheduled tasks are running (desk/sync/SCHEDULED_TASKS.md)"
+      },
+      {
+        "what": "Which DMs to read",
+        "why": "It is not decided which social networks to include. For now it covers only mail and calendar.",
+        "needs": "Choose the social networks. Then replace read_dms in connect.py"
+      },
+      {
+        "what": "Pushing to GitHub",
+        "why": "This Mac has no GitHub login, so main cannot be pushed. The Mac's Desk already has it.",
+        "needs": "In Terminal, run gh auth login and gh auth setup-git"
+      }
+    ]
+  }
 }

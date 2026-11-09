@@ -44,7 +44,8 @@ MAX_COSENSE_PAGES = 60        # per run; the rest come in the next runs
 PAGE_CHARS = 40000            # one Cosense page is cut here
 PROJECT_URL = "https://scrapbox.io/"
 # no shouting, no blame (.claude/rules/writing-style.md): an issue with these words is not saved
-BAD_WORDS = ("必ず", "絶対", "圧倒的", "革命的", "誰でも簡単", "するだけで", "すべきです", "べきだ", "ダメ", "だめです", "怠け", "なぜできない", "できていません")
+BAD_WORDS = ("必ず", "絶対", "圧倒的", "革命的", "誰でも簡単", "するだけで", "すべきです", "べきだ", "ダメ", "だめです", "怠け", "なぜできない", "できていません",
+             "always", "never fail", "guaranteed", "revolutionary", "game-changing", "anyone can easily", "all you have to do", "you should", "you must", "lazy", "why can't you", "failed to")
 CONTACT = re.compile(r"[\w.+-]+@[\w-]+\.[\w.]+|\+?\d[\d() -]{8,}\d")  # a quote must not carry an address or a phone number
 SECTIONS = ("title", "advice", "next", "effort")
 
@@ -76,7 +77,7 @@ def write_json(path, value):
 def sources():
     s = read_json(os.path.join(base(), "sources.json"), None)
     if not isinstance(s, dict):
-        sys.exit("data/ideas/sources.json がありません。読む範囲が決まるまで動きません。")
+        sys.exit("data/ideas/sources.json is missing. Nothing runs until the reading scope is set.")
     return s
 
 
@@ -173,7 +174,7 @@ def cmd_cosense():
     conf, st = sources().get("cosense") or {}, state()
     project = conf.get("project")
     if not project:
-        sys.exit("Cosense の範囲がありません")
+        sys.exit("No Cosense scope is set")
     quoted = urllib.parse.quote(project)
     pages, skip_n = [], 0
     while True:
@@ -218,10 +219,10 @@ def drive_allowed(conf, file_id, parent, title):
 def cmd_add_drive(file_id, parent, title, url, modified, path):
     conf = sources().get("drive") or {}
     if not drive_allowed(conf, file_id, parent, title):
-        return {"skipped": title, "why": "読む範囲に入っていません"}
+        return {"skipped": title, "why": "Not in the reading scope"}
     clean = clean_drive_url(url)
     if not clean:
-        return {"skipped": title, "why": "Drive の URL ではありません"}
+        return {"skipped": title, "why": "Not a Drive URL"}
     with open(path, encoding="utf-8") as f:
         text = f.read()
     key = put_corpus({"kind": "drive", "title": title, "url": clean, "date": str(modified)[:10], "text": text, "ref": file_id, "version": modified})
@@ -247,46 +248,46 @@ def check(payload, docs, earlier):
     errors, out = [], []
     items = payload.get("items") if isinstance(payload, dict) else None
     if not isinstance(items, list) or len(items) > MAX_ITEMS:
-        return [f"items は {MAX_ITEMS} 件までのリストです"], []
+        return [f"items must be a list of up to {MAX_ITEMS}"], []
     by_url = {d["url"]: d for d in docs}
     passed_quotes = {plain(q) for e in earlier if e["status"] == "passed" for q in e["quotes"]}
     for n, item in enumerate(items, 1):
-        where = f"{n}件目"
+        where = f"Item {n}"
         if not isinstance(item, dict):
-            errors.append(where + "：形が違います")
+            errors.append(where + ": wrong shape")
             continue
         rec = {k: str(item.get(k) or "").strip() for k in SECTIONS}
         limits = {"title": TITLE_MAX, "advice": ADVICE_MAX, "next": NEXT_MAX, "effort": EFFORT_MAX}
         for key, limit in limits.items():
             if not rec[key]:
-                errors.append(f"{where}：{key} がありません")
+                errors.append(f"{where}: {key} is missing")
             elif len(rec[key]) > limit:
-                errors.append(f"{where}：{key} が {limit} 字を超えています")
+                errors.append(f"{where}: {key} is over {limit} characters")
         said = "".join(rec.values())
-        errors += [f"{where}：使わない言葉「{w}」があります" for w in BAD_WORDS if w in said]
+        errors += [f"{where}: contains the word \"{w}\", which is not used here" for w in BAD_WORDS if w in said.lower()]
         for e in earlier:
             if similar(rec["title"], e["title"]):
-                errors.append(f"{where}：前に出した案「{e['title']}」と同じです")
+                errors.append(f"{where}: same as the earlier idea \"{e['title']}\"")
         if any(similar(rec["title"], x["title"]) for x in out):
-            errors.append(f"{where}：同じ号に同じ案があります")
+            errors.append(f"{where}: the same idea is already in this issue")
         quotes, raw = [], item.get("quotes")
         if not isinstance(raw, list) or not raw or len(raw) > MAX_QUOTES:
-            errors.append(f"{where}：引用は1〜{MAX_QUOTES}個です")
+            errors.append(f"{where}: needs 1 to {MAX_QUOTES} quotes")
             raw = []
         for q in raw:
             text = str((q or {}).get("text") or "").strip() if isinstance(q, dict) else ""
             doc = by_url.get(str((q or {}).get("url") or "")) if isinstance(q, dict) else None
             wanted = plain(text)
             if not QUOTE_MIN <= len(text) <= QUOTE_MAX:
-                errors.append(f"{where}：引用は {QUOTE_MIN}〜{QUOTE_MAX} 字です")
+                errors.append(f"{where}: a quote must be {QUOTE_MIN} to {QUOTE_MAX} characters")
             elif not doc:
-                errors.append(f"{where}：今回読んだ出典にない URL です")
+                errors.append(f"{where}: the URL is not among the sources read this time")
             elif wanted not in plain(doc["text"]):
-                errors.append(f"{where}：引用「{text[:20]}」が出典「{doc['title']}」にありません")
+                errors.append(f"{where}: the quote \"{text[:20]}\" is not in the source \"{doc['title']}\"")
             elif CONTACT.search(text):
-                errors.append(f"{where}：引用に連絡先があります")
+                errors.append(f"{where}: the quote contains contact details")
             elif wanted in passed_quotes:
-                errors.append(f"{where}：見送った案と同じ引用です")
+                errors.append(f"{where}: same quote as a skipped idea")
             else:
                 quotes.append({"text": text, "title": doc["title"], "url": anchor(doc, wanted), "date": doc["date"], "kind": doc["kind"]})
         out.append({**rec, "quotes": quotes})
@@ -303,9 +304,9 @@ def cmd_save(path, replace=False):
     if this_week:
         ids = [i.get("id") for i in this_week.get("items") or []]
         if not replace:
-            return {"errors": [f"今週の号 {this_week['id']} があります"]}
+            return {"errors": [f"This week's issue {this_week['id']} already exists"]}
         if any(i in log for i in ids):
-            return {"errors": ["今週の号はもう「やる」か「見送る」を押してあるので置き換えません"]}
+            return {"errors": ["This week's issue already has a Do or Skip choice, so it is not replaced"]}
     earlier = [e for e in past() if not (this_week and e["date"] == this_week.get("date"))]
     docs = corpus()
     errors, items = check(payload, docs, earlier)

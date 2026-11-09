@@ -29,5 +29,34 @@
   ],
   "commands": [],
   "updated": "2026-11-05",
-  "stoppedNote": "2026-11-05 に本人の判断で一旦停止。戻すときは status を元に戻す。コードは残している。"
+  "stoppedNote": "2026-11-05 に本人の判断で一旦停止。戻すときは status を元に戻す。コードは残している。",
+  "_en": {
+    "name": "Chat log",
+    "oneline": "\"ランチ 3万ドン\" (lunch 30k dong) logs spending, and \"明日 資料 締切\" (docs due tomorrow) logs a deadline",
+    "usage": [
+      "Send one line and it is logged. A one-line confirmation comes back",
+      "Spending tells currencies apart (dong and yen). Without a unit, it guesses from the amount and the reply says the currency is a guess",
+      "Deadlines go into Desk tasks with a due date. Send \"締切\" (deadlines) to get a list like \"3 days left\"",
+      "Habit lines such as \"読書30分\" (reading 30 min) go to No. 07. Until No. 07 runs, they are held",
+      "Without Telegram, chatlog.py logs the same way"
+    ],
+    "howToCheck": [
+      "After the merge, open the Desk folder in Terminal",
+      "Type one real expense from today, like python3 lifeos/12-chatlog/chatlog.py \"ランチ 3万ドン\"",
+      "Check that the reply is one line and the amount and currency are right",
+      "Check that the same line is in logs/expenses.md in the data folder",
+      "Type one real deadline, like python3 lifeos/12-chatlog/chatlog.py \"明日 資料 締切\"",
+      "Check that the reply says 1 day left",
+      "Check that it shows in Desk tasks with a due date and countdown",
+      "Once Telegram is connected, send the same lines to the bot and check that the replies match"
+    ],
+    "blockers": [
+      {
+        "what": "Writing to Google Calendar",
+        "why": "Which calendar to write to is not decided, and there is no permission to write. Deadlines go into tasks, and the calendar part waits in a queue.",
+        "needs": "Choose one calendar for deadlines and tell the coordinator it is OK to write there in the hourly sync. Steps are in INTEGRATION.md"
+      }
+    ],
+    "stoppedNote": "Paused on 2026-11-05 by Tatsuki's choice. To bring it back, set status back. The code is kept."
+  }
 }

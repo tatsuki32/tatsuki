@@ -16,10 +16,10 @@ from lifeos.lib import paths, tasks
 
 # (from this many days, emoji, name, what to say on arrival). Same table as PLANTS in desk/index.html
 STAGES = (
-    (0, "🌰", "種", "種をまきました"),
-    (10, "🌱", "芽", "芽が出ました"),
-    (30, "🌸", "花", "花が咲きました"),
-    (100, "🌳", "木", "木になりました"),
+    (0, "🌰", "Seed", "a seed is planted"),
+    (10, "🌱", "Sprout", "it sprouted"),
+    (30, "🌸", "Flower", "it flowered"),
+    (100, "🌳", "Tree", "it grew into a tree"),
 )
 # recognised before the first record, when the Desk has no habit of that name yet
 STARTERS = ("筋トレ", "読書", "散歩", "ウォーキング", "ランニング", "ジョギング", "ストレッチ", "ヨガ",
@@ -31,8 +31,22 @@ _VERB = r"した|しました|してきた|してきました|やった|やり�
 _END = r"[。.!！~〜♪\U0001F300-\U0001FAFF☀-➿️]*"
 _TAIL = r"[をは]?(?P<amount>" + _AMOUNT + r")?を?(?P<verb>" + _VERB + r")?" + _END
 _TAIL_RE = re.compile(_TAIL, re.I)
-_EXPLICIT = re.compile(r"習慣\s*:\s*(?P<body>\S.*)", re.S)
+_EXPLICIT = re.compile(r"(?:習慣|habit)\s*:\s*(?P<body>\S.*)", re.S | re.I)
 _EXPLICIT_NAME = re.compile(r"(?P<name>.+?)\s*" + _TAIL, re.I | re.S)
+# English: "did workout", "did reading 30 min yesterday", "reading 30 min", "habit: walk 5 min"
+_EN_DAY = r"(?:the\s+)?day\s+before\s+yesterday|yesterday|today|this\s+morning"
+_EN_AMOUNT = r"\d+(?:\.\d+)?\s*(?:min|mins|minutes?|hours?|hrs?|h|times|pages?|km|miles?|sets?|books?)"
+_EN = re.compile(r"(?:(?P<day1>" + _EN_DAY + r")\s*,?\s+)?(?:i\s+)?(?P<verb>did|done|finished)?\s*(?P<name>[^\d]+?)"
+                 r"(?:\s+(?:for\s+)?(?P<amount>" + _EN_AMOUNT + r"))?(?:\s+(?P<day2>" + _EN_DAY + r"))?[.!~]*", re.I)
+_EN_EXPLICIT = re.compile(r"(?=.*[a-z])(?P<name>.+?)\s+(?:for\s+)?(?P<amount>" + _EN_AMOUNT + r")[.!~]*", re.I | re.S)
+_EN_AGO = {"yesterday": 1, "today": 0, "this morning": 0}
+# an English word for a habit the Desk keeps under its Japanese name
+ALIASES = {"workout": "筋トレ", "work out": "筋トレ", "strength training": "筋トレ", "reading": "読書", "read": "読書",
+           "walk": "散歩", "a walk": "散歩", "walking": "ウォーキング", "running": "ランニング", "run": "ランニング",
+           "a run": "ランニング", "jogging": "ジョギング", "jog": "ジョギング", "stretching": "ストレッチ", "stretch": "ストレッチ",
+           "yoga": "ヨガ", "meditation": "瞑想", "meditate": "瞑想", "journal": "日記", "journaling": "日記",
+           "study": "勉強", "studying": "勉強", "english": "英語", "early rise": "早起き", "woke up early": "早起き",
+           "cooking": "自炊", "cooked": "自炊", "swimming": "水泳", "swim": "水泳"}
 _DAY = (("一昨日", 2), ("おととい", 2), ("昨日", 1), ("きのう", 1), ("今日", 0), ("きょう", 0), ("今朝", 0), ("さっき", 0))
 
 
@@ -51,8 +65,8 @@ def next_stage(count):
 def status_line(count):
     _, emoji, name, _ = stage(count)
     nxt = next_stage(count)
-    rest = f"（{nxt[2]}まであと{nxt[0] - count}回）" if nxt else ""
-    return f"{emoji} {name}{rest}" if not count else f"{emoji} {name} · これまで {count}回{rest}"
+    rest = f" · {nxt[0] - count} more to {nxt[2]}" if nxt else ""
+    return f"{emoji} {name}{rest}" if not count else f"{emoji} {name} · {count} so far{rest}"
 
 
 def count_of(habit):
@@ -134,9 +148,14 @@ def parse(text):
     raw = unicodedata.normalize("NFKC", text or "").strip()
     m = _EXPLICIT.fullmatch(raw)
     if m:
-        n = _EXPLICIT_NAME.fullmatch(m.group("body").strip())
+        body = m.group("body").strip()
+        n = _EN_EXPLICIT.fullmatch(body) or _EXPLICIT_NAME.fullmatch(body)
         name = n.group("name").strip()[:NAME_MAX] if n else ""
-        return {"name": name, "amount": n.group("amount"), "days_ago": 0} if name else None
+        amount = " ".join(n.group("amount").split()) if n and n.group("amount") else None
+        return {"name": name, "amount": amount, "days_ago": 0} if name else None
+    en = _parse_en(raw)
+    if en:
+        return en
     t = "".join(raw.split())
     days_ago = 0
     for word, ago in _DAY:
@@ -154,6 +173,21 @@ def parse(text):
         if tail and (is_known or tail.group("amount") or tail.group("verb")):
             return {"name": name, "amount": tail.group("amount"), "days_ago": days_ago}
     return None
+
+
+def _parse_en(raw):
+    """The English forms. A name must be a Desk habit or a known word, and needs a verb or an amount."""
+    m = _EN.fullmatch(raw)
+    if not m or not (m.group("verb") or m.group("amount")):
+        return None
+    word = " ".join(m.group("name").split()).lower()
+    names = {_key(n): n for n in _known_names() if _key(n)}
+    name = names.get(_key(word)) or ALIASES.get(word)
+    if not name:
+        return None
+    day = " ".join((m.group("day1") or m.group("day2") or "today").lower().split())
+    amount = " ".join(m.group("amount").split()) if m.group("amount") else None
+    return {"name": name, "amount": amount, "days_ago": _EN_AGO.get(day, 2)}
 
 
 def _new_id():
@@ -193,9 +227,9 @@ def week_report(day=None):
     habits = sorted(all_habits(), key=lambda h: h.get("createdAt") or 0)
     if not habits:
         return None
-    lines = ["🌿 今週の育ち具合"]
+    lines = ["🌿 How your habits grew this week"]
     for h in habits:
         n = len(week & set(h.get("done") or []))
-        lines.append(f"{h.get('name') or '習慣'}：{status_line(count_of(h))}" + (f" · この7日で +{n}" if n else ""))
-    lines.append("育った分はこのまま残ります。")
+        lines.append(f"{h.get('name') or 'Habit'}: {status_line(count_of(h))}" + (f" · +{n} in the last 7 days" if n else ""))
+    lines.append("Everything that grew stays.")
     return "\n".join(lines)

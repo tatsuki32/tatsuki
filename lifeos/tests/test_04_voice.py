@@ -45,6 +45,11 @@ class TestSort(SandboxCase):
     def test_a_prefix_decides_for_the_whole_message(self):
         self.assertEqual(kinds("日記：明日は資料を送る。3000円使った"), ["diary"])
         self.assertEqual(kinds("タスク 散歩に行ってきた"), ["task"])
+        self.assertEqual(kinds("journal: 明日は資料を送る。3000円使った"), ["diary"])
+        self.assertEqual(kinds("Idea: a shelf app"), ["idea"])
+
+    def test_an_english_word_needs_a_colon_to_decide(self):
+        self.assertNotEqual(kinds("event 明日15時に歯医者だ。本を読んだ"), ["event"])
 
     def test_a_spoken_memo_splits_by_sentence(self):
         self.assertEqual(kinds("今日は疲れた。資料を送らないと。明日15時に歯医者。"), ["diary", "task", "event"])
@@ -116,7 +121,7 @@ class TestFiling(SandboxCase):
         t = tasks.open_tasks()[0]
         self.assertEqual((t["title"], t["source"], t["status"]), ("明日までに資料を送る", "lifeos-04", "notyet"))
         self.assertIsNotNone(t["due"])
-        self.assertIn("タスク", reply)
+        self.assertIn("- Task: ", reply)
         self.assertEqual(self.inbox(), [])
 
     def test_an_event_is_a_task_with_a_due_time(self):
@@ -125,7 +130,7 @@ class TestFiling(SandboxCase):
         at = datetime.fromtimestamp(t["due"] / 1000, paths.HCMC)
         self.assertEqual((at.hour, at.minute), (15, 0))
         self.assertIn("種類:予定", t["note"])
-        self.assertIn("15:00", reply)
+        self.assertIn("3:00 PM", reply)
 
     def test_ideas_and_diary_become_notes(self):
         self.core().take("思いついた、棚を作る")
@@ -145,7 +150,7 @@ class TestFiling(SandboxCase):
         self.assertEqual(tasks.open_tasks(), [])
 
     def test_an_unsure_memo_says_so(self):
-        self.assertIn("迷った", self.core().take("りんご"))
+        self.assertIn("I was not sure", self.core().take("りんご"))
 
     def test_the_reply_is_never_cut(self):
         long = "資料を" + "とても" * 40 + "送る"
@@ -175,7 +180,7 @@ class TestFiling(SandboxCase):
 
         with mock.patch.object(tasks, "add", flaky):
             reply = c.take("資料を送る。牛乳を買う")
-        self.assertIn("未整理に残しました", reply)
+        self.assertIn("in the unsorted list", reply)
         self.assertEqual(len(self.inbox()), 1)
         self.assertEqual(len(tasks.open_tasks()), 1)
         self.assertEqual(c.sweep(), (1, 0))
@@ -207,7 +212,7 @@ class TestSummary(SandboxCase):
         self.said("2026-11-03", "task", "きのう")
         self.said("2026-11-04", "task", "きょう")
         out = self.core().summary("2026-11-04")
-        self.assertEqual(out, ["昨日しゃべったこと（1件）", "・タスク：きのう"])
+        self.assertEqual(out, ["What you said yesterday (1)", "- Task: きのう"])
 
     def test_never_more_than_ten_lines_and_tasks_come_first(self):
         for i in range(30):
@@ -215,8 +220,8 @@ class TestSummary(SandboxCase):
         self.said("2026-11-03", "task", "大事なこと")
         out = self.core().summary("2026-11-04")
         self.assertEqual(len(out), 10)
-        self.assertEqual(out[1], "・タスク：大事なこと")
-        self.assertEqual(out[-1], "ほか23件")
+        self.assertEqual(out[1], "- Task: 大事なこと")
+        self.assertEqual(out[-1], "and 23 more")
         for line in out:
             self.assertNotIn("\n", line)
             self.assertLessEqual(len(line), 45)
@@ -233,7 +238,7 @@ class TestSummary(SandboxCase):
         self.said("2026-11-03", "expense", "コーヒー 5万ドン")
         self.said("2026-11-03", "expense", "本 1500円")
         out = self.core().summary("2026-11-04")
-        self.assertEqual(out[1], "・支出 3件（80,000ドン、1,500円）")
+        self.assertEqual(out[1], "- Expenses: 3 (80,000 VND, ¥1,500)")
 
     def test_leftovers_are_mentioned_within_the_limit(self):
         c = self.core()
@@ -243,7 +248,7 @@ class TestSummary(SandboxCase):
             c.take("資料を送る")
         out = c.summary("2026-11-04")
         self.assertEqual(len(out), 10)
-        self.assertEqual(out[-1], "未整理 1件が残っています")
+        self.assertEqual(out[-1], "1 still in the unsorted list")
 
     def test_the_brief_part_is_found(self):
         self.said("2026-11-03", "idea", "案")
@@ -294,7 +299,7 @@ class TestAnalysis(SandboxCase):
         at = datetime.fromtimestamp(by_title["バス停"]["due"] / 1000, paths.HCMC)
         self.assertEqual((at.day, at.hour), (6, 18))
         self.assertIsNone(by_title["ウェブサイトを作る"]["due"])
-        self.assertIn("カレンダー未接続", reply)
+        self.assertIn("→ task; calendar not connected", reply)
 
     def test_with_the_calendar_dated_items_go_there_and_the_rest_to_tasks(self):
         os.environ["LIFEOS_GCAL_URL"] = "https://example.com/exec"
@@ -312,10 +317,10 @@ class TestAnalysis(SandboxCase):
         self.assertEqual([d["title"] for d in sent], ["バス停", "請求書を出す"])
         self.assertEqual(sent[0]["start"], "2026-11-06T18:00:00+07:00")
         self.assertEqual(sent[0]["minutes"], 15)
-        self.assertIn("18:00 15分 → カレンダー", reply)
+        self.assertIn("Nov 6, 6:00 PM, 15 min → calendar", reply)
         self.assertEqual((sent[1]["start"], sent[1]["date"]), ("", "2026-11-13"))  # all day
-        self.assertIn("→ カレンダー", reply)
-        self.assertIn("→ タスク", reply)
+        self.assertIn("Nov 13 → calendar", reply)
+        self.assertIn("(→ task)", reply)
 
     def test_a_spoken_length_is_used(self):
         os.environ["LIFEOS_GCAL_URL"] = "https://example.com/exec"
@@ -331,7 +336,7 @@ class TestAnalysis(SandboxCase):
         with mock.patch("urllib.request.urlopen", side_effect=answer):
             reply = self.core.take("明日10時から1時間半", True)
         self.assertEqual(sent[0]["minutes"], 90)
-        self.assertIn("90分", reply)
+        self.assertIn("90 min", reply)
 
     def test_only_sensible_lengths_are_kept(self):
         for v, want in [(20, 20), (90, 90), (None, 0), (0, 0), (-5, 0), (5000, 0), ("20", 0), (True, 0), (1.5, 0)]:
@@ -362,34 +367,34 @@ class TestAnalysis(SandboxCase):
             {"title": "打ち合わせ", "allDay": False, "date": "2026-11-04", "start": "10:00", "end": "11:30"},
             {"title": "誕生日", "allDay": True, "date": "2026-11-04", "start": "00:00", "end": "00:00"}])
         self.assertEqual(self.asked[0], {"action": "list", "from": "2026-11-04", "to": "2026-11-04"})
-        self.assertEqual(reply.split("\n"), ["11/4(水)の予定（4件）", "・終日 誕生日", "・10:00〜11:30 打ち合わせ", "・14:00〜14:15 歯医者", "・期日のタスク：資料を送る"])
+        self.assertEqual(reply.split("\n"), ["Wed, Nov 4 (4 items)", "- All day 誕生日", "- 10:00–11:30 打ち合わせ", "- 14:00–14:15 歯医者", "- Task due: 資料を送る"])
         self.assertEqual(sorted(t["title"] for t in tasks.open_tasks()), ["来週の仕事", "資料を送る"])
         self.assertEqual(logs.read("voice"), [])
         self.assertEqual(self.core.leftovers(), [])
 
     def test_an_event_still_going_from_an_earlier_day_counts(self):
         reply = self.ask(self.TODAY, [{"title": "旅行", "allDay": True, "date": "2026-11-02", "start": "00:00", "end": "00:00"}])
-        self.assertIn("・終日 旅行", reply)
+        self.assertIn("- All day 旅行", reply)
 
     def test_an_empty_day_says_so(self):
-        self.assertEqual(self.ask(self.TODAY, []), "11/4(水)の予定（0件）\n予定はありません")
+        self.assertEqual(self.ask(self.TODAY, []), "Wed, Nov 4 (0 items)\nNothing scheduled.")
 
     def test_a_span_lists_only_days_with_something(self):
         items = {"items": [{"kind": "query", "text": "今週", "date": "2026-11-04", "date_to": "2026-11-08"}]}
         reply = self.ask(items, [{"title": "会議", "allDay": False, "date": "2026-11-06", "start": "10:00", "end": "10:15"}])
-        self.assertEqual(reply, "11/6(金)の予定（1件）\n・10:00〜10:15 会議")
-        self.assertEqual(self.ask(items, []), "11/4(水)〜11/8(日)の予定はありません")
+        self.assertEqual(reply, "Fri, Nov 6 (1 item)\n- 10:00–10:15 会議")
+        self.assertEqual(self.ask(items, []), "Nothing scheduled from Wed, Nov 4 to Sun, Nov 8.")
 
     def test_when_the_calendar_cannot_be_read_it_says_so_and_still_gives_tasks(self):
         tasks.add("資料を送る", due=int(NOW.replace(hour=23, minute=59).timestamp() * 1000))
         reply = self.ask(self.TODAY, urllib.error.URLError("down"))
-        self.assertIn("カレンダーを読めませんでした", reply)
+        self.assertIn("I could not read the calendar", reply)
         self.assertIn("資料を送る", reply)
 
     def test_a_question_and_a_plan_in_one_message(self):
         items = {"items": [self.TODAY["items"][0], {"kind": "task", "title": "牛乳を買う", "text": "牛乳を買う"}]}
         reply = self.ask(items, [])
-        self.assertIn("予定はありません", reply)
+        self.assertIn("Nothing scheduled.", reply)
         self.assertIn("牛乳を買う", reply)
         self.assertEqual([t["title"] for t in tasks.open_tasks()], ["牛乳を買う"])
 
@@ -408,7 +413,7 @@ class TestAnalysis(SandboxCase):
                 raise urllib.error.URLError("down")
             return FakeResponse(b'{"ok": true, "events": []}')
 
-        for text, day in (("今日の予定を教えて", "11/4"), ("明日のタスクは？", "11/5")):
+        for text, day in (("今日の予定を教えて", "Nov 4"), ("明日のタスクは？", "Nov 5")):
             with mock.patch("urllib.request.urlopen", side_effect=respond):
                 self.assertIn(day, self.core.take(text, True))
         self.assertEqual(tasks.open_tasks(), [])
@@ -424,7 +429,7 @@ class TestAnalysis(SandboxCase):
         with mock.patch("urllib.request.urlopen", side_effect=answer):
             reply = self.core.take("話した言葉", True)
         self.assertEqual(len(tasks.open_tasks()), 3)
-        self.assertIn("カレンダーに入らず", reply)
+        self.assertIn("could not add it to the calendar", reply)
         self.assertNotIn("example.com", json.dumps(logs.read("bot-errors")))
 
     def test_when_the_model_fails_the_rules_take_over_and_say_so(self):
@@ -433,7 +438,7 @@ class TestAnalysis(SandboxCase):
         with mock.patch("urllib.request.urlopen", side_effect=down):
             reply = self.core.take("牛乳を買う", True)
         self.assertEqual(tasks.open_tasks()[0]["title"], "牛乳を買う")
-        self.assertIn("規則", reply)
+        self.assertIn("simple rules", reply)
 
     def test_a_broken_answer_is_not_trusted(self):
         for bad in (b"<html>", model_answer({"items": []}), model_answer({"items": "x"}), model_answer([1])):
@@ -490,7 +495,7 @@ class TestAnalysis(SandboxCase):
             return real(*a, **k)
 
         with mock.patch.object(tasks, "add", flaky):
-            self.assertIn("未整理に残しました", self.take())
+            self.assertIn("in the unsorted list", self.take())
         self.assertEqual(len(tasks.open_tasks()), 2)
         with mock.patch("urllib.request.urlopen", side_effect=AssertionError("the model is not asked again")):
             self.assertEqual(self.core.sweep(), (1, 0))
@@ -499,7 +504,7 @@ class TestAnalysis(SandboxCase):
     def test_the_morning_summary_uses_the_short_names(self):
         self.take()
         out = self.core.summary("2026-11-05")
-        self.assertIn("・タスク：請求書を出す", out)
+        self.assertIn("- Task: 請求書を出す", out)
 
 
 class FakeResponse:
@@ -599,9 +604,9 @@ class TestGroq(SandboxCase):
         answer = FakeResponse('{"text": "今日は疲れた。資料を送らないと。"}'.encode())
         with mock.patch("urllib.request.urlopen", return_value=answer):
             run.handle_update({"update_id": 2, "message": {"chat": {"id": 5}, "voice": {"file_id": "f"}}}, client, 5, [route])
-        self.assertEqual(client.sent[0], "文字起こし：\n今日は疲れた。資料を送らないと。")
-        self.assertIn("日記", client.sent[1])
-        self.assertIn("タスク", client.sent[1])
+        self.assertEqual(client.sent[0], "Transcript:\n今日は疲れた。資料を送らないと。")
+        self.assertIn("Diary", client.sent[1])
+        self.assertIn("Task", client.sent[1])
 
     def test_a_voice_over_the_limit_stays_and_can_be_tried_again(self):
         os.environ["LIFEOS_GROQ_API_KEY"] = self.KEY
@@ -610,7 +615,7 @@ class TestGroq(SandboxCase):
             raise urllib.error.HTTPError(req.full_url, 429, "limit", {}, None)
         with mock.patch("urllib.request.urlopen", side_effect=limit):
             run.handle_update({"update_id": 3, "message": {"chat": {"id": 5}, "voice": {"file_id": "f"}}}, client, 5, [])
-        self.assertIn("失敗", client.sent[0])
+        self.assertIn("Could not transcribe", client.sent[0])
         kept = paths.data_path("inbox", "audio", "3")
         self.assertTrue(os.path.exists(kept))
         memo = load_tool("04-voice", "voice_memo")
@@ -668,16 +673,16 @@ class TestBot(SandboxCase):
         run.handle_update(self.update(voice={"file_id": "f"}), client, 5, [route])
         self.assertLess(time.monotonic() - start, 60)
         self.assertEqual(len(client.sent), 2)
-        self.assertEqual(client.sent[0], "文字起こし：\n今日は疲れた。資料を送らないと。")
-        self.assertIn("日記", client.sent[1])
-        self.assertIn("タスク", client.sent[1])
+        self.assertEqual(client.sent[0], "Transcript:\n今日は疲れた。資料を送らないと。")
+        self.assertIn("Diary", client.sent[1])
+        self.assertIn("Task", client.sent[1])
         self.assertTrue(logs.read("voice")[0]["voice"])
         self.assertIn("音声メモ", tasks.open_tasks()[0]["note"])
 
     def test_text_to_sorted_reply(self):
         client = FakeClient()
         run.handle_update(self.update(text="牛乳を買う"), client, 5)
-        self.assertIn("タスク", client.sent[0])
+        self.assertIn("Task", client.sent[0])
         self.assertEqual(len(client.sent), 1)  # typed words need no transcript
         self.assertEqual(tasks.open_tasks()[0]["title"], "牛乳を買う")
 
@@ -692,7 +697,7 @@ class TestBot(SandboxCase):
         voice.set_transcriber(fail)
         client = FakeClient()
         run.handle_update(self.update(voice={"file_id": "f"}), client, 5)
-        self.assertIn("文字起こしに失敗", client.sent[0])
+        self.assertIn("Could not transcribe", client.sent[0])
         with open(paths.data_path("inbox", "audio", "1"), "rb") as f:
             self.assertEqual(f.read(), b"audio")
 

@@ -24,5 +24,29 @@
     }
   ],
   "commands": [],
-  "updated": "2026-11-05"
+  "updated": "2026-11-05",
+  "_en": {
+    "name": "Daily Note email",
+    "oneline": "Reply to the 4 p.m. email each day, and it is saved to a Desk task and marked done",
+    "usage": [
+      "A 3min Daily Note email arrives every day at 4 p.m.",
+      "Reply to that email. Numbering your answers sorts them by item. Answering only some is fine",
+      "Within an hour the Desk task is marked done, and you can read it in the task note",
+      "On days you do not reply, the task quietly moves to the archive the next day"
+    ],
+    "howToCheck": [
+      "Open the email that arrived at 4 p.m.",
+      "Write only item 1 and reply",
+      "An hour later, open \"Tasks\" in the Desk",
+      "Check that today's 3min Daily Note is in the Done column",
+      "Open the card and check that the note has your reply"
+    ],
+    "blockers": [
+      {
+        "what": "Registering the 4 p.m. scheduled task",
+        "why": "The steps are ready, but it cannot be registered in the Claude app from within this work. Until it is registered, the 4 p.m. email does not arrive.",
+        "needs": "Create desk-daily-note in the Claude app's scheduled tasks to run every day at 16:00. The steps are in ~/.claude/scheduled-tasks/desk-daily-note/SKILL.md"
+      }
+    ]
+  }
 }

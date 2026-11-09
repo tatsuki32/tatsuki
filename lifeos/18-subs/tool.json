@@ -29,5 +29,32 @@
     "/subs"
   ],
   "updated": "2026-11-05",
-  "stoppedNote": "2026-11-05 に本人の判断で一旦停止。戻すときは status を元に戻す。コードは残している。"
+  "stoppedNote": "2026-11-05 に本人の判断で一旦停止。戻すときは status を元に戻す。コードは残している。",
+  "_en": {
+    "name": "Build your own subscriptions",
+    "oneline": "Lists your current subscriptions and judges whether you could replace each with your own tool",
+    "usage": [
+      "/subs 洗い出し (scan) builds a list with monthly costs from billing emails (once the scope is set)",
+      "/subs 判定 (judge) builds a table of difficulty and savings",
+      "Once you decide to replace one, use the /newtool line it gives you to have No. 09 build it",
+      "After a month of use, a cancellation suggestion goes into Desk tasks. You cancel it yourself",
+      "Without mail, you can enter them by hand with subs.py add"
+    ],
+    "howToCheck": [
+      "Decide the scope to scan and tell /subs",
+      "Type /subs 洗い出し (scan)",
+      "Check that the list and monthly costs match what you actually pay",
+      "If something is wrong, tell /subs and have it fixed",
+      "Type /subs 判定 (judge) and look at the difficulty and savings in the table",
+      "Even after a month and a suggestion, check on the service's own page that nothing was canceled"
+    ],
+    "blockers": [
+      {
+        "what": "Scan scope not set",
+        "why": "It is not decided which period and senders to read, so billing emails cannot be read.",
+        "needs": "Decide how many months to look at and which senders to leave out, and tell /subs. Run it in a session with Gmail connected"
+      }
+    ],
+    "stoppedNote": "Paused on 2026-11-05 by Tatsuki's choice. To bring it back, set status back. The code is kept."
+  }
 }

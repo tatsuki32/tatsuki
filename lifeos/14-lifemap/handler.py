@@ -1,4 +1,4 @@
-"""Takes the reply to today's question, only while that question is open."""
+"""Takes the reply to today's question, only while that question is open. "skip" or 「パス」 closes it."""
 import os
 
 from lifeos.lib.tools import load_file
@@ -31,8 +31,8 @@ def match(text):
 def handle(text, ctx):
     if text.strip().lower() in SKIP_WORDS:
         _core.skip()
-        return "わかりました。"
+        return "OK. No answer needed."
     area = _core.add_answer(text, is_voice=ctx.is_voice)
     if not area:
         return None
-    return f"{_core.AREAS[area]}のファイルに書きました。"
+    return f"Saved it in your {_core.AREAS_EN[area]} notes."

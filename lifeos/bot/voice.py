@@ -8,7 +8,7 @@ import os
 
 from lifeos.lib import tools
 
-NOT_CONNECTED = "文字起こし未接続"
+NOT_CONNECTED = "Transcription is not connected yet."
 _fn = None
 
 

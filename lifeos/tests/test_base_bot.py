@@ -86,7 +86,7 @@ class TestRouter(BotCase):
     def test_handle_error_keeps_the_words(self):
         self.tool("01-bad", "def match(t): return True\ndef handle(t,c): raise ValueError('boom')")
         reply = router.dispatch("大事なメモ", router.Ctx())
-        self.assertIn("エラー", reply)
+        self.assertIn("hit an error", reply)
         self.assertEqual(logs.read("unrouted")[0]["text"], "大事なメモ")
 
     def test_nothing_matched_is_kept(self):
@@ -128,7 +128,7 @@ class TestCli(BotCase):
         self.assertEqual(self.cli("--which", "hi"), "05-a")
         self.assertIn("05-a", self.cli("--list"))
         self.assertEqual(self.cli("ほか"), router.UNROUTED)
-        self.assertEqual(self.cli("--voice", "x.ogg"), "文字起こし未接続")
+        self.assertEqual(self.cli("--voice", "x.ogg"), voice.NOT_CONNECTED)
 
 
 class TestUpdates(BotCase):
@@ -156,14 +156,14 @@ class TestUpdates(BotCase):
     def test_voice_without_a_transcriber(self):
         c = Fake()
         run.handle_update(self.msg(voice={"file_id": "f"}), c, "7")
-        self.assertEqual(c.sent, [(7, "文字起こし未接続")])
+        self.assertEqual(c.sent, [(7, voice.NOT_CONNECTED)])
 
     def test_voice_with_a_swapped_transcriber(self):
         self.tool("05-v", "def match(t): return True\ndef handle(t,c): return ('音声' if c.is_voice else '文字')+':'+t")
         voice.set_transcriber(lambda path: "しゃべった内容")
         c = Fake()
         run.handle_update(self.msg(voice={"file_id": "f"}), c, "7")
-        self.assertEqual(c.sent, [(7, "文字起こし：\nしゃべった内容"), (7, "音声:しゃべった内容")])
+        self.assertEqual(c.sent, [(7, "Transcript:\nしゃべった内容"), (7, "音声:しゃべった内容")])
 
     def test_stickers_and_the_like(self):
         c = Fake()
@@ -186,7 +186,7 @@ class TestTelegramSetup(BotCase):
         r = subprocess.run([sys.executable, os.path.join(paths.REPO, "lifeos", "bot", "run.py")],
                            capture_output=True, text=True, env=os.environ, timeout=30)
         self.assertEqual(r.returncode, 2)
-        self.assertIn("トークンがないので起動しません", r.stdout)
+        self.assertIn("No Telegram token", r.stdout)
 
     def test_notify_in_a_sandbox_never_sends(self):
         os.environ["LIFEOS_TELEGRAM_TOKEN"] = "fake"

@@ -36,5 +36,41 @@
     }
   ],
   "commands": [],
-  "updated": "2026-11-04"
+  "updated": "2026-11-04",
+  "_en": {
+    "name": "Auto-linked notes",
+    "oneline": "Adds tags and links to notes, and summarizes them by day, week and year",
+    "usage": [
+      "Press \"Link now\" in \"Note links\" in the Desk. It also runs with the hourly sync. From the command line: python3 lifeos/11-notes/cli.py run",
+      "Ideas and diary entries sorted by No. 04 come in. You can add one by hand with cli.py add \"text\"",
+      "Each note appears in Desk \"Notes\". Press a \"Related notes\" link to open the next one",
+      "Daily summaries, weekly reviews and yearly roundups are made in both briefs/ and Desk notes",
+      "Put photos and handwriting in notes/. Write the text in a .txt with the same name (automatic reading is not connected yet)",
+      "Cosense is not used at all until its scope is decided",
+      "To stop it, run cli.py stop. To take notes off the Desk, run cli.py unpublish"
+    ],
+    "howToCheck": [
+      "Open Terminal in the Desk folder",
+      "Run python3 lifeos/11-notes/cli.py add \"I want to build a flashcard app #languages\"",
+      "Run python3 lifeos/11-notes/cli.py add \"Looked into review timing for the flashcard app #languages\"",
+      "Open \"Note links\" in the Desk and press \"Link now\"",
+      "Check that the note count went up",
+      "Press \"View in Notes\" and open one of today's 📝 notes",
+      "Press a \"Related notes\" link and check that the other note opens",
+      "Check that \"📅 Note summary\" in Notes has one for today",
+      "If you do not need the test notes, remove them with \"Delete\" in the Desk"
+    ],
+    "blockers": [
+      {
+        "what": "Scope of Cosense notes to import",
+        "why": "How much to use is not decided, so matching with Cosense is turned off. Everything else works.",
+        "needs": "Decide the scope (all, by tag, by page-name prefix, or by update date). Put a JSON export from Cosense at desk/data/lifeos/tools/11-notes/cosense-export.json and set the scope with cli.py cosense-scope. Steps are in lifeos/11-notes/README.md"
+      },
+      {
+        "what": "Reading text from photos and handwriting",
+        "why": "The reading method is not decided, so photos become notes without text. They get no related notes either.",
+        "needs": "Choose a method and say which (have Claude read them, use the Mac's text recognition, and so on). Until then, it works if you write the text in a .txt with the same name as the photo"
+      }
+    ]
+  }
 }

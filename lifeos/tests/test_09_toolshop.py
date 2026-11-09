@@ -286,7 +286,7 @@ class TestRepositoryFiles(unittest.TestCase):
         with open(os.path.join(paths.REPO, "desk", "index.html"), encoding="utf-8") as f:
             page = f.read()
         self.assertIn('cmd:"/newtool"', page)
-        self.assertIn("作りかけ ${n(\"building\")} / 3", page)
+        self.assertIn("In progress ${n(\"building\")} / 3", page)
 
     def test_the_command_runs_this_script(self):
         with open(os.path.join(paths.REPO, ".claude", "commands", "newtool.md"), encoding="utf-8") as f:

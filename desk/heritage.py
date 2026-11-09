@@ -74,7 +74,7 @@ def _plain(text):
 def _get(url):
     host = urllib.parse.urlsplit(url).hostname or ""
     if host != "commons.wikimedia.org" and host not in COMMONS_HOSTS:
-        raise ValueError("Commons 以外の URL です")
+        raise ValueError("Not a Commons URL")
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     for wait in (20, 60, None):  # Commons answers 429 when asked too fast
         try:
@@ -94,17 +94,17 @@ def photo(title, width=1200):
     pages = json.loads(data)["query"]["pages"]
     info = (next(iter(pages.values())).get("imageinfo") or [None])[0]
     if not info:
-        raise ValueError("Commons にないファイルです: " + title)
+        raise ValueError("Not a file on Commons: " + title)
     meta = info.get("extmetadata") or {}
     field = lambda k: _plain((meta.get(k) or {}).get("value"))
     author, license_name = field("Artist"), field("LicenseShortName")
     if not author:
-        raise ValueError("作者が分かりません: " + title)
+        raise ValueError("Author unknown: " + title)
     if not FREE_LICENSE.match(license_name):
-        raise ValueError(f"使えないライセンスです（{license_name or '不明'}）: {title}")
+        raise ValueError(f"License not usable ({license_name or 'unknown'}): {title}")
     body, ctype = _get(info.get("thumburl") or info["url"])
     if ctype not in PHOTO_TYPES or len(body) > PHOTO_MAX_BYTES:
-        raise ValueError("JPEG か PNG の8MBまでです: " + title)
+        raise ValueError("Only JPEG or PNG up to 8 MB: " + title)
     name = hashlib.sha256(title.encode("utf-8")).hexdigest()[:16] + "." + PHOTO_TYPES[ctype]
     os.makedirs(photos_dir(), exist_ok=True)
     server.write_bytes_atomic(os.path.join(photos_dir(), name), body)
@@ -124,56 +124,56 @@ def _https(url):
 
 def _check_photos(items, where, errors):
     if not isinstance(items, list) or len(items) > PHOTOS_MAX:
-        errors.append(f"{where}: 写真は{PHOTOS_MAX}枚までです")
+        errors.append(f"{where}: up to {PHOTOS_MAX} photos")
         return
     for p in items:
         p = p if isinstance(p, dict) else {}
         ok_file = server.HERITAGE_PHOTO.match(str(p.get("file") or "")) and os.path.exists(os.path.join(photos_dir(), p["file"]))
         if not ok_file:
-            errors.append(f"{where}: 写真のファイルがありません")
+            errors.append(f"{where}: photo file is missing")
         if not p.get("author") or not FREE_LICENSE.match(str(p.get("license") or "")):
-            errors.append(f"{where}: 写真の作者かライセンスがありません")
+            errors.append(f"{where}: photo author or license is missing")
         if not str(p.get("page") or "").startswith("https://commons.wikimedia.org/"):
-            errors.append(f"{where}: 写真の Commons のページがありません")
+            errors.append(f"{where}: photo Commons page is missing")
 
 
 def check(doc, expected):
-    """Every problem in an issue, in Japanese. An empty list means it can be saved."""
+    """Every problem in an issue, in English. An empty list means it can be saved."""
     errors = []
     items = doc.get("countries") if isinstance(doc.get("countries"), list) else []
     codes = [c.get("code") for c in items if isinstance(c, dict)]
     want = [c["code"] for c in expected]
     if codes != want:
-        errors.append(f"国が違います（必要：{'、'.join(want)}）")
+        errors.append(f"Wrong countries (expected: {', '.join(want)})")
     for c in items:
         c = c if isinstance(c, dict) else {}
-        where = c.get("name") or c.get("code") or "国"
-        for key, label in (("name", "国名"), ("capital", "首都"), ("about", "紹介")):
+        where = c.get("name") or c.get("code") or "Country"
+        for key, label in (("name", "name"), ("capital", "capital"), ("about", "description")):
             if not str(c.get(key) or "").strip():
-                errors.append(f"{where}: {label}がありません")
+                errors.append(f"{where}: {label} is missing")
         sources = c.get("sources") if isinstance(c.get("sources"), list) else []
         if not sources or not all(isinstance(s, dict) and s.get("name") and _https(s.get("url")) for s in sources):
-            errors.append(f"{where}: 出典がありません")
+            errors.append(f"{where}: sources are missing")
         _check_photos(c.get("photos") or [], where, errors)
         sites = c.get("sites") if isinstance(c.get("sites"), list) else []
         if len(sites) > SITES_MAX:
-            errors.append(f"{where}: 遺産は{SITES_MAX}件までです")
+            errors.append(f"{where}: up to {SITES_MAX} sites")
         if not sites and not str(c.get("noSites") or "").strip():
-            errors.append(f"{where}: 遺産か、遺産がない事情（noSites）が要ります")
+            errors.append(f"{where}: needs sites, or the reason there are none (noSites)")
         for s in sites:
             s = s if isinstance(s, dict) else {}
-            name = f"{where} {s.get('name') or '遺産'}"
+            name = f"{where} {s.get('name') or 'site'}"
             if not s.get("name") or not s.get("why"):
-                errors.append(f"{name}: 名前か登録の理由がありません")
+                errors.append(f"{name}: name or reason for listing is missing")
             if s.get("kind") not in KINDS:
-                errors.append(f"{name}: 種類は {' / '.join(KINDS)} です")
+                errors.append(f"{name}: kind must be {' / '.join(KINDS)}")
             if not isinstance(s.get("year"), int):
-                errors.append(f"{name}: 登録年がありません")
+                errors.append(f"{name}: year listed is missing")
             if not _https(s.get("url")):
-                errors.append(f"{name}: 出典がありません")
+                errors.append(f"{name}: source is missing")
             _check_photos(s.get("photos") or [], name, errors)
         if not c.get("photos") and not any(s.get("photos") for s in sites if isinstance(s, dict)):
-            errors.append(f"{where}: 写真が1枚もありません")
+            errors.append(f"{where}: no photos at all")
     return errors
 
 

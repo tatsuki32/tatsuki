@@ -156,6 +156,9 @@ def task_title(item):
     no_subject = "件名なし" in item["subject"] or "no subject" in item["subject"].lower()
     subject = "" if _is_chat(item) or no_subject else re.sub(r"^((re|fwd?)[:：]\s*)+", "", item["subject"], flags=re.I)
     topic = item.get("topic") or subject
+    if topic and re.search(r"[ぁ-んァ-ン一-龥]", topic):  # old threads have Japanese topics: keep their Japanese title
+        ja = "WhatsApp催促" if _is_chat(item) else "メール催促"
+        return f"{ja} {topic}について（{_who(item)}）"
     return f"{kind}: {topic} ({_who(item)})" if topic else f"{kind} ({_who(item)})"
 
 
@@ -208,10 +211,23 @@ def _queue_drafts(s, day, cfg):
     return made
 
 
+MONTHS_EN = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+
+
+def _days(n):
+    return f"{n} day" + ("" if n == 1 else "s")
+
+
+def _md(d):
+    """en-US month and day, "Nov 9"."""
+    return f"{MONTHS_EN[d.month - 1]} {d.day}"
+
+
 def question(item, day):
-    return (f"返信待ち {age_days(item, day)}日：{item['subject']}（{item['to'][0]}）\n"
-            f"催促の下書きは Gmail にあります。送信はしていません。\n答え方：\n"
-            f"催促 送る {item['no']}\n催促 保留 {item['no']}\n催促 捨てる {item['no']}")
+    """The 14-day question on Telegram. The answers also work in Japanese (催促 送る 3)."""
+    return (f"No reply for {_days(age_days(item, day))}: {item['subject']} ({item['to'][0]})\n"
+            f"A nudge draft is in Gmail. Nothing was sent.\nTo answer:\n"
+            f"nudge send {item['no']}\nnudge hold {item['no']}\nnudge drop {item['no']}")
 
 
 def _ask(s, day, cfg):
@@ -320,31 +336,31 @@ def answer(no, choice, day=None):
     with state() as s:
         item = find(s, no)
         if item is None:
-            return f"{no}番の返信待ちはありません。"
+            return f"There is no follow-up number {no}."
         name = item["subject"]
         if item["state"] == "closed":
-            return f"「{name}」は相手から返信が来ています。"
+            return f'"{name}" already has a reply.'
         if choice == "戻す":
             _end_task(item, "archived")
             item.update(state="waiting", holdUntil=None, askedOn=None, askQueuedOn=None)
-            return f"「{name}」を返信待ちに戻しました。"
+            return f'"{name}" is back on the waiting list.'
         if choice == "捨てる":
             _end_task(item, "archived")
             item.update(state="dropped", holdUntil=None)
-            return f"「{name}」の催促をやめました。Gmail の下書きは消していません。元に戻すなら：催促 戻す {no}"
+            return f'Stopped the nudge for "{name}". The Gmail draft is still there. To undo: nudge undo {no}'
         if choice == "保留":
             _end_task(item, "archived")
             until = datetime.strptime(day, "%Y-%m-%d") + timedelta(days=config()["holdDays"])
             item.update(state="held", holdUntil=until.strftime("%Y-%m-%d"))
-            return f"「{name}」を保留にしました。{until.month}月{until.day}日にまた聞きます。"
+            return f'"{name}" is on hold. I will ask again on {_md(until)}.'
         if not item.get("draft"):
-            return f"「{name}」の下書きがまだありません。朝の処理で作ったあとに答えてください。"
+            return f'"{name}" has no draft yet. Answer after the morning run makes one.'
         if not item.get("taskId"):
-            item["taskId"] = tasks.add("Send nudge: " + name, source="lifeos-02", source_ref=item["threadId"],
+            item["taskId"] = tasks.add(task_title(item), source="lifeos-02", source_ref=item["threadId"],
                                        note="Open the Gmail draft and send it yourself. Life OS does not send.")["id"]
         item.update(state="send", holdUntil=None)
-        url = item["draft"].get("viewUrl") or "Gmail の下書き"
-        return f"送信はしていません。下書きを確かめて、自分で送ってください：{url}\nDesk のタスクにも入れました。"
+        url = item["draft"].get("viewUrl") or "the Gmail draft"
+        return f"Nothing was sent. Check the draft and send it yourself: {url}\nIt is also on the Desk as a task."
 
 
 def _public(item, day, cfg):
@@ -390,11 +406,11 @@ def sync_online(remote, day=None):
 
 def _short(titles, unit=3):
     head = " / ".join(titles[:unit])
-    return head + (f"（ほか{len(titles) - unit}件）" if len(titles) > unit else "")
+    return head + (f" (and {len(titles) - unit} more)" if len(titles) > unit else "")
 
 
 def _old(age):
-    return f"（{int(age)}時間前の情報）" if age is not None and age >= 24 else ""
+    return f" (as of {int(age)} hours ago)" if age is not None and age >= 24 else ""
 
 
 def today_lines(day=None):
@@ -404,28 +420,28 @@ def today_lines(day=None):
     out = []
     cal = conn.read_calendar(day)
     if cal is None:
-        out.append("今日の予定：まだ届いていません")
+        out.append("Today's events: not in yet")
     else:
         rest = [e for e in cal["events"] if not e.get("past")]
-        names = [("終日 " if e["allDay"] else e["start"][-5:] + " ") + e["title"] for e in rest]
-        out.append("今日の予定：" + (_short(names) if names else "なし") + _old(cal["ageHours"]))
+        names = [("All day " if e["allDay"] else e["start"][-5:] + " ") + e["title"] for e in rest]
+        out.append("Today's events: " + (_short(names) if names else "none") + _old(cal["ageHours"]))
     mail = conn.read_needs_reply(day)
     dms = conn.read_dms(day) or []
     if mail is None and not dms:
-        out.append("こちらが返すもの：メールの確認がまだ届いていません")
+        out.append("Yours to answer: the mail check is not in yet")
     else:
         items = (mail["items"] if mail else []) + dms
         age = _old(mail["ageHours"]) if mail else ""
-        out.append(f"こちらが返すもの：{len(items)}件" + ("　" + _short([x["title"] for x in items]) if items else "") + age)
+        out.append(f"Yours to answer: {len(items)}" + ("  " + _short([x["title"] for x in items]) if items else "") + age)
     s = read_state()
     waiting = open_items(s)
     if s.get("lastRun") is None and not waiting:
         return out
-    named = [f"{i['subject']}（{age_days(i, day)}日）" for i in waiting]
-    line = f"相手の返信待ち：{len(waiting)}件" + ("　" + _short(named) if named else "")
+    named = [f"{i['subject']} ({_days(age_days(i, day))})" for i in waiting]
+    line = f"Waiting on others: {len(waiting)}" + ("  " + _short(named) if named else "")
     if s.get("lastRun") != day:
-        line += "（今朝のメール確認はまだです）"
+        line += " (this morning's mail check has not run yet)"
     out.append(line)
     for item in asking(s)[:3]:
-        out.append(f"答えを待っています：{item['subject']} → 催促 送る {item['no']} / 保留 / 捨てる")
+        out.append(f"Waiting for your answer: {item['subject']} → nudge send {item['no']} / hold / drop")
     return out

@@ -131,7 +131,8 @@ class TestAsk(FollowupCase):
         self.snap(self.thread(days=14))
         self.assertEqual(self.core.morning()["asked"], 1)
         text = logs.read("outbox")[0]["text"]
-        for word in ("催促 送る 1", "催促 保留 1", "催促 捨てる 1"):
+        self.assertTrue(text.startswith("No reply for 14 days: "), text)
+        for word in ("nudge send 1", "nudge hold 1", "nudge drop 1"):
             self.assertIn(word, text)
 
     def test_never_asks_before_a_draft_exists(self):
@@ -155,7 +156,7 @@ class TestAsk(FollowupCase):
     def test_send_answer_adds_a_task_and_sends_nothing(self):
         item = self.asked()
         reply = self.core.answer(item["no"], "送る")
-        self.assertIn("送信はしていません", reply)
+        self.assertIn("Nothing was sent", reply)
         self.assertEqual(self.core.open_items()[0]["state"], "send")
         self.assertEqual([t["source"] for t in tasks.open_tasks()], ["lifeos-02"])
         self.core.answer(item["no"], "送る")
@@ -179,7 +180,7 @@ class TestAsk(FollowupCase):
         self.core.morning()
         no = self.core.needs_detail()[0]["no"]
         self.assertEqual(self.core.save_details([{"no": no, "topic": "見積もり", "summary": "見積もりの確認を頼んだ。"}]), 1)
-        self.assertEqual(tasks.open_tasks()[0]["title"], "Email nudge: 見積もり (someone@example.com)")
+        self.assertEqual(tasks.open_tasks()[0]["title"], "メール催促 見積もりについて（someone@example.com）")
         self.assertEqual(self.core.needs_detail(), [])
         view = self.core.desk_view()["items"][0]
         self.assertEqual((view["taskId"], view["summary"]), (tasks.open_tasks()[0]["id"], "見積もりの確認を頼んだ。"))
@@ -187,7 +188,7 @@ class TestAsk(FollowupCase):
     def test_send_answer_needs_a_draft(self):
         self.snap(self.thread(days=15))
         self.core.morning()
-        self.assertIn("下書きがまだ", self.core.answer(1, "送る"))
+        self.assertIn("has no draft yet", self.core.answer(1, "送る"))
         self.assertEqual([t["title"] for t in tasks.open_tasks()], [self.core.task_title(self.core.read_state()["threads"]["a"])])
 
     def test_three_days_makes_one_task_for_today_and_a_reply_closes_it(self):
@@ -196,8 +197,8 @@ class TestAsk(FollowupCase):
         self.core.morning()
         task = tasks.open_tasks()
         self.assertEqual([t["title"] for t in task], [self.core.task_title(self.core.read_state()["threads"]["b"])])
-        self.assertTrue(task[0]["title"].startswith("Email nudge"))
-        self.assertTrue(task[0]["title"].endswith(" (山田)"))
+        self.assertTrue(task[0]["title"].startswith("メール催促"))
+        self.assertTrue(task[0]["title"].endswith("（山田）"))
         self.assertEqual(task[0]["planDate"], self.day)
         self.snap(self.thread("b", days=0, last="them"))
         self.core.morning()
@@ -229,7 +230,7 @@ class TestAsk(FollowupCase):
 
     def test_drop_stops_and_can_be_undone(self):
         item = self.asked()
-        self.assertIn("消していません", self.core.answer(item["no"], "捨てる"))
+        self.assertIn("draft is still there. To undo: nudge undo", self.core.answer(item["no"], "捨てる"))
         self.assertEqual(self.core.open_items(), [])
         self.core.answer(item["no"], "戻す")
         self.assertEqual(len(self.core.open_items()), 1)
@@ -238,7 +239,7 @@ class TestAsk(FollowupCase):
         item = self.asked()
         self.snap(self.thread(days=0, last="them"))
         self.core.morning()
-        self.assertIn("返信が来ています", self.core.answer(item["no"], "送る"))
+        self.assertIn("already has a reply", self.core.answer(item["no"], "送る"))
         self.assertEqual(tasks.open_tasks(), [])
 
 
@@ -247,8 +248,23 @@ class TestHandler(FollowupCase):
         h = load_tool("02-followup", "handler")
         for ok in ("催促 送る 3", "催促　保留　３", "催促捨てる3番", "催促 一覧", "催促 送る"):
             self.assertTrue(h.match(ok), ok)
-        for no in ("催促してほしい", "送る 3", "催促 送る 3 と 4", "task: 催促 送る 3"):
+        for ok in ("nudge send 3", "Nudge hold 3", "nudge drop #3", "nudge undo 3", "nudge list", "nudge send"):
+            self.assertTrue(h.match(ok), ok)
+        for no in ("催促してほしい", "送る 3", "催促 送る 3 と 4", "task: 催促 送る 3", "nudge", "nudge him", "send 3"):
             self.assertFalse(h.match(no), no)
+
+    def test_english_commands(self):
+        self.run_with_drafts(self.thread(days=15))
+        self.snap(self.thread(days=15))
+        self.core.morning()
+        found = router.discover()
+        self.assertEqual(router.which("nudge list", found.routes).slug, "02-followup")
+        self.assertIn("1. ", router.dispatch("nudge list", router.Ctx(), found.routes))
+        self.assertIn("on hold. I will ask again on ", router.dispatch("nudge hold 1", router.Ctx(), found.routes))
+        self.assertEqual(self.core.open_items()[0]["state"], "held")
+        self.assertIn("back on the waiting list", router.dispatch("nudge undo 1", router.Ctx(), found.routes))
+        self.assertIn("Stopped the nudge", router.dispatch("nudge drop 1", router.Ctx(), found.routes))
+        self.assertEqual(self.core.open_items(), [])
 
     def test_route_and_reply(self):
         self.run_with_drafts(self.thread(days=15))
@@ -256,16 +272,16 @@ class TestHandler(FollowupCase):
         self.core.morning()
         found = router.discover()
         self.assertEqual(router.which("催促 保留 1", found.routes).slug, "02-followup")
-        self.assertIn("保留", router.dispatch("催促 保留 1", router.Ctx(), found.routes))
-        self.assertIn("1番", router.dispatch("催促 一覧", router.Ctx(), found.routes))
+        self.assertIn("on hold", router.dispatch("催促 保留 1", router.Ctx(), found.routes))
+        self.assertIn("1. ", router.dispatch("催促 一覧", router.Ctx(), found.routes))
 
     def test_no_number_works_for_a_single_question_only(self):
         self.run_with_drafts(self.thread(days=15))
         self.snap(self.thread(days=15))
         self.core.morning()
         h = load_tool("02-followup", "handler")
-        self.assertIn("保留", h.handle("催促 保留", router.Ctx()))
-        self.assertIn("番号", h.handle("催促 保留", router.Ctx()))
+        self.assertIn("on hold", h.handle("催促 保留", router.Ctx()))
+        self.assertIn('"nudge hold 3"', h.handle("nudge hold", router.Ctx()))
 
 
 class TestBrief(FollowupCase):
@@ -286,29 +302,29 @@ class TestBrief(FollowupCase):
             {"key": "k3", "priority": "Reply drafted", "subject": "送った件", "from": "相手", "status": "sent"}]}}], "MAIL")
         text = "\n".join(self.part())
         self.assertIn("23:58 打合せ", text)
-        self.assertIn("こちらが返すもの：1件　返す件", text)
+        self.assertIn("Yours to answer: 1  返す件", text)
         self.assertNotIn("参考の件", text)
         self.assertNotIn("送った件", text)
 
     def test_missing_desk_data_is_said_plainly(self):
         text = "\n".join(self.part())
-        self.assertIn("今日の予定：まだ届いていません", text)
-        self.assertIn("メールの確認がまだ", text)
+        self.assertIn("Today's events: not in yet", text)
+        self.assertIn("mail check is not in yet", text)
 
     def test_waiting_is_listed_with_at_most_three(self):
         self.snap(*[self.thread(tid="t%d" % i, days=1, subject="件%d" % i) for i in range(5)])
         self.core.morning()
-        line = [x for x in self.part() if x.startswith("相手の返信待ち")][0]
-        self.assertIn("5件", line)
-        self.assertIn("ほか2件", line)
-        self.assertEqual(line.count("（1日）"), 3)
+        line = [x for x in self.part() if x.startswith("Waiting on others")][0]
+        self.assertIn("Waiting on others: 5", line)
+        self.assertIn("(and 2 more)", line)
+        self.assertEqual(line.count("(1 day)"), 3)
 
     def test_says_when_this_morning_did_not_run(self):
         self.snap(self.thread(days=1))
         self.core.morning()
         with self.core.state() as s:
             s["lastRun"] = "2020-01-01"
-        self.assertIn("まだです", [x for x in self.part() if x.startswith("相手")][0])
+        self.assertIn("has not run yet", [x for x in self.part() if x.startswith("Waiting on others")][0])
 
     def test_dm_source_can_be_swapped_in(self):
         self.conn.read_dms, saved = (lambda day: [{"title": "DMの件", "from": "相手"}]), self.conn.read_dms
@@ -364,4 +380,4 @@ class TestNeverSends(FollowupCase):
             self.assertEqual(run.main(["demo"]), 0)
         self.assertNotEqual(os.environ["LIFEOS_DATA"], before)
         self.assertFalse(os.path.exists(os.environ["LIFEOS_DATA"]))
-        self.assertIn("送信はしていません", buf.getvalue())
+        self.assertIn("Nothing was sent", buf.getvalue())

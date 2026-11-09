@@ -1,11 +1,11 @@
-"""Telegram: 「筋トレした」「読書30分」 add one day to that habit on the Desk."""
+"""Telegram: 「筋トレした」「読書30分」 or "did workout", "reading 30 min" add one day to that habit on the Desk."""
 import os
 
 from lifeos.lib import paths, tools
 
 PRIORITY = 30
 core = tools.load_file(os.path.dirname(os.path.abspath(__file__)), "core")
-WHEN = {0: "今日", 1: "昨日", 2: "一昨日"}
+WHEN = {0: "today", 1: "yesterday", 2: "the day before yesterday"}
 
 
 def match(text):
@@ -19,13 +19,13 @@ def handle(text, ctx):
     name, count = habit["name"], core.count_of(habit)
     now = core.status_line(count)
     if not added:
-        return f"{when}の{name}は、もう入っています。\n{now}"
+        return f"{name} is already in for {when}.\n{now}"
     what = name + (" " + p["amount"] if p["amount"] else "")
-    lines = [f"{what}、記録しました。" if p["days_ago"] == 0 else f"{what}、{when}の分として記録しました。"]
+    lines = [f"Recorded {what}." if p["days_ago"] == 0 else f"Recorded {what} for {when}."]
     if is_new:
-        lines.append("新しい習慣として Desk に足しました。")
+        lines.append("Added it to the Desk as a new habit.")
     grown = core.stage(count)
     if count == 1 or count == grown[0]:
-        lines.append(f"{grown[1]} {name}：{grown[3]}。")
+        lines.append(f"{grown[1]} {name}: {grown[3]}.")
     lines.append(now)
     return "\n".join(lines)

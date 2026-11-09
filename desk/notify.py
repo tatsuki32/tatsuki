@@ -174,7 +174,8 @@ def minutes_of(dt):
 
 
 def hhmm(ts, tz):
-    return local(ts, tz).strftime("%-H:%M")
+    """en-US: "3:00 PM"."""
+    return local(ts, tz).strftime("%-I:%M %p")
 
 
 def start_ts(text):
@@ -560,7 +561,7 @@ def view(now=None):
     return {"settings": s, "log": sorted(log, key=lambda e: -e.get("at", 0)), "problem": problem,
             "kinds": [{"id": k, "label": label, "tier": tier} for k, label, tier in KINDS],
             "ringing": in_ring(minutes_of(local(now)), s) and now >= s["pauseUntil"], "now": int(now),
-            "clock": local(now).strftime("%-H:%M")}
+            "clock": local(now).strftime("%-I:%M %p")}
 
 
 def put_settings(rec):

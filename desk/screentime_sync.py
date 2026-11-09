@@ -164,13 +164,13 @@ def run():
     except (sqlite3.Error, OSError) as e:
         python = python_program()
         write_json("status.json", {"ok": False, "at": at, "error": str(e), "python": python})
-        print(f"読めません（{e}）。システム設定のフルディスクアクセスに {python} を入れてください。", file=sys.stderr)
+        print(f"Could not read the data ({e}). Add {python} to Full Disk Access in System Settings.", file=sys.stderr)
         return 1
     days = merge(read_json("days.json", {}), new)
     write_json("days.json", days)
     write_json("names.json", find_names(new, read_json("names.json", {})))
     write_json("status.json", {"ok": True, "at": at, "days": len(days), **coverage()})
-    print(f"スクリーンタイム：{len(days)}日分")
+    print(f"Screen time: {len(days)} days")
     return 0
 
 

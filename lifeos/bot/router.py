@@ -17,8 +17,8 @@ from lifeos.lib import logs, md, paths, tasks, tools
 DEFAULT_PRIORITY = 50
 # the secretary bot's tools. Every other tool stays with the records bot, new ones included.
 SECRETARY_TOOLS = ("04-voice", "03-task", "02-followup")
-UNROUTED = "受け取りました。振り分け先のツールがまだないので、未整理に残しました。"
-EMPTY = "文字を受け取れませんでした。"
+UNROUTED = "Got it. No tool takes this yet, so I kept it in the unsorted list."
+EMPTY = "I could not find any text in that."
 
 
 @dataclass
@@ -63,7 +63,7 @@ def discover(root=None):
         try:
             mod = tools.load_file(d, "handler")
             if not callable(getattr(mod, "match", None)) or not callable(getattr(mod, "handle", None)):
-                raise AttributeError("match と handle が必要です")
+                raise AttributeError("needs match and handle")
             priority = int(getattr(mod, "PRIORITY", DEFAULT_PRIORITY))
         except Exception as e:
             found.errors.append((slug, type(e).__name__ + ": " + str(e)))
@@ -106,4 +106,4 @@ def dispatch(text, ctx, routes=None):
         # keep the words: the person should not have to say them again
         logs.append("unrouted", {"text": text, "source": ctx.source, "voice": ctx.is_voice, "failedTool": r.slug})
         logs.append("bot-errors", {"tool": r.slug, "where": "handle", "error": type(e).__name__})
-        return r.name + "でエラーが起きました。内容は未整理に残しました。"
+        return r.name + " hit an error. I kept your message in the unsorted list."

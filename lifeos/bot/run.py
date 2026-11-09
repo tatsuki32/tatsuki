@@ -21,22 +21,22 @@ sys.path.insert(0, os.path.join(REPO, "desk"))
 from lifeos.bot import router, telegram, voice  # noqa: E402
 from lifeos.lib import logs, paths  # noqa: E402
 
-NO_TOKEN = """Telegram のトークンがないので起動しません。
-1. Telegram の BotFather でボットを作り、トークンを受け取る
-2. キーチェーンに入れる：security add-generic-password -a telegram -s tatsuki-desk-telegram -w
-3. もう一度起動し、ボットに何か送ると、チャット ID を返します
-4. 登録する：python3 lifeos/bot/run.py set-chat <チャット ID>
-トークンなしで試すには：python3 lifeos/bot/cli.py "テキスト\""""
-TRANSCRIPT = "文字起こし：\n"
-NOT_TEXT = "文字と音声と写真を受け取れます。"
-PHOTO_ELSEWHERE = "写真は記録ボットに送ってください。"
-TO_SECRETARY = "記録として受け取れませんでした。内容は未整理に残しました。予定やタスクは秘書ボットに送ってください。"
+NO_TOKEN = """No Telegram token, so the bot is not starting.
+1. Create a bot with BotFather in Telegram and get its token
+2. Add it to the keychain: security add-generic-password -a telegram -s tatsuki-desk-telegram -w
+3. Start again and send the bot anything; it replies with the chat ID
+4. Register it: python3 lifeos/bot/run.py set-chat <chat ID>
+To try it without a token: python3 lifeos/bot/cli.py "text\""""
+TRANSCRIPT = "Transcript:\n"
+NOT_TEXT = "This bot takes text, voice and photos."
+PHOTO_ELSEWHERE = "Please send photos to the records bot."
+TO_SECRETARY = "This was not taken as a record. It is kept in Unsorted. Please send plans and tasks to the assistant bot."
 OFFSET_FILES = {telegram.RECORDS: "offset.json", telegram.SECRETARY: "offset-secretary.json"}
 PHOTO_TYPES = ("image/", "application/pdf")
 
 
 def ask_for_chat_id(chat_id):
-    return f"このチャットの ID は {chat_id} です。Mac で python3 lifeos/bot/run.py set-chat {chat_id} を実行すると使えるようになります。"
+    return f"This chat's ID is {chat_id}. Run python3 lifeos/bot/run.py set-chat {chat_id} on the Mac to start using it."
 
 
 def photo_file(msg):
@@ -61,7 +61,7 @@ def handle_photo(file_id, caption, client, chat):
             client.send_message(chat, str(e))
             return
     if not new:
-        client.send_message(chat, "この写真は取り込み済みです")
+        client.send_message(chat, "This photo is already in")
         return
     client.send_message(chat, lifelog.reply_text(lifelog.process()))
 
@@ -100,7 +100,7 @@ def handle_update(update, client, owner, routes=None, photos=True, unrouted=None
             except Exception as e:
                 logs.append("bot-errors", {"where": "transcribe", "error": type(e).__name__})
                 shutil.copy(os.path.join(d, "voice"), paths.data_path("inbox", "audio", str(update.get("update_id"))))
-                client.send_message(chat, "文字起こしに失敗しました。音声は inbox/audio/ に残しました。")
+                client.send_message(chat, "Could not transcribe. The audio is kept in inbox/audio/.")
                 return
         ctx.is_voice = True
     else:
@@ -151,7 +151,7 @@ def serve(bot, token, owner, routes, photos=True, unrouted=None):
             offset = poll_once(client, owner, offset, routes, bot, photos, unrouted)
             wait = 5
         except telegram.TelegramError as e:
-            print(f"Telegram エラー（{bot}）: {e}。{wait}秒後にやり直します", file=sys.stderr, flush=True)
+            print(f"Telegram error ({bot}): {e}. Retrying in {wait} seconds", file=sys.stderr, flush=True)
             time.sleep(wait)
             wait = min(wait * 2, 300)
         except Exception as e:
@@ -171,14 +171,14 @@ def plan_bots(token, secretary_token, routes):
 def main():
     if sys.argv[1:2] == ["set-chat"]:
         if len(sys.argv) != 3 or not sys.argv[2].lstrip("-").isdigit():
-            print("使い方：python3 lifeos/bot/run.py set-chat <チャット ID>")
+            print("Usage: python3 lifeos/bot/run.py set-chat <chat ID>")
             return 2
         telegram.set_chat_id(sys.argv[2])
         try:  # the running bot reads the id at start. launchd may hold the restart for its throttle, so do not wait for it
             subprocess.run(["launchctl", "kickstart", "-k", f"gui/{os.getuid()}/com.tatsuki.desk.telegram"], capture_output=True, timeout=5)
         except subprocess.TimeoutExpired:
             pass
-        print("チャット ID を登録しました。")
+        print("Chat ID registered.")
         return 0
     token, owner = telegram.config()
     if not token:
@@ -188,14 +188,14 @@ def main():
     try:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except OSError:
-        print("ボットはすでに動いています。")
+        print("The bot is already running.")
         return 1
     found = router.discover()
     for slug, err in found.errors:
-        print(f"読み込めません  {slug}  {err}", file=sys.stderr)
+        print(f"Could not load  {slug}  {err}", file=sys.stderr)
     bots = plan_bots(token, telegram.config(telegram.SECRETARY)[0], found.routes)
-    shown = "、".join(f"{b[0]} {len(b[2])}個" for b in bots)
-    print(f"ボットを起動しました（{shown}）" + ("" if owner else "。chat_id が未設定です"), flush=True)
+    shown = ", ".join(f"{b[0]} {len(b[2])} tools" for b in bots)
+    print(f"Bot started ({shown})" + ("" if owner else ". chat_id is not set"), flush=True)
     for bot, bot_token, routes, photos, unrouted in bots[1:]:
         threading.Thread(target=serve, args=(bot, bot_token, owner, routes, photos, unrouted), daemon=True).start()
     bot, bot_token, routes, photos, unrouted = bots[0]

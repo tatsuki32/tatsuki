@@ -30,5 +30,33 @@
   "commands": [
     "/newtool"
   ],
-  "updated": "2026-11-04"
+  "updated": "2026-11-04",
+  "_en": {
+    "name": "Tool workshop",
+    "oneline": "Build a new homemade tool quickly from a template. Up to 3 in progress at once",
+    "usage": [
+      "Type /newtool, the tool name, and what you want it to do",
+      "In the Desk, ask from \"Make a tool\" under \"Ask Claude\" (the Home card, the C key, or / in search)",
+      "A guide and code template are made, and the tool appears in this screen's list",
+      "/newtool 一覧 (list) shows names and states (building, working, stopped)",
+      "It does not build when 3 are already in progress, or from 11 p.m. to 5 a.m. Your idea is kept",
+      "/newtool 仕上げ (finish) and a number sets it to working. /newtool 止める (stop) and a number stops it. No files are deleted"
+    ],
+    "howToCheck": [
+      "In the Desk, press C, enter \"Trial One, just testing\" in \"Make a tool\", and send",
+      "Reopen the Life OS screen in the Desk and check that Trial One appears at the bottom as building",
+      "Type /newtool 一覧 (list) and check that names and states appear",
+      "Type /newtool Trial Two just testing and /newtool Trial Three just testing",
+      "Type /newtool Trial Four just testing and check that it does not build and asks you to finish one first",
+      "On a day past 11 p.m., type /newtool and check that it stops without building",
+      "When done, ask Claude to \"delete Trial One to Three\""
+    ],
+    "blockers": [
+      {
+        "what": "Pushing to GitHub",
+        "why": "This Mac has no GitHub login, so main does not reach GitHub. It works in the Mac's Desk, but requests from iPhone run on the old main.",
+        "needs": "In Terminal, run gh auth login, then git -C ~/TatsukiDesk push origin main"
+      }
+    ]
+  }
 }

@@ -21,5 +21,26 @@
   ],
   "blockers": [],
   "commands": [],
-  "updated": "2026-11-04"
+  "updated": "2026-11-04",
+  "_en": {
+    "name": "Zero-decision start",
+    "oneline": "Loads context when you start working and shows the first task",
+    "usage": [
+      "When a session starts, CLAUDE.md and today's briefing are read, and only the first task appears",
+      "Tasks untouched for 14 days or more move to \"Deferred\" (the Desk archive) in a once-a-day check",
+      "Tasks with a near deadline, and tasks from outside such as mail or calendar, are not moved",
+      "Deferred tasks are shown together once a week when a session starts. Give the ID to bring one back",
+      "To stop it, run python3 lifeos/10-autostart/autostart.py off"
+    ],
+    "howToCheck": [
+      "In Terminal, go to ~/TatsukiDesk",
+      "Type python3 lifeos/10-autostart/autostart.py defer --dry",
+      "Look at the list of tasks that would be deferred (nothing moves yet)",
+      "Start a new Claude Code session in the Tatsuki's Desk folder",
+      "Check that the first task appears without you choosing",
+      "Check that the listed tasks moved to the Desk archive",
+      "To bring them back, type python3 lifeos/10-autostart/autostart.py restore --all"
+    ],
+    "blockers": []
+  }
 }

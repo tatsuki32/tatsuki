@@ -185,13 +185,13 @@ def run():
         except (sqlite3.Error, OSError) as e:
             set_meta(con, import_ok=False, import_at=at, import_error=str(e))
             con.commit()
-            print(f"Chrome の履歴を読めません（{e}）。", file=sys.stderr)
+            print(f"Could not read the Chrome history ({e}).", file=sys.stderr)
             return 1
         with con:
             import_rows(con, visits, searches)
             set_meta(con, import_ok=True, import_at=at, import_error="")
         total = con.execute("SELECT count(*) FROM visits").fetchone()[0]
-        print(f"Web履歴：{total}件")
+        print(f"Web history: {total} visits")
         return 0
     finally:
         con.close()
@@ -441,14 +441,14 @@ def export_csv(tab, period="week", start=None, end=None, q="", site="", after=No
     out = io.StringIO()
     w = csv.writer(out)
     if tab == "sites":
-        w.writerow(["サイト", "秒", "実測の秒", "推定の秒", "訪問数", "前の期間の秒"])
+        w.writerow(["Site", "Seconds", "Measured seconds", "Estimated seconds", "Visits", "Seconds in the previous period"])
         for r in sites_view(period, start, end, q)["sites"]:
             w.writerow([csv_cell(r["site"]), r["sec"], r["measured"], r["estimated"], r["visits"], r["prev"]])
     elif tab == "searches":
         where, args = search_filter(period, start, end, q)
         con = connect()
         try:
-            w.writerow(["日時", "検索語", "サイト"])
+            w.writerow(["Time", "Search terms", "Site"])
             for r in con.execute(f"SELECT term, at, site FROM searches WHERE deleted = 0 AND {where} ORDER BY at DESC", args):
                 w.writerow([clock(r["at"]), csv_cell(r["term"]), csv_cell(r["site"])])
         finally:
@@ -457,10 +457,10 @@ def export_csv(tab, period="week", start=None, end=None, q="", site="", after=No
         where, args = visit_filter(period, start, end, q, site, after, before)
         con = connect()
         try:
-            w.writerow(["日時", "題名", "URL", "サイト", "秒", "種類"])
+            w.writerow(["Time", "Title", "URL", "Site", "Seconds", "Kind"])
             for r in con.execute(VISIT_SQL.format(where=where), args):
                 v = visit_row(r)
-                w.writerow([v["time"], csv_cell(v["title"]), csv_cell(v["url"]), csv_cell(v["site"]), v["sec"], "実測" if v["kind"] == "measured" else "推定"])
+                w.writerow([v["time"], csv_cell(v["title"]), csv_cell(v["url"]), csv_cell(v["site"]), v["sec"], "Measured" if v["kind"] == "measured" else "Estimated"])
         finally:
             con.close()
     return "﻿" + out.getvalue()  # the mark tells spreadsheets the file is UTF-8

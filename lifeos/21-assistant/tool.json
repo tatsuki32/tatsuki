@@ -22,5 +22,27 @@
     }
   ],
   "commands": [],
-  "updated": "2026-11-05"
+  "updated": "2026-11-05",
+  "_en": {
+    "name": "Assistant bot",
+    "oneline": "Even with the Mac closed, ask about your calendar and mail on Telegram, and get translations and drafts. Weather arrives at 5 a.m.",
+    "usage": [
+      "Send your question as is to the separate Telegram bot (for example, \"When am I free next week?\")",
+      "Send a sentence or photo in another language and it translates. \"I want to decline politely\" drafts a reply in their language. It never sends",
+      "Send your location to change where the 5 a.m. weather is for",
+      "You can also use \"weather\", \"usage\" and \"forget\""
+    ],
+    "howToCheck": [
+      "Close the Mac, send \"When am I free next week?\", and check that the answer matches your calendar",
+      "Send your location and check that the place name and weather come back",
+      "Send from another account and check that there is no reply"
+    ],
+    "blockers": [
+      {
+        "what": "Deploying to Cloudflare",
+        "why": "The new bot's token, a Cloudflare account and Google permission are not in place yet.",
+        "needs": "Follow the steps in lifeos/21-assistant/README.md"
+      }
+    ]
+  }
 }

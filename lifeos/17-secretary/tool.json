@@ -23,5 +23,28 @@
   ],
   "commands": [],
   "updated": "2026-11-05",
-  "stoppedNote": "2026-11-05 に本人の判断で一旦停止。戻すときは status を元に戻す。コードは残している。"
+  "stoppedNote": "2026-11-05 に本人の判断で一旦停止。戻すときは status を元に戻す。コードは残している。",
+  "_en": {
+    "name": "Personal secretary",
+    "oneline": "Turns your voice into tasks and sizes the plan to how recovered you are. It also keeps what you got done",
+    "usage": [
+      "Voice brain dumps are split into tasks and added to the Desk",
+      "On low-recovery days, the morning focus block gets shorter (90 to 45 minutes)",
+      "If you keep editing the same file, it stops you and says it is ready to ship",
+      "At the end of the day it logs what you got done, and a summary comes once a week"
+    ],
+    "howToCheck": [
+      "Send a voice message and check that it is split into tasks",
+      "Check that the plan size changes on days with different recovery",
+      "Check that the weekly summary arrives"
+    ],
+    "blockers": [
+      {
+        "what": "Sleep tracker",
+        "why": "Which device to use is not decided.",
+        "needs": "Choose a device"
+      }
+    ],
+    "stoppedNote": "Paused on 2026-11-05 by Tatsuki's choice. To bring it back, set status back. The code is kept."
+  }
 }

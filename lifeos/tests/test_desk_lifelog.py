@@ -71,7 +71,7 @@ class Reading(Base):
     def test_no_key_keeps_photo_waiting(self):
         self.put()
         r = ll.process()
-        self.assertIn("API キー", r["stopped"])
+        self.assertIn("API key", r["stopped"])
         self.assertEqual(ll.status()["waiting"], 1)
 
     def test_refusal_is_recorded_not_retried(self):
@@ -88,7 +88,7 @@ class Reading(Base):
         self.put()
         ll.set_settings({"monthlyLimitUsd": 0})
         r = ll.process(call=lambda p, n: self.fail("spent over the limit"))
-        self.assertIn("上限", r["stopped"])
+        self.assertIn("limit", r["stopped"])
         self.assertEqual(ll.status()["waiting"], 1)
 
     def test_usage_is_counted(self):
@@ -266,6 +266,12 @@ class Typed(Base):
         for no in ("筋トレした", "読書30分", "朝食を見直したい", "体重を減らす方法は？", "新しいアプリのアイデア", "/start", "task: 買い物"):
             self.assertFalse(self.h.match(no), no)
 
+    def test_english_records_match_too(self):
+        for yes in ("weight 65.2", "lunch curry", "workout: chest", "bench 60x8x3", "slept 7 hours", "steps 12000", "Breakfast eggs"):
+            self.assertTrue(self.h.match(yes), yes)
+        for no in ("meeting tomorrow at 10", "I want to lose weight 5kg", "task: buy milk", "how do I log steps 1000", "orange 3"):
+            self.assertFalse(self.h.match(no), no)
+
     def test_typed_record_needs_no_photo_and_keeps_the_words(self):
         ll.add_text("体重65.2", "telegram")
         seen = {}
@@ -289,7 +295,7 @@ class Typed(Base):
     def test_no_key_keeps_the_words_and_says_so(self):
         from lifeos.bot import router
         out = self.h.handle("体重65.2", router.Ctx(source="telegram"))
-        self.assertIn("API キー", out)
+        self.assertIn("API key", out)
         self.assertEqual(ll.status()["waiting"], 1)
 
     def test_not_a_record_goes_on_to_the_other_tools(self):
@@ -325,15 +331,17 @@ class Sleep(View):
 
     def test_advice_is_refused_when_it_cannot_be_stood_behind(self):
         self.nights()
-        self.assertIn("計算にない", ll.save_coach(self.good(yours="平均は999分です"), "2026-11-05")[1])
-        self.assertIn("出典", ll.save_coach(self.good(url="https://example.com/a"), "2026-11-05")[1])
-        self.assertIn("出典", ll.save_coach(self.good(url="https://evilcdc.gov.example.com/a"), "2026-11-05")[1])
-        self.assertIn("責める", ll.save_coach(self.good(tryTonight="寝ないのはダメです"), "2026-11-05")[1])
+        self.assertIn("not in the computation", ll.save_coach(self.good(yours="平均は999分です"), "2026-11-05")[1])
+        self.assertIn("chosen sources", ll.save_coach(self.good(url="https://example.com/a"), "2026-11-05")[1])
+        self.assertIn("chosen sources", ll.save_coach(self.good(url="https://evilcdc.gov.example.com/a"), "2026-11-05")[1])
+        self.assertIn("blaming", ll.save_coach(self.good(tryTonight="寝ないのはダメです"), "2026-11-05")[1])
+        self.assertIn("blaming", ll.save_coach(self.good(tryTonight="Staying up is lazy"), "2026-11-05")[1])
+        self.assertIsNone(ll.save_coach(self.good(tryTonight="Play badminton earlier in the day"), "2026-11-05")[1])
 
     def test_same_article_is_not_repeated_within_a_month(self):
         self.nights()
         ll.save_coach(self.good(), "2026-11-04")
-        self.assertIn("30日", ll.save_coach(self.good(), "2026-11-05")[1])
+        self.assertIn("30 days", ll.save_coach(self.good(), "2026-11-05")[1])
 
 
 class Weight(View):
@@ -376,7 +384,7 @@ class Workout(View):
     def test_typed_sets_are_split_named_and_totalled(self):
         raw = {"kind": "workout", "date": None, "label": "", "items": [], "uncertain": [], "values": [], "sets": [{"exercise": "ベンチ", "weight_kg": 60, "reps": 8, "sets": 3}]}
         got = ll.check(raw, ll.today(), typed=True)
-        self.assertEqual(got["sets"][0]["exercise"], "ベンチプレス")
+        self.assertEqual(got["sets"][0]["exercise"], "Bench press")
         self.assertEqual(got["values"], {"workout_sets": 3, "workout_reps": 24, "workout_volume": 1440.0})
 
     def test_impossible_sets_wait_for_review(self):
@@ -392,21 +400,28 @@ class Workout(View):
         a, b = self.rec("2026-11-01", 60, 8, 3, "a"), self.rec("2026-11-05", 62.5, 8, 3, "b")
         self.save(a)
         text = ll.describe({**b, "status": "confirmed"})
-        self.assertIn("前回（11/01）60kg × 8回 → 今回 62.5kg × 8回", text)
-        self.assertIn("最大重量", text)
-        self.assertIn("初めての記録", ll.describe({**a, "id": "a"}))
+        self.assertIn("last time (Nov 1) 60kg × 8 reps → this time 62.5kg × 8 reps", text)
+        self.assertIn("heaviest weight", text)
+        self.assertIn("first record", ll.describe({**a, "id": "a"}))
+
+    def test_old_japanese_names_and_english_names_are_one_exercise(self):
+        self.save(self.rec("2026-11-01", 60, 8, 3, "a"))
+        b = {**self.rec("2026-11-05", 62.5, 8, 3, "b"), "sets": [{"exercise": "bench press", "weight_kg": 62.5, "reps": 8, "sets": 3}]}
+        self.assertIn("Bench press: last time (Nov 1)", ll.describe(b))
+        self.assertEqual(ll.exercise_name("プッシュアップ"), "Push-up")
+        self.assertEqual(ll.exercise_name("Pull-ups"), "Pull-up")
 
     def test_next_step_only_after_holding_a_weight(self):
         rows = [{"weight": 60, "reps": 8}, {"weight": 60, "reps": 8}]
-        self.assertEqual(ll.next_step(rows), "62.5kg を試す")
+        self.assertEqual(ll.next_step(rows), "Try 62.5kg")
         self.assertIsNone(ll.next_step([{"weight": 60, "reps": 8}, {"weight": 60, "reps": 6}]))
-        self.assertEqual(ll.next_step([{"weight": 0, "reps": 10}, {"weight": 0, "reps": 10}]), "11回を目指す")
+        self.assertEqual(ll.next_step([{"weight": 0, "reps": 10}, {"weight": 0, "reps": 10}]), "Aim for 11 reps")
 
     def test_week_counts_sets_by_muscle(self):
         self.save(self.rec("2026-11-05", 60, 8, 3, "a"))
         ll.write_json(ll.bp("exercises.json"), {})
         v = ll.view("2026-11-05")["workouts"]
-        self.assertEqual(v["weeks"][0]["sets"], {"胸": 3})
+        self.assertEqual(v["weeks"][0]["sets"], {"Chest": 3})
         ll.set_muscle("ベンチプレス", "上半身")
         self.assertEqual(ll.view("2026-11-05")["workouts"]["weeks"][0]["sets"], {"上半身": 3})
 
@@ -430,6 +445,7 @@ class Receipts(Base):
         self.assertEqual(v["rows"][0]["matchState"], "matched")
         self.assertEqual(v["rows"][0]["candidates"][0]["title"], "Coles")
         self.assertEqual(v["totals"]["AUD"]["new"], 0)
+        self.assertEqual(v["totals"]["AUD"]["byCategory"], {"Food": 12.5})
 
     def test_two_matches_ask_and_none_is_a_suggestion(self):
         self.setup([self.act("a"), self.act("b")])
@@ -472,7 +488,7 @@ class Bot(Base):
     def test_photo_from_owner_is_queued_and_reported(self):
         self.run_mod.handle_update({"message": {"chat": {"id": 7}, "photo": [{"file_id": "s"}, {"file_id": "L"}], "caption": "朝食"}}, self.client, "7")
         self.assertEqual(ll.status()["waiting"], 1)
-        self.assertIn("API キー", self.sent[-1][1])
+        self.assertIn("API key", self.sent[-1][1])
         self.assertEqual(list(ll.read_json(ll.lp("queue.json"), {}).values())[0]["note"], "朝食")
 
     def test_photo_from_a_stranger_is_ignored(self):
@@ -484,7 +500,7 @@ class Bot(Base):
         msg = {"message": {"chat": {"id": 7}, "photo": [{"file_id": "s"}]}}
         self.run_mod.handle_update(msg, self.client, "7")
         self.run_mod.handle_update(msg, self.client, "7")
-        self.assertIn("取り込み済み", self.sent[-1][1])
+        self.assertIn("already in", self.sent[-1][1])
 
     def test_long_polling_sends_telegrams_timeout_and_waits_longer(self):
         from unittest import mock

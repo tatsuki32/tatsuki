@@ -25,5 +25,28 @@
   "commands": [
     "/lines"
   ],
-  "updated": "2026-11-05"
+  "updated": "2026-11-05",
+  "_en": {
+    "name": "Parallel lines",
+    "oneline": "Run several Claude Code sessions at once, with end times and a limit as safeguards",
+    "usage": [
+      "See the list with /lines. One screen shows what each is doing and where it stopped",
+      "Start one with /lines start name --until 18:30 --what \"what to do\". It makes a branch and a work folder",
+      "Write how far it got with /lines note name \"progress\"",
+      "Finish with /lines end name. The work folder and branch are kept",
+      "See hours worked per week with /lines week",
+      "You can run up to 3 at once. After the end time, a notification asks you to stop"
+    ],
+    "howToCheck": [
+      "In Terminal, open ~/TatsukiDesk and type python3 lifeos/05-parallel/lines.py start trial1 --until 1m --what checking-notifications",
+      "Start trial2 and trial3 the same way with --until 2h",
+      "Try starting trial4 and check that it is refused because 3 is the limit",
+      "Type python3 lifeos/05-parallel/lines.py and check that all 3 lines fit on one screen",
+      "Wait 2 minutes and check that a Mac notification appears",
+      "Show the list again and check that a past-end-time notice appears at the top",
+      "Type python3 lifeos/05-parallel/lines.py week and check that today's hours appear",
+      "End all 3 with end, then remove the work folders like remove trial1 --yes. The branches stay, so delete them if you do not need them"
+    ],
+    "blockers": []
+  }
 }

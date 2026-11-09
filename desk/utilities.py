@@ -303,11 +303,11 @@ def _token(entry):
 def qr(text):
     """Returns (status, body) for the page: the rows to draw and a link to the PNG."""
     if not isinstance(text, str) or not text.strip():
-        return 400, {"error": "リンクを入れてください"}
+        return 400, {"error": "Enter a link"}
     if len(text.encode("utf-8")) > QR_MAX_BYTES:
-        return 413, {"error": f"長すぎます。QRコードに入るのは {QR_MAX_BYTES} バイトまでです"}
+        return 413, {"error": f"Too long. A QR code holds up to {QR_MAX_BYTES} bytes"}
     rows = qr_matrix(text)
-    token = _token({"data": _png(rows), "name": "QRコード.png", "ctype": "image/png"})
+    token = _token({"data": _png(rows), "name": "QR code.png", "ctype": "image/png"})
     with _lock:
         _qr_tokens.append(token)
         while len(_qr_tokens) > 8:  # each keystroke makes one; only the latest few can still be saved
@@ -319,28 +319,28 @@ def qr(text):
 
 LOCAL_HOST = re.compile(r"^(localhost|.*\.local|.*\.localhost|127\.\d+\.\d+\.\d+|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+|\[?::1\]?)$", re.I)
 SHORTENER_ERRORS = {
-    1: "このアドレスは短縮できませんでした。形を確かめてください",
-    2: "このアドレスは短縮できませんでした",
-    3: "混み合っています。少し待ってからもう一度押してください",
-    4: "is.gd が一時的に使えないようです。少し待ってください",
+    1: "This address could not be shortened. Check its format",
+    2: "This address could not be shortened",
+    3: "The service is busy. Wait a moment, then try again",
+    4: "is.gd seems to be down for now. Wait a moment",
 }
 
 
 def shorten(url, opener=urllib.request.urlopen):
     if not isinstance(url, str) or not url.strip():
-        return 400, {"error": "短縮するアドレスを入れてください"}
+        return 400, {"error": "Enter an address to shorten"}
     url = url.strip()
     if len(url) > 5000 or re.search(r"\s", url):
-        return 400, {"error": "アドレスの形を確かめてください"}
+        return 400, {"error": "Check the address format"}
     try:
         parts = urllib.parse.urlsplit(url)
         host = parts.hostname
     except ValueError:
-        return 400, {"error": "アドレスの形を確かめてください"}
+        return 400, {"error": "Check the address format"}
     if parts.scheme.lower() not in ("http", "https") or not host:
-        return 400, {"error": "http または https で始まるアドレスだけ短縮できます"}
+        return 400, {"error": "Only addresses starting with http or https can be shortened"}
     if LOCAL_HOST.match(host):
-        return 400, {"error": "この Mac や家の中だけのアドレスは短縮しません"}
+        return 400, {"error": "Addresses for this Mac or the home network are not shortened"}
     request = urllib.request.Request(SHORTENER + "?" + urllib.parse.urlencode({"format": "json", "url": url}), headers={"User-Agent": "TatsukiDesk"})
     try:
         with opener(request, timeout=15) as r:
@@ -349,14 +349,14 @@ def shorten(url, opener=urllib.request.urlopen):
         try:
             answer = json.loads(e.read(100000).decode("utf-8"))
         except ValueError:
-            return 502, {"error": "is.gd から答えがありませんでした"}
+            return 502, {"error": "No answer from is.gd"}
     except (OSError, ValueError):
-        return 502, {"error": "is.gd につながりませんでした。回線を確かめてください"}
+        return 502, {"error": "Could not reach is.gd. Check the connection"}
     short = answer.get("shorturl") if isinstance(answer, dict) else None
     if isinstance(short, str) and short.startswith("https://is.gd/"):
         return 200, {"short": short}
     code = answer.get("errorcode") if isinstance(answer, dict) else None
-    return 502, {"error": SHORTENER_ERRORS.get(code, "短縮できませんでした")}
+    return 502, {"error": SHORTENER_ERRORS.get(code, "Could not shorten")}
 
 
 # --- PDF compression ---
@@ -398,9 +398,9 @@ def purge(now=None):
 def start_pdf(stream, length, name, level):
     """Takes the upload and compresses it. Returns (status, body)."""
     if level not in LEVELS:
-        return 400, {"error": "画質を選んでください"}
+        return 400, {"error": "Choose a quality"}
     if length <= 0:
-        return 400, {"error": "ファイルが空です"}
+        return 400, {"error": "The file is empty"}
     purge()
     folder = tempfile.mkdtemp(prefix="desk-pdf-")
     source = os.path.join(folder, "source.pdf")
@@ -417,13 +417,13 @@ def start_pdf(stream, length, name, level):
                 left -= len(block)
     except OSError:
         shutil.rmtree(folder, ignore_errors=True)
-        return 500, {"error": "受け取れませんでした。Mac の空き容量を確かめてください"}
+        return 500, {"error": "Could not receive the file. Check free space on the Mac"}
     if left > 0:
         shutil.rmtree(folder, ignore_errors=True)
-        return 400, {"error": "途中で切れました。もう一度選んでください"}
+        return 400, {"error": "The upload was cut off. Choose the file again"}
     if b"%PDF-" not in head:
         shutil.rmtree(folder, ignore_errors=True)
-        return 415, {"error": "PDF ではないようです"}
+        return 415, {"error": "This does not look like a PDF"}
     job_id = secrets.token_urlsafe(16)
     with _lock:
         _jobs[job_id] = {"dir": folder, "name": clean_name(name), "before": length, "at": time.time()}
@@ -431,10 +431,10 @@ def start_pdf(stream, length, name, level):
 
 
 EXIT_WORDS = {
-    3: "パスワードや保護のかかった PDF は圧縮できません",
-    4: "この PDF は読めませんでした",
-    5: "圧縮すると内容が変わるので、やめました。元のファイルはそのままです",
-    6: "圧縮したファイルを書き出せませんでした",
+    3: "PDFs with a password or protection cannot be compressed",
+    4: "Could not read this PDF",
+    5: "Compressing would change the content, so it stopped. The original file is unchanged",
+    6: "Could not write the compressed file",
 }
 
 
@@ -442,21 +442,21 @@ def run_pdf(job_id, level):
     with _lock:
         job = _jobs.get(job_id)
     if not job:
-        return 404, {"error": "時間がたったので消えました。もう一度選んでください"}
+        return 404, {"error": "This expired. Choose the file again"}
     if level not in LEVELS:
-        return 400, {"error": "画質を選んでください"}
+        return 400, {"error": "Choose a quality"}
     helper = tool()
     if not helper:
-        return 500, {"error": "圧縮の準備ができませんでした。xcode-select --install のあとで試してください"}
+        return 500, {"error": "Could not set up compression. Run xcode-select --install, then try again"}
     out = os.path.join(job["dir"], f"{level}.pdf")
     try:
         done = subprocess.run([helper, os.path.join(job["dir"], "source.pdf"), out, level], capture_output=True, timeout=600)
     except subprocess.TimeoutExpired:
-        return 504, {"error": "時間がかかりすぎたので止めました"}
+        return 504, {"error": "It took too long, so it stopped"}
     except OSError:
-        return 500, {"error": "圧縮を始められませんでした"}
+        return 500, {"error": "Could not start compressing"}
     if done.returncode != 0 or not os.path.exists(out):
-        return 422, {"error": EXIT_WORDS.get(done.returncode, "この PDF は圧縮できませんでした")}
+        return 422, {"error": EXIT_WORDS.get(done.returncode, "This PDF could not be compressed")}
     try:
         pages = json.loads(done.stdout.decode("utf-8"))["pages"]
     except (ValueError, KeyError):
@@ -470,7 +470,7 @@ def run_pdf(job_id, level):
         token = None
         if body["smaller"]:
             token = secrets.token_urlsafe(16)
-            _files[token] = {"path": out, "name": job["name"] + "-圧縮.pdf", "ctype": "application/pdf", "at": time.time()}
+            _files[token] = {"path": out, "name": job["name"] + "-compressed.pdf", "ctype": "application/pdf", "at": time.time()}
         job["file"] = token
     body["file"] = token
     return 200, body

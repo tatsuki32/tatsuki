@@ -45,12 +45,12 @@ class Parse(unittest.TestCase):
     def test_a_run_that_stopped_halfway_is_not_a_result(self):
         got, error = ns.parse_result({**GOOD, "error_code": 1003, "error_domain": "NetworkQualityErrorDomain"})
         self.assertIsNone(got)
-        self.assertIn("途中", error)
+        self.assertIn("partway", error)
 
     def test_no_connection_says_so(self):
         got, error = ns.parse_result({"error_code": -1003, "error_domain": "NSURLErrorDomain"})
         self.assertIsNone(got)
-        self.assertIn("つながりません", error)
+        self.assertIn("Could not connect", error)
 
     def test_missing_speed_is_not_a_result(self):
         self.assertIsNone(ns.parse_result({"base_rtt": 30})[0])
@@ -84,12 +84,12 @@ class Judge(unittest.TestCase):
 
     def test_weak_signal_is_named_as_the_cause(self):
         slow = ns.describe(row(10, 10, signal=-80), None)
-        self.assertIn("電波が弱い", slow["sentence"])
-        self.assertIn("回線の側", ns.describe(row(10, 10, signal=-50), None)["sentence"])
-        self.assertNotIn("電波", ns.describe(row(10, 10), None)["sentence"])
+        self.assertIn("signal is weak", slow["sentence"])
+        self.assertIn("line itself", ns.describe(row(10, 10, signal=-50), None)["sentence"])
+        self.assertNotIn("signal", ns.describe(row(10, 10), None)["sentence"])
 
     def test_how_many_times_the_4k_figure(self):
-        self.assertIn("約6倍", ns.describe(row(92, 105), None)["sentence"])
+        self.assertIn("about 6x", ns.describe(row(92, 105), None)["sentence"])
 
     def test_waiting_time(self):
         self.assertEqual(ns.wait_seconds(88), 0.68)

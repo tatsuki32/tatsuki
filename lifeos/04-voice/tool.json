@@ -19,5 +19,24 @@
   ],
   "blockers": [],
   "commands": [],
-  "updated": "2026-11-06"
+  "updated": "2026-11-06",
+  "_en": {
+    "name": "Voice memo sorter",
+    "oneline": "Send your voice or text, and AI sorts it into to-dos, events, ideas and more, then adds them to your calendar and tasks",
+    "usage": [
+      "Send a voice message or text to the Telegram bot",
+      "For voice, the full transcript arrives first, then the sorted result",
+      "Anything with a date and time goes to Google Calendar. To-dos without a time go to Desk tasks (if the calendar write fails, it becomes a task with a due date)",
+      "Ideas and diary entries go to notes, and spending goes to the spending log. Start with a label like \"タスク：\" (task) or \"日記：\" (diary) to choose the type",
+      "The next morning's briefing includes up to 10 lines summarizing the day before",
+      "Voice messages that fail to transcribe are kept. Retry them later with python3 lifeos/04-voice/voice_memo.py audio"
+    ],
+    "howToCheck": [
+      "Say \"Meeting tomorrow at 10. Buy milk.\" to the Telegram bot",
+      "Check that the full transcript arrives first",
+      "Check that a reply split into 2 items follows",
+      "Check that the meeting is on the calendar and the milk is in tasks"
+    ],
+    "blockers": []
+  }
 }

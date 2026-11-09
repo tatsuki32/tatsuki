@@ -27,19 +27,20 @@ def _expense(found, text, source, is_voice):
     logs.append("expenses", {**found, "text": text, "source": source, "voice": is_voice})
     shown = parse.money(found["amount"], found["currency"])
     md.append("logs/expenses.md", f"- {paths.now().strftime('%Y-%m-%d %H:%M')} {found['item']} {shown}")
-    return f"支出：{found['item']} {shown}" + ("（通貨は推定）" if found["guessed"] else "")
+    item = "(no item)" if found["item"] == "品目なし" else found["item"]
+    return f"Expense: {item} {parse.money_en(found['amount'], found['currency'])}" + (" (currency guessed)" if found["guessed"] else "")
 
 
 def _deadline(found):
     title, due = found["title"], found["due"]
     if due is None:
         tasks.add(title, source=SOURCE, source_ref="chat")
-        return f"締切：{title} を日付なしで入れました。日付は Desk で直せます"
-    head = f"締切：{title} {parse.when(due)} {parse.countdown(due, paths.now())}"
+        return f"Deadline: {title}, added without a date. You can set the date on the Desk."
+    head = f"Deadline: {title}, {parse.when(due)}, {parse.countdown(due, paths.now())}"
     if any(t.get("title") == title and t.get("due") == due for t in tasks.open_tasks()):
-        return head + "（登録済み）"
+        return head + " (already on the Desk)"
     t = tasks.add(title, due=due, source=SOURCE, source_ref="chat")
-    return head + ("・カレンダー記入済み" if gcal.push(title, due, t["id"]) else "・カレンダー待ち")
+    return head + (" · on the calendar" if gcal.push(title, due, t["id"]) else " · calendar pending")
 
 
 def _habit(text, ctx):
@@ -47,7 +48,7 @@ def _habit(text, ctx):
     if tool and tool.match(text):
         return tool.handle(text, ctx)
     logs.append(PENDING_HABITS, {"text": text, "source": getattr(ctx, "source", "cli")})
-    return f"習慣：{text} を預かりました（07番が動くまで保管します）"
+    return f"Habit: kept \"{text}\" until tool 07 is running."
 
 
 def deadlines():
@@ -59,10 +60,10 @@ def deadline_list(now=None):
     now = now or paths.now()
     items = deadlines()
     if not items:
-        return "締切はありません"
-    rows = [f"{parse.when(t['due'])} {parse.countdown(t['due'], now)}　{t['title']}" for t in items[:LIST_MAX]]
+        return "No deadlines."
+    rows = [f"{parse.when(t['due'])}, {parse.countdown(t['due'], now)}: {t['title']}" for t in items[:LIST_MAX]]
     if len(items) > LIST_MAX:
-        rows.append(f"ほか{len(items) - LIST_MAX}件")
+        rows.append(f"and {len(items) - LIST_MAX} more")
     return "\n".join(rows)
 
 

@@ -37,7 +37,7 @@ def main(argv=None):
     elif a.calendar_done:
         core.gcal.mark_done(a.calendar_done)
     elif a.text:
-        print(core.record(" ".join(a.text), router.Ctx()) or "記録する形として読めませんでした。何も記録していません")
+        print(core.record(" ".join(a.text), router.Ctx()) or "I could not read that as something to record. Nothing was recorded.")
     else:
         ap.print_usage()
         return 2

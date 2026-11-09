@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="ja">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Tatsuki's Desk</title>
-<!-- ブラウザで開くときの入口。普段は「Tatsuki's Desk.app」を使う。サーバーが動いていれば localhost:4747 へ飛ぶ。 -->
+<!-- The way in from a browser. Normally use "Tatsuki's Desk.app". When the server is running, this goes on to localhost:4747. -->
 <style>
   :root { --bg:#0d0d0d; --text:#ece8df; --muted:#9a958a; --gold:#d4af37; }
   * { box-sizing:border-box; }
@@ -20,11 +20,11 @@
 </head>
 <body>
 <main>
-  <p id="checking">Desk を開いています…</p>
+  <p id="checking">Opening Desk…</p>
   <div id="down" hidden>
-    <h1>Desk のサーバーが動いていません</h1>
-    <p>「Tatsuki's Desk.app」を開くと、自動で起動します。直らないときは、ターミナルで <code>bash ~/TatsukiDesk/desk/setup-mac.sh</code> を実行してください。</p>
-    <button id="retry" type="button">もう一度試す</button>
+    <h1>The Desk server is not running</h1>
+    <p>Opening "Tatsuki's Desk.app" starts it. If that does not help, run <code>bash ~/TatsukiDesk/desk/setup-mac.sh</code> in Terminal.</p>
+    <button id="retry" type="button">Try again</button>
   </div>
 </main>
 <script>
@@ -39,7 +39,7 @@
       document.getElementById("down").hidden = false;
     };
     setTimeout(fail, 2500);
-    // no-cors: 応答の中身は読めないが、サーバーが動いていれば成功、止まっていれば失敗になる
+    // no-cors: the reply cannot be read, but it succeeds when the server runs and fails when it is down
     fetch(LOCAL + "/health", { mode: "no-cors", cache: "no-store" })
       .then(function () { if (done) return; done = true; location.replace(LOCAL); })
       .catch(fail);

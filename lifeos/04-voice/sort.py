@@ -17,7 +17,10 @@ LABELS = {"task": "タスク", "event": "予定", "expense": "支出", "idea": "
 # 「日記：…」: the person said what it is, so the whole message follows it
 _PREFIXES = {"タスク": "task", "やること": "task", "todo": "task", "アイデア": "idea", "アイディア": "idea",
              "ひらめき": "idea", "日記": "diary", "支出": "expense", "出費": "expense", "予定": "event"}
-_PREFIX = re.compile(r"^\s*(" + "|".join(_PREFIXES) + r")\s*(?:[:：、,]|\s)\s*(.+)$", re.I | re.S)
+# English words start many plain sentences, so they count only with a colon: "idea: ...", "journal: ..."
+_PREFIXES_EN = {"task": "task", "idea": "idea", "diary": "diary", "journal": "diary", "expense": "expense", "event": "event"}
+_PREFIX = re.compile(r"^\s*(?:(" + "|".join(_PREFIXES) + r")\s*(?:[:：、,]|\s)|(" + "|".join(_PREFIXES_EN)
+                     + r")\s*[:：])\s*(.+)$", re.I | re.S)
 
 _SPLIT = re.compile(r"[。．！？!?\n]+")
 _PAST_WORD = re.compile(r"昨日|きのう|一昨日|おととい|先週|先月|去年|さっき")
@@ -200,7 +203,8 @@ def split(text, now=None):
     text = text.strip()
     m = _PREFIX.match(text)
     if m:
-        return [Part(_PREFIXES[m.group(1).lower()], m.group(2).strip(), False)]
+        word = (m.group(1) or m.group(2)).lower()
+        return [Part(_PREFIXES.get(word) or _PREFIXES_EN[word], m.group(3).strip(), False)]
     parts = []  # [kind, text]
     lead = ""   # sentences with no clue, before the first one that has a clue
     for sentence in (x.strip() for x in _SPLIT.split(text)):

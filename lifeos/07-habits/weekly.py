@@ -16,9 +16,9 @@ from lifeos.bot import telegram  # noqa: E402
 from lifeos.lib import paths, tools  # noqa: E402
 
 core = tools.load_file(HERE, "core")
-MESSAGES = {"stopped": "止めてあるので送りません。", "already": "今週の分は送ってあります。",
-            "empty": "習慣がまだないので送りません。", "sent": "送りました。",
-            "outbox": "Telegram につながらないので logs/outbox.jsonl に残しました。"}
+MESSAGES = {"stopped": "The tool is stopped, so nothing was sent.", "already": "This week's report was already sent.",
+            "empty": "There are no habits yet, so nothing was sent.", "sent": "Sent.",
+            "outbox": "Telegram was not reachable, so the report is in logs/outbox.jsonl."}
 
 
 def _state():
@@ -61,7 +61,7 @@ def main(argv=None):
     ap.add_argument("--force", action="store_true", help="今週すでに送っていても送る")
     a = ap.parse_args(argv)
     if a.preview:
-        print(core.week_report() or "習慣がまだありません。")
+        print(core.week_report() or "There are no habits yet.")
         return 0
     print(MESSAGES[run(force=a.force)])
     return 0

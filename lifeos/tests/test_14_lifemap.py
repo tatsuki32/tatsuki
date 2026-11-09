@@ -180,12 +180,19 @@ class TestAnswer(SandboxCase):
         self.assertFalse(handler.match("/help"))
         route = router.Route("14-lifemap", "14", "人生マップ", handler.PRIORITY, handler.match, handler.handle)
         reply = router.dispatch("よく眠れた", router.Ctx(), [route])
-        self.assertIn(core.AREAS[s["area"]], reply)
+        self.assertIn(core.AREAS_EN[s["area"]], reply)
         self.assertFalse(handler.match("次のメモ"))
+
+    def test_skip_in_english(self):
+        s = ask_just_now()
+        self.assertEqual(router.dispatch("Skip", router.Ctx(), [router.Route("14-lifemap", "14", "x", handler.PRIORITY, handler.match, handler.handle)]),
+                         "OK. No answer needed.")
+        self.assertIsNone(md.read(f"life/{s['area']}.md"))
+        self.assertIsNone(core.pending())
 
     def test_skipping_writes_nothing(self):
         s = ask_just_now()
-        self.assertEqual(handler.handle("パス", router.Ctx()), "わかりました。")
+        self.assertEqual(handler.handle("パス", router.Ctx()), "OK. No answer needed.")
         self.assertIsNone(md.read(f"life/{s['area']}.md"))
         self.assertIsNone(core.pending())
 
@@ -212,7 +219,7 @@ class TestNoNagging(SandboxCase):
 
     def test_questions_look_the_same_after_silence(self):
         for t in [core.format_question(a, core.QUESTIONS[a][0]) for a in core.AREAS]:
-            self.assertIn("答えなくても大丈夫", t)
+            self.assertIn("It is fine not to answer", t)
 
     def test_no_task_is_ever_created(self):
         run_day("2026-11-04", Sent())
@@ -339,7 +346,7 @@ class TestDesk(SandboxCase):
             answer("money", day, "不安")
         core.tick(at("2026-11-01", "09:00"), Sent(), random.Random(1))
         d = next(x for x in core.desk_docs() if x["id"] == "insight-2026-10")
-        self.assertIn("ストレス", d["text"])
+        self.assertIn("stress", d["text"])
 
     def test_a_broken_answer_time_does_not_lose_the_answer(self):
         ask()
@@ -371,12 +378,18 @@ class TestInsight(SandboxCase):
     def test_finds_the_cross_area_pattern(self):
         self.fill()
         text = core.insight("2026-10")
-        self.assertIn("仕事の「ストレス」と、お金の「不安」", text)
-        self.assertIn("同じ週に2回", text)
+        self.assertIn("Work (stress) and money (worry)", text)
+        self.assertIn("same week 2 times", text)
+
+    def test_english_answers_count_too(self):
+        for day in ("2026-10-05", "2026-10-13"):
+            answer("work", day, "Deadlines are stressful")
+            answer("money", day, "I worry about rent")
+        self.assertIn("Work (stress) and money (worry)", core.insight("2026-10"))
 
     def test_shared_words_across_areas(self):
         self.fill()
-        self.assertIn("「締切」", core.insight("2026-10"))
+        self.assertIn('"締切"', core.insight("2026-10"))
 
     def test_words_of_the_question_do_not_count(self):
         answer("work", "2026-10-05", "晴れ", q="不安はありますか")
@@ -399,7 +412,7 @@ class TestInsight(SandboxCase):
             for w in ("共通語彙", "別語彙", "第三語彙", "第四語彙"):
                 answer(a, "2026-10-05", w)
         self.assertEqual(len(core.find_patterns(core.entries("2026-10"))), core.MAX_PATTERNS)
-        self.assertEqual(core.insight("2026-10", finder=lambda items: ["a", "b", "c", "d"]).count("・"), 3)
+        self.assertEqual(core.insight("2026-10", finder=lambda items: ["a", "b", "c", "d"]).count("\n- "), 3)
 
     def test_the_finder_can_be_replaced(self):
         answer("work", "2026-10-05", "何か")
@@ -410,13 +423,13 @@ class TestInsight(SandboxCase):
         send = Sent()
         run_day("2026-11-01", send)
         run_day("2026-11-02", send)
-        monthly = [t for t in send.texts if "人生マップ" in t]
+        monthly = [t for t in send.texts if "Life map" in t]
         self.assertEqual(len(monthly), 1)
         self.assertIn("2026-10", md.read("life/insights/2026-10.md"))
-        self.assertEqual(len([t for t in send.texts if "について" in t]), 2)
+        self.assertEqual(len([t for t in send.texts if t.startswith("About ")]), 2)
 
     def test_a_quiet_month_sends_nothing(self):
         send = Sent()
         core.tick(at("2026-11-01", "09:00"), send, random.Random(3))
-        self.assertEqual([t for t in send.texts if "人生マップ" in t], [])
+        self.assertEqual([t for t in send.texts if "Life map" in t], [])
         self.assertIsNone(md.read("life/insights/2026-10.md"))

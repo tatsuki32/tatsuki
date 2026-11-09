@@ -12,6 +12,8 @@ from datetime import date, datetime, timedelta, timezone
 HCMC = timezone(timedelta(hours=7))
 MAX_LEN = 60
 WEEK = "月火水木金土日"
+WEEK_EN = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")  # fixed, not the locale's
+MONTHS_EN = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
 END_OF_DAY = (23, 59)  # same as the Desk's daily tasks
 
 # these belong to other tools (17 takes brain dumps after this one in the routing order)
@@ -100,12 +102,19 @@ def parse_expense(text):
 
 
 def money(amount, currency):
+    """For logs/expenses.md, which keeps its Japanese units."""
     return f"{amount:,}" + ("ドン" if currency == "VND" else "円")
+
+
+def money_en(amount, currency):
+    """For replies: "30,000 VND", "¥1,500"."""
+    return f"{amount:,} VND" if currency == "VND" else f"¥{amount:,}"
 
 
 # ---------- deadlines ----------
 _WORD = r"(?:締め?切り?|〆切り?|しめきり|期限|期日|納期|deadline)日?"
-_LIST = re.compile(r"^(?:締め?切り?|〆切り?|しめきり|期限)(?:一覧|リスト|確認|を見る|は\??)?$", re.I)
+_LIST = re.compile(r"^(?:(?:締め?切り?|〆切り?|しめきり|期限)(?:一覧|リスト|確認|を見る|は\??)?"
+                   r"|deadlines?(?:\s+list)?\??|list\s+deadlines|show\s+deadlines)$", re.I)
 # the word must stand at either end of what remains, so "締切を延ばす" is not a deadline
 _WORD_END = re.compile(_WORD + r"(?:は|まで(?:に)?|です|だ)?$", re.I)
 _WORD_START = re.compile("^" + _WORD + r"(?:は|:|\s|$)", re.I)
@@ -215,15 +224,22 @@ def parse_deadline(text, now):
 
 
 def countdown(due_ms, now):
-    """Whole days by the calendar: あと3日 / 今日まで / 2日過ぎ."""
+    """Whole days by the calendar: in 3 days / due today / 2 days ago."""
     left = (datetime.fromtimestamp(due_ms / 1000, HCMC).date() - now.date()).days
-    return f"あと{left}日" if left > 0 else "今日まで" if left == 0 else f"{-left}日過ぎ"
+    if left == 0:
+        return "due today"
+    n = abs(left)
+    days = f"{n} day" + ("" if n == 1 else "s")
+    return f"in {days}" if left > 0 else f"{days} ago"
 
 
 def when(due_ms):
+    """en-US: "Thu, Nov 5" or "Thu, Nov 5, 3:00 PM"."""
     d = datetime.fromtimestamp(due_ms / 1000, HCMC)
-    day = f"{d.month}/{d.day}({WEEK[d.weekday()]})"
-    return day if (d.hour, d.minute) == END_OF_DAY else day + f" {d.hour}:{d.minute:02d}"
+    day = f"{WEEK_EN[d.weekday()]}, {MONTHS_EN[d.month - 1]} {d.day}"
+    if (d.hour, d.minute) == END_OF_DAY:
+        return day
+    return day + f", {d.hour % 12 or 12}:{d.minute:02d} {'AM' if d.hour < 12 else 'PM'}"
 
 
 # ---------- habits (these go to tool 07) ----------

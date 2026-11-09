@@ -25,7 +25,7 @@ def calendar(raw):
         all_day = "date" in s and "dateTime" not in s
         out.append({
             "id": e.get("id", ""),
-            "title": e.get("summary") or "(タイトルなし)",
+            "title": e.get("summary") or "(No title)",
             "start": (s.get("date") or "")[:10] if all_day else s.get("dateTime", ""),
             "end": (en.get("date") or "")[:10] if all_day else en.get("dateTime", ""),
             "allDay": all_day,

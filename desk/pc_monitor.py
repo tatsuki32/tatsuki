@@ -21,7 +21,7 @@ SMALL = 20 * 1024 * 1024  # tools under this and idle are only counted
 ALERT_AFTER = 120  # memory pressure has to last this long
 NOTIFY_EVERY = 1800
 PROTECTED_BUNDLES = {"com.tatsuki.desk.app", "com.apple.finder", "com.apple.dock"}
-CLAUDE_WARN = "定期タスクと作業中のセッションが止まります。"
+CLAUDE_WARN = "Scheduled tasks and open sessions will stop."
 SYSTEM_PATHS = ("/System/", "/usr/libexec/", "/usr/sbin/", "/usr/bin/", "/sbin/", "/bin/", "/Library/Apple/", "/private/var/", "/usr/local/libexec/")
 LEVELS = {"1": "normal", "2": "warn", "4": "critical"}
 
@@ -244,7 +244,7 @@ def tick(level, now, notify):
 
 
 def notify_mac():
-    run(["/usr/bin/osascript", "-e", 'display notification "メモリがひっ迫しています。Desk の PC 画面で確認できます。" with title "Tatsuki\'s Desk"'])
+    run(["/usr/bin/osascript", "-e", 'display notification "Memory is running low. See the PC screen in Desk for details." with title "Tatsuki\'s Desk"'])
 
 
 def watch():

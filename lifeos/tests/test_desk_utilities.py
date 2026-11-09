@@ -32,7 +32,7 @@ class QR(unittest.TestCase):
     def test_too_long_is_a_sentence(self):
         code, body = ut.qr("a" * (ut.QR_MAX_BYTES + 1))
         self.assertEqual(code, 413)
-        self.assertIn("長すぎ", body["error"])
+        self.assertIn("Too long", body["error"])
 
     def test_png_is_a_png_and_only_the_latest_stay(self):
         tokens = []
@@ -93,7 +93,7 @@ class Shorten(unittest.TestCase):
     def test_service_errors_become_sentences(self):
         code, body = ut.shorten("https://example.com", lambda r, timeout: Answer(json.dumps({"errorcode": 3}).encode()))
         self.assertEqual(code, 502)
-        self.assertIn("待って", body["error"])
+        self.assertIn("Wait", body["error"])
         code, body = ut.shorten("https://example.com", mock.Mock(side_effect=urllib.error.URLError("down")))
         self.assertEqual(code, 502)
         code, body = ut.shorten("https://example.com", lambda r, timeout: Answer(json.dumps({"shorturl": "https://evil.example/x"}).encode()))

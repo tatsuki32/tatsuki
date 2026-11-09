@@ -492,7 +492,10 @@ def add_turn(items, saved, kind, reading, at, now=None):
     """One open task per chat: new messages join it, and the title follows the newest topic. Returns the task id."""
     name = clean_name(reading["name"])
     topic = clean_topic(reading.get("topic"))
-    title = tasks._clean_title(f"LINE reply: {name} — {topic}" if topic else f"LINE reply: {name}")
+    if topic and re.search(r"[ぁ-んァ-ン一-龥]", topic):  # old readings were Japanese: keep their Japanese title
+        title = tasks._clean_title(f"LINE返信　{name}　{topic}")
+    else:
+        title = tasks._clean_title(f"LINE reply: {name} — {topic}" if topic else f"LINE reply: {name}")
     tid = next((k for k, i in items.items() if i.get("name") == name), None)
     if not tid:
         tid = "tln" + hashlib.sha1(f"{name}|{at}".encode()).hexdigest()[:16]

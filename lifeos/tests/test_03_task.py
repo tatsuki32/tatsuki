@@ -188,7 +188,15 @@ class TestTelegram(Base):
         self.assertEqual(len(reply.splitlines()), 1)
         self.assertEqual(tasks.open_tasks()[0]["title"], "資料を送る")
 
+    def test_english_reply(self):
+        found = router.discover()
+        reply = router.dispatch("todo: send the slides !高 #Acme", router.Ctx(), found.routes)
+        self.assertEqual(reply, "Added: send the slides (high priority, project Acme)")
+        self.assertEqual(tasks.open_tasks()[0]["note"], "優先度:高 案件:Acme")
+        reply = router.dispatch("task: buy milk", router.Ctx(), found.routes)
+        self.assertEqual(reply, "Added: buy milk (medium priority)")
+
     def test_empty(self):
         found = router.discover()
-        self.assertIn("内容がありません", router.dispatch("task:", router.Ctx(), found.routes))
+        self.assertIn("nothing to add", router.dispatch("task:", router.Ctx(), found.routes))
         self.assertEqual(tasks.open_tasks(), [])
