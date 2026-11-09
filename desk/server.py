@@ -34,6 +34,7 @@ import bank
 import netspeed
 import notify
 import pc_monitor
+import routine_alarm
 import chrome_web_sync
 import gmail_clean
 import lifelog
@@ -1070,6 +1071,7 @@ if __name__ == "__main__":
     threading.Thread(target=pc_monitor.watch, daemon=True).start()
     if PORT == 4747:  # a test server on another port shows nothing
         threading.Thread(target=notify.watch, daemon=True).start()
+        threading.Thread(target=routine_alarm.watch, daemon=True).start()  # morning / evening routine start alarm
     try:
         srv.serve_forever()
     except KeyboardInterrupt:

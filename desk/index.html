@@ -478,6 +478,60 @@ details.draft .sent-as summary{cursor:pointer;display:block;padding:var(--s2) 0;
 .rtweek{display:grid;grid-template-columns:auto minmax(0,1fr);gap:var(--s1) var(--s2);align-items:center}
 .rtcells{display:grid;grid-template-columns:repeat(14,minmax(0,1fr));gap:2px}
 .rtcell{font-size:var(--t1);text-align:center;border-radius:4px;padding:2px 0;color:var(--muted);background:rgba(226,184,102,calc(var(--on)*.55))}
+/* ---------- Routine player: one item at a time, read aloud, counted down. Its own colors on purpose: a warm sunrise for the
+   morning, a night sky for the evening, round and soft. Over time the ring turns pink and counts up. ---------- */
+.rthead .rtgo{margin-left:auto}
+.rtdur{white-space:nowrap}
+.homestrip .rtgo{min-height:28px}
+.rp{position:fixed;inset:0;z-index:45;display:grid;grid-template-rows:auto minmax(0,1fr) auto;gap:var(--s2);color:var(--rp-ink);background:var(--rp-bg);overflow:hidden;outline:none;
+  padding:calc(var(--s3) + env(safe-area-inset-top,0px)) max(var(--s3),env(safe-area-inset-right,0px)) calc(var(--s3) + env(safe-area-inset-bottom,0px)) max(var(--s3),env(safe-area-inset-left,0px));font-variant-numeric:tabular-nums}
+.rp[data-when="morning"]{--rp-bg:linear-gradient(165deg,#ffe3a6 0%,#ffb78c 36%,#f590b3 70%,#b49ddc 100%);--rp-ink:#3a2034;--rp-soft:rgba(255,255,255,.45);--rp-go:#ff6f61;--rp-go-ink:#fff;--rp-ring:#fff;--rp-track:rgba(255,255,255,.4);--rp-over:#d81b60}
+.rp[data-when="night"]{--rp-bg:radial-gradient(1.5px 1.5px at 12% 18%,#ffffffaa 50%,transparent 51%),radial-gradient(1px 1px at 78% 12%,#ffffffbb 50%,transparent 51%),radial-gradient(1.5px 1.5px at 64% 30%,#ffffff88 50%,transparent 51%),radial-gradient(1px 1px at 30% 42%,#ffffff99 50%,transparent 51%),radial-gradient(1px 1px at 90% 55%,#ffffff88 50%,transparent 51%),radial-gradient(1.5px 1.5px at 8% 72%,#ffffff77 50%,transparent 51%),radial-gradient(1px 1px at 52% 88%,#ffffff66 50%,transparent 51%),linear-gradient(170deg,#0c1033 0%,#1d1b4f 55%,#3b2a6e 100%);
+  --rp-ink:#f3efff;--rp-soft:rgba(255,255,255,.12);--rp-go:#a99aff;--rp-go-ink:#14102e;--rp-ring:#cfc4ff;--rp-track:rgba(255,255,255,.13);--rp-over:#ff8fab}
+.rptop{display:flex;align-items:center;gap:var(--s2);max-width:720px;width:100%;margin:0 auto}
+.rpbtn{border:0;background:var(--rp-soft);color:var(--rp-ink);border-radius:999px;min-width:44px;min-height:44px;padding:0 var(--s3);font:inherit;font-size:var(--t2);font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;-webkit-user-select:none;user-select:none}
+.rpbtn:hover{filter:brightness(1.07)}
+.rpbtn:active{transform:scale(.97)}
+.rp :focus-visible{outline:2px solid var(--rp-ink);outline-offset:2px}
+.rpbar{flex:1;height:8px;border-radius:999px;background:var(--rp-track);overflow:hidden}
+.rpbar i{display:block;height:100%;border-radius:999px;background:var(--rp-ring);transition:width .4s ease}
+.rpcount{font-size:var(--t1);font-weight:700;min-width:3.5em;text-align:right}
+.rpmain{display:grid;justify-items:center;align-content:center;gap:var(--s3);text-align:center;min-height:0;overflow-y:auto;padding:var(--s2) 0}
+.rpring{position:relative;width:min(68vw,320px,40vh);aspect-ratio:1}
+.rpring svg{width:100%;height:100%;transform:rotate(-90deg);display:block}
+.rpring circle{fill:none;stroke-width:12}
+.rptrack{stroke:var(--rp-track)}
+.rparc{stroke:var(--rp-ring);stroke-linecap:round;transition:stroke-dashoffset .25s linear,stroke .3s}
+.rp.over .rparc{stroke:var(--rp-over)}
+.rp.over .rpring{animation:rppulse 1.2s ease-in-out infinite}
+.rpcenter{position:absolute;inset:0;display:grid;justify-items:center;align-content:center;gap:2px}
+.rpicon{font-size:clamp(40px,8vh,72px);line-height:1.1;animation:rpbounce .5s ease-out}
+.rptime{font-size:clamp(36px,7.5vh,60px);font-weight:700;line-height:1.1}
+.rp.over .rptime{color:var(--rp-over)}
+.rpstate{font-size:var(--t1);font-weight:700;opacity:.75}
+.rptitle{margin:0;font-size:clamp(22px,4vh,32px);line-height:1.3;max-width:20em;text-wrap:balance;overflow-wrap:anywhere}
+.rphow{margin:0;font-size:var(--t3);opacity:.8;max-width:28em;text-wrap:pretty;overflow-wrap:anywhere}
+.rpnext{margin:0;font-size:var(--t2);opacity:.8;display:flex;flex-wrap:wrap;gap:var(--s2);justify-content:center;align-items:center;overflow-wrap:anywhere}
+.rppace{font-size:var(--t1);font-weight:700;background:var(--rp-soft);border-radius:999px;padding:2px 12px}
+.rppace:empty{display:none}
+.rpctl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) minmax(0,1.6fr);gap:var(--s2);max-width:720px;width:100%;margin:0 auto}
+.rpctl .rpbtn{flex-direction:column;gap:0;min-height:64px;border-radius:22px;font-size:20px;padding:0 var(--s2)}
+.rpctl .rpbtn span{font-size:var(--t1)}
+.rpctl .rpgo{background:var(--rp-go);color:var(--rp-go-ink);font-size:26px;box-shadow:0 10px 28px rgba(0,0,0,.18)}
+.rpstamp{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}
+.rpstamp b{font-size:clamp(80px,18vh,140px);color:var(--rp-go);text-shadow:0 6px 20px rgba(0,0,0,.15);animation:rpstamp .6s ease-out forwards}
+.rpbig{min-height:64px;padding:0 var(--s5);font-size:var(--t4);background:var(--rp-go);color:var(--rp-go-ink);box-shadow:0 12px 30px rgba(0,0,0,.2)}
+.rpscore{font-size:clamp(64px,15vh,120px);font-weight:700;line-height:1}
+.rpstats{display:flex;flex-wrap:wrap;justify-content:center;gap:var(--s2);max-width:36em}
+.rpstats span{background:var(--rp-soft);border-radius:999px;padding:4px 14px;font-size:var(--t2)}
+.rpmsg{margin:0;font-size:clamp(20px,3.4vh,28px);font-weight:700;text-wrap:balance}
+.rpskipped{margin:0;font-size:var(--t2);opacity:.8;max-width:32em;overflow-wrap:anywhere}
+.rpacts{display:flex;flex-wrap:wrap;justify-content:center;gap:var(--s2)}
+@keyframes rpbounce{0%{transform:scale(.4)}70%{transform:scale(1.15)}100%{transform:scale(1)}}
+@keyframes rppulse{50%{transform:scale(1.03)}}
+@keyframes rpstamp{0%{transform:scale(2.4) rotate(-20deg);opacity:0}40%{transform:scale(.9) rotate(-8deg);opacity:1}100%{transform:scale(1) rotate(-8deg);opacity:0}}
+@media (prefers-reduced-motion:reduce){.rpicon,.rp.over .rpring,.rpstamp b{animation:none}.rparc,.rpbar i{transition:none}}
+@media (max-width:560px){.rpctl{grid-template-columns:repeat(3,minmax(0,1fr))}.rpctl .rpgo{grid-column:1/-1;order:-1;min-height:72px}}
 /* ---------- Reward cards ---------- */
 .rwtools{display:flex;gap:var(--s2)}
 .rwlist{display:grid;gap:var(--s3);grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
@@ -2141,9 +2195,10 @@ function wireBody(){
 /* ---------- Morning & Evening Routines and Reward Cards: tabs inside Habits. No streak and no red: a day is simply how far it went. ---------- */
 async function rtLoad(force){
   if(!LOCALAPI||S.rtBusy||(!force&&S.routines&&Date.now()-(S.rtAt||0)<30000))return;
-  S.rtBusy=true;S.rtAt=Date.now();
+  S.rtBusy=true;S.rtAt=Date.now();const t0=Date.now();
   try{const [r,l,c]=await Promise.all([api("GET","/api/routines"),api("GET","/api/routinelog"),api("GET","/api/rewards")]);
-    const was=JSON.stringify([S.routines,S.routinelog,S.rewards]);S.routines=r.filter(x=>!x.deleted);S.routinelog=l;S.rewards=c.filter(x=>!x.deleted);S.rtBusy=false;
+    // a mark saved while this was loading is newer than what came back: keep the log on screen
+    const was=JSON.stringify([S.routines,S.routinelog,S.rewards]);S.routines=r.filter(x=>!x.deleted);if(!((S.rtSavedAt||0)>=t0))S.routinelog=l;S.rewards=c.filter(x=>!x.deleted);S.rtBusy=false;
     if(was!==JSON.stringify([S.routines,S.routinelog,S.rewards])&&["habits","home"].includes(viewId()))render()}
   catch(e){S.rtBusy=false}
 }
@@ -2154,7 +2209,7 @@ const rtItems=when=>(S.routines||[]).filter(x=>x.when===when).sort((a,b)=>(a.ord
 const RTNAME={morning:"Morning",night:"Evening"};
 const rtWhenNow=()=>{const h=new Date(Date.now()+HCMC).getUTCHours();return h>=4&&h<12?"morning":"night"};
 async function rtSaveLog(rec){
-  const id=rec.id,{id:_,...body}=rec;S.routinelog=[...(S.routinelog||[]).filter(x=>x.id!==id),rec];render();
+  const id=rec.id,{id:_,...body}=rec;S.rtSavedAt=Date.now();S.routinelog=[...(S.routinelog||[]).filter(x=>x.id!==id),rec];render();
   try{await api("PUT","/api/routinelog/"+encodeURIComponent(id),body)}catch(e){toast("保存できませんでした");rtLoad(true)}
 }
 function rtToggle(when,item){
@@ -2165,14 +2220,14 @@ function rtToggle(when,item){
 const rtRate=(log,when)=>{const t=(log.totals||{})[when]||0;return t?Object.keys(log[when]||{}).length/t:null};
 function rtSection(when,edit){
   const items=rtItems(when),log=rtLog(rtDay()),marks=log[when]||{};
-  const row=it=>{const at=marks[it.id];return `<div class="rtrow"><button class="rtcheck" data-rttoggle="${esc(it.id)}" data-rtwhen="${when}" role="checkbox" aria-checked="${!!at}" aria-label="${esc(it.title)}">${at?"✓":""}</button><div class="rttext"><span class="${at?"rtdone":""}">${it.icon?esc(it.icon)+" ":""}${esc(it.title)}</span>${it.how?`<span class="sub">${esc(it.how)}</span>`:""}</div>${at?`<span class="sub">${new Date(at+HCMC).toISOString().slice(11,16)}</span>`:""}${edit?`<span class="rtedit"><button class="btn sm" data-rtup="${esc(it.id)}" aria-label="Move ${esc(it.title)} up">Up</button><button class="btn sm" data-rtedit="${esc(it.id)}">Edit</button><button class="btn sm" data-rtdel="${esc(it.id)}">Remove</button></span>`:""}</div>`};
-  return `<section class="rtsec"><div class="rthead"><h2>${RTNAME[when]}</h2><span class="sub">${Object.keys(marks).filter(k=>items.some(i=>i.id===k)).length} / ${items.length}</span>${edit?`<button class="btn sm" data-rtadd="${when}">Add</button>`:""}</div>${items.map(row).join("")||`<p class="sub">No items yet.</p>`}</section>`;
+  const row=it=>{const at=marks[it.id];return `<div class="rtrow"><button class="rtcheck" data-rttoggle="${esc(it.id)}" data-rtwhen="${when}" role="checkbox" aria-checked="${!!at}" aria-label="${esc(it.title)}">${at?"✓":""}</button><div class="rttext"><span class="${at?"rtdone":""}">${it.icon?esc(it.icon)+" ":""}${esc(it.title)} <span class="sub rtdur">· ${rpDur(rpSec(it))}${it.lang?" · "+esc(it.lang):""}</span></span>${it.how?`<span class="sub">${esc(it.how)}</span>`:""}</div>${at?`<span class="sub">${new Date(at+HCMC).toISOString().slice(11,16)}</span>`:""}${edit?`<span class="rtedit"><button class="btn sm" data-rtup="${esc(it.id)}" aria-label="Move ${esc(it.title)} up">Up</button><button class="btn sm" data-rtedit="${esc(it.id)}">Edit</button><button class="btn sm" data-rtdel="${esc(it.id)}">Remove</button></span>`:""}</div>`};
+  return `<section class="rtsec"><div class="rthead"><h2>${RTNAME[when]}</h2><span class="sub">${Object.keys(marks).filter(k=>items.some(i=>i.id===k)).length} / ${items.length} · about ${Math.round(items.reduce((s,it)=>s+rpSec(it),0)/60)} min · starts ${esc(rpCfg()[when+"At"])}</span>${edit?`<button class="btn sm rtgo" data-rtadd="${when}">Add</button>`:items.length?`<button class="btn primary sm rtgo" data-rpgo="${when}">▶ Start</button>`:""}</div>${items.map(row).join("")||`<p class="sub">No items yet.</p>`}</section>`;
 }
 function routinesTab(){
   if(!S.routines)return `<div class="card empty"><b>Loading</b></div>`;
   const edit=!!S.rtEdit,first=rtWhenNow(),second=first==="morning"?"night":"morning",today=rtDay(),days=[...Array(14)].map((_,i)=>dayOff(today,i-13));
   const cell=(d,w)=>{const r=rtRate(rtLog(d),w);return `<span class="rtcell" title="${esc(d)} ${RTNAME[w]} ${r==null?"no record":Math.round(r*100)+"%"}" style="--on:${r==null?0:Math.max(.12,r)}">${+d.slice(8)}</span>`};
-  return `<div class="rtbar"><span class="sub">The day rolls over at ${esc(rtSettings().cutoff)}:00</span><button class="btn sm" id="rtEditMode" aria-pressed="${edit}">${edit?"Finish editing":"Edit items"}</button></div>${edit?`<form class="bdtarget" id="rtCut"><label>Rollover hour<input type="number" min="0" max="12" id="rtCutV" value="${esc(rtSettings().cutoff)}"></label><button class="btn sm">Save</button></form>`:""}${rtSection(first,edit)}${rtSection(second,edit)}<section class="rtsec"><h2>Last 14 days</h2><div class="rtweek"><span class="sub">Morning</span><div class="rtcells">${days.map(d=>cell(d,"morning")).join("")}</div><span class="sub">Evening</span><div class="rtcells">${days.map(d=>cell(d,"night")).join("")}</div></div></section>`;
+  return `<div class="rtbar"><span class="sub">The day rolls over at ${esc(rtSettings().cutoff)}:00</span><button class="btn sm" id="rtEditMode" aria-pressed="${edit}">${edit?"Finish editing":"Edit items"}</button></div>${edit?(c=>`<form class="bdtarget" id="rtCut"><label>Rollover hour<input type="number" min="0" max="12" id="rtCutV" value="${esc(rtSettings().cutoff)}"></label><label>Morning starts<input type="time" id="rtAtM" value="${esc(c.morningAt)}"></label><label>Evening starts<input type="time" id="rtAtN" value="${esc(c.nightAt)}"></label><label>Voice for guidance<select id="rtVoice">${Object.entries(RPLN).map(([k,l])=>`<option value="${k}" ${c.voice===k?"selected":""}>${l}</option>`).join("")}</select></label><label>Over-time reminder<select id="rtNag">${[[30,"Every 30 seconds"],[60,"Every minute"],[0,"Off"]].map(([v,l])=>`<option value="${v}" ${+c.nag===v?"selected":""}>${l}</option>`).join("")}</select></label><label>Start alarm<select id="rtAlarm"><option value="1" ${c.alarm!==false?"selected":""}>On</option><option value="0" ${c.alarm===false?"selected":""}>Off</option></select></label><button class="btn sm">Save</button></form>`)(rpCfg()):""}${rtSection(first,edit)}${rtSection(second,edit)}<section class="rtsec"><h2>Last 14 days</h2><div class="rtweek"><span class="sub">Morning</span><div class="rtcells">${days.map(d=>cell(d,"morning")).join("")}</div><span class="sub">Evening</span><div class="rtcells">${days.map(d=>cell(d,"night")).join("")}</div></div></section>`;
 }
 const rwSave=async rec=>{const {id,...body}=rec;try{await api("PUT","/api/rewards/"+encodeURIComponent(id),{...body,updatedAt:Date.now()});await rtLoad(true)}catch(e){toast("Couldn't save")}};
 function rewardsTab(){
@@ -2190,8 +2245,11 @@ async function rwEdit(c){
 async function rtEditItem(when,it){
   const title=await askText(it?"Edit item":`Add to ${RTNAME[when].toLowerCase()}`,"What to do",it?.title||"",120);if(!title)return;
   const how=await askText("Steps","How to start in one second (optional)",it?.how||"",200);if(how==null)return;
+  const d=await askText("Time","How long? (e.g., 30s, 1m, 2m 30s)",it?rpDur(rpSec(it)):"1m",12);if(d==null)return;const sec=rpParseDur(d);if(!sec){toast("Enter a time like 30s or 2m");return}
+  const lg=await askText("Voice","Read this item in en, ja or ru (blank: guess from the words)",it?.lang||"",2);if(lg==null)return;const lang=RPL[lg.trim().toLowerCase()]?lg.trim().toLowerCase():"";
+  const m=/^(\p{Extended_Pictographic}️?)\s*(.+)$/u.exec(title.trim()),icon=m?m[1]:it?.icon||"",name=m?m[2]:title.trim();
   const id=it?.id||"rt"+Date.now(),order=it?it.order:Math.max(0,...rtItems(when).map(x=>x.order||0))+1;
-  try{await api("PUT","/api/routines/"+encodeURIComponent(id),{when,order,icon:it?.icon||"",title,how,updatedAt:Date.now()});await rtLoad(true)}catch(e){toast("Couldn't save")}
+  try{await api("PUT","/api/routines/"+encodeURIComponent(id),{when,order,icon,title:name,how,sec,lang,updatedAt:Date.now()});await rtLoad(true)}catch(e){toast("Couldn't save")}
 }
 function wireRoutines(){
   document.querySelectorAll("[data-habtab]").forEach(b=>b.onclick=()=>{S.habTab=b.dataset.habtab;S.rtEdit=false;render()});
@@ -2203,12 +2261,210 @@ function wireRoutines(){
   document.querySelectorAll("[data-rtedit]").forEach(b=>b.onclick=()=>{const it=find(b.dataset.rtedit);if(it)rtEditItem(it.when,it)});
   document.querySelectorAll("[data-rtdel]").forEach(b=>b.onclick=async()=>{const it=find(b.dataset.rtdel);if(it){await putItem(it,{deleted:true});rtLoad(true)}});
   document.querySelectorAll("[data-rtup]").forEach(b=>b.onclick=async()=>{const it=find(b.dataset.rtup);if(!it)return;const list=rtItems(it.when),i=list.findIndex(x=>x.id===it.id);if(i<1)return;const up=list[i-1];await putItem(it,{order:up.order});await putItem(up,{order:it.order});rtLoad(true)});
-  $("#rtCut")&&($("#rtCut").onsubmit=e=>{e.preventDefault();const v=Number($("#rtCutV").value);if(!(v>=0&&v<=12))return toast("Enter a number from 0 to 12");rtSaveLog({id:"settings",cutoff:v})});
+  $("#rtCut")&&($("#rtCut").onsubmit=e=>{e.preventDefault();const v=Number($("#rtCutV").value);if(!(v>=0&&v<=12))return toast("Enter a number from 0 to 12");
+    const hm=x=>/^\d\d:\d\d$/.test(x)?x:null,mAt=hm($("#rtAtM").value),nAt=hm($("#rtAtN").value);if(!mAt||!nAt)return toast("Enter both start times");
+    rtSaveLog({...rtSettings(),id:"settings",cutoff:v,morningAt:mAt,nightAt:nAt,voice:$("#rtVoice").value,nag:+$("#rtNag").value,alarm:$("#rtAlarm").value==="1"});toast("Saved")});
+  document.querySelectorAll("[data-rpgo]").forEach(b=>b.onclick=()=>rpOpen(b.dataset.rpgo));
   document.querySelectorAll("[data-rwstamp]").forEach(b=>b.onclick=()=>{const c=(S.rewards||[]).find(x=>x.id===b.dataset.rwstamp);if(!c)return;const i=Number(b.dataset.rwi),n=c.count||0;rwSave({...c,count:i<n?i:i+1});if(i>=n)toast(i+1>=c.target?"Complete. Enjoy your reward":"One step forward")});
   $("#rwAdd")&&($("#rwAdd").onclick=()=>rwEdit());
   document.querySelectorAll("[data-rwedit]").forEach(b=>b.onclick=()=>rwEdit((S.rewards||[]).find(x=>x.id===b.dataset.rwedit)));
   document.querySelectorAll("[data-rwdel]").forEach(b=>b.onclick=()=>{const c=(S.rewards||[]).find(x=>x.id===b.dataset.rwdel);if(c)rwSave({...c,deleted:true})});
 }
+/* ---------- Routine player (Routinery style). A start alarm (desk/routine_alarm.py rings this Mac and opens #play/<when>), then
+   one item at a time: a chime, the item read aloud (English, Japanese or Russian), a ring that counts down. Nothing moves on by
+   itself: past zero the ring turns pink, counts up (+0:30) and says so every 30 seconds until you press Done or Skip.
+   Done items are the same marks as the checklist above (routinelog day doc); the run goes to its log[when+"Run"].
+   Item fields: sec (seconds, 60 if missing), lang (en|ja|ru, empty = guessed from the words).
+   Settings doc "settings": morningAt, nightAt (HH:MM, Ho Chi Minh City time like the rest of the routines), voice, nag (seconds, 0 = off), alarm.
+   The player is drawn outside #view, so render() never interrupts it. ---------- */
+const RPL={en:"en-US",ja:"ja-JP",ru:"ru-RU"}, RPLN={en:"English",ja:"Japanese",ru:"Russian"};
+const rpCfg=()=>{const s={morningAt:"04:00",nightAt:"17:00",voice:"en",nag:30,alarm:true,...rtSettings()};if(!RPL[s.voice])s.voice="en";return s};
+const rpLang=it=>RPL[it.lang]?it.lang:/[぀-ヿ一-鿿]/.test(it.title||"")?"ja":/[Ѐ-ӿ]/.test(it.title||"")?"ru":"en";
+const rpSec=it=>Math.max(5,Math.round(Number(it.sec)||60));
+const rpFmt=s=>{s=Math.max(0,Math.round(s));return Math.floor(s/60)+":"+pad(s%60)};
+const rpDur=s=>{s=Math.round(s);const m=Math.floor(s/60),r=s%60;return m?(r?`${m}m ${r}s`:`${m}m`):`${r}s`};
+function rpParseDur(v){
+  v=String(v||"").trim().toLowerCase().replace(/分/g,"m").replace(/秒/g,"s");if(!v)return null;
+  let m=/^(\d+):(\d{1,2})$/.exec(v);if(m)return +m[1]*60+ +m[2];
+  if(/^\d+(\.\d+)?$/.test(v))return Math.round(parseFloat(v)*60);
+  const mm=/(\d+(?:\.\d+)?)\s*m/.exec(v),ss=/(\d+)\s*s/.exec(v);if(!mm&&!ss)return null;
+  return Math.round((mm?parseFloat(mm[1])*60:0)+(ss?+ss[1]:0))||null;
+}
+const ruN=(n,a,b,c)=>{const t=n%100,o=n%10;return t>10&&t<20?c:o===1?a:o>=2&&o<=4?b:c};
+const RPW={
+  dur:{en:s=>{const m=Math.floor(s/60),r=s%60;return [m?m+(m>1?" minutes":" minute"):"",r?r+" seconds":""].filter(Boolean).join(" ")},
+    ja:s=>{const m=Math.floor(s/60),r=s%60;return (m?m+"分":"")+(r?r+"秒":"")},
+    ru:s=>{const m=Math.floor(s/60),r=s%60;return [m?m+" "+ruN(m,"минута","минуты","минут"):"",r?r+" "+ruN(r,"секунда","секунды","секунд"):""].filter(Boolean).join(" ")}},
+  up:{en:"Time's up. Press Done when you finish.",ja:"時間です。終わったら完了を押してね。",ru:"Время вышло. Нажми «Готово», когда закончишь."},
+  over:{en:s=>`${RPW.dur.en(s)} over.`,ja:s=>`${RPW.dur.ja(s)}、過ぎています。`,ru:s=>`Уже ${RPW.dur.ru(s)} сверх времени.`},
+  time:{en:w=>`It's time for your ${w==="morning"?"morning":"evening"} routine.`,ja:w=>`${w==="morning"?"朝":"夜"}のルーティンの時間です。`,ru:w=>`Пора начинать ${w==="morning"?"утреннюю":"вечернюю"} рутину.`},
+  end:{morning:{en:"All done. Let's make today a great day!",ja:"おつかれさま。今日も一日がんばろう！",ru:"Готово. Хорошего дня!"},
+    night:{en:"All done. Great work today. Sleep well.",ja:"おつかれさま。今日もよくがんばったね。ゆっくり休んでね。",ru:"Готово. Отличный день. Спокойной ночи."}},
+  part:{morning:{en:"Good start. Let's make today a great day!",ja:"おつかれさま。できた分でOK。今日も一日がんばろう！",ru:"Хорошее начало. Хорошего дня!"},
+    night:{en:"Good work today. What you did counts. Sleep well.",ja:"おつかれさま。できた分でOK。ゆっくり休んでね。",ru:"Хорошая работа. Спокойной ночи."}}
+};
+/* sound and voice switches, per browser */
+const rpPref=()=>{let v={};try{v=JSON.parse(localStorage.getItem("desk-rp")||"{}")||{}}catch(e){}return {sound:v.sound!==false,voice:v.voice!==false}};
+function rpPrefToggle(k){const p=rpPref();p[k]=!p[k];try{localStorage.setItem("desk-rp",JSON.stringify(p))}catch(e){}if(k==="voice"&&!p.voice)try{speechSynthesis.cancel()}catch(e){}
+  const b=$(`#rp [data-rp="${k}"]`);if(b){b.setAttribute("aria-pressed",p[k]);b.textContent=k==="sound"?(p.sound?"🔔":"🔕"):(p.voice?"🗣️":"🤐")}}
+const rpToggles=()=>{const p=rpPref();return `<button class="rpbtn" data-rp="sound" aria-pressed="${p.sound}" aria-label="Sound" title="Sound">${p.sound?"🔔":"🔕"}</button><button class="rpbtn" data-rp="voice" aria-pressed="${p.voice}" aria-label="Read aloud" title="Read aloud">${p.voice?"🗣️":"🤐"}</button>`};
+let rpVoices=[];
+const rpLoadVoices=()=>{try{rpVoices=speechSynthesis.getVoices()||[]}catch(e){}};
+if(window.speechSynthesis){rpLoadVoices();try{speechSynthesis.addEventListener("voiceschanged",rpLoadVoices)}catch(e){}}
+function rpSay(text,lang,queue){
+  if(!window.speechSynthesis||!rpPref().voice||!text)return;
+  try{if(!queue)speechSynthesis.cancel();const tag=RPL[lang]||"en-US",u=new SpeechSynthesisUtterance(text);u.lang=tag;
+    const vs=rpVoices.filter(v=>String(v.lang).replace("_","-").toLowerCase().startsWith(tag.slice(0,2)));
+    u.voice=vs.find(v=>String(v.lang).replace("_","-")===tag&&v.localService)||vs.find(v=>v.localService)||vs[0]||null;
+    speechSynthesis.speak(u)}catch(e){}
+}
+function rpCtx(){if(!actx){try{actx=new (window.AudioContext||window.webkitAudioContext)()}catch(e){return null}}if(actx.state==="suspended")actx.resume();return actx}
+function rpTone(notes,type,vol){
+  if(!rpPref().sound)return;const a=rpCtx();if(!a)return;const t0=a.currentTime+.02;
+  notes.forEach(([f,d,len=.45])=>{const o=a.createOscillator(),g=a.createGain();o.type=type;o.frequency.value=f;
+    g.gain.setValueAtTime(0,t0+d);g.gain.linearRampToValueAtTime(vol,t0+d+.012);g.gain.exponentialRampToValueAtTime(.0001,t0+d+len);
+    o.connect(g).connect(a.destination);o.start(t0+d);o.stop(t0+d+len+.05)});
+}
+const RPS={chime:()=>rpTone([[784,0],[988,.09],[1175,.18],[1568,.27,.9]],"triangle",.2), // the "ru-ru-ru-run" at the start of an item
+  warn:()=>rpTone([[1320,0,.12],[1320,.18,.12]],"sine",.14),
+  up:()=>rpTone([[880,0,.25],[660,.28,.25],[880,.56,.25],[660,.84,.5]],"square",.07),
+  nag:()=>rpTone([[523,0,.2],[392,.24,.4]],"triangle",.22),
+  done:()=>rpTone([[1047,0,.15],[1568,.1,.45]],"triangle",.2),
+  alarm:()=>rpTone([[988,0,.18],[1319,.2,.18],[988,.4,.18],[1319,.6,.18],[988,.8,.18],[1319,1,.45]],"square",.09)};
+let rpLock=null;
+async function rpWake(on){try{if(on&&!rpLock&&navigator.wakeLock&&document.visibilityState==="visible"){rpLock=await navigator.wakeLock.request("screen");rpLock.addEventListener("release",()=>{rpLock=null})}
+  if(!on&&rpLock){const l=rpLock;rpLock=null;await l.release()}}catch(e){}}
+document.addEventListener("visibilitychange",()=>{if(P&&P.phase==="run"&&document.visibilityState==="visible")rpWake(true)});
+let P=null, rpTimer=0;
+const RPC=2*Math.PI*88;
+async function rpEnsure(){for(let i=0;i<40&&!S.routines;i++){rtLoad(true);await new Promise(r=>setTimeout(r,150))}return !!S.routines}
+async function rpOpen(when,from){
+  if(P)return;
+  if(!LOCALAPI){toast("The routine player runs in the Mac Desk");return}
+  if(!await rpEnsure()){toast("Couldn't load the routines");return}
+  const items=rtItems(when);if(!items.length){toast("No items yet. Add some under Habits → Morning & Evening Routines");return}
+  P={when,all:items,items,from,phase:"ready",results:{},i:0,pausedAll:0};
+  let el=$("#rp");if(!el){el=document.createElement("div");el.id="rp";document.body.appendChild(el)}
+  el.className="rp";el.dataset.when=when;el.dataset.noauto="";el.tabIndex=-1;el.setAttribute("role","dialog");el.setAttribute("aria-modal","true");el.setAttribute("aria-label",RTNAME[when]+" routine");
+  el.onclick=rpClick;document.documentElement.style.overflow="hidden";
+  rpDrawReady();
+  if(from==="alarm"){let n=0;const ring=()=>{if(!P||P.phase!=="ready")return;RPS.alarm();if(n%3===0){const c=rpCfg();rpSay(RPW.time[c.voice](when),c.voice,true)}if(++n<45)P.ringT=setTimeout(ring,4000)};ring()}
+}
+function rpClose(){if(P)clearTimeout(P.ringT);clearInterval(rpTimer);rpTimer=0;try{speechSynthesis.cancel()}catch(e){}rpWake(false);P=null;$("#rp")?.remove();document.documentElement.style.overflow="";render()}
+function rpDrawReady(){
+  const total=P.items.reduce((s,it)=>s+rpSec(it),0),c=rpCfg(),ran=rtLog(rtDay())[P.when+"Run"];
+  $("#rp").innerHTML=`<header class="rptop"><button class="rpbtn" data-rp="close" aria-label="Close" title="Close (Esc)">✕</button><span style="flex:1"></span>${rpToggles()}</header>
+  <main class="rpmain"><span class="rpicon">${P.when==="morning"?"🌅":"🌙"}</span><h2 class="rptitle">${RTNAME[P.when]} routine</h2>
+    <p class="rphow">${P.items.length} items · about ${Math.round(total/60)} min${P.from==="alarm"?` · It's ${esc(c[P.when+"At"])}`:""}${ran?` · Today so far: ${ran.score}%`:""}</p>
+    <button class="rpbtn rpbig" data-rp="start">▶ Start</button><p class="rpnext">Space or Enter to start · The screen stays on while it runs</p></main><footer></footer>`;
+  $("#rp").focus();
+}
+function rpStart(){
+  if(!P)return;clearTimeout(P.ringT);try{speechSynthesis.cancel()}catch(e){}
+  P.phase="run";P.startedAt=P.startedAt||Date.now();P.day=rtDay();P.i=0;rpWake(true);rpStep();
+  clearInterval(rpTimer);rpTimer=setInterval(rpTick,200);
+}
+const rpEl=()=>Date.now()-P.stepAt-P.paused-(P.pauseAt?Date.now()-P.pauseAt:0);
+const rpLeft=()=>rpSec(P.items[P.i])*1000+P.extra-rpEl();
+function rpStep(){
+  const it=P.items[P.i];Object.assign(P,{stepAt:Date.now(),paused:0,pauseAt:0,extra:0,warned:false,upSaid:false,nagAt:0,busy:false});
+  rpDrawStep();RPS.chime();
+  const lang=rpLang(it);setTimeout(()=>{if(P&&P.phase==="run"&&P.items[P.i]===it&&!P.pauseAt)rpSay(`${it.title}. ${RPW.dur[lang](rpSec(it))}.`,lang)},700);
+}
+function rpDrawStep(){
+  const it=P.items[P.i],nx=P.items[P.i+1],n=P.items.length;
+  $("#rp").innerHTML=`<header class="rptop"><button class="rpbtn" data-rp="end" aria-label="End the routine" title="End (Esc)">✕</button><div class="rpbar" role="progressbar" aria-label="Items done" aria-valuemin="0" aria-valuemax="${n}" aria-valuenow="${P.i}"><i style="width:${P.i/n*100}%"></i></div><span class="rpcount">${P.i+1} / ${n}</span>${rpToggles()}</header>
+  <main class="rpmain"><div class="rpring"><svg viewBox="0 0 200 200" aria-hidden="true"><circle class="rptrack" cx="100" cy="100" r="88"/><circle class="rparc" cx="100" cy="100" r="88" stroke-dasharray="${RPC}" stroke-dashoffset="0"/></svg>
+      <div class="rpcenter"><span class="rpicon" aria-hidden="true">${esc(it.icon||"✨")}</span><b class="rptime">${rpFmt(rpSec(it))}</b><span class="rpstate">left</span></div><div class="rpstamp"></div></div>
+    <h2 class="rptitle">${esc(it.title)}</h2>${it.how?`<p class="rphow">${esc(it.how)}</p>`:""}
+    <p class="rpnext"><span class="rppace"></span><span>${nx?`Next: ${esc(nx.icon||"")} ${esc(nx.title)} · ${rpDur(rpSec(nx))}`:"Last one"}</span></p></main>
+  <footer class="rpctl"><button class="rpbtn" data-rp="pause" title="Pause (Space)">⏸<span>Pause</span></button><button class="rpbtn" data-rp="skip" title="Skip (S)">⏭<span>Skip</span></button><button class="rpbtn" data-rp="add" title="One more minute (+)">＋1<span>+1 min</span></button><button class="rpbtn rpgo" data-rp="done" title="Done (Enter)">✓<span>Done</span></button></footer>`;
+  $("#rp").focus();rpTick();
+}
+function rpTick(){
+  if(!P||P.phase!=="run")return;const el=$("#rp");if(!el)return;
+  const it=P.items[P.i],tot=rpSec(it)*1000+P.extra,left=rpLeft(),over=left<0,c=rpCfg();
+  el.classList.toggle("over",over);
+  const t=el.querySelector(".rptime"),st=el.querySelector(".rpstate"),arc=el.querySelector(".rparc"),pace=el.querySelector(".rppace");
+  if(t)t.textContent=over?"+"+rpFmt(Math.floor(-left/1000)):rpFmt(Math.ceil(left/1000));
+  if(st)st.textContent=P.pauseAt?"paused":over?"over time":"left";
+  if(arc)arc.setAttribute("stroke-dashoffset",over?"0":String(RPC*(1-left/tot)));
+  if(pace){const run=Date.now()-P.startedAt-P.pausedAll-(P.pauseAt?Date.now()-P.pauseAt:0),plan=P.items.slice(0,P.i).reduce((s,x)=>s+rpSec(x),0)*1000+Math.min(rpEl(),tot),d=Math.round((run-plan)/1000);
+    pace.textContent=P.i===0&&!over?"":Math.abs(d)<15?"On time":d>0?`${rpDur(d)} behind`:`${rpDur(-d)} ahead`}
+  if(P.pauseAt)return;
+  if(!over&&left<=10000&&tot>15000&&!P.warned){P.warned=true;RPS.warn()}
+  if(over&&!P.upSaid){P.upSaid=true;P.nagAt=Date.now();RPS.up();setTimeout(()=>{if(P&&P.phase==="run"&&P.items[P.i]===it&&!P.pauseAt)rpSay(RPW.up[c.voice],c.voice)},1200)}
+  else if(over&&+c.nag>0&&Date.now()-P.nagAt>=c.nag*1000){P.nagAt=Date.now();RPS.nag();const s=Math.max(c.nag,Math.round(-left/1000/c.nag)*c.nag);setTimeout(()=>{if(P&&P.items[P.i]===it)rpSay(RPW.over[c.voice](s),c.voice)},600)}
+}
+function rpPause(){
+  if(!P||P.phase!=="run")return;const b=$('#rp [data-rp="pause"]');
+  if(P.pauseAt){const d=Date.now()-P.pauseAt;P.paused+=d;P.pausedAll+=d;P.pauseAt=0;if(b)b.innerHTML="⏸<span>Pause</span>";rpWake(true)}
+  else{P.pauseAt=Date.now();try{speechSynthesis.cancel()}catch(e){}if(b)b.innerHTML="▶<span>Resume</span>"}
+  rpTick();
+}
+function rpAdd(){if(!P||P.phase!=="run")return;P.extra+=60000;if(rpLeft()>0){P.upSaid=false;P.warned=rpLeft()<=10000}rpTick()}
+/* the day doc with every item this run has done, even if the log on screen is older than the run */
+function rpLogNow(){const log=JSON.parse(JSON.stringify(rtLog(P.day))),m=log[P.when]||(log[P.when]={});
+  Object.entries(P.results).forEach(([id,r])=>{if(r.status==="done"&&!m[id])m[id]=r.at});log.totals={morning:rtItems("morning").length,night:rtItems("night").length};return log}
+function rpMark(){rtSaveLog(rpLogNow())}
+function rpNext(status){
+  if(!P||P.phase!=="run"||P.busy)return;const it=P.items[P.i];P.busy=true;
+  if(P.pauseAt)rpPause();
+  P.results[it.id]={status,planned:rpSec(it),actual:Math.round(rpEl()/1000),at:Date.now()};
+  try{speechSynthesis.cancel()}catch(e){}
+  if(status==="done"){RPS.done();rpMark();const s=$("#rp .rpstamp");if(s)s.innerHTML="<b>✓</b>"}
+  P.i++;const wait=status==="done"?500:0;
+  setTimeout(()=>{if(!P||P.phase!=="run")return;if(P.i>=P.items.length)rpFinish();else rpStep()},wait);
+}
+function rpEnd(){
+  if(!P||P.phase!=="run")return;
+  if(Date.now()-(P.endAsk||0)>3000){P.endAsk=Date.now();toast("Press ✕ again to end the routine");return}
+  if(P.pauseAt)rpPause();rpFinish();
+}
+function rpFinish(){
+  clearInterval(rpTimer);rpTimer=0;rpWake(false);P.phase="end";P.endAt=Date.now();
+  const all=P.all,res=all.map(it=>({it,r:P.results[it.id]})),done=res.filter(x=>x.r?.status==="done"),skipped=res.filter(x=>x.r?.status==="skip"),left=res.filter(x=>!x.r);
+  const score=Math.round(done.length/all.length*100),plan=all.reduce((s,it)=>s+rpSec(it),0),real=Math.round((P.endAt-P.startedAt-P.pausedAll)/1000);
+  const c=rpCfg(),day=P.day,log=rpLogNow();
+  log[P.when+"Run"]={start:P.startedAt,end:P.endAt,score,done:done.length,total:all.length,skipped:skipped.map(x=>x.it.id),notReached:left.map(x=>x.it.id),planned:plan,actual:real,
+    over:Object.fromEntries(res.filter(x=>x.r&&x.r.status==="done"&&x.r.actual>x.r.planned).map(x=>[x.it.id,x.r.actual-x.r.planned]))};
+  rtSaveLog(log);
+  if(done.length)store.putWin({id:winId("routine-"+day+"-"+P.when),kind:"self",title:`${RTNAME[P.when]} routine ${score}%`,date:day}).catch(()=>{});
+  const wk=[...Array(7)].map((_,i)=>dayOff(day,-i)).filter(d=>rtLog(d)[P.when+"Run"]).length,rest=skipped.length+left.length,msg=(rest?RPW.part:RPW.end)[P.when];
+  const el=$("#rp");el.classList.remove("over");
+  el.innerHTML=`<header class="rptop"><span style="flex:1"></span>${rpToggles()}</header>
+  <main class="rpmain"><span class="rpicon">${score>=80?"🏆":score>=50?"🌟":"🌱"}</span><b class="rpscore">${score}%</b><p class="rpmsg">${esc(msg.en)}</p>
+    <div class="rpstats"><span>✓ ${done.length} of ${all.length} done</span>${skipped.length?`<span>⏭ ${skipped.length} skipped</span>`:""}${left.length?`<span>${left.length} not reached</span>`:""}<span>⏱ ${rpDur(real)} · planned ${rpDur(plan)}</span><span>${P.when==="morning"?"🌅":"🌙"} ${wk} this week</span></div>
+    ${skipped.length?`<p class="rpskipped">Skipped: ${skipped.map(x=>esc(x.it.title)).join(" · ")}</p>`:""}
+    <div class="rpacts">${rest?`<button class="rpbtn" data-rp="again">Do the ${rest} left</button>`:""}<button class="rpbtn rpbig" data-rp="close">Close</button></div></main><footer></footer>`;
+  el.focus();
+  setTimeout(()=>{if(P&&P.phase==="end")rpSay(msg[c.voice],c.voice)},400);
+}
+function rpAgain(){
+  if(!P||P.phase!=="end")return;const rest=P.all.filter(it=>P.results[it.id]?.status!=="done");if(!rest.length)return;
+  P.pausedAll+=Date.now()-P.endAt;P.items=rest;P.phase="run";P.i=0;rpWake(true);rpStep();clearInterval(rpTimer);rpTimer=setInterval(rpTick,200);
+}
+function rpClick(e){const b=e.target.closest("[data-rp]");if(!b)return;
+  ({start:rpStart,close:rpClose,end:rpEnd,pause:rpPause,skip:()=>rpNext("skip"),done:()=>rpNext("done"),add:rpAdd,again:rpAgain,sound:()=>rpPrefToggle("sound"),voice:()=>rpPrefToggle("voice")})[b.dataset.rp]?.()}
+/* keys while the player is open; nothing reaches Desk's own shortcuts (N, T, C, G, /) */
+document.addEventListener("keydown",e=>{
+  if(!P||!$("#rp")||e.metaKey||e.ctrlKey||e.altKey)return;const k=e.key;e.stopPropagation();
+  if(P.phase==="ready"){if(k===" "||k==="Enter"){e.preventDefault();rpStart()}else if(k==="Escape")rpClose();return}
+  if(P.phase==="end"){if(k==="Escape"||k==="Enter"){e.preventDefault();rpClose()}return}
+  if(k===" "){e.preventDefault();rpPause()}else if(k==="Enter"||k==="ArrowRight"){e.preventDefault();rpNext("done")}else if(k==="s"||k==="S")rpNext("skip");else if(k==="+"||k==="=")rpAdd();else if(k==="Escape")rpEnd();
+},true);
+/* the start alarm inside an open Desk tab (the Mac's own alarm is routine_alarm.py). A tab in the background stays quiet. */
+function rpAlarmCheck(){
+  if(!LOCALAPI||P||document.visibilityState!=="visible")return;if(!S.routines){rtLoad();return}
+  const c=rpCfg();if(c.alarm===false)return;const now=new Date(Date.now()+HCMC).toISOString().slice(11,16);
+  ["morning","night"].forEach(w=>{if(P||now!==c[w+"At"])return;const key=rtDay()+w;let last="";try{last=localStorage.getItem("desk-rp-alarm")||""}catch(e){}
+    if(last===key||rtLog(rtDay())[w+"Run"])return;try{localStorage.setItem("desk-rp-alarm",key)}catch(e){}rpOpen(w,"alarm")});
+}
+setInterval(rpAlarmCheck,15000);
+function rpHash(){const m=/^#play\/(morning|night)$/.exec(location.hash||"");if(!m)return;S.habTab="routines";history.replaceState(null,"","#habits");render();
+  try{localStorage.setItem("desk-rp-alarm",rtDay()+m[1])}catch(e){}rpOpen(m[1],"alarm")}
+window.addEventListener("hashchange",rpHash);
+setTimeout(rpHash,0);
 function habTabs(){
   if(!LOCALAPI)return "";
   const t=S.habTab||"habits";
@@ -2218,7 +2474,7 @@ function homeBodyStrip(){
   if(!LOCALAPI)return "";
   bodyLoad();rtLoad();
   const when=rtWhenNow(),items=rtItems(when),marks=rtLog(rtDay())[when]||{},n=items.filter(i=>marks[i.id]).length,review=(S.body?.review||[]).filter(r=>r.kind!=="receipt").length;
-  const parts=[items.length?`<a href="#habits" data-rthome>${RTNAME[when]} routine <span class="sub">${n} / ${items.length}</span></a>`:"",review?`<a href="#body">Needs review <span class="sub">${review}</span></a>`:""].filter(Boolean);
+  const parts=[items.length?`<a href="#habits" data-rthome>${RTNAME[when]} routine <span class="sub">${n} / ${items.length}</span></a><button class="btn sm rtgo" data-rpgo="${when}">▶ Start</button>`:"",review?`<a href="#body">Needs review <span class="sub">${review}</span></a>`:""].filter(Boolean);
   return parts.length?`<div class="homestrip">${parts.join("")}</div>`:"";
 }
 /* Receipts: the months of receipts, each checked against Wise. A receipt that matches a Wise line is never new spending. */
