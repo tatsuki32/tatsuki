@@ -51,5 +51,10 @@
 - Drive の大きいファイルは download_file_content の結果がファイルに保存されるので、python で base64 を戻せる（文脈に入れずに済む）。PDF のページは Swift の PDFKit で画像にできる（poppler はない）。
 - 実績まとめの PDF（Portfolio_Tatsuki_Mitsuhashi.pdf、10 ページ）に、ドバイのイベント・成人式の代表挨拶などの写真がある。
 
+## 追記7：英語と日本語（同じ日）
+- 右上の EN / 日本語 で全文を切り替える形にした。文はすべて [英語, 日本語] の組で持ち、render() が描き直す。
+- 最初の言語は ?lang=（本物のサイト用）→ 前回の選択（localStorage）→ 端末の言語の順。
+- 日本語の文は職務経歴書の言い回しに合わせた。
+
 ## 次の一手
-- 本人に CYBER と株式会社高校生のロゴの場所（ファイル名かフォルダ）を聞く。「アイデアの扉」のロゴも。よければ手元の HTML（Netlify / Cloudflare）に反映する。
+- 本人に CYBER と株式会社高校生のロゴの場所を聞く。「アイデアの扉」のロゴも。よければ手元の HTML（Netlify / Cloudflare）に反映する。
