@@ -1360,7 +1360,7 @@ const store={
     if(db){await db.collection("presents").doc(p.id).set(rec)}
     else if(LOCALAPI){await api("PUT","/api/presents/"+encodeURIComponent(p.id),rec);await loadApiMemos()}
     else {S.presents=[...S.presents.filter(x=>x.id!==p.id),{id:p.id,...rec}].filter(x=>!x.deleted);render()} },
-  async putGear(g){ const rec={name:g.name||"",cat:g.cat||"other",qty:+g.qty||1,grams:g.grams==null||g.grams===""?null:+g.grams,gsrc:g.gsrc||"",price:g.price==null||g.price===""?null:+g.price,psrc:g.psrc||"",note:g.note||"",url:g.url||"",img:g.img||"",gone:!!g.gone,packed:!!g.packed,packedAt:g.packedAt||null,order:+g.order||0,createdAt:g.createdAt||Date.now(),updatedAt:Date.now(),deleted:!!g.deleted};
+  async putGear(g){ const rec={name:g.name||"",cat:g.cat||"other",qty:+g.qty||1,grams:g.grams==null||g.grams===""?null:+g.grams,gsrc:g.gsrc||"",price:g.price==null||g.price===""?null:+g.price,psrc:g.psrc||"",note:g.note||"",url:g.url||"",img:g.img||"",imgSrc:g.imgSrc||"",emoji:g.emoji||"",gone:!!g.gone,packed:!!g.packed,packedAt:g.packedAt||null,order:+g.order||0,createdAt:g.createdAt||Date.now(),updatedAt:Date.now(),deleted:!!g.deleted};
     if(db){await db.collection("gear").doc(g.id).set(rec)}
     else if(LOCALAPI){await api("PUT","/api/gear/"+encodeURIComponent(g.id),rec);await loadApiMemos()}
     else {S.gear=[...S.gear.filter(x=>x.id!==g.id),{id:g.id,...rec}].filter(x=>!x.deleted);try{localStorage.setItem("desk-gear",JSON.stringify(S.gear))}catch(e){}render()} },
@@ -2313,12 +2313,14 @@ const gW=g=>g.grams==null||g.grams===""?null:Math.round(+g.grams*(+g.qty||1));
 const gP=g=>g.price==null||g.price===""?null:Math.round(+g.price*(+g.qty||1));
 const fmtG=n=>n==null?"—":n>=1000?(n/1000).toFixed(2).replace(/\.?0+$/,"")+" kg":n+" g";
 const fmtY=n=>n==null?"—":"¥"+Math.round(n).toLocaleString("en-US");
-/* a photo is either an uploaded asset id (served at /_blob/<id>, online only) or an https URL */
-const gImg=g=>/^[0-9a-f]{32}$/.test(g.img||"")?(db?"/_blob/"+g.img:""):okUrl(g.img)&&/^https:/.test(g.img)?g.img:"";
+/* a photo is either an uploaded asset id (online: /_blob/<id>; Mac: a copy in desk/data/uploads/<id>.jpg) or an https URL.
+   imgSrc is the page a web photo came from, shown as its credit */
+const gImg=g=>/^[0-9a-f]{32}$/.test(g.img||"")?(db?"/_blob/"+g.img:LOCALAPI?"/uploads/"+g.img+".jpg":""):okUrl(g.img)&&/^https:/.test(g.img)?g.img:"";
+const gCredit=g=>{if(!okUrl(g.imgSrc)||!gImg(g))return "";let host="";try{host=new URL(g.imgSrc).hostname.replace(/^www\./,"")}catch(e){}return `<a href="${esc(g.imgSrc)}" target="_blank" rel="noopener">Photo: ${esc(host||"source")} ↗</a>`};
 const GSORT=[["cat","By type"],["w","Heaviest first"],["p","Priciest first"]];
 function gearRow(g){const w=gW(g),pr=gP(g),c=GCAT[g.cat]||GCAT.other,q=+g.qty||1;
-  return `<div class="grow ${g.packed?"on":""}">${gImg(g)?`<img class="gimg" src="${esc(gImg(g))}" alt="" loading="lazy" data-gzoom="${esc(g.id)}">`:`<span class="gimg e" aria-hidden="true">${c[1]}</span>`}
-    <div style="min-width:0"><button class="tt" data-gedit="${esc(g.id)}">${esc(g.name)}</button><div class="due">${[q>1?"×"+q:"",g.note?esc(g.note):"",g.gsrc&&w!=null?GSRC[g.gsrc]||"":"",pr!=null?fmtY(pr)+(g.psrc==="est"?" (est.)":""):"",okUrl(g.url)?`<a href="${esc(g.url)}" target="_blank" rel="noopener">Product page ↗</a>`:""].filter(Boolean).join(" · ")}</div></div>
+  return `<div class="grow ${g.packed?"on":""}">${gImg(g)?`<img class="gimg" src="${esc(gImg(g))}" alt="" loading="lazy" data-gzoom="${esc(g.id)}">`:`<span class="gimg e" aria-hidden="true">${esc(g.emoji||c[1])}</span>`}
+    <div style="min-width:0"><button class="tt" data-gedit="${esc(g.id)}">${esc(g.name)}</button><div class="due">${[q>1?"×"+q:"",g.note?esc(g.note):"",g.gsrc&&w!=null?GSRC[g.gsrc]||"":"",pr!=null?fmtY(pr)+(g.psrc==="est"?" (est.)":""):"",okUrl(g.url)?`<a href="${esc(g.url)}" target="_blank" rel="noopener">Product page ↗</a>`:"",gCredit(g)].filter(Boolean).join(" · ")}</div></div>
     <span class="gw ${w==null?"none":""}">${fmtG(w)}</span>
     <button class="gchk ${g.packed?"on":""}" data-gpack="${esc(g.id)}" aria-pressed="${!!g.packed}" aria-label="${g.packed?"Mark not packed":"Mark packed"}: ${esc(g.name)}">${g.packed?"✓":""}</button></div>`}
 /* one measure per chart (weight or money), one quiet hue, every bar labeled: the list below is the table view */
@@ -2351,7 +2353,7 @@ function gearView(){
   ${have.length?`<div class="gtools"><div class="chips" role="group" aria-label="Sort"><span class="sub">Sort</span>${GSORT.map(([k,l])=>`<button class="chip" data-gsort="${k}" aria-pressed="${sort===k}">${l}</button>`).join("")}</div>
     <div class="chips" role="group" aria-label="Export"><span class="sub">Export</span><button class="chip" data-gexport="csv">CSV</button><button class="chip" data-gexport="txt">Text</button><button class="chip" data-gexport="pdf">PDF (print)</button></div></div>`:""}
   ${have.length?(sort==="cat"?GCATS.map(section).join(""):sorted(sort)):`<div class="card empty"><b>Nothing here yet</b>Use “+ Add”. A name and a weight are enough.</div>`}
-  ${gone.length?`<details class="card shelf"><summary><span class="e">🕊️</span>Let go<span class="count">${gone.length}</span></summary><div class="list2">${gone.map(g=>`<div class="grow gone"><span class="gimg e" aria-hidden="true">${(GCAT[g.cat]||GCAT.other)[1]}</span><div style="min-width:0"><button class="tt" data-gedit="${esc(g.id)}">${esc(g.name)}</button><div class="due">${g.note?esc(g.note):""}</div></div><span class="gw">${fmtG(gW(g))}</span><span></span></div>`).join("")}</div></details>`:""}`;
+  ${gone.length?`<details class="card shelf"><summary><span class="e">🕊️</span>Let go<span class="count">${gone.length}</span></summary><div class="list2">${gone.map(g=>`<div class="grow gone">${gImg(g)?`<img class="gimg" src="${esc(gImg(g))}" alt="" loading="lazy" data-gzoom="${esc(g.id)}">`:`<span class="gimg e" aria-hidden="true">${esc(g.emoji||(GCAT[g.cat]||GCAT.other)[1])}</span>`}<div style="min-width:0"><button class="tt" data-gedit="${esc(g.id)}">${esc(g.name)}</button><div class="due">${g.note?esc(g.note):""}</div></div><span class="gw">${fmtG(gW(g))}</span><span></span></div>`).join("")}</div></details>`:""}`;
 }
 /* Export: CSV (with a BOM so Excel reads non-ASCII names), plain text by category, or the browser's print → PDF */
 function gearCsv(){const H=["Name","Type","Qty","Weight (g, each)","Weight source","Price (yen, each)","Price source","Notes","Product page","Photo","Let go","Packed"];
@@ -2393,10 +2395,12 @@ function gearForm(g){
         <div class="row">${S.assets?`<label class="btn" for="gFile">Choose a photo</label><input type="file" id="gFile" accept="image/*" class="sr">`:""}${g?.img?`<button class="btn sm" id="gImgClear" type="button">Remove photo</button>`:""}<span class="sub" id="gImgMsg">${S.assets?"":"Add photos in the online version"}</span></div>
         <input type="hidden" id="gImg" value="${v("img")}"></div>
       <label class="sub" for="gUrl2">Photo URL (optional)</label><input type="url" id="gUrl2" value="${/^[0-9a-f]{32}$/.test(g?.img||"")?"":v("img")}" placeholder="https://" autocomplete="off">
+      <label class="sub" for="gImgSrc">Photo source page (shown as credit)</label><input type="url" id="gImgSrc" value="${v("imgSrc")}" placeholder="https://" autocomplete="off">
+      <label class="sub" for="gEmoji">Emoji when there is no photo</label><input type="text" id="gEmoji" maxlength="8" value="${v("emoji")}" placeholder="${esc((GCAT[g?.cat]||GCAT.other)[1])}" autocomplete="off">
       <div class="row"><button class="btn primary" id="gOk">${g?"Save":"Add"}</button><button class="btn" id="gCancel">Cancel</button>${g?`<span style="flex:1"></span><button class="btn" id="gGone">${g.gone?"Have it again":"Let go"}</button><button class="ibtn" id="gDel" aria-label="Delete" title="Delete">🗑️</button>`:""}</div>
     </div></div>`;
     const done=v=>{$("#modal").innerHTML="";res(v)};
-    const read=()=>({name:$("#gName").value.trim().slice(0,80),cat:$("#gCat").value,qty:Math.max(1,Math.min(99,+$("#gQty").value||1)),grams:$("#gGrams").value===""?null:Math.max(0,Math.round(+$("#gGrams").value)),gsrc:$("#gSrc").value,price:$("#gPrice").value===""?null:Math.max(0,Math.round(+$("#gPrice").value)),psrc:$("#gPsrc").value,note:$("#gNote").value.trim().slice(0,120),url:$("#gUrl").value.trim(),img:$("#gImg").value.trim()||$("#gUrl2").value.trim()});
+    const read=()=>({name:$("#gName").value.trim().slice(0,80),cat:$("#gCat").value,qty:Math.max(1,Math.min(99,+$("#gQty").value||1)),grams:$("#gGrams").value===""?null:Math.max(0,Math.round(+$("#gGrams").value)),gsrc:$("#gSrc").value,price:$("#gPrice").value===""?null:Math.max(0,Math.round(+$("#gPrice").value)),psrc:$("#gPsrc").value,note:$("#gNote").value.trim().slice(0,120),url:$("#gUrl").value.trim(),img:$("#gImg").value.trim()||$("#gUrl2").value.trim(),imgSrc:$("#gImgSrc").value.trim(),emoji:$("#gEmoji").value.trim().slice(0,8)});
     $("#gName").focus();
     const fi=$("#gFile");if(fi)fi.onchange=async()=>{const f=fi.files&&fi.files[0];if(!f)return;$("#gImgMsg").textContent="Uploading…";
       try{const blob=await shrinkImage(f);const r=await S.assets.upload(blob,{type:"image/jpeg"});$("#gImg").value=r.id;$("#gUrl2").value="";
@@ -2413,7 +2417,7 @@ function gearForm(g){
 /* phones send 3–5 MB photos; a 900px JPEG is plenty for a list and keeps the artifact's storage small */
 function shrinkImage(file){return new Promise((res,rej)=>{const url=URL.createObjectURL(file),im=new Image();im.onload=()=>{URL.revokeObjectURL(url);const M=900,r=Math.min(1,M/Math.max(im.width,im.height)),c=document.createElement("canvas");c.width=Math.round(im.width*r);c.height=Math.round(im.height*r);c.getContext("2d").drawImage(im,0,0,c.width,c.height);c.toBlob(b=>b?res(b):rej(new Error("blob")),"image/jpeg",.85)};im.onerror=()=>{URL.revokeObjectURL(url);rej(new Error("img"))};im.src=url})}
 function zoomGear(id){const g=S.gear.find(x=>x.id===id),src=g&&gImg(g);if(!src||$("#modal").firstChild)return;
-  $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop gzoom" role="dialog" aria-modal="true" aria-label="${esc(g.name)}"><div class="top"><h2>${esc(g.name)}</h2><button class="ibtn" id="xZ" aria-label="Close">✕</button></div><img src="${esc(src)}" alt=""></div></div>`;
+  $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop gzoom" role="dialog" aria-modal="true" aria-label="${esc(g.name)}"><div class="top"><h2>${esc(g.name)}</h2><button class="ibtn" id="xZ" aria-label="Close">✕</button></div><img src="${esc(src)}" alt="">${gCredit(g)?`<p class="sub">${gCredit(g)}</p>`:""}</div></div>`;
   const done=()=>{$("#modal").innerHTML=""};$("#xZ").onclick=done;$("#scrim").onclick=e=>{if(e.target.id==="scrim")done()}}
 async function editGear(g){
   const r=await gearForm(g); if(!r) return;
