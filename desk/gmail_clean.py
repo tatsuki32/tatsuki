@@ -109,7 +109,7 @@ def read_client(path):
 def auth(path=None):
     path = path or find_client_file()
     if not path:
-        print("接続情報のファイルが見つかりません。~/Downloads に client_secret で始まる JSON を置いてください。")
+        print("Connection file not found. Put the JSON file that starts with client_secret in ~/Downloads.")
         return 1
     client = read_client(path)
     state, verifier = secrets.token_urlsafe(24), secrets.token_urlsafe(64)
@@ -125,7 +125,7 @@ def auth(path=None):
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.end_headers()
-            self.wfile.write("<p>接続の処理を受け取りました。この画面は閉じて大丈夫です。</p>".encode())
+            self.wfile.write("<p>Connection received. You can close this window.</p>".encode())
 
         def log_message(self, *a):
             pass  # the request line holds the code
@@ -136,7 +136,7 @@ def auth(path=None):
         "client_id": client["id"], "redirect_uri": redirect, "response_type": "code", "scope": SCOPES,
         "access_type": "offline", "prompt": "consent", "state": state,
         "code_challenge": challenge, "code_challenge_method": "S256"})
-    print("ブラウザで Google の画面を開きます。開かなければ、次の URL を開いてください。\n" + url, flush=True)
+    print("Opening the Google sign-in page in your browser. If it does not open, visit this URL.\n" + url, flush=True)
     webbrowser.open(url)
     srv.timeout = 300
     deadline = time.time() + 300
@@ -144,16 +144,16 @@ def auth(path=None):
         srv.handle_request()
     srv.server_close()
     if not got.get("code"):
-        print("接続できませんでした：" + (got.get("error") or "時間切れ"))
+        print("Could not connect: " + (got.get("error") or "timed out"))
         return 1
     data = _form(TOKEN_URL, {"code": got["code"], "client_id": client["id"], "client_secret": client["secret"],
                              "redirect_uri": redirect, "grant_type": "authorization_code", "code_verifier": verifier})
     if not data.get("refresh_token"):
-        print("更新用のトークンを受け取れませんでした。もう一度試してください。")
+        print("No refresh token was received. Please try again.")
         return 1
     _key_set("client", json.dumps(client))
     _key_set("refresh", data["refresh_token"])
-    print("接続しました。読み込んだファイルは、もう消して構いません：" + path)
+    print("Connected. You can delete the file that was read: " + path)
     return 0
 
 
@@ -250,9 +250,9 @@ def parse_unsub(value):
 
 def protected_reason(addr, name, subject, starred):
     if starred:
-        return "星を付けたメールがあります"
+        return "Has a starred email"
     if PROTECT.search(addr) or PROTECT.search(name) or PROTECT.search(subject or ""):
-        return "大事な連絡かもしれません"
+        return "May be an important message"
     return ""
 
 
@@ -332,7 +332,7 @@ def _scan():
             SCAN["error"] = "connect"
     except (GmailError, OSError) as e:
         with LOCK:
-            SCAN["error"] = "Gmail から読めませんでした。少し待ってもう一度試してください"
+            SCAN["error"] = "Could not read from Gmail. Wait a moment and try again"
         print("mailclean scan:", e, file=sys.stderr, flush=True)
     finally:
         with LOCK:

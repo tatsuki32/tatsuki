@@ -15,15 +15,15 @@ import wise_analysis
 import wise_sync
 
 API = "https://api.worldbank.org/v2"
-SOURCE = {"name": "世界銀行 International Comparison Program", "year": 2021, "url": "https://www.worldbank.org/en/programs/icp"}
+SOURCE = {"name": "World Bank International Comparison Program", "year": 2021, "url": "https://www.worldbank.org/en/programs/icp"}
 TOTAL = "9020000"
 # Spending is grouped by use, with the statistic's own definition beside it on the page
-USES = {"food": ("1101000", "食料品"), "outside": ("1111000", "外食・宿泊"), "transport": ("1107000", "交通"), "communication": ("1108000", "通信"), "housing": ("9060000", "住居・光熱"),
-        "goods": ("1103000;1105000", "衣類・家具・日用品"), "health": ("9080000", "医療"), "recreation": ("9110000", "娯楽・文化"), "education": ("9120000", "教育"), "other": ("1102000;9140000", "酒・たばこ・その他")}
+USES = {"food": ("1101000", "Groceries"), "outside": ("1111000", "Eating out / lodging"), "transport": ("1107000", "Transport"), "communication": ("1108000", "Phone / internet"), "housing": ("9060000", "Housing / utilities"),
+        "goods": ("1103000;1105000", "Clothing / furniture / household"), "health": ("9080000", "Health"), "recreation": ("9110000", "Leisure / culture"), "education": ("9120000", "Education"), "other": ("1102000;9140000", "Alcohol / tobacco / other")}
 MINE = {"食料品": "food", "コンビニ": "food", "外食・カフェ": "outside", "旅行・宿泊": "outside", "交通": "transport", "通信": "communication", "サブスク・ツール": "communication",
         "買い物": "goods", "日用品・薬": "goods", "医療": "health", "娯楽・文化": "recreation", "学び": "education", "手続き・手数料": "other"}
 WAGE_API = "https://en.wikipedia.org/w/api.php?action=parse&page=List_of_countries_by_minimum_wage&prop=text&format=json"
-WAGE_SOURCE = {"name": "Wikipedia: List of countries by minimum wage", "url": "https://en.wikipedia.org/wiki/List_of_countries_by_minimum_wage", "note": "各国の法令や ILO をまとめた一覧で、公的統計ではありません。更新不足の注意書きがあります"}
+WAGE_SOURCE = {"name": "Wikipedia: List of countries by minimum wage", "url": "https://en.wikipedia.org/wiki/List_of_countries_by_minimum_wage", "note": "A compiled list from national laws and the ILO, not an official statistic. It carries a notice that parts may be out of date"}
 WAGE_NAMES = {"Vietnam": "Viet Nam", "South Korea": "Korea, Rep.", "Egypt": "Egypt, Arab Rep.", "Russia": "Russian Federation", "Iran": "Iran, Islamic Rep.", "Turkey": "Turkiye", "The Bahamas": "Bahamas, The", "The Gambia": "Gambia, The", "Gambia": "Gambia, The",
               "Yemen": "Yemen, Rep.", "Venezuela": "Venezuela, RB", "Kyrgyzstan": "Kyrgyz Republic", "Laos": "Lao PDR", "Slovakia": "Slovak Republic", "Czech Republic": "Czechia", "Syria": "Syrian Arab Republic", "Hong Kong": "Hong Kong SAR, China", "Macau": "Macao SAR, China",
               "Democratic Republic of the Congo": "Congo, Dem. Rep.", "Republic of the Congo": "Congo, Rep.", "Ivory Coast": "Cote d'Ivoire", "Cape Verde": "Cabo Verde", "East Timor": "Timor-Leste", "Swaziland": "Eswatini", "Micronesia": "Micronesia, Fed. Sts.", "Saint Lucia": "St. Lucia", "Saint Kitts and Nevis": "St. Kitts and Nevis", "Saint Vincent and the Grenadines": "St. Vincent and the Grenadines", "Taiwan": "Taiwan, China"}
@@ -183,5 +183,5 @@ def view(rows, today):
 
 if __name__ == "__main__":
     ok = update()
-    print("ok" if ok else "stopped: 統計を取れませんでした", len(wise_sync.read_json("world.json", {}).get("countries") or {}), "countries", flush=True)
+    print("ok" if ok else "stopped: could not fetch the statistics", len(wise_sync.read_json("world.json", {}).get("countries") or {}), "countries", flush=True)
     sys.exit(0 if ok else 1)

@@ -135,9 +135,9 @@ def mail_tasks(dues, stored):
             tid = "t" + due_doc_id(uid)
             st = stored.get(tid, {}).get("status", "notyet")
             who = re.sub(r"\s*[<(（].*$", "", i.get("from") or "").strip()
-            subject = i.get("subject_ja") or i.get("subject") or "（件名なし）"
+            subject = i.get("subject_ja") or i.get("subject") or "(no subject)"
             topic = i.get("topic") or re.sub(r"^((re|fwd?)[:：]\s*)+", "", subject, flags=re.I)
-            title = f"メール返信 {topic}について（{who}）" if (i.get("priority") == "Reply drafted" or i.get("draft")) and who else subject
+            title = f"Email reply: {topic} ({who})" if (i.get("priority") == "Reply drafted" or i.get("draft")) and who else subject
             out.append({"id": tid, "title": title, "source": "mail",
                         "sourceRef": uid, "status": st, "due": due, "kind": "事務", "from": i.get("from") or ""})
     return [x for x in out if x["sourceRef"] not in closed and x["status"] in OPEN]
@@ -204,7 +204,7 @@ def kind_of(t):
     """MVP の見分け方：メール由来・手続き系の言葉は事務、それ以外は集中"""
     if t.get("source") == "mail":
         return "事務"
-    return "事務" if re.search(r"返信|連絡|申請|手続|支払|予約|提出|確認|メール|電話", t.get("title", "")) else "集中"
+    return "事務" if re.search(r"返信|連絡|申請|手続|支払|予約|提出|確認|メール|電話|\b(reply|replies|contact|apply|application|paperwork|pay(ment)?|book(ing)?|submit|confirm|check|e-?mail|call|nudge)\b", t.get("title", ""), re.I) else "集中"
 
 
 def candidates():
@@ -250,7 +250,7 @@ def candidates():
         t["dueToday"] = t["due"] is not None and now <= t["due"] <= day_end
         t["overdue"] = t["due"] is not None and t["due"] < now
     return {
-        "now": fmt(now), "weekday": "月火水木金土日"[datetime.fromtimestamp(now / 1000, HCMC).weekday()],
+        "now": fmt(now), "weekday": ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")[datetime.fromtimestamp(now / 1000, HCMC).weekday()],
         "mode": mode, "nextEvent": nxt and {"title": nxt["title"], "start": nxt["start"]}, "freeMinutes": free_min,
         "short": free_min is not None and free_min < 30,
         "events": [{k: e[k] for k in ("title", "allDay", "start", "end", "past")} for e in events],
@@ -266,13 +266,13 @@ def put_task(task_id, rec):
         with urllib.request.urlopen(req, timeout=5) as r:
             r.read()
     except OSError as e:
-        sys.exit(f"Desk サーバー（localhost:4747）につながりません：{e}")
+        sys.exit(f"Cannot reach the Desk server (localhost:4747): {e}")
 
 
 def add(title):
     title = " ".join(title.split())[:120]
     if not title:
-        sys.exit("タイトルが空です")
+        sys.exit("The title is empty")
     tid = "t" + format(now_ms(), "x") + os.urandom(2).hex()
     put_task(tid, {"title": title, "status": "doing", "source": "manual", "sourceRef": "", "due": None, "note": "",
                    "createdAt": now_ms(), "deleted": False, "updatedAt": now_ms()})
@@ -283,7 +283,7 @@ def start(task_id):
     c = candidates()
     t = next((x for x in c["tasks"] if x["id"] == task_id), None)
     if not t:
-        sys.exit(f"タスクが見つかりません：{task_id}")
+        sys.exit(f"Task not found: {task_id}")
     stored = {x["id"]: x for x in read_json("tasks.json", []) if isinstance(x, dict) and x.get("id")}
     old = stored.get(task_id, {})
     rec = {"title": t["title"], "status": "doing", "source": t["source"], "sourceRef": t.get("sourceRef", old.get("sourceRef", "")),

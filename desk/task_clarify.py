@@ -117,7 +117,7 @@ def main(argv):
         saved = apply_rows(tasks._load(), rows, int(time.time() * 1000))
         for rec in saved:
             tasks._put(rec)
-        print(f"整えた {len(saved)}件" + (f" / 飛ばした {len(rows) - len(saved)}件" if len(rows) != len(saved) else ""))
+        print(f"Clarified {len(saved)}" + (f" / skipped {len(rows) - len(saved)}" if len(rows) != len(saved) else ""))
     else:
         sys.exit(__doc__)
 

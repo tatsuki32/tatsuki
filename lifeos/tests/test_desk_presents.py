@@ -53,5 +53,5 @@ class Presents(SandboxCase):
         wise_sync.write_json("flows.json", {"in:取引先": "income"})
         self.assertEqual(presents.add_wise(), 1)
         p = presents.load()[0]
-        self.assertEqual((p["kind"], p["title"], p["from"], p["date"]), ("payment", "10 USD の入金", "取引先", "2026-11-01"))
+        self.assertEqual((p["kind"], p["title"], p["from"], p["date"]), ("payment", "10 USD received", "取引先", "2026-11-01"))
         self.assertEqual(presents.add_wise(), 0)

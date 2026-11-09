@@ -1,0 +1,23 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "desk-test",
+      "runtimeExecutable": "/bin/sh",
+      "runtimeArgs": ["-c", "cd desk && DESK_PORT=${PORT:-4791} exec python3 server.py"],
+      "port": 4791
+    },
+    {
+      "name": "desk-usage-test",
+      "runtimeExecutable": "/bin/sh",
+      "runtimeArgs": ["-c", "cd desk && DESK_USAGE_DIR=/tmp/claude/desk-usage-test DESK_PORT=${PORT:-4792} exec python3 server.py"],
+      "port": 4792
+    },
+    {
+      "name": "desk-notify-test",
+      "runtimeExecutable": "/bin/sh",
+      "runtimeArgs": ["-c", "cd desk && NOTIFY_DIR=/tmp/claude/desk-notify-test DESK_PORT=${PORT:-4793} exec python3 server.py"],
+      "port": 4793
+    }
+  ]
+}

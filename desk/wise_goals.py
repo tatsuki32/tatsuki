@@ -18,6 +18,8 @@ import wise_sync
 
 FIELDS = ("ライフプランニング", "リスク管理", "金融資産運用", "タックスプランニング", "不動産", "相続・事業承継")
 REPORT = "金融機関のレポート"
+# field ids stay Japanese (they are stored in lessons.json); the page shows these labels
+FIELD_EN = {"ライフプランニング": "Life planning", "リスク管理": "Risk management", "金融資産運用": "Investing", "タックスプランニング": "Tax planning", "不動産": "Real estate", "相続・事業承継": "Inheritance and succession", REPORT: "Institutional reports"}
 REPORT_EVERY = 5  # one lesson in this many reads a published report instead of the next exam field
 HISTORY = 12
 
@@ -215,20 +217,20 @@ def put_lesson(new, today):
     field, title, body, source, topic = (str(new.get(k) or "").strip() for k in ("field", "title", "body", "source", "topic"))
     url, year, quiz = new.get("url"), new.get("year"), new.get("quiz") or {}
     if field not in FIELDS + (REPORT,):
-        return {"saved": False, "why": "分野が違います"}
+        return {"saved": False, "why": "Unknown field"}
     if not (title and body and source and topic):
-        return {"saved": False, "why": "題名・本文・話題・出典が必要です"}
+        return {"saved": False, "why": "Title, body, topic and source are needed"}
     if not (isinstance(url, str) and url.startswith("https://")) or not isinstance(year, int):
-        return {"saved": False, "why": "出典の URL と年が必要です"}
+        return {"saved": False, "why": "The source URL and year are needed"}
     choices = quiz.get("choices") if isinstance(quiz.get("choices"), list) else []
     answer = quiz.get("answer")
     if not str(quiz.get("q") or "").strip() or not 2 <= len(choices) <= 4 or not isinstance(answer, int) or isinstance(answer, bool) or not 0 <= answer < len(choices):
-        return {"saved": False, "why": "クイズの問い、2〜4個の選択肢、正解が必要です"}
+        return {"saved": False, "why": "A quiz question, 2 to 4 choices and the answer are needed"}
     if any(w in title + body for w in wise_analysis.BANNED_WORDS):
-        return {"saved": False, "why": "使わない言葉があります"}
+        return {"saved": False, "why": "Contains a word not used here"}
     saved = lessons()
     if any(s["topic"] == topic for s in saved):
-        return {"saved": False, "why": "同じ話題がすでにあります"}
+        return {"saved": False, "why": "This topic already exists"}
     lesson = {"id": f"{today}-{len(saved) + 1}", "date": today, "field": field, "topic": topic[:60], "title": title[:80], "body": body[:1200], "source": source[:80], "url": url[:300], "year": year,
               "quiz": {"q": str(quiz["q"])[:200], "choices": [str(c)[:120] for c in choices], "answer": answer, "why": str(quiz.get("why") or "")[:300]}}
     wise_sync.write_json("lessons.json", saved + [lesson])
@@ -255,7 +257,7 @@ def learn(today):
         if given:
             p["answered"] += 1
             p["correct"] += 1 if given["correct"] else 0
-    return {"lessons": [{**s, "given": answers.get(s["id"])} for s in reversed(saved[-60:])], "progress": progress, "fields": FIELDS + (REPORT,)}
+    return {"lessons": [{**s, "given": answers.get(s["id"])} for s in reversed(saved[-60:])], "progress": progress, "fields": FIELDS + (REPORT,), "fieldLabels": FIELD_EN}
 
 
 def lesson_context():

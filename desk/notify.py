@@ -46,25 +46,25 @@ OVERUSE_MIN = 30 * MIN
 CALENDAR_OLD = 6 * HOUR
 SOUNDS = {"now": "Glass", "digest": "Tink"}
 SLOTS = ("morning", "noon", "evening")
-SLOT_TITLES = {"morning": "朝のまとめ", "noon": "昼のまとめ", "evening": "夕方のまとめ"}
+SLOT_TITLES = {"morning": "Morning digest", "noon": "Midday digest", "evening": "Afternoon digest"}
 
 # id, label on the settings screen, tier
 KINDS = (
-    ("reply", "今すぐ返信が要る連絡", "now"),
-    ("event30", "予定の30分前", "now"),
-    ("task30", "タスクの30分前", "now"),
-    ("event6h", "予定の6時間前", "heads"),
-    ("morning", "朝のまとめ", "digest"),
-    ("noon", "昼のまとめ", "digest"),
-    ("evening", "夕方のまとめ", "digest"),
-    ("overdue", "期日を過ぎたタスク", "line"),
-    ("meal", "食事の記録", "line"),
-    ("habit", "習慣とルーティン", "line"),
-    ("progress", "終わったタスクと進行中", "line"),
-    ("triage", "未分類のタスク", "line"),
-    ("screen", "画面時間", "line"),
-    ("move", "運動", "line"),
-    ("nudge", "忘れ防止（1日1件）", "line"),
+    ("reply", "Messages that need a reply now", "now"),
+    ("event30", "30 minutes before an event", "now"),
+    ("task30", "30 minutes before a task is due", "now"),
+    ("event6h", "6 hours before an event", "heads"),
+    ("morning", "Morning digest", "digest"),
+    ("noon", "Midday digest", "digest"),
+    ("evening", "Afternoon digest", "digest"),
+    ("overdue", "Tasks past their due date", "line"),
+    ("meal", "Meal log", "line"),
+    ("habit", "Habits and routines", "line"),
+    ("progress", "Finished and in-progress tasks", "line"),
+    ("triage", "Unsorted tasks", "line"),
+    ("screen", "Screen time", "line"),
+    ("move", "Exercise", "line"),
+    ("nudge", "Gentle reminder (one a day)", "line"),
 )
 DEFAULTS = {
     "on": {k: True for k, _, _ in KINDS},
@@ -186,7 +186,7 @@ def start_ts(text):
 
 def task_title(t):
     c = t.get("clear") or {}
-    return (c.get("title") if c.get("title") and not c.get("titleOff") else t.get("title")) or "（無題）"
+    return (c.get("title") if c.get("title") and not c.get("titleOff") else t.get("title")) or "(untitled)"
 
 
 def timed_due(t):
@@ -210,7 +210,7 @@ def short(text, n=40):
 
 def dur(sec):
     h, m = int(sec) // 3600, int(sec) % 3600 // 60
-    return f"{h}時間{m}分" if h else f"{m}分"
+    return f"{h}h {m}m" if h else f"{m}m"
 
 
 def in_ring(minute, s):
@@ -228,18 +228,18 @@ def instant(now, data, s, tz=None):
         if st is None or not e.get("id"):
             continue
         left = st - now
-        line = f"{hhmm(st, tz)} {short(e.get('title') or '予定')}"
+        line = f"{hhmm(st, tz)} {short(e.get('title') or 'Event')}"
         if 0 < left <= 30 * MIN:
             out.append({"id": f"event30:{e['id']}:{int(st)}", "kind": "event30", "tier": "now",
-                        "title": f"予定まであと{max(1, round(left / 60))}分", "body": line, "link": "#calendar"})
+                        "title": f"Event in {max(1, round(left / 60))} min", "body": line, "link": "#calendar"})
         elif 5 * HOUR < left <= 6 * HOUR:
             out.append({"id": f"event6h:{e['id']}:{int(st)}", "kind": "event6h", "tier": "heads",
-                        "title": "今日の予定", "body": line + "（あと約6時間）", "link": "#calendar"})
+                        "title": "Today's event", "body": line + " (in about 6 hours)", "link": "#calendar"})
     for t in data["tasks"]:
         due = timed_due(t) if t.get("status") in OPEN else None
         if due is not None and 0 < due - now <= 30 * MIN:
             out.append({"id": f"task30:{t['id']}:{int(due)}", "kind": "task30", "tier": "now",
-                        "title": f"タスクの期日まであと{max(1, round((due - now) / 60))}分",
+                        "title": f"Task due in {max(1, round((due - now) / 60))} min",
                         "body": f"{hhmm(due, tz)} {short(task_title(t))}", "link": "#tasks", "task": t["id"]})
     return out + urgent(data)
 
@@ -256,8 +256,8 @@ def urgent(data):
         if t and t.get("status") not in OPEN:
             continue
         who = sender(m.get("from"))
-        out.append({"id": f"reply:mail:{m['key']}", "kind": "reply", "tier": "now", "title": "今すぐ返信が要るメール",
-                    "body": short(m.get("topic") or m.get("subject_ja") or m.get("subject") or "メール") + (f"（{who}）" if who else ""),
+        out.append({"id": f"reply:mail:{m['key']}", "kind": "reply", "tier": "now", "title": "Email that needs a reply now",
+                    "body": short(m.get("topic") or m.get("subject_ja") or m.get("subject") or "Email") + (f" ({who})" if who else ""),
                     "why": short(m.get("urgentWhy"), 60), "link": "#tasks", "task": t and t["id"]})
     for tid, w in data["whatsapp"].items():
         if not isinstance(w, dict) or w.get("urgent") is not True:
@@ -266,8 +266,8 @@ def urgent(data):
         if t and t.get("status") not in OPEN:
             continue
         out.append({"id": f"reply:wa:{tid}:{w.get('lastId') or w.get('lastAt')}", "kind": "reply", "tier": "now",
-                    "title": "今すぐ返信が要る WhatsApp",
-                    "body": short(w.get("topic") or "メッセージ") + (f"（{short(w.get('name'), 20)}）" if w.get("name") else ""),
+                    "title": "WhatsApp message that needs a reply now",
+                    "body": short(w.get("topic") or "Message") + (f" ({short(w.get('name'), 20)})" if w.get("name") else ""),
                     "why": short(w.get("urgentWhy"), 60), "link": "#tasks", "task": tid})
     return out
 
@@ -282,21 +282,21 @@ def morning_lines(now, data, s, st, tz):
     lines, on = [], s["on"]
     day = local(now, tz).date()
     for item in st["carry"]:  # urgent replies that came in the quiet hours
-        lines.append(("reply", f"返信：{item['body']}"))
+        lines.append(("reply", f"Reply: {item['body']}"))
     evs = sorted(((start_ts(e.get("start")), e) for e in data["events"] if not e.get("allDay") and start_ts(e.get("start"))), key=lambda x: x[0])
     evs = [(t, e) for t, e in evs if t > now and local(t, tz).date() == day]
     if evs:
-        lines.append(("event6h", "今日の予定：" + "、".join(f"{hhmm(t, tz)} {short(e.get('title'), 16)}" for t, e in evs[:3])
-                      + (f" ほか{len(evs) - 3}件" if len(evs) > 3 else "")))
+        lines.append(("event6h", "Today's events: " + ", ".join(f"{hhmm(t, tz)} {short(e.get('title'), 16)}" for t, e in evs[:3])
+                      + (f" and {len(evs) - 3} more" if len(evs) > 3 else "")))
     dues = sorted(((timed_due(t), t) for t in data["tasks"] if t.get("status") in OPEN and timed_due(t)), key=lambda x: x[0])
     dues = [(d, t) for d, t in dues if d > now and local(d, tz).date() == day]
     if dues:
-        lines.append(("task30", "今日が期日：" + "、".join(f"{hhmm(d, tz)} {short(task_title(t), 16)}" for d, t in dues[:3])))
+        lines.append(("task30", "Due today: " + ", ".join(f"{hhmm(d, tz)} {short(task_title(t), 16)}" for d, t in dues[:3])))
     if on["overdue"]:
         late = [t for t in data["tasks"] if t.get("status") == "notyet" and isinstance(t.get("due"), (int, float))
                 and 0 < now - t["due"] / 1000 <= 3 * DAY and f"overdue:{t['id']}:{int(t['due'])}" not in st["sent"]]
         if late:
-            lines.append(("overdue", f"期日を過ぎた未着手：{short(task_title(late[0]), 20)}" + (f" ほか{len(late) - 1}件" if len(late) > 1 else ""),
+            lines.append(("overdue", f"Past due, not started: {short(task_title(late[0]), 20)}" + (f" and {len(late) - 1} more" if len(late) > 1 else ""),
                           [f"overdue:{t['id']}:{int(t['due'])}" for t in late]))
     return lines
 
@@ -305,23 +305,23 @@ def noon_lines(now, data, s, st, tz):
     lines, on = [], s["on"]
     today = datetime.fromtimestamp(now, HCMC).strftime("%Y-%m-%d")
     if on["meal"] and not any(r.get("date") == today and str(r.get("kind", "")).startswith("meal") for r in data["body"]):
-        lines.append(("meal", "今日の食事の記録がありません。食べたら写真を1枚。"))
+        lines.append(("meal", "No meals logged today. A photo after you eat is enough."))
     if on["habit"]:
         left = [h.get("name") or "" for h in data["habits"] if today not in (h.get("done") or [])]
         if left:
-            lines.append(("habit", "習慣がまだ：" + "、".join(short(n, 10) for n in left[:3]) + (f" ほか{len(left) - 3}件" if len(left) > 3 else "")))
+            lines.append(("habit", "Habits still open: " + ", ".join(short(n, 10) for n in left[:3]) + (f" and {len(left) - 3} more" if len(left) > 3 else "")))
         items = [r for r in data["routines"] if r.get("when") == "morning"]
         marks = (next((r for r in data["routinelog"] if r.get("id") == today), {}).get("morning")) or {}
         rest = sum(1 for r in items if not marks.get(r.get("id")))
         if items and rest:
-            lines.append(("habit", f"朝のルーティン：残り{rest}個"))
+            lines.append(("habit", f"Morning routine: {rest} left"))
     if on["progress"]:
         lines += progress(now, data, tz)
     if on["triage"]:
         loose = [t for t in data["tasks"] if t.get("status") == "notyet" and not t.get("planDate") and not t.get("due")]
         key = "triage:" + local(now, tz).strftime("%G-%V")
         if len(loose) > TRIAGE_OVER and key not in st["sent"]:
-            lines.append(("triage", f"未分類が{len(loose)}件。「仕分ける」は10枚で区切れます。", [key]))
+            lines.append(("triage", f"{len(loose)} unsorted tasks. Sort them in batches of 10.", [key]))
     return lines
 
 
@@ -330,10 +330,10 @@ def progress(now, data, tz):
     doing = [t for t in data["tasks"] if t.get("status") == "doing"]
     out = []
     if done:
-        out.append(("progress", f"今日終わったタスク：{len(done)}件（{short(task_title(done[-1]), 16)} など）" if len(done) > 1
-                    else f"今日終わったタスク：{short(task_title(done[0]), 24)}"))
+        out.append(("progress", f"Finished today: {len(done)} tasks ({short(task_title(done[-1]), 16)} and others)" if len(done) > 1
+                    else f"Finished today: {short(task_title(done[0]), 24)}"))
     if doing:
-        out.append(("progress", f"進行中：{short(task_title(doing[0]), 20)}" + (f" ほか{len(doing) - 1}件" if len(doing) > 1 else "")))
+        out.append(("progress", f"In progress: {short(task_title(doing[0]), 20)}" + (f" and {len(doing) - 1} more" if len(doing) > 1 else "")))
     return out
 
 
@@ -345,7 +345,7 @@ def screen_lines(now, data):
         return []
     name = lambda b: data["appNames"].get(b) or b.rsplit(".", 1)[-1]
     top = max(apps, key=apps.get)
-    out = [("screen", f"今日の画面時間：{dur(sum(apps.values()))}（一番長いのは {name(top)} {dur(apps[top])}）")]
+    out = [("screen", f"Screen time today: {dur(sum(apps.values()))} (most in {name(top)}, {dur(apps[top])})")]
     past = [datetime.fromtimestamp(now - i * DAY, HCMC).strftime("%Y-%m-%d") for i in range(1, 8)]
     past = [((days.get(d) or {}).get("mac") or {}).get("apps") for d in past]
     past = [p for p in past if p]
@@ -356,7 +356,7 @@ def screen_lines(now, data):
             if sec >= OVERUSE_MIN and avg > 0 and sec > avg * OVERUSE:
                 over.append((sec - avg, b))
         for extra, b in sorted(over, reverse=True)[:2]:
-            out.append(("screen", f"{name(b)} がいつもより{dur(extra)}長いです。"))
+            out.append(("screen", f"{name(b)} ran {dur(extra)} longer than usual."))
     return out
 
 
@@ -371,11 +371,11 @@ def nudge(now, data, st, tz):
         first = data["top3"][0]
         if not touched and first.get("id") and fresh(first["id"]):
             title = task_title(by_id.get(first["id"]) or first)
-            return first["id"], f"今日の3つの最初：{short(title, 24)}。5分だけ開いてみますか。"
+            return first["id"], f"First of today's three: {short(title, 24)}. Open it for five minutes?"
     stale = sorted((t for t in data["tasks"] if t.get("status") == "doing" and isinstance(t.get("updatedAt"), (int, float))
                     and now - t["updatedAt"] / 1000 >= STALE_DOING and fresh(t["id"])), key=lambda t: t["updatedAt"])
     if stale:
-        return stale[0]["id"], f"進行中のまま：{short(task_title(stale[0]), 24)}。続きから入れます。"
+        return stale[0]["id"], f"Still in progress: {short(task_title(stale[0]), 24)}. You can pick up where you left off."
     return None, None
 
 
@@ -386,9 +386,9 @@ def evening_lines(now, data, s, st, tz):
     if on["move"]:
         since = datetime.fromtimestamp(now - 3 * DAY, HCMC).strftime("%Y-%m-%d")
         if not any(r.get("kind") in ("steps", "workout") and str(r.get("date", "")) > since for r in data["body"]):
-            lines.append(("move", "歩数と筋トレの記録が3日ありません。少し歩きませんか。"))
+            lines.append(("move", "No steps or workouts logged for 3 days. A short walk counts."))
     if on["progress"]:
-        lines += [p for p in progress(now, data, tz) if p[1].startswith("今日終わった")]
+        lines += [p for p in progress(now, data, tz) if p[1].startswith(("Finished today", "今日終わった"))]
     if on["nudge"]:
         tid, text = nudge(now, data, st, tz)
         if tid:
@@ -432,8 +432,8 @@ def plan(now, data, s, st, tz=None, focus=False):
         elif used >= URGENT_CAP:
             log += [entry(n, False, "cap") for n in replies]
         elif len(replies) > URGENT_TOGETHER:
-            one = {"id": "reply:many:" + str(int(now)), "kind": "reply", "tier": "now", "title": f"今すぐ返信が要る連絡が{len(replies)}件",
-                   "body": "、".join(n["body"] for n in replies[:2]) + " ほか", "link": "#tasks", "lines": [n["body"] for n in replies]}
+            one = {"id": "reply:many:" + str(int(now)), "kind": "reply", "tier": "now", "title": f"{len(replies)} messages need a reply now",
+                   "body": ", ".join(n["body"] for n in replies[:2]) + " and more", "link": "#tasks", "lines": [n["body"] for n in replies]}
             show.append(one)
             log.append(entry(one, True))
             st["urgent"][day] = used + 1
@@ -474,7 +474,7 @@ def plan(now, data, s, st, tz=None, focus=False):
                 st["nudged"][line[3]] = int(now)
         texts = [line[1] for line in lines]
         n = {"id": f"digest:{slot}:{day}", "kind": slot, "tier": "digest", "title": SLOT_TITLES[slot],
-             "body": "\n".join(texts[:2]) + (f"\nほか{len(texts) - 2}件は Desk のお知らせに" if len(texts) > 2 else ""),
+             "body": "\n".join(texts[:2]) + (f"\n{len(texts) - 2} more in Desk notices" if len(texts) > 2 else ""),
              "lines": texts, "link": "#notices"}
         show.append(n)
         log.append(entry(n, True))
@@ -552,7 +552,7 @@ def view(now=None):
     cal = (read_json(os.path.join(DATA, "docs", "calendar", "upcoming.json"), {}) or {}).get("fetchedAt")
     problem = ""
     if isinstance(cal, (int, float)) and now - cal / 1000 > CALENDAR_OLD:
-        problem = f"予定の取り込みが{int((now - cal / 1000) // HOUR)}時間止まっています。予定の通知は古い内容で動いています。"
+        problem = f"Calendar import has been paused for {int((now - cal / 1000) // HOUR)} hours. Event notifications are using older data."
     try:
         time.tzset()
     except AttributeError:
@@ -584,7 +584,7 @@ def pause(rec, now=None):
 
 
 def test():
-    ok = show_mac({"title": "通知の確認", "body": "この音と表示で届きます。", "tier": "now"}, True)
+    ok = show_mac({"title": "Test notification", "body": "This is how notifications look and sound.", "tier": "now"}, True)
     return (200, {"ok": True}) if ok else (503, {"error": "could not show"})
 
 

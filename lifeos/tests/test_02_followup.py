@@ -179,7 +179,7 @@ class TestAsk(FollowupCase):
         self.core.morning()
         no = self.core.needs_detail()[0]["no"]
         self.assertEqual(self.core.save_details([{"no": no, "topic": "見積もり", "summary": "見積もりの確認を頼んだ。"}]), 1)
-        self.assertEqual(tasks.open_tasks()[0]["title"], "メール催促 見積もりについて（someone@example.com）")
+        self.assertEqual(tasks.open_tasks()[0]["title"], "Email nudge: 見積もり (someone@example.com)")
         self.assertEqual(self.core.needs_detail(), [])
         view = self.core.desk_view()["items"][0]
         self.assertEqual((view["taskId"], view["summary"]), (tasks.open_tasks()[0]["id"], "見積もりの確認を頼んだ。"))
@@ -196,7 +196,7 @@ class TestAsk(FollowupCase):
         self.core.morning()
         task = tasks.open_tasks()
         self.assertEqual([t["title"] for t in task], [self.core.task_title(self.core.read_state()["threads"]["b"])])
-        self.assertTrue(task[0]["title"].startswith("メール催促 "))
+        self.assertTrue(task[0]["title"].startswith("Email nudge"))
         self.assertTrue(task[0]["title"].endswith("について（山田）"))
         self.assertEqual(task[0]["planDate"], self.day)
         self.snap(self.thread("b", days=0, last="them"))

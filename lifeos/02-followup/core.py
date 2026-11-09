@@ -151,11 +151,12 @@ def _who(item):
 
 
 def task_title(item):
-    """「メール催促 用件について（名前）」. A chat has no subject: its topic comes once Claude has read it."""
-    kind = "WhatsApp催促" if _is_chat(item) else "メール催促"
-    subject = "" if _is_chat(item) or "件名なし" in item["subject"] else re.sub(r"^((re|fwd?)[:：]\s*)+", "", item["subject"], flags=re.I)
+    """"Email nudge: <topic> (<name>)". A chat has no subject: its topic comes once Claude has read it."""
+    kind = "WhatsApp nudge" if _is_chat(item) else "Email nudge"
+    no_subject = "件名なし" in item["subject"] or "no subject" in item["subject"].lower()
+    subject = "" if _is_chat(item) or no_subject else re.sub(r"^((re|fwd?)[:：]\s*)+", "", item["subject"], flags=re.I)
     topic = item.get("topic") or subject
-    return f"{kind} {topic}について（{_who(item)}）" if topic else f"{kind}（{_who(item)}）"
+    return f"{kind}: {topic} ({_who(item)})" if topic else f"{kind} ({_who(item)})"
 
 
 def _queue_tasks(s, day, cfg):
@@ -163,7 +164,7 @@ def _queue_tasks(s, day, cfg):
     due = sorted((i for i in s["threads"].values() if i["state"] == "waiting" and not i.get("taskId")
                   and age_days(i, day) >= cfg["draftDays"]), key=lambda i: i["waitingAt"])
     for item in due[:MAX_TASKS_PER_RUN]:
-        note = "この画面の文面をコピーして、WhatsApp で自分で送る。" if _is_chat(item) else "Gmail の下書きを開いて、自分で送る。Life OS は送信しません。"
+        note = "Copy the draft on this screen and send it yourself in WhatsApp." if _is_chat(item) else "Open the Gmail draft and send it yourself. Life OS does not send."
         rec = tasks.add(task_title(item), source="lifeos-02", source_ref=item["threadId"], note=note)
         tasks._put({**rec, "planDate": day})
         item["taskId"] = rec["id"]
@@ -339,8 +340,8 @@ def answer(no, choice, day=None):
         if not item.get("draft"):
             return f"「{name}」の下書きがまだありません。朝の処理で作ったあとに答えてください。"
         if not item.get("taskId"):
-            item["taskId"] = tasks.add("催促を送る：" + name, source="lifeos-02", source_ref=item["threadId"],
-                                       note="Gmail の下書きを開いて、自分で送る。Life OS は送信しません。")["id"]
+            item["taskId"] = tasks.add("Send nudge: " + name, source="lifeos-02", source_ref=item["threadId"],
+                                       note="Open the Gmail draft and send it yourself. Life OS does not send.")["id"]
         item.update(state="send", holdUntil=None)
         url = item["draft"].get("viewUrl") or "Gmail の下書き"
         return f"送信はしていません。下書きを確かめて、自分で送ってください：{url}\nDesk のタスクにも入れました。"

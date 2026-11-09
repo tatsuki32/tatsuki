@@ -250,8 +250,8 @@ def lifeos_tools():
             if not isinstance(rec, dict):
                 raise ValueError("object expected")
         except (OSError, ValueError):
-            rec = {"no": slug[:2], "name": slug, "status": "blocked", "oneline": "tool.json を読めません",
-                   "blockers": [{"what": "tool.json", "why": "ファイルの形が壊れています。", "needs": "担当の作業で直す"}]}
+            rec = {"no": slug[:2], "name": slug, "status": "blocked", "oneline": "Cannot read tool.json",
+                   "blockers": [{"what": "tool.json", "why": "The file is malformed.", "needs": "Fix it in that tool's own work"}]}
         out.append({**rec, "id": slug})
     return out
 
@@ -448,16 +448,16 @@ def memolink_run():
     """POST /api/memolink/run: one pass, never two at once. The answer holds counts only, never a memo's words."""
     core = memolink_core()
     if core is None:
-        return 404, {"error": "メモ連携がこの Desk に入っていません"}
+        return 404, {"error": "Memo link is not installed in this Desk"}
     if not MEMOLINK_LOCK.acquire(blocking=False):
-        return 409, {"error": "連携しています。終わるまでお待ちください"}
+        return 409, {"error": "Linking is in progress. Please wait for it to finish"}
     try:
         core.run()
         return 200, core.desk_view()
     except core.desk_notes.NoteStoreError as e:
         return 500, {"error": str(e)}
     except Exception:
-        return 500, {"error": "連携できませんでした。元のメモは変わっていません"}
+        return 500, {"error": "Linking did not complete. The original memos are unchanged"}
     finally:
         MEMOLINK_LOCK.release()
 
@@ -515,7 +515,7 @@ def open_claude(cmd, arg):
             f"cd {shlex.quote(REPO)} || exit 1\n"
             f'P="$(cat {shlex.quote(msg)})"\n'
             f"rm -rf {shlex.quote(d)}\n"
-            'if ! command -v claude >/dev/null; then echo "claude が見つかりません（Claude Code を入れてください）"; read -r; exit 1; fi\n'
+            'if ! command -v claude >/dev/null; then echo "claude was not found (install Claude Code)"; read -r; exit 1; fi\n'
             'exec claude "$P"\n'
         )
     os.chmod(script, 0o700)
@@ -532,7 +532,7 @@ def focus_call(path, body=None):
         except urllib.error.HTTPError as e:
             return e.code, json.load(e)
     except (OSError, ValueError):
-        return 502, {"error": "FocusBlock につながりません"}
+        return 502, {"error": "Cannot reach FocusBlock"}
 
 
 def focus_state():
@@ -573,7 +573,7 @@ def save_upload(data):
     """Stores a file under a name made from its content, so the same file is kept once. Returns its URL."""
     kind = upload_kind(data)
     if not kind:
-        raise ValueError("画像か PDF だけ置けます")
+        raise ValueError("Only images and PDFs can be uploaded")
     name = hashlib.sha256(data).hexdigest()[:32] + "." + kind
     os.makedirs(UPLOADS, exist_ok=True)
     path = os.path.join(UPLOADS, name)
@@ -600,7 +600,7 @@ def lifelog_put(parts, rec):
         try:
             out = lifelog.set_settings(rec)
         except (TypeError, ValueError):
-            return 400, {"error": "値の形が違います"}
+            return 400, {"error": "The value has the wrong shape"}
     elif parts[0] == "receipts" and len(parts) == 2:
         out = lifelog.settle_receipt(parts[1], rec.get("state"), rec.get("wiseId"))
     else:
@@ -677,7 +677,7 @@ class Handler(BaseHTTPRequestHandler):
             n = int(self.headers.get("Content-Length") or 0)
             if n > utilities.PDF_MAX:
                 self.close_connection = True
-                return self.send(413, {"error": "500MB までです"})
+                return self.send(413, {"error": "The limit is 500MB"})
             q = parse_qs(urlsplit(self.path).query)
             return self.send(*utilities.start_pdf(self.rfile, n, q.get("name", [""])[0], q.get("level", [""])[0]))
         if not (self.headers.get("Content-Type") or "").startswith("application/json"):
@@ -826,13 +826,13 @@ class Handler(BaseHTTPRequestHandler):
         n = int(self.headers.get("Content-Length") or 0)
         if n > UPLOAD_MAX:
             self.close_connection = True
-            return self.send(413, {"error": "20MB までです"})
+            return self.send(413, {"error": "The limit is 20MB"})
         try:
             return self.send(200, {"url": save_upload(self.rfile.read(n))})
         except ValueError as e:
             return self.send(415, {"error": str(e)})
         except OSError:
-            return self.send(500, {"error": "保存できませんでした"})
+            return self.send(500, {"error": "Could not save"})
 
     def web_get(self, what, q):
         one = lambda k, default="": q.get(k, [default])[0]
@@ -990,7 +990,7 @@ class Handler(BaseHTTPRequestHandler):
         except ValueError:
             return self.send(400, {"error": "bad export"})
         if data is None:
-            return self.send(503, "PDF を作れませんでした。xcode-select --install を実行してから、もう一度お試しください。", "text/plain; charset=utf-8")
+            return self.send(503, "Could not create the PDF. Run xcode-select --install, then try again.", "text/plain; charset=utf-8")
         self.send_response(200)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(data)))

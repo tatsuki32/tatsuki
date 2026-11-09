@@ -1,0 +1,11 @@
+{
+  "manifest_version": 3,
+  "name": "Tatsuki's Desk Web履歴",
+  "version": "1.0.0",
+  "description": "前面のタブを見ていた時間を測り、この Mac の Desk だけに送ります。",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEApauiaz0aUasGeb0ere4uopY4ehHNC6Pmlvb0Kcqi7RTggm0+ZLb+dkCFYFHi5m6WDuepI6UIiPuZzTN8bdTORdKQ8HDkN5F8aj3867S2mAs+nLyA7CF8gC8XjyiA9kIbJM3na21Ix6HnsQFQJVUzKvsWXWhLEaOjN3Gv4p5vZ4i4HyeKdPnts6/Vc3zwrztbQ/F259UCUHNk0WNDv9b16X0eyxbwuVRUl5/5/OojNz3vAjVYP2IyI7AIgeGrsIsq1Tiu2aZSA8/K1oiE6xMfK+KoDgvZGPnYJcdiMijMm6FNPr0vtzWpDGzcacP3ve+NEHKfWv6CYN62SvR87+JVDwIDAQAB",
+  "background": {"service_worker": "background.js"},
+  "permissions": ["tabs", "idle", "alarms", "storage"],
+  "host_permissions": ["http://localhost:4747/*"],
+  "incognito": "not_allowed"
+}

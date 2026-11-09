@@ -28,7 +28,7 @@ STORE = "~/Library/Group Containers/group.net.whatsapp.WhatsApp.shared/ChatStora
 APPLE_EPOCH = 978307200  # the store counts seconds from 2001-01-01
 WINDOW = 48 * 3600  # older than this is not a new message, also when a run was missed
 SYSTEM = (6, 10)  # group and security notices
-KINDS = {0: "text", 1: "画像", 2: "動画", 3: "音声", 4: "連絡先", 5: "位置情報", 7: "text", 8: "ファイル", 15: "スタンプ"}
+KINDS = {0: "text", 1: "photo", 2: "video", 3: "voice message", 4: "contact", 5: "location", 7: "text", 8: "file", 15: "sticker"}
 RECENT = 12  # messages given to Claude for one draft
 NUDGE_LINES = 6  # of the talk so far, shown in a 催促 task
 BODY_MAX = 4000
@@ -92,7 +92,7 @@ def recent(db, session, limit=40):
 
 def waiting_turn(msgs):
     """Their messages since your last one, oldest first; [] when you spoke last or their last word is a sticker."""
-    if not msgs or msgs[0]["me"] or msgs[0]["kind"] == "スタンプ":
+    if not msgs or msgs[0]["me"] or msgs[0]["kind"] in ("sticker", "スタンプ"):
         return []
     turn = []
     for m in msgs:
@@ -126,7 +126,7 @@ def waiting_threads(now=None):
             msgs = recent(db, session, RECENT)
             if not msgs or (msgs[0]["me"] and closes_chat(msgs[0])):
                 continue
-            who = clean_name(name) or "（名前なし）"
+            who = clean_name(name) or "(no name)"
             out.append({"threadId": "wa" + hashlib.sha1(jid.encode()).hexdigest()[:16], "source": "whatsapp", "subject": who, "to": [who],
                         "lastFrom": "me" if msgs[0]["me"] else "them", "lang": "ja" if KANA.search(msgs[0]["text"]) else "",
                         "lastAt": datetime.fromtimestamp(msgs[0]["at"], paths.HCMC).isoformat(timespec="seconds")})
@@ -154,10 +154,10 @@ def phone_of(jid):
 
 
 def title_of(it):
-    """「WhatsApp返信 用件について（名前）」. The topic comes once Claude has read the chat."""
-    kind = "WhatsApp催促" if it.get("nudge") else "WhatsApp返信"
+    """"WhatsApp reply: <topic> (<name>)". The topic comes once Claude has read the chat."""
+    kind = "WhatsApp nudge" if it.get("nudge") else "WhatsApp reply"
     topic = it.get("topic")
-    return tasks._clean_title(f"{kind} {topic}について（{it['name']}）" if topic else f"{kind}（{it['name']}）")
+    return tasks._clean_title(f"{kind}: {topic} ({it['name']})" if topic else f"{kind} ({it['name']})")
 
 
 def today():
@@ -165,7 +165,7 @@ def today():
 
 
 def line(m):
-    return m["text"] if m["kind"] == "text" else f"（{m['kind']}）"
+    return m["text"] if m["kind"] == "text" else f"({m['kind']})"
 
 
 def scan(now=None):
@@ -200,7 +200,7 @@ def scan(now=None):
             t = saved.get(tid)
             if t and (t.get("deleted") or t.get("status") not in tasks.OPEN):
                 continue  # you closed this turn yourself
-            name = clean_name(c["name"]) or "（名前なし）"
+            name = clean_name(c["name"]) or "(no name)"
             if not t:
                 ms = paths.now_ms()
                 tasks._put({"id": tid, "title": title_of({"name": name}), "status": "notyet", "source": "whatsapp",
@@ -213,7 +213,7 @@ def scan(now=None):
                           "lastId": last["id"], "lastAt": last["at"], "kind": last["kind"], "texts": [line(m) for m in turn]}
             if last["kind"] == "text" and it.get("draftFor") != last["id"]:
                 drafts.append({"ref": tid, "name": name, "unknown": is_unknown(name),
-                               "messages": [{"from": "自分" if m["me"] else name, "text": line(m), "at": m["at"]} for m in msgs[:RECENT][::-1]]})
+                               "messages": [{"from": "Me" if m["me"] else name, "text": line(m), "at": m["at"]} for m in msgs[:RECENT][::-1]]})
         save_items(items)
         return {"closed": closed, "created": created, "open": len(items), "drafts": drafts}
     finally:
@@ -227,7 +227,7 @@ def nudges():
         chats = {}
         for session, jid, name in db.execute("SELECT Z_PK, ZCONTACTJID, ZPARTNERNAME FROM ZWACHATSESSION WHERE ZSESSIONTYPE=0 AND COALESCE(ZREMOVED,0)=0"):
             if jid:
-                chats["wa" + hashlib.sha1(jid.encode()).hexdigest()[:16]] = (session, jid, clean_name(name) or "（名前なし）")
+                chats["wa" + hashlib.sha1(jid.encode()).hexdigest()[:16]] = (session, jid, clean_name(name) or "(no name)")
         items, drafts = load_items(), []
         for t in tasks._load():
             chat = chats.get(t.get("sourceRef"))
@@ -240,10 +240,10 @@ def nudges():
             it = items.get(t["id"], {})
             talk = msgs[::-1]
             items[t["id"]] = {**it, "nudge": True, "jid": jid, "phone": phone_of(jid), "name": name, "unknown": is_unknown(name), "lastId": msgs[0]["id"],
-                              "lastAt": msgs[0]["at"], "kind": "text", "texts": [("自分：" if m["me"] else name + "：") + line(m) for m in talk if m["kind"] != "other"][-NUDGE_LINES:]}
+                              "lastAt": msgs[0]["at"], "kind": "text", "texts": [("Me: " if m["me"] else name + ": ") + line(m) for m in talk if m["kind"] != "other"][-NUDGE_LINES:]}
             if it.get("draftFor") != msgs[0]["id"]:
                 drafts.append({"ref": t["id"], "name": name, "unknown": is_unknown(name),
-                               "messages": [{"from": "自分" if m["me"] else name, "text": line(m), "at": m["at"]} for m in talk if m["kind"] != "other"]})
+                               "messages": [{"from": "Me" if m["me"] else name, "text": line(m), "at": m["at"]} for m in talk if m["kind"] != "other"]})
         save_items(items)
         return {"open": sum(1 for i in items.values() if i.get("nudge")), "drafts": drafts}
     finally:

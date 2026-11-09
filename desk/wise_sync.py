@@ -85,14 +85,14 @@ def http_get(path, tok):
                 return json.load(r)
         except urllib.error.HTTPError as e:
             if e.code in (401, 403):
-                raise Stop("Wise にトークンを断られました。トークンの期限と権限を確かめてください") from None
+                raise Stop("Wise rejected the token. Check its expiry and permissions") from None
             if e.code < 500 and e.code != 429:
-                raise Stop(f"Wise からエラーが返りました（{e.code}）") from None
+                raise Stop(f"Wise returned an error ({e.code})") from None
         except (http.client.HTTPException, OSError, ValueError):
             pass
         if attempt < TRIES - 1:
             time.sleep(2 * (attempt + 1))
-    raise Stop("Wise につながりません。次の回にもう一度試します")
+    raise Stop("Could not reach Wise. Will try again next time")
 
 
 def parse_iso(s):
@@ -145,7 +145,7 @@ def fetch(get, since=None):
             if not cursor or not acts or (since and all(str(a.get("createdOn")) < since for a in acts)):
                 break
         else:
-            raise Stop("明細のページが多すぎます。取り込みを止めました")
+            raise Stop("Too many pages of activity. Import stopped")
     return out
 
 
@@ -215,7 +215,7 @@ def run(get=None):
         if get is None:
             tok = token()
             if not tok:
-                raise Stop("トークンがまだ設定されていません")
+                raise Stop("No token has been set yet")
             get = lambda path: http_get(path, tok)
         last = state.get("lastSuccess")
         since = None
