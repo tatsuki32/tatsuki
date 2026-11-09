@@ -45,7 +45,7 @@ class TestGather(SandboxCase):
 
     def test_deleted_and_dropped_are_left_out(self):
         tasks.delete(tasks.add("試し案件A", source="t")["id"])
-        tasks.update(tasks.add("試し案件B", source="t")["id"], status="dropped")
+        tasks.update(tasks.add("試し案件B", source="t")["id"], status="archived")
         found = core().find_tasks("試し案件")
         self.assertEqual(found, {"done": [], "open": []})
 

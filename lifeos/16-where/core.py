@@ -45,9 +45,9 @@ def _brief(t):
 
 
 def find_tasks(name):
-    """The project's tasks, newest first. Dropped ones say nothing about progress and are left out."""
+    """The project's tasks, newest first. Paused and archived ones say nothing about progress and are left out."""
     found = sorted((t for t in tasks.all_tasks() if matches(name, t.get("title"), t.get("note"))), key=_touched, reverse=True)
-    return {"done": [_brief(t) for t in found if t.get("status") in ("done", "archived")],
+    return {"done": [_brief(t) for t in found if t.get("status") == "done"],
             "open": [_brief(t) for t in found if t.get("status") in tasks.OPEN]}
 
 

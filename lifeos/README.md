@@ -89,7 +89,7 @@ tasks.done(t["id"])
 tasks.delete(t["id"])                # deleted:true にするだけ
 ```
 
-- `status` は `notyet` / `doing` / `done` / `archived` / `dropped`。
+- `status` は `notyet` / `doing` / `done` / `paused` / `archived`。
 - `due` はミリ秒の時刻か `None`。
 - 項目は Desk と同じものだけです。Desk で編集すると、ほかの項目は消えます。優先度や案件名は `note` に書きます。
 

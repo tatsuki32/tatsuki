@@ -1,11 +1,13 @@
 """Minimal Telegram Bot API client. The token never appears in logs or error messages.
 
-Settings, from the environment or the git-ignored <data>/secrets/telegram.json:
-    LIFEOS_TELEGRAM_TOKEN    / "token"
+The token comes from the environment or the macOS keychain (service tatsuki-desk-telegram), never from a file that is
+backed up. The chat id is not a secret: the environment or <data>/secrets/telegram.json.
+    LIFEOS_TELEGRAM_TOKEN    / keychain
     LIFEOS_TELEGRAM_CHAT_ID  / "chat_id"   (the only chat the bot serves)
 """
 import json
 import os
+import subprocess
 import urllib.parse
 import urllib.request
 
@@ -19,6 +21,31 @@ class TelegramError(Exception):
     pass
 
 
+KEYCHAIN = ("tatsuki-desk-telegram", "telegram")
+
+
+def keychain_token():
+    try:
+        out = subprocess.run(["security", "find-generic-password", "-s", KEYCHAIN[0], "-a", KEYCHAIN[1], "-w"],
+                             capture_output=True, text=True, timeout=30)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return out.stdout.strip() if out.returncode == 0 else None
+
+
+def set_chat_id(chat_id):
+    """Keeps the chat id. Anything else already in the file stays."""
+    path = paths.data_path("secrets", "telegram.json")
+    try:
+        with open(path, encoding="utf-8") as f:
+            saved = json.load(f)
+    except (OSError, ValueError):
+        saved = {}
+    saved["chat_id"] = str(chat_id)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(saved, f)
+
+
 def config():
     """(token, chat_id). Either may be None."""
     saved = {}
@@ -28,7 +55,7 @@ def config():
                 saved = json.load(f)
         except (OSError, ValueError):
             saved = {}
-    token = os.environ.get("LIFEOS_TELEGRAM_TOKEN") or saved.get("token") or None
+    token = os.environ.get("LIFEOS_TELEGRAM_TOKEN") or saved.get("token") or (None if paths.is_sandbox() else keychain_token())
     chat = os.environ.get("LIFEOS_TELEGRAM_CHAT_ID") or saved.get("chat_id") or None
     return token, chat
 
@@ -41,8 +68,9 @@ class Client:
     def __init__(self, token):
         self._token = token
 
-    def call(self, method, timeout=30, **params):
-        data = urllib.parse.urlencode(params).encode("utf-8")
+    def call(self, method, timeout=30, fields=None, **params):
+        """timeout is how long this Mac waits. fields carries names that clash with it, such as Telegram's own timeout."""
+        data = urllib.parse.urlencode({**(fields or {}), **params}).encode("utf-8")
         try:
             with urllib.request.urlopen(f"{API}/bot{self._token}/{method}", data=data, timeout=timeout) as r:
                 v = json.loads(r.read().decode("utf-8"))
@@ -56,7 +84,7 @@ class Client:
         params = {"timeout": timeout, "allowed_updates": json.dumps(["message"])}
         if offset is not None:
             params["offset"] = offset
-        return self.call("getUpdates", timeout=timeout + 10, **params)
+        return self.call("getUpdates", timeout=timeout + 10, fields=params)
 
     def send_message(self, chat_id, text):
         for part in split_text(text):

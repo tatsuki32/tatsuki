@@ -81,6 +81,5 @@ class TestWiring(SandboxCase):
         for word in ('id:"memolink"', "function mlView", "/api/memolink/run", "#mlRun"):
             self.assertIn(word, html)
 
-    def test_hourly_sync_runs_it_before_syncing(self):
-        text = self.read("desk", "sync", "HOURLY_SYNC.md")
-        self.assertLess(text.index("lifeos/11-notes/cli.py"), text.index("## 2. データを同期する"))
+    def test_scheduled_tasks_run_it(self):
+        self.assertIn("lifeos/11-notes/cli.py", self.read("desk", "sync", "SCHEDULED_TASKS.md"))
