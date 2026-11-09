@@ -632,7 +632,7 @@ def stop_proposal(ref):
         sub["status"] = "keep"
         task_id = sub.get("proposal_task")
     if task_id and tasks.get(task_id):
-        tasks.update(task_id, status="dropped")
+        tasks.update(task_id, status="archived")
     return view(sub)
 
 

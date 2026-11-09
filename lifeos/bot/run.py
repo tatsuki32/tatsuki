@@ -9,27 +9,57 @@ import fcntl
 import json
 import os
 import shutil
+import subprocess
 import sys
 import tempfile
 import time
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, REPO)
+sys.path.insert(0, os.path.join(REPO, "desk"))
 from lifeos.bot import router, telegram, voice  # noqa: E402
 from lifeos.lib import logs, paths  # noqa: E402
 
 NO_TOKEN = """Telegram のトークンがないので起動しません。
 1. Telegram の BotFather でボットを作り、トークンを受け取る
-2. 次のどちらかに入れる（git には入りません）
-   ・環境変数 LIFEOS_TELEGRAM_TOKEN
-   ・{path} に、JSON で token と chat_id を書く
-3. もう一度起動し、ボットに何か送ると、チャット ID を返します。それを chat_id に入れる
+2. キーチェーンに入れる：security add-generic-password -a telegram -s tatsuki-desk-telegram -w
+3. もう一度起動し、ボットに何か送ると、チャット ID を返します
+4. 登録する：python3 lifeos/bot/run.py set-chat <チャット ID>
 トークンなしで試すには：python3 lifeos/bot/cli.py "テキスト\""""
 TRANSCRIPT = "文字起こし：\n"
-NOT_TEXT = "文字と音声を受け取れます。"
+NOT_TEXT = "文字と音声と写真を受け取れます。"
+PHOTO_TYPES = ("image/", "application/pdf")
 
 
 def ask_for_chat_id(chat_id):
-    return f"このチャットの ID は {chat_id} です。chat_id に設定すると使えるようになります。"
+    return f"このチャットの ID は {chat_id} です。Mac で python3 lifeos/bot/run.py set-chat {chat_id} を実行すると使えるようになります。"
+
+
+def photo_file(msg):
+    """The file id of a photo or image file in a message, or None. Telegram lists a photo's sizes from small to large."""
+    photos = msg.get("photo")
+    if photos:
+        return photos[-1].get("file_id")
+    doc = msg.get("document") or {}
+    if str(doc.get("mime_type") or "").startswith(PHOTO_TYPES):
+        return doc.get("file_id")
+    return None
+
+
+def handle_photo(file_id, caption, client, chat):
+    """A photo goes to the same queue as the Drive folder, and is read right away when it can be."""
+    import lifelog  # desk/lifelog.py
+    with tempfile.TemporaryDirectory() as d:
+        path = client.download(file_id, os.path.join(d, "photo"))
+        try:
+            _, new = lifelog.add(path, "telegram", note=caption or "")
+        except lifelog.Refused as e:
+            client.send_message(chat, str(e))
+            return
+    if not new:
+        client.send_message(chat, "この写真は取り込み済みです")
+        return
+    client.send_message(chat, lifelog.reply_text(lifelog.process()))
 
 
 def handle_update(update, client, owner, routes=None):
@@ -42,6 +72,10 @@ def handle_update(update, client, owner, routes=None):
         client.send_message(chat, ask_for_chat_id(chat))
         return
     if str(chat) != str(owner):
+        return
+    photo = photo_file(msg)
+    if photo:
+        handle_photo(photo, msg.get("caption"), client, chat)
         return
     ctx = router.Ctx(source="telegram", chat_id=chat, send=lambda t: client.send_message(chat, t))
     audio = msg.get("voice") or msg.get("audio")
@@ -97,6 +131,17 @@ def poll_once(client, owner, offset, routes=None):
 
 
 def main():
+    if sys.argv[1:2] == ["set-chat"]:
+        if len(sys.argv) != 3 or not sys.argv[2].lstrip("-").isdigit():
+            print("使い方：python3 lifeos/bot/run.py set-chat <チャット ID>")
+            return 2
+        telegram.set_chat_id(sys.argv[2])
+        try:  # the running bot reads the id at start. launchd may hold the restart for its throttle, so do not wait for it
+            subprocess.run(["launchctl", "kickstart", "-k", f"gui/{os.getuid()}/com.tatsuki.desk.telegram"], capture_output=True, timeout=5)
+        except subprocess.TimeoutExpired:
+            pass
+        print("チャット ID を登録しました。")
+        return 0
     token, owner = telegram.config()
     if not token:
         print(NO_TOKEN.format(path=paths.data_path("secrets", "telegram.json", mkdir=False)))

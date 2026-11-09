@@ -1,37 +1,33 @@
 #!/usr/bin/env python3
-"""Tatsuki's Desk — merge the Mac's data with the online desk (Artifact DB).
+"""Tatsuki's Desk — write data from the scheduled tasks, and import an old online export.
 
-Used by the hourly sync task (see sync/HOURLY_SYNC.md). Claude reads the online
-collections into one JSON file, runs this script, and writes back what it prints.
+The Mac's desk/data/ is the only source. The scheduled tasks (sync/SCHEDULED_TASKS.md) write here:
 
-  python3 sync.py merge REMOTE.json   -> updates data/*.json and data/*.js,
-                                         prints {"write": {collection: [docs]}}
-                                         = docs the online desk must `set` (id kept)
-  python3 sync.py code-status         -> prints {"changed": bool, "hash": ...}
-                                         (index.html differs from the last publish)
-  python3 sync.py mark-published      -> remembers the current index.html as published
+  python3 sync.py put COLLECTION DOC_ID FILE.json  -> saves one doc (feeds: docs/<collection>/<id>.json + the page's *.js;
+                                                      memos / tasks / ...: through the server when it runs)
+  python3 sync.py get COLLECTION DOC_ID            -> prints one doc, or {} when there is none
+  python3 sync.py build                            -> rewrites the page's *.js from the docs
+  python3 sync.py mail DAY KEY                     -> prints the draft of one mail for /mail-send
+  python3 sync.py mail-add DAY FILE.json           -> adds a run's mail to the day's doc; what an earlier run found stays
+  python3 sync.py mail-replied DAY KEY             -> you answered in Gmail: closes the item and its task
+  python3 sync.py merge REMOTE.json                -> imports an export: {"tasks": [{"id": ..., ...fields}], "days": [...], ...}
 
-REMOTE.json: {"memos": [{"id": ..., ...fields}], "dues": [...], "tasks": [...], "prompts": [...], "notes": [...], "habits": [...], "wins": [...],
-              "tools": [...], "editions": [...], "days": [...], "reports": [...], "watch": [...],
-              "calendar": [...], "gtasks": [...], "lifeos": [...], "lifemap": [...]}  (each doc = its id plus its fields)
-
-Rule for memos / dues / tasks / prompts / notes / habits / lifemap / wins: per id, the record with the larger updatedAt wins;
+Rule for memos / dues / tasks / prompts / notes / habits / lifemap / wins / gear / projects / sections: per id, the record with the larger updatedAt wins;
 a missing updatedAt counts as 0; nothing is removed (deleted:true is a record too).
-lifeos flows Mac -> online only: lifeos/*/tool.json in this repo is the source (Life OS view).
-followups flows Mac -> online too, except the answers left on its docs, which are applied here first.
-Everything else flows online -> Mac only.
 """
-import hashlib
 import json
 import os
 import sys
+import urllib.error
+import urllib.request
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(ROOT, "data")
 sys.path.insert(0, ROOT)
-from server import LOCK, followup_core, lifeos_tools, load, save  # noqa: E402
+sys.path.insert(0, os.path.dirname(ROOT))
+from server import FEEDS, LOCK, doc_path, feed_docs, followup_core, lifeos_tools, load, put_doc, rebuild_feed, save, upsert  # noqa: E402
 
-TWO_WAY = ("memos", "dues", "tasks", "prompts", "notes", "habits", "lifemap", "wins")
+TWO_WAY = ("memos", "dues", "tasks", "prompts", "notes", "habits", "lifemap", "wins", "presents", "gear", "projects", "sections")
 
 
 def ts(x):
@@ -79,25 +75,6 @@ def followups_push(remote):
         return []
 
 
-def write_js(name, var, value):
-    text = json.dumps(value, ensure_ascii=False).replace("</", "<\\/")
-    tmp = os.path.join(DATA, "." + name + ".tmp")
-    with open(tmp, "w", encoding="utf-8") as f:
-        f.write(f"window.{var}={text};\n")
-    os.replace(tmp, os.path.join(DATA, name))
-
-
-def by_date_desc(docs, key="date"):
-    return sorted(docs, key=lambda d: str(d.get(key) or d.get("id") or ""), reverse=True)
-
-
-def one(docs, doc_id):
-    for d in docs:
-        if d.get("id") == doc_id:
-            return {k: v for k, v in d.items() if k != "id"}
-    return None
-
-
 def cmd_merge(remote_path):
     with open(remote_path, encoding="utf-8") as f:
         remote = json.load(f)
@@ -119,58 +96,140 @@ def cmd_merge(remote_path):
         push = followups_push(remote["followups"])
         if push:
             write["followups"] = push
-    strip = lambda d: {k: v for k, v in d.items() if k != "id"}
-    if "tools" in remote:
-        write_js("tools.js", "TOOLS", [d for d in remote["tools"] if not d.get("deleted")])
-    if "editions" in remote:
-        write_js("world.js", "WORLD", [{"id": d["id"], "data": strip(d)} for d in by_date_desc(remote["editions"])[:60]])
-    if "days" in remote:
-        write_js("mail.js", "MAIL", [{"id": d["id"], "data": strip(d)} for d in by_date_desc(remote["days"])[:30]])
-    if "reports" in remote:
-        write_js("reports.js", "REPORTS", by_date_desc(remote["reports"])[:30])
-    if "watch" in remote:
-        write_js("watch.js", "WATCH", [d for d in by_date_desc(remote["watch"])[:30] if not d.get("deleted")])
-    if "calendar" in remote:
-        write_js("calendar.js", "CAL", one(remote["calendar"], "upcoming"))
-    if "gtasks" in remote:
-        write_js("gtasks.js", "GTASKS", one(remote["gtasks"], "current"))
+    for col in FEEDS:
+        for d in remote.get(col, []):
+            if isinstance(d, dict) and d.get("id"):
+                put_doc(col, d["id"], d)
+        if col in remote:
+            rebuild_feed(col)
     print(json.dumps({"write": write}, ensure_ascii=False, indent=1))
 
 
-def index_hash():
-    with open(os.path.join(ROOT, "index.html"), "rb") as f:
-        return hashlib.sha256(f.read()).hexdigest()
+def mail_ref(item):
+    return item.get("gmail_url") or item.get("key")
 
 
-def published_path():
-    return os.path.join(DATA, ".published")
+def merge_mail(old, new):
+    """Today's doc after one more run. An item keeps its status and draft; the newest text wins."""
+    before = {mail_ref(i): i for i in old.get("items") or []}
+    items = []
+    for i in new.get("items") or []:
+        p = before.pop(mail_ref(i), None)
+        if p:
+            if (p.get("status") or "pending") != "pending":
+                i["status"] = p["status"]
+            if p.get("draft") and not i.get("draft"):
+                i["draft"] = p["draft"]
+        items.append(i)
+    return {**new, "items": list(before.values()) + items}
 
 
-def cmd_code_status():
-    h = index_hash()
-    try:
-        with open(published_path()) as f:
-            last = f.read().strip()
-    except FileNotFoundError:
-        last = ""
-    print(json.dumps({"changed": h != last, "hash": h}))
-
-
-def cmd_mark_published():
-    os.makedirs(DATA, exist_ok=True)
-    with open(published_path(), "w") as f:
-        f.write(index_hash())
+def cmd_mail_add(day, path):
+    with open(path, encoding="utf-8") as f:
+        new = json.load(f)
+    old = next((d for d in feed_docs("days") if d.get("id") == day), {})
+    put_doc("days", day, merge_mail(old.get("data") or old, new))
+    rebuild_feed("days")
     print("ok")
+
+
+def cmd_mail_replied(day, key):
+    from kickoff import due_doc_id
+    from lifeos.lib import paths, tasks
+    d = next((x for x in feed_docs("days") if x.get("id") == day), None)
+    doc = (d.get("data") or d) if d else {}
+    item = next((i for i in doc.get("items") or [] if i.get("key") == key), None)
+    if not item:
+        sys.exit("not found")
+    item["status"] = "sent"
+    put_doc("days", day, {k: v for k, v in doc.items() if k != "id"})
+    rebuild_feed("days")
+    uid = "mail:" + (item.get("gmail_url") or f"{day}/{key}")
+    tid = "t" + due_doc_id(uid)
+    cur = next((t for t in tasks._load() if t["id"] == tid), None)
+    if not cur or cur.get("status") in tasks.OPEN:
+        ms = paths.now_ms()
+        base = cur or {"id": tid, "title": item.get("subject_ja") or item.get("subject") or "（件名なし）", "source": "mail",
+                       "sourceRef": uid, "due": None, "note": "", "createdAt": ms, "deleted": False}
+        tasks._put({**base, "status": "done", "updatedAt": ms})
+    print("ok")
+
+
+def cmd_build():
+    for col in FEEDS:
+        rebuild_feed(col)
+    print("ok")
+
+
+def put_two_way(col, doc_id, rec):
+    """Through the running server, so its lock covers the write; straight to the file when it is stopped."""
+    port = os.environ.get("DESK_PORT", "4747")
+    req = urllib.request.Request(
+        f"http://127.0.0.1:{port}/api/{col}/{urllib.request.quote(doc_id, safe='')}",
+        data=json.dumps(rec, ensure_ascii=False).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="PUT",
+    )
+    # no proxy: while websites are blocked the system proxy points at FocusBlock
+    try:
+        urllib.request.build_opener(urllib.request.ProxyHandler({})).open(req, timeout=5).read()
+    except (urllib.error.URLError, OSError):
+        upsert(col, doc_id, {"updatedAt": 0, **rec}, merge=False)
+
+
+def cmd_put(col, doc_id, path):
+    with open(path, encoding="utf-8") as f:
+        rec = json.load(f)
+    if not isinstance(rec, dict):
+        sys.exit("object expected")
+    rec.pop("id", None)
+    if col in FEEDS:
+        put_doc(col, doc_id, rec)
+        rebuild_feed(col)
+    elif col in TWO_WAY:
+        put_two_way(col, doc_id, rec)
+    else:
+        sys.exit("unknown collection: " + col)
+    print("ok")
+
+
+def cmd_get(col, doc_id):
+    if col in FEEDS:
+        docs = [d for d in feed_docs(col) if d["id"] == doc_id]
+    else:
+        docs = [d for d in load(col) if d["id"] == doc_id]
+    print(json.dumps(docs[0] if docs else {}, ensure_ascii=False, indent=1))
+
+
+def cmd_mail(day, key):
+    """One mail's draft, for /mail-send. It only reads."""
+    try:
+        with open(doc_path("days", day), encoding="utf-8") as f:
+            items = json.load(f).get("items", [])
+    except (OSError, ValueError):
+        items = []
+    item = next((i for i in items if i.get("key") == key), None)
+    if not item or not item.get("draft"):
+        sys.exit("draft not found")
+    print(json.dumps({k: item.get(k) for k in ("from", "subject", "subject_ja", "action", "draft", "gmail_url")}, ensure_ascii=False, indent=1))
 
 
 if __name__ == "__main__":
     args = sys.argv[1:]
     if args[:1] == ["merge"] and len(args) == 2:
         cmd_merge(args[1])
-    elif args == ["code-status"]:
-        cmd_code_status()
-    elif args == ["mark-published"]:
-        cmd_mark_published()
+    elif args[:1] == ["put"] and len(args) == 4:
+        cmd_put(args[1], args[2], args[3])
+    elif args[:1] == ["get"] and len(args) == 3:
+        cmd_get(args[1], args[2])
+    elif args[:1] == ["mail"] and len(args) == 3:
+        cmd_mail(args[1], args[2])
+    elif args[:1] == ["mail-add"] and len(args) == 3:
+        cmd_mail_add(args[1], args[2])
+    elif args[:1] == ["mail-replied"] and len(args) == 3:
+        cmd_mail_replied(args[1], args[2])
+    elif args == ["build"]:
+        cmd_build()
     else:
         print(__doc__)
         sys.exit(2)

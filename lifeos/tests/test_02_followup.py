@@ -178,6 +178,32 @@ class TestAsk(FollowupCase):
         self.snap(self.thread(days=15))
         self.core.morning()
         self.assertIn("下書きがまだ", self.core.answer(1, "送る"))
+        self.assertEqual([t["title"] for t in tasks.open_tasks()], ["催促：someone@example.com"])
+
+    def test_three_days_makes_one_task_for_today_and_a_reply_closes_it(self):
+        self.snap(self.thread(days=2), self.thread("b", days=4, to=("山田 <someone@example.com>",)))
+        self.core.morning()
+        self.core.morning()
+        task = tasks.open_tasks()
+        self.assertEqual([t["title"] for t in task], ["催促：山田"])
+        self.assertEqual(task[0]["planDate"], self.day)
+        self.snap(self.thread("b", days=0, last="them"))
+        self.core.morning()
+        self.assertEqual(tasks.open_tasks(), [])
+
+    def test_first_run_adds_five_tasks_at_most(self):
+        self.snap(*[self.thread(str(i), days=5) for i in range(8)])
+        self.core.morning()
+        self.assertEqual(len(tasks.open_tasks()), 5)
+
+    def test_chat_gets_a_task_and_no_mail_draft(self):
+        chat = {**self.thread("wa1", days=4, to=("友達",), subject="友達"), "source": "whatsapp"}
+        self.assertEqual(self.core.apply_chats([chat]), {"tasks": 1})
+        self.assertEqual(self.core.pending_drafts(), [])
+        item = self.core.desk_view()["items"][0]
+        self.assertEqual((item["source"], item["hasDraft"]), ("whatsapp", False))
+        self.assertTrue(item["copyText"])
+        self.core.apply_chats([{**chat, "lastFrom": "them", "lastAt": self.now.isoformat(timespec="seconds")}])
         self.assertEqual(tasks.open_tasks(), [])
 
     def test_hold_asks_again_after_seven_days(self):

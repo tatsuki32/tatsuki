@@ -56,7 +56,7 @@ class TestStale(Base):
     def test_in_progress_counts_but_closed_does_not(self):
         at = self.now - 30 * DAY
         self.assertTrue(core.is_stale(rec(status="doing", updatedAt=at), self.now))
-        for status in ("done", "archived", "dropped"):
+        for status in ("done", "archived", "paused"):
             self.assertFalse(core.is_stale(rec(status=status, updatedAt=at), self.now), status)
         self.assertFalse(core.is_stale(rec(updatedAt=at, deleted=True), self.now))
 
