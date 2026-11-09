@@ -96,7 +96,7 @@ class Sync(Base):
         old = wise_sync.token
         wise_sync.token = lambda: None
         self.addCleanup(lambda: setattr(wise_sync, "token", old))
-        self.assertIn("トークン", wise_sync.run()["error"])
+        self.assertIn("token", wise_sync.run()["error"])
 
 
 class Totals(Base):
@@ -307,12 +307,12 @@ class Report(Base):
         v = wise_report.view("month", "2026-11", today=self.TODAY)
         self.assertEqual(v["pace"]["month"]["left"], 20.0)
         self.assertEqual(v["pace"]["month"]["forecast"], 150.0)
-        self.assertIn("超えそう", v["finding"]["fact"])
+        self.assertIn("past your own limit", v["finding"]["fact"])
         self.assertNotIn("week", v["pace"])
 
     def test_cash_is_the_finding_when_it_is_large(self):
         v = self.put(act("a", "2026-11-02T01:00:00Z", amount="10.00 USD"), act("b", "2026-11-03T01:00:00Z", amount="30.00 USD", type_="CASH_WITHDRAWAL"))
-        self.assertIn("現金", v["finding"]["fact"])
+        self.assertIn("Cash withdrawals", v["finding"]["fact"])
         self.assertTrue(v["finding"]["lesson"]["url"].startswith("https://"))
 
     def test_findings_do_not_blame_or_advise_on_products(self):
@@ -344,7 +344,7 @@ class Files(Base):
         text = raw.decode("utf-8-sig")
         self.assertIn("'=HYPERLINK(1)", text)
         self.assertEqual(len(text.strip().split("\r\n")), 3)
-        self.assertIn('500.0,レートで換算,1000.0,JPY,"1,000 JPY",389.00 PHP', text)
+        self.assertIn('500.0,Converted at rate,1000.0,JPY,"1,000 JPY",389.00 PHP', text)
 
     def test_the_report_escapes_titles_and_keeps_rows_to_the_list(self):
         wise_sync.write_json("categories.json", {})
@@ -354,7 +354,7 @@ class Files(Base):
         self.assertNotIn("<script>x", full)
         self.assertIn("&lt;script&gt;x", full)
         self.assertNotIn("件</h2>", report)
-        self.assertIn("出入金 2件", full)
+        self.assertIn("All rows: 2", full)
 
     def test_a_bad_format_is_refused(self):
         with self.assertRaises(ValueError):
@@ -481,11 +481,11 @@ class Analysis(SandboxCase, Base):
     def test_advice_with_a_number_not_on_the_page_is_refused(self):
         allowed = wise_analysis.numbers_in({"a": 1234.5, "b": [99.25]})
         self.assertIsNone(wise_analysis.check_advice({"fact": "支出は 1,234.50 USD で、3か月の中央値は 99.25 です。", "next": "明細を見る"}, allowed))
-        self.assertIn("計算にない", wise_analysis.check_advice({"fact": "支出は 5,000 USD です。", "next": "明細を見る"}, allowed))
+        self.assertIn("Number not in the computation", wise_analysis.check_advice({"fact": "支出は 5,000 USD です。", "next": "明細を見る"}, allowed))
 
     def test_advice_never_blames(self):
-        self.assertIn("使わない言葉", wise_analysis.check_advice({"fact": "今月は使いすぎです。", "next": "見直す"}, set()))
-        self.assertIn("必要", wise_analysis.check_advice({"fact": "事実だけ"}, set()))
+        self.assertIn("Word not used here", wise_analysis.check_advice({"fact": "今月は使いすぎです。", "next": "見直す"}, set()))
+        self.assertIn("needed", wise_analysis.check_advice({"fact": "事実だけ"}, set()))
 
     def test_a_person_setting_goes_through_the_server(self):
         self.assertEqual(server.wise_settings(["kind"], {"title": "Someone", "flow": "out", "kind": "advance"})[0], 200)

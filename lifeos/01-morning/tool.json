@@ -17,15 +17,9 @@
     "別の画面の朝のまとめが出たら、python3 lifeos/01-morning/morning.py と打つ",
     "Telegram をつないだあと、もう一度 /morning と打ち、届くことを見る"
   ],
-  "blockers": [
-    {
-      "what": "Telegram に届かない",
-      "why": "ボットのトークンとチャット番号がまだありません。今は送る文を控えとして残しています",
-      "needs": "Telegram の BotFather でボットを作り、トークンとチャット番号を desk/data/lifeos/secrets/telegram.json に書いてください。チャットには貼らないでください"
-    }
-  ],
+  "blockers": [],
   "commands": [
     "/morning"
   ],
-  "updated": "2026-11-04"
+  "updated": "2026-11-05"
 }

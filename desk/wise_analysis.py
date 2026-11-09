@@ -17,8 +17,19 @@ import sys
 
 import wise_sync
 
-KINDS = {"spend": "支出", "income": "収益", "self": "自分の移動", "advance": "立替", "refund": "返金", "unknown": "未確認"}
-UNSORTED = "未分類"
+KINDS = {"spend": "Spending", "income": "Income", "self": "Own transfer", "advance": "Paid for someone", "refund": "Refund", "unknown": "Unverified"}
+UNSORTED = "未分類"  # category ids stay Japanese: they are what categories.json, guess.json and budgets.json hold
+CATEGORY_EN = {"食料品": "Groceries", "外食・カフェ": "Eating out / cafes", "コンビニ": "Convenience store", "交通": "Transport", "旅行・宿泊": "Travel / lodging", "通信": "Phone / internet",
+               "買い物": "Shopping", "日用品・薬": "Household / pharmacy", "医療": "Medical", "サブスク・ツール": "Subscriptions / tools", "娯楽・文化": "Leisure / culture", "学び": "Learning",
+               "手続き・手数料": "Fees / paperwork", "現金": "Cash", "送金": "Transfer", "カード": "Card", UNSORTED: "Uncategorized"}
+GROUP_EN = {"飲食費": "Food & drink", "交通費": "Transport", "旅行・宿泊": "Travel / lodging", "買い物・日用品": "Shopping / household", "学び・手続き": "Learning / fees", "現金": "Cash", "その他": "Other"}
+
+
+def label_en(name):
+    """English for a category or group id. Unknown names come back as they are."""
+    return CATEGORY_EN.get(name) or GROUP_EN.get(name) or name
+
+
 GROUPS = {"食料品": "飲食費", "外食・カフェ": "飲食費", "コンビニ": "飲食費", "交通": "交通費", "旅行・宿泊": "旅行・宿泊", "買い物": "買い物・日用品",
           "日用品・薬": "買い物・日用品", "学び": "学び・手続き", "手続き・手数料": "学び・手続き", "現金": "現金"}
 GROUP_ORDER = ("飲食費", "交通費", "旅行・宿泊", "買い物・日用品", "学び・手続き", "現金", "その他")
@@ -28,7 +39,8 @@ ACCOUNTS = {"交通": ("旅費交通費", "Travel"), "旅行・宿泊": ("旅費
             "カード": ("支払手数料", "Other expenses")}
 LIVING = ("生活費", "Personal")
 UNKNOWN_ACCOUNT = ("使途不明", "Uncategorized")
-BANNED_WORDS = ("赤字", "使いすぎ", "使い過ぎ", "無駄", "浪費", "おすすめの銘柄", "買うべき", "売るべき")
+BANNED_WORDS = ("赤字", "使いすぎ", "使い過ぎ", "無駄", "浪費", "おすすめの銘柄", "買うべき", "売るべき",
+                "in the red", "overspend", "overspent", "wasteful", "wasted", "waste of", "recommended stock", "should buy", "should sell")
 FREE_NUMBER = 36  # months, days and counts may appear in words without being a computed amount
 MAX_ADVICE = 3
 HISTORY = 12
@@ -273,10 +285,10 @@ def week_action(charges, gaps, today):
     limit = (dt.date.fromisoformat(today) - dt.timedelta(days=183)).isoformat()
     for c in charges:
         if c["active"] and (not c["reviewed"] or c["reviewed"] < limit):
-            return {"kind": "charge", "key": c["key"], "fact": f"毎月の請求で一番大きいのは {c['title']} で、月 {c['usd']:,.2f} USD（年 {c['yearly']:,.2f} USD）です。", "ask": "今も使っていますか"}
+            return {"kind": "charge", "key": c["key"], "fact": f"Your largest monthly charge is {c['title']}: {c['usd']:,.2f} USD a month ({c['yearly']:,.2f} USD a year).", "ask": "Do you still use it?"}
     up = next((v for v in gaps if v["gap"] > 0 and v["name"] != UNSORTED), None)
     if up:
-        return {"kind": "gap", "name": up["name"], "fact": f"{up['name']} は今月 {up['usd']:,.2f} USD で、いつもの同じ時期より {up['gap']:,.2f} USD 多いです。", "ask": "明細を1回だけ見ますか"}
+        return {"kind": "gap", "name": up["name"], "fact": f"{label_en(up['name'])} is {up['usd']:,.2f} USD this month, {up['gap']:,.2f} USD more than usual for this point in the month.", "ask": "Look at the rows once?"}
     return None
 
 
@@ -334,12 +346,12 @@ def analyze(rows, today, month=None, start=None, end=None, before=None, label=No
         start, end = f"{month}-01", f"{month}-{cut:02d}"
         window_before = (f"{previous}-01", f"{previous}-{prior_cut:02d}")
         windows = month_windows([m["month"] for m in series if m["month"] < month][-HISTORY:], cut)
-        scope = ("今月" + f"1日〜{cut}日") if month == current else f"{int(month[:4])}年{int(month[5:7])}月"
+        scope = f"This month, day 1 to {cut}" if month == current else dt.date(int(month[:4]), int(month[5:7]), 1).strftime("%B %Y")
     else:
         month, cut, prior_cut = None, None, None
         window_before = tuple(d.isoformat() if hasattr(d, "isoformat") else d for d in before) if before else None
         windows = same_length_windows(start, end, data_start)
-        scope = label or f"{start} 〜 {end}"
+        scope = label or f"{start} to {end}"
     this = [a for a in counted if in_window(a, (start, end))]
     prior = [a for a in counted if window_before and in_window(a, window_before)]
     gaps = variances(counted, this, windows)
@@ -348,12 +360,12 @@ def analyze(rows, today, month=None, start=None, end=None, before=None, label=No
     categories = []
     for v in gaps:
         prev = spent_total(a for a in prior if a["category"] == v["name"])
-        categories.append({**v, "last": prev, "change": round(v["usd"] - prev, 2), "share": round(v["usd"] / so_far * 100, 1) if so_far > 0 else 0})
+        categories.append({**v, "label": label_en(v["name"]), "last": prev, "change": round(v["usd"] - prev, 2), "share": round(v["usd"] / so_far * 100, 1) if so_far > 0 else 0})
     focus = []
     group_gaps = variances(counted, this, windows, "group")
     for name in ("交通費", "飲食費"):
         v = next((g for g in group_gaps if g["name"] == name), {"name": name, "usd": 0, "usual": 0, "gap": 0})
-        focus.append({**v, "last": spent_total(a for a in prior if a["group"] == name), "share": round(v["usd"] / so_far * 100, 1) if so_far > 0 else 0})
+        focus.append({**v, "label": GROUP_EN[name], "last": spent_total(a for a in prior if a["group"] == name), "share": round(v["usd"] / so_far * 100, 1) if so_far > 0 else 0})
     moved = [a for a in counted if a["date"] and not a.get("direct")]  # paid straight from a bank: the balance never moved
     money_in, money_out = round(sum(a["usd"] for a in moved if a["flow"] == "in"), 2), round(sum(a["usd"] for a in moved if a["flow"] == "out"), 2)
     bridge = {"in": money_in, "out": money_out, "balance": balance["usd"], "gap": round(balance["usd"] - (money_in - money_out), 2)} if balance else None
@@ -379,7 +391,7 @@ def analyze(rows, today, month=None, start=None, end=None, before=None, label=No
         "usual": usual, "runway": runway, "soFar": so_far, "sameTime": round(statistics.median(same_time), 2) if same_time else None, "lastSame": spent_total(prior), "lastCut": prior_cut,
         "income": income, "netNow": round(income - so_far, 2), "netUsual": round(statistics.median(nets), 2) if nets else None, "perMonth": round(so_far / span_months, 2), "spanMonths": span_months,
         "yesterday": {"date": day_of(1), "usd": on_day(day_of(1)), "before": on_day(day_of(2)), "lastWeek": on_day(day_of(8))},
-        "days": days_series(counted, day_start, last_day), "daysCut": day_start > start, "groups": by_group_month(counted), "groupOrder": GROUP_ORDER,
+        "days": days_series(counted, day_start, last_day), "daysCut": day_start > start, "groups": by_group_month(counted), "groupOrder": GROUP_ORDER, "groupLabels": GROUP_EN,
         "categories": categories, "focus": focus, "bridge": bridge, "outliers": outliers(counted, this, windows), "fx": fx_effect(this, prior), "moved": largest_move,
         "currencyOrder": sorted(cur_totals, key=lambda c: -cur_totals[c]),
         "charges": charges, "next": next_payments(charges, today), "action": week_action(charges, current_gaps, today),
@@ -412,12 +424,12 @@ def check_advice(item, allowed):
     text = " ".join(str(item.get(k) or "") for k in ("fact", "why", "next"))
     for word in BANNED_WORDS:
         if word in text:
-            return f"使わない言葉：{word}"
+            return f"Word not used here: {word}"
     for raw in re.findall(r"\d[\d,]*(?:\.\d+)?", text):
         n = float(raw.replace(",", ""))
         if n > FREE_NUMBER and round(n, 2) not in allowed:
-            return f"計算にない数字：{raw}"
-    return None if str(item.get("fact") or "").strip() and str(item.get("next") or "").strip() else "事実と次の1つが必要です"
+            return f"Number not in the computation: {raw}"
+    return None if str(item.get("fact") or "").strip() and str(item.get("next") or "").strip() else "A fact and one next step are needed"
 
 
 def facts():

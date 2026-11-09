@@ -1,0 +1,15 @@
+{
+  "name": "tatsuki-assistant-bot",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/bot.test.js",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.5.0"
+  },
+  "devDependencies": {
+    "wrangler": "^4"
+  }
+}

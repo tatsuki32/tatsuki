@@ -1,4 +1,12 @@
 """08 2-minute tidy: rotation, the no-score rule, keeping the data safe."""
+import json as _json
+import os as _os
+import unittest as _unittest
+
+with open(_os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), "08-tidy", "tool.json"), encoding="utf-8") as _f:
+    if _json.load(_f).get("status") == "stopped":  # the owner stopped this tool; its tests come back with it
+        raise _unittest.SkipTest("08-tidy は停止中")
+
 import json
 import os
 import re

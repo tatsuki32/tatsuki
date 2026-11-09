@@ -1,4 +1,5 @@
 """WhatsApp chats waiting for a reply become Desk tasks, and answering closes them."""
+import hashlib
 import importlib.util
 import json
 import os
@@ -55,7 +56,7 @@ class Scan(SandboxCase):
         self.s.msg(1, False, "元気？")
         r = wa.scan(NOW)
         t = tasks.open_tasks()[0]
-        self.assertEqual(t["title"], "連絡返信：相手")
+        self.assertEqual(t["title"], "WhatsApp reply (相手)")
         self.assertEqual(t["source"], "whatsapp")
         self.assertEqual(t["planDate"], wa.today())
         self.assertEqual(r["drafts"][0]["messages"][-1]["text"], "元気？")
@@ -92,9 +93,9 @@ class Scan(SandboxCase):
         self.s.chat(1, "相手")
         self.s.msg(1, False, text="", kind=3)
         r = wa.scan(NOW)
-        self.assertEqual(self.titles(), ["連絡返信：相手"])
+        self.assertEqual(self.titles(), ["WhatsApp reply (相手)"])
         self.assertEqual(r["drafts"], [])
-        self.assertEqual(wa.load_items()[tasks.open_tasks()[0]["id"]]["kind"], "音声")
+        self.assertEqual(wa.load_items()[tasks.open_tasks()[0]["id"]]["kind"], "voice message")
 
     def test_an_old_message_makes_no_task(self):
         self.s.chat(1, "相手")
@@ -162,6 +163,42 @@ class Scan(SandboxCase):
         self.s.msg(1, False)
         ref = wa.scan(NOW)["drafts"][0]["ref"]
         self.assertEqual(wa.save([{"ref": ref, "body": " "}]), 0)
+
+
+class Titles(Scan):
+    def test_the_topic_goes_into_the_title(self):
+        self.s.chat(1, "相手")
+        self.s.msg(1, False, "来週どう？")
+        ref = wa.scan(NOW)["drafts"][0]["ref"]
+        wa.save([{"ref": ref, "topic": "来週の予定", "summary": "予定を聞かれた", "body": "Hi"}])
+        self.assertEqual(tasks.get(ref)["title"], "WhatsApp reply: 来週の予定 (相手)")
+
+    def nudge_task(self, jid="81901" + PERSON_HOST):
+        ref = "wa" + hashlib.sha1(jid.encode()).hexdigest()[:16]
+        return tasks.add("催促：相手", source="lifeos-02", source_ref=ref)
+
+    def test_a_nudge_gets_the_talk_and_a_draft_and_your_last_word_does_not_close_it(self):
+        self.s.chat(1, "相手")
+        self.s.msg(1, False, "こんにちは", ago=7200)
+        self.s.msg(1, True, "どうですか？")
+        t = self.nudge_task()
+        r = wa.nudges()
+        self.assertEqual(r["drafts"][0]["ref"], t["id"])
+        self.assertEqual(wa.load_items()[t["id"]]["texts"], ["相手: こんにちは", "Me: どうですか？"])
+        wa.save([{"ref": t["id"], "topic": "前の件", "body": "その後どう？"}])
+        self.assertEqual(tasks.get(t["id"])["title"], "WhatsApp nudge: 前の件 (相手)")
+        self.assertEqual(wa.scan(NOW)["closed"], 0)
+        self.assertEqual(tasks.get(t["id"])["status"], "notyet")
+        self.assertEqual(wa.nudges()["drafts"], [])
+
+    def test_a_closed_nudge_leaves_no_text_behind(self):
+        self.s.chat(1, "相手")
+        self.s.msg(1, True)
+        t = self.nudge_task()
+        wa.nudges()
+        tasks.done(t["id"])
+        wa.scan(NOW)
+        self.assertNotIn(t["id"], wa.load_items())
 
 
 class MailAdd(SandboxCase):

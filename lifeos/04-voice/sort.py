@@ -9,7 +9,8 @@ from collections import namedtuple
 from datetime import datetime, timedelta
 
 # title, at (ISO time) and timed are filled by the language model, or by core.py from the rules
-Part = namedtuple("Part", "kind text unsure title at timed minutes", defaults=("", "", False, 0))
+# for a question (kind "query"), at is the first day asked about and until the last, both YYYY-MM-DD
+Part = namedtuple("Part", "kind text unsure title at timed minutes until", defaults=("", "", False, 0, ""))
 
 LABELS = {"task": "タスク", "event": "予定", "expense": "支出", "idea": "アイデア", "diary": "日記"}
 
@@ -85,24 +86,14 @@ def amount(text):
 
 _WEEKDAYS = "月火水木金土日"
 _DIGITS = re.compile(r"[〇一二三四五六七八九十]+(?=時|月|日|分)")
+_ASKS = re.compile(r"(予定|スケジュール|タスク|やること).{0,12}(教えて|見せて|ある[?？か]?$|は[?？]?$|何|なに)|空いて(る|ます|い)|入って(る|ます|い)")
 _LATER = re.compile(r"(\d+)\s*(分|時間半|時間)後")
 JAPAN_TIME = "日本時間"
-_PLAN = re.compile(r"明日|あした|明後日|あさって|来週|再来週|今夜|今晩|\d+\s*(分|時間半?)後|日本時間|カレンダー|予定|予約"
-                   r"|\d{1,2}\s*時(半|\d{1,2}\s*分)?\s*(に|から|まで)|\d{1,2}:\d{2}\s*(に|から)|[月火水木金土日]曜")
 
 
 def _plain(text):
     s = _DIGITS.sub(lambda m: str(int(number(m.group()))), text)
     return s.translate(str.maketrans("０１２３４５６７８９：／", "0123456789:/"))
-
-
-def looks_like_plan(text):
-    """Whether any sentence talks about a time still to come. Other tools use this to leave a plan to this tool."""
-    for sentence in _SPLIT.split(_plain(text)):
-        s = sentence.strip(" 　、,")
-        if s and not _PAST_END.search(s) and not _PAST_WORD.search(s) and _PLAN.search(s):
-            return True
-    return False
 
 
 def when(text, now):
@@ -192,6 +183,11 @@ def judge(sentence, now):
 
 # several tasks are several things to do; several diary sentences are one entry
 _JOIN_SAME = ("idea", "diary")
+
+
+def asks_about_plans(text):
+    """Used when the language model is away, so a question never becomes a task."""
+    return bool(_ASKS.search(text.strip()))
 
 
 def names_its_kind(text):

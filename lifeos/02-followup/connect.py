@@ -72,4 +72,4 @@ def can_ask():
 
 def ask(text):
     """Puts a question to the owner. False means it waits in logs/outbox.jsonl."""
-    return telegram.notify(text)
+    return telegram.notify(text, telegram.SECRETARY)

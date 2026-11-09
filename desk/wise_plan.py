@@ -16,7 +16,7 @@ import sys
 import wise_analysis
 import wise_sync
 
-KINDS = {"flight": "航空券", "stay": "宿", "event": "予定", "payment": "支払い", "other": "その他"}
+KINDS = {"flight": "Flight", "stay": "Lodging", "event": "Event", "payment": "Payment", "other": "Other"}
 MAX_TEXT = 120
 MIN_DAYS = 5  # fewer days spent in a currency than this says nothing about the next trip
 DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
@@ -64,7 +64,7 @@ def ahead(rows, today, runway=None, usual=None):
         guess = round(day * length, 2) if day is not None and item.get("end") else None
         low = round(guess * 0.7, 2) if guess is not None else None
         high = round(guess * 1.3, 2) if guess is not None else None
-        out.append({**item, "kindName": KINDS.get(item.get("kind"), "その他"), "paidUsd": paid, "dueUsd": owed, "estimate": guess, "low": low, "high": high, "days": length, "basedOn": based_on})
+        out.append({**item, "kindName": KINDS.get(item.get("kind"), "Other"), "paidUsd": paid, "dueUsd": owed, "estimate": guess, "low": low, "high": high, "days": length, "basedOn": based_on})
         if owed is None:
             unknown += 1
         else:
@@ -75,7 +75,7 @@ def ahead(rows, today, runway=None, usual=None):
             limit = t["budget"] if t["budget"] is not None else sum(i["plan"] or 0 for i in t["items"])
             spent = sum(i["actual"] or 0 for i in t["items"])
             owed = to_usd({"value": max(limit - spent, 0), "currency": t["currency"]}, rates)
-            out.append({"id": t["id"], "title": t["name"], "kind": "other", "kindName": "旅の計画", "date": t["start"], "end": t["end"], "place": t.get("country"), "currency": t["currency"], "paid": None,
+            out.append({"id": t["id"], "title": t["name"], "kind": "other", "kindName": "Trip plan", "date": t["start"], "end": t["end"], "place": t.get("country"), "currency": t["currency"], "paid": None,
                         "due": {"value": max(limit - spent, 0), "currency": t["currency"]}, "url": None, "source": "plan", "paidUsd": None, "dueUsd": owed, "estimate": None, "low": None, "high": None, "days": 0, "basedOn": 0})
             if owed is None:
                 unknown += 1
@@ -137,14 +137,14 @@ def put_tip(new, today):
     url, year = new.get("url"), new.get("year")
     title, body, topic, source = (str(new.get(k) or "").strip() for k in ("title", "body", "topic", "source"))
     if not (title and body and topic and source):
-        return {"saved": False, "why": "題名・本文・話題・出典が必要です"}
+        return {"saved": False, "why": "Title, body, topic and source are needed"}
     if not (isinstance(url, str) and url.startswith("https://")) or not isinstance(year, int):
-        return {"saved": False, "why": "出典の URL と年が必要です"}
+        return {"saved": False, "why": "The source URL and year are needed"}
     if any(w in title + body for w in wise_analysis.BANNED_WORDS):
-        return {"saved": False, "why": "使わない言葉があります"}
+        return {"saved": False, "why": "Contains a word not used here"}
     saved = tips()
     if any(t["topic"] == topic or t["url"] == url for t in saved):
-        return {"saved": False, "why": "同じ話がすでにあります"}
+        return {"saved": False, "why": "This topic already exists"}
     wise_sync.write_json("tips.json", saved + [{"date": today, "topic": topic[:60], "title": title[:80], "body": body[:400], "source": source[:80], "url": url[:300], "year": year}])
     return {"saved": True}
 

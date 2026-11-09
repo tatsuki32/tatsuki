@@ -123,7 +123,7 @@ def add_wise():
     for a in wise_sync.read_json("activities.json", {}).values():
         a = {**a, "flow": wise_sync.flow(a)}
         if a["flow"] == "in" and wise_analysis.kind_of(a, chosen, guess)[0] == "income":
-            rows.append({"kind": "payment", "title": (a.get("amountText") or "").lstrip("+ ") + " の入金", "from": a.get("title"),
+            rows.append({"kind": "payment", "title": (a.get("amountText") or "").lstrip("+ ") + " received", "from": a.get("title"),
                          "date": wise_sync.local_date(a.get("createdOn")), "source": "wise", "ref": a.get("id")})
     return add(rows)
 

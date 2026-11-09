@@ -19,6 +19,7 @@ import os
 import re
 import secrets
 import shlex
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -29,9 +30,17 @@ import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, unquote, urlsplit
 
-import lifelog
+import bank
 import netspeed
+import notify
+import pc_monitor
+import chrome_web_sync
+import gmail_clean
+import lifelog
+import utilities
+import showcase
 import screentime_sync
+import usage
 import wise_analysis
 import wise_goals
 import wise_report
@@ -40,7 +49,7 @@ import wise_sync
 ROOT = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(ROOT, "data")
 PORT = int(os.environ.get("DESK_PORT", "4747"))
-COLLECTIONS = ("memos", "dues", "tasks", "prompts", "notes", "habits", "lifemap", "wins", "worldlog", "presents", "heritagelog", "routines", "routinelog", "rewards", "gear", "projects", "sections")
+COLLECTIONS = ("memos", "dues", "tasks", "prompts", "notes", "habits", "lifemap", "wins", "worldlog", "presents", "heritagelog", "routines", "routinelog", "rewards", "ideaslog", "gear", "projects", "sections")
 # file in data/, global the page reads, value when the file is missing
 DATA_JS = [
     ("tools.js", "TOOLS", "[]"),
@@ -51,6 +60,7 @@ DATA_JS = [
     ("reports.js", "REPORTS", "[]"),
     ("watch.js", "WATCH", "[]"),
     ("heritage.js", "HERITAGE", "[]"),
+    ("ideas.js", "IDEAS", "[]"),
 ]
 # what the scheduled tasks and the tools view write: one file per doc in data/docs/<collection>/, joined into the page's
 # data/*.js. collection -> (file, global, newest docs kept in the page; the docs stay on disk)
@@ -61,6 +71,7 @@ FEEDS = {
     "reports": ("reports.js", "REPORTS", 30),
     "watch": ("watch.js", "WATCH", 30),
     "heritage": ("heritage.js", "HERITAGE", None),
+    "ideas": ("ideas.js", "IDEAS", 52),
     "calendar": ("calendar.js", "CAL", "upcoming"),
     "gtasks": ("gtasks.js", "GTASKS", "current"),
 }
@@ -191,6 +202,18 @@ def whatsapp_view():
         return {}
 
 
+def line_view():
+    """Drafts of the open LINE tasks and how the last check went (desk/line_sync.py writes them; the page only reads)."""
+    out = {}
+    for key, name in (("items", "items.json"), ("status", "status.json")):
+        try:
+            with open(os.path.join(DATA, "line", name), encoding="utf-8") as f:
+                out[key] = json.load(f)
+        except (OSError, ValueError):
+            out[key] = {}
+    return out
+
+
 def keep_clear(old, new):
     """A page opened before the night's run saves the whole task: it must not erase what the run wrote."""
     cur = old.get("clear")
@@ -227,8 +250,8 @@ def lifeos_tools():
             if not isinstance(rec, dict):
                 raise ValueError("object expected")
         except (OSError, ValueError):
-            rec = {"no": slug[:2], "name": slug, "status": "blocked", "oneline": "tool.json を読めません",
-                   "blockers": [{"what": "tool.json", "why": "ファイルの形が壊れています。", "needs": "担当の作業で直す"}]}
+            rec = {"no": slug[:2], "name": slug, "status": "blocked", "oneline": "Cannot read tool.json",
+                   "blockers": [{"what": "tool.json", "why": "The file is malformed.", "needs": "Fix it in that tool's own work"}]}
         out.append({**rec, "id": slug})
     return out
 
@@ -425,16 +448,16 @@ def memolink_run():
     """POST /api/memolink/run: one pass, never two at once. The answer holds counts only, never a memo's words."""
     core = memolink_core()
     if core is None:
-        return 404, {"error": "メモ連携がこの Desk に入っていません"}
+        return 404, {"error": "Memo link is not installed in this Desk"}
     if not MEMOLINK_LOCK.acquire(blocking=False):
-        return 409, {"error": "連携しています。終わるまでお待ちください"}
+        return 409, {"error": "Linking is in progress. Please wait for it to finish"}
     try:
         core.run()
         return 200, core.desk_view()
     except core.desk_notes.NoteStoreError as e:
         return 500, {"error": str(e)}
     except Exception:
-        return 500, {"error": "連携できませんでした。元のメモは変わっていません"}
+        return 500, {"error": "Linking did not complete. The original memos are unchanged"}
     finally:
         MEMOLINK_LOCK.release()
 
@@ -462,6 +485,11 @@ def page():
             parts.append("window.HERITAGE_COUNTRIES=" + json.dumps(json.load(f), ensure_ascii=False).replace("</", "<\\/") + ";")
     except (OSError, ValueError):
         parts.append("window.HERITAGE_COUNTRIES=[];")
+    try:  # how the menu and the Home cards are arranged this week (desk/usage.py); the page shows the first arrangement without it
+        lay = json.dumps(usage.public(usage.read_layout(), usage.enabled(PORT)), ensure_ascii=False).replace("</", "<\\/")
+    except Exception:
+        lay = "null"
+    parts.append(f"window.LAYOUT={lay};")
     inject = "<script>\n" + "\n".join(parts) + "\n</script>\n"
     i = html.find("<script>")
     return html[:i] + inject + html[i:] if i >= 0 else html + inject
@@ -487,7 +515,7 @@ def open_claude(cmd, arg):
             f"cd {shlex.quote(REPO)} || exit 1\n"
             f'P="$(cat {shlex.quote(msg)})"\n'
             f"rm -rf {shlex.quote(d)}\n"
-            'if ! command -v claude >/dev/null; then echo "claude が見つかりません（Claude Code を入れてください）"; read -r; exit 1; fi\n'
+            'if ! command -v claude >/dev/null; then echo "claude was not found (install Claude Code)"; read -r; exit 1; fi\n'
             'exec claude "$P"\n'
         )
     os.chmod(script, 0o700)
@@ -504,7 +532,7 @@ def focus_call(path, body=None):
         except urllib.error.HTTPError as e:
             return e.code, json.load(e)
     except (OSError, ValueError):
-        return 502, {"error": "FocusBlock につながりません"}
+        return 502, {"error": "Cannot reach FocusBlock"}
 
 
 def focus_state():
@@ -545,7 +573,7 @@ def save_upload(data):
     """Stores a file under a name made from its content, so the same file is kept once. Returns its URL."""
     kind = upload_kind(data)
     if not kind:
-        raise ValueError("画像か PDF だけ置けます")
+        raise ValueError("Only images and PDFs can be uploaded")
     name = hashlib.sha256(data).hexdigest()[:32] + "." + kind
     os.makedirs(UPLOADS, exist_ok=True)
     path = os.path.join(UPLOADS, name)
@@ -564,11 +592,15 @@ def lifelog_put(parts, rec):
         out = lifelog.update_record(parts[2], rec.get("action"), rec)
     elif parts[:2] == ["body", "targets"] and len(parts) == 3:
         out = lifelog.set_target(parts[2], rec.get("target"), rec.get("dir"))
+    elif parts[:2] == ["body", "repeat"] and len(parts) == 3:
+        out = lifelog.repeat_meal(parts[2])
+    elif parts[:2] == ["body", "exercises"] and len(parts) == 3:
+        out = lifelog.set_muscle(parts[2], rec.get("muscle"))
     elif parts == ["body", "settings"]:
         try:
             out = lifelog.set_settings(rec)
         except (TypeError, ValueError):
-            return 400, {"error": "値の形が違います"}
+            return 400, {"error": "The value has the wrong shape"}
     elif parts[0] == "receipts" and len(parts) == 2:
         out = lifelog.settle_receipt(parts[1], rec.get("state"), rec.get("wiseId"))
     else:
@@ -615,6 +647,55 @@ class Handler(BaseHTTPRequestHandler):
             raise ValueError("object expected")
         return v
 
+    def utility_file(self, token):
+        entry = utilities.get_file(token)
+        if not entry:
+            return self.send(404, {"error": "not found"})
+        try:
+            size = len(entry["data"]) if "data" in entry else os.path.getsize(entry["path"])
+            self.send_response(200)
+            self.send_header("Content-Type", entry["ctype"])
+            self.send_header("Content-Length", str(size))
+            self.send_header("Content-Disposition", utilities.disposition(entry["name"]))
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+            if "data" in entry:
+                self.wfile.write(entry["data"])
+            else:
+                with open(entry["path"], "rb") as f:
+                    shutil.copyfileobj(f, self.wfile)
+        except OSError:
+            self.close_connection = True
+
+    def utilities_post(self, path):
+        """小さな道具: QR, is.gd and the PDF. Same protection as uploads and the other JSON posts: another site cannot send these."""
+        step = path.split("/")[3:]
+        if step == ["pdf"]:
+            if self.headers.get("X-Desk-Upload") != "1":
+                return self.send(415, {"error": "upload header required"})
+            n = int(self.headers.get("Content-Length") or 0)
+            if n > utilities.PDF_MAX:
+                self.close_connection = True
+                return self.send(413, {"error": "The limit is 500MB"})
+            q = parse_qs(urlsplit(self.path).query)
+            return self.send(*utilities.start_pdf(self.rfile, n, q.get("name", [""])[0], q.get("level", [""])[0]))
+        if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+            return self.send(415, {"error": "json only"})
+        try:
+            rec = self.body()
+        except (ValueError, json.JSONDecodeError):
+            return self.send(400, {"error": "bad json"})
+        if step == ["qr"]:
+            return self.send(*utilities.qr(rec.get("text")))
+        if step == ["shorten"]:
+            return self.send(*utilities.shorten(rec.get("url")))
+        if len(step) == 3 and step[0] == "pdf" and step[2] == "run":
+            return self.send(*utilities.run_pdf(step[1], rec.get("level")))
+        if len(step) == 3 and step[0] == "pdf" and step[2] == "clear":
+            return self.send(*utilities.clear_pdf(step[1]))
+        return self.send(404, {"error": "not found"})
+
     def lifelog_photo(self, name):
         p = lifelog.photo_path(name)
         if not p:
@@ -657,14 +738,38 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, core.desk_view()) if core else self.send(404, {"error": "not found"})
         if path == "/api/whatsapp":
             return self.send(200, whatsapp_view())
+        if path == "/api/line":
+            return self.send(200, line_view())
+        if path == "/api/bank":
+            try:
+                return self.send(200, bank.view())
+            except bank.BankError:
+                return self.send(500, {"error": "read"})
         if path == "/api/netspeed":
             return self.send(200, netspeed.view())
+        if path.startswith("/api/utilities/file/"):
+            return self.utility_file(path.rsplit("/", 1)[1])
+        if path == "/api/showcase":
+            return self.send(200, showcase.view())
+        if path == "/api/mailclean":
+            return self.send(200, gmail_clean.view())
         if path == "/api/body":
             return self.send(200, lifelog.view())
         if path == "/api/receipts":
             return self.send(200, lifelog.receipts_view(parse_qs(urlsplit(self.path).query).get("month", [None])[0]))
         if path.startswith("/lifelog-photos/"):
             return self.lifelog_photo(path.rsplit("/", 1)[1])
+        if path == "/api/notify":
+            return self.send(200, notify.view())
+        if path == "/api/pc":
+            brief = "summary" in parse_qs(urlsplit(self.path).query)
+            return self.send(200, pc_monitor.summary() if brief else pc_monitor.snapshot())
+        if path.startswith("/api/web/"):
+            return self.web_get(path.rsplit("/", 1)[1], parse_qs(urlsplit(self.path).query))
+        if path == "/api/usage":
+            return self.send(200, {**usage.view(parse_qs(urlsplit(self.path).query).get("period", ["14"])[0]), "on": usage.enabled(PORT)})
+        if path == "/api/layout":
+            return self.send(200, usage.public(usage.read_layout(), usage.enabled(PORT)))
         if path == "/api/screentime":
             q = parse_qs(urlsplit(self.path).query)
             return self.send(200, screentime_sync.view(q.get("period", ["week"])[0], q.get("device", ["mac"])[0]))
@@ -721,24 +826,83 @@ class Handler(BaseHTTPRequestHandler):
         n = int(self.headers.get("Content-Length") or 0)
         if n > UPLOAD_MAX:
             self.close_connection = True
-            return self.send(413, {"error": "20MB までです"})
+            return self.send(413, {"error": "The limit is 20MB"})
         try:
             return self.send(200, {"url": save_upload(self.rfile.read(n))})
         except ValueError as e:
             return self.send(415, {"error": str(e)})
         except OSError:
-            return self.send(500, {"error": "保存できませんでした"})
+            return self.send(500, {"error": "Could not save"})
+
+    def web_get(self, what, q):
+        one = lambda k, default="": q.get(k, [default])[0]
+        num = lambda k: float(one(k)) if re.fullmatch(r"\d+(\.\d+)?", one(k)) else None
+        scope = (one("period", "week"), one("from") or None, one("to") or None)
+        moment = (num("after"), num("before"))
+        offset = int(num("offset") or 0)
+        if what == "sites":
+            return self.send(200, chrome_web_sync.sites_view(*scope, one("q")))
+        if what == "visits":
+            return self.send(200, chrome_web_sync.visits_view(*scope, one("q"), one("site"), *moment, offset))
+        if what == "searches":
+            return self.send(200, chrome_web_sync.searches_view(*scope, one("q"), offset))
+        if what == "export":
+            data = chrome_web_sync.export_csv(one("tab", "sites"), *scope, one("q"), one("site"), *moment).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "text/csv; charset=utf-8")
+            self.send_header("Content-Length", str(len(data)))
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("Content-Disposition", 'attachment; filename="web-history.csv"')
+            self.end_headers()
+            return self.wfile.write(data)
+        return self.send(404, {"error": "not found"})
+
+    def web_time(self):
+        # the one write that comes from outside localhost: only this Desk's own extension, by its fixed id
+        host = (self.headers.get("Host") or "").split(":")[0]
+        if host not in ("localhost", "127.0.0.1") or self.headers.get("Origin") != "chrome-extension://" + chrome_web_sync.EXTENSION_ID:
+            return self.send(403, {"error": "forbidden"})
+        if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+            return self.send(415, {"error": "json only"})
+        try:
+            rec = self.body()
+            added = chrome_web_sync.add_spans(rec.get("spans"), rec.get("diag"))
+        except (ValueError, json.JSONDecodeError):
+            return self.send(400, {"error": "bad json"})
+        return self.send(400, {"error": "bad spans"}) if added is None else self.send(200, {"added": added})
+
+    def web_put(self, parts, rec):
+        if parts == ["exclude"]:
+            out = chrome_web_sync.set_excluded(rec.get("site"), rec.get("on") is not False)
+            return self.send(400, {"error": "bad site"}) if out is None else self.send(200, {"excluded": out})
+        if len(parts) == 2 and parts[0] in ("visits", "searches"):
+            ok = chrome_web_sync.hide(parts[0], unquote(parts[1]))
+            return self.send(200, {"ok": True}) if ok else self.send(404, {"error": "not found"})
+        return self.send(404, {"error": "not found"})
 
     def write(self, method):
+        if method == "POST" and urlsplit(self.path).path == "/api/web/time":
+            return self.web_time()
         if not self.allowed():
             return self.send(403, {"error": "forbidden"})
         if method == "POST" and urlsplit(self.path).path == "/api/uploads":
             return self.upload_post()
+        if method == "POST" and urlsplit(self.path).path.startswith("/api/utilities/"):
+            return self.utilities_post(urlsplit(self.path).path)
         col, doc_id = self.route()
         try:
             rec = self.body()
         except (ValueError, json.JSONDecodeError):
             return self.send(400, {"error": "bad json"})
+        if method == "PUT" and urlsplit(self.path).path.startswith("/api/web/"):
+            return self.web_put(urlsplit(self.path).path.split("/")[3:], rec)
+        if urlsplit(self.path).path.startswith("/api/bank/"):
+            return self.bank_write(method, rec)
+        if method == "POST" and urlsplit(self.path).path == "/api/usage":
+            # counts only; a test server on another port answers and keeps nothing
+            return self.send(200, {"ok": usage.enabled(PORT) and usage.record(rec)})
+        if method == "PUT" and urlsplit(self.path).path == "/api/layout":
+            return self.send(200, usage.change(rec, usage.enabled(PORT)))
         if method == "POST" and urlsplit(self.path).path == "/api/claude":
             return self.claude(rec)
         if method == "POST" and urlsplit(self.path).path in ("/api/focus/start", "/api/focus/stop"):
@@ -748,10 +912,44 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(415, {"error": "json only"})
             netspeed.start()
             return self.send(200, netspeed.view())
+        if method == "POST" and urlsplit(self.path).path == "/api/showcase/open-local":
+            if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+                return self.send(415, {"error": "json only"})
+            return self.send(200, {"ok": showcase.open_local()})
+        if method == "POST" and urlsplit(self.path).path.startswith("/api/mailclean/"):
+            # same protection as claude(): Host/Origin checked, and JSON from another origin needs a preflight
+            if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+                return self.send(415, {"error": "json only"})
+            step = urlsplit(self.path).path.rsplit("/", 1)[1]
+            if step == "scan":
+                gmail_clean.scan()
+                return self.send(200, gmail_clean.view())
+            if step == "act":
+                return self.send(*gmail_clean.act(rec.get("id"), rec.get("action"), rec.get("confirm") is True))
+            if step == "undo":
+                return self.send(*gmail_clean.undo(rec.get("id")))
+            return self.send(404, {"error": "not found"})
         if method == "PUT" and urlsplit(self.path).path.startswith(("/api/body/", "/api/receipts/")):
             if not (self.headers.get("Content-Type") or "").startswith("application/json"):
                 return self.send(415, {"error": "json only"})
             return self.send(*lifelog_put(urlsplit(self.path).path.split("/")[2:], rec))
+        if urlsplit(self.path).path.startswith("/api/notify/"):
+            # same protection as claude(): Host/Origin checked, and JSON from another origin needs a preflight
+            if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+                return self.send(415, {"error": "json only"})
+            step = (method, urlsplit(self.path).path.rsplit("/", 1)[1])
+            if step == ("PUT", "settings"):
+                return self.send(*notify.put_settings(rec))
+            if step == ("POST", "pause"):
+                return self.send(*notify.pause(rec))
+            if step == ("POST", "test"):
+                return self.send(*notify.test())
+            return self.send(404, {"error": "not found"})
+        if method == "POST" and urlsplit(self.path).path == "/api/pc/close":
+            # same protection as claude(): Host/Origin checked, and JSON from another origin needs a preflight
+            if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+                return self.send(415, {"error": "json only"})
+            return self.send(*pc_monitor.close(rec.get("pid"), rec.get("started"), rec.get("force") is True))
         if method == "POST" and urlsplit(self.path).path == "/api/memolink/run":
             if not (self.headers.get("Content-Type") or "").startswith("application/json"):
                 return self.send(415, {"error": "json only"})
@@ -792,7 +990,7 @@ class Handler(BaseHTTPRequestHandler):
         except ValueError:
             return self.send(400, {"error": "bad export"})
         if data is None:
-            return self.send(503, "PDF を作れませんでした。xcode-select --install を実行してから、もう一度お試しください。", "text/plain; charset=utf-8")
+            return self.send(503, "Could not create the PDF. Run xcode-select --install, then try again.", "text/plain; charset=utf-8")
         self.send_response(200)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(data)))
@@ -827,6 +1025,33 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(500, {"error": "could not open Terminal"})
         return self.send(200, {"ok": True})
 
+    def bank_write(self, method, rec):
+        # same protection as claude(): Host/Origin checked, and JSON from another origin needs a preflight.
+        # The answers and errors carry no value; only reveal returns a whole number.
+        if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+            return self.send(415, {"error": "json only"})
+        p = urlsplit(self.path).path.split("/")[3:]  # <id> or <id>/<action>
+        acct = unquote(p[0]) if p else ""
+        action = p[1] if len(p) == 2 else None
+        try:
+            if method == "PUT" and len(p) == 1:
+                return self.send(200, bank.put(acct, rec))
+            if method != "POST" or not action:
+                return self.send(404, {"error": "not found"})
+            if action == "reveal":
+                r = bank.reveal(acct)
+                return self.send(200, r) if r else self.send(404, {"error": "not found"})
+            if action == "copy":
+                ok = bank.copy(acct, rec.get("what") if isinstance(rec.get("what"), str) else "")
+                return self.send(200, {"ok": True}) if ok else self.send(404, {"error": "not found"})
+            if action == "remove":
+                return self.send(200, bank.view()) if bank.remove(acct) else self.send(404, {"error": "not found"})
+            return self.send(404, {"error": "not found"})
+        except ValueError as e:
+            return self.send(400, {"error": str(e)})
+        except bank.BankError:
+            return self.send(500, {"error": "storage"})
+
     def do_POST(self):
         self.write("POST")
 
@@ -842,6 +1067,9 @@ if __name__ == "__main__":
     srv = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
     print(f"Tatsuki's Desk: http://localhost:{PORT}", flush=True)
     threading.Thread(target=lifemap_ticks, daemon=True).start()
+    threading.Thread(target=pc_monitor.watch, daemon=True).start()
+    if PORT == 4747:  # a test server on another port shows nothing
+        threading.Thread(target=notify.watch, daemon=True).start()
     try:
         srv.serve_forever()
     except KeyboardInterrupt:

@@ -174,18 +174,30 @@ class TestAsk(FollowupCase):
         self.core.answer(item["no"], "捨てる")
         self.assertEqual(tasks.open_tasks(), [])
 
+    def test_details_rename_the_task_and_reach_the_desk(self):
+        self.snap(self.thread(days=4))
+        self.core.morning()
+        no = self.core.needs_detail()[0]["no"]
+        self.assertEqual(self.core.save_details([{"no": no, "topic": "見積もり", "summary": "見積もりの確認を頼んだ。"}]), 1)
+        self.assertEqual(tasks.open_tasks()[0]["title"], "Email nudge: 見積もり (someone@example.com)")
+        self.assertEqual(self.core.needs_detail(), [])
+        view = self.core.desk_view()["items"][0]
+        self.assertEqual((view["taskId"], view["summary"]), (tasks.open_tasks()[0]["id"], "見積もりの確認を頼んだ。"))
+
     def test_send_answer_needs_a_draft(self):
         self.snap(self.thread(days=15))
         self.core.morning()
         self.assertIn("下書きがまだ", self.core.answer(1, "送る"))
-        self.assertEqual([t["title"] for t in tasks.open_tasks()], ["催促：someone@example.com"])
+        self.assertEqual([t["title"] for t in tasks.open_tasks()], [self.core.task_title(self.core.read_state()["threads"]["a"])])
 
     def test_three_days_makes_one_task_for_today_and_a_reply_closes_it(self):
         self.snap(self.thread(days=2), self.thread("b", days=4, to=("山田 <someone@example.com>",)))
         self.core.morning()
         self.core.morning()
         task = tasks.open_tasks()
-        self.assertEqual([t["title"] for t in task], ["催促：山田"])
+        self.assertEqual([t["title"] for t in task], [self.core.task_title(self.core.read_state()["threads"]["b"])])
+        self.assertTrue(task[0]["title"].startswith("Email nudge"))
+        self.assertTrue(task[0]["title"].endswith(" (山田)"))
         self.assertEqual(task[0]["planDate"], self.day)
         self.snap(self.thread("b", days=0, last="them"))
         self.core.morning()

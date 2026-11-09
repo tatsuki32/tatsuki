@@ -1,5 +1,7 @@
 # Tatsuki's Desk の定期タスク（Mac の Claude スケジュールタスク）
 
+言語（2026-11-09 から）：どのタスクも Desk に書く文はアメリカ英語。各 SKILL.md の本文の先頭に「Language (changed 2026-11-09)」の段落がある。`*_ja` の欄は名前のままで中身は英語。
+
 データの正本は Mac の `~/TatsukiDesk/desk/data/` だけです。オンライン版とは同期しません。
 タスクは Claude アプリが開いている間に動きます。閉じていた間の分は、次に開いたときに動きます。
 
@@ -24,11 +26,12 @@ python3 desk/write_feed.py gtasks <raw.json>                 # Google タスク�
 |---|---|---|---|
 | `desk-daily-note` | 毎日 16:00 | 3min Daily Note のメールを本人へ送り、当日のタスクを作る（`lifeos/19-daily-note/`） | `tasks` |
 | `desk-lifelog-drive` | 毎時 | Drive の `Daily_Photos_Inbox` の新しい写真を待ち行列に入れ、読む（`desk/lifelog.py`。Drive のファイルは動かさない。1回10枚まで） | `lifelog/`・`body/`・`wise/receipts.json` |
+| `desk-sleep-coach` | 毎日 7:00 | 睡眠の記事を決めた出典から1本読み、本人の記録に当てはめた助言を作る（`desk/lifelog.py`。医療の助言はしない） | `body/sleep_coach.json` |
 | `desk-task-calendar` | 毎時 | 未着手で時刻つき期日のタスクを Google カレンダーへ（`desk/task_calendar.py`） | `calendar-sync.json` |
 | `desk-task-clarify` | 毎晩 2:30 | 未整理のタスクを30件まで、具体的なタイトル・まず5分・手順・出典・頼む文面に整える（`desk/task_clarify.py`。送信しない） | `tasks` の `clear` |
 | `desk-task-estimate` | 毎日 6:40 | タスクにかかる時間の目安と時期の案（`desk/task_estimate.py`。本人の選択は変えない） | `tasks` の `estAi`・`planAi` |
 | `desk-world-brief` | 毎日 7:17 | 世界ニュース（結果のある出来事と研究を8〜10本。予想の問い、媒体の見比べ、なぜを5回つき。指示は `desk/sync/world-brief-v2.md`、号の形は `WORLD_EDITION.md`） | `editions` |
-| `desk-morning-mail` | 毎日 3:00・16:00 | Gmail と WhatsApp の個人トークの確認と返信案（`desk/whatsapp_sync.py`）。相手の返信待ち（`lifeos/02-followup/MORNING_RUN.md`、`run.py whatsapp`）。プレゼントの判定（`desk/presents.py`）。送信しない | `days`・`tasks`・`desk/data/whatsapp/`・`02-followup/state.json`・`presents` |
+| `desk-morning-mail` | 毎日 3:00・16:00 | Gmail と WhatsApp の個人トークの確認と返信案（`desk/whatsapp_sync.py`）。相手の返信待ち（`lifeos/02-followup/MORNING_RUN.md`、`run.py whatsapp`）。プレゼントの判定（`desk/presents.py`）。今すぐ返信が要るものに `urgent` の印（Desk の通知が鳴る。`desk/notify.py`）。送信しない | `days`・`tasks`・`desk/data/whatsapp/`・`02-followup/state.json`・`presents` |
 | `desk-minor-watch` | 火・金 7:33 | マイナー国ウォッチ | `watch` |
 | `desk-heritage-daily` | 毎日 7:05 | 毎日世界遺産。まだ出ていない国を3カ国、国の紹介と遺産を写真つきで（`desk/heritage.py`。休んだ日の分は作らない） | `heritage`・`desk/data/heritage/photos/` |
 | `desk-claude-daily-report` | 毎日 7:40 | 前日の Claude の作業レポート | `reports` |
@@ -37,5 +40,6 @@ python3 desk/write_feed.py gtasks <raw.json>                 # Google タスク�
 | `desk-money-learn` | 毎日 8:35 | FP の6分野と金融機関のレポートから解説とクイズを1本 | `desk/data/wise/lessons.json` |
 | `desk-money-review` | 3日ごと 8:10 | お金の助言と、新しい明細の種類・分類の案（`/money-review`） | `desk/data/wise/`（`advice.json`・`guess.json`） |
 | `desk-sunday-mirror` | 日曜 17:08 | 日曜の鏡 | `memos` |
+| `desk-idea-suggest` | 月曜 6:30 | 提案。Drive と Cosense に本人が書いたものから、作れるものを5件まで。本人の言葉の引用と出典つき（`desk/ideas.py`。読む範囲は `desk/data/ideas/sources.json` だけ。引用が原文にないと保存しない。読んだ本文は残さない） | `ideas` |
 
 各タスクの手順は Mac の `~/.claude/scheduled-tasks/<ID>/SKILL.md` にあります。経歴やドキュメントの ID を含むので、このリポジトリには入れません。

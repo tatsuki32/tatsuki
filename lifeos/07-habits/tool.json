@@ -18,16 +18,11 @@
   ],
   "blockers": [
     {
-      "what": "Telegram のボット",
-      "why": "トークンがないので、Telegram からの記録と週の報告が届きません。",
-      "needs": "BotFather でボットを作り、トークンとチャット ID を secrets/telegram.json に入れて、python3 lifeos/bot/run.py を起動する"
-    },
-    {
       "what": "週1回の自動送信",
       "why": "週の報告を自動で動かす定期実行は、まだ入れていません。",
       "needs": "自動送信を入れてよいか Claude に伝える（手順は INTEGRATION.md）"
     }
   ],
   "commands": [],
-  "updated": "2026-11-04"
+  "updated": "2026-11-05"
 }

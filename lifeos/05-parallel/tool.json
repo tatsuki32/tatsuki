@@ -21,15 +21,9 @@
     "python3 lifeos/05-parallel/lines.py week と打ち、今日の稼働時間が出ることを見る",
     "3つを end で終え、remove 試し1 --yes のように作業フォルダを消す。ブランチは残るので、要らなければ消す"
   ],
-  "blockers": [
-    {
-      "what": "Telegram への通知",
-      "why": "ボットのトークンがまだ置かれていません。いまの通知は一覧の画面と Mac の通知だけです。",
-      "needs": "Telegram でボットを作り、トークンとチャット ID を desk/data/lifeos/secrets/telegram.json に token と chat_id として保存する"
-    }
-  ],
+  "blockers": [],
   "commands": [
     "/lines"
   ],
-  "updated": "2026-11-04"
+  "updated": "2026-11-05"
 }

@@ -1,0 +1,23 @@
+# The KV id is added to this file by scripts/setup.sh. It is an identifier, not a secret.
+name = "tatsuki-assistant-bot"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+MODEL = "claude-opus-5-5"
+MONTHLY_LIMIT_USD = "10"
+
+# 22:00 UTC is 5:00 in Ho Chi Minh City.
+[triggers]
+crons = ["0 22 * * *"]
+
+[[queues.producers]]
+queue = "assistant-messages"
+binding = "MESSAGES"
+
+# No retries: a failed message gets a one-line reply, and a retry could send two answers.
+[[queues.consumers]]
+queue = "assistant-messages"
+max_batch_size = 1
+max_retries = 0

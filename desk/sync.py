@@ -149,7 +149,7 @@ def cmd_mail_replied(day, key):
     cur = next((t for t in tasks._load() if t["id"] == tid), None)
     if not cur or cur.get("status") in tasks.OPEN:
         ms = paths.now_ms()
-        base = cur or {"id": tid, "title": item.get("subject_ja") or item.get("subject") or "（件名なし）", "source": "mail",
+        base = cur or {"id": tid, "title": item.get("subject_ja") or item.get("subject") or "(no subject)", "source": "mail",
                        "sourceRef": uid, "due": None, "note": "", "createdAt": ms, "deleted": False}
         tasks._put({**base, "status": "done", "updatedAt": ms})
     print("ok")

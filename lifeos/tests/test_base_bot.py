@@ -204,3 +204,53 @@ class TestTelegramSetup(BotCase):
 
     def test_long_text_is_split(self):
         self.assertEqual([len(x) for x in telegram.split_text("a" * 8500)], [4000, 4000, 500])
+
+
+class TestTwoBots(SandboxCase):
+    def route(self, slug):
+        return router.Route(slug, slug[:2], slug, 50, lambda t: t.startswith(slug[:2]), lambda t, c: slug)
+
+    def routes(self):
+        return [self.route(s) for s in ("02-followup", "03-task", "04-voice", "07-habits", "14-lifemap", "20-lifelog", "99-new")]
+
+    def test_each_tool_has_one_bot_and_new_tools_go_to_records(self):
+        slugs = lambda bot: [r.slug for r in router.for_bot(self.routes(), bot)]
+        self.assertEqual(slugs("secretary"), ["02-followup", "03-task", "04-voice"])
+        self.assertEqual(slugs("records"), ["07-habits", "14-lifemap", "20-lifelog", "99-new"])
+
+    def test_one_token_serves_everything_as_before(self):
+        for second in (None, "A"):
+            bots = run.plan_bots("A", second, self.routes())
+            self.assertEqual([(b[0], len(b[2]), b[4]) for b in bots], [("records", 7, None)])
+
+    def test_two_tokens_make_two_bots(self):
+        bots = run.plan_bots("A", "B", self.routes())
+        self.assertEqual([(b[0], b[1], len(b[2]), b[3]) for b in bots], [("records", "A", 4, True), ("secretary", "B", 3, False)])
+        self.assertEqual(bots[0][4], run.TO_SECRETARY)
+
+    def test_the_secretary_points_photos_to_records(self):
+        c = Fake()
+        update = {"update_id": 1, "message": {"chat": {"id": 7}, "photo": [{"file_id": "f"}]}}
+        run.handle_update(update, c, "7", [], photos=False)
+        self.assertEqual(c.sent, [(7, run.PHOTO_ELSEWHERE)])
+
+    def test_a_plan_sent_to_records_points_to_the_secretary_and_is_kept(self):
+        c = Fake()
+        update = {"update_id": 1, "message": {"chat": {"id": 7}, "text": "明日10時に会議"}}
+        run.handle_update(update, c, "7", [], unrouted=run.TO_SECRETARY)
+        self.assertEqual(c.sent, [(7, run.TO_SECRETARY)])
+        self.assertEqual(logs.read("unrouted")[0]["text"], "明日10時に会議")
+
+    def test_each_bot_keeps_its_own_place(self):
+        run.save_offset(5)
+        run.save_offset(9, "secretary")
+        self.assertEqual((run.read_offset(), run.read_offset("secretary")), (5, 9))
+
+    def test_each_bot_has_its_own_token(self):
+        os.environ["LIFEOS_TELEGRAM_TOKEN"] = "A"
+        os.environ["LIFEOS_TELEGRAM_SECRETARY_TOKEN"] = "B"
+        self.addCleanup(os.environ.pop, "LIFEOS_TELEGRAM_SECRETARY_TOKEN", None)
+        self.assertEqual((telegram.config()[0], telegram.config("secretary")[0]), ("A", "B"))
+        del os.environ["LIFEOS_TELEGRAM_SECRETARY_TOKEN"]
+        self.assertIsNone(telegram.config("secretary")[0])
+

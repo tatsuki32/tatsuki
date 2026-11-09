@@ -1,3 +1,11 @@
+import json as _json
+import os as _os
+import unittest as _unittest
+
+with open(_os.path.join(_os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))), "13-brain", "tool.json"), encoding="utf-8") as _f:
+    if _json.load(_f).get("status") == "stopped":  # the owner stopped this tool; its tests come back with it
+        raise _unittest.SkipTest("13-brain は停止中")
+
 import glob
 import io
 import json

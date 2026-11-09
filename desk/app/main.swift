@@ -19,7 +19,7 @@ let noProxy: URLSession = {
 func isDesk(_ url: URL?) -> Bool {
     guard let u = url, u.scheme == "http" || u.scheme == "about" else { return false }
     if u.scheme == "about" { return true }
-    if u.path.hasPrefix("/api/wise/export") { return false } // a file to save: the default browser downloads it
+    if u.path.hasPrefix("/api/wise/export") || u.path.hasPrefix("/api/utilities/file/") { return false } // a file to save: the default browser downloads it
     return (u.host == "localhost" || u.host == "127.0.0.1") && String(u.port ?? 80) == deskPort
 }
 
@@ -129,6 +129,18 @@ final class DeskController: NSObject, NSApplicationDelegate, WKNavigationDelegat
         if isDesk(url) { return decisionHandler(.allow) }
         NSWorkspace.shared.open(url)
         decisionHandler(.cancel)
+    }
+
+    // <input type="file">: a WKWebView shows no chooser unless it is asked to
+    func webView(_ webView: WKWebView, runOpenPanelWith parameters: WKOpenPanelParameters, initiatedByFrame frame: WKFrameInfo,
+                 completionHandler: @escaping ([URL]?) -> Void) {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = parameters.allowsMultipleSelection
+        panel.beginSheetModal(for: window) { answer in
+            completionHandler(answer == .OK ? panel.urls : nil)
+        }
     }
 
     // target="_blank" and window.open

@@ -14,6 +14,8 @@ private backup (backup_data.py). The API key is in the macOS keychain, never in 
   python3 lifelog.py refs                                   the Drive ids already queued, one per line
   python3 lifelog.py process [limit]                        read what is waiting
   python3 lifelog.py reread <photo id> ...                  read photos again (after the fields grew)
+  python3 lifelog.py sleep-facts                            the numbers the morning sleep advice may use
+  python3 lifelog.py sleep-coach <file.json>                saves one morning's article and advice, if it passes
   python3 lifelog.py status                                 how much is waiting (no contents)
 """
 import base64
@@ -89,7 +91,7 @@ KINDS = {
 SCHEMA = {
     "type": "object", "additionalProperties": False, "required": ["records"],
     "properties": {"records": {"type": "array", "items": {
-        "type": "object", "additionalProperties": False, "required": ["kind", "date", "label", "values", "items", "uncertain"],
+        "type": "object", "additionalProperties": False, "required": ["kind", "date", "label", "values", "items", "sets", "uncertain"],
         "properties": {
             "kind": {"type": "string", "enum": list(KINDS)},
             "date": {"type": ["string", "null"], "description": "YYYY-MM-DD, only when the photo shows it"},
@@ -98,7 +100,11 @@ SCHEMA = {
                 "type": "object", "additionalProperties": False, "required": ["key", "number", "text"],
                 "properties": {"key": {"type": "string"}, "number": {"type": ["number", "null"]}, "text": {"type": ["string", "null"]}},
             }},
-            "items": {"type": "array", "items": {"type": "string"}, "description": "receipt lines, meal dishes or workout exercises, otherwise empty"},
+            "items": {"type": "array", "items": {"type": "string"}, "description": "receipt lines or meal dishes, otherwise empty"},
+            "sets": {"type": "array", "description": "workout only: one entry per exercise and weight, otherwise empty", "items": {
+                "type": "object", "additionalProperties": False, "required": ["exercise", "weight_kg", "reps", "sets"],
+                "properties": {"exercise": {"type": "string"}, "weight_kg": {"type": "number"}, "reps": {"type": "integer"}, "sets": {"type": "integer"}},
+            }},
             "uncertain": {"type": "array", "items": {"type": "string"}, "description": "keys that could not be read clearly"},
         },
     }}},
@@ -120,7 +126,7 @@ Rules:
 - A typed message counts like a photo: numbers the owner wrote are read exactly. Food described in words is meal_photo: estimate it from the words and any amount they give. A message that records nothing, such as an idea, a question or a plan, returns an empty records list.
 - Be thorough. Return every key of the kind that the photo shows or, for meal_photo, every nutrient you can estimate. Do not stop at the headline number.
 - A sleep screen may show only some keys. Return those it shows: time asleep, stages, wake ups, score, breathing, heart rate, HRV, SpO2. Convert "4 h 54 min" to minutes.
-- workout is a training log, app or notebook. items lists each exercise as 'name weight x reps x sets' in Japanese or as printed. workout_volume is only when printed, or when every set's weight and reps are shown and you can add them up.
+- workout is a training log, app, notebook or typed line. Fill sets: exercise in Japanese, weight_kg (0 for bodyweight), reps, sets. "ベンチ 60x8x3" means 60 kg, 8 reps, 3 sets. values may stay empty unless time, calories or heart rate are given.
 - steps: return steps and everything else the screen prints, such as distance, calories, active time and floors.
 - screen_time: peak_hour is the busiest hour as HH:00-HH:00, top_genre the largest category, and items lists each app shown as 'name minutes'. Convert 4h 12m to minutes.
 - study: label is the subject, language or app. A photo showing several subjects returns one record for each.
@@ -377,6 +383,44 @@ def _date_ok(v):
         return False
 
 
+ALIASES = {"ベンチ": "ベンチプレス", "スクワ": "スクワット", "デッド": "デッドリフト", "腕立て伏せ": "腕立て", "プッシュアップ": "腕立て", "チンニング": "懸垂"}
+MUSCLES = {"ベンチプレス": "胸", "腕立て": "胸", "チェストプレス": "胸", "ダンベルフライ": "胸", "スクワット": "脚", "レッグプレス": "脚", "ランジ": "脚", "レッグカール": "脚", "レッグエクステンション": "脚",
+           "デッドリフト": "背中", "懸垂": "背中", "ラットプルダウン": "背中", "ベントオーバーロウ": "背中", "シーテッドロウ": "背中", "ショルダープレス": "肩", "サイドレイズ": "肩",
+           "アームカール": "腕", "ダンベルカール": "腕", "トライセプス": "腕", "腹筋": "腹", "プランク": "腹", "クランチ": "腹"}
+
+
+def exercise_name(name):
+    name = str(name or "").strip()[:40]
+    return ALIASES.get(name, name)
+
+
+def _clean_sets(raw, doubts):
+    out = []
+    for x in raw or []:
+        name = exercise_name(x.get("exercise"))
+        try:
+            w, r, n = float(x.get("weight_kg") or 0), int(x.get("reps") or 0), int(x.get("sets") or 0)
+        except (TypeError, ValueError):
+            doubts.append("sets")
+            continue
+        if not name or r < 1 or n < 1:
+            doubts.append("sets")
+            continue
+        if not (0 <= w <= 1000 and r <= 1000 and n <= 50):
+            doubts.append("sets")
+        out.append({"exercise": name, "weight_kg": int(w) if w.is_integer() else w, "reps": r, "sets": n})
+    return out
+
+
+def workout_totals(sets):
+    return {"workout_sets": sum(x["sets"] for x in sets), "workout_reps": sum(x["reps"] * x["sets"] for x in sets), "workout_volume": round(sum(x["weight_kg"] * x["reps"] * x["sets"] for x in sets), 1)}
+
+
+def e1rm(weight, reps):
+    """Epley. Past 12 reps the estimate says little, so it is not given."""
+    return round(weight * (1 + reps / 30), 1) if weight and reps <= 12 else None
+
+
 def check(raw, base_date, typed=False):
     """The model's record becomes ours, or None. Decides confirmed or review from the values, not from the model's mood."""
     kind = raw.get("kind")
@@ -406,6 +450,9 @@ def check(raw, base_date, typed=False):
             if not rule["lo"] <= n <= rule["hi"]:
                 doubts.append(k)
             values[k] = n
+    sets = _clean_sets(raw.get("sets"), doubts) if kind == "workout" else []
+    if sets:
+        values.update(workout_totals(sets))
     if not values:
         return None
     d = raw.get("date")
@@ -422,7 +469,7 @@ def check(raw, base_date, typed=False):
             if must not in values:
                 doubts.append(must)
     return {"kind": kind, "date": d or base_date, "label": str(raw.get("label") or "").strip()[:120],
-            "values": values, "items": [str(i)[:120] for i in (raw.get("items") or [])][:60] if kind in ("receipt", "workout", "meal_photo", "meal_screen", "screen_time", "steps", "study") else [],
+            "values": values, "sets": sets, "items": [str(i)[:120] for i in (raw.get("items") or [])][:60] if kind in ("receipt", "workout", "meal_photo", "meal_screen", "screen_time", "steps", "study") else [],
             "estimated": kind == "meal_photo", "doubts": sorted(set(doubts)), "status": "review" if doubts else "confirmed"}
 
 
@@ -527,9 +574,99 @@ def describe(rec):
     lines = [f"{rec['date'][5:].replace('-', '/')} {name}"]
     lines += ["・" + fmt_value(kind, k, vals[k]) for k in KINDS[kind]["values"] if k in vals]
     lines += ["- " + i for i in rec.get("items") or []]
+    if kind == "workout":
+        for x in rec.get("sets") or []:
+            lines.append(f"- {x['exercise']} {x['weight_kg']}kg × {x['reps']}回 × {x['sets']}セット")
+        lines += workout_compare(rec)
     if rec.get("status") == "review":
         lines.append("Desk の要確認で確かめてください")
     return "\n".join(lines)
+
+
+def _sessions(exclude=None):
+    """exercise -> its sessions, oldest first. One day's sets of one exercise are one session."""
+    days = {}
+    for r in read_json(bp("records.json"), {}).values():
+        if r.get("kind") != "workout" or r.get("status") != "confirmed" or r.get("id") == exclude:
+            continue
+        for x in r.get("sets") or []:
+            days.setdefault(x["exercise"], {}).setdefault(r["date"], []).append(x)
+    out = {}
+    for name, by_day in days.items():
+        rows = []
+        for d in sorted(by_day):
+            sets = by_day[d]
+            best = max(sets, key=lambda x: (x["weight_kg"], x["reps"]))
+            rms = [e for e in (e1rm(x["weight_kg"], x["reps"]) for x in sets) if e]
+            rows.append({"date": d, "weight": best["weight_kg"], "reps": best["reps"], "sets": sum(x["sets"] for x in sets), "volume": round(sum(x["weight_kg"] * x["reps"] * x["sets"] for x in sets), 1), "e1rm": max(rms) if rms else None, "detail": sets})
+        out[name] = rows
+    return out
+
+
+def _bests(rows):
+    return {"weight": max((r["weight"] for r in rows), default=0), "reps": max((r["reps"] for r in rows), default=0), "e1rm": max((r["e1rm"] or 0 for r in rows), default=0), "volume": max((r["volume"] for r in rows), default=0)}
+
+
+def workout_compare(rec):
+    """前回との差と自己ベストの更新。The record itself is left out, so a first session says only that."""
+    out, past = [], _sessions(exclude=rec.get("id"))
+    for name in dict.fromkeys(x["exercise"] for x in rec.get("sets") or []):
+        now = _sessions_for(rec, name)
+        rows = [r for r in past.get(name, []) if r["date"] <= rec["date"]]
+        if not rows:
+            out.append(f"{name}：初めての記録です")
+            continue
+        last, best = rows[-1], _bests(rows)
+        out.append(f"{name}：前回（{last['date'][5:].replace('-', '/')}）{last['weight']}kg × {last['reps']}回 → 今回 {now['weight']}kg × {now['reps']}回")
+        new = [label for label, key in (("最大重量", "weight"), ("最多回数", "reps"), ("推定1RM", "e1rm"), ("ボリューム", "volume")) if (now[key] or 0) > best[key]]
+        if new:
+            out.append(f"自己ベスト更新：{'、'.join(new)}")
+    return out
+
+
+def _sessions_for(rec, name):
+    sets = [x for x in rec.get("sets") or [] if x["exercise"] == name]
+    best = max(sets, key=lambda x: (x["weight_kg"], x["reps"]))
+    rms = [e for e in (e1rm(x["weight_kg"], x["reps"]) for x in sets) if e]
+    return {"weight": best["weight_kg"], "reps": best["reps"], "e1rm": max(rms) if rms else 0, "volume": sum(x["weight_kg"] * x["reps"] * x["sets"] for x in sets)}
+
+
+def next_step(rows):
+    """前回の結果から次の案。Only when the last two sessions used the same weight and reps did not fall. The owner decides."""
+    if len(rows) < 2:
+        return None
+    a, b = rows[-2], rows[-1]
+    if b["weight"] == a["weight"] and b["reps"] >= a["reps"]:
+        return f"{b['weight'] + 2.5:g}kg を試す" if b["weight"] else f"{b['reps'] + 1}回を目指す"
+    return None
+
+
+def workout_view(day):
+    sessions = _sessions()
+    names = sorted(sessions, key=lambda n: sessions[n][-1]["date"], reverse=True)
+    mapping = {**MUSCLES, **read_json(bp("exercises.json"), {})}
+    exercises = [{"name": n, "muscle": mapping.get(n, "その他"), "rows": sessions[n][-60:], "last": sessions[n][-1], "prev": sessions[n][-2] if len(sessions[n]) > 1 else None, "bests": _bests(sessions[n]), "next": next_step(sessions[n])} for n in names]
+    base = date.fromisoformat(day)
+    weeks = []
+    for w in range(4):
+        end = base - timedelta(days=7 * w)
+        start = end - timedelta(days=6)
+        counts = {}
+        for n in names:
+            for r in sessions[n]:
+                if start.isoformat() <= r["date"] <= end.isoformat():
+                    m = mapping.get(n, "その他")
+                    counts[m] = counts.get(m, 0) + r["sets"]
+        weeks.append({"from": start.isoformat(), "to": end.isoformat(), "sets": counts})
+    return {"exercises": exercises, "weeks": weeks}
+
+
+def set_muscle(name, muscle):
+    with locked():
+        m = read_json(bp("exercises.json"), {})
+        m[exercise_name(name)] = str(muscle or "その他")[:12]
+        write_json(bp("exercises.json"), m)
+        return m
 
 
 def reply_text(report):
@@ -641,6 +778,165 @@ def metric_row(key, label, unit, series, target, day):
             "history": [[d, series[d]] for d in days][-400:]}
 
 
+def _clock(t):
+    """Minutes after noon, so that 23:30 and 00:30 sit an hour apart."""
+    try:
+        h, m = str(t).split(":")
+    except ValueError:
+        return None
+    return (int(h) * 60 + int(m) + 720) % 1440
+
+
+def _spread(times):
+    vals = [v for v in (_clock(t) for t in times) if v is not None]
+    if len(vals) < 3:
+        return None
+    mean = sum(vals) / len(vals)
+    return round((sum((v - mean) ** 2 for v in vals) / len(vals)) ** 0.5)
+
+
+def sleep_view(records, series, targets, day):
+    goal = (targets.get("total_min") or {}).get("target") or 480
+    totals = series.get("total_min", {})
+    base = date.fromisoformat(day)
+    since = lambda n: (base - timedelta(days=n - 1)).isoformat()
+    week = {d: v for d, v in totals.items() if since(7) <= d <= day}
+    fortnight = [v for d, v in totals.items() if since(14) <= d <= day]
+    nights = sorted((r for r in records if r["kind"] == "sleep" and r.get("status") == "confirmed"), key=lambda r: r["date"])
+    recent = [r for r in nights if r["date"] >= since(14)]
+    last = max(totals) if totals else None
+    notes = {r["date"]: r.get("note") for r in nights if r.get("note") and r.get("source") != "sheet"}
+    return {"goal": goal, "last": {"date": last, "total": totals[last], "pct": round(totals[last] / goal * 100)} if last else None,
+            "avg7": round(sum(week.values()) / len(week)) if week else None, "days7": len(week), "debt7": round(sum(max(0, goal - v) for v in week.values())),
+            "avg14": round(sum(fortnight) / len(fortnight)) if fortnight else None, "days14": len(fortnight),
+            "bedSpread": _spread([r["values"].get("bedtime") for r in recent]), "wakeSpread": _spread([r["values"].get("wake_time") for r in recent]),
+            "lastWake": next((r["values"].get("wake_time") for r in reversed(nights) if r["values"].get("wake_time")), None), "notes": notes}
+
+
+COACH_SOURCES = ("aasm.org", "cdc.gov", "nih.gov", "thensf.org", "sleepfoundation.org")
+COACH_BLAME = ("ダメ", "だめ", "怠", "失敗", "サボ", "悪い", "ひどい", "べき", "してはいけ", "不健康")
+COACH_REPEAT_DAYS = 30
+
+
+def sleep_facts(day=None):
+    """What the morning task may say about the owner's nights. Its numbers are checked against these."""
+    day = day or today()
+    records = list(read_json(bp("records.json"), {}).values())
+    targets = read_json(bp("targets.json"), {})
+    series, _ = daily_series(records)
+    v = sleep_view(records, series, targets, day)
+    return {k: v[k] for k in ("goal", "last", "avg7", "days7", "debt7", "avg14", "days14", "bedSpread", "wakeSpread")}
+
+
+def _allowed_numbers(facts):
+    allowed = {7, 14}
+    def add(m):
+        if m is None:
+            return
+        allowed.update({m, round(m), int(m // 60), round(m % 60), round(m / 60, 1)})
+    for k in ("goal", "avg7", "debt7", "avg14", "bedSpread", "wakeSpread"):
+        add(facts.get(k))
+    last = facts.get("last")
+    if last:
+        add(last["total"])
+        allowed.update({last["pct"], int(last["date"][5:7]), int(last["date"][8:])})
+    allowed.update({facts.get("days7") or 0, facts.get("days14") or 0})
+    return allowed
+
+
+def save_coach(rec, day=None):
+    """One morning's article and advice, or (None, why). Nothing is kept that the code cannot stand behind."""
+    day = day or today()
+    for k in ("title", "url", "learned", "yours", "tryTonight"):
+        if not str(rec.get(k) or "").strip():
+            return None, f"{k} がありません"
+    url = str(rec["url"]).strip()
+    m = re.match(r"https://(?:[\w-]+\.)*?([\w-]+\.(?:org|gov))(?:/|$)", url)
+    host = re.match(r"https://([^/]+)", url)
+    if not m or not host or not any(host.group(1) == s or host.group(1).endswith("." + s) for s in COACH_SOURCES):
+        return None, "決めた出典ではありません"
+    text = " ".join(str(rec[k]) for k in ("title", "learned", "yours", "tryTonight"))
+    if any(w in text for w in COACH_BLAME):
+        return None, "責める言葉を含みます"
+    facts = sleep_facts(day)
+    allowed = _allowed_numbers(facts)
+    for n in re.findall(r"\d+(?:\.\d+)?", str(rec["yours"])):
+        if float(n) not in {float(a) for a in allowed}:
+            return None, f"計算にない数字です：{n}"
+    with locked():
+        items = read_json(bp("sleep_coach.json"), [])
+        cut = (date.fromisoformat(day) - timedelta(days=COACH_REPEAT_DAYS)).isoformat()
+        if any(i["url"] == url and i["date"] >= cut and i["date"] != day for i in items):
+            return None, "30日以内に出した記事です"
+        items = [i for i in items if i["date"] != day]
+        items.append({"date": day, "title": str(rec["title"])[:120], "url": url, "source": host.group(1), "learned": str(rec["learned"])[:400], "yours": str(rec["yours"])[:400], "tryTonight": str(rec["tryTonight"])[:300]})
+        write_json(bp("sleep_coach.json"), sorted(items, key=lambda i: i["date"])[-400:])
+    return items[-1], None
+
+
+SMOOTH = 0.9
+DEFAULT_PINNED = ["protein_g", "fat_g", "carb_g", "fiber_g", "salt_g"]
+
+
+def weight_view(series, targets, day):
+    """Trend weight: a moving average that the day's swings hardly move. Missing days are filled along a straight line."""
+    raw = series.get("weight_kg", {})
+    if not raw:
+        return None
+    days = sorted(raw)
+    points, trend = [], raw[days[0]]
+    cur = date.fromisoformat(days[0])
+    end = date.fromisoformat(days[-1])
+    i = 0
+    while cur <= end:
+        iso = cur.isoformat()
+        if iso in raw:
+            value, measured = raw[iso], raw[iso]
+            i = days.index(iso)
+        else:
+            a, b = date.fromisoformat(days[i]), date.fromisoformat(days[i + 1])
+            value, measured = raw[days[i]] + (raw[days[i + 1]] - raw[days[i]]) * (cur - a).days / (b - a).days, None
+        trend = trend + (1 - SMOOTH) * (value - trend)
+        points.append([iso, measured, round(trend, 2)])
+        cur += timedelta(days=1)
+    at = lambda n: points[-1 - n][2] if len(points) > n else None
+    goal = (targets.get("weight_kg") or {}).get("target")
+    week = round(at(0) - at(7), 2) if at(7) is not None else None
+    per_day = (at(0) - at(14)) / 14 if at(14) is not None else None
+    projection = None
+    if goal and per_day and (goal - at(0)) / per_day > 0:
+        n = (goal - at(0)) / per_day
+        if n <= 730:
+            projection = (end + timedelta(days=round(n))).isoformat()
+    return {"points": points[-400:], "trend": at(0), "latest": raw[days[-1]], "latestDate": days[-1], "week": week, "goal": goal, "toGoal": round(at(0) - goal, 2) if goal else None, "projection": projection, "daysOfData": len(points), "staleDays": (date.fromisoformat(day) - end).days}
+
+
+def frequent_meals(records, day):
+    since = (date.fromisoformat(day) - timedelta(days=90)).isoformat()
+    groups = {}
+    for r in records:
+        if r["kind"] == "meal_photo" and r.get("status") == "confirmed" and r.get("label") and r["date"] >= since:
+            g = groups.setdefault(r["label"], {"id": r["id"], "label": r["label"], "kcal": r["values"].get("energy_kcal"), "times": 0, "at": 0})
+            g["times"] += 1
+            if r.get("at", 0) >= g["at"]:
+                g.update(id=r["id"], kcal=r["values"].get("energy_kcal"), at=r.get("at", 0))
+    return sorted(groups.values(), key=lambda g: (-g["times"], -g["at"]))[:12]
+
+
+def repeat_meal(rec_id, day=None):
+    """The same meal again, today. No photo is read, so it costs nothing."""
+    day = day or today()
+    with locked():
+        store = read_json(bp("records.json"), {})
+        src = store.get(rec_id)
+        if not src or src["kind"] not in ("meal_photo", "meal_screen"):
+            return None
+        new_id = f"repeat-{int(time.time() * 1000)}"
+        store[new_id] = {**src, "id": new_id, "date": day, "source": "repeat", "at": int(time.time()), "doubts": [], "status": "confirmed"}
+        write_json(bp("records.json"), store)
+        return store[new_id]
+
+
 def view(day=None):
     day = day or today()
     records = list(read_json(bp("records.json"), {}).values())
@@ -661,6 +957,7 @@ def view(day=None):
     shown = sorted((r for r in records if r.get("source") != "sheet" and r.get("status") == "confirmed"), key=lambda r: -r.get("at", 0))[:12]
     nights = sorted((r for r in records if r["kind"] == "sleep" and r.get("status") == "confirmed" and r["values"].get("bedtime")), key=lambda r: r["date"])
     last_night = dict(nights[-1]["values"], date=nights[-1]["date"]) if nights else None
+    nights_detail = [{"date": r["date"], "total": r["values"].get("total_min"), "bedtime": r["values"].get("bedtime"), "wake_time": r["values"].get("wake_time"), "score": r["values"].get("sleep_score"), "note": r.get("note", "") if r.get("source") != "sheet" else ""} for r in sorted((x for x in records if x["kind"] == "sleep" and x.get("status") == "confirmed"), key=lambda x: x["date"])][-30:]
     meals, sleeps, sessions = {}, [], []
     for r in sorted((x for x in records if x.get("status") == "confirmed"), key=lambda x: (x["date"], x.get("at", 0))):
         if r["kind"] in ("meal_photo", "meal_screen"):
@@ -671,7 +968,8 @@ def view(day=None):
             sessions.append({"date": r["date"], **_meal_row(r)})
     apps = [{"date": r["date"], "items": r.get("items") or [], "peak": r["values"].get("peak_hour"), "genre": r["values"].get("top_genre")} for r in records if r["kind"] == "screen_time" and r.get("status") == "confirmed"]
     studied = [{"date": r["date"], "label": r.get("label", ""), "minutes": r["values"].get("minutes")} for r in records if r["kind"] == "study" and r.get("status") == "confirmed"]
-    return {"today": day, "meals": meals, "nights": sleeps[-30:], "sessions": sessions[-60:], "apps": sorted(apps, key=lambda r: r["date"])[-14:], "studied": sorted(studied, key=lambda r: r["date"])[-30:],
+    return {"today": day, "sleep": sleep_view(records, series, targets, day), "coach": read_json(bp("sleep_coach.json"), [])[-7:], "weight": weight_view(series, targets, day), "workouts": workout_view(day),
+            "frequent": frequent_meals(records, day), "pinned": sett.get("pinned") or DEFAULT_PINNED, "meals": meals, "nights": nights_detail, "sessions": sessions[-60:], "apps": sorted(apps, key=lambda r: r["date"])[-14:], "studied": sorted(studied, key=lambda r: r["date"])[-30:],
             "recent": shown, "lastNight": last_night, "groups": groups, "windows": [[n, l] for n, l in WINDOWS], "review": sorted(review, key=lambda r: -r.get("at", 0)), "kinds": _kinds_for_page(),
             "estimatedDays": sorted(estimated), "waiting": sum(1 for e in q if e.get("status") == "pending"),
             "failed": sum(1 for e in q if e.get("status") == "failed"), "usage": month_usage(), "limit": sett.get("monthlyLimitUsd"), "model": sett.get("model"),
@@ -721,6 +1019,16 @@ def update_record(rec_id, action, patch=None):
             rec["status"] = "discarded"
         elif action == "reopen":
             rec["status"] = "review"
+        elif action == "scale":
+            try:
+                f = float(patch.get("factor"))
+            except (TypeError, ValueError):
+                return {"error": "倍率が違います"}
+            if rec["kind"] not in ("meal_photo", "meal_screen") or not 0.1 <= f <= 5:
+                return {"error": "倍率が違います"}
+            rec["values"] = {k: round(v * f, 2) if isinstance(v, (int, float)) else v for k, v in rec["values"].items()}
+            rec["scale"] = round(rec.get("scale", 1) * f, 3)
+            rec["confirmedAt"] = int(time.time())
         rec["at"] = int(time.time())
         write_json(path, store)
         return rec
@@ -752,6 +1060,8 @@ def set_settings(rec):
             s["monthlyLimitUsd"] = None if v in ("", None) else max(0.0, float(v))
         if rec.get("model") in PRICES:
             s["model"] = rec["model"]
+        if isinstance(rec.get("pinned"), list):
+            s["pinned"] = [k for k in rec["pinned"] if k in NUTRIENTS]
         write_json(lp("settings.json"), s)
     return settings()
 
@@ -870,6 +1180,13 @@ def main(argv):
         print(json.dumps({"id": entry["id"], "new": new, "status": entry["status"]}))
     elif cmd == "refs":
         print("\n".join(known_refs()))
+    elif cmd == "sleep-facts":
+        print(json.dumps(sleep_facts(), ensure_ascii=False))
+    elif cmd == "sleep-coach":
+        with open(argv[1], encoding="utf-8") as f:
+            saved, why = save_coach(json.load(f))
+        print(json.dumps({"saved": bool(saved), "why": why}, ensure_ascii=False))
+        return 0 if saved else 1
     elif cmd == "reread":
         print(reread(argv[1:]))
     elif cmd == "process":

@@ -18,13 +18,7 @@
     "15分ほどあとに、desk/data/lifeos/life/ の分野のファイルに答えが入ったことを見る",
     "次の日は答えずに過ごし、催促が来ないことを見る"
   ],
-  "blockers": [
-    {
-      "what": "Telegram のボット（なくても使える）",
-      "why": "Desk では使えます。Telegram にも問いを届けたいときだけ必要です。",
-      "needs": "BotFather でボットを作り、トークンとチャット ID を secrets/telegram.json に入れて、python3 lifeos/bot/run.py を起動する"
-    }
-  ],
+  "blockers": [],
   "commands": [],
-  "updated": "2026-11-04"
+  "updated": "2026-11-05"
 }

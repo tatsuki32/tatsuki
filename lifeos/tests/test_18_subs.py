@@ -375,6 +375,6 @@ class TestSafety(Base):
         with open(os.path.join(root_dir(), "18-subs", "tool.json"), encoding="utf-8") as f:
             t = json.load(f)
         self.assertEqual(t["commands"], ["/subs"])
-        self.assertIn(t["status"], ("working", "blocked"))
+        self.assertIn(t["status"], ("working", "blocked", "stopped"))
         if t["status"] == "blocked":
             self.assertTrue(t["blockers"])

@@ -93,7 +93,7 @@ def plan(all_tasks, state, now_ms):
 
     for task_id, t in by_id.items():
         if task_id not in state and t.get("status") == "notyet" and has_time(t.get("due")) and slot(t)[0] > now:
-            out["create"].append({"taskId": task_id, "description": "Desk のタスク " + task_id, **event(t)})
+            out["create"].append({"taskId": task_id, "description": "Desk task " + task_id, **event(t)})
     return out
 
 

@@ -97,7 +97,7 @@ def main(argv):
         saved = apply_rows(tasks._load(), rows, today)
         for rec in saved:
             tasks._put(rec)
-        print(f"見積もり {len(saved)}件")
+        print(f"Estimated {len(saved)}")
     else:
         sys.exit(__doc__)
 
