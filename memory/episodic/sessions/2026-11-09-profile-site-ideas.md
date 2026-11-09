@@ -45,5 +45,11 @@
 - BaseMe は baseme.co.jp（AI のキャリア支援、HR）。CENTER RIVER はロゴなしで会社マーク。
 - Instagram のプロフィール画像の取得は自動モードで止められた（ボット対策の回避とみなされる）。
 
+## 追記6：Drive のロゴ探し（同じ日）
+- X bar（Cebu χ）のロゴは Drive の「Old_Company_Kokosei / Other / X bar」に final_*_BKG.jpg として 4 色あった。黒を使った。
+- CYBER と株式会社高校生のロゴは、ファイル名・フォルダ・画像内の文字で探しても見つからない。「CYBER NOT A BAR」フォルダの下の original・complete は検索では空。
+- Drive の大きいファイルは download_file_content の結果がファイルに保存されるので、python で base64 を戻せる（文脈に入れずに済む）。PDF のページは Swift の PDFKit で画像にできる（poppler はない）。
+- 実績まとめの PDF（Portfolio_Tatsuki_Mitsuhashi.pdf、10 ページ）に、ドバイのイベント・成人式の代表挨拶などの写真がある。
+
 ## 次の一手
-- 本人から「アイデアの扉」と株式会社高校生のロゴのファイルをもらう。よければ手元の HTML（Netlify / Cloudflare）に反映する。
+- 本人に CYBER と株式会社高校生のロゴの場所（ファイル名かフォルダ）を聞く。「アイデアの扉」のロゴも。よければ手元の HTML（Netlify / Cloudflare）に反映する。
