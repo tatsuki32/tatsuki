@@ -2630,7 +2630,7 @@ function gearView(){
   ${have.length?gearChart(have):""}
   ${notesHere("gear")}
   ${have.length?`<div class="gtools"><div class="chips" role="group" aria-label="Sort"><span class="sub">Sort</span>${GSORT.map(([k,l])=>`<button class="chip" data-gsort="${k}" aria-pressed="${sort===k}">${l}</button>`).join("")}</div>
-    <div class="chips" role="group" aria-label="Export"><span class="sub">Export</span><button class="chip" data-gexport="csv">CSV</button><button class="chip" data-gexport="txt">Text</button><button class="chip" data-gexport="pdf">PDF (print)</button></div></div>`:""}
+    <div class="chips" role="group" aria-label="Export"><span class="sub">Export</span><button class="chip" data-gexport="csv">CSV</button><button class="chip" data-gexport="txt">Text</button><button class="chip" data-gexport="pdf">PDF</button></div></div>`:""}
   ${have.length?(sort==="cat"?GCATS.map(section).join(""):sorted(sort)):`<div class="card empty"><b>Nothing here yet</b>Use “+ Add”. A name and a weight are enough.</div>`}
   ${gone.length?`<details class="card shelf"><summary><span class="e">🕊️</span>Let go<span class="count">${gone.length}</span></summary><div class="list2">${gone.map(g=>`<div class="grow gone">${gImg(g)?`<img class="gimg" src="${esc(gImg(g))}" alt="" loading="lazy" data-gzoom="${esc(g.id)}">`:`<span class="gimg e" aria-hidden="true">${esc(g.emoji||(GCAT[g.cat]||GCAT.other)[1])}</span>`}<div style="min-width:0"><button class="tt" data-gedit="${esc(g.id)}">${esc(g.name)}</button><div class="due">${g.note?esc(g.note):""}</div></div><span class="gw">${fmtG(gW(g))}</span><span></span></div>`).join("")}</div></details>`:""}`;
 }
@@ -2650,9 +2650,24 @@ async function saveText(filename,data,mime){
   try{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([data],{type:mime}));a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}catch(e){toast("Couldn't save")}
 }
 async function exportGear(kind){const day=hcmcDate();
-  if(kind==="csv") return saveText(`belongings-${day}.csv`,gearCsv(),"text/csv");
-  if(kind==="txt"){const t=gearText();try{await navigator.clipboard.writeText(t);toast("Text copied (saving a file too)")}catch(e){}return saveText(`belongings-${day}.txt`,t,"text/plain")}
-  if(kind==="pdf"){const t=document.title;document.title=`Belongings ${day}`;window.print();setTimeout(()=>document.title=t,1000)}
+/* The page for the PDF on the Mac (the Desk window cannot print, so the server turns this into a PDF). No photos: nothing is fetched. */
+function gearPdfHtml(){const day=hcmcDate(),have=gearList().filter(g=>!g.gone),gone=gearList().filter(g=>g.gone),tot=have.reduce((s,g)=>s+(gW(g)||0),0);
+  const money=have.reduce((s,g)=>s+(gP(g)||0),0);
+  const row=g=>`<tr><td>${g.packed?"✓":""}</td><td>${esc(g.name)}${(+g.qty||1)>1?` ×${+g.qty}`:""}${g.note?`<div class="sub">${esc(g.note)}</div>`:""}</td><td class="n">${esc(fmtG(gW(g)))}${g.gsrc?`<div class="sub">${esc(GSRC[g.gsrc]||"")}</div>`:""}</td><td class="n">${gP(g)!=null?esc(fmtY(gP(g)))+(g.psrc==="est"?`<div class="sub">est.</div>`:""):""}</td></tr>`;
+  const table=xs=>`<table><tr><th style="width:16px"></th><th>Item</th><th class="n">Weight</th><th class="n">Price</th></tr>${xs.map(row).join("")}</table>`;
+  const parts=[`<h1>Belongings</h1><p class="sub">${esc(day)} · ${have.length} ${have.length===1?"item":"items"} · ${have.filter(g=>g.packed).length} packed</p><div class="nums"><div><b>${esc(fmtG(tot))}</b>Total weight</div><div><b>${esc(fmtY(money))}</b>Total price</div></div>`];
+  GCATS.forEach(c=>{const xs=have.filter(g=>(g.cat||"other")===c[0]);if(!xs.length)return;parts.push(`<h2>${esc(c[1])} ${esc(c[2])} · ${esc(fmtG(xs.reduce((s,g)=>s+(gW(g)||0),0)))}</h2>${table(xs)}`)});
+  if(gone.length)parts.push(`<h2>🕊️ Let go</h2>${table(gone)}`);
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Belongings ${esc(day)}</title><style>
+body{font:11px/1.5 -apple-system,"Hiragino Sans",sans-serif;color:#111;margin:0}h1{font-size:20px;margin:0}h2{font-size:13px;margin:20px 0 6px;break-after:avoid}
+p{margin:0 0 8px}.sub{color:#555;font-size:9.5px}.nums{display:flex;gap:40px;margin:12px 0}.nums b{display:block;font-size:18px}
+table{width:100%;border-collapse:collapse}td,th{padding:4px 8px 4px 0;border-bottom:1px solid #ddd;text-align:left;vertical-align:top;overflow-wrap:anywhere}
+tr{break-inside:avoid}.n{text-align:right;white-space:nowrap;padding:4px 0 4px 16px}</style></head><body>${parts.join("")}</body></html>`}
+  if(kind==="csv") return saveFile(`belongings-${day}`,gearCsv(),"csv");
+  if(kind==="txt"){const t=gearText();try{await navigator.clipboard.writeText(t);toast("Text copied (saving a file too)")}catch(e){}return saveFile(`belongings-${day}`,t,"txt")}
+  if(kind==="pdf"){
+    if(LOCALAPI){toast("Making the PDF…");return saveFile(`belongings-${day}`,gearPdfHtml(),"pdf")}
+    const t=document.title;document.title=`Belongings ${day}`;window.print();setTimeout(()=>document.title=t,1000)}
 }
 /* the form: one dialog for add / edit. "Let go" keeps the record (so the list of what was let go stays); Delete is the usual deleted:true */
 function gearForm(g){

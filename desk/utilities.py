@@ -491,13 +491,20 @@ TEXT_TYPES = {"csv": "text/csv; charset=utf-8", "txt": "text/plain; charset=utf-
 
 
 def text_file(name, text, kind):
-    """A CSV or text the page made (a project's tasks): kept in memory for an hour so the default browser can save it."""
-    if kind not in TEXT_TYPES or not isinstance(text, str):
-        return 400, {"error": "csv or txt only"}
+    """A CSV or text the page made (a project's tasks): kept in memory for an hour so the default browser can save it.
+    kind "pdf": text is a whole HTML page, turned into a PDF on this Mac (the Desk window cannot print)."""
+    if kind not in (*TEXT_TYPES, "pdf") or not isinstance(text, str):
+        return 400, {"error": "csv, txt or pdf only"}
     data = text.encode("utf-8")
     if len(data) > TEXT_MAX:
         return 413, {"error": "too large"}
     base = re.sub(r'[\\/:*?"<>|\x00-\x1f]', "_", str(name or "").strip())[:80] or "export"
+    if kind == "pdf":
+        import wise_report  # the same WebKit helper the money report uses (app/htmlpdf.swift)
+        data = wise_report.to_pdf(text)
+        if not data:
+            return 500, {"error": "pdf failed"}
+        return 200, {"file": _token({"data": data, "name": f"{base}.pdf", "ctype": "application/pdf"})}
     return 200, {"file": _token({"data": data, "name": f"{base}.{kind}", "ctype": TEXT_TYPES[kind]})}
 
 
