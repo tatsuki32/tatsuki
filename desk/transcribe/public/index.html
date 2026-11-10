@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Transcribe</title>
+<style>
+  :root {
+    --bg: #0a0a0b; --panel: #141417; --line: #26262b; --text: #ededee; --muted: #9a9aa2;
+    --accent: #e4b768; --danger: #e5675f; --ok: #6cc08b;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.7 -apple-system, "Hiragino Sans", sans-serif; }
+  button, select, input { font: inherit; color: inherit; }
+  button { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; cursor: pointer; }
+  button:hover:not(:disabled) { border-color: var(--muted); }
+  button:disabled { opacity: .45; cursor: default; }
+  select { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; }
+  .app { display: grid; grid-template-columns: 280px 1fr; min-height: 100vh; }
+  aside { border-right: 1px solid var(--line); padding: 16px 12px; overflow-y: auto; max-height: 100vh; position: sticky; top: 0; }
+  aside h2 { font-size: 12px; font-weight: 600; color: var(--muted); margin: 0 4px 8px; }
+  .new { width: 100%; margin-bottom: 18px; }
+  .item { display: block; width: 100%; text-align: left; background: none; border: 0; border-radius: 8px; padding: 8px 10px; margin-bottom: 2px; }
+  .item:hover { background: var(--panel); }
+  .item.active { background: var(--panel); outline: 1px solid var(--line); }
+  .item b { display: block; font-weight: 500; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .item small { color: var(--muted); font-size: 12px; }
+  main { padding: 32px; min-width: 0; }
+  .wrap { max-width: 760px; margin: 0 auto; }
+  .notice { border: 1px solid var(--danger); color: var(--danger); border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; }
+  .notice.soft { border-color: var(--line); color: var(--muted); }
+  .recorder { text-align: center; padding: 28px 16px; }
+  .timer { font-size: 56px; font-variant-numeric: tabular-nums; letter-spacing: .02em; line-height: 1.2; }
+  .rec { width: 84px; height: 84px; border-radius: 50%; background: var(--danger); border: 0; color: #fff; font-weight: 600; margin: 18px 0; }
+  .rec.on { background: var(--panel); color: var(--danger); border: 2px solid var(--danger); }
+  .meter { height: 6px; max-width: 320px; margin: 0 auto 10px; background: var(--line); border-radius: 3px; overflow: hidden; }
+  .meter i { display: block; height: 100%; width: 0; background: var(--ok); transition: width .3s; }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; align-items: center; margin: 12px 0; }
+  .hint { color: var(--muted); font-size: 13px; }
+  .drop { border: 1px dashed var(--line); border-radius: 12px; padding: 22px; text-align: center; color: var(--muted); margin-top: 24px; cursor: pointer; }
+  .drop.over { border-color: var(--accent); color: var(--accent); }
+  .title { width: 100%; background: none; border: 0; border-bottom: 1px solid transparent; font-size: 22px; font-weight: 600; padding: 2px 0; }
+  .title:focus { outline: 0; border-color: var(--line); }
+  .sub { color: var(--muted); font-size: 13px; margin: 2px 0 14px; }
+  .bar { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; margin: 8px 0; }
+  .bar i { display: block; height: 100%; background: var(--accent); transition: width .4s; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; align-items: center; }
+  .toolbar .spacer { flex: 1; }
+  .danger { color: var(--danger); }
+  audio { width: 100%; height: 36px; margin: 6px 0 14px; }
+  .segment { display: grid; grid-template-columns: 74px 1fr; gap: 10px; padding: 5px 0; border-bottom: 1px solid #1b1b1e; }
+  .segment time { color: var(--accent); font-size: 12px; font-variant-numeric: tabular-nums; cursor: pointer; padding-top: 3px; background: none; border: 0; text-align: left; }
+  .segment div { outline: 0; border-radius: 4px; }
+  .segment div:focus { background: var(--panel); }
+  .failed { border: 1px solid var(--danger); color: var(--danger); border-radius: 8px; padding: 8px 12px; margin: 8px 0; font-size: 13px; }
+  @media (max-width: 720px) {
+    .app { grid-template-columns: 1fr; }
+    aside { position: static; max-height: 240px; border-right: 0; border-bottom: 1px solid var(--line); }
+    main { padding: 20px 16px; }
+    .timer { font-size: 44px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <button class="new" id="newBtn">+ New recording</button>
+    <h2>Recordings</h2>
+    <div id="list"></div>
+  </aside>
+  <main><div class="wrap" id="view"></div></main>
+</div>
+
+<script>
+const LANG = { ja: 'Japanese', auto: 'Detect language', en: 'English', vi: 'Vietnamese', zh: 'Chinese', ko: 'Korean' };
+const STATUS = {
+  recording: 'Recording', interrupted: 'Stopped early', uploading: 'Importing', queued: 'Waiting',
+  converting: 'Converting', transcribing: 'Transcribing', done: 'Done', partial: 'Partly done', error: "Didn't finish",
+};
+const ACTIVE = ['queued', 'converting', 'transcribing'];
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const clock = (sec) => {
+  sec = Math.floor(sec || 0);
+  return [Math.floor(sec / 3600), Math.floor(sec / 60) % 60, sec % 60].map((n) => String(n).padStart(2, '0')).join(':');
+};
+const api = async (path, options = {}) => {
+  const res = await fetch(path, options);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `Connection problem (${res.status})`);
+  return data;
+};
+const post = (path, body) => api(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) });
+
+let selected = null;      // 開いている記録のID。nullなら録音画面
+let renderedKey = '';     // 文字部分を不要に描き直さないための印
+let status = { engine_ready: true, free_bytes: Infinity };
+let sessions = [];
+
+/* ---------- 録音 ---------- */
+const rec = {
+  active: false, starting: false, sid: null, sent: 0, captured: 0, queue: [], sending: false, finishing: false,
+  stream: null, ctx: null, node: null, wakeLock: null, peak: 0, quietSince: 0, netError: false, warning: '', pending: [],
+};
+
+async function startRecording() {
+  if (rec.active || rec.starting) return;
+  rec.starting = true;
+  rec.warning = '';
+  renderRecorder();
+  try {
+    const deviceId = $('mic') && $('mic').value;
+    rec.stream = await navigator.mediaDevices.getUserMedia({
+      audio: { deviceId: deviceId ? { exact: deviceId } : undefined, channelCount: 1, echoCancellation: false, noiseSuppression: false, autoGainControl: true },
+    });
+    loadMics();
+    await buildAudioGraph();
+    const language = $('language').value;
+    const meta = await post('/api/sessions', { language });
+    Object.assign(rec, { active: true, sid: meta.id, sent: 0, captured: 0, queue: [], pending: [], finishing: false, netError: false, quietSince: Date.now() });
+    rec.stream.getTracks().forEach((t) => {
+      t.onended = () => { rec.warning = 'The microphone was disconnected. Everything up to now is saved. Check the connection, then press Stop.'; renderRecorder(); };
+      t.onmute = () => { rec.warning = 'No sound is coming from the microphone.'; renderRecorder(); };
+      t.onunmute = () => { rec.warning = ''; renderRecorder(); };
+    });
+    rec.node.port.onmessage = onAudio;
+    try { rec.wakeLock = await navigator.wakeLock.request('screen'); } catch (e) { /* なくても録音は続く */ }
+    renderRecorder();
+    refreshList();
+  } catch (e) {
+    cleanupAudio();
+    rec.warning = e.name === 'NotAllowedError'
+      ? 'The microphone is blocked. Allow it in the address bar and in System Settings › Privacy & Security › Microphone.'
+      : `Could not start recording: ${e.message}`;
+  } finally {
+    rec.starting = false;
+    renderRecorder();
+  }
+}
+
+async function buildAudioGraph() {
+  const build = async (options) => {
+    const ctx = new AudioContext(options);
+    await ctx.audioWorklet.addModule('/worklet.js');
+    const source = ctx.createMediaStreamSource(rec.stream);
+    const node = new AudioWorkletNode(ctx, 'pcm-capture', { numberOfOutputs: 0 });
+    source.connect(node);
+    return { ctx, node };
+  };
+  let graph;
+  try { graph = await build({ sampleRate: 16000 }); } catch (e) { graph = await build({}); }
+  rec.ctx = graph.ctx;
+  rec.node = graph.node;
+  rec.ctx.onstatechange = () => { if (rec.active && rec.ctx && rec.ctx.state === 'suspended') rec.ctx.resume().catch(() => {}); };
+  if (rec.ctx.state === 'suspended') await rec.ctx.resume();
+}
+
+// マイクの音声が1秒届くたびに動く。タイマーと違い、裏のタブでも間引かれない。
+function onAudio(event) {
+  const { pcm, peak } = event.data;
+  rec.pending.push(new Uint8Array(pcm));
+  rec.captured += pcm.byteLength;
+  rec.peak = peak;
+  if (peak > 0.003) rec.quietSince = Date.now();
+  if (rec.pending.length >= 2 || rec.finishing) flushPending();
+  renderMeter();
+}
+
+function flushPending() {
+  if (!rec.pending.length) return;
+  rec.queue.push(new Blob(rec.pending));
+  rec.pending = [];
+  sendQueue();
+}
+
+// 送信は順番に1つずつ。失敗しても音声はメモリに残し、届くまで再送する。
+async function sendQueue() {
+  if (rec.sending) return;
+  rec.sending = true;
+  while (rec.queue.length) {
+    const blob = rec.queue[0];
+    try {
+      const res = await fetch(`/api/sessions/${rec.sid}/chunk?offset=${rec.sent}`, { method: 'POST', body: blob });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const { size } = await res.json();
+      if (size === rec.sent + blob.size) {
+        rec.sent = size;
+        rec.queue.shift();
+        rec.netError = false;
+      } else if (size < rec.sent) {
+        rec.warning = 'Part of the recording is missing on this Mac. Stop the recording and check it.';
+        rec.netError = true;
+        await new Promise((r) => setTimeout(r, 2000));
+      } else {
+        rec.sent = size - blob.size;
+      }
+    } catch (e) {
+      rec.netError = true;
+      renderMeter();
+      await new Promise((r) => setTimeout(r, 2000));
+    }
+  }
+  rec.sending = false;
+  renderMeter();
+}
+
+function cleanupAudio() {
+  if (rec.stream) rec.stream.getTracks().forEach((t) => { t.onended = t.onmute = t.onunmute = null; t.stop(); });
+  if (rec.ctx) rec.ctx.close().catch(() => {});
+  if (rec.wakeLock) rec.wakeLock.release().catch(() => {});
+  rec.stream = rec.ctx = rec.node = rec.wakeLock = null;
+}
+
+async function stopRecording() {
+  if (!rec.active || rec.finishing) return;
+  rec.finishing = true;
+  renderRecorder();
+  await new Promise((resolve) => {
+    const onLast = (event) => { if (event.data.last) resolve(); };
+    rec.node.port.addEventListener('message', onLast);
+    rec.node.port.postMessage('flush');
+    setTimeout(resolve, 1000);
+  });
+  cleanupAudio();
+  flushPending();
+  while (rec.queue.length || rec.sending) await new Promise((r) => setTimeout(r, 200));
+  const sid = rec.sid;
+  for (;;) {
+    try { await post(`/api/sessions/${sid}/finish`); break; } catch (e) { await new Promise((r) => setTimeout(r, 2000)); }
+  }
+  rec.active = false;
+  rec.finishing = false;
+  rec.warning = '';
+  selected = sid;
+  renderedKey = '';
+  await refreshList();
+  renderMain();
+}
+
+window.addEventListener('beforeunload', (e) => {
+  if (rec.active) { e.preventDefault(); e.returnValue = ''; }
+});
+
+function renderMeter() {
+  if (!$('timer')) return;
+  $('timer').textContent = clock(rec.captured / 32000);
+  $('level').style.width = `${Math.min(100, Math.sqrt(rec.peak) * 100)}%`;
+  const unsent = Math.round((rec.captured - rec.sent) / 32000);
+  let note = `Saved ${clock(rec.sent / 32000)}`;
+  if (rec.netError) note = `Can't reach the recorder. Still trying (${unsent} sec not saved yet). Keep this page open.`;
+  else if (rec.warning) note = rec.warning;
+  else if (Date.now() - rec.quietSince > 30000) note = 'No sound for over 30 seconds. Check the microphone.';
+  $('recNote').textContent = note;
+}
+
+function renderRecorder() {
+  if (selected !== null || !$('recBtn')) return;
+  const b = $('recBtn');
+  b.className = 'rec' + (rec.active ? ' on' : '');
+  b.textContent = rec.finishing ? 'Saving' : rec.active ? 'Stop' : 'Record';
+  b.disabled = rec.starting || rec.finishing;
+  $('language').disabled = $('mic').disabled = rec.active;
+  $('recWarn').textContent = !rec.active && rec.warning ? rec.warning : '';
+  $('recWarn').style.display = !rec.active && rec.warning ? 'block' : 'none';
+  $('recTips').style.display = rec.active ? 'block' : 'none';
+  $('drop').style.display = rec.active ? 'none' : 'block';
+  if (!rec.active) { $('timer').textContent = '00:00:00'; $('level').style.width = 0; $('recNote').textContent = 'Saved every few seconds while recording'; }
+  else renderMeter();
+}
+
+async function loadMics() {
+  if (!$('mic')) return;
+  const devices = await navigator.mediaDevices.enumerateDevices().catch(() => []);
+  const mics = devices.filter((d) => d.kind === 'audioinput' && d.deviceId !== 'communications');
+  const current = $('mic').value;
+  $('mic').innerHTML = '<option value="">Default microphone</option>' +
+    mics.filter((d) => d.deviceId && d.deviceId !== 'default' && d.label).map((d) => `<option value="${esc(d.deviceId)}">${esc(d.label)}</option>`).join('');
+  $('mic').value = current;
+}
+
+/* ---------- 画面 ---------- */
+function renderHome() {
+  $('view').innerHTML = `
+    ${status.engine_ready ? '' : '<div class="notice">The speech engine isn\'t installed yet. Run setup.sh once. You can still record.</div>'}
+    ${status.free_bytes < 2e9 ? '<div class="notice">Less than 2 GB of disk space is left. An hour of recording uses about 60 MB.</div>' : ''}
+    <div class="notice" id="recWarn" style="display:none"></div>
+    <div class="recorder">
+      <div class="timer" id="timer">00:00:00</div>
+      <button class="rec" id="recBtn">Record</button>
+      <div class="meter"><i id="level"></i></div>
+      <div class="hint" id="recNote"></div>
+      <div class="controls">
+        <select id="mic" aria-label="Microphone"><option value="">Default microphone</option></select>
+        <select id="language" aria-label="Language">${Object.entries(LANG).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select>
+      </div>
+      <div class="hint" id="recTips" style="display:none">Your Mac stays awake while recording. Keep the lid open, and plug in for long sessions.</div>
+    </div>
+    <div class="drop" id="drop">Drop an audio file here, or click to choose one<br><small>m4a (iPhone Voice Memos), mp3, wav, aiff, aac, caf</small></div>
+    <input type="file" id="file" accept="audio/*,.m4a,.mp3,.wav,.aiff,.aac,.caf" hidden>`;
+  $('recBtn').onclick = () => (rec.active ? stopRecording() : startRecording());
+  const drop = $('drop');
+  drop.onclick = () => $('file').click();
+  drop.ondragover = (e) => { e.preventDefault(); drop.classList.add('over'); };
+  drop.ondragleave = () => drop.classList.remove('over');
+  drop.ondrop = (e) => { e.preventDefault(); drop.classList.remove('over'); if (e.dataTransfer.files[0]) upload(e.dataTransfer.files[0]); };
+  $('file').onchange = (e) => { if (e.target.files[0]) upload(e.target.files[0]); };
+  loadMics();
+  renderRecorder();
+}
+
+function upload(file) {
+  const drop = $('drop');
+  const language = $('language').value;
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', `/api/upload?name=${encodeURIComponent(file.name)}&language=${language}`);
+  xhr.upload.onprogress = (e) => { if ($('drop')) drop.textContent = `Importing… ${Math.round(e.loaded / e.total * 100)}%`; };
+  xhr.onload = async () => {
+    if (xhr.status === 200) {
+      selected = JSON.parse(xhr.responseText).id;
+      renderedKey = '';
+      await refreshList();
+      renderMain();
+    } else {
+      drop.textContent = 'The import didn\'t finish. Try again.';
+    }
+  };
+  xhr.onerror = () => { drop.textContent = 'The import didn\'t finish. Try again.'; };
+  xhr.send(file);
+}
+
+function renderList() {
+  $('list').innerHTML = sessions.map((m) => `
+    <button class="item ${m.id === selected ? 'active' : ''}" data-id="${m.id}">
+      <b>${esc(m.title)}</b>
+      <small>${clock(m.duration)} · ${STATUS[m.status] || m.status}${m.status === 'transcribing' && m.total_chunks ? ` ${Math.round(m.done_chunks / m.total_chunks * 100)}%` : ''}</small>
+    </button>`).join('') || '<div class="hint" style="padding:0 4px">Nothing yet</div>';
+  $('list').querySelectorAll('.item').forEach((el) => {
+    el.onclick = () => { selected = el.dataset.id; renderedKey = ''; renderList(); renderMain(); };
+  });
+}
+
+function estimateLeft(m) {
+  const fresh = m.done_chunks - (m.resumed_chunks || 0);
+  if (m.status !== 'transcribing' || fresh < 1 || !m.started_at) return '';
+  const perChunk = (Date.now() / 1000 - m.started_at) / fresh;
+  const left = Math.round(perChunk * (m.total_chunks - m.done_chunks) / 60);
+  return left < 1 ? '· almost done' : `· about ${left} min left`;
+}
+
+async function renderDetail() {
+  const sid = selected;
+  let m;
+  try { m = await api(`/api/sessions/${sid}`); } catch (e) { selected = null; renderedKey = ''; return renderMain(); }
+  if (sid !== selected) return;
+  const key = [m.id, m.status, m.done_chunks, m.segments.length, m.failed_chunks.length].join('|');
+  if (key === renderedKey) return;
+  // 編集中や再生中は描き直さない
+  if (document.activeElement && document.activeElement.isContentEditable) return;
+  const player = document.querySelector('audio');
+  const keepTime = player && !player.paused ? null : player ? player.currentTime : 0;
+  if (player && !player.paused) return;
+  renderedKey = key;
+
+  const running = ACTIVE.includes(m.status);
+  const percent = m.total_chunks ? Math.round(m.done_chunks / m.total_chunks * 100) : 0;
+  const isLiveRecording = m.status === 'recording' && rec.sid === m.id;
+  const hasText = m.segments.length > 0;
+  $('view').innerHTML = `
+    <input class="title" id="title" value="${esc(m.title)}" aria-label="Title">
+    <div class="sub">${new Date(m.created * 1000).toLocaleString('en-US')} · ${clock(m.duration)} · ${LANG[m.language] || m.language} · ${STATUS[m.status] || m.status}</div>
+    ${m.status === 'error' ? `<div class="notice">${esc(m.error || 'Something went wrong')}</div>` : ''}
+    ${m.status === 'interrupted' ? '<div class="notice">The recording stopped early. Everything up to that point is saved.</div>' : ''}
+    ${running ? `
+      <div class="hint">${STATUS[m.status]} ${m.total_chunks ? `${m.done_chunks} of ${m.total_chunks} parts ${estimateLeft(m)}` : ''}</div>
+      <div class="bar"><i style="width:${percent}%"></i></div>
+      <div class="hint">You can close this page. If anything stops, it picks up where it left off.</div>` : ''}
+    ${m.failed_chunks.map((f) => `<div class="failed">${clock(f.start)}–${clock(f.end)} didn't turn into text. Press “Retry failed parts.”</div>`).join('')}
+    ${m.duration > 0 ? `<audio controls preload="none" src="/api/sessions/${m.id}/audio.wav"></audio>` : ''}
+    <div class="toolbar">
+      ${hasText ? '<button id="copy">Copy all</button>' : ''}
+      ${hasText ? `<button id="txt">Save as text</button>` : ''}
+      ${m.status === 'interrupted' ? '<button id="resume">Transcribe what was saved</button>' : ''}
+      ${m.status === 'partial' || m.status === 'error' ? '<button id="retry">Retry failed parts</button>' : ''}
+      ${['done', 'partial', 'error'].includes(m.status) ? `<select id="redoLang" aria-label="Language for the redo">${Object.entries(LANG).map(([k, v]) => `<option value="${k}" ${k === m.language ? 'selected' : ''}>${v}</option>`).join('')}</select><button id="redo">Start over</button>` : ''}
+      <span class="spacer"></span>
+      ${isLiveRecording ? '' : '<button id="del" class="danger">Delete</button>'}
+    </div>
+    <div id="segments">
+      ${m.segments.map((s) => `<div class="segment"><time data-t="${s.start}">${clock(s.start)}</time><div contenteditable="plaintext-only" data-key="${esc(s.key)}">${esc(s.text)}</div></div>`).join('')}
+      ${m.status === 'done' && !hasText ? '<div class="hint">No speech was found in this recording.</div>' : ''}
+    </div>`;
+
+  const newPlayer = document.querySelector('audio');
+  if (newPlayer && keepTime) newPlayer.addEventListener('loadedmetadata', () => { newPlayer.currentTime = keepTime; }, { once: true });
+  $('title').onchange = async (e) => { await api(`/api/sessions/${m.id}`, { method: 'PATCH', body: JSON.stringify({ title: e.target.value }) }); refreshList(); };
+  if ($('copy')) $('copy').onclick = async (e) => {
+    const texts = [...document.querySelectorAll('#segments [data-key]')].map((el) => el.textContent.trim());
+    const text = texts.join('\n');
+    let copied = false;
+    try {
+      await navigator.clipboard.writeText(text);
+      copied = true;
+    } catch (err) {
+      const area = document.createElement('textarea');
+      area.value = text;
+      document.body.append(area);
+      area.select();
+      copied = document.execCommand('copy');
+      area.remove();
+    }
+    e.target.textContent = copied ? 'Copied' : 'Could not copy. Use Save as text';
+    setTimeout(() => { e.target.textContent = 'Copy all'; }, 1500);
+  };
+  if ($('txt')) $('txt').onclick = () => { location.href = `/api/sessions/${m.id}/transcript.txt?ts=1`; };
+  const action = async (body) => { renderedKey = ''; await post(`/api/sessions/${m.id}/transcribe`, body); await refreshList(); renderMain(); };
+  if ($('resume')) $('resume').onclick = () => action({});
+  if ($('retry')) $('retry').onclick = () => action({});
+  if ($('redo')) $('redo').onclick = () => {
+    if (confirm('This deletes the current text and your edits, then transcribes again from the start. Continue?')) action({ restart: true, language: $('redoLang').value });
+  };
+  if ($('del')) $('del').onclick = async () => {
+    if (!confirm(`Delete the audio and text of “${m.title}”? This can't be undone.`)) return;
+    await api(`/api/sessions/${m.id}`, { method: 'DELETE' });
+    selected = null;
+    renderedKey = '';
+    await refreshList();
+    renderMain();
+  };
+  document.querySelectorAll('#segments time').forEach((el) => {
+    el.onclick = () => { const a = document.querySelector('audio'); if (a) { a.currentTime = Number(el.dataset.t); a.play(); } };
+  });
+  document.querySelectorAll('#segments [data-key]').forEach((el) => {
+    el.dataset.saved = el.textContent;
+    el.onblur = async () => {
+      if (el.textContent === el.dataset.saved) return;
+      await api(`/api/sessions/${m.id}/segments`, { method: 'PATCH', body: JSON.stringify({ key: el.dataset.key, text: el.textContent }) });
+      el.dataset.saved = el.textContent;
+    };
+  });
+}
+
+function renderMain() {
+  renderList();
+  if (selected === null) {
+    if (!$('recBtn')) renderHome();
+    else renderRecorder();
+  } else {
+    renderDetail();
+  }
+}
+
+async function refreshList() {
+  try {
+    [sessions, status] = await Promise.all([api('/api/sessions'), api('/api/status')]);
+    renderList();
+  } catch (e) { /* サーバーが再起動中なら次の周期で回復する */ }
+}
+
+$('newBtn').onclick = () => { selected = null; renderedKey = ''; renderList(); renderHome(); };
+setInterval(async () => {
+  await refreshList();
+  if (selected !== null) renderDetail();
+}, 3000);
+selected = new URLSearchParams(location.search).get('id'); // Desk opens a recording with ?id=
+refreshList().then(renderMain);
+</script>
+</body>
+</html>

@@ -33,6 +33,7 @@ from urllib.parse import parse_qs, unquote, urlsplit
 import bank
 import accounts
 import netspeed
+import transcribe_desk
 import notify
 import pc_monitor
 import routine_alarm
@@ -756,6 +757,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(500, {"error": "read"})
         if path == "/api/netspeed":
             return self.send(200, netspeed.view())
+        if path == "/api/transcribe":
+            return self.send(200, transcribe_desk.view())
         if path.startswith("/api/utilities/file/"):
             return self.utility_file(path.rsplit("/", 1)[1])
         if path == "/api/showcase":
@@ -923,6 +926,11 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(415, {"error": "json only"})
             netspeed.start()
             return self.send(200, netspeed.view())
+        if method == "POST" and urlsplit(self.path).path == "/api/transcribe/start":
+            if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+                return self.send(415, {"error": "json only"})
+            transcribe_desk.start()
+            return self.send(200, transcribe_desk.view())
         if method == "POST" and urlsplit(self.path).path == "/api/showcase/open-local":
             if not (self.headers.get("Content-Type") or "").startswith("application/json"):
                 return self.send(415, {"error": "json only"})
@@ -1099,6 +1107,7 @@ if __name__ == "__main__":
     if PORT == 4747:  # a test server on another port shows nothing
         threading.Thread(target=notify.watch, daemon=True).start()
         threading.Thread(target=routine_alarm.watch, daemon=True).start()  # morning / evening routine start alarm
+        threading.Thread(target=transcribe_desk.watch, daemon=True).start()  # the transcriber on 8791, kept running
     try:
         srv.serve_forever()
     except KeyboardInterrupt:

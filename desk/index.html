@@ -767,6 +767,9 @@ button.hname:hover{color:var(--ink)}
 .strow .nsv.wt{font-weight:700}
 .strow .nsn{grid-column:1/-1;font-size:var(--t1);color:var(--muted);overflow-wrap:anywhere}
 .nsp{max-width:640px}
+.trp{max-width:640px}
+.trrow{color:inherit;text-decoration:none}
+.trrow:hover>span:first-child{color:var(--accent)}
 .bkp{max-width:640px}
 .bkcard{display:grid;gap:var(--s3);padding:var(--s3)}
 .bkhead{display:flex;align-items:baseline;gap:var(--s2);min-width:0}
@@ -1360,6 +1363,7 @@ if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="screentime")+1,0,{id:"netsp
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="screentime")+1,0,{id:"pc",e:"🖥️",label:"PC",g:"write"});
 if(LOCALAPI) VIEWS.push({id:"usage",e:"📊",label:"Usage",g:"write"}); // which parts of Desk get used, and the weekly re-arrangement (desk/usage.py)
 if(LOCALAPI) VIEWS.push({id:"utilities",e:"🧰",label:"Small Utilities",g:"write"}); // QR, character count, is.gd and PDF compression (desk/utilities.py)
+if(LOCALAPI) VIEWS.push({id:"transcribe",e:"🎙️",label:"Transcribe",g:"write"}); // long recordings to text on this Mac (desk/transcribe/, its own server on 8791)
 if(LOCALAPI) VIEWS.push({id:"bank",e:"🏦",label:"Bank Accounts",g:"tool"}); // same: from Tools and the / list. Details stay on this Mac (desk/bank.py)
 if(LOCALAPI) VIEWS.push({id:"accounts",e:"🔑",label:"Accounts",g:"tool"}); // where you have accounts and how you sign in; no passwords yet (desk/accounts.py)
 if(LOCALAPI) VIEWS.push({id:"showcase",e:"🖼️",label:"Showcase",g:"tool"}); // same: opened from Tools and the / list
@@ -4239,7 +4243,7 @@ function toolsView(){
   const tools=S.tools.filter(t=>!t.deleted), groups=GROUPS.filter(([g])=>tools.some(t=>t.group===g));
   return `<header class="head"><div><p class="eyebrow">Tools</p><h1>Tools & folders</h1></div></header>
   ${notesHere("tools")}
-  ${LOCALAPI?`<section><div class="section-title"><span class="e">🖥️</span>This Mac</div><div class="tiles"><a class="tile" href="#netspeed"><span class="ico">📶</span><span class="t">Internet Speed</span><span class="d">Test your Wi-Fi speed and see what it can handle</span></a><a class="tile" href="#bank"><span class="ico">🏦</span><span class="t">Bank Accounts</span><span class="d">Copy account details to share</span></a><a class="tile" href="#accounts"><span class="ico">🔑</span><span class="t">Accounts</span><span class="d">Which sites you use, what for, and how you sign in</span></a><a class="tile" href="#utilities"><span class="ico">🧰</span><span class="t">Small Utilities</span><span class="d">QR codes, character count, URL shortener, PDF compression</span></a></div></section>`:""}
+  ${LOCALAPI?`<section><div class="section-title"><span class="e">🖥️</span>This Mac</div><div class="tiles"><a class="tile" href="#netspeed"><span class="ico">📶</span><span class="t">Internet Speed</span><span class="d">Test your Wi-Fi speed and see what it can handle</span></a><a class="tile" href="#bank"><span class="ico">🏦</span><span class="t">Bank Accounts</span><span class="d">Copy account details to share</span></a><a class="tile" href="#accounts"><span class="ico">🔑</span><span class="t">Accounts</span><span class="d">Which sites you use, what for, and how you sign in</span></a><a class="tile" href="#utilities"><span class="ico">🧰</span><span class="t">Small Utilities</span><span class="d">QR codes, character count, URL shortener, PDF compression</span></a><a class="tile" href="#transcribe"><span class="ico">🎙️</span><span class="t">Transcribe</span><span class="d">Record meetings and get the text, on this Mac</span></a></div></section>`:""}
   ${LOCALAPI?`<section><div class="section-title"><span class="e">🌐</span>For others to see</div><div class="tiles"><a class="tile" href="#showcase"><span class="ico">🖼️</span><span class="t">Showcase</span><span class="d">View your portfolio site and PR photos</span></a></div></section>`:""}
   ${groups.length?groups.map(([g,e,l])=>`<section><div class="section-title"><span class="e">${e}</span>${l}</div><div class="tiles">${tools.filter(t=>t.group===g).sort((a,b)=>(a.order??99)-(b.order??99)).map(tile).join("")}</div></section>`).join(""):`<div class="card empty"><b>Loading tools</b>Your tools and folders will appear here.</div>`}`;
 }
@@ -4699,6 +4703,7 @@ function render(){
   if(viewId().startsWith("body")){bodyLoad();$("#view").innerHTML=searchResults()+bodyView();wire();wireBody();return}
   if(viewId()==="mailclean"){mcLoad();$("#view").innerHTML=searchResults()+mcView();wire();wireMc();return}
   if(viewId()==="netspeed"){nsLoad();$("#view").innerHTML=searchResults()+nsView();wire();wireNs();return}
+  if(viewId()==="transcribe"){trLoad();$("#view").innerHTML=searchResults()+trView();wire();wireTr();return}
   if(viewId()==="utilities"){if(!document.activeElement?.closest?.(".utfield")||!$("#utView"))utDraw();return} // a redraw from elsewhere never takes the text being typed
   if(viewId()==="notices"){ntLoad();$("#view").innerHTML=searchResults()+ntView();wire();wireNt();return}
   if(viewId()==="accounts"){acLoad();$("#view").innerHTML=searchResults()+acView();wire();wireAc();return}
@@ -4766,6 +4771,41 @@ function nsView(){
   return `<div class="money nsp" data-noauto>${head}${main}${can}${reply}${link}${places}${past}</div>`;
 }
 function wireNs(){const b=$("#nsRun");if(b)b.onclick=nsStart}
+/* Transcribe: long recordings turned into text on this Mac. The recorder is its own server (desk/transcribe/, 8791) and opens in the default browser,
+   which can use the microphone. This view only reads the sessions (desk/transcribe_desk.py) and starts the server when it is not running. */
+const TRWORD={recording:"Recording",interrupted:"Stopped early",uploading:"Importing",queued:"Waiting",converting:"Converting",transcribing:"Transcribing",done:"Done",partial:"Partly done",error:"Didn't finish"};
+const TRBUSY=["recording","queued","converting","transcribing"];
+const trLen=v=>{const t=Math.round(v||0),h=Math.floor(t/3600),m=Math.floor(t%3600/60);return h?`${h} hr ${m} min`:m?`${m} min`:`${t} sec`};
+const trState=x=>x.status==="transcribing"&&x.total?`${TRWORD.transcribing} · ${Math.round(x.done/x.total*100)}%`:x.status==="partial"?`${TRWORD.partial} · ${x.failed} part${x.failed>1?"s":""} to retry`:TRWORD[x.status]||x.status;
+async function trLoad(){
+  if(!LOCALAPI||S.trBusy)return;
+  S.trBusy=true;
+  try{const v=await api("GET","/api/transcribe"),same=JSON.stringify(v)===JSON.stringify(S.tr);S.tr=v;S.trErr=false;if(!same&&viewId()==="transcribe")render()}
+  catch(e){const was=S.trErr;S.trErr=true;if(!was&&viewId()==="transcribe")render()}
+  S.trBusy=false;
+  clearTimeout(S.trTimer);
+  if(viewId()==="transcribe")S.trTimer=setTimeout(trLoad,(S.tr?.sessions||[]).some(x=>TRBUSY.includes(x.status))?3000:15000);
+}
+async function trOpen(e){
+  if(S.tr?.running)return; // the link opens it as it is
+  e.preventDefault();
+  const href=e.currentTarget.href;
+  try{S.tr=await api("POST","/api/transcribe/start",{})}catch(err){}
+  if(S.tr?.running)window.open(href,"_blank");else toast("Could not start the recorder. Restarting the Desk server may help");
+  render();
+}
+function trView(){
+  const d=S.tr,head=`<h1>Transcribe</h1>`;
+  if(S.trErr)return `<div class="money trp">${head}<p class="due">Could not load. Restarting the server may help.</p></div>`;
+  if(!d)return `<div class="money trp">${head}<p class="due">Loading…</p></div>`;
+  const main=`<section class="card mfocus" aria-label="Record"><p class="mtalk">Record a meeting or import a voice memo. The text appears here when it's ready, and nothing leaves this Mac.</p>`
+    +(d.engine?"":`<p class="due" role="alert">The speech engine isn't installed yet. Run desk/transcribe/setup.sh once (about 1.6 GB).</p>`)
+    +`<div class="nsgo"><a class="btn primary trgo" href="${esc(d.url)}" target="_blank" rel="noopener">Record or import ↗</a><span class="due">Opens in your browser</span></div></section>`;
+  const rows=d.sessions.map(x=>`<a class="strow trrow trgo" href="${esc(d.url)}?id=${esc(x.id)}" target="_blank" rel="noopener"><span>${esc(x.title)}</span><span class="nsv">${esc(trLen(x.duration))}</span><span class="nsn">${esc(new Date(x.created*1000).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}))} · ${esc(trState(x))}</span></a>`).join("");
+  const list=d.sessions.length?mpanel("Recent",d.running?"":"Recorder is off. It starts when you open one.",rows):"";
+  return `<div class="money trp" data-noauto>${head}${main}${list}</div>`;
+}
+function wireTr(){$("#view").querySelectorAll(".trgo").forEach(a=>a.onclick=trOpen)}
 /* Small Utilities: QR, character count, is.gd and PDF compression. Typed text is never saved; only Shorten sends anything out (desk/utilities.py). */
 const UTTABS=[["qr","QR code"],["count","Character count"],["short","URL shortener"],["pdf","PDF compression"]];
 const UTLEVELS=[["high","High quality","Looks good printed"],["standard","Standard","For email and sharing"],["small","Smallest","For on-screen reading"]];
