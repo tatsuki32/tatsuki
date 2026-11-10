@@ -1,9 +1,9 @@
 # 2026-11-09 プロフィールサイトの見せ方の案
 
 ## ひとこと
-- いま：LinkedIn 風の版を作った
-- 次：本物のサイトに入れる
-- 待ち：中身を見て直す所を言う
+- いま：新しい版を公開した
+- 次：足りないロゴを入れる
+- 待ち：ロゴのファイルの場所
 
 ## やったこと
 - 公開中のプロフィールサイト（単一 HTML、Cloudflare Pages）を読み、写真がバーの分しかないことを確かめた。
@@ -63,5 +63,9 @@
 - 元ファイルは /Applications/programming/my_profile_linkedin（index.html は doctype と head 付きの完全版、img・i18n・README）。
 - PC に node・wrangler がない。Cloudflare Pages へはダッシュボードからドラッグ＆ドロップ、または wrangler の導入が要る。
 
+## 追記9：公開（2026-11-10）
+- node と wrangler を ~/.local に入れ、`wrangler login --browser=false` の URL を内蔵ブラウザで開いて許可した。ログインは数分で切れるので、URL を出したらすぐ押す。
+- `wrangler pages deploy <フォルダ> --project-name tatsuki3284 --branch main` で本番が置き換わった。本番で日本語・アラビア語（rtl）・375px を確認。
+
 ## 次の一手
-- Cloudflare Pages に上げる（本人の操作か wrangler の導入）。CYBER と株式会社高校生、「アイデアの扉」のロゴの場所を聞く。
+- CYBER と株式会社高校生、「アイデアの扉」のロゴの場所を聞いて差し替え、もう一度 deploy する。
