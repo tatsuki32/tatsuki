@@ -951,6 +951,7 @@ button.mhbar[data-mdrillcat]{cursor:pointer}
 .mailbox{display:grid;gap:var(--s2);padding:12px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
 .mailbox p{margin:0}
 .msum{color:var(--ink-2);font-size:var(--t3);line-height:1.75}
+.rabout{color:var(--ink-2);font-size:var(--t3);line-height:1.55;margin:2px 0}
 .mailbox details.draft{margin-top:0}
 /* a finished event can be ticked */
 .evwrap{display:flex;align-items:center;gap:var(--s2);border-top:1px solid var(--line);padding-right:var(--s3)}
@@ -1313,7 +1314,7 @@ h1 .inedit{font-size:var(--t4);font-weight:700}
 <script>
 /* the menu in four groups (proximity): today / what came in / reading / writing and looking back */
 const NAVGROUPS=[["today","Today"],["body","Body"],["in","Incoming"],["read","Read"],["write","Write & reflect"]];
-const VIEWS=[{id:"home",e:"🏠",label:"Home",g:"today"},{id:"tasks",e:"🗂️",label:"Tasks",g:"today"},{id:"calendar",e:"📅",label:"Calendar",g:"today"},{id:"habits",e:"🌱",label:"Habits",g:"today"},
+const VIEWS=[{id:"home",e:"🏠",label:"Home",g:"today"},{id:"tasks",e:"🗂️",label:"Tasks",g:"today"},{id:"replies",e:"💬",label:"Replies",g:"today"},{id:"calendar",e:"📅",label:"Calendar",g:"today"},{id:"habits",e:"🌱",label:"Habits",g:"today"},
   {id:"wins",e:"✨",label:"Wins",g:"in"},{id:"presents",e:"🎁",label:"Presents",g:"in"},
   {id:"news",e:"🌍",label:"World News",g:"read"},{id:"watch",e:"🗺️",label:"Minor Countries",g:"read"},{id:"heritage",e:"🏛️",label:"Daily World Heritage",g:"read"},
   {id:"notes",e:"📒",label:"Notes",g:"write"},{id:"log",e:"🤖",label:"Claude Log",g:"write"},{id:"tools",e:"🧰",label:"Tools",g:"write"}];
@@ -1564,6 +1565,8 @@ const toLocalInput=ms=>{const d=new Date(ms);return `${d.getFullYear()}-${pad(d.
 const TSTATUS=[["notyet","Not started"],["doing","In progress"],["done","Done"],["paused","Paused"],["archived","Archived"]];
 const TCOLS=["notyet","doing","done"], TSHELF=["paused","archived"], TOPEN=new Set(["notyet","doing"]);
 const TSRC={manual:["✍️","Manual"],memo:["📝","From a note"],mail:["✉️","From email"],whatsapp:["💬","WhatsApp"],line:["💬","LINE"],calendar:["📅","From the calendar"],gtasks:["☑️","Google Tasks"],claude:["🤖","Claude"],daily:["☀️","Daily"]};
+/* Email, WhatsApp and LINE replies live in their own "Replies" screen, not on the task board, unless "Make it a task" set asTask */
+const REPLYSRC=new Set(["mail","whatsapp","line"]), isReply=t=>REPLYSRC.has(t?.source)&&!t.asTask;
 const LINKED=new Set(["mail","whatsapp","line","calendar","gtasks","claude","daily"]); // these come from elsewhere: their title and due date live at the source
 const tLabel=k=>(TSTATUS.find(s=>s[0]===k)||[k,k])[1];
 const mailTaskId=uid=>"t"+dueDocId(uid);
@@ -1571,7 +1574,7 @@ const newTaskId=()=>"t"+Date.now().toString(36)+Math.random().toString(36).slice
 /* project fields are written only when set, so a task outside any project is stored exactly as before */
 const taskRecord=t=>{const r={id:t.id,title:t.title,status:t.status||"notyet",source:t.source||"manual",sourceRef:t.sourceRef||"",due:LINKED.has(t.source)?null:(t.due??null),note:t.note||"",planDate:t.planDate||null,planAi:t.planAi||null,estMin:t.estMin??null,estAi:t.estAi??null,...(t.clear?{clear:t.clear}:{}),createdAt:t.createdAt||Date.now(),deleted:!!t.deleted};
   ["projectId","sectionId","group","desc","estimate","start","dateLabel"].forEach(k=>{if(t[k])r[k]=String(t[k])});
-  if(t.urgent)r.urgent=true; if(t.order!=null&&t.order!==""&&!isNaN(+t.order))r.order=+t.order; return r};
+  if(t.urgent)r.urgent=true; if(t.asTask)r.asTask=true; if(t.order!=null&&t.order!==""&&!isNaN(+t.order))r.order=+t.order; return r};
 const byDeadline=(a,b)=>(a.deadline??Infinity)-(b.deadline??Infinity)||(b.createdAt||0)-(a.createdAt||0);
 const withDeadline=t=>({...t,deadline:t.due!=null?t.due-LEAD:null});
 /* Calendar events whose title starts with a mark become tasks: "TODO 書類を送る", "【やる】…", "☑ …" */
@@ -1607,7 +1610,7 @@ function boardTasks(mails){
   Object.values(linked).forEach(l=>{if(!stored.has(l.id))out.push(withDeadline({...l,status:l.gdone?"done":"notyet"}))});
   return out;
 }
-const findTask=id=>S.board.find(t=>t.id===id);
+const findTask=id=>(S.all||S.board).find(t=>t.id===id);
 const hcmcDate=()=>new Date(Date.now()+HCMC).toISOString().slice(0,10);
 async function setTaskStatus(id,status){const t=findTask(id);if(!t||t.status===status)return;
   try{await store.putTask({...t,status});await taskWin(t,status);toast(status==="done"?"✨ Done. Added to Wins":`🗂️ Moved to ${tLabel(status)}`)}catch(e){toast("Could not save. Please try again")}}
@@ -1625,7 +1628,7 @@ const WKIND={task:["🗂️","Task"],mail:["✉️","Email reply"],event:["📅"
 function winList(){
   const out=new Map();
   S.wins.filter(w=>!w.deleted&&w.date).forEach(w=>out.set(w.id,w));
-  S.board.filter(t=>t.status==="done").forEach(t=>{const id=winId("task-"+t.id), at=t.updatedAt||t.createdAt;if(out.has(id)||!at)return;
+  (S.all||S.board).filter(t=>t.status==="done").forEach(t=>{const id=winId("task-"+t.id), at=t.updatedAt||t.createdAt;if(out.has(id)||!at)return;
     out.set(id,{id,kind:t.source==="mail"?"mail":"task",title:t.title,sub:t.mail?.sub||"",at,date:hcmcDay(at)})});
   S.reports.forEach(r=>(r.done||[]).forEach((x,i)=>{const d=String(r.date||"").slice(0,10);if(!x?.text||!/^\d{4}-\d\d-\d\d$/.test(d))return;
     out.set("claude-"+r.id+"-"+i,{id:"claude-"+r.id+"-"+i,kind:"claude",title:x.text,date:d,at:Date.parse(d+"T23:00:00+07:00")})}));
@@ -2724,6 +2727,36 @@ async function editGear(g){
 }
 async function toggleGearPack(id){const g=S.gear.find(x=>x.id===id);if(!g)return;const on=!g.packed;try{await store.putGear({...g,packed:on,packedAt:on?Date.now():null})}catch(e){toast("Couldn't save")}}
 async function resetGearPack(){for(const g of S.gear.filter(x=>!x.deleted&&x.packed)){try{await store.putGear({...g,packed:false,packedAt:null})}catch(e){}}toast("Unpacked everything")}
+/* ---------- Replies: email, WhatsApp and LINE that need an answer, apart from the task board ---------- */
+/* Each row: title, then "About …" from the summary the import wrote. "Make it a task" moves it to Tasks (asTask), "Back to Replies" undoes it. */
+const RSRC=[["mail","✉️","Email"],["whatsapp","🟢","WhatsApp"],["line","💚","LINE"]];
+const replyList=()=>(S.all||[]).filter(t=>isReply(t)&&TOPEN.has(t.status)).sort(byDeadline);
+function replyInfo(t){
+  if(t.source==="mail"){const i=mailItem(t);return {about:i?.summary||t.mail?.sum||"",who:i?.from||"",when:i?.received||"",subj:i?.subject_ja||i?.subject||t.mail?.sub||""}}
+  const i=t.source==="line"?((S.line||{}).items||{})[t.id]:(S.wa||{})[t.id];
+  const when=i?.lastAt?new Date(i.lastAt*1000).toLocaleString("en-US",{timeZone:"Asia/Ho_Chi_Minh",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}):"";
+  const last=(i?.texts||[]).filter(x=>x&&!/^\(.*\)$/.test(x)).slice(-1)[0]||"";
+  return {about:i?.summary||last||(i?.kind&&i.kind!=="text"?"A "+i.kind+" arrived":""),who:i?.name||"",when,subj:""};
+}
+const clip=(x,n)=>{x=String(x||"").replace(/\s+/g," ").trim();return x.length>n?x.slice(0,n-1)+"…":x};
+function replyRow(t){
+  const r=replyInfo(t), src=RSRC.find(x=>x[0]===t.source)||RSRC[0];
+  return `<div class="drow reprow"><span class="e" aria-hidden="true">${src[1]}</span><div style="min-width:0">
+    <button class="tt" data-topen="${esc(t.id)}" data-noauto>${esc(t.title)}</button>
+    ${r.about?`<div class="rabout" data-noauto>About: ${esc(clip(r.about,180))}</div>`:""}
+    <div class="due">${[src[2],r.who,r.when,t.deadline!=null&&t.due!=null?"Due "+fmtDue(t.due):""].filter(Boolean).map(esc).join(" · ")}</div></div>
+    <div class="dacts"><button class="btn" data-rtask="${esc(t.id)}" title="Move this to the task board">→ Make it a task</button></div></div>`;
+}
+function repliesView(){
+  const xs=replyList(), moved=(S.all||[]).filter(t=>REPLYSRC.has(t.source)&&t.asTask&&TOPEN.has(t.status));
+  const groups=RSRC.map(([k,e,l])=>[e,l,xs.filter(t=>t.source===k)]).filter(g=>g[2].length);
+  return `<header class="head"><div><p class="eyebrow">Today</p><h1>Replies</h1></div></header>
+  <p class="sub">Email, WhatsApp and LINE that need an answer. They stay here, off your task board. Press “Make it a task” for one that is real work.</p>
+  ${groups.length?groups.map(([e,l,ts])=>`<section class="card dpanel" aria-label="${l}"><div class="dhead"><h2><span class="e">${e}</span>${l}</h2><span class="sub">${ts.length}</span></div><div>${ts.map(replyRow).join("")}</div></section>`).join(""):`<div class="card empty"><b>No replies waiting</b>New email, WhatsApp and LINE messages show up here after each import.</div>`}
+  ${moved.length?`<p class="sub">Moved to Tasks: ${moved.map(t=>`<button class="tt" data-topen="${esc(t.id)}" data-noauto>${esc(clip(t.title,60))}</button> <button class="ibtn" data-rtask="${esc(t.id)}" data-back="1" title="Back to Replies" aria-label="Back to Replies">↩︎</button>`).join(" · ")}</p>`:""}`;
+}
+async function replyToTask(id,back){const t=findTask(id);if(!t)return;
+  try{await store.putTask({...t,asTask:!back});toast(back?"💬 Back in Replies":"🗂️ Added to Tasks")}catch(e){toast("Couldn't save. Please try again")}}
 function todayPanel(skip){
   const MAX=5, skipIds=new Set(skip||[]);
   const doing=S.board.filter(t=>t.status==="doing"&&!skipIds.has(t.id)).sort(byDeadline), notyet=S.board.filter(t=>t.status==="notyet"&&!skipIds.has(t.id)).sort(byDeadline);
@@ -3517,7 +3550,7 @@ function sentIndex(){
   S.watch.filter(w=>!w.deleted).forEach(w=>add("watch",w.body,w.date||w.id,Date.parse(w.date)||0,{watch:w.id},w.docUrl||""));
   noteList().forEach(n=>add("note",n.body,n.title,n.updatedAt||n.createdAt||0,{note:n.id}));
   S.memos.filter(m=>!m.deleted).forEach(m=>add("memo",m.text,"",m.updatedAt||m.createdAt||0,{memo:m.id}));
-  S.board.filter(t=>!t.deleted).forEach(t=>{const wa=(S.wa||{})[t.id];
+  (S.all||S.board).filter(t=>!t.deleted).forEach(t=>{const wa=(S.wa||{})[t.id];
     [t.title,taskName(t),t.clear?.first,t.note,t.mail?.sum,wa?.summary,wa?.texts].forEach(r=>add("task",r,taskName(t),t.updatedAt||t.createdAt||0,{task:t.id}))});
   calEvents().forEach(e=>[e.title,e.location].forEach(r=>add("event",r,day(e.startMs),e.startMs||0,{cal:1})));
   S.habits.filter(h=>!h.deleted).forEach(h=>add("habit",h.name,"",h.updatedAt||h.createdAt||0,{view:"habits"}));
@@ -4172,7 +4205,8 @@ try{S.aiExp=JSON.parse(localStorage.getItem("desk-ai-exp")||"{}")||{}}catch(e){S
 function navCount(id){
   if(id==="focus"&&fbActive()) return `<span class="count" data-fleft="${fbEndMs()}">${fbLeft(fbEndMs()-Date.now())}</span>`;
   const fresh=presentsNew(), winsN=id==="wins"?winsToday().length:0, taskN=S.board.filter(t=>t.status==="doing").length;
-  return id==="presents"&&fresh?`<span class="count" title="New">${fresh}</span>`:id==="wins"&&winsN?`<span class="count" title="Today">${winsN}</span>`:id==="tasks"&&taskN?`<span class="count" title="In progress">${taskN}</span>`:id==="log"&&S.reports[0]?.pending?.length?`<span class="count" title="Pending">${S.reports[0].pending.length}</span>`:"";
+  const repN=id==="replies"?replyList().length:0;
+  return id==="replies"&&repN?`<span class="count" title="To answer">${repN}</span>`:id==="presents"&&fresh?`<span class="count" title="New">${fresh}</span>`:id==="wins"&&winsN?`<span class="count" title="Today">${winsN}</span>`:id==="tasks"&&taskN?`<span class="count" title="In progress">${taskN}</span>`:id==="log"&&S.reports[0]?.pending?.length?`<span class="count" title="Pending">${S.reports[0].pending.length}</span>`:"";
 }
 function navHtml(){
   const cur=viewId(), has=id=>id!=="home"&&VIEWS.some(v=>v.id===id);
@@ -4232,7 +4266,7 @@ function inflow(){
   const act=S.dl.filter(x=>x.kind==="mail").length, fresh=presentsNew(), e=S.editions[0], st=e?.data?.stories||[];
   const n=(v,hot)=>`<span class="n ${v?hot?"hot":"":"zero"}">${v}</span>`;
   return `<section aria-label="Incoming"><div class="section-title"><span class="e">📬</span>Incoming</div><div class="card inflow">
-    <a class="irow" href="#tasks" data-gonotyet><span class="e">✉️</span>Emails to answer${n(act,true)}</a>
+    <a class="irow" href="#replies"><span class="e">💬</span>Replies to send${n(replyList().length,true)}</a>
     <a class="irow" href="#presents"><span class="e">🎁</span>Presents${n(fresh)}</a>
     ${e?`<details class="digest" ${S.digestOpen?"open":""} id="digest"><summary class="irow"><span class="e">📰</span>Today's news<span class="s" data-noauto>${esc(e.data.headline||"")}</span>${n(st.length)}</summary>
       <ol data-noauto>${st.map((x,i)=>`<li><button class="tt" data-story="${i}" data-ed="${esc(e.id)}">${esc(x.title)}</button></li>`).join("")}</ol></details>`:""}
@@ -4688,8 +4722,8 @@ function render(){
   if($("#view .inedit"))return;
   if(document.activeElement?.id==="winText"&&S.winView===viewId())return; // a background refresh must not wipe what is being typed
   applyNoteCss();
-  const mails=deadlines();S.board=boardTasks(mails);S.dlMap=Object.fromEntries(mails.map(x=>[x.uid,x]));
-  const closed=new Set(S.board.filter(t=>t.source==="mail"&&!TOPEN.has(t.status)).map(t=>t.sourceRef));
+  const mails=deadlines();S.all=boardTasks(mails);S.board=S.all.filter(t=>!isReply(t));S.dlMap=Object.fromEntries(mails.map(x=>[x.uid,x]));
+  const closed=new Set(S.all.filter(t=>t.source==="mail"&&!TOPEN.has(t.status)).map(t=>t.sourceRef));
   S.dl=mails.filter(x=>!closed.has(x.uid)); // a mail task moved to Done / paused / archive leaves the deadline panel
   updateBadges();checkNew();
   renderNav();
@@ -4713,7 +4747,7 @@ function render(){
   if(viewId()==="usage"){uLoad();$("#view").innerHTML=searchResults()+usageView();wire();return}
   const v=viewId();
   if(v==="project")S.projectId=decodeURIComponent(location.hash.slice(9));
-  $("#view").innerHTML=searchResults()+(v==="focus"?focusView():v==="notes"?notesView():v==="watch"?watch():v==="heritage"?heritageView():v==="tasks"?tasks():v==="calendar"?calendar():v==="news"?news():v==="wins"?winsView():v==="presents"?presentsView():v==="habits"?habitsView():v==="gear"?gearView():v==="project"?projectView():v==="log"?log():v==="tools"?toolsView():home());
+  $("#view").innerHTML=searchResults()+(v==="focus"?focusView():v==="notes"?notesView():v==="watch"?watch():v==="heritage"?heritageView():v==="tasks"?tasks():v==="replies"?repliesView():v==="calendar"?calendar():v==="news"?news():v==="wins"?winsView():v==="presents"?presentsView():v==="habits"?habitsView():v==="gear"?gearView():v==="project"?projectView():v==="log"?log():v==="tools"?toolsView():home());
   if(v==="news"||v==="watch") linkSources($("#view"));
   wire();
   if(v==="news"&&S.focus!=null){const el=document.getElementById("story-"+S.focus);S.focus=null;if(el){el.classList.add("flash");setTimeout(()=>el.scrollIntoView({block:"start"}),0)}}
@@ -5882,6 +5916,7 @@ function wire(){
   // tasks: open, change status from the menu, drag between columns, phone column tabs
   $("#newTask")&&($("#newTask").onclick=()=>openTask(null));
   document.querySelectorAll("[data-topen]").forEach(b=>b.onclick=()=>openTask(b.dataset.topen));
+  document.querySelectorAll("[data-rtask]").forEach(b=>b.onclick=()=>replyToTask(b.dataset.rtask,b.dataset.back==="1"));
   document.querySelectorAll("[data-story]").forEach(b=>b.onclick=()=>{S.ed=b.dataset.ed;S.region="All";S.focus=+b.dataset.story;if(location.hash==="#news")render();else location.hash="news"});
   $("#digest")&&($("#digest").ontoggle=e=>{S.digestOpen=e.target.open});
   $("#watchNo")&&($("#watchNo").onchange=e=>{S.watchId=e.target.value;render()});
