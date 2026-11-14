@@ -82,8 +82,10 @@ FEEDS = {
 LOCK = threading.Lock()
 MEMOLINK_LOCK = threading.Lock()
 REPO = os.path.dirname(ROOT)
+# commands that work in the person's Chrome (Claude in Chrome), started with --chrome
+CLAUDE_CHROME = ("/joins-apply",)
 # Desk's ⌨️ buttons may start only these Claude Code commands (POST /api/claude)
-CLAUDE_CMDS = ("/morning-kickoff", "/begin", "/recap", "/rsd", "/learn", "/sync", "/knowledge", "/desk-feature", "/followup", "/newtool", "/kickoff", "/clarify", "/split", "/where", "/lowenergy", "/mail-send", "/money-review")
+CLAUDE_CMDS = ("/morning-kickoff", "/begin", "/recap", "/rsd", "/learn", "/sync", "/knowledge", "/desk-feature", "/followup", "/newtool", "/kickoff", "/clarify", "/split", "/where", "/lowenergy", "/mail-send", "/money-review", "/joins-apply")
 CLAUDE_ARG_MAX = 6000
 FOCUS_URL = "http://127.0.0.1:47800"
 # no proxy: while websites are blocked the system proxy points at FocusBlock itself
@@ -532,7 +534,7 @@ def open_claude(cmd, arg):
             f'P="$(cat {shlex.quote(msg)})"\n'
             f"rm -rf {shlex.quote(d)}\n"
             'if ! command -v claude >/dev/null; then echo "claude was not found (install Claude Code)"; read -r; exit 1; fi\n'
-            'exec claude "$P"\n'
+            + ('exec claude --chrome "$P"\n' if cmd in CLAUDE_CHROME else 'exec claude "$P"\n')
         )
     os.chmod(script, 0o700)
     subprocess.run(["open", "-a", "Terminal", script], check=True, timeout=10)

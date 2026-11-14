@@ -18,3 +18,8 @@
 
 ## 次の一手
 - 初回の自動実行（11/20 金）の結果を「Done by Claude」で確かめる。
+
+## 追記（同じ夜）：応募の送信も Claude が
+- 八代目儀兵衛には本人の OK をもらって Claude が送った（受付メールあり）。フォームは HubSpot で、ページの中に直接ある（欄の name は `/joins-apply` の表を参照）。
+- 「Send for me」ボタン（`data-jasend`）→ `POST /api/claude` の `/joins-apply <id>` → `claude --chrome` で Terminal に起動（`CLAUDE_CHROME`）。押すことがその1件の承認。基本の値は `desk/data/joins-apply.json`（git に入れない）。
+- 存在しない id で起動まで確かめた。本物の送信は次の案件で。
