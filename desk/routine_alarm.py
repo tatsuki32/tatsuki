@@ -7,6 +7,8 @@ time, and opens the Routine app at http://localhost:4747/routine/#alarm/<when>.
 - Times are Ho Chi Minh City time, the same clock the page uses for routines.
 - It rings once per routine per day, and not at all if that routine already ran today (log[when+"Run"]).
 - If the Mac was asleep at the start time, it rings when it wakes, up to 30 minutes late.
+- Quiet hours (QUIET, 22:00-07:00 Ho Chi Minh City time; everyone at home is asleep): no sound and no voice.
+  It only opens the Routine app's start screen (#start/<when>), which does not ring either.
 - Nothing is written except its own small state file (data/routine-alarm.json).
 
   python3 desk/routine_alarm.py plan     what would ring now
@@ -25,6 +27,7 @@ PORT = int(os.environ.get("DESK_PORT", "4747"))
 HCMC = 7 * 3600
 LATE = 30 * 60  # still ring this long after the start time (a Mac that just woke up)
 DEFAULT = {"morningAt": "04:00", "nightAt": "17:00", "alarm": True, "cutoff": 4, "voice": "en"}
+QUIET = (22, 7)  # from 22:00 to 07:00 the Mac stays silent
 SOUND = "/System/Library/Sounds/Glass.aiff"
 SAY = {"en": "It's time for {}.", "ja": "{}の時間です。", "ru": "Пора: {}."}  # {} = the routine's name
 VOICE = {"ja": "Kyoko", "ru": "Milena"}  # macOS voices; the default voice is used when one is missing
@@ -94,7 +97,16 @@ def due(now=None):
     return out
 
 
-def ring(when, s):
+def quiet(now=None):
+    h = time.gmtime((now or time.time()) + HCMC).tm_hour
+    a, b = QUIET
+    return h >= a or h < b
+
+
+def ring(when, s, now=None):
+    if quiet(now):  # silent: just leave the start screen open for when they wake up
+        subprocess.run(["/usr/bin/open", f"http://localhost:{PORT}/routine/#start/{when}"], capture_output=True, timeout=10)
+        return
     say = SAY[s["voice"]].format(s.get("name") or "your routine")
     for i in range(3):
         subprocess.run(["/usr/bin/afplay", SOUND], capture_output=True, timeout=10)
@@ -112,7 +124,7 @@ def tick(now=None):
         with open(tmp, "w", encoding="utf-8") as f:
             json.dump(state, f)
         os.replace(tmp, STATE)
-        ring(when, s)
+        ring(when, s, now)
 
 
 def watch():
@@ -129,7 +141,7 @@ if __name__ == "__main__":
     if arg[0] == "plan":
         s = settings(log_docs())
         print(json.dumps({"routines": [{k: r.get(k) for k in ("id", "name", "at", "alarm")} for r in routines(s)], "settings": {k: s[k] for k in ("alarm", "voice")},
-                          "due": [w for w, _, _ in due()], "state": read(STATE, {})}, ensure_ascii=False))
+                          "due": [w for w, _, _ in due()], "quietNow": quiet(), "state": read(STATE, {})}, ensure_ascii=False))
     elif arg[0] == "ring" and len(arg) > 1:
         s = settings(log_docs())
         r = next((x for x in routines(s) if x["id"] == arg[1]), None)
