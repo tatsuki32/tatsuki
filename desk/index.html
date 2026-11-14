@@ -1330,6 +1330,7 @@ async function loadApiMemos(){try{
   S.gear=gear.filter(g=>!g.deleted);S.projects=projects.filter(p=>!p.deleted);S.sections=sections.filter(x=>!x.deleted);
   S.fu=await api("GET","/api/followups").catch(()=>S.fu);
   S.line=await api("GET","/api/line").catch(()=>({}));lineAlert();
+  S.replyWin=((await api("GET","/api/replywin").catch(()=>[]))||[]).find(x=>x&&x.id==="state")||{};
   S.habits=habits.filter(h=>!h.deleted);S.wins=wins.filter(w=>!w.deleted);S.presents=presents.filter(p=>!p.deleted);S.memos=memos.filter(m=>!m.deleted&&!m.movedTo);S.dues=duesById(dues);S.tasks=tasks.filter(t=>!t.deleted);S.prompts=promptsById(prompts);S.wnotes=notes.filter(n=>!n.deleted);render();absorbMemos()}catch(e){toast("Cannot reach the Desk server. Is it running?")}}
 const promptsById=list=>Object.fromEntries(list.filter(p=>p&&p.id&&!p.deleted).map(p=>[p.id,p]));
 const duesById=list=>Object.fromEntries(list.filter(v=>v&&v.uid).map(v=>[v.uid,v]));
@@ -1439,6 +1440,8 @@ const dueLine=x=>`Due ${esc(fmtDue(x.due))} · <button class="duebtn" data-due="
 function tick(){const now=Date.now();let fbDone=false;document.querySelectorAll("[data-fleft]").forEach(el=>{const left=+el.dataset.fleft-now;el.textContent=fbLeft(left);if(left<=0)fbDone=true});if(fbDone)fbLoad();document.querySelectorAll("[data-dl]").forEach(el=>{const left=+el.dataset.dl-now;el.textContent=dlText(left);el.className="dl "+dlClass(left)});
   document.querySelectorAll("[data-until]").forEach(el=>{const left=+el.dataset.until-now;if(left<=0&&!el.dataset.done){el.dataset.done="1";setTimeout(render,500)}el.textContent=untilText(left)})}
 setInterval(tick,1000);
+/* the reply window opens by the clock: draw again when it does */
+let rwWas=null;setInterval(()=>{if(!S.replyWin)return;const o=replyOpen();if(rwWas!==null&&o!==rwWas)render();rwWas=o},30000);
 /* badges: Home panel, rail counts, tab title, favicon, home-screen icon */
 let lastBadge=-1;
 function updateBadges(){
@@ -1519,7 +1522,23 @@ const TSTATUS=[["notyet","Not started"],["doing","In progress"],["done","Done"],
 const TCOLS=["notyet","doing","done"], TSHELF=["paused","archived"], TOPEN=new Set(["notyet","doing"]);
 const TSRC={manual:["✍️","Manual"],memo:["📝","From a note"],mail:["✉️","From email"],whatsapp:["💬","WhatsApp"],line:["💬","LINE"],calendar:["📅","From the calendar"],gtasks:["☑️","Google Tasks"],claude:["🤖","Claude"],daily:["☀️","Daily"]};
 /* Email, WhatsApp and LINE replies live in their own "Replies" screen, not on the task board, unless "Make it a task" set asTask */
-const REPLYSRC=new Set(["mail","whatsapp","line"]), isReply=t=>REPLYSRC.has(t?.source)&&!t.asTask;
+/* Nudges that chase an answer (Life OS 02, "Email nudge …", "WhatsApp催促 …") are replies too. desk/replywin.py has the same rule. */
+const REPLYSRC=new Set(["mail","whatsapp","line"]);
+function replyKind(t){if(!t)return null;const s=t.source||"", ti=String(t.title||"");
+  if(s==="lifeos-02"||/^\s*(?:Email nudge|WhatsApp nudge|メール催促|WhatsApp催促)/i.test(ti))return "nudge";
+  if(REPLYSRC.has(s))return s;
+  if(/^\s*(?:Email|WhatsApp|LINE)\s+(?:reply|nudge)\b|^\s*(?:メール|WhatsApp|LINE)\s*(?:返信|催促)/i.test(ti))return /^\s*(?:Email|メール)/i.test(ti)?"mail":/^\s*WhatsApp/i.test(ti)?"whatsapp":"line";
+  return null}
+const isReply=t=>!!replyKind(t)&&!t.asTask;
+/* The reply window: Replies opens at 5:00 and 16:00 on the Mac's own clock and stays open until "Replies done" (replywin doc "state", closedAt).
+   While it is closed no title, sender, count or search hit shows. There is no "open just now". */
+const RW_SLOTS=[5,16];
+function rwSlot(now,dir){const d=new Date(now);for(let k=0;k<3;k++){const b=new Date(d.getFullYear(),d.getMonth(),d.getDate()+(dir<0?-k:k));
+  for(const h of dir<0?[...RW_SLOTS].reverse():RW_SLOTS){const x=new Date(b.getFullYear(),b.getMonth(),b.getDate(),h).getTime();if(dir<0?x<=now:x>now)return x}}return now}
+const rwLast=(now=Date.now())=>rwSlot(now,-1), rwNext=(now=Date.now())=>rwSlot(now,1);
+const replyOpen=()=>{const c=S.replyWin?.closedAt;return typeof c!=="number"||c<rwLast()};
+const rwTime=ms=>new Date(ms).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});
+const hideReply=t=>isReply(t)&&!replyOpen();
 const LINKED=new Set(["mail","whatsapp","line","calendar","gtasks","claude","daily"]); // these come from elsewhere: their title and due date live at the source
 const tLabel=k=>(TSTATUS.find(s=>s[0]===k)||[k,k])[1];
 const mailTaskId=uid=>"t"+dueDocId(uid);
@@ -1577,7 +1596,7 @@ async function taskWin(t,status){
   if(TOPEN.has(status)&&had) return store.putWin({...had,deleted:true});
   if(was==="done"&&!TOPEN.has(status)&&!had){const at=t.updatedAt||t.createdAt||Date.now();return store.putWin({quiet:true,id,kind:t.source==="mail"?"mail":"task",title:t.title,sub:t.mail?.sub||"",ref:t.id,at,date:hcmcDay(at)})}
 }
-const WKIND={task:["🗂️","Task"],mail:["✉️","Email reply"],event:["📅","Event"],claude:["🤖","With Claude"],self:["✍️","By you"]};
+const WKIND={task:["🗂️","Task"],mail:["✉️","Email reply"],replies:["💬","Replies"],event:["📅","Event"],claude:["🤖","With Claude"],self:["✍️","By you"]};
 function winList(){
   const out=new Map();
   S.wins.filter(w=>!w.deleted&&w.date).forEach(w=>out.set(w.id,w));
@@ -1948,7 +1967,7 @@ const tzName=()=>{const z=localTz(), city={"Asia/Saigon":"Ho Chi Minh City","Asi
 const wallTime=ms=>{const d=new Date(ms);return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`};
 const CALMAX=1500, CALLENS=[[15,"15m"],[30,"30m"],[60,"1h"],[120,"2h"]];
 function calDetails(t){
-  const c=t.clear||{}, out=[], reply=REPLYSRC.has(t.source);
+  const c=t.clear||{}, out=[], reply=!!replyKind(t);
   if(reply) out.push("Reply task. The message and the draft reply are in the Desk.");
   else{
     if(c.first) out.push("First 5 minutes: "+c.first);
@@ -2553,7 +2572,7 @@ async function toggleGearPack(id){const g=S.gear.find(x=>x.id===id);if(!g)return
 async function resetGearPack(){for(const g of S.gear.filter(x=>!x.deleted&&x.packed)){try{await store.putGear({...g,packed:false,packedAt:null})}catch(e){}}toast("Unpacked everything")}
 /* ---------- Replies: email, WhatsApp and LINE that need an answer, apart from the task board ---------- */
 /* Each row: title, then "About …" from the summary the import wrote. "Make it a task" moves it to Tasks (asTask), "Back to Replies" undoes it. */
-const RSRC=[["mail","✉️","Email"],["whatsapp","🟢","WhatsApp"],["line","💚","LINE"]];
+const RSRC=[["mail","✉️","Email"],["whatsapp","🟢","WhatsApp"],["line","💚","LINE"],["nudge","⏳","Follow-ups"]];
 const replyList=()=>(S.all||[]).filter(t=>isReply(t)&&TOPEN.has(t.status)).sort(byDeadline);
 function replyInfo(t){
   if(t.source==="mail"){const i=mailItem(t);return {about:i?.summary||t.mail?.sum||"",who:i?.from||"",when:i?.received||"",subj:i?.subject_ja||i?.subject||t.mail?.sub||""}}
@@ -2564,7 +2583,7 @@ function replyInfo(t){
 }
 const clip=(x,n)=>{x=String(x||"").replace(/\s+/g," ").trim();return x.length>n?x.slice(0,n-1)+"…":x};
 function replyRow(t){
-  const r=replyInfo(t), src=RSRC.find(x=>x[0]===t.source)||RSRC[0];
+  const r=replyInfo(t), src=RSRC.find(x=>x[0]===replyKind(t))||RSRC[0];
   return `<div class="drow reprow"><span class="e" aria-hidden="true">${src[1]}</span><div style="min-width:0">
     <button class="tt" data-topen="${esc(t.id)}" data-noauto>${esc(t.title)}</button>
     ${r.about?`<div class="rabout" data-noauto>About: ${esc(clip(r.about,180))}</div>`:""}
@@ -2572,13 +2591,21 @@ function replyRow(t){
     <div class="dacts"><button class="btn" data-rtask="${esc(t.id)}" title="Move this to the task board">→ Make it a task</button></div></div>`;
 }
 function repliesView(){
-  const xs=replyList(), moved=(S.all||[]).filter(t=>REPLYSRC.has(t.source)&&t.asTask&&TOPEN.has(t.status));
-  const groups=RSRC.map(([k,e,l])=>[e,l,xs.filter(t=>t.source===k)]).filter(g=>g[2].length);
-  return `<header class="head"><div><p class="eyebrow">Today</p><h1>Replies</h1></div></header>
-  <p class="sub">Email, WhatsApp and LINE that need an answer. They stay here, off your task board. Press “Make it a task” for one that is real work.</p>
+  const xs=replyList(), moved=(S.all||[]).filter(t=>replyKind(t)&&t.asTask&&TOPEN.has(t.status));
+  if(!replyOpen()) return `<header class="head"><div><p class="eyebrow">Today</p><h1>Replies</h1></div></header>
+  <div class="card empty rwclosed"><b>${xs.length} waiting · opens at ${esc(rwTime(rwNext()))}</b>Replies open at 5:00 and 16:00. Until then, nothing here needs you.</div>`;
+  const groups=RSRC.map(([k,e,l])=>[e,l,xs.filter(t=>replyKind(t)===k)]).filter(g=>g[2].length);
+  return `<header class="head"><div><p class="eyebrow">Today</p><h1>Replies</h1></div><button class="btn primary" id="rwDone">Replies done</button></header>
+  <p class="sub">Email, WhatsApp, LINE and follow-ups that need an answer. They stay here, off your task board. Press “Make it a task” for one that is real work. “Replies done” hides them until ${esc(rwTime(rwNext()))}.</p>
   ${groups.length?groups.map(([e,l,ts])=>`<section class="card dpanel" aria-label="${l}"><div class="dhead"><h2><span class="e">${e}</span>${l}</h2><span class="sub">${ts.length}</span></div><div>${ts.map(replyRow).join("")}</div></section>`).join(""):`<div class="card empty"><b>No replies waiting</b>New email, WhatsApp and LINE messages show up here after each import.</div>`}
   ${moved.length?`<p class="sub">Moved to Tasks: ${moved.map(t=>`<button class="tt" data-topen="${esc(t.id)}" data-noauto>${esc(clip(t.title,60))}</button> <button class="ibtn" data-rtask="${esc(t.id)}" data-back="1" title="Back to Replies" aria-label="Back to Replies">↩︎</button>`).join(" · ")}</p>`:""}`;
 }
+/* "Replies done": closes the window until the next 5:00 or 16:00 and adds one win for this sitting (replies-<date>-am|pm) */
+async function repliesDone(){const now=Date.now(), slot=new Date(rwLast(now)), day=`${slot.getFullYear()}-${pad(slot.getMonth()+1)}-${pad(slot.getDate())}`, half=slot.getHours()<12?"am":"pm";
+  const rec={...(S.replyWin||{}),closedAt:now,updatedAt:now};
+  try{await api("PUT","/api/replywin/state",rec);S.replyWin={id:"state",...rec}}catch(e){toast("Couldn't save. Please try again");return}
+  try{await store.putWin({id:winId(`replies-${day}-${half}`),kind:"replies",title:half==="am"?"Morning replies done":"Afternoon replies done",date:day})}catch(e){}
+  toast(`✨ Replies done. Next at ${rwTime(rwNext(now))}`);render()}
 async function replyToTask(id,back){const t=findTask(id);if(!t)return;
   try{await store.putTask({...t,asTask:!back});toast(back?"💬 Back in Replies":"🗂️ Added to Tasks")}catch(e){toast("Couldn't save. Please try again")}}
 function todayPanel(skip){
@@ -2688,6 +2715,7 @@ function wireMail(t,close){
 }
 function openTask(id,preset){
   if($("#modal").firstChild) return;
+  if(id&&hideReply(findTask(id))){toast(`💬 Replies open at ${rwTime(rwNext())}`);return}
   const t=id?findTask(id):null, pre=preset||{}, isMail=t?.source==="mail", isLinked=LINKED.has(t?.source);
   $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop" role="dialog" aria-modal="true" aria-label="${t?"Edit task":"New task"}">
     <div class="top"><h2>🗂️ ${t?"Task":"New task"}</h2><button class="ibtn" id="xTask" aria-label="Close">✕</button></div>
@@ -3402,7 +3430,7 @@ function sentIndex(){
   S.watch.filter(w=>!w.deleted).forEach(w=>add("watch",w.body,w.date||w.id,Date.parse(w.date)||0,{watch:w.id},w.docUrl||""));
   noteList().forEach(n=>add("note",n.body,n.title,n.updatedAt||n.createdAt||0,{note:n.id}));
   S.memos.filter(m=>!m.deleted).forEach(m=>add("memo",m.text,"",m.updatedAt||m.createdAt||0,{memo:m.id}));
-  (S.all||S.board).filter(t=>!t.deleted).forEach(t=>{const wa=(S.wa||{})[t.id];
+  (S.all||S.board).filter(t=>!t.deleted&&!hideReply(t)).forEach(t=>{const wa=(S.wa||{})[t.id];
     [t.title,taskName(t),t.clear?.first,t.note,t.mail?.sum,wa?.summary,wa?.texts].forEach(r=>add("task",r,taskName(t),t.updatedAt||t.createdAt||0,{task:t.id}))});
   calEvents().forEach(e=>[e.title,e.location].forEach(r=>add("event",r,day(e.startMs),e.startMs||0,{cal:1})));
   S.habits.filter(h=>!h.deleted).forEach(h=>add("habit",h.name,"",h.updatedAt||h.createdAt||0,{view:"habits"}));
@@ -4057,7 +4085,7 @@ try{S.aiExp=JSON.parse(localStorage.getItem("desk-ai-exp")||"{}")||{}}catch(e){S
 function navCount(id){
   if(id==="focus"&&fbActive()) return `<span class="count" data-fleft="${fbEndMs()}">${fbLeft(fbEndMs()-Date.now())}</span>`;
   const fresh=presentsNew(), winsN=id==="wins"?winsToday().length:0, taskN=S.board.filter(t=>t.status==="doing").length;
-  const repN=id==="replies"?replyList().length:0;
+  const repN=id==="replies"&&replyOpen()?replyList().length:0;
   return id==="replies"&&repN?`<span class="count" title="To answer">${repN}</span>`:id==="presents"&&fresh?`<span class="count" title="New">${fresh}</span>`:id==="wins"&&winsN?`<span class="count" title="Today">${winsN}</span>`:id==="tasks"&&taskN?`<span class="count" title="In progress">${taskN}</span>`:id==="log"&&S.reports[0]?.pending?.length?`<span class="count" title="Pending">${S.reports[0].pending.length}</span>`:"";
 }
 function navHtml(){
@@ -4118,7 +4146,7 @@ function inflow(){
   const act=S.dl.filter(x=>x.kind==="mail").length, fresh=presentsNew(), e=S.editions[0], st=e?.data?.stories||[];
   const n=(v,hot)=>`<span class="n ${v?hot?"hot":"":"zero"}">${v}</span>`;
   return `<section aria-label="Incoming"><div class="section-title"><span class="e">📬</span>Incoming</div><div class="card inflow">
-    <a class="irow" href="#replies"><span class="e">💬</span>Replies to send${n(replyList().length,true)}</a>
+    <a class="irow" href="#replies"><span class="e">💬</span>Replies to send${replyOpen()?n(replyList().length,true):`<span class="s">Opens at ${esc(rwTime(rwNext()))}</span>`}</a>
     <a class="irow" href="#presents"><span class="e">🎁</span>Presents${n(fresh)}</a>
     ${e?`<details class="digest" ${S.digestOpen?"open":""} id="digest"><summary class="irow"><span class="e">📰</span>Today's news<span class="s" data-noauto>${esc(e.data.headline||"")}</span>${n(st.length)}</summary>
       <ol data-noauto>${st.map((x,i)=>`<li><button class="tt" data-story="${i}" data-ed="${esc(e.id)}">${esc(x.title)}</button></li>`).join("")}</ol></details>`:""}
@@ -4577,6 +4605,7 @@ function render(){
   const mails=deadlines();S.all=boardTasks(mails);S.board=S.all.filter(t=>!isReply(t));S.dlMap=Object.fromEntries(mails.map(x=>[x.uid,x]));
   const closed=new Set(S.all.filter(t=>t.source==="mail"&&!TOPEN.has(t.status)).map(t=>t.sourceRef));
   S.dl=mails.filter(x=>!closed.has(x.uid)); // a mail task moved to Done / paused / archive leaves the deadline panel
+  if(!replyOpen()) S.dl=S.dl.filter(x=>x.kind!=="mail"); // outside the reply window: no count, badge or chime for mail
   updateBadges();checkNew();
   renderNav();
   if(viewId()==="lifeos"){$("#view").innerHTML=searchResults()+lifeosView();wire();wireLifeos();return}
@@ -5770,6 +5799,7 @@ function wire(){
   $("#newTask")&&($("#newTask").onclick=()=>openTask(null));
   document.querySelectorAll("[data-topen]").forEach(b=>b.onclick=()=>openTask(b.dataset.topen));
   document.querySelectorAll("[data-rtask]").forEach(b=>b.onclick=()=>replyToTask(b.dataset.rtask,b.dataset.back==="1"));
+  const rwB=$("#rwDone");if(rwB)rwB.onclick=()=>{rwB.disabled=true;repliesDone()};
   document.querySelectorAll("[data-story]").forEach(b=>b.onclick=()=>{S.ed=b.dataset.ed;S.region="All";S.focus=+b.dataset.story;if(location.hash==="#news")render();else location.hash="news"});
   $("#digest")&&($("#digest").ontoggle=e=>{S.digestOpen=e.target.open});
   $("#watchNo")&&($("#watchNo").onchange=e=>{S.watchId=e.target.value;render()});

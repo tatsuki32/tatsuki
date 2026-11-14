@@ -27,6 +27,11 @@ HCMC = timezone(timedelta(hours=7))
 DAY = 86400000
 FOCUS_UNTIL = 12  # 12時より前は集中作業
 OPEN = {"notyet", "doing"}
+try:
+    from replywin import is_reply
+except ImportError:  # run from elsewhere: fall back to the sources alone
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from replywin import is_reply
 NEEDS = {"Action needed", "Reply drafted"}
 API = "http://localhost:4747"
 
@@ -213,8 +218,8 @@ def candidates():
     dues = {d["id"]: d for d in read_json("dues.json", []) if isinstance(d, dict) and d.get("id")}
     tasks = []
     for t in stored.values():
-        if t.get("status") not in OPEN or t.get("source") == "mail":
-            continue
+        if t.get("status") not in OPEN or t.get("source") == "mail" or is_reply(t):
+            continue  # replies have their own window (desk/replywin.py), never today's three
         tasks.append({"id": t["id"], "title": t.get("title", ""), "source": t.get("source", "manual"), "status": t["status"],
                       "due": to_ms(t.get("due")), "note": (t.get("note") or "")[:300], "kind": kind_of(t)})
     for g in (read_js("gtasks.js") or {}).get("tasks") or []:
@@ -226,7 +231,7 @@ def candidates():
             due = to_ms(g["due"][:10] + "T23:59:00+07:00") if g.get("due") else None
             tasks.append({"id": tid, "title": g["title"], "source": "gtasks", "sourceRef": g["id"], "status": st,
                           "due": due, "note": (g.get("notes") or "")[:300], "kind": kind_of(g)})
-    tasks += mail_tasks(dues, stored)
+    # mail that needs a reply lives in Replies, not here (mail_tasks stays for anything that reads it)
 
     events = events_today(now)
     nxt = next((e for e in events if not e["allDay"] and e["startMs"] > now), None)

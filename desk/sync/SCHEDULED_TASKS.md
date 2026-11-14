@@ -31,7 +31,7 @@ python3 desk/write_feed.py gtasks <raw.json>                 # Google タスク�
 | `desk-task-clarify` | 毎晩 2:30 | 未整理のタスクを30件まで、具体的なタイトル・まず5分・手順・出典・頼む文面に整える（`desk/task_clarify.py`。送信しない） | `tasks` の `clear` |
 | `desk-task-estimate` | 毎日 6:40 | タスクにかかる時間の目安と時期の案（`desk/task_estimate.py`。本人の選択は変えない） | `tasks` の `estAi`・`planAi` |
 | `desk-world-brief` | 毎日 7:17 | 世界ニュース（結果のある出来事と研究を8〜10本。予想の問い、媒体の見比べ、なぜを5回つき。指示は `desk/sync/world-brief-v2.md`、号の形は `WORLD_EDITION.md`） | `editions` |
-| `desk-morning-mail` | 毎日 3:00・16:00 | Gmail と WhatsApp の個人トークの確認と返信案（`desk/whatsapp_sync.py`）。相手の返信待ち（`lifeos/02-followup/MORNING_RUN.md`、`run.py whatsapp`）。プレゼントの判定（`desk/presents.py`）。今すぐ返信が要るものに `urgent` の印（Desk の通知が鳴る。`desk/notify.py`）。送信しない | `days`・`tasks`・`desk/data/whatsapp/`・`02-followup/state.json`・`presents` |
+| `desk-morning-mail` | 毎日 4:30・15:30（2026-11-15 に 3:00・16:00 から。返信の時間 5:00・16:00 の前にそろえる） | Gmail と WhatsApp の個人トークの確認と返信案（`desk/whatsapp_sync.py`）。相手の返信待ち（`lifeos/02-followup/MORNING_RUN.md`、`run.py whatsapp`）。プレゼントの判定（`desk/presents.py`）。今すぐ返信が要るものに `urgent` の印（Desk の通知が鳴る。`desk/notify.py`）。送信しない | `days`・`tasks`・`desk/data/whatsapp/`・`02-followup/state.json`・`presents` |
 | `desk-minor-watch` | 火・金 7:33 | マイナー国ウォッチ | `watch` |
 | `desk-heritage-daily` | 毎日 7:05 | 毎日世界遺産。まだ出ていない国を3カ国、国の紹介と遺産を写真つきで（`desk/heritage.py`。休んだ日の分は作らない） | `heritage`・`desk/data/heritage/photos/` |
 | `desk-claude-daily-report` | 毎日 7:40 | 前日の Claude の作業レポート | `reports` |

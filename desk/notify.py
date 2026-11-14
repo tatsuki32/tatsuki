@@ -146,8 +146,18 @@ def load_data(now):
         top = kickoff.candidates()["tasks"][:3]
     except Exception:  # the order of today's three is a nicety; a broken file must not stop the rest
         top = []
+    try:
+        import replywin
+        reply_open = replywin.is_open(now, data_dir=DATA)
+        is_reply = replywin.is_reply
+    except Exception:  # without the module, behave as before
+        reply_open, is_reply = True, (lambda t: False)
+    every = [t for t in j("tasks.json", d=[]) or [] if isinstance(t, dict) and t.get("id") and not t.get("deleted")]
     return {
-        "tasks": [t for t in j("tasks.json", d=[]) or [] if isinstance(t, dict) and t.get("id") and not t.get("deleted")],
+        "replyOpen": reply_open,
+        "allTasks": every,
+        # replies live in their own window: they never ring as a task, a due date or a nudge
+        "tasks": [t for t in every if not is_reply(t)],
         "events": [e for e in cal.get("events") or [] if isinstance(e, dict)],
         "calendarAt": cal.get("fetchedAt"),
         "mail": mail,
@@ -246,9 +256,13 @@ def instant(now, data, s, tz=None):
 
 
 def urgent(data):
-    """Replies the intake marked `urgent`, still unanswered. The intake decides; nothing here raises a message."""
-    tasks = {t.get("sourceRef"): t for t in data["tasks"] if t.get("sourceRef")}
-    by_id = {t["id"]: t for t in data["tasks"]}
+    """Replies the intake marked `urgent`, still unanswered. The intake decides; nothing here raises a message.
+    Outside the reply window (5:00 and 16:00 until "Replies done") nothing is told, urgent or not; it waits for the window."""
+    if not data.get("replyOpen", True):
+        return []
+    every = data.get("allTasks", data["tasks"])
+    tasks = {t.get("sourceRef"): t for t in every if t.get("sourceRef")}
+    by_id = {t["id"]: t for t in every}
     out = []
     for m in data["mail"]:
         if m.get("urgent") is not True or not m.get("key") or (m.get("status") or "pending") != "pending":
@@ -275,14 +289,14 @@ def urgent(data):
 
 def done_today(data, now, tz):
     day = local(now, tz).date()
-    return [t for t in data["tasks"] if t.get("status") == "done" and isinstance(t.get("updatedAt"), (int, float))
+    return [t for t in data.get("allTasks", data["tasks"]) if t.get("status") == "done" and isinstance(t.get("updatedAt"), (int, float))
             and local(t["updatedAt"] / 1000, tz).date() == day]
 
 
 def morning_lines(now, data, s, st, tz):
     lines, on = [], s["on"]
     day = local(now, tz).date()
-    for item in st["carry"]:  # urgent replies that came in the quiet hours
+    for item in st["carry"] if data.get("replyOpen", True) else []:  # urgent replies that came in the quiet hours
         lines.append(("reply", f"Reply: {item['body']}"))
     evs = sorted(((start_ts(e.get("start")), e) for e in data["events"] if not e.get("allDay") and start_ts(e.get("start"))), key=lambda x: x[0])
     evs = [(t, e) for t, e in evs if t > now and local(t, tz).date() == day]
