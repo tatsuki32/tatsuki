@@ -36,6 +36,7 @@ import netspeed
 import finder
 import transcribe_desk
 import notify
+import tg_notify
 import pc_monitor
 import routine_alarm
 import routine_sync
@@ -904,7 +905,7 @@ class Handler(BaseHTTPRequestHandler):
         if path.startswith("/lifelog-photos/"):
             return self.lifelog_photo(path.rsplit("/", 1)[1])
         if path == "/api/notify":
-            return self.send(200, notify.view())
+            return self.send(200, {**notify.view(), "telegram": tg_notify.view()})
         if path == "/api/pc":
             brief = "summary" in parse_qs(urlsplit(self.path).query)
             return self.send(200, pc_monitor.summary() if brief else pc_monitor.snapshot())
@@ -1115,6 +1116,12 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(*notify.pause(rec))
             if step == ("POST", "test"):
                 return self.send(*notify.test())
+            if step == ("PUT", "telegram"):  # Telegram: which kinds, sent by desk/tg_notify.py
+                return self.send(*tg_notify.put_settings(rec))
+            if step == ("POST", "tgtest"):
+                return self.send(*tg_notify.test())
+            if step == ("POST", "tgconnect"):
+                return self.send(*tg_notify.connect())
             return self.send(404, {"error": "not found"})
         if method == "POST" and urlsplit(self.path).path == "/api/pc/close":
             # same protection as claude(): Host/Origin checked, and JSON from another origin needs a preflight
@@ -1287,6 +1294,7 @@ if __name__ == "__main__":
     threading.Thread(target=pc_monitor.watch, daemon=True).start()
     if PORT == 4747:  # a test server on another port shows nothing
         threading.Thread(target=notify.watch, daemon=True).start()
+        threading.Thread(target=tg_notify.watch, daemon=True).start()  # tasks and events to Telegram
         threading.Thread(target=routine_alarm.watch, daemon=True).start()  # morning / evening routine start alarm
         threading.Thread(target=routine_sync.watch, daemon=True).start()  # routines <-> the Routine app on the phone
         threading.Thread(target=transcribe_desk.watch, daemon=True).start()  # the transcriber on 8791, kept running

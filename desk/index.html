@@ -5767,7 +5767,21 @@ function ntView(){
     `<div class="mform nttimes">${time("morning","Morning",s.digests.morning)}${time("noon","Noon",s.digests.noon)}${time("evening","Evening",s.digests.evening)}</div>`+
     grp("What goes in the digest","line")+
     `<p class="ntgrp">How it sounds</p><div class="mchecks"><label class="mcheck"><input type="checkbox" data-ntflag="sound" ${s.sound?"checked":""}><span>Play sound</span></label><label class="mcheck"><input type="checkbox" data-ntflag="focusOnlyNow" ${s.focusOnlyNow?"checked":""}><span>During Focus (FocusBlock), show only “Right away”</span></label></div><button class="btn" id="ntTest">Send a test</button>`);
-  return `<div class="money nsp" data-noauto>${head}${main}${now}${old}${set}</div>`;
+  return `<div class="money nsp" data-noauto>${head}${main}${ntTgPanel(d.telegram)}${now}${old}${set}</div>`;
+}
+/* Telegram: desk/tg_notify.py sends one message per task change, due date and event from its own bot. */
+function ntTgPanel(t){
+  if(!t)return "";
+  const s=t.settings,hm=`${ntHM(s.from)}–${ntHM(s.to)}`;
+  const state=t.connected?`Connected. Task messages go out ${hm} by the Mac's clock; the rest waits and goes out from ${ntHM(s.from)}. Events: any hour, from ${esc(t.calendar)}.`:"Not connected yet.";
+  const box=k=>`<label class="mcheck"><input type="checkbox" data-tgon="${k.id}" ${s.on[k.id]?"checked":""}><span>${esc(k.label)}</span></label>`;
+  const log=t.log.length?t.log.slice(0,10).map(e=>`<div class="strow"><span>${esc(e.text)}</span><span class="nsv">${esc(ntDay(e.at))} ${esc(ntClock(e.at))}</span></div>`).join(""):`<p class="due">Nothing sent yet.</p>`;
+  return mpanel("Telegram","One message each, up to 30 tasks a day",
+    `<p class="mtalk">${esc(state)}${t.waiting?` ${t.waiting} waiting.`:""}</p>`+
+    (t.problem?`<p class="due" role="status">${esc(t.problem)}</p>`:"")+(t.calendarError?`<p class="due" role="status">${esc(t.calendarError)}</p>`:"")+
+    `<div class="nsgo">${t.connected?"":`<button class="btn primary" id="tgConnect">Connect</button>`}<button class="btn" id="tgTest">Send a test</button></div>`+
+    `<p class="ntgrp">What to send</p><div class="mchecks">${t.kinds.map(box).join("")}</div>`+
+    `<p class="ntgrp">Sent recently</p>${log}`);
 }
 function wireNt(){
   document.querySelectorAll("[data-ntpause]").forEach(b=>b.onclick=()=>{const v=b.dataset.ntpause;ntSend("POST","/api/notify/pause",v==="today"?{today:true}:{minutes:+v},v==="0"?"Resumed":"Paused")});
@@ -5775,6 +5789,9 @@ function wireNt(){
   document.querySelectorAll("[data-ntflag]").forEach(c=>c.onchange=()=>ntSend("PUT","/api/notify/settings",{[c.dataset.ntflag]:c.checked}));
   document.querySelectorAll("[data-nttime]").forEach(i=>i.onchange=()=>{if(!i.value)return;const [h,m]=i.value.split(":").map(Number),k=i.dataset.nttime,v=h*60+m;ntSend("PUT","/api/notify/settings",["ringFrom","ringTo"].includes(k)?{[k]:v}:{digests:{[k]:v}})});
   const t=$("#ntTest");if(t)t.onclick=async()=>{try{await api("POST","/api/notify/test",{});toast("Sent one notification")}catch(e){toast("Could not send a notification")}};
+  document.querySelectorAll("[data-tgon]").forEach(c=>c.onchange=async()=>{try{await api("PUT","/api/notify/telegram",{on:{[c.dataset.tgon]:c.checked}});toast("Saved");ntLoad(true)}catch(e){toast("Could not save")}});
+  const tt=$("#tgTest");if(tt)tt.onclick=async()=>{try{await api("POST","/api/notify/tgtest",{});toast("Sent a test to Telegram")}catch(e){toast("Could not send. See the line above.");ntLoad(true)}};
+  const tc=$("#tgConnect");if(tc)tc.onclick=async()=>{try{await api("POST","/api/notify/tgconnect",{});toast("Connected");ntLoad(true)}catch(e){toast("Could not connect yet.");ntLoad(true)}};
 }
 /* Bank Accounts: details for people who send money. S.bk holds hidden fields as their last four characters only, and is
    not part of search. A copy goes from the server to the clipboard (desk/bank.py); the whole number reaches the page only for Show and Edit. */

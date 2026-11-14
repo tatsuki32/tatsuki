@@ -1,7 +1,6 @@
 # 今の状態（STATE）
 
-最終更新：2026-11-15（返信の時間を入れた）
-
+最終更新：2026-11-15（Telegram 通知を入れた）
 ## 進行中の作業
 - Desk は Mac 専用（データは非公開リポジトリに15分ごとに保管）。本線は main に一本化（2026-11-09）：`desk/page-cards`・プロジェクト・持ち物・Mac だけにあった変更を全部 main に入れ、Mac は main で `desk/pull.sh` が5分ごとに取り込む。
 - 作りたい機能リスト（全11件）：全部 main にマージ済み（tatsuki32/tatsuki#9）。使ってみて直す段階。③ は `/recap`。⑦ ペルソナは仮の設定。
@@ -25,6 +24,7 @@
 - LINE の返信タスク化（`desk/line_sync.py`）：実装・未コミット。流れは本番で確認。未読のあるトークはまだ本番で未確認。お知らせ（Mac の通知。`desk/notify.py`）：実装・未コミット。本番で動作中。実際の音と表示、まとめの実走、`urgent` の印は確認待ち。使い方の計測と週1回の並び替え（`desk/usage.py`）：実装・未コミット。数え始めは 2026-11-06、最初の並び替えは 11-23。 週1回の提案（`desk/ideas.py`、`desk-idea-suggest`）：main に入った。
 - アカウント一覧（`desk/accounts.py`、🔑 Accounts）：仮の版を実装。パスワードは持たない。鍵つきのパスワード欄は次の段階（要件定義から）。ポートフォリオは Cloudflare Pages に移した。 会社のサイトの計測（tany.im、`desk/site_sync.py`、「📈 Site」）：本番で動作。Search Console の数字は2〜3日後から。
 - やることを減らす・時間計測（要件定義 9pc5JCfnvLoB6FiU15RDwR）：B（返信の時間）・A＋F（やらないと決める・種類とジャンル・まとめる案）・C（時間計測）・D（自動化の提案）は main に。E は計測が2週間たまってから質問。「Desk Log」カレンダーは本人が作る。
+- Telegram 通知（`desk/tg_notify.py`）：main に入った。本人がボットを作り、キーと予定の iCal URL をキーチェーンに入れて Connect するまで動かない。本物での送信は未確認。
 ## 決定済みの事項
 - 作ったものは必ず main に入れる（どの Claude も。`.claude/rules/main-branch.md`）。Mac は main だけを取り込む。
 - デザインの本を読む作業はしない（2026-11-15、全作業）。UI は `.claude/rules/design-ui.md` と `design-nondesigner.md` のルールで作る。
