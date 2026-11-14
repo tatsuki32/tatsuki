@@ -4679,7 +4679,7 @@ async function addPresent(){
 }
 /* Done by Claude: work Claude does without putting it on your list. Tasks with by:"claude" (done or waiting on you) and
    application drafts in "jobapps" (desk-joins-weekly reads the JOINS emails, keeps remote-OK listings and writes each form field).
-   Claude never submits an application; "Applied" is pressed by you after you send it. */
+   Claude submits only the one you press "Send for me" on (/joins-apply); "I applied" is for one you sent yourself. */
 const JSTATE={drafted:"Draft ready",applied:"Applied",skipped:"Skipped"};
 async function aiLoad(force){
   if(!LOCALAPI||(!force&&Date.now()-(S.jaAt||0)<30000)) return;
@@ -4697,7 +4697,7 @@ function jobCard(j){
     ${(j.fields||[]).map((f,i)=>`<details class="draft" open><summary><span>${esc(f.name)}</span><span class="sub">${[...(f.body||"")].length} chars${f.limit?" / limit "+esc(f.limit):""}</span></summary><pre>${esc(f.body||"")}</pre><div class="row"><button class="btn" data-jacopy="${esc(j.id)}" data-jafield="${i}">Copy</button></div></details>`).join("")}
     ${(j.check||[]).length?`<p class="ia"><span class="ilab">Check before sending</span>${j.check.map(esc).join("<br>")}</p>`:""}
     ${(j.advice||[]).length?`<p class="ia"><span class="ilab">Claude's advice</span>${j.advice.map(esc).join("<br>")}</p>`:""}
-    <div class="row">${okUrl(j.applyUrl||j.url)?`<a class="btn primary" href="${esc(j.applyUrl||j.url)}" target="_blank" rel="noopener">Open the form ↗</a>`:""}<button class="btn" data-jaset="${esc(j.id)}" data-jast="applied">I applied</button><button class="btn" data-jaset="${esc(j.id)}" data-jast="skipped">Skip</button></div></article>`;
+    <div class="row"><button class="btn primary" data-jasend="${esc(j.id)}">Send for me</button>${okUrl(j.applyUrl||j.url)?`<a class="btn" href="${esc(j.applyUrl||j.url)}" target="_blank" rel="noopener">Open the form ↗</a>`:""}<button class="btn" data-jaset="${esc(j.id)}" data-jast="applied">I applied</button><button class="btn" data-jaset="${esc(j.id)}" data-jast="skipped">Skip</button></div></article>`;
 }
 function aiView(){
   const jobs=[...(S.jobapps||[])].sort((a,b)=>(b.createdAt||0)-(a.createdAt||0)), open=jobs.filter(j=>(j.status||"drafted")==="drafted"), rest=jobs.filter(j=>(j.status||"drafted")!=="drafted");
@@ -4719,6 +4719,10 @@ function wireAi(){
   document.querySelectorAll("[data-jaset]").forEach(b=>b.onclick=()=>mark(b.dataset.jaset,b.dataset.jast));
   document.querySelectorAll("[data-jaundo]").forEach(b=>b.onclick=()=>mark(b.dataset.jaundo,"drafted"));
   document.querySelectorAll("[data-aitask]").forEach(b=>b.onclick=()=>openTask(b.dataset.aitask));
+  // pressing it is your OK for this one application: /joins-apply fills the JOINS form in Chrome and sends it
+  document.querySelectorAll("[data-jasend]").forEach(b=>b.onclick=async()=>{b.disabled=true;
+    try{await api("POST","/api/claude",{cmd:"/joins-apply",arg:b.dataset.jasend});toast("Claude is starting in Terminal. It fills the form in Chrome and sends it")}
+    catch(e){b.disabled=false;toast("Could not start Claude. Is the Desk server running on this Mac?")}});
 }
 /* Ideas: once a week, what could be built from what was already written. desk/ideas.py checks and writes the issues; the page only keeps Do / Skip. */
 const ideaIssues=()=>(window.IDEAS||[]).filter(d=>!d.deleted);
