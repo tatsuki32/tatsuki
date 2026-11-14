@@ -98,5 +98,48 @@ def turn_off(code):
     return _call("DELETE", f"/api/links/{code}")
 
 
+# --- automatic posting (the queue lives on go.tany.im so it is sent even while this Mac sleeps) ---
+
+_accounts = {"at": 0, "value": None}
+
+
+def accounts(fresh=False):
+    """The connected accounts: id (provider:account), provider, handle, problem. Never the tokens. Kept a minute."""
+    import time
+    if fresh or not _accounts["value"] or time.time() - _accounts["at"] > 60:
+        _accounts["value"] = _call("GET", "/api/accounts")["accounts"]
+        _accounts["at"] = time.time()
+    return _accounts["value"]
+
+
+def upload(path):
+    """One picture to the two-day store Instagram and Threads fetch from. Returns its key."""
+    k = key()
+    if not k:
+        raise RuntimeError("The go.tany.im key is not on this Mac")
+    with open(path, "rb") as f:
+        data = f.read()
+    req = urllib.request.Request(BASE + "/api/media", method="POST", data=data,
+                                 headers={"authorization": "Bearer " + k, "content-type": "image/jpeg", "user-agent": "tatsuki-desk"})
+    try:
+        with urllib.request.urlopen(req, timeout=60) as r:
+            return json.load(r)["key"]
+    except (OSError, ValueError, KeyError):
+        raise RuntimeError("Could not send the picture to go.tany.im") from None
+
+
+def queue_add(rec):
+    return _call("POST", "/api/queue", rec)
+
+
+def queue_list():
+    return _call("GET", "/api/queue")["items"]
+
+
+def queue_do(qid, action, body=None):
+    # "now" waits for Meta to prepare the picture, which can take a minute
+    return _call("POST", f"/api/queue/{qid}/{action}", body or {}, timeout=120)
+
+
 if __name__ == "__main__":
     print(json.dumps(stats(), ensure_ascii=False, indent=1))

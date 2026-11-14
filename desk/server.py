@@ -747,7 +747,7 @@ class Handler(BaseHTTPRequestHandler):
         if not post:
             return self.send(404, {"error": "not found"})
         if len(step) == 1:
-            return self.send(200, posts.public(post))
+            return self.send(200, posts.public(posts.sync(post["id"]) or post))  # brings back what go.tany.im sent
         if len(step) == 4 and step[1] == "img" and step[3].removesuffix(".jpg").isdigit():
             return self.image_file(posts.image(post["id"], step[2], int(step[3].removesuffix(".jpg"))))
         return self.send(404, {"error": "not found"})
@@ -803,6 +803,10 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(*posts.change(pid, rec))
         if method == "POST" and step[1:] == ["regen"]:
             return self.send(*posts.regen(pid, rec))
+        if method == "POST" and step[1:] == ["approve"]:  # the person pressed Post now, Schedule or Next slot
+            return self.send(*posts.approve(pid, rec))
+        if method == "POST" and step[1:] == ["unqueue"]:
+            return self.send(*posts.cancel_queued(pid, str(rec.get("target") or "")))
         if method == "POST" and step[1:] == ["save"]:
             return self.send(*posts.save_image(pid, str(rec.get("target") or ""), int(rec.get("n") or 0)))
         return self.send(404, {"error": "not found"})

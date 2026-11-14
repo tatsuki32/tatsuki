@@ -118,6 +118,10 @@ def save_settings(rec):
             t["on"] = change["on"]
         if change.get("link") in LINK_MODES:
             t["link"] = change["link"]
+        if isinstance(change.get("account"), str) and (change["account"] == "" or re.match(r"^(instagram|threads):\d{3,30}$", change["account"])):
+            t["account"] = change["account"]
+        if isinstance(change.get("slots"), list):
+            t["slots"] = [x for x in (clean_slot(v) for v in change["slots"][:14]) if x]
         for key, kind, top in (("style", str, 600), ("name", str, 60), ("fixedTags", str, 200)):
             if isinstance(change.get(key), kind):
                 t[key] = change[key].strip()[:top]
@@ -470,6 +474,159 @@ def _start(post_id, only=None, hint=""):
     threading.Thread(target=write_drafts, args=(post_id, only, hint), daemon=True).start()
 
 
+
+# ---------- automatic posting ----------
+
+DAYS = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
+POSTABLE = {"instagram": ("post", "story"), "threads": ("post",)}
+
+
+def clean_slot(v):
+    """One routine slot: {days: "daily" or "mon,fri", time: "HH:MM", tz: an IANA zone}. None when it is not one."""
+    from zoneinfo import ZoneInfo
+    if not isinstance(v, dict):
+        return None
+    days = str(v.get("days") or "daily").lower().replace(" ", "")
+    if days != "daily" and not all(d in DAYS for d in days.split(",") if d):
+        return None
+    if not re.match(r"^([01]\d|2[0-3]):[0-5]\d$", str(v.get("time") or "")):
+        return None
+    try:
+        ZoneInfo(str(v.get("tz") or "Asia/Tokyo"))
+    except Exception:
+        return None
+    return {"days": days, "time": v["time"], "tz": str(v.get("tz") or "Asia/Tokyo")}
+
+
+def next_slot(t, taken, after=None):
+    """The next routine time for this target that has no post yet (milliseconds), or None when it has no routine."""
+    from datetime import timedelta
+    from zoneinfo import ZoneInfo
+    after = after or time.time() + 120
+    best = None
+    for sl in t.get("slots") or []:
+        z = ZoneInfo(sl["tz"])
+        hh, mm = map(int, sl["time"].split(":"))
+        start = datetime.fromtimestamp(after, z)
+        for i in range(0, 60):
+            d = (start + timedelta(days=i)).replace(hour=hh, minute=mm, second=0, microsecond=0)
+            if d.timestamp() < after:
+                continue
+            if sl["days"] != "daily" and DAYS[d.weekday()] not in sl["days"].split(","):
+                continue
+            ms = int(d.timestamp() * 1000)
+            if any(abs(ms - x) < 60000 for x in taken):
+                continue
+            best = ms if best is None or ms < best else best
+            break
+    return best
+
+
+def provider_of(t):
+    return (t.get("account") or "").split(":")[0]
+
+
+def can_post(t):
+    return provider_of(t) in POSTABLE and t["kind"] in POSTABLE[provider_of(t)]
+
+
+def approve(post_id, rec):
+    """The person pressed Post now, Schedule or Next slot: the pictures go up, the words go exactly as shown."""
+    post = get(post_id)
+    tid = rec.get("target")
+    t = target(tid)
+    if not post or not t or tid not in post["targets"]:
+        return 404, {"error": "not found"}
+    if not can_post(t):
+        return 400, {"error": "This place is not connected for automatic posting. Choose an account in Settings"}
+    d = (post.get("drafts") or {}).get(tid)
+    if not d:
+        return 400, {"error": "There is no draft to post yet"}
+    old = (post.get("queue") or {}).get(tid)
+    if old and old.get("status") in ("waiting", "sending", "posted"):
+        return 409, {"error": "This one is already scheduled or posted"}
+    when = rec.get("when")
+    now = int(time.time() * 1000)
+    if when == "at":
+        at = int(rec.get("at") or 0)
+        if at < now - 60000:
+            return 400, {"error": "Choose a time in the future"}
+    elif when == "slot":
+        try:
+            taken = [q["at"] for q in golinks.queue_list() if q.get("target") == tid and q["status"] in ("waiting", "sending")]
+        except RuntimeError as e:
+            return 502, {"error": str(e)}
+        at = next_slot(t, taken)
+        if not at:
+            return 400, {"error": "This place has no routine yet. Add one in Settings"}
+    else:
+        at = now
+    try:
+        keys = []
+        for n in range(len(post["photos"])):
+            p = image(post_id, tid, n)
+            if not p:
+                return 500, {"error": "The picture could not be made"}
+            keys.append(golinks.upload(p))
+        text = "" if t["kind"] == "story" else full_text(t, d)
+        r = golinks.queue_add({"account": t["account"], "kind": t["kind"], "text": text, "media": keys, "at": at, "post": post_id, "target": tid})
+    except RuntimeError as e:
+        return 502, {"error": str(e)}
+    with _lock:
+        post = get(post_id)
+        post.setdefault("queue", {})[tid] = {"id": r["id"], "at": at, "status": "waiting", "link": "", "error": ""}
+        _save(post)
+    if when not in ("at", "slot"):
+        threading.Thread(target=_send_now, args=(post_id, tid, r["id"]), daemon=True).start()
+    return 200, public(get(post_id))
+
+
+def _send_now(post_id, tid, qid):
+    try:
+        golinks.queue_do(qid, "now")
+    except RuntimeError:
+        pass  # the cron on go.tany.im picks it up within 5 minutes
+    sync(post_id)
+
+
+def cancel_queued(post_id, tid):
+    post = get(post_id)
+    q = (post or {}).get("queue", {}).get(tid)
+    if not q:
+        return 404, {"error": "not found"}
+    try:
+        golinks.queue_do(q["id"], "cancel")
+    except RuntimeError as e:
+        return 400, {"error": str(e)}
+    with _lock:
+        post = get(post_id)
+        post["queue"].pop(tid, None)
+        _save(post)
+    return 200, public(post)
+
+
+def sync(post_id):
+    """Brings back what go.tany.im did: posted (with the link), failed (with why), or still waiting."""
+    post = get(post_id)
+    if not post or not any(q.get("status") in ("waiting", "sending") for q in (post.get("queue") or {}).values()):
+        return post
+    try:
+        items = {q["id"]: q for q in golinks.queue_list()}
+    except RuntimeError:
+        return post
+    with _lock:
+        post = get(post_id)
+        for tid, q in (post.get("queue") or {}).items():
+            it = items.get(q["id"])
+            if not it:
+                continue
+            q.update(status=it["status"], link=it.get("link") or "", error=it.get("error") or "", at=it["at"])
+            if it["status"] == "posted":
+                post.setdefault("posted", {})[tid] = it.get("done") or int(time.time() * 1000)
+        _save(post)
+    return post
+
+
 # ---------- the posts ----------
 
 def _all():
@@ -576,7 +733,11 @@ def public(post):
 
 def view():
     posts = sorted((p for p in _all().values() if not p.get("deleted")), key=lambda p: -p.get("createdAt", 0))
-    return {"targets": targets(), "voice": settings().get("voice", {}), "signature": settings().get("signature", {}),
+    try:
+        acc = [{k: a[k] for k in ("id", "provider", "handle", "problem")} for a in golinks.accounts()]
+    except RuntimeError:
+        acc = []
+    return {"targets": targets(), "accounts": acc, "voice": settings().get("voice", {}), "signature": settings().get("signature", {}),
             "key": bool(lifelog.api_key()), "tool": os.path.exists(TOOL),
             "posts": [{"id": p["id"], "createdAt": p["createdAt"], "memo": p["memo"][:120], "photo": (p["photos"][0]["id"] if p["photos"] else ""),
                        "targets": len(p["targets"]), "posted": len(p.get("posted") or {}), "status": p.get("status")} for p in posts[:40]]}

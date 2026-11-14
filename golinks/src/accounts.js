@@ -83,6 +83,8 @@ export const PROVIDERS = {
 };
 
 const enc = encodeURIComponent;
+// secrets pasted by hand can carry a stray space or line break
+const clean = (env) => { for (const k of ["META_APP_SECRET", "THREADS_APP_SECRET", "IG_APP_SECRET"]) if (typeof env[k] === "string") env[k] = env[k].trim(); };
 
 async function get(url) {
   const r = await fetch(url);
@@ -120,6 +122,7 @@ export async function open(env, sealed) {
 // --- the steps ---
 
 export async function start(env, provider) {
+  clean(env);
   const p = PROVIDERS[provider];
   if (!p) return { error: "Unknown platform" };
   if (!p.id(env) || !p.secret(env)) return { error: `${p.name} is not set up yet: the app id and secret are missing on go.tany.im` };
@@ -136,6 +139,7 @@ export async function start(env, provider) {
 }
 
 export async function callback(env, provider, url) {
+  clean(env);
   const p = PROVIDERS[provider];
   const state = url.searchParams.get("state") || "";
   const row = p && (await env.DB.prepare("SELECT provider, created FROM oauth_states WHERE state = ?").bind(state).first());

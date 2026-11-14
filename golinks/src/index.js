@@ -3,6 +3,7 @@
 // No IP address and no cookie is kept. The /api/ part answers only to Desk's key (DESK_KEY secret).
 
 import * as accounts from "./accounts.js";
+import * as publish from "./publish.js";
 
 const ALPHABET = "abcdefghijkmnpqrstuvwxyz23456789"; // no l, o, 0, 1: easy to read out loud
 const BOTS = /bot|crawl|spider|slurp|preview|facebookexternalhit|meta-externalagent|facebot|twitterbot|linkedinbot|slackbot|telegrambot|whatsapp|discordbot|skypeuripreview|embedly|quora link|pinterest|vkshare|redditbot|applebot|google-inspectiontool|headless|curl|wget|python-requests|httpclient|okhttp|go-http/i;
@@ -87,6 +88,15 @@ async function api(request, env, url) {
     return json(r, r.error ? 400 : 200);
   }
   if (request.method === "GET" && path === "accounts") return json(await accounts.list(env));
+  if (request.method === "POST" && path === "media") { const r = await publish.putMedia(env, request); return json(r, r.error ? 400 : 200); }
+  if (request.method === "POST" && path === "queue") { const r = await publish.add(env, await request.json().catch(() => ({}))); return json(r, r.error ? 400 : 200); }
+  if (request.method === "GET" && path === "queue") return json(await publish.list(env, url));
+  const q = path.match(/^queue\/(q-[0-9a-f]{16})(?:\/(now|cancel|move))?$/);
+  if (q && request.method === "POST") {
+    const rec = await request.json().catch(() => ({}));
+    const r = q[2] === "now" ? await publish.send(env, q[1]) : q[2] === "cancel" ? await publish.cancel(env, q[1]) : q[2] === "move" ? await publish.move(env, q[1], rec.at) : { error: "not found" };
+    return json(r, r.error ? 400 : 200);
+  }
   if (request.method === "DELETE" && path.startsWith("accounts/")) return json(await accounts.remove(env, decodeURIComponent(path.slice(9))));
   if (request.method === "DELETE" && path.startsWith("links/")) {
     await env.DB.prepare("UPDATE links SET off = 1 WHERE code = ?").bind(path.slice(6)).run();
@@ -103,6 +113,8 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     if (url.pathname.startsWith("/api/")) return api(request, env, url);
+    const m = url.pathname.match(/^\/m\/([0-9a-f]{48}\.(?:jpg|png))$/);
+    if (m) return (await publish.getMedia(env, m[1])) || page("Not found", "This picture is gone.", 404);
     const gone = url.pathname.match(/^\/oauth\/(threads)-(uninstall|delete)$/);
     if (gone) return json(await accounts.forget(env, gone[1]));
     const back = url.pathname.match(/^\/oauth\/([a-z]+)$/);
@@ -126,6 +138,8 @@ export default {
     return new Response(null, { status: 302, headers: { location: link.dest, "cache-control": "no-store", "referrer-policy": "no-referrer-when-downgrade" } });
   },
   async scheduled(event, env, ctx) {
+    ctx.waitUntil(publish.due(env)); // approved posts whose time has come
+    if (event.cron !== "17 3 * * *") return;
     ctx.waitUntil(accounts.refreshAll(env));
     ctx.waitUntil(env.DB.prepare("DELETE FROM oauth_states WHERE created < ?").bind(Date.now() - 3600000).run());
   },

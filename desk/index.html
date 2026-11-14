@@ -800,6 +800,9 @@ button.hname:hover{color:var(--ink)}
 .psset1:first-child{border-top:0;padding-top:0}
 .psset1 textarea.wd-field{min-height:64px;font-size:var(--t2)}
 .pslinksel{max-width:220px;min-height:36px;font-size:var(--t2)}
+.psq{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s2);margin:0}
+.psq .btn{min-height:28px;padding:0 var(--s2);font-size:var(--t1)}
+.psat{max-width:220px;min-height:36px;font-size:var(--t2)}
 .pslkrow{display:grid;grid-template-columns:minmax(0,1fr) 120px 40px auto;gap:var(--s2) var(--s3);align-items:center;padding:var(--s2) 0;border-top:1px solid var(--line)}
 .pslkmain{display:grid;gap:0;min-width:0}
 .pslkdest{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -5534,6 +5537,21 @@ function wireUt(){
 const PSLANG=[["ja","Japanese"],["en","English"],["ru","Russian"]];
 const PSKIND={post:"Post",story:"Story",article:"Article",news:"News"};
 const PSLINK={inline:"Link in the text",bio:"Link in bio",sticker:"Link sticker",none:"No link"};
+const PSCAN={instagram:["post","story"],threads:["post"]};
+const psProv=t=>(t.account||"").split(":")[0];
+const psCan=t=>!!PSCAN[psProv(t)]?.includes(t.kind);
+const psHandle=t=>{const a=(ps().data?.accounts||[]).find(x=>x.id===t.account);return a?"@"+a.handle:"the account"};
+const psWhen=ms=>new Date(ms).toLocaleString("en-US",{weekday:"short",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
+const psSlotsText=sl=>(sl||[]).map(x=>`${x.days} ${x.time} ${x.tz}`).join("; ");
+const psSlotsParse=v=>v.split(";").map(x=>x.trim()).filter(Boolean).map(x=>{const [days,time,tz]=x.split(/\s+/);return {days,time,tz:tz||"Asia/Tokyo"}});
+function psSend2(post,t){
+  const q=post.queue?.[t.id],h=esc(psHandle(t));
+  if(q?.status==="waiting")return `<p class="due psq">Scheduled for ${esc(psWhen(q.at))} to ${h}${q.error?` · last try failed: ${esc(q.error)}`:""} <button class="btn" data-psunq="${esc(t.id)}">Cancel</button></p>`;
+  if(q?.status==="sending")return `<p class="due psq" role="status">Posting to ${h}…</p>`;
+  if(q?.status==="posted")return `<p class="due psq">Posted to ${h}${q.link?` <a href="${esc(q.link)}" target="_blank" rel="noopener">View ↗</a>`:""}</p>`;
+  const fail=q?.status==="failed"?`<p class="due" role="alert">Could not post: ${esc(q.error||"unknown")}. You can try again.</p>`:"";
+  return `${fail}<div class="nsgo psgo"><button class="btn" data-psnow="${esc(t.id)}">Post now</button>${t.slots?.length?`<button class="btn" data-psslot="${esc(t.id)}">Next slot</button>`:""}<input class="wd-field psedit psat" type="datetime-local" data-psat="${esc(t.id)}" aria-label="When to post"><button class="btn" data-psatgo="${esc(t.id)}">Schedule</button></div>`;
+}
 const ps=()=>S.ps||(S.ps={tab:"new",memo:"",link:"",photos:[],pick:null,cur:null,data:null,busy:false,err:"",n:{},open:{}});
 async function psSend(method,path,body){
   const r=await fetch(path,{method,headers:{"Content-Type":"application/json"},body:body?JSON.stringify(body):undefined});
@@ -5550,7 +5568,9 @@ async function psOpen(id){
   const p=ps();clearTimeout(p.timer);
   try{p.cur=await psSend("GET","/api/posts/"+encodeURIComponent(id))}catch(e){p.err=e.message}
   p.tab="new";psRedraw();
+  const busyQ=Object.values(p.cur?.queue||{}).some(q=>q.status==="sending"||(q.status==="waiting"&&q.at<Date.now()+90e3));
   if(p.cur&&(p.cur.status==="making"||p.cur.running))p.timer=setTimeout(()=>psOpen(id),2000);
+  else if(busyQ)p.timer=setTimeout(()=>psOpen(id),5000);
 }
 function psRedraw(){if(viewId()!=="post")return;const keep=document.activeElement?.closest?.(".psedit");if(keep&&$("#psView"))return;psDraw()}
 function psDraw(){$("#view").innerHTML=searchResults()+psView();wire();wirePs()}
@@ -5590,6 +5610,7 @@ function psCard(post,t){
   return `<article class="card pscard${posted?" done":""}" aria-label="${esc(t.name)}">
     <header class="pshead"><h3>${esc(t.name)}</h3><span class="due">${PSKIND[t.kind]}${d?` · ${len.toLocaleString("en-US")} / ${t.limit.toLocaleString("en-US")}${t.count==="x"?" (weighted)":""}${over>0?` · ${over} over`:""}`:""}</span></header>
     ${img}${body}${linkNote}
+    ${d&&psCan(t)?psSend2(post,t):""}
     <div class="nsgo">${acts}${post.photos.length?`<button class="btn" data-pssave="${tid}">${post.photos.length>1?`Save ${post.photos.length} pictures`:"Save picture"}</button>`:""}</div>
     <div class="nsgo">${p.open[t.id]?`<input class="wd-field psedit pshint" data-pshint="${tid}" placeholder="What to change (optional)" aria-label="What to change"><button class="btn" data-psregen="${tid}" ${post.running?"disabled":""}>Rewrite</button>`:`<button class="btn" data-psask="${tid}" ${post.running?"disabled":""}>${busy&&post.regen===t.id?"Rewriting…":"Rewrite"}</button>`}
     <label class="pschip"><input type="checkbox" data-psposted="${tid}" ${posted?"checked":""}><span>Posted</span></label></div></article>`;
@@ -5650,6 +5671,8 @@ function wirePsLinks(){const p=ps(),l=p.lk;if(!l)return;
 function psSettings(){
   const d=ps().data;if(!d)return "";
   const rows=d.targets.map(t=>`<div class="psset1"><label class="pschip"><input type="checkbox" data-pson="${esc(t.id)}" ${t.on?"checked":""}><span><b>${esc(t.name)}</b> <span class="due">${PSKIND[t.kind]} · ${t.lang} · ${t.limit} chars · ${t.tags} tags</span></span></label>
+    ${["ig","threads"].includes(t.id.split("-")[0])?`<div class="nsgo"><select class="wd-field pslinksel" data-psacc="${esc(t.id)}" aria-label="${esc(t.name)} account"><option value="">Not connected (copy and open)</option>${(d.accounts||[]).filter(a=>a.provider===(t.id.startsWith("ig")?"instagram":"threads")).map(a=>`<option value="${esc(a.id)}" ${t.account===a.id?"selected":""}>@${esc(a.handle)}</option>`).join("")}</select>
+    <input class="wd-field psedit pshint" data-psslots="${esc(t.id)}" value="${esc(psSlotsText(t.slots))}" placeholder="Routine, like: daily 21:00 Asia/Tokyo; mon,fri 18:00 Asia/Tokyo" aria-label="${esc(t.name)} routine"></div>`:""}
     <select class="wd-field pslinksel" data-pslinkmode="${esc(t.id)}" aria-label="${esc(t.name)} link">${Object.entries(PSLINK).map(([k,l])=>`<option value="${k}" ${t.link===k?"selected":""}>${l}</option>`).join("")}</select>
     <textarea class="wd-field psedit" data-psstyle="${esc(t.id)}" aria-label="${esc(t.name)} style">${esc(t.style||"")}</textarea>
     <input class="wd-field psedit" data-psfixed="${esc(t.id)}" value="${esc(t.fixedTags||"")}" placeholder="Tags always added, like #ZEN大学" aria-label="${esc(t.name)} tags always added"></div>`).join("");
@@ -5689,6 +5712,14 @@ function wirePs(){
   const link=$("#psLink");if(link)link.oninput=e=>{p.link=e.target.value};
   all("[data-pslinkcopy]").forEach(b=>b.onclick=async()=>toast(await copyText(b.dataset.pslinkcopy)?"Link copied":"Could not copy"));
   all("[data-pslinkmode]").forEach(el=>el.onchange=()=>saveSet({targets:[{id:el.dataset.pslinkmode,link:el.value}]}));
+  all("[data-psacc]").forEach(el=>el.onchange=()=>saveSet({targets:[{id:el.dataset.psacc,account:el.value}]}));
+  all("[data-psslots]").forEach(el=>el.onblur=()=>{if(el.value!==psSlotsText(tOf(el.dataset.psslots)?.slots))saveSet({targets:[{id:el.dataset.psslots,slots:psSlotsParse(el.value)}]})});
+  const approve=async(id,body,ask)=>{const t=tOf(id);if(ask&&!confirm(ask))return;
+    try{p.cur=await psSend("POST",`/api/posts/${encodeURIComponent(p.cur.id)}/approve`,{target:id,...body});toast(body.when==="now"?"Posting":"Scheduled")}catch(e){toast(e.message)}psDraw();psOpen(p.cur.id)};
+  all("[data-psnow]").forEach(b=>b.onclick=()=>{const t=tOf(b.dataset.psnow);approve(b.dataset.psnow,{when:"now"},`Post this to ${psHandle(t)} now? It will be public.`)});
+  all("[data-psslot]").forEach(b=>b.onclick=()=>approve(b.dataset.psslot,{when:"slot"}));
+  all("[data-psatgo]").forEach(b=>b.onclick=()=>{const v=$(`[data-psat="${b.dataset.psatgo}"]`)?.value;if(!v){toast("Choose a date and time first");return}approve(b.dataset.psatgo,{when:"at",at:new Date(v).getTime()})});
+  all("[data-psunq]").forEach(b=>b.onclick=async()=>{if(!confirm("Cancel this scheduled post?"))return;try{p.cur=await psSend("POST",`/api/posts/${encodeURIComponent(p.cur.id)}/unqueue`,{target:b.dataset.psunq})}catch(e){toast(e.message)}psDraw()});
   all("[data-pspick]").forEach(c=>c.onchange=()=>{const id=c.dataset.pspick;p.pick=c.checked?[...new Set([...(p.pick||[]),id])]:(p.pick||[]).filter(x=>x!==id)});
   const make=$("#psMake");if(make)make.onclick=async()=>{
     p.busy=true;p.err="";psDraw();

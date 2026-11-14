@@ -26,3 +26,10 @@ CREATE TABLE IF NOT EXISTS accounts (
   provider TEXT NOT NULL, account TEXT NOT NULL, handle TEXT NOT NULL DEFAULT '',
   token TEXT NOT NULL, expires INTEGER NOT NULL DEFAULT 0, updated INTEGER NOT NULL, problem TEXT NOT NULL DEFAULT ''
 );
+-- approved posts waiting for their time. text is exactly what the person approved
+CREATE TABLE IF NOT EXISTS queue (
+  id TEXT PRIMARY KEY, account TEXT NOT NULL, kind TEXT NOT NULL, text TEXT NOT NULL DEFAULT '', media TEXT NOT NULL DEFAULT '[]',
+  at INTEGER NOT NULL, status TEXT NOT NULL, tries INTEGER NOT NULL DEFAULT 0, link TEXT NOT NULL DEFAULT '', error TEXT NOT NULL DEFAULT '',
+  created INTEGER NOT NULL, done INTEGER, post TEXT NOT NULL DEFAULT '', target TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS queue_due ON queue (status, at);
