@@ -1138,6 +1138,15 @@ a.shelfbtn{text-decoration:none;display:inline-flex;align-items:center}
 .tifnot{min-height:56px}
 .mplist{margin:0;padding-left:var(--s3);display:flex;flex-direction:column;gap:var(--s1);font-size:var(--t2)}
 .gedit[hidden]{display:none}
+.tlbarwrap{display:flex;flex-direction:column;gap:var(--s1);padding-top:var(--s2);padding-bottom:var(--s2);border-bottom:1px solid var(--line)}
+.tlbarwrap[hidden]{display:none}
+.tlrow{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s2)}
+.tltitle{flex:1 1 160px;min-width:0;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tlclock{font-variant-numeric:tabular-nums;font-weight:700}
+.tlbars{display:flex;flex-direction:column;gap:var(--s2)}
+.tlbar{display:grid;grid-template-columns:minmax(80px,140px) 1fr auto;align-items:center;gap:var(--s2);font-size:var(--t2)}
+.tltrack{height:8px;border-radius:4px;background:var(--line);overflow:hidden}
+.tltrack span{display:block;height:100%;background:var(--muted)}
 .gedit{display:flex;flex-wrap:wrap;gap:var(--s2);margin-top:var(--s2)}
 .gedit input,.gedit select{min-height:36px;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:0 var(--s3);font:inherit;font-size:var(--t2);max-width:100%}
 .pop.qa{width:min(520px,100%)}
@@ -1272,7 +1281,7 @@ a.shelfbtn{text-decoration:none;display:inline-flex;align-items:center}
       <p class="hint"><kbd>T</kbd> Add a task · <kbd>/</kbd><kbd>/</kbd> Commands</p>
     </div>
   </aside>
-  <main><a class="pcalert" id="pcAlert" href="#pc" style="display:none">Memory is running low. Check the PC screen</a><p class="pcalert" id="lineAlert" style="display:none"></p><div class="wrap" id="view"></div></main>
+  <main><a class="pcalert" id="pcAlert" href="#pc" style="display:none">Memory is running low. Check the PC screen</a><p class="pcalert" id="lineAlert" style="display:none"></p><div class="wrap tlbarwrap" id="timerBar" hidden aria-label="Running timers"></div><div class="wrap" id="view"></div></main>
 </div>
 <nav id="tabs" aria-label="Frequently used screens"></nav>
 <div id="modal"></div>
@@ -1324,6 +1333,7 @@ if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="followups")+1,0,{id:"mailcl
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="presents")+1,0,{id:"ideas",e:"💡",label:"Ideas",g:"in"});
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="ideas")+1,0,{id:"aidone",e:"🤝",label:"Done by Claude",g:"in"}); // work Claude does on its own (tasks with by:"claude", JOINS application drafts); never on your task list // once a week, from what was already written (desk/ideas.py)
 VIEWS.splice(VIEWS.findIndex(v=>v.id==="replies")+1,0,{id:"notdoing",e:"🍃",label:"Not doing",g:"today"},{id:"genres",e:"🏷️",label:"Genres",g:"today"});
+VIEWS.splice(VIEWS.findIndex(v=>v.id==="tools"),0,{id:"timelog",e:"⏱️",label:"Time",g:"write"});
 if(LOCALAPI) VIEWS.splice(4,0,{id:"focus",e:"🎯",label:"Focus",g:"today"}); // blocks apps on this Mac, so the Mac version only
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="focus")+1,0,{id:"notices",e:"🔔",label:"Notifications",g:"today"}); // Mac notifications: desk/notify.py decides, this page lists and sets
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="memolink")+1,0,{id:"money",e:"💰",label:"Money",g:"write"}); // statements stay on this Mac
@@ -1347,7 +1357,7 @@ async function loadApiMemos(){try{
   S.fu=await api("GET","/api/followups").catch(()=>S.fu);
   S.line=await api("GET","/api/line").catch(()=>({}));lineAlert();
   S.replyWin=((await api("GET","/api/replywin").catch(()=>[]))||[]).find(x=>x&&x.id==="state")||{};
-  S.genres=await api("GET","/api/genres").catch(()=>S.genres||[]);S.ttypes=await api("GET","/api/tasktypes").catch(()=>S.ttypes||[]);S.mprops=await api("GET","/api/mergeprops").catch(()=>S.mprops||[]);
+  S.genres=await api("GET","/api/genres").catch(()=>S.genres||[]);S.ttypes=await api("GET","/api/tasktypes").catch(()=>S.ttypes||[]);S.mprops=await api("GET","/api/mergeprops").catch(()=>S.mprops||[]);S.timelog=await api("GET","/api/timelog").catch(()=>S.timelog||[]);
   S.habits=habits.filter(h=>!h.deleted);S.wins=wins.filter(w=>!w.deleted);S.presents=presents.filter(p=>!p.deleted);S.memos=memos.filter(m=>!m.deleted&&!m.movedTo);S.dues=duesById(dues);S.tasks=tasks.filter(t=>!t.deleted);S.prompts=promptsById(prompts);S.wnotes=notes.filter(n=>!n.deleted);render();absorbMemos()}catch(e){toast("Cannot reach the Desk server. Is it running?")}}
 const promptsById=list=>Object.fromEntries(list.filter(p=>p&&p.id&&!p.deleted).map(p=>[p.id,p]));
 const duesById=list=>Object.fromEntries(list.filter(v=>v&&v.uid).map(v=>[v.uid,v]));
@@ -1456,7 +1466,7 @@ function dlChip(x){const left=x.deadline-Date.now();return `<span class="dl ${dl
 const dueLine=x=>`Due ${esc(fmtDue(x.due))} · <button class="duebtn" data-due="${esc(x.uid)}" aria-label="Change due date">${esc(x.src)}</button>`;
 function tick(){const now=Date.now();let fbDone=false;document.querySelectorAll("[data-fleft]").forEach(el=>{const left=+el.dataset.fleft-now;el.textContent=fbLeft(left);if(left<=0)fbDone=true});if(fbDone)fbLoad();document.querySelectorAll("[data-dl]").forEach(el=>{const left=+el.dataset.dl-now;el.textContent=dlText(left);el.className="dl "+dlClass(left)});
   document.querySelectorAll("[data-until]").forEach(el=>{const left=+el.dataset.until-now;if(left<=0&&!el.dataset.done){el.dataset.done="1";setTimeout(render,500)}el.textContent=untilText(left)})}
-setInterval(tick,1000);
+setInterval(tick,1000);setInterval(()=>tlTick(),1000);
 /* the reply window opens by the clock: draw again when it does */
 let rwWas=null;setInterval(()=>{if(!S.replyWin)return;const o=replyOpen();if(rwWas!==null&&o!==rwWas)render();rwWas=o},30000);
 /* badges: Home panel, rail counts, tab title, favicon, home-screen icon */
@@ -1775,7 +1785,7 @@ function taskCard(t,ps){
     <button class="tt" data-topen="${esc(t.id)}" data-noauto>${esc(taskName(t))}</button>
     ${open&&clearOn(t)&&t.clear.first?`<p class="tfirstline">First: ${esc(t.clear.first)}</p>`:""}
     <div class="tm">${t.url&&okUrl(t.url)?`<a href="${esc(t.url)}" target="_blank" rel="noopener" title="Open (${src})" aria-label="Open (${src})">${ic}</a>`:`<span title="${src}" aria-label="${src}">${ic}</span>`}${t.projectId?projTag(t):""}${t.mail?`<span class="from">${esc(t.mail.sub)}</span>`:t.due!=null?`<span>Due ${esc(fmtDue(t.due))}</span>`:""}${open&&t.calAt>Date.now()-HOUR?`<span>${esc(calOnText(t))}</span>`:""}${open&&t.deadline!=null?dlChip(t):""}${open&&est!=null?`<span>${t.estMin!=null?"":"est. "}${fmtMin(est)}</span>`:""}${ai?`<button class="chip aiplan" data-taiplan="${esc(t.id)}" title="Claude's suggestion. Press to accept">Suggested: ${tPeriodOf(ai,ps)[1]}</button>`:""}
-      <span class="tsel">${open?`<select data-tplan="${esc(t.id)}" aria-label="When">${planSel(t,ps)}</select>`:""}<select data-tstatus="${esc(t.id)}" aria-label="Status">${TSTATUS.map(([k,l])=>`<option value="${k}" ${k===t.status?"selected":""}>${l}</option>`).join("")}</select></span></div>
+      ${open?timerBtn(t,"shelfbtn"):""}<span class="tsel">${open?`<select data-tplan="${esc(t.id)}" aria-label="When">${planSel(t,ps)}</select>`:""}<select data-tstatus="${esc(t.id)}" aria-label="Status">${TSTATUS.map(([k,l])=>`<option value="${k}" ${k===t.status?"selected":""}>${l}</option>`).join("")}</select></span></div>
   </article>`;
 }
 function taskGroups(k,items,ps){
@@ -1975,6 +1985,84 @@ function openMerge(){
     done:past=>{const n=past.filter(x=>x.side>0).length;return n?`${n} merged. Fewer, clearer tasks.`:"All decided"}});
 }
 function mergeEntry(){const n=mpOpen().length;return n?`<button class="shelfbtn" data-tmerge>Merge similar ${n} →</button>`:""}
+/* ---------- C. Time: Desk timers (several at once) and the Task Desk Chrome extension write one timelog record per run.
+   start / end in ms (no end while running), pausedMs, pausedAt while paused, via desk|chrome. The timer keeps going with the window
+   closed, because the start is on the server. "Today" here is the Mac's own clock. ---------- */
+const TL_LONG=4*HOUR;
+const tlRecs=()=>(S.timelog||[]).filter(r=>r&&r.id!=="_calendar"&&!r.deleted&&typeof r.start==="number");
+const tlRunning=()=>tlRecs().filter(r=>!r.end).sort((a,b)=>a.start-b.start);
+const tlMs=(r,now=Date.now())=>{const end=r.end||now, paused=(r.pausedMs||0)+(r.pausedAt&&!r.end?end-r.pausedAt:0);return Math.max(0,end-r.start-paused)};
+const tlFmt=ms=>{const m=Math.floor(ms/6e4),h=Math.floor(m/60);return h?`${h}h ${pad(m%60)}m`:`${m}m ${pad(Math.floor(ms%6e4/1e3))}s`};
+const tlMin=ms=>{const m=Math.round(ms/6e4);return m>=60?`${Math.floor(m/60)}h ${m%60}m`:m+" min"};
+const tlTitle=r=>{const t=findTask(r.taskId);return t?taskName(t):r.title||"Task"};
+async function tlPut(r){const {id,...rec}={...r,updatedAt:Date.now()};await api("PUT","/api/timelog/"+encodeURIComponent(id),rec);S.timelog=[...(S.timelog||[]).filter(x=>x.id!==id),{id,...rec}]}
+async function startTimer(taskId){const t=findTask(taskId);if(!t)return;
+  if(tlRunning().some(r=>r.taskId===taskId)){toast("Already timing this one");return}
+  const now=Date.now();
+  try{await tlPut({id:"tl-"+now.toString(36)+Math.random().toString(36).slice(2,5),taskId,title:taskName(t),start:now,pausedMs:0,via:"desk",cat:typeOf(t),deleted:false});
+    if(t.status!=="doing"&&!replyKind(t))await store.putTask({...t,status:"doing"});toast("Timer started");render()}catch(e){toast("Couldn't start the timer")}}
+async function pauseTimer(id){const r=(S.timelog||[]).find(x=>x.id===id);if(!r||r.end)return;const now=Date.now();
+  await tlPut(r.pausedAt?{...r,pausedMs:(r.pausedMs||0)+now-r.pausedAt,pausedAt:null}:{...r,pausedAt:now});render()}
+function stopTimer(id){const r=(S.timelog||[]).find(x=>x.id===id);if(!r||r.end||$("#modal").firstChild)return;
+  const long=Date.now()-r.start>TL_LONG, local=ms=>{const d=new Date(ms);return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`};
+  $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop" role="dialog" aria-modal="true" aria-label="Stop the timer"><div class="top"><h2>Stop the timer</h2><button class="ibtn" id="xTl" aria-label="Close">✕</button></div>
+    <p class="hint" data-noauto>${esc(tlTitle(r))} · ${esc(tlMin(tlMs(r)))}</p>
+    ${long?`<p class="hint">This one ran over 4 hours. If you stopped earlier, set the end time.</p>`:""}
+    <label class="sub" for="tlEnd">Ended at</label><input type="datetime-local" id="tlEnd" value="${local(Date.now())}" min="${local(r.start)}" max="${local(Date.now())}">
+    <div class="row"><button class="btn primary" id="tlStop">Stop</button><button class="btn" id="tlDone">Stop and mark done</button><button class="btn" id="tlCancel">Cancel</button></div></div></div>`;
+  const close=()=>{$("#modal").innerHTML=""};$("#xTl").onclick=close;$("#tlCancel").onclick=close;$("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};
+  const go=async done=>{let end=new Date($("#tlEnd").value).getTime();if(isNaN(end)||end>Date.now())end=Date.now();if(end<r.start)end=r.start;
+    const paused=(r.pausedMs||0)+(r.pausedAt?Math.max(0,end-r.pausedAt):0);
+    try{await tlPut({...r,end,pausedMs:paused,pausedAt:null});close();if(done)await setTaskStatus(r.taskId,"done");else toast(`Logged ${tlMin(tlMs({...r,end,pausedMs:paused,pausedAt:null}))}`);render()}catch(e){toast("Couldn't save. Please try again")}};
+  $("#tlStop").onclick=()=>go(false);$("#tlDone").onclick=()=>go(true);$("#tlStop").focus()}
+/* the running timers, one line each, above every screen */
+function timerBar(){const xs=tlRunning();const el=$("#timerBar");if(!el)return;
+  if(!xs.length){el.hidden=true;el.innerHTML="";return}
+  el.hidden=false;
+  el.innerHTML=xs.map(r=>`<div class="tlrow" data-noauto><button class="tt tltitle" data-topen="${esc(r.taskId)}">${esc(tlTitle(r))}</button><span class="tlclock" data-tlrun="${esc(r.id)}">${tlFmt(tlMs(r))}</span>${Date.now()-r.start>TL_LONG?`<span class="sub">Over 4h · still going?</span>`:""}${r.pausedAt?`<span class="sub">Paused</span>`:""}<button class="btn sm" data-tlpause="${esc(r.id)}">${r.pausedAt?"Resume":"Pause"}</button><button class="btn sm" data-tlstop="${esc(r.id)}">Stop</button></div>`).join("");
+  el.querySelectorAll("[data-topen]").forEach(b=>b.onclick=()=>openTask(b.dataset.topen));
+  el.querySelectorAll("[data-tlpause]").forEach(b=>b.onclick=()=>pauseTimer(b.dataset.tlpause));
+  el.querySelectorAll("[data-tlstop]").forEach(b=>b.onclick=()=>stopTimer(b.dataset.tlstop))}
+function tlTick(){document.querySelectorAll("[data-tlrun]").forEach(el=>{const r=(S.timelog||[]).find(x=>x.id===el.dataset.tlrun);if(r)el.textContent=tlFmt(tlMs(r))})}
+const timerBtn=(t,cls="btn sm")=>{if(!t||!OPENISH.has(t.status)&&t.status!=="notyet")return "";const run=tlRunning().find(r=>r.taskId===t.id);
+  return run?`<span class="tlclock sub" data-tlrun="${esc(run.id)}">${tlFmt(tlMs(run))}</span>`:`<button class="${cls}" data-tlstart="${esc(t.id)}">Start timer</button>`};
+/* totals: all time per task (for Genres) */
+function timeByTask(){const o={};tlRecs().forEach(r=>{if(r.taskId)o[r.taskId]=(o[r.taskId]||0)+tlMs(r)});return o}
+/* the summary screen: today / this week / last 30 days on the Mac's clock */
+function tlRange(k){const d=new Date(),day=new Date(d.getFullYear(),d.getMonth(),d.getDate()).getTime();
+  if(k==="today")return [day,day+DAY];if(k==="week"){const dow=(d.getDay()+6)%7;return [day-dow*DAY,day+DAY]}return [day-29*DAY,day+DAY]}
+function tlClip(r,a,b){const s=Math.max(r.start,a),e=Math.min(r.end||Date.now(),b);if(e<=s)return 0;const whole=(r.end||Date.now())-r.start;return whole>0?tlMs(r)*(e-s)/whole:0}
+function tlUnion(rs,a,b){const iv=rs.map(r=>[Math.max(r.start,a),Math.min(r.end||Date.now(),b)]).filter(x=>x[1]>x[0]).sort((x,y)=>x[0]-y[0]);let tot=0,cs=null,ce=null;
+  iv.forEach(([s,e])=>{if(ce==null||s>ce){if(ce!=null)tot+=ce-cs;cs=s;ce=e}else ce=Math.max(ce,e)});if(ce!=null)tot+=ce-cs;return tot}
+function timelogView(){
+  const k=S.tlPeriod||"week", [a,b]=tlRange(k), rs=tlRecs().filter(r=>tlClip(r,a,b)>0), sum=rs.reduce((x,r)=>x+tlClip(r,a,b),0), wall=tlUnion(rs,a,b);
+  const typeOfRec=r=>{const t=findTask(r.taskId);return t?typeOf(t):r.cat||""};
+  const byG={},byT={},byTask={};rs.forEach(r=>{const ms=tlClip(r,a,b),ty=typeOfRec(r)||"No type",g=typeGroup(ty)||"No type";byG[g]=(byG[g]||0)+ms;byT[ty]=(byT[ty]||0)+ms;(byTask[r.taskId||r.id]||=[0,r])[0]+=ms});
+  const max=Math.max(1,...Object.values(byG)), bars=Object.entries(byG).sort((x,y)=>y[1]-x[1]);
+  const tasksSorted=Object.entries(byTask).sort((x,y)=>y[1][0]-x[1][0]);
+  const est=t=>t?.estMin||t?.estAi||null;
+  const diff=(ms,e)=>{if(!e)return "";const d=Math.round(ms/6e4)-e;return d===0?"on estimate":(d>0?"+":"−")+Math.abs(d)+" min"};
+  const needed=tasksSorted.filter(([id,[ms]])=>{const t=findTask(id);return t&&t.skip?.minor&&OPENISH.has(t.status)&&ms>=30*6e4});
+  const status=(S.timelog||[]).find(r=>r.id==="_calendar");
+  const local=ms=>{const d=new Date(ms);return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`};
+  const when=ms=>new Date(ms).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
+  return `<header class="head"><div><p class="eyebrow">Write & reflect</p><h1>Time</h1></div></header>
+  <div class="chips" role="group" aria-label="Period">${[["today","Today"],["week","This week"],["30","Last 30 days"]].map(([x,l])=>`<button class="chip" data-tlper="${x}" aria-pressed="${k===x}">${l}</button>`).join("")}</div>
+  ${status?.calendar==="missing"?`<p class="hint">To copy your times to Google Calendar each night, create a calendar named “Desk Log” there once.</p>`:""}
+  ${rs.length?`<section class="card ndsum" aria-label="Total"><div class="ndn"><b>${esc(tlMin(sum))}</b><span>Measured</span></div>${Math.abs(sum-wall)>6e4?`<div class="ndn"><b>${esc(tlMin(wall))}</b><span>Clock time (overlaps once)</span></div>`:""}<div class="ndn"><b>${rs.length}</b><span>Runs</span></div></section>
+  <section class="card dpanel" aria-label="By group"><div class="dhead"><h2>By group</h2></div><div class="tlbars">${bars.map(([g,ms])=>`<div class="tlbar"><span>${esc(g)}</span><span class="tltrack"><span style="width:${(ms/max*100).toFixed(1)}%"></span></span><span class="sub">${esc(tlMin(ms))}</span></div>`).join("")}</div>
+    <p class="sub">${Object.entries(byT).sort((x,y)=>y[1]-x[1]).slice(0,10).map(([ty,ms])=>`${esc(ty)} ${esc(tlMin(ms))}`).join(" · ")}</p></section>
+  ${needed.length?`<section class="card dpanel" aria-label="Is this really needed?"><div class="dhead"><h2>Is this really needed?</h2>${dropCands().length?`<button class="shelfbtn" data-tdecide>Decide →</button>`:""}</div><p class="sub">These took 30 minutes or more and are marked minor impact.</p><div>${needed.map(([id,[ms]])=>{const t=findTask(id);return `<div class="drow" data-noauto><span class="e" aria-hidden="true">⏱️</span><div style="min-width:0"><button class="tt" data-topen="${esc(id)}">${esc(taskName(t))}</button><div class="due">${esc(tlMin(ms))} · ${esc(t.skip.ifNot||"")}</div></div></div>`}).join("")}</div></section>`:""}
+  <section class="card dpanel" aria-label="By task"><div class="dhead"><h2>By task</h2><span class="sub">Estimate and actual</span></div><div>${tasksSorted.slice(0,30).map(([id,[ms,r]])=>{const t=findTask(id),e=est(t);return `<div class="drow" data-noauto><span class="e" aria-hidden="true">⏱️</span><div style="min-width:0">${t?`<button class="tt" data-topen="${esc(id)}">${esc(taskName(t))}</button>`:`<span class="wt">${esc(r.title||"Task")}</span>`}<div class="due">${[tlMin(ms),e?"estimate "+e+" min":"",diff(ms,e)].filter(Boolean).map(esc).join(" · ")}</div></div></div>`}).join("")}</div></section>
+  <section class="card dpanel" aria-label="Runs"><div class="dhead"><h2>Runs</h2></div><div>${rs.slice().sort((x,y)=>y.start-x.start).slice(0,60).map(r=>`<div class="drow" data-noauto><span class="e" aria-hidden="true">⏱️</span><div style="min-width:0"><span class="wt">${esc(tlTitle(r))}</span><div class="due">${esc(when(r.start))}${r.end?" – "+esc(new Date(r.end).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"})):" · running"} · ${esc(tlMin(tlMs(r)))} · ${r.via==="chrome"?"Chrome":"Desk"}</div>
+    <div class="gedit" id="tle-${esc(r.id)}" hidden><input type="datetime-local" aria-label="Start" data-tls="${esc(r.id)}" value="${local(r.start)}">${r.end?`<input type="datetime-local" aria-label="End" data-tle="${esc(r.id)}" value="${local(r.end)}">`:""}<button class="btn sm" data-tlsave="${esc(r.id)}">Save</button><button class="btn sm" data-tldel="${esc(r.id)}">Delete</button></div></div>
+    <div class="dacts"><button class="btn sm" data-tledit="${esc(r.id)}">Edit</button></div></div>`).join("")}</div></section>`
+  :`<div class="card empty"><b>Nothing measured ${k==="today"?"today":"in this period"}</b>Press “Start timer” on a task, or use the Task Desk extension in Chrome.</div>`}`;
+}
+async function tlEditSave(id){const r=(S.timelog||[]).find(x=>x.id===id);if(!r)return;
+  const s=new Date($(`[data-tls="${CSS.escape(id)}"]`).value).getTime(), eIn=$(`[data-tle="${CSS.escape(id)}"]`), e=eIn?new Date(eIn.value).getTime():null;
+  if(isNaN(s)||(eIn&&(isNaN(e)||e<=s))){toast("Check the times");return}
+  try{await tlPut({...r,start:s,...(eIn?{end:e,pausedMs:Math.min(r.pausedMs||0,e-s)}:{})});toast("Saved");render()}catch(err){toast("Couldn't save")}}
 /* the not-doing list: how many you let go of, roughly how much time that freed, and each one by day. Never red, never "behind". */
 function notDoingView(){
   const ws=dropWins(), today=hcmcDate(), wk=weekStart(), byDay=new Map();
@@ -2093,7 +2181,7 @@ function topThree(){
   const slot=freeSlot(30);
   const why=t=>whyText(t,r);
   const row=(t,i)=>`<div class="t3row ${i?"":"first"}"><span class="t3n">${i+1}</span><div style="min-width:0"><button class="tt" data-topen="${esc(t.id)}" data-noauto>${esc(taskName(t))}</button><div class="due">${esc(why(t))}${t.deadline!=null?` · ${dlChip(t)}`:""}</div>
-    <div class="t3acts">${t.status==="notyet"?`<button class="btn ${i?"sm":"primary"}" data-t3="doing" data-id="${esc(t.id)}">Start</button>`:""}${mailUrl(t)?`<a class="btn ${i?"sm":""}" href="${esc(mailUrl(t))}" target="_blank" rel="noopener">Reply</a>`:""}${slot&&!i?`<a class="btn" href="${esc(calLink(t,slot))}" target="_blank" rel="noopener" title="30 minutes from ${esc(fmtDue(slot))}">Block time</a>`:""}<button class="btn ${i?"sm":""}" data-t3="done" data-id="${esc(t.id)}">Done</button></div></div></div>`;
+    <div class="t3acts">${t.status==="notyet"?`<button class="btn ${i?"sm":"primary"}" data-tlstart="${esc(t.id)}">Start timer</button>`:timerBtn(t,"btn sm")}${mailUrl(t)?`<a class="btn ${i?"sm":""}" href="${esc(mailUrl(t))}" target="_blank" rel="noopener">Reply</a>`:""}${slot&&!i?`<a class="btn" href="${esc(calLink(t,slot))}" target="_blank" rel="noopener" title="30 minutes from ${esc(fmtDue(slot))}">Block time</a>`:""}<button class="btn ${i?"sm":""}" data-t3="done" data-id="${esc(t.id)}">Done</button></div></div></div>`;
   return `<section class="card t3" aria-label="Today's Three">${list.length?list.map(row).join(""):`<div class="empty"><b>Nothing in Today's Three</b>Take it easy. Press T to add a task.</div>`}</section>`;
 }
 const t3Mode=()=>new Date(Date.now()+HCMC).getUTCHours()<12?"Focus time (until noon)":"Admin time";
@@ -2934,7 +3022,7 @@ function openTask(id,preset){
     ${isLinked?"":projFields(t||pre)}
     <label class="sub" for="tNote">Notes</label><textarea id="tNote" class="tnote" placeholder="Details if needed. [word] links to a note">${esc(t?.note||"")}</textarea>${t&&linksIn(t.note).length?`<p class="hint">🔗 ${linksIn(t.note).map(x=>wlink(x)).join(" ")}</p>`:""}
     ${t?`<p class="hint" id="tCalOn">${esc(calOnText(t))}</p><div id="tCal" class="tcal" hidden></div>`:""}
-    <div class="row"><button class="btn primary" id="tSave">Save <kbd>⌘/Ctrl + Enter</kbd></button><button class="btn" id="tCancel">Cancel</button>${t?`<button class="btn" id="tCopy">Copy as text</button><button class="btn" id="tCalBtn" aria-expanded="false" aria-controls="tCal">Add to calendar</button>`:""}${t&&!isLinked?`<button class="btn" id="tDel" style="margin-left:auto;color:var(--red)">Delete</button>`:""}</div>
+    <div class="row"><button class="btn primary" id="tSave">Save <kbd>⌘/Ctrl + Enter</kbd></button><button class="btn" id="tCancel">Cancel</button>${t?`${timerBtn(t,"btn")}<button class="btn" id="tCopy">Copy as text</button><button class="btn" id="tCalBtn" aria-expanded="false" aria-controls="tCal">Add to calendar</button>`:""}${t&&!isLinked?`<button class="btn" id="tDel" style="margin-left:auto;color:var(--red)">Delete</button>`:""}</div>
   </div></div>`;
   const ti=$("#tTitle");ti.focus();ti.setSelectionRange(ti.value.length,ti.value.length);
   wireWa(t);wireLine(t);
@@ -2942,6 +3030,7 @@ function openTask(id,preset){
   wireJobs(t);wireMail(t,close);wireClear(t,close);wireProjFields(t||pre);
   const dueIn=$("#tDue"), dueT=$("#tDueT");
   t&&wireCal(t);
+  document.querySelectorAll("#modal [data-tlstart]").forEach(b=>b.onclick=()=>{close();startTimer(b.dataset.tlstart)});
   const save=async()=>{const title=ti.value.trim();if(!title){ti.focus();toast("Enter a title");return}
     if(dueT&&dueT.value&&!dueIn.value){dueIn.focus();toast("Enter a date too");return}
     const due=dueIn?dueFromParts(dueIn.value,dueT.value):null;
@@ -4859,7 +4948,7 @@ function render(){
   S.dl=mails.filter(x=>!closed.has(x.uid)); // a mail task moved to Done / paused / archive leaves the deadline panel
   if(!replyOpen()) S.dl=S.dl.filter(x=>x.kind!=="mail"); // outside the reply window: no count, badge or chime for mail
   updateBadges();checkNew();
-  renderNav();
+  renderNav();timerBar();
   if(viewId()==="lifeos"){$("#view").innerHTML=searchResults()+lifeosView();wire();wireLifeos();return}
   if(viewId()==="memolink"){mlLoad();$("#view").innerHTML=searchResults()+mlView();wire();wireMl();return}
   if(viewId()==="followups"){fuLoad();$("#view").innerHTML=searchResults()+fuView();wire();wireFu();return}
@@ -4881,7 +4970,7 @@ function render(){
   if(viewId()==="usage"){uLoad();$("#view").innerHTML=searchResults()+usageView();wire();return}
   const v=viewId();
   if(v==="project")S.projectId=decodeURIComponent(location.hash.slice(9));
-  $("#view").innerHTML=searchResults()+(v==="focus"?focusView():v==="notes"?notesView():v==="watch"?watch():v==="heritage"?heritageView():v==="tasks"?tasks():v==="replies"?repliesView():v==="notdoing"?notDoingView():v==="genres"?genresView():v==="calendar"?calendar():v==="news"?news():v==="wins"?winsView():v==="presents"?presentsView():v==="habits"?habitsView():v==="gear"?gearView():v==="project"?projectView():v==="log"?log():v==="tools"?toolsView():home());
+  $("#view").innerHTML=searchResults()+(v==="focus"?focusView():v==="notes"?notesView():v==="watch"?watch():v==="heritage"?heritageView():v==="tasks"?tasks():v==="replies"?repliesView():v==="notdoing"?notDoingView():v==="genres"?genresView():v==="timelog"?timelogView():v==="calendar"?calendar():v==="news"?news():v==="wins"?winsView():v==="presents"?presentsView():v==="habits"?habitsView():v==="gear"?gearView():v==="project"?projectView():v==="log"?log():v==="tools"?toolsView():home());
   if(v==="news"||v==="watch") linkSources($("#view"));
   wire();
   if(v==="news"&&S.focus!=null){const el=document.getElementById("story-"+S.focus);S.focus=null;if(el){el.classList.add("flash");setTimeout(()=>el.scrollIntoView({block:"start"}),0)}}
@@ -6062,6 +6151,11 @@ function wire(){
   document.querySelectorAll("[data-ttriage]").forEach(b=>b.onclick=()=>openTriage());
   document.querySelectorAll("[data-tdecide]").forEach(b=>b.onclick=()=>openDecide());
   document.querySelectorAll("[data-tmerge]").forEach(b=>b.onclick=()=>openMerge());
+  document.querySelectorAll("#view [data-tlstart],#modal [data-tlstart]").forEach(b=>b.onclick=e=>{e.stopPropagation();const m=$("#modal").firstChild;if(m)$("#modal").innerHTML="";startTimer(b.dataset.tlstart)});
+  document.querySelectorAll("[data-tlper]").forEach(b=>b.onclick=()=>{S.tlPeriod=b.dataset.tlper;render()});
+  document.querySelectorAll("[data-tledit]").forEach(b=>b.onclick=()=>{const x=document.getElementById("tle-"+b.dataset.tledit);if(x)x.hidden=!x.hidden});
+  document.querySelectorAll("[data-tlsave]").forEach(b=>b.onclick=()=>tlEditSave(b.dataset.tlsave));
+  document.querySelectorAll("[data-tldel]").forEach(b=>b.onclick=async()=>{const r=(S.timelog||[]).find(x=>x.id===b.dataset.tldel);if(!r)return;try{await tlPut({...r,deleted:true});toast("Deleted");render()}catch(e){toast("Couldn't save")}});
   document.querySelectorAll("[data-mundo]").forEach(b=>b.onclick=async()=>{b.disabled=true;try{await undoMerge(b.dataset.mundo)}catch(e){toast("Couldn't save. Please try again")}render()});
   document.querySelectorAll("[data-tback]").forEach(b=>b.onclick=()=>bringBack(b.dataset.tback));
   [["#tFGenre","genre"],["#tFType","type"]].forEach(([q,k])=>{const el=$(q);if(el)el.onchange=()=>{tFiltSet({...tFilt(),[k]:el.value});render()}});

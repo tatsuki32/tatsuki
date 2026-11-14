@@ -24,7 +24,7 @@
 - メール整理（`desk/gmail_clean.py`）：main に入った。本物で12件停止済み。OAuth はテスト中で、接続が7日で切れる可能性あり。 見せる素材（`desk/showcase.py`）：main に入った。 小さな道具（`desk/utilities.py`）：`claude/desk-utilities-a3a168` にコミット。アプリの窓で使うには再ビルドが要る。
 - LINE の返信タスク化（`desk/line_sync.py`）：実装・未コミット。流れは本番で確認。未読のあるトークはまだ本番で未確認。お知らせ（Mac の通知。`desk/notify.py`）：実装・未コミット。本番で動作中。実際の音と表示、まとめの実走、`urgent` の印は確認待ち。使い方の計測と週1回の並び替え（`desk/usage.py`）：実装・未コミット。数え始めは 2026-11-06、最初の並び替えは 11-23。 週1回の提案（`desk/ideas.py`、`desk-idea-suggest`）：main に入った。
 - アカウント一覧（`desk/accounts.py`、🔑 Accounts）：仮の版を実装。パスワードは持たない。鍵つきのパスワード欄は次の段階（要件定義から）。ポートフォリオは Cloudflare Pages に移した。
-- やることを減らす・時間計測（要件定義 9pc5JCfnvLoB6FiU15RDwR）：B（返信の時間）・A＋F（やらないと決める・種類とジャンル・まとめる案）は main に。次は C、D。
+- やることを減らす・時間計測（要件定義 9pc5JCfnvLoB6FiU15RDwR）：B（返信の時間）・A＋F（やらないと決める・種類とジャンル・まとめる案）・C（時間計測）は main に。次は D。「Desk Log」カレンダーは本人が作る。
 ## 決定済みの事項
 - 作ったものは必ず main に入れる（どの Claude も。`.claude/rules/main-branch.md`）。Mac は main だけを取り込む。
 - UI/UX を作るときは毎回、本を全文読んでから（`.claude/rules/design-ui.md`）。Drive の文字変換は p.136 まで。後半は Tatsuki のまとめで補っている。

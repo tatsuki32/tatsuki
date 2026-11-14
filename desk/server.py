@@ -53,7 +53,7 @@ import wise_sync
 ROOT = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(ROOT, "data")
 PORT = int(os.environ.get("DESK_PORT", "4747"))
-COLLECTIONS = ("memos", "dues", "tasks", "prompts", "notes", "habits", "lifemap", "wins", "worldlog", "presents", "heritagelog", "routines", "routinelog", "rewards", "ideaslog", "gear", "projects", "sections", "jobapps", "replywin", "genres", "tasktypes", "mergeprops")
+COLLECTIONS = ("memos", "dues", "tasks", "prompts", "notes", "habits", "lifemap", "wins", "worldlog", "presents", "heritagelog", "routines", "routinelog", "rewards", "ideaslog", "gear", "projects", "sections", "jobapps", "replywin", "genres", "tasktypes", "mergeprops", "timelog")
 # file in data/, global the page reads, value when the file is missing
 DATA_JS = [
     ("tools.js", "TOOLS", "[]"),
@@ -80,6 +80,8 @@ FEEDS = {
     "gtasks": ("gtasks.js", "GTASKS", "current"),
 }
 LOCK = threading.Lock()
+# Task Desk Chrome extension (Applications/programming/Tatsuki Desk/task-desk-extension). Its id is fixed by the "key" in its manifest.
+TASKDESK_ORIGIN = "chrome-extension://nofajepofefkhjckmgciabfjbeeenhlm"
 MEMOLINK_LOCK = threading.Lock()
 REPO = os.path.dirname(ROOT)
 # commands that work in the person's Chrome (Claude in Chrome), started with --chrome
@@ -655,6 +657,10 @@ class Handler(BaseHTTPRequestHandler):
             return False
         origin = self.headers.get("Origin")
         if self.command != "GET" and origin:
+            if origin == TASKDESK_ORIGIN:
+                # the Task Desk Chrome extension may only save tasks, add memos and log the time it measured
+                p = urlsplit(self.path).path
+                return (self.command == "PUT" and p.startswith(("/api/tasks/", "/api/timelog/"))) or (self.command == "POST" and p == "/api/memos")
             return urlsplit(origin).hostname in ("localhost", "127.0.0.1")
         return True
 
