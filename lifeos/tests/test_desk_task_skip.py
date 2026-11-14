@@ -94,3 +94,19 @@ class ServerKeeps(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class Weekly(unittest.TestCase):
+    def test_merge_proposals_stay_in_one_genre_and_are_never_repeated(self):
+        items = [task("a", genre="g1"), task("b", genre="g1"), task("c", genre="g2"), task("d", genre="g1", status="done")]
+        out = ts.merge_add(items, [], [{"title": "Learn VLLO", "ids": ["a", "b"]}, {"title": "Mixed", "ids": ["a", "c"]},
+                                       {"title": "Done one", "ids": ["b", "d"]}], NOW)
+        self.assertEqual([p["ids"] for p in out], [["a", "b"]])
+        self.assertEqual(ts.merge_add(items, out, [{"title": "Again", "ids": ["b", "a"]}], NOW), [])
+        kept = [{**out[0], "status": "kept"}]
+        self.assertEqual(ts.merge_pending(items, kept), {})
+
+    def test_genre_review_leaves_the_persons_genres(self):
+        gs = [{"id": "g1", "name": "Video", "by": "claude"}, {"id": "g2", "name": "Videos", "by": "claude"}, {"id": "g3", "name": "Mine", "by": "me"}]
+        out = ts.genre_apply(gs, [{"id": "g2", "mergeInto": "g1"}, {"id": "g3", "rename": "Theirs"}, {"id": "g1", "rename": "Video editing"}], NOW)
+        self.assertEqual([(g["id"], g.get("mergedInto"), g["name"]) for g in out], [("g2", "g1", "Videos"), ("g1", None, "Video editing")])

@@ -6,6 +6,10 @@
   python3 desk/task_skip.py genres                 # the genres so far (up to 100)
   python3 desk/task_skip.py apply                  # reads a JSON list from stdin and writes it
   python3 desk/task_skip.py stats                  # counts only, no titles
+  python3 desk/task_skip.py merge-pending          # open tasks by genre, for finding ones that belong together (weekly)
+  python3 desk/task_skip.py merge-add              # stdin [{"title","note","ids":[...]}]: proposals; nothing is merged
+  python3 desk/task_skip.py genre-review           # every genre with its counts and who made it (weekly)
+  python3 desk/task_skip.py genre-apply            # stdin [{"id","rename"?,"mergeInto"?,"emoji"?,"desc"?}]; only Claude's genres
 
 The nightly scheduled task (desk-task-skip) writes here. Rows look like
   {"id": "...", "ifNot": "Nothing breaks. ...", "minor": true, "why": "...", "cat": "Research", "genre": "Georgia company"}
@@ -192,6 +196,88 @@ def stats(items, genres, now_ms):
             "dropped": sum(t.get("status") == "dropped" and not t.get("deleted") for t in items)}
 
 
+# ---------- weekly: proposals to merge similar tasks, and tidying the genres ----------
+# A proposal is only a card. The person decides on it in the Desk; merging there makes one new task and archives
+# the originals with mergedInto (nothing is deleted, and "Undo" brings them back).
+PROPOSAL_MAX = 10  # new proposals a week
+MERGE_MIN, MERGE_MAX = 2, 30
+
+
+def prop_key(ids):
+    return "|".join(sorted(ids))
+
+
+def merge_pending(items, props):
+    taken = {i for p in props if not p.get("deleted") and p.get("status") in ("open", "kept") for i in p.get("ids") or []}
+    groups = {}
+    for t in items:
+        if eligible(t) and t.get("genre") and t["id"] not in taken:
+            groups.setdefault(t["genre"], []).append({"id": t["id"], "title": t.get("title", ""), "clearTitle": (t.get("clear") or {}).get("title") or "",
+                                                       "cat": t.get("cat") or "", "status": t.get("status")})
+    return {g: xs for g, xs in groups.items() if len(xs) >= MERGE_MIN}
+
+
+def merge_add(items, props, rows, now_ms):
+    by_id = {t["id"]: t for t in items if eligible(t)}
+    seen = {prop_key(p.get("ids") or []) for p in props}
+    taken = {i for p in props if not p.get("deleted") and p.get("status") in ("open", "kept") for i in p.get("ids") or []}
+    out = []
+    for row in rows if isinstance(rows, list) else []:
+        if len(out) >= PROPOSAL_MAX or not isinstance(row, dict):
+            break
+        ids = [i for i in dict.fromkeys(row.get("ids") or []) if i in by_id and i not in taken]
+        genres = {by_id[i].get("genre") for i in ids}
+        title = text(row.get("title"), 80)
+        if not (MERGE_MIN <= len(ids) <= MERGE_MAX) or len(genres) != 1 or None in genres or not title or prop_key(ids) in seen:
+            continue
+        rec = {"id": "mp-" + str(now_ms) + "-" + str(len(out)), "title": title, "note": text(row.get("note"), 300), "ids": ids,
+               "genre": genres.pop(), "status": "open", "by": "claude", "createdAt": now_ms, "updatedAt": now_ms, "deleted": False}
+        out.append(rec)
+        seen.add(prop_key(ids))
+        taken.update(ids)
+    return out
+
+
+def genre_review(items, genres):
+    count = {}
+    for t in items:
+        if not t.get("deleted") and t.get("genre"):
+            c = count.setdefault(t["genre"], {"open": 0, "all": 0})
+            c["all"] += 1
+            c["open"] += t.get("status") in OPEN
+    return [{"id": g["id"], "name": g.get("name"), "by": g.get("by") or "claude", "desc": g.get("desc") or "", **count.get(g["id"], {"open": 0, "all": 0})}
+            for g in live_genres(genres)]
+
+
+def genre_apply(genres, rows, now_ms):
+    """Only genres Claude made can be renamed or merged here; the person's stay as they are."""
+    live = {g["id"]: g for g in live_genres(genres)}
+    names = {g.get("name", "").lower(): gid for gid, g in live.items()}
+    out = []
+    for row in rows if isinstance(rows, list) else []:
+        g = live.get(row.get("id")) if isinstance(row, dict) else None
+        if not g or g.get("by") == "me":
+            continue
+        rec = dict(g)
+        into = row.get("mergeInto")
+        if into and into in live and into != g["id"]:
+            rec["mergedInto"] = into
+        else:
+            name = text(row.get("rename"), NAME_MAX)
+            if name and name.lower() not in names:
+                rec["name"] = name
+            if text(row.get("emoji"), 4):
+                rec["emoji"] = text(row.get("emoji"), 4)
+            if text(row.get("desc"), DESC_MAX):
+                rec["desc"] = text(row.get("desc"), DESC_MAX)
+        if rec != g:
+            rec["updatedAt"] = now_ms
+            out.append(rec)
+            if rec.get("mergedInto"):
+                live.pop(g["id"], None)
+    return out
+
+
 def main(argv):
     now_ms = int(time.time() * 1000)
     cmd = argv[:1]
@@ -216,6 +302,20 @@ def main(argv):
             tasks._put(r)
         print(f"Labeled {len(recs)}" + (f" / skipped {len(rows) - len(recs)}" if len(rows) != len(recs) else "")
               + (f" / new genres {len(new)}" if new else ""))
+    elif cmd == ["merge-pending"]:
+        print(json.dumps(merge_pending(tasks._load(), _load_col("mergeprops")), ensure_ascii=False, indent=1))
+    elif cmd == ["merge-add"]:
+        new = merge_add(tasks._load(), _load_col("mergeprops"), json.load(sys.stdin), now_ms)
+        for p in new:
+            _put_col("mergeprops", p)
+        print(f"Proposals {len(new)}")
+    elif cmd == ["genre-review"]:
+        print(json.dumps(genre_review(tasks._load(), _load_col("genres")), ensure_ascii=False, indent=1))
+    elif cmd == ["genre-apply"]:
+        recs = genre_apply(_load_col("genres"), json.load(sys.stdin), now_ms)
+        for g in recs:
+            _put_col("genres", g)
+        print(f"Genres changed {len(recs)}")
     elif cmd == ["stats"]:
         print(json.dumps(stats(tasks._load(), _load_col("genres"), now_ms), indent=1))
     else:

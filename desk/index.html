@@ -1136,6 +1136,8 @@ a.shelfbtn{text-decoration:none;display:inline-flex;align-items:center}
 .ndpraise{margin:0;font-size:var(--t3);color:var(--ink)}
 .tminor{display:flex;align-items:center;gap:var(--s2);font-size:var(--t2);min-height:32px}
 .tifnot{min-height:56px}
+.mplist{margin:0;padding-left:var(--s3);display:flex;flex-direction:column;gap:var(--s1);font-size:var(--t2)}
+.gedit[hidden]{display:none}
 .gedit{display:flex;flex-wrap:wrap;gap:var(--s2);margin-top:var(--s2)}
 .gedit input,.gedit select{min-height:36px;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:0 var(--s3);font:inherit;font-size:var(--t2);max-width:100%}
 .pop.qa{width:min(520px,100%)}
@@ -1345,7 +1347,7 @@ async function loadApiMemos(){try{
   S.fu=await api("GET","/api/followups").catch(()=>S.fu);
   S.line=await api("GET","/api/line").catch(()=>({}));lineAlert();
   S.replyWin=((await api("GET","/api/replywin").catch(()=>[]))||[]).find(x=>x&&x.id==="state")||{};
-  S.genres=await api("GET","/api/genres").catch(()=>S.genres||[]);S.ttypes=await api("GET","/api/tasktypes").catch(()=>S.ttypes||[]);
+  S.genres=await api("GET","/api/genres").catch(()=>S.genres||[]);S.ttypes=await api("GET","/api/tasktypes").catch(()=>S.ttypes||[]);S.mprops=await api("GET","/api/mergeprops").catch(()=>S.mprops||[]);
   S.habits=habits.filter(h=>!h.deleted);S.wins=wins.filter(w=>!w.deleted);S.presents=presents.filter(p=>!p.deleted);S.memos=memos.filter(m=>!m.deleted&&!m.movedTo);S.dues=duesById(dues);S.tasks=tasks.filter(t=>!t.deleted);S.prompts=promptsById(prompts);S.wnotes=notes.filter(n=>!n.deleted);render();absorbMemos()}catch(e){toast("Cannot reach the Desk server. Is it running?")}}
 const promptsById=list=>Object.fromEntries(list.filter(p=>p&&p.id&&!p.deleted).map(p=>[p.id,p]));
 const duesById=list=>Object.fromEntries(list.filter(v=>v&&v.uid).map(v=>[v.uid,v]));
@@ -1857,7 +1859,7 @@ function openTriage(){
   document.addEventListener("keydown",onKey,true);
   next();
 }
-function triHome(){const n=unsorted().length,q=waitingQs().reduce((a,t)=>a+openQs(t).length,0),d=dropEntry();return n||q||d?`<div class="trhome">${d}${n?`<button class="shelfbtn" data-ttriage>Triage ${n} unsorted →</button>`:""}${q?`<button class="shelfbtn" data-tqs>Answer ${q} open ${q===1?"question":"questions"} →</button>`:""}</div>`:""}
+function triHome(){const n=unsorted().length,q=waitingQs().reduce((a,t)=>a+openQs(t).length,0),d=dropEntry()+mergeEntry();return n||q||d?`<div class="trhome">${d}${n?`<button class="shelfbtn" data-ttriage>Triage ${n} unsorted →</button>`:""}${q?`<button class="shelfbtn" data-tqs>Answer ${q} open ${q===1?"question":"questions"} →</button>`:""}</div>`:""}
 /* ---------- A. Not doing: decide on purpose what you will not do, and count it like a finished task ---------- */
 /* F. Every task gets a type ("what you do", a fixed list of about 45 in 8 groups) and a genre ("what it is about", up to 100).
    desk/task_skip.py (nightly desk-task-skip) writes skip.ifNot / skip.minor / skip.why, cat and genre. What you change here is marked
@@ -1945,6 +1947,34 @@ function openDecide(){
     done:past=>{const n=past.filter(p=>p.side>0).length;return n?`${n} let go. ${PRAISE[n%PRAISE.length]}`:"All decided"}});
 }
 function dropEntry(){const n=dropCands().length;return n?`<button class="shelfbtn" data-tdecide>Decide what not to do ${n} →</button>`:""}
+/* F. Merge similar tasks: Claude proposes once a week (mergeprops); nothing merges until you swipe right.
+   Merging makes one new task whose notes keep every original title and note; the originals go to Archived with mergedInto. Undo brings them back. */
+const mpOpen=()=>(S.mprops||[]).filter(p=>!p.deleted&&p.status==="open"&&p.ids.filter(id=>{const t=findTask(id);return t&&OPENISH.has(t.status)}).length>=2);
+async function putProp(p){const {id,...rec}={...p,updatedAt:Date.now()};await api("PUT","/api/mergeprops/"+encodeURIComponent(id),rec);S.mprops=[...(S.mprops||[]).filter(x=>x.id!==id),{id,...rec}]}
+async function doMerge(p){
+  const ts=p.ids.map(findTask).filter(t=>t&&OPENISH.has(t.status));
+  if(ts.length<2) return putProp({...p,status:"kept"});
+  const id=newTaskId(), est=ts.reduce((a,t)=>a+(t.estMin||0),0);
+  const lines=ts.map(t=>"- "+taskName(t)+(t.note?" — "+t.note.replace(/\s+/g," ").slice(0,300):""));
+  await store.putTask({id,title:p.title,status:ts.some(t=>t.status==="doing")?"doing":"notyet",source:"manual",note:[p.note,"Merged from:",...lines].filter(Boolean).join("\n"),
+    cat:ts[0].cat||"",genre:p.genre,tagBy:"claude",tagAt:Date.now(),estMin:est||null,createdAt:Date.now()});
+  for(const t of ts) await store.putTask({...t,status:"archived",mergedInto:id});
+  await putProp({...p,status:"merged",newId:id,prev:Object.fromEntries(ts.map(t=>[t.id,t.status]))});
+}
+async function undoMerge(id){const p=(S.mprops||[]).find(x=>x.id===id);if(!p||p.status!=="merged")return;
+  for(const [tid,st] of Object.entries(p.prev||{})){const t=findTask(tid);if(t)await store.putTask({...t,status:st,mergedInto:null})}
+  const n=findTask(p.newId);if(n)await store.putTask({...n,deleted:true});
+  await putProp({...p,status:"open",newId:null,prev:null});toast("Back as separate tasks")}
+function openMerge(){
+  openDeck({label:"Merge similar tasks",ids:mpOpen().map(p=>p.id),empty:"No merge suggestions right now",get:id=>(S.mprops||[]).find(p=>p.id===id&&p.status==="open")||null,
+    body:p=>{const ts=p.ids.map(findTask).filter(t=>t&&OPENISH.has(t.status));
+      return `<h2 class="trtitle" data-noauto>${esc(p.title)}</h2>${p.note?`<p class="dkq">${esc(p.note)}</p>`:""}
+      <p class="sub">${esc(genreRoot(p.genre)?.name||"")} · ${ts.length} tasks become one</p><ul class="mplist" data-noauto>${ts.map(t=>`<li>${esc(taskName(t))}</li>`).join("")}</ul>`},
+    right:{label:"Merge",act:p=>doMerge(p)},left:{label:"Keep separate",act:p=>putProp({...p,status:"kept"})},
+    undo:async(p,side)=>{if(side>0)return undoMerge(p.id);await putProp({...p,status:"open"})},
+    done:past=>{const n=past.filter(x=>x.side>0).length;return n?`${n} merged. Fewer, clearer tasks.`:"All decided"}});
+}
+function mergeEntry(){const n=mpOpen().length;return n?`<button class="shelfbtn" data-tmerge>Merge similar ${n} →</button>`:""}
 /* the not-doing list: how many you let go of, roughly how much time that freed, and each one by day. Never red, never "behind". */
 function notDoingView(){
   const ws=dropWins(), today=hcmcDate(), wk=weekStart(), byDay=new Map();
@@ -2008,7 +2038,8 @@ function genresView(){
     <button class="tt" data-gfilter="${esc(g.id)}">${esc(g.name)}</button><div class="due">${[open+" open",dropped?dropped+" let go":"",min?fmtMin(min)+" measured":""].filter(Boolean).join(" · ")}</div>
     <div class="gedit" id="ge-${esc(g.id)}" hidden><input type="text" value="${esc(g.name)}" aria-label="New name" data-gname="${esc(g.id)}"><select data-ginto="${esc(g.id)}" aria-label="Merge into"><option value="">Merge into…</option>${gs.filter(x=>x.id!==g.id).map(x=>`<option value="${esc(x.id)}">${esc(x.name)}</option>`).join("")}</select><button class="btn sm" data-gsave="${esc(g.id)}">Save</button></div></div>
     <div class="dacts"><button class="btn sm" data-gedit="${esc(g.id)}">Edit</button></div></div>`).join("")}</div></section>`
-  :`<div class="card empty"><b>No genres yet</b>Claude adds them each night from your tasks. You can also type one in a task.</div>`}`;
+  :`<div class="card empty"><b>No genres yet</b>Claude adds them each night from your tasks. You can also type one in a task.</div>`}
+  ${(m=>m.length?`<section class="card dpanel" aria-label="Merged tasks"><div class="dhead"><h2>Merged</h2>${mergeEntry()}</div><div>${m.map(p=>`<div class="drow" data-noauto><span class="e" aria-hidden="true">🧷</span><div style="min-width:0">${findTask(p.newId)?`<button class="tt" data-topen="${esc(p.newId)}">${esc(p.title)}</button>`:esc(p.title)}<div class="due">${Object.keys(p.prev||{}).length} tasks · ${esc(genreRoot(p.genre)?.name||"")}</div></div><div class="dacts"><button class="btn sm" data-mundo="${esc(p.id)}">Undo</button></div></div>`).join("")}</div></section>`:mergeEntry()?`<p>${mergeEntry()}</p>`:"")((S.mprops||[]).filter(p=>!p.deleted&&p.status==="merged").sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0)).slice(0,20))}`;
 }
 async function saveGenre(id){
   const g=(S.genres||[]).find(x=>x.id===id);if(!g)return;
@@ -2033,7 +2064,7 @@ function tasks(){
   <header class="head"><div><p class="eyebrow">Tasks</p><h1>To-do</h1></div><div class="row"><button class="btn primary" id="newTask">+ New task <kbd>T</kbd></button></div></header>
   ${notesHere("tasks")}
   ${projChips(f)}
-  <div class="taskbar"><label class="tsort">Sort<select id="tSort">${TSORT.map(([k,l])=>`<option value="${k}" ${k===S.taskSort?"selected":""}>${l}</option>`).join("")}</select></label><nav class="shelfnav" aria-label="Stopped tasks">${TSHELF.map(k=>`<button class="shelfbtn" data-tshelf="${k}" aria-expanded="${S.taskShelf===k}">${tLabel(k)} ${shelf(k).length}</button>`).join("")}${(q=>q?`<button class="shelfbtn" data-tqs>Open questions ${q}</button>`:"")(waitingQs().reduce((a,t)=>a+openQs(t).length,0))}${dropEntry()}<a class="shelfbtn" href="#notdoing">Not doing ${list.filter(t=>t.status==="dropped").length}</a><span class="sub tnotyet">Not yet clarified ${notCleared()}</span></nav>${tFiltBar()}</div>
+  <div class="taskbar"><label class="tsort">Sort<select id="tSort">${TSORT.map(([k,l])=>`<option value="${k}" ${k===S.taskSort?"selected":""}>${l}</option>`).join("")}</select></label><nav class="shelfnav" aria-label="Stopped tasks">${TSHELF.map(k=>`<button class="shelfbtn" data-tshelf="${k}" aria-expanded="${S.taskShelf===k}">${tLabel(k)} ${shelf(k).length}</button>`).join("")}${(q=>q?`<button class="shelfbtn" data-tqs>Open questions ${q}</button>`:"")(waitingQs().reduce((a,t)=>a+openQs(t).length,0))}${dropEntry()}${mergeEntry()}<a class="shelfbtn" href="#notdoing">Not doing ${list.filter(t=>t.status==="dropped").length}</a><span class="sub tnotyet">Not yet clarified ${notCleared()}</span></nav>${tFiltBar()}</div>
   ${S.taskShelf?`<section class="shelf" aria-label="${tLabel(S.taskShelf)}">${shelf(S.taskShelf).map(t=>taskCard(t,ps)).join("")||`<p class="sub">No ${tLabel(S.taskShelf).toLowerCase()} tasks</p>`}</section>`:""}
   <div class="chips colTabs" role="group" aria-label="Column to show">${TCOLS.map(k=>`<button class="chip" data-tcol="${k}" aria-pressed="${S.taskCol===k}">${tLabel(k)} ${col(k).length}</button>`).join("")}</div>
   <div class="board">${TCOLS.map(k=>{const items=col(k);return `<section class="col ${S.taskCol===k?"show":""}" data-col="${k}" aria-label="${tLabel(k)}">
@@ -6026,6 +6057,8 @@ function wire(){
   document.querySelectorAll("[data-tstatus]").forEach(s=>s.onchange=()=>setTaskStatus(s.dataset.tstatus,s.value));
   document.querySelectorAll("[data-ttriage]").forEach(b=>b.onclick=()=>openTriage());
   document.querySelectorAll("[data-tdecide]").forEach(b=>b.onclick=()=>openDecide());
+  document.querySelectorAll("[data-tmerge]").forEach(b=>b.onclick=()=>openMerge());
+  document.querySelectorAll("[data-mundo]").forEach(b=>b.onclick=async()=>{b.disabled=true;try{await undoMerge(b.dataset.mundo)}catch(e){toast("Couldn't save. Please try again")}render()});
   document.querySelectorAll("[data-tback]").forEach(b=>b.onclick=()=>bringBack(b.dataset.tback));
   [["#tFGenre","genre"],["#tFType","type"]].forEach(([q,k])=>{const el=$(q);if(el)el.onchange=()=>{tFiltSet({...tFilt(),[k]:el.value});render()}});
   document.querySelectorAll("[data-gedit]").forEach(b=>b.onclick=()=>{const box=document.getElementById("ge-"+b.dataset.gedit);if(box)box.hidden=!box.hidden});
@@ -6181,6 +6214,7 @@ function palItems(){
     {e:"🔎",name:"Search",key:"/",kw:"けんさく search",run:()=>setTimeout(()=>$("#q")?.focus(),0)},
     {e:"🗂️",name:"Triage unsorted tasks",kw:"しわけ みぶんるい triage",run:()=>openTriage()},
     {e:"🍃",name:"Decide what not to do",kw:"やらない not doing drop decide",run:()=>openDecide()},
+    {e:"🧷",name:"Merge similar tasks",kw:"まとめる merge similar",run:()=>openMerge()},
     {e:"❓",name:"Answer open questions",kw:"しつもん こたえる question",run:()=>openQuestions()},
     {e:"🌱",name:"Add a habit",kw:"しゅうかん habit",run:()=>newHabit()},
     {e:"📒",name:"New note",kw:"のーと note",run:()=>newNotePrompt()},
