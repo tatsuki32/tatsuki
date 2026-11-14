@@ -1061,6 +1061,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(*gmail_clean.act(rec.get("id"), rec.get("action"), rec.get("confirm") is True))
             if step == "undo":
                 return self.send(*gmail_clean.undo(rec.get("id")))
+            if step == "block":
+                return self.send(*gmail_clean.block(rec.get("target"), rec.get("confirm") is True))
             return self.send(404, {"error": "not found"})
         if method == "PUT" and urlsplit(self.path).path.startswith(("/api/body/", "/api/receipts/")):
             if not (self.headers.get("Content-Type") or "").startswith("application/json"):

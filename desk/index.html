@@ -751,6 +751,9 @@ button.hname:hover{color:var(--ink)}
 .mcrow{padding:var(--s2) 0}
 .mcacts{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:var(--s2);margin-top:var(--s1)}
 .btn.mcgo{color:var(--accent);border-color:var(--accent)}
+.mcbform{display:flex;flex-wrap:wrap;gap:var(--s2);margin-bottom:var(--s2)}
+.mcbform .wd-field{flex:1 1 240px;min-width:0}
+.mcbh{font-size:var(--t2);font-weight:700;margin:var(--s4) 0 var(--s1)}
 .mccode{display:block;max-width:100%;overflow-wrap:anywhere;font-size:var(--t1);color:var(--ink);background:var(--line);padding:var(--s2);border-radius:var(--r-s)}
 .nsgo{display:flex;flex-wrap:wrap;gap:var(--s2);align-items:center}
 /* Small Utilities: one tool per tab, each with one focus */
@@ -5683,10 +5686,35 @@ function mcView(){
   const go=running?`<div class="nsgo"><button class="btn primary" disabled>Reading</button><span class="due" id="mcWait" role="status">${esc(mcWait())}</span></div>`:`<div class="nsgo"><button class="btn${d.at?"":" primary"}" id="mcScan">${d.at?"Read again":"Read mail"}</button><span class="due">Last 90 days. Message bodies are not read${d.at?` · read ${esc(mcWhen(d.at))}`:""}</span></div>`;
   const main=`<section class="card mfocus"><p class="mtalk">${d.at?(n?`${n} senders can be stopped.`:"Nothing to stop."):"Not read yet. Press the button to list senders."}</p>${go}${d.scan.error&&d.scan.error!=="connect"?`<p class="due" role="alert">${esc(d.scan.error)}</p>`:""}</section>`;
   const list=(title,sub,rows,group)=>rows.length?mpanel(`${title} (${rows.length})`,sub,rows.map(r=>mcRow(r,group)).join("")):"";
-  return `<div class="money" data-noauto>${head}${main}${list("Suggestions","Most mail first",d.candidates,"candidates")}${list("Protected","Banks, bookings, and similar. Asks before stopping",d.guarded,"guarded")}${list("Decided","",d.done,"done")}</div>`;
+  return `<div class="money" data-noauto>${head}${main}${mcBlockView(d.blocked||[])}${list("Suggestions","Most mail first",d.candidates,"candidates")}${list("Protected","Banks, bookings, and similar. Asks before stopping",d.guarded,"guarded")}${list("Decided","",d.done,"done")}</div>`;
+}
+/* Block a sender by hand: an address or a whole domain gets the same Gmail filter as Stop. Past mail stays. */
+function mcBlockView(rows){
+  const b=S.mcBlock||{},shown=S.mcBlockAll?rows:rows.slice(0,10);
+  const hint=b.ask?`<div class="mcacts" role="alert"><span>${esc(b.ask)}. Block it anyway?</span><button class="btn" id="mcbSure">Block anyway</button><button class="btn" id="mcbNo">Cancel</button></div>`
+    :`<span class="due"${b.err?' role="alert"':""}>${esc(b.err||"New mail from this sender goes to Trash. Past mail stays. A domain blocks every address at it.")}</span>`;
+  const list=shown.map(r=>`<div class="strow mcrow"><span>${esc(r.target)}</span><span class="nsv">${esc(r.at?new Date(r.at).toLocaleDateString("en-US",{month:"short",day:"numeric"}):"")}</span><div class="mcacts"><button class="btn" data-mcundo="${esc(r.id)}">Unblock</button></div></div>`).join("");
+  const more=rows.length>10?`<button class="btn" id="mcbAll">${S.mcBlockAll?"Show fewer":`Show all ${rows.length}`}</button>`:"";
+  return mpanel("Block a sender","",`<form class="mcbform" id="mcbForm"><input class="wd-field" id="mcbIn" type="text" inputmode="email" autocomplete="off" spellcheck="false" placeholder="name@example.com or @example.com" aria-label="Email address or domain" value="${esc(b.val||"")}"><button class="btn mcgo" type="submit"${b.busy?" disabled":""}>Block</button></form>${hint}${rows.length?`<h3 class="mcbh">Blocked (${rows.length})</h3>${list}${more}`:""}`);
+}
+async function mcBlock(confirm){
+  const val=($("#mcbIn")?.value||S.mcBlock?.val||"").trim();
+  S.mcBlock={val,busy:true};render();
+  try{
+    const r=await fetch("/api/mailclean/block",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({target:val,confirm:!!confirm})});
+    const j=await r.json().catch(()=>({}));
+    if(r.ok){S.mc=j;S.mcBlock={};toast("Blocked")}
+    else if(r.status===409)S.mcBlock={val,ask:j.reason||"May be an important sender"};
+    else S.mcBlock={val,err:r.status===401?"Gmail disconnected. Run python3 ~/TatsukiDesk/desk/gmail_clean.py auth in Terminal.":j.reason||"That didn't work. Please try again."};
+  }catch(e){S.mcBlock={val,err:"That didn't work. Please try again."}}
+  render();const i=$("#mcbIn");if(i&&!S.mcBlock.ask)i.focus();
 }
 function wireMc(){
   const a=$("#mcAgain");if(a)a.onclick=()=>mcLoad(true);
+  const f=$("#mcbForm");if(f)f.onsubmit=e=>{e.preventDefault();mcBlock(false)};
+  const bs=$("#mcbSure");if(bs)bs.onclick=()=>mcBlock(true);
+  const bn=$("#mcbNo");if(bn)bn.onclick=()=>{S.mcBlock={val:S.mcBlock?.val};render()};
+  const ba=$("#mcbAll");if(ba)ba.onclick=()=>{S.mcBlockAll=!S.mcBlockAll;render()};
   const b=$("#mcScan");if(b)b.onclick=()=>mcPost("scan",{});
   document.querySelectorAll("[data-mcgo]").forEach(x=>x.onclick=()=>{
     const id=x.dataset.mcgo,row=[...S.mc.guarded].find(r=>r.id===id);
