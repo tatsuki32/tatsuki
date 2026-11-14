@@ -27,3 +27,11 @@
 - Desk は `desk/golinks.py`。Post Studio は案を作る前に投稿先ごとの短縮リンクを作って `post.short` に残し、Claude にはその先の分だけを渡す。
 - ロボットの判定は User-Agent の正規表現と HEAD。試験のリンクは `DELETE /api/links/<code>` で止めた。
 - 次：要件定義の2番（予約の土台：Queue、ルーティン、R2、5分ごとの送信）。
+
+## 自動投稿（同じ日）
+- Meta アプリ「Tatsuki Post Studio」（ポートフォリオ「Tatsuki Mitsuhashi 三橋龍起」）。新しいアプリは Instagram ログイン不可 → 統合ログイン（ログイン設定 1123461540280904、システムユーザーの鍵＝期限なし）。許可は use case の「アクセス許可と機能」で先に「追加」しないと設定に出ない。
+- Instagram に出ないアカウントは、Meta ビジネスの 設定→Instagramアカウント→追加 でポートフォリオに入れると出る。
+- Threads の戻り先の欄はコンボボックス。打ったあと出る候補を選ぶと確定（Enter では入らない）。テスターの招待はアプリの 設定→More settings→Website permissions→Invitations。ウェブのログインは電話認証で止まることがある（tatsuki3284 の Threads は未接続）。
+- R2 は未申し込み（code 10042）なので画像は KV `tatsuki-go-media`。動画は R2 の申し込みが要る。
+- 試しの1件を tatsu_languages の Threads に投稿できた（本人の OK のあと）。
+- 次：動画（リール・YouTube・TikTok）、Facebook ページ、LinkedIn、DM を Replies へ。
