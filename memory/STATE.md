@@ -1,37 +1,33 @@
 # 今の状態（STATE）
 
-最終更新：2026-11-09（アカウント一覧の仮の版）
+最終更新：2026-11-09（main に一本化。作ったものは必ず main へ）
 
 ## 進行中の作業
+- Desk は Mac 専用（データは非公開リポジトリに15分ごとに保管）。本線は main に一本化（2026-11-09）：`desk/page-cards`・プロジェクト・持ち物・Mac だけにあった変更を全部 main に入れ、Mac は main で `desk/pull.sh` が5分ごとに取り込む。
+- 作りたい機能リスト（全11件）：全部 main にマージ済み（tatsuki32/tatsuki#9）。使ってみて直す段階。③ は `/recap`。⑦ ペルソナは仮の設定。
 - Desk の画面とボットをアメリカ英語にした（2026-11-09、main。今あるタスクとメモは日本語のまま。記録 `memory/episodic/sessions/2026-11-09-english-ui.md`）。
-- Desk の Mac 専用化：実装はブランチ `desk/local-first`。データは非公開リポジトリに15分ごとに保管中。クラウド定期タスクの停止は Mac 側の試運転のあと。
-- 本線は main に一本化（2026-11-09）。`desk/page-cards` の全部＋プロジェクト・持ち物を main に入れた。Mac は main に戻して `setup-mac.sh` を入れ直す（`desk/pull.sh`）。Mac だけにあった未コミットの変更（英語化・秘書ボット・Web 履歴・通知 など）も 2026-11-09 に main へ入れた。
-- 作りたい機能リスト（全11件）を順番に作っている。Desk のタスク「作りたい機能①〜⑪」で進み具合を見る。
-  - ① CLAUDE.md＋memory/（外付けメモリ）… 完了
-  - ②〜⑪ もすべて最小版を実装（2026-11-03）。Mac での本番確認はマージ後。使ってみて直す段階。
-  - ③ は標準の /resume とぶつかるので `/recap`。⑦ ペルソナは仮の設定（Tatsuki が決めたら /sync）。全部 main にマージ済み（tatsuki32/tatsuki#9）。
 - 朝のメールをタスクに一本化＋「できたこと」画面（`wins`）：実装・オンライン版に公開。main に未マージ（Mac に届くのはマージ後）。
 - コマンドを忘れる対策（Claude に頼むカード・`/` 一覧）と Desk 全体の文字リンク：main にマージ済み。Mac の Terminal 起動と iPhone の長押しは未確認。
-- Desk の「🎯 集中」と `focusblock/`：main に入れた。本物のブロックは本人の確認待ち。
-- Life OS（18個のツール）：土台と 01・02・11・12・13 を main に入れた。残りはブランチのまま。統括役は置かない。約束は `lifeos/README.md`。
+- 「🎯 集中」（`focusblock/`）：本物のブロックは本人の確認待ち。Life OS（18個のツール）：土台と 01・02・11・12・13 を main に入れた。残りはブランチのまま。統括役は置かない。約束は `lifeos/README.md`。
 - Wise の取り込みと「💰 お金」画面：第1版（5タブ、種類分け、比較、助言）を実装。記録と残高の差は、直接払いの送金を分けてほぼ解消（本人の確認待ち）。第2版（今後の支出・豆知識）を実装。定期タスクの実走は未確認。第3版（国の比較）を実装。最低賃金は Wikipedia の一覧から収録。第4版（期間で変わる分析、予算、旅の計画、貯金、シミュレーション、毎日の学び）を実装。
 - タスクの一旦中止・アーカイブ、時刻つき期日のカレンダー同期（`desk-task-calendar`）：実装済み。実走は確認待ち。予定の取り込み・メモ連携の毎時実行は止まっている。
 - タスクの時期トグル・並び替え・仕分けカード：実装済み。`desk-task-estimate` は手動で成功、朝の自動実行は確認待ち。
-- 言葉のページの文カード：全ページ対象。ニュース・マイナー国・タスクは自動リンクしない。`desk/page-cards` にコミット済み。main に未マージ。
+- 言葉のページの文カード：全ページ対象。ニュース・マイナー国・タスクは自動リンクしない。main に入った。
 - 連絡返信（Gmail・WhatsApp を 3:00・16:00 にタスクへ、`desk/whatsapp_sync.py`）：実装済み。11月6日3時の実走は成功。題名と中身の変更は未コミット。
-- World Desk の読む画面（一覧 → 予想・見比べ・なぜ5回・意見、`worldlog`）：`desk/page-cards` に入れて Mac の Desk に反映済み。main に未マージ。朝のタスク `desk-world-brief` の指示を入れ替えた（最初の実行は 11月6日。3日間ためす）。
-- ノートの Scrapbox 機能：`desk/page-cards` に取り込み済み。押した行を編集する形に変更（未コミット）。main に未マージ。
+- World Desk の読む画面（一覧 → 予想・見比べ・なぜ5回・意見、`worldlog`）：main に入った。朝のタスク `desk-world-brief` の指示を入れ替えた（最初の実行は 11月6日。3日間ためす）。
+- ノートの Scrapbox 機能：main に入った。押した行を編集する形に変更。
 - タスクをやりやすくする（`clear`）：実装済み。3件を本番で試した。`desk-task-clarify` の夜の実走は確認待ち。ボタンにはサーバーの再起動が要る。
-- プレゼント・ノート吸収・返信待ちの WhatsApp 対応：`desk/page-cards` に統合。`desk-morning-mail` の実走は確認待ち。
-- スクリーンタイム（`desk/screentime_sync.py`）：本物を19日分取り込めた。Chrome は確認済み。Brave は確認待ち。毎日世界遺産（`desk/heritage.py`）：`desk/page-cards` にコミット済み。朝の自動実行は確認待ち。
+- プレゼント・ノート吸収・返信待ちの WhatsApp 対応：main に入った。`desk-morning-mail` の実走は確認待ち。
+- スクリーンタイム（`desk/screentime_sync.py`）：本物を19日分取り込めた。Chrome は確認済み。Brave は確認待ち。毎日世界遺産（`desk/heritage.py`）：main に入った。朝の自動実行は確認待ち。
 - PC 画面（`desk/pc_monitor.py`）：実装済み・未コミット。ツールの終了は試し済み。アプリの終了は本番サーバーで確認待ち。
 - Web履歴（`desk/chrome_web_sync.py`、`desk/chrome-extension/`）：実装済み・未コミット。履歴は本物で取り込み済み。拡張は Tatsuki の読み込み待ちで、実物の Chrome では未確認。
 - Life Dashboard を Desk へ（`desk/lifelog.py`、体の画面、朝夜ルーティン、ご褒美カード、領収書）：最初の版を実装（未コミット）。睡眠と食事は本番で確認済み。レシートと Drive は確認待ち。
 - 秘書ボット（`lifeos/21-assistant/`。Cloudflare Workers、写真のボットとは別）：実装・未コミット。テストは偽物の通信で成功。本物の API と本番は導入待ち。
-- メール整理（`desk/gmail_clean.py`）：`desk/page-cards` にコミット済み。main に未マージ。本物で12件停止済み。OAuth はテスト中で、接続が7日で切れる可能性あり。 見せる素材（`desk/showcase.py`）：`desk/page-cards` に統合済み。main に未マージ。 小さな道具（`desk/utilities.py`）：`claude/desk-utilities-a3a168` にコミット。アプリの窓で使うには再ビルドが要る。
-- LINE の返信タスク化（`desk/line_sync.py`）：実装・未コミット。流れは本番で確認。未読のあるトークはまだ本番で未確認。お知らせ（Mac の通知。`desk/notify.py`）：実装・未コミット。本番で動作中。実際の音と表示、まとめの実走、`urgent` の印は確認待ち。使い方の計測と週1回の並び替え（`desk/usage.py`）：実装・未コミット。数え始めは 2026-11-06、最初の並び替えは 11-23。 週1回の提案（`desk/ideas.py`、`desk-idea-suggest`）：`desk/page-cards` に統合。
+- メール整理（`desk/gmail_clean.py`）：main に入った。本物で12件停止済み。OAuth はテスト中で、接続が7日で切れる可能性あり。 見せる素材（`desk/showcase.py`）：main に入った。 小さな道具（`desk/utilities.py`）：`claude/desk-utilities-a3a168` にコミット。アプリの窓で使うには再ビルドが要る。
+- LINE の返信タスク化（`desk/line_sync.py`）：実装・未コミット。流れは本番で確認。未読のあるトークはまだ本番で未確認。お知らせ（Mac の通知。`desk/notify.py`）：実装・未コミット。本番で動作中。実際の音と表示、まとめの実走、`urgent` の印は確認待ち。使い方の計測と週1回の並び替え（`desk/usage.py`）：実装・未コミット。数え始めは 2026-11-06、最初の並び替えは 11-23。 週1回の提案（`desk/ideas.py`、`desk-idea-suggest`）：main に入った。
 - アカウント一覧（`desk/accounts.py`、🔑 Accounts）：仮の版を実装。パスワードは持たない。鍵つきのパスワード欄は次の段階（要件定義から）。ポートフォリオは Cloudflare Pages に移した。
 ## 決定済みの事項
+- 作ったものは必ず main に入れる（どの Claude も。`.claude/rules/main-branch.md`）。Mac は main だけを取り込む。
 - UI/UX を作るときは毎回、本を全文読んでから（`.claude/rules/design-ui.md`）。Drive の文字変換は p.136 まで。後半は Tatsuki のまとめで補っている。
 - Desk の見た目：文字 12/14/16/20/28px・太さ 400/700・余白 4/8/16/24/40px。金は今いる場所・焦点・主ボタン・外部リンクだけ。ボタンに絵文字を付けない。
 - 機能追加は `/desk-feature` の流れ（質問 → 要件定義 → 承認 → 実装）。質問はすべて日本語で聞く。
