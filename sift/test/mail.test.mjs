@@ -31,24 +31,28 @@ test("MIME: encoded subject, two parts, CRLF", () => {
 
 test("day label", () => assert.equal(dayLabel("2026-01-03"), "Jan 3"));
 
-test("summary answer: JSON inside text, missing lines become empty", () => {
-  const r = readAnswer('Here: {"lines": {"1": "First.", "3": "Third."}, "brief": "Day."}', 3);
+test("summary answer: lines by number, missing ones become empty", () => {
+  const r = readAnswer('{"lines": [{"n": 1, "line": "First."}, {"n": 3, "line": "Third."}], "brief": "Day."}', 3);
   assert.deepEqual(r.lines, ["First.", "", "Third."]);
   assert.equal(r.brief, "Day.");
-  assert.throws(() => readAnswer("no json", 1));
 });
 
 test("prompt numbers each article with its site", () => {
   assert.equal(prompt([{ site: "S", title: "T", descr: "D" }]), "1. [S] T\n   D");
 });
 
-test("summarize calls the API once and reads usage", async () => {
-  let sent;
-  const fake = async (url, opt) => {
-    sent = JSON.parse(opt.body);
-    return { ok: true, json: async () => ({ content: [{ type: "text", text: '{"lines":{"1":"L"},"brief":"B"}' }], usage: { input_tokens: 100, output_tokens: 20 } }) };
-  };
-  const r = await summarize({ ANTHROPIC_KEY: "k" }, [{ site: "S", title: "T" }], fake);
-  assert.equal(sent.model, "claude-haiku-5-5");
+const fakeClient = (reply) => ({ messages: { create: async (req) => { fakeClient.sent = req; return reply; } } });
+
+test("summarize: Haiku, low effort, JSON schema, reads usage", async () => {
+  const c = fakeClient({ stop_reason: "end_turn", content: [{ type: "thinking", thinking: "" }, { type: "text", text: '{"lines":[{"n":1,"line":"L"}],"brief":"B"}' }], usage: { input_tokens: 100, output_tokens: 20 } });
+  const r = await summarize({}, [{ site: "S", title: "T" }], c);
+  assert.equal(fakeClient.sent.model, "claude-haiku-5-5");
+  assert.equal(fakeClient.sent.output_config.effort, "low");
+  assert.equal(fakeClient.sent.output_config.format.type, "json_schema");
   assert.deepEqual(r, { lines: ["L"], brief: "B", tin: 100, tout: 20 });
+});
+
+test("summarize: a stop other than end_turn is an error with its reason and tokens", async () => {
+  const c = fakeClient({ stop_reason: "max_tokens", content: [], usage: { input_tokens: 5, output_tokens: 16000 } });
+  await assert.rejects(summarize({}, [{ site: "S", title: "T" }], c), (e) => /max_tokens/.test(e.message) && e.tout === 16000);
 });

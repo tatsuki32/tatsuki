@@ -1,1 +1,1 @@
-{"name":"sift-daily","private":true,"type":"module","scripts":{"test":"node --test test/"},"devDependencies":{"wrangler":"^4.162.0"}}
+{"name":"sift-daily","private":true,"type":"module","scripts":{"test":"node --test test/"},"devDependencies":{"wrangler":"^4.162.0"},"dependencies":{"@anthropic-ai/sdk":"^1.8.0"}}

@@ -114,7 +114,7 @@ async function summarizeUser(env, user, now) {
     await log(env, "summary", user.id, true, `${results.length} articles`, s.tin, s.tout);
     return { done: results.length };
   } catch (e) {
-    await log(env, "summary", user.id, false, e.message);
+    await log(env, "summary", user.id, false, e.message, e.tin || 0, e.tout || 0);
     return { error: e.message };
   }
 }
