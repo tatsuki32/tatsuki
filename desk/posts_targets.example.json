@@ -1,0 +1,37 @@
+{
+  "_note": "Post Studio defaults. The real settings live in desk/data/posts/targets.json (made from this file on first use, never committed). Limits were read on 2026-11-15; platforms change them, so edit them here when they do.",
+  "voice": {
+    "ja": "First person, plain and honest, like someone sharing what they tried. Short sentences. No hype words. Say what went well and, when the memo says so, what did not.",
+    "en": "First person, friendly and plain. Short sentences. No hype. Say what happened and what was learned.",
+    "ru": "First person, friendly and plain. Short sentences. No hype. Natural Russian written by the person, not a translation."
+  },
+  "signature": {"ja": "", "en": "", "ru": ""},
+  "targets": [
+    {"id": "ig-ru-post", "name": "Instagram post (Russian)", "group": "ru", "lang": "ru", "kind": "post", "limit": 2200, "count": "chars", "tags": 5, "size": [1080, 1350], "open": "https://www.instagram.com/", "on": true,
+     "style": "Instagram caption for the Russian-speaking account. First line hooks. 3 to 6 short lines. Hashtags in Russian or English."},
+    {"id": "ig-en-post", "name": "Instagram post (English)", "group": "en", "lang": "en", "kind": "post", "limit": 2200, "count": "chars", "tags": 5, "size": [1080, 1350], "open": "https://www.instagram.com/", "on": true,
+     "style": "Instagram caption for the English account. First line hooks. 3 to 6 short lines."},
+    {"id": "ig-ru-story", "name": "Instagram story (Russian)", "group": "ru", "lang": "ru", "kind": "story", "limit": 60, "count": "chars", "tags": 0, "size": [1080, 1920], "open": "https://www.instagram.com/", "on": true,
+     "style": "One short line written on the picture. No hashtags."},
+    {"id": "ig-en-story", "name": "Instagram story (English)", "group": "en", "lang": "en", "kind": "story", "limit": 60, "count": "chars", "tags": 0, "size": [1080, 1920], "open": "https://www.instagram.com/", "on": true,
+     "style": "One short line written on the picture. No hashtags."},
+    {"id": "threads-ru", "name": "Threads (Russian)", "group": "ru", "lang": "ru", "kind": "post", "limit": 500, "count": "chars", "tags": 1, "size": [1080, 1350], "open": "https://www.threads.com/intent/post?text={text}", "on": true,
+     "style": "Conversational, like talking to friends. Ends with a light question when it fits. One topic tag at most."},
+    {"id": "threads-en", "name": "Threads (English)", "group": "en", "lang": "en", "kind": "post", "limit": 500, "count": "chars", "tags": 1, "size": [1080, 1350], "open": "https://www.threads.com/intent/post?text={text}", "on": true,
+     "style": "Conversational, like talking to friends. Ends with a light question when it fits. One topic tag at most."},
+    {"id": "x", "name": "X", "group": "ja", "lang": "ja", "kind": "post", "limit": 280, "count": "x", "tags": 2, "size": [1600, 900], "open": "https://x.com/intent/post?text={text}", "on": true,
+     "style": "One short post. Japanese counts double on X, so about 120 Japanese characters with the tags."},
+    {"id": "fb-post", "name": "Facebook post", "group": "ja", "lang": "ja", "kind": "post", "limit": 1500, "count": "chars", "tags": 3, "size": [1080, 1350], "open": "https://www.facebook.com/", "on": true,
+     "style": "Personal profile post for friends and family. About 200 to 400 characters, a little more context than Instagram."},
+    {"id": "fb-story", "name": "Facebook story", "group": "ja", "lang": "ja", "kind": "story", "limit": 40, "count": "chars", "tags": 0, "size": [1080, 1920], "open": "https://www.facebook.com/", "on": true,
+     "style": "One short line written on the picture. No hashtags."},
+    {"id": "linkedin", "name": "LinkedIn", "group": "en", "lang": "en", "kind": "post", "limit": 3000, "count": "chars", "tags": 4, "size": [1200, 1200], "open": "https://www.linkedin.com/feed/?shareActive=true&text={text}", "on": true,
+     "style": "Professional but personal. What was done, one thing learned, who it may help. 600 to 1300 characters. Line breaks between short paragraphs."},
+    {"id": "note", "name": "note article", "group": "ja", "lang": "ja", "kind": "article", "limit": 6000, "count": "chars", "tags": 5, "size": [1280, 670], "open": "https://note.com/notes/new", "on": true,
+     "style": "A note article in Markdown: a lead, 2 to 4 sections with ## headings, short paragraphs, the person's own voice. 1500 to 3000 characters. Hashtags at the end."},
+    {"id": "news", "name": "Company site news", "group": "ja", "lang": "ja", "kind": "news", "limit": 800, "count": "chars", "tags": 0, "size": [1200, 630], "open": "", "on": true,
+     "style": "A short company news item in polite Japanese (desu/masu). Title, then 300 to 800 characters: what happened, when, where. No hashtags. Test format for now."},
+    {"id": "reddit", "name": "Reddit", "group": "en", "lang": "en", "kind": "article", "limit": 3000, "count": "chars", "tags": 0, "size": [1080, 1350], "open": "https://www.reddit.com/submit?type=TEXT&title={title}&text={text}", "on": false,
+     "style": "A Reddit text post: a plain, honest title and a body that shares the experience without selling anything. Check the community's rules before posting."}
+  ]
+}

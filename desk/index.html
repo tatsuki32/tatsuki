@@ -763,6 +763,39 @@ button.hname:hover{color:var(--ink)}
 .utchoice label{display:grid;grid-template-columns:auto minmax(0,1fr);gap:0 var(--s2);align-items:baseline;cursor:pointer}
 .utchoice .due{grid-column:2}
 .utchoice input{accent-color:var(--accent)}
+.psp{max-width:1200px}
+.psnew{max-width:640px}
+.psnew>*{max-width:100%}
+.psthumbs{display:flex;flex-wrap:wrap;gap:var(--s2)}
+.psthumb{display:grid;gap:var(--s1);justify-items:start}
+.psthumb img{width:96px;height:96px;object-fit:cover;border-radius:var(--r-s);display:block}
+.psthumb .btn{min-height:28px;padding:0 var(--s2);font-size:var(--t1)}
+.psgroups{display:grid;gap:var(--s3);width:100%}
+.psgroup{border:0;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:var(--s1) var(--s3)}
+.psgroup legend{padding:0;margin-bottom:var(--s1)}
+.pschip{display:inline-flex;align-items:center;gap:var(--s1);font-size:var(--t2);cursor:pointer;min-height:32px}
+.pspost{display:grid;gap:var(--s3);margin-top:var(--s5)}
+.pspost .mpanelh h2{font-size:var(--t4)}
+.psset{display:grid;gap:var(--s2);margin-top:var(--s4)}
+.psset>h2{margin:0;font-size:var(--t3)}
+.psgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:var(--s3);align-items:start}
+.pscard{padding:var(--s3);display:grid;gap:var(--s2);min-width:0}
+.pscard.done{opacity:.6}
+.pshead{display:grid;gap:0}
+.pshead h3{margin:0;font-size:var(--t3)}
+.psimg{display:grid;gap:var(--s1);justify-items:start;overflow:hidden}
+.psimg img{max-width:100%;max-height:340px;border-radius:var(--r-s);display:block;cursor:grab;touch-action:none;user-select:none}
+.psnav{display:flex;align-items:center;gap:var(--s2)}
+.psnav .btn{min-height:28px;padding:0 var(--s2)}
+.pscard .wd-field{max-width:100%;font-size:var(--t2)}
+.pscard textarea.pstext{min-height:160px}
+.pshint{flex:1 1 160px;min-height:36px}
+.psrow{display:grid;grid-template-columns:40px minmax(0,1fr) auto auto;gap:var(--s2);align-items:center;width:100%;background:none;border:0;border-top:1px solid var(--line);padding:var(--s2) 0;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.psrow img{width:40px;height:40px;object-fit:cover;border-radius:6px}
+.psset1{display:grid;gap:var(--s1);width:100%;padding-top:var(--s3);border-top:1px solid var(--line)}
+.psset1:first-child{border-top:0;padding-top:0}
+.psset1 textarea.wd-field{min-height:64px;font-size:var(--t2)}
+@media (max-width:560px){.psgrid{grid-template-columns:minmax(0,1fr)}.psrow{grid-template-columns:40px minmax(0,1fr) auto}.psrow .nsn{display:none}}
 .utdrop{display:grid;gap:var(--s2);justify-items:start;width:100%}
 .utdrop.on{outline:2px dashed var(--accent);outline-offset:8px}
 .utdrop label{cursor:pointer}
@@ -1343,6 +1376,7 @@ if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="screentime")+1,0,{id:"netsp
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="screentime")+1,0,{id:"pc",e:"🖥️",label:"PC",g:"write"});
 if(LOCALAPI) VIEWS.push({id:"usage",e:"📊",label:"Usage",g:"write"}); // which parts of Desk get used, and the weekly re-arrangement (desk/usage.py)
 if(LOCALAPI) VIEWS.push({id:"utilities",e:"🧰",label:"Small Utilities",g:"write"}); // QR, character count, is.gd and PDF compression (desk/utilities.py)
+if(LOCALAPI) VIEWS.push({id:"post",e:"📣",label:"Post Studio",g:"write"}); // photos and a memo become drafts for each social account; nothing is posted from Desk (desk/posts.py)
 if(LOCALAPI) VIEWS.push({id:"transcribe",e:"🎙️",label:"Transcribe",g:"write"}); // long recordings to text on this Mac (desk/transcribe/, its own server on 8791)
 if(LOCALAPI) VIEWS.push({id:"bank",e:"🏦",label:"Bank Accounts",g:"tool"}); // same: from Tools and the / list. Details stay on this Mac (desk/bank.py)
 if(LOCALAPI) VIEWS.push({id:"accounts",e:"🔑",label:"Accounts",g:"tool"}); // where you have accounts and how you sign in; no passwords yet (desk/accounts.py)
@@ -4977,6 +5011,7 @@ function render(){
   if(viewId()==="mailclean"){mcLoad();$("#view").innerHTML=searchResults()+mcView();wire();wireMc();return}
   if(viewId()==="netspeed"){nsLoad();$("#view").innerHTML=searchResults()+nsView();wire();wireNs();return}
   if(viewId()==="transcribe"){trLoad();$("#view").innerHTML=searchResults()+trView();wire();wireTr();return}
+  if(viewId()==="post"){if(!ps().data&&!ps().loading)psLoad();if(!document.activeElement?.closest?.(".psedit")||!$("#psView"))psDraw();return} // a redraw from elsewhere never takes the text being typed
   if(viewId()==="utilities"){if(!document.activeElement?.closest?.(".utfield")||!$("#utView"))utDraw();return} // a redraw from elsewhere never takes the text being typed
   if(viewId()==="notices"){ntLoad();$("#view").innerHTML=searchResults()+ntView();wire();wireNt();return}
   if(viewId()==="accounts"){acLoad();$("#view").innerHTML=searchResults()+acView();wire();wireAc();return}
@@ -5197,6 +5232,158 @@ function wireUt(){
     zone.ondragleave=e=>{if(!zone.contains(e.relatedTarget))drop?.classList.remove("on")};
     zone.ondrop=e=>{e.preventDefault();drop?.classList.remove("on");utPdfFile(e.dataTransfer.files[0])};
   }
+}
+/* Post Studio: photos and a short memo become drafts for each account (desk/posts.py). Nothing is posted from here:
+   the person copies the text, saves the pictures and posts on each site. */
+const PSLANG=[["ja","Japanese"],["en","English"],["ru","Russian"]];
+const PSKIND={post:"Post",story:"Story",article:"Article",news:"News"};
+const ps=()=>S.ps||(S.ps={tab:"new",memo:"",photos:[],pick:null,cur:null,data:null,busy:false,err:"",n:{},open:{}});
+async function psSend(method,path,body){
+  const r=await fetch(path,{method,headers:{"Content-Type":"application/json"},body:body?JSON.stringify(body):undefined});
+  let v={};try{v=await r.json()}catch(e){}
+  if(!r.ok)throw new Error(v.error||"Restarting the server may help");
+  return v;
+}
+async function psLoad(){
+  const p=ps();if(p.loading)return;p.loading=true;
+  try{p.data=await psSend("GET","/api/posts");if(!p.pick)p.pick=p.data.targets.filter(t=>t.on).map(t=>t.id);p.err=""}catch(e){p.err=e.message}
+  p.loading=false;psRedraw();
+}
+async function psOpen(id){
+  const p=ps();clearTimeout(p.timer);
+  try{p.cur=await psSend("GET","/api/posts/"+encodeURIComponent(id))}catch(e){p.err=e.message}
+  p.tab="new";psRedraw();
+  if(p.cur&&(p.cur.status==="making"||p.cur.running))p.timer=setTimeout(()=>psOpen(id),2000);
+}
+function psRedraw(){if(viewId()!=="post")return;const keep=document.activeElement?.closest?.(".psedit");if(keep&&$("#psView"))return;psDraw()}
+function psDraw(){$("#view").innerHTML=searchResults()+psView();wire();wirePs()}
+const psFull=(t,d)=>{if(!d)return "";if(t.kind==="story")return d.overlay||"";let s=(d.text||"").trim();const tags=[...(d.hashtags||[])];(t.fixedTags||"").split(/[\s,]+/).filter(x=>x.startsWith("#")&&!tags.includes(x)).forEach(x=>tags.push(x));if(tags.length)s+="\n\n"+tags.join(" ");return s};
+const psLen=(t,s)=>{if(t.count!=="x")return [...s].length;let n=0;s=s.replace(/https?:\/\/\S+/g,()=>{n+=23;return ""});for(const ch of s){const c=ch.codePointAt(0);n+=(c<=4351||(c>=8192&&c<=8205)||(c>=8208&&c<=8223)||(c>=8242&&c<=8247))?1:2}return n};
+const psOpenUrl=(t,d)=>t.open?t.open.replace("{text}",encodeURIComponent(t.kind==="story"?"":psFull(t,d))).replace("{title}",encodeURIComponent(d?.title||"")):"";
+function psNew(){
+  const p=ps(),d=p.data,on=(d?.targets||[]).filter(t=>t.on);
+  const thumbs=p.photos.map((x,i)=>`<span class="psthumb"><img src="/api/posts/photo/${esc(x.id)}.jpg" alt="Photo ${i+1}"><button class="btn" data-psdrop="${i}" aria-label="Remove photo ${i+1}">Remove</button></span>`).join("");
+  const groups=PSLANG.map(([l,name])=>{const xs=on.filter(t=>t.lang===l);if(!xs.length)return "";
+    return `<fieldset class="psgroup"><legend class="sub">${name}</legend>${xs.map(t=>`<label class="pschip"><input type="checkbox" data-pspick="${esc(t.id)}" ${p.pick?.includes(t.id)?"checked":""}><span>${esc(t.name)}</span></label>`).join("")}</fieldset>`}).join("");
+  return `<section class="card mfocus psnew">
+    <div class="utdrop" id="psDrop"><div class="psthumbs">${thumbs}</div><label class="btn">${p.photos.length?"Add more photos":"Choose photos"}<input type="file" id="psFile" hidden multiple accept="image/*,.heic,.heif"></label><span class="due">${p.upBusy?"Adding photos…":"Up to 10. You can also drag them here."}</span></div>
+    <textarea class="wd-field psedit" id="psMemo" placeholder="What did you do? A few words or bullet points are enough." aria-label="What you did">${esc(p.memo)}</textarea>
+    <div class="psgroups">${groups}</div>
+    ${d&&!d.key?`<p class="due" role="alert">No Anthropic API key on this Mac yet. The drafts need it (the same key the body photos use).</p>`:""}
+    ${p.err?`<p class="due" role="alert">${esc(p.err)}</p>`:""}
+    <button class="btn primary" id="psMake" ${p.busy||p.upBusy?"disabled":""}>${p.busy?"Starting":"Make drafts"}</button>
+    <p class="due">Your memo and photos go to Claude to write the drafts. Nothing is posted from Desk.</p></section>`;
+}
+function psCard(post,t){
+  const p=ps(),d=post.drafts?.[t.id],tid=esc(t.id),n=Math.min(p.n[t.id]||0,Math.max(post.photos.length-1,0)),busy=post.running&&(!post.regen||post.regen===t.id);
+  const full=psFull(t,d),len=d?psLen(t,full):0,over=len-t.limit,posted=!!post.posted?.[t.id];
+  const img=post.photos.length?`<div class="psimg" data-psimg="${tid}"><img src="/api/posts/${esc(post.id)}/img/${tid}/${n}.jpg?k=${post.updatedAt}" alt="${esc(t.name)} picture ${n+1}" draggable="false">
+    ${post.photos.length>1?`<div class="psnav"><button class="btn" data-psprev="${tid}" aria-label="Previous photo">‹</button><span class="due">${n+1} / ${post.photos.length}</span><button class="btn" data-psnext="${tid}" aria-label="Next photo">›</button></div>`:""}
+    <span class="due">${t.size[0]}×${t.size[1]} · drag the picture to move the frame</span></div>`:"";
+  let body="";
+  if(!d)body=`<p class="due">${busy?"Writing…":"No draft yet."}</p>`;
+  else if(t.kind==="story")body=`<input class="wd-field psedit" data-psover="${tid}" value="${esc(d.overlay)}" aria-label="Words on the picture"><label class="pschip"><input type="checkbox" data-pstexton="${tid}" ${post.textOn?.[t.id]===false?"":"checked"}><span>Write it on the picture</span></label>`;
+  else body=`${t.kind==="article"||t.kind==="news"?`<input class="wd-field psedit" data-pstitle="${tid}" value="${esc(d.title)}" aria-label="Title">`:""}<textarea class="wd-field psedit pstext" data-pstext="${tid}" aria-label="${esc(t.name)} text">${esc(full)}</textarea>`;
+  const url=d?psOpenUrl(t,d):"";
+  const acts=!d?"":t.id==="note"?`<button class="btn" data-pscopy="${tid}">Copy Markdown</button><button class="btn" data-pshtml="${tid}">Copy formatted</button>${url?`<a class="btn" href="${esc(url)}" target="_blank" rel="noopener" data-pscopygo="${tid}">Open note ↗</a>`:""}`
+    :`${url?`<a class="btn" href="${esc(url)}" target="_blank" rel="noopener" data-pscopygo="${tid}">Copy and open ↗</a>`:""}<button class="btn" data-pscopy="${tid}">Copy</button>`;
+  return `<article class="card pscard${posted?" done":""}" aria-label="${esc(t.name)}">
+    <header class="pshead"><h3>${esc(t.name)}</h3><span class="due">${PSKIND[t.kind]}${d?` · ${len.toLocaleString("en-US")} / ${t.limit.toLocaleString("en-US")}${t.count==="x"?" (weighted)":""}${over>0?` · ${over} over`:""}`:""}</span></header>
+    ${img}${body}
+    <div class="nsgo">${acts}${post.photos.length?`<button class="btn" data-pssave="${tid}">${post.photos.length>1?`Save ${post.photos.length} pictures`:"Save picture"}</button>`:""}</div>
+    <div class="nsgo">${p.open[t.id]?`<input class="wd-field psedit pshint" data-pshint="${tid}" placeholder="What to change (optional)" aria-label="What to change"><button class="btn" data-psregen="${tid}" ${post.running?"disabled":""}>Rewrite</button>`:`<button class="btn" data-psask="${tid}" ${post.running?"disabled":""}>${busy&&post.regen===t.id?"Rewriting…":"Rewrite"}</button>`}
+    <label class="pschip"><input type="checkbox" data-psposted="${tid}" ${posted?"checked":""}><span>Posted</span></label></div></article>`;
+}
+function psPost(){
+  const p=ps(),post=p.cur;if(!post)return "";
+  const ts=(p.data?.targets||[]).filter(t=>post.targets.includes(t.id)),done=Object.keys(post.posted||{}).length;
+  const when=new Date(post.createdAt).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
+  const groups=PSLANG.map(([l,name])=>{const xs=ts.filter(t=>t.lang===l);return xs.length?`<section class="psset"><h2>${name}</h2><div class="psgrid">${xs.map(t=>psCard(post,t)).join("")}</div></section>`:""}).join("");
+  return `<section class="pspost" id="psPost"><div class="mpanelh"><h2>Drafts</h2><span class="sub">${esc(when)} · ${done} / ${post.targets.length} posted</span></div>
+    <p class="mtalk" data-noauto>${esc(post.memo)}</p>
+    ${post.status==="making"?`<p class="due" role="status">Writing the drafts. This takes about a minute.</p>`:""}
+    ${post.error?`<p class="due" role="alert">${esc(post.error)}</p>`:""}
+    ${post.namesLeftOut?.length?`<p class="due">Names left out of the drafts: ${post.namesLeftOut.map(esc).join(", ")}. Add them yourself if they agreed.</p>`:""}
+    ${groups}</section>`;
+}
+function psEarlier(){
+  const xs=ps().data?.posts||[];
+  if(!xs.length)return `<p class="due">Nothing yet. Your drafts appear here.</p>`;
+  return mpanel("Earlier","",xs.map(x=>`<button class="psrow" data-psload="${esc(x.id)}">${x.photo?`<img src="/api/posts/photo/${esc(x.photo)}.jpg" alt="">`:"<span></span>"}<span>${esc(x.memo||"(photos only)")}</span><span class="nsv">${x.posted} / ${x.targets}</span><span class="nsn">${esc(new Date(x.createdAt).toLocaleDateString("en-US",{month:"short",day:"numeric"}))}</span></button>`).join(""));
+}
+function psSettings(){
+  const d=ps().data;if(!d)return "";
+  const rows=d.targets.map(t=>`<div class="psset1"><label class="pschip"><input type="checkbox" data-pson="${esc(t.id)}" ${t.on?"checked":""}><span><b>${esc(t.name)}</b> <span class="due">${PSKIND[t.kind]} · ${t.lang} · ${t.limit} chars · ${t.tags} tags</span></span></label>
+    <textarea class="wd-field psedit" data-psstyle="${esc(t.id)}" aria-label="${esc(t.name)} style">${esc(t.style||"")}</textarea>
+    <input class="wd-field psedit" data-psfixed="${esc(t.id)}" value="${esc(t.fixedTags||"")}" placeholder="Tags always added, like #ZEN大学" aria-label="${esc(t.name)} tags always added"></div>`).join("");
+  const voice=PSLANG.map(([l,name])=>`<label class="psset1"><span class="sub">${name} voice</span><textarea class="wd-field psedit" data-psvoice="${l}">${esc(d.voice?.[l]||"")}</textarea></label>`).join("");
+  return `<section class="card mfocus"><p class="mtalk">How each account sounds, and where to post. Saved when you leave a box.</p>${voice}</section><section class="card mfocus">${rows}</section>`;
+}
+function psView(){
+  const p=ps(),tabs=[["new","New"],["earlier","Earlier"],["settings","Settings"]];
+  const pane=p.tab==="earlier"?psEarlier():p.tab==="settings"?psSettings():psNew()+psPost();
+  return `<div class="money psp" id="psView" data-noauto><h1>Post Studio</h1><div class="mtabs" role="tablist" aria-label="Post Studio">${tabs.map(([k,l])=>`<button role="tab" class="mtab" data-pstab="${k}" aria-selected="${k===p.tab}">${l}</button>`).join("")}</div>${p.data||p.err?pane:`<p class="due">Loading…</p>`}</div>`;
+}
+async function psAddFiles(files){
+  const p=ps(),list=[...files].filter(f=>f.type.startsWith("image/")||/\.(heic|heif)$/i.test(f.name)).slice(0,10-p.photos.length);
+  if(!list.length)return;p.upBusy=true;p.err="";psDraw();
+  for(const f of list){
+    try{const r=await fetch("/api/posts/photo",{method:"POST",headers:{"Content-Type":"application/octet-stream","X-Desk-Upload":"1"},body:f});
+      let v={};try{v=await r.json()}catch(e){}if(!r.ok)throw new Error(v.error||"Could not add the photo");
+      if(!p.photos.some(x=>x.id===v.id))p.photos.push(v)}catch(e){p.err=e.message}
+  }
+  p.upBusy=false;psDraw();
+}
+async function psPut(body){const p=ps();if(!p.cur)return;try{p.cur=await psSend("PUT","/api/posts/"+encodeURIComponent(p.cur.id),body)}catch(e){toast(e.message)}}
+async function psCheckDone(){
+  const post=ps().cur;if(!post)return;
+  if(Object.keys(post.posted||{}).length===post.targets.length&&post.targets.length)
+    await store.putWin({id:winId("post-"+post.id),kind:"self",title:"Posted: "+(post.memo||"photos").split("\n")[0].slice(0,60),date:hcmcDate()});
+}
+function wirePs(){
+  const p=ps(),all=s=>document.querySelectorAll(s),tOf=id=>p.data?.targets.find(t=>t.id===id),dOf=id=>p.cur?.drafts?.[id];
+  all("[data-pstab]").forEach(b=>b.onclick=()=>{p.tab=b.dataset.pstab;psDraw()});
+  const file=$("#psFile");if(file)file.onchange=e=>psAddFiles(e.target.files);
+  const drop=$("#psDrop"),zone=drop?.closest(".psnew");
+  if(zone){zone.ondragover=e=>{e.preventDefault();drop.classList.add("on")};zone.ondragleave=e=>{if(!zone.contains(e.relatedTarget))drop.classList.remove("on")};zone.ondrop=e=>{e.preventDefault();drop.classList.remove("on");psAddFiles(e.dataTransfer.files)}}
+  all("[data-psdrop]").forEach(b=>b.onclick=()=>{p.photos.splice(+b.dataset.psdrop,1);psDraw()});
+  const memo=$("#psMemo");if(memo)memo.oninput=e=>{p.memo=e.target.value};
+  all("[data-pspick]").forEach(c=>c.onchange=()=>{const id=c.dataset.pspick;p.pick=c.checked?[...new Set([...(p.pick||[]),id])]:(p.pick||[]).filter(x=>x!==id)});
+  const make=$("#psMake");if(make)make.onclick=async()=>{
+    p.busy=true;p.err="";psDraw();
+    try{const post=await psSend("POST","/api/posts",{memo:p.memo,photos:p.photos.map(x=>x.id),targets:p.pick||[]});p.memo="";p.photos=[];p.n={};p.open={};p.busy=false;psOpen(post.id);psLoad();return}
+    catch(e){p.err=e.message}p.busy=false;psDraw()};
+  all("[data-psload]").forEach(b=>b.onclick=()=>psOpen(b.dataset.psload));
+  all("[data-psprev],[data-psnext]").forEach(b=>b.onclick=()=>{const id=b.dataset.psprev||b.dataset.psnext,k=p.cur.photos.length;p.n[id]=((p.n[id]||0)+(b.dataset.psprev?-1:1)+k)%k;psDraw()});
+  all("[data-pstext]").forEach(el=>el.onblur=()=>{const id=el.dataset.pstext;if(el.value===psFull(tOf(id),dOf(id)))return;psPut({drafts:{[id]:{text:el.value,hashtags:[]}}}).then(psDraw)});
+  all("[data-pstitle]").forEach(el=>el.onblur=()=>{const id=el.dataset.pstitle;if(el.value===(dOf(id)?.title||""))return;psPut({drafts:{[id]:{title:el.value}}}).then(psDraw)});
+  all("[data-psover]").forEach(el=>el.onblur=()=>{const id=el.dataset.psover;if(el.value===(dOf(id)?.overlay||""))return;psPut({drafts:{[id]:{overlay:el.value}}}).then(psDraw)});
+  all("[data-pstexton]").forEach(c=>c.onchange=()=>psPut({textOn:{[c.dataset.pstexton]:c.checked}}).then(psDraw));
+  all("[data-psposted]").forEach(c=>c.onchange=()=>psPut({posted:{[c.dataset.psposted]:c.checked}}).then(()=>{psCheckDone();psDraw();psLoad()}));
+  const copy=async id=>{const t=tOf(id),d=dOf(id);const s=t.kind==="article"||t.kind==="news"?(d.title?`# ${d.title}\n\n`:"")+psFull(t,d):psFull(t,d);return copyText(s)};
+  all("[data-pscopy]").forEach(b=>b.onclick=async()=>toast(await copy(b.dataset.pscopy)?"Copied":"Could not copy"));
+  all("[data-pscopygo]").forEach(a=>a.onclick=()=>{copy(a.dataset.pscopygo).then(ok=>toast(ok?"Copied. Paste it on the site":"Could not copy"))});
+  all("[data-pshtml]").forEach(b=>b.onclick=async()=>{const id=b.dataset.pshtml,t=tOf(id),d=dOf(id),src=psFull(t,d);
+    try{await psSend("POST","/api/posts/copy",{html:(d.title?`<h1>${esc(d.title)}</h1>`:"")+md(src),plain:(d.title?d.title+"\n\n":"")+src});toast("Copied with formatting. Paste it into note")}catch(e){toast(e.message)}});
+  all("[data-pssave]").forEach(b=>b.onclick=async()=>{const id=b.dataset.pssave;
+    for(let n=0;n<p.cur.photos.length;n++){try{const v=await psSend("POST",`/api/posts/${encodeURIComponent(p.cur.id)}/save`,{target:id,n});
+      const a=document.createElement("a");a.href="/api/utilities/file/"+v.file;a.download="";document.body.append(a);a.click();a.remove()}catch(e){toast(e.message);break}}
+    toast("Saving to Downloads")});
+  all("[data-psask]").forEach(b=>b.onclick=()=>{p.open[b.dataset.psask]=true;psDraw();$(`[data-pshint="${b.dataset.psask}"]`)?.focus()});
+  const regen=async id=>{const hint=$(`[data-pshint="${id}"]`)?.value||"";p.open[id]=false;try{p.cur=await psSend("POST",`/api/posts/${encodeURIComponent(p.cur.id)}/regen`,{target:id,hint})}catch(e){toast(e.message)}psDraw();psOpen(p.cur.id)};
+  all("[data-psregen]").forEach(b=>b.onclick=()=>regen(b.dataset.psregen));
+  all("[data-pshint]").forEach(el=>el.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();regen(el.dataset.pshint)}});
+  all("[data-psimg]").forEach(box=>{const img=box.querySelector("img"),id=box.dataset.psimg;if(!img)return;
+    img.onpointerdown=e=>{e.preventDefault();img.setPointerCapture(e.pointerId);const n=Math.min(p.n[id]||0,p.cur.photos.length-1),ph=p.cur.photos[n],sx=e.clientX,sy=e.clientY,r=img.getBoundingClientRect();
+      img.onpointermove=m=>{img.style.transform=`translate(${(m.clientX-sx)/3}px,${(m.clientY-sy)/3}px)`};
+      img.onpointerup=u=>{img.onpointermove=img.onpointerup=null;img.style.transform="";const dx=(u.clientX-sx)/r.width,dy=(u.clientY-sy)/r.height;if(Math.abs(dx)+Math.abs(dy)<.01)return;
+        // dragging the picture right shows more of the left side: the frame's middle moves the other way
+        const x=Math.min(Math.max((ph.x??.5)-dx*.5,0),1),y=Math.min(Math.max((ph.y??.45)-dy*.5,0),1);psPut({focus:{[n]:[x,y]}}).then(psDraw)}}});
+  const saveSet=body=>psSend("PUT","/api/posts/settings",body).then(v=>{p.data=v;toast("Saved")}).catch(e=>toast(e.message));
+  all("[data-pson]").forEach(c=>c.onchange=()=>saveSet({targets:[{id:c.dataset.pson,on:c.checked}]}).then(()=>{p.pick=null;psLoad()}));
+  all("[data-psstyle]").forEach(el=>el.onblur=()=>{if(el.value!==(tOf(el.dataset.psstyle)?.style||""))saveSet({targets:[{id:el.dataset.psstyle,style:el.value}]})});
+  all("[data-psfixed]").forEach(el=>el.onblur=()=>{if(el.value!==(tOf(el.dataset.psfixed)?.fixedTags||""))saveSet({targets:[{id:el.dataset.psfixed,fixedTags:el.value}]})});
+  all("[data-psvoice]").forEach(el=>el.onblur=()=>{if(el.value!==(p.data.voice?.[el.dataset.psvoice]||""))saveSet({voice:{[el.dataset.psvoice]:el.value}})});
 }
 /* Notifications: what desk/notify.py showed on this Mac or held back, and its settings. The page decides nothing. */
 const NTHELD={quiet:"Quiet hours",paused:"Paused",cap:"Daily limit"};

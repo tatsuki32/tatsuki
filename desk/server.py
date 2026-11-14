@@ -42,6 +42,7 @@ import chrome_web_sync
 import gmail_clean
 import lifelog
 import utilities
+import posts
 import showcase
 import screentime_sync
 import usage
@@ -724,6 +725,66 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(*utilities.clear_pdf(step[1]))
         return self.send(404, {"error": "not found"})
 
+    def posts_get(self, step):
+        """Post Studio: the list, one post, its pictures. Photos are served only by their own hashed names."""
+        if not step:
+            return self.send(200, posts.view())
+        if len(step) == 2 and step[0] == "photo":
+            p = posts.photo_path(step[1].removesuffix(".jpg"), "api") or posts.photo_path(step[1].removesuffix(".jpg"))
+            return self.image_file(p)
+        post = posts.get(unquote(step[0]))
+        if not post:
+            return self.send(404, {"error": "not found"})
+        if len(step) == 1:
+            return self.send(200, posts.public(post))
+        if len(step) == 4 and step[1] == "img" and step[3].removesuffix(".jpg").isdigit():
+            return self.image_file(posts.image(post["id"], step[2], int(step[3].removesuffix(".jpg"))))
+        return self.send(404, {"error": "not found"})
+
+    def image_file(self, p):
+        if not p:
+            return self.send(404, {"error": "not found"})
+        with open(p, "rb") as f:
+            data = f.read()
+        self.send_response(200)
+        self.send_header("Content-Type", "image/jpeg")
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("Cache-Control", "private, max-age=3600")
+        self.end_headers()
+        self.wfile.write(data)
+
+    def posts_write(self, method, step):
+        """Post Studio writes. Nothing here posts to any site; the person does that from each site."""
+        if method == "POST" and step == ["photo"]:
+            if self.headers.get("X-Desk-Upload") != "1":
+                return self.send(415, {"error": "upload header required"})
+            n = int(self.headers.get("Content-Length") or 0)
+            if n > posts.PHOTO_MAX:
+                self.close_connection = True
+                return self.send(413, {"error": "A photo can be up to 40 MB"})
+            return self.send(*posts.add_photo(self.rfile, n))
+        if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+            return self.send(415, {"error": "json only"})
+        try:
+            rec = self.body()
+        except (ValueError, json.JSONDecodeError):
+            return self.send(400, {"error": "bad json"})
+        if method == "POST" and not step:
+            return self.send(*posts.create(rec))
+        if method == "PUT" and step == ["settings"]:
+            return self.send(*posts.save_settings(rec))
+        if method == "POST" and step == ["copy"]:
+            return self.send(*posts.copy_html(rec.get("html"), rec.get("plain")))
+        pid = unquote(step[0]) if step else ""
+        if method == "PUT" and len(step) == 1:
+            return self.send(*posts.change(pid, rec))
+        if method == "POST" and step[1:] == ["regen"]:
+            return self.send(*posts.regen(pid, rec))
+        if method == "POST" and step[1:] == ["save"]:
+            return self.send(*posts.save_image(pid, str(rec.get("target") or ""), int(rec.get("n") or 0)))
+        return self.send(404, {"error": "not found"})
+
     def lifelog_photo(self, name):
         p = lifelog.photo_path(name)
         if not p:
@@ -810,6 +871,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, transcribe_desk.view())
         if path.startswith("/api/utilities/file/"):
             return self.utility_file(path.rsplit("/", 1)[1])
+        if path == "/api/posts" or path.startswith("/api/posts/"):
+            return self.posts_get(path.split("/")[3:])
         if path == "/api/showcase":
             return self.send(200, showcase.view())
         if path == "/api/mailclean":
@@ -950,6 +1013,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.upload_post()
         if method == "POST" and urlsplit(self.path).path.startswith("/api/utilities/"):
             return self.utilities_post(urlsplit(self.path).path)
+        if urlsplit(self.path).path == "/api/posts" or urlsplit(self.path).path.startswith("/api/posts/"):
+            return self.posts_write(method, urlsplit(self.path).path.split("/")[3:])
         col, doc_id = self.route()
         try:
             rec = self.body()

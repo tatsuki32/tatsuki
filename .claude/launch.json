@@ -20,6 +20,12 @@
       "port": 4795
     },
     {
+      "name": "desk-posts-test",
+      "runtimeExecutable": "/bin/sh",
+      "runtimeArgs": ["-c", "cd desk && DESK_POSTS_DIR=/tmp/claude/desk-posts-test DESK_PORT=${PORT:-4796} exec python3 server.py"],
+      "port": 4796
+    },
+    {
       "name": "desk-notify-test",
       "runtimeExecutable": "/bin/sh",
       "runtimeArgs": ["-c", "cd desk && NOTIFY_DIR=/tmp/claude/desk-notify-test DESK_PORT=${PORT:-4793} exec python3 server.py"],
