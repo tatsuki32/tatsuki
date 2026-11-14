@@ -620,11 +620,13 @@ document.addEventListener("keydown",e=>{
 });
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"){if(P&&P.phase==="run")rpWake(true);sync()}});
 window.addEventListener("online",sync);
+/* on the Mac (localhost), 22:00-07:00 is quiet: the start screen opens without the alarm sound (same as desk/routine_alarm.py) */
+const macQuiet=()=>{if(!/^(localhost|127\.0\.0\.1)$/.test(location.hostname))return false;const h=new Date(Date.now()+HCMC).getUTCHours();return h>=22||h<7};
 /* the start alarm while this page is open (on the Mac, desk/routine_alarm.py rings even when it is closed) */
 setInterval(()=>{
   if(P||document.visibilityState!=="visible")return;const c=settings();if(c.alarm===false)return;const now=new Date(Date.now()+HCMC).toISOString().slice(11,16);
   lists().filter(l=>l.alarm!==false&&l.at).forEach(l=>{const w=l.id;if(P||now!==l.at)return;const key=today()+w;let last="";try{last=localStorage.getItem("rt-alarm")||""}catch(e){}
-    if(last===key||run(today(),w))return;try{localStorage.setItem("rt-alarm",key)}catch(e){}rpOpen(w,"alarm")});
+    if(last===key||run(today(),w))return;try{localStorage.setItem("rt-alarm",key)}catch(e){}rpOpen(w,macQuiet()?"":"alarm")});
 },15000);
 
 /* ---------- start ---------- */
