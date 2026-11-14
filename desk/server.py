@@ -48,6 +48,7 @@ import golinks
 import showcase
 import screentime_sync
 import usage
+import site_sync
 import wise_analysis
 import wise_goals
 import wise_report
@@ -913,6 +914,12 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, {**usage.view(parse_qs(urlsplit(self.path).query).get("period", ["14"])[0]), "on": usage.enabled(PORT)})
         if path == "/api/layout":
             return self.send(200, usage.public(usage.read_layout(), usage.enabled(PORT)))
+        if path == "/api/site":
+            # tany.im analytics (desk/site_sync.py): read from desk/data/site/, nothing is fetched here
+            q = parse_qs(urlsplit(self.path).query)
+            return self.send(200, site_sync.view(q.get("period", ["7"])[0], q.get("from", [None])[0], q.get("to", [None])[0]))
+        if path == "/api/site/home":
+            return self.send(200, site_sync.home_line() or {})
         if path == "/api/screentime":
             q = parse_qs(urlsplit(self.path).query)
             return self.send(200, screentime_sync.view(q.get("period", ["week"])[0], q.get("device", ["mac"])[0]))
@@ -1050,6 +1057,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, {"ok": usage.enabled(PORT) and usage.record(rec)})
         if method == "PUT" and urlsplit(self.path).path == "/api/layout":
             return self.send(200, usage.change(rec, usage.enabled(PORT)))
+        if urlsplit(self.path).path.startswith("/api/site/") and method in ("POST", "PUT"):
+            return self.site_action(method, urlsplit(self.path).path.rsplit("/", 1)[1], rec)
         if method == "POST" and urlsplit(self.path).path == "/api/claude":
             return self.claude(rec)
         if method == "POST" and urlsplit(self.path).path in ("/api/focus/start", "/api/focus/stop"):
@@ -1231,6 +1240,35 @@ class Handler(BaseHTTPRequestHandler):
         except bank.BankError:
             return self.send(500, {"error": "storage"})
 
+    def site_action(self, method, what, rec):
+        # tany.im analytics: pull now, Search Console, the SEO check, UTM links and the Clarity id
+        if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+            return self.send(415, {"error": "json only"})
+        if method == "POST" and what == "refresh":
+            site_sync.pull()
+            return self.send(200, {"ok": True})
+        if method == "POST" and what == "gsc":
+            site_sync.gsc_pull()
+            return self.send(200, {"ok": True})
+        if method == "POST" and what == "gsc-connect":
+            threading.Thread(target=site_sync.gsc_auth, daemon=True).start()  # opens Google's page in the default browser
+            return self.send(200, {"ok": True})
+        if method == "POST" and what == "audit":
+            return self.send(200, site_sync.audit())
+        if method == "POST" and what == "utm":
+            if not str(rec.get("source") or "").strip():
+                return self.send(400, {"error": "source"})
+            return self.send(200, {"url": site_sync.utm(str(rec.get("source")), str(rec.get("medium") or ""), str(rec.get("campaign") or ""), str(rec.get("content") or ""), str(rec.get("path") or "/"))})
+        if method == "PUT" and what == "settings":
+            cid = str(rec.get("clarity") or "").strip()
+            if cid and not re.fullmatch(r"[a-z0-9]{6,16}", cid):
+                return self.send(400, {"error": "clarity id"})
+            s = site_sync.settings()
+            s["clarity"] = cid
+            site_sync._save(site_sync.SETTINGS, s)
+            return self.send(200, s)
+        return self.send(404, {"error": "not found"})
+
     def do_POST(self):
         self.write("POST")
 
@@ -1252,6 +1290,7 @@ if __name__ == "__main__":
         threading.Thread(target=routine_alarm.watch, daemon=True).start()  # morning / evening routine start alarm
         threading.Thread(target=routine_sync.watch, daemon=True).start()  # routines <-> the Routine app on the phone
         threading.Thread(target=transcribe_desk.watch, daemon=True).start()  # the transcriber on 8791, kept running
+        threading.Thread(target=site_sync.watch, daemon=True).start()  # tany.im analytics pulled every 15 minutes
     try:
         srv.serve_forever()
     except KeyboardInterrupt:

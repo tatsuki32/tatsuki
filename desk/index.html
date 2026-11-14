@@ -837,6 +837,27 @@ button.hname:hover{color:var(--ink)}
 .webrow .btn{justify-self:end}
 .webext{margin:var(--s2) 0 0;padding-left:var(--s4);font-size:var(--t2);color:var(--ink-2)}
 .pcalert{display:block;max-width:960px;margin:0 auto var(--s3);padding:var(--s2) var(--s3);border-left:3px solid var(--red);background:var(--red-soft);color:var(--ink);font-size:var(--t2);text-decoration:none}
+.stgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--s3)}
+.stduo{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s3)}
+.strows{display:grid}
+.strow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--s1) var(--s3);align-items:start;padding:var(--s2) 0;border-top:1px solid var(--line)}
+.strow:first-child{border-top:0}
+.strow .uname{min-width:0;overflow-wrap:anywhere}
+.strow .n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.strow.sq{grid-template-columns:minmax(0,1fr) 4em 4em 3.5em}
+.strow.uhead{padding:0 0 var(--s1);color:var(--muted);font-size:var(--t1)}
+.stbar{display:block;height:4px;margin-top:var(--s1);border-radius:2px;background:var(--v1);opacity:.7}
+.stabs .chip{min-height:36px}
+.sheats{display:grid;grid-template-columns:3fr 1fr;gap:var(--s4);align-items:start}
+.sheatbox{min-width:0}
+.sheat{position:relative;height:520px;margin-top:var(--s2);background:var(--surface-2);border-radius:var(--r-s);overflow:hidden}
+.sheat i{position:absolute;width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:50%;background:var(--v2);opacity:.55}
+.sheat i.dead{background:var(--muted);opacity:.45}
+.sheatl{position:absolute;left:var(--s2);transform:translateY(-50%);font-size:var(--t1);color:var(--ink-2);pointer-events:none;max-width:90%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sutm input{flex:1 1 140px;min-width:0}
+.sutmurl{font-family:var(--code);font-size:var(--t1);overflow-wrap:anywhere;min-width:0;flex:1}
+.svit-good{color:var(--green)}.svit-warn{color:var(--ink-2)}
+@media (max-width:760px){.stgrid{grid-template-columns:repeat(2,minmax(0,1fr))}.stduo{grid-template-columns:1fr}.sheats{grid-template-columns:1fr 1fr}.sheat{height:420px}.strow.sq{grid-template-columns:minmax(0,1fr) 3em 3.5em 3em}}
 .urow{display:grid;grid-template-columns:minmax(0,1fr) 3.5em 3.5em 5.5em 4.5em 4em minmax(0,10em) 5em;gap:var(--s1) var(--s2);align-items:center;padding:var(--s2) 0;border-top:1px solid var(--line)}
 .urow.ucards{grid-template-columns:minmax(0,1fr) 3.5em 6.5em 5em}
 .urow.ubtns{grid-template-columns:minmax(0,1fr) 3.5em 6.5em}
@@ -1422,6 +1443,7 @@ const LOCALAPI=/^https?:$/.test(location.protocol)&&/^(localhost|127\.0\.0\.1)$/
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="habits")+1,0,{id:"body",e:"🫀",label:"Summary",g:"body"},{id:"bodysleep",e:"😴",label:"Sleep",g:"body"},{id:"bodymeal",e:"🍽️",label:"Meals & Calories",g:"body"},{id:"bodyweight",e:"⚖️",label:"Weight",g:"body"},{id:"bodysteps",e:"👟",label:"Steps",g:"body"},{id:"bodyworkout",e:"💪",label:"Workouts",g:"body"},{id:"bodyhabits",e:"📚",label:"Study & Screen Time",g:"body"}); // photos and health records stay on this Mac
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="followups")+1,0,{id:"mailclean",e:"🧹",label:"Inbox Cleanup",g:"in"});
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="presents")+1,0,{id:"ideas",e:"💡",label:"Ideas",g:"in"});
+if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="presents")+1,0,{id:"site",e:"📈",label:"Site",g:"in"}); // tany.im analytics (desk/site_sync.py)
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="ideas")+1,0,{id:"aidone",e:"🤝",label:"Done by Claude",g:"in"}); // work Claude does on its own (tasks with by:"claude", JOINS application drafts); never on your task list // once a week, from what was already written (desk/ideas.py)
 VIEWS.splice(VIEWS.findIndex(v=>v.id==="replies")+1,0,{id:"notdoing",e:"🍃",label:"Not doing",g:"today"},{id:"genres",e:"🏷️",label:"Genres",g:"today"});
 VIEWS.splice(VIEWS.findIndex(v=>v.id==="replies")+1,0,{id:"timelog",e:"⏱️",label:"Time",g:"today"}); // 4th in Today (Home, Tasks, Replies, Time)
@@ -4582,7 +4604,7 @@ function home(){
   const d=new Date();const h=d.getHours();const greet=h<11?"Good morning":h<18?"Good afternoon":"Good evening";
   const tools=S.tools.filter(t=>!t.deleted), daily=tools.filter(t=>t.group==="Daily").sort((a,b)=>(a.order??99)-(b.order??99));
   const top=topThreeIds();
-  const cards={triage:triHome(),focus:focusHomeCard(),pc:LOCALAPI?`<a class="sub pcline" id="pcLine" href="#pc">${pcLineText()}</a>`:"",body:homeBodyStrip(),
+  const cards={triage:triHome(),focus:focusHomeCard(),pc:LOCALAPI?`<a class="sub pcline" id="pcLine" href="#pc">${pcLineText()}</a>`:"",site:LOCALAPI?siteHomeLine():"",body:homeBodyStrip(),
     today:`<div class="duo">${todayEvents()}${habitStrip()||`<section class="card"><div class="dhead"><h2><span class="e">🌱</span>Today's habits</h2><a class="more" href="#habits">Add →</a></div><div class="empty">Add things you want to keep up in Habits.</div></section>`}</div>`,
     heritage:heritageCard(),ideas:ideasCard(),claude:ccCard(),panel:todayPanel(top),inflow:inflow(),notes:notesHere("home"),
     tools:daily.length?`<section><div class="section-title"><span class="e">☀️</span>Daily tools<a href="#tools">All tools →</a></div><div class="tiles mini">${daily.map(tile).join("")}</div></section>`:`<p class="sub" style="margin:0"><a href="#tools" class="more">Open tools →</a></p>`};
@@ -5135,6 +5157,7 @@ function render(){
   if(viewId()==="pc"){pcLoad();$("#view").innerHTML=searchResults()+pcView();wire();wirePc();return}
   if(viewId().startsWith("body")){bodyLoad();$("#view").innerHTML=searchResults()+bodyView();wire();wireBody();return}
   if(viewId()==="mailclean"){mcLoad();$("#view").innerHTML=searchResults()+mcView();wire();wireMc();return}
+  if(viewId()==="site"){siteLoad();$("#view").innerHTML=searchResults()+siteView();wire();return}
   if(viewId()==="netspeed"){nsLoad();$("#view").innerHTML=searchResults()+nsView();wire();wireNs();return}
   if(viewId()==="transcribe"){trLoad();$("#view").innerHTML=searchResults()+trView();wire();wireTr();return}
   if(viewId()==="post"){if(!ps().data&&!ps().loading)psLoad();if(!document.activeElement?.closest?.(".psedit")||!$("#psView"))psDraw();return} // a redraw from elsewhere never takes the text being typed
@@ -5205,6 +5228,153 @@ function nsView(){
   const past=d.count>1?mpanel("History","Down / up (Mbps)",d.history.map(h=>nsRow(nsWhen(h.at),`${nsMbps(h.down)} / ${nsMbps(h.up)}`,esc(h.place))).join("")):"";
   return `<div class="money nsp" data-noauto>${head}${main}${can}${reply}${link}${places}${past}</div>`;
 }
+/* Site: tany.im analytics. The tag on the site and its Worker store events on Cloudflare; desk/site_sync.py pulls them every 15 minutes
+   and does all the counting. This page only shows the numbers. Search Console is read with Tatsuki's own Google sign-in (read only). */
+S.site=null;S.siteP="7";S.siteTab="overview";S.siteBusy="";S.siteHome=null;
+const SITETABS=[["overview","Overview"],["content","Content"],["conversion","Conversion"],["ux","UX"],["seo","SEO"]];
+async function siteLoad(){
+  if(!LOCALAPI)return;
+  try{const q=S.siteP==="custom"&&S.siteFrom&&S.siteTo?`custom&from=${S.siteFrom}&to=${S.siteTo}`:S.siteP;
+    const v=await api("GET","/api/site?period="+q),same=JSON.stringify(v)===JSON.stringify(S.site);S.site=v;S.siteErr=false;if(!same&&viewId()==="site")render()}
+  catch(e){const was=S.siteErr;S.siteErr=true;if(!was&&viewId()==="site")render()}
+}
+async function siteHomeLoad(){if(!LOCALAPI)return;try{S.siteHome=await api("GET","/api/site/home");const el=$("#siteLine");if(el){const t=document.createElement("div");t.innerHTML=siteHomeLine();el.textContent=t.firstChild.textContent}}catch(e){}}
+const siteHomeLine=()=>{const h=S.siteHome;if(!LOCALAPI||!h||h.people==null)return `<a class="sub pcline" id="siteLine" href="#site">Site: tany.im visitors</a>`;
+  return `<a class="sub pcline" id="siteLine" href="#site">Site yesterday: ${h.people} ${h.people===1?"person":"people"} · ${h.contacts} ${h.contacts===1?"inquiry":"inquiries"}${h.top?` · top: ${esc(h.top)}`:""}</a>`};
+async function siteAct(what,body,msg){
+  if(S.siteBusy)return;S.siteBusy=what;render();
+  try{const r=await api("POST","/api/site/"+what,body||{});if(msg)toast(msg);await siteLoad();return r}catch(e){toast("Could not finish. Please check the Desk server")}
+  finally{S.siteBusy="";if(viewId()==="site")render()}
+}
+const siteNum=n=>n==null?"—":Math.round(n).toLocaleString("en-US");
+const sitePct=n=>n==null?"—":(n*100).toFixed(n<0.1?1:0)+"%";
+const siteDur=ms=>{if(ms==null)return "—";const s=Math.round(ms/1000);return s<60?`${s} sec`:`${Math.floor(s/60)} min ${s%60} sec`};
+function siteDelta(a,b,fmt){if(a==null||b==null||(!a&&!b))return "";if(!b)return `<span class="sub">new this period</span>`;
+  const d=(a-b)/b;return `<span class="sub">${d>=0?"↑":"↓"} ${Math.abs(Math.round(d*100))}% vs before (${fmt?fmt(b):siteNum(b)})</span>`}
+function siteRows(list,label,opt){opt=opt||{};if(!list||!list.length)return `<p class="sub">${opt.empty||"Nothing yet."}</p>`;
+  const top=Math.max(1,...list.map(x=>x[opt.key||"n"]||0));
+  return `<div class="strows">${list.map(x=>{const n=x[opt.key||"n"]||0;return `<div class="strow"><span class="uname">${esc(x[label]??"")}${opt.meta?`<small class="sub cumeta">${opt.meta(x)}</small>`:""}<i class="stbar" style="width:${Math.max(2,n/top*100)}%"></i></span><span class="n">${opt.fmt?opt.fmt(n,x):siteNum(n)}</span></div>`}).join("")}</div>`}
+function siteBars(daily,key){const top=Math.max(1,...daily.map(d=>d[key]||0));
+  const bars=daily.map(d=>`<div class="cubar" title="${d.date} · ${d[key]}"><span class="cur" style="height:${(d[key]||0)/top*100}%"></span></div>`).join("");
+  const md=s=>new Date(s+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"});
+  return `<div class="cubars">${bars}</div><div class="cuaxis"><span>${daily.length?md(daily[0].date):""}</span><span>Tallest ${siteNum(top)}</span><span>${daily.length?md(daily[daily.length-1].date):""}</span></div>`}
+function siteHeat(pts,label){
+  if(!pts||!pts.length)return `<div class="sheatbox"><p class="sub">${label}: no clicks yet</p></div>`;
+  const by={};pts.forEach(p=>{if(p[3])(by[p[3]]=by[p[3]]||[]).push(p[1])});
+  const marks=Object.entries(by).map(([k,ys])=>{ys.sort((a,b)=>a-b);return [k,ys[Math.floor(ys.length/2)]]}).sort((a,b)=>a[1]-b[1]);
+  const shown=[];marks.forEach(m=>{if(!shown.length||m[1]-shown[shown.length-1][1]>0.04)shown.push(m)});
+  return `<div class="sheatbox"><p class="sub">${label} · ${pts.length} clicks</p><div class="sheat">${pts.map(p=>`<i class="${p[2]?"":"dead"}" style="left:${(p[0]*100).toFixed(1)}%;top:${(p[1]*100).toFixed(1)}%"></i>`).join("")}${shown.map(m=>`<span class="sheatl" style="top:${(m[1]*100).toFixed(1)}%">${esc(m[0].replace(/^case:/,""))}</span>`).join("")}</div></div>`}
+function siteView(){
+  const E=esc,d=S.site,head=sub=>`<div><p class="eyebrow">Site · tany.im</p>${sub}</div>`;
+  if(S.siteErr&&!d)return `<div class="money">${head(`<h1>Could not load</h1><p class="sub">Restarting the Desk server may fix it.</p>`)}</div>`;
+  if(!d)return `<div class="money">${head(`<h1>Counting…</h1>`)}</div>`;
+  const n=d.now,p=d.prev,st=d.state||{},tab=S.siteTab;
+  const periods=[["today","Today"],["7","7 days"],["30","30 days"],["90","90 days"],["custom","Custom"]];
+  const pulled=st.pulled?new Date(st.pulled).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}):"never";
+  let h=`<div class="money" data-noauto>`+head(`<h1>${siteNum(n.reach)} ${n.reach===1?"person":"people"} · ${siteNum(n.contacts)} ${n.contacts===1?"inquiry":"inquiries"}</h1><p class="sub" style="margin:var(--s1) 0 0">${E(d.period.from)}${d.period.to!==d.period.from?" – "+E(d.period.to):""} · pulled at ${E(pulled)}, every 15 minutes${st.error?` · <b>${E(st.error)}</b>`:""}</p>`);
+  h+=`<div class="nsgo"><div class="chips" role="group" aria-label="Period">${periods.map(([k,l])=>`<button class="chip" data-sitep="${k}" aria-pressed="${S.siteP===k}">${l}</button>`).join("")}</div><button class="btn sm" data-siterefresh ${S.siteBusy?"disabled":""}>${S.siteBusy==="refresh"?"Pulling…":"Pull now"}</button></div>`;
+  if(S.siteP==="custom")h+=`<div class="nsgo"><input type="date" id="siteFrom" value="${E(S.siteFrom||d.period.from)}" aria-label="From"><input type="date" id="siteTo" value="${E(S.siteTo||d.period.to)}" aria-label="To"><button class="btn sm" data-sitecustom>Show</button></div>`;
+  if(st.gap)h+=`<p class="cunote sub">${E(st.gap)}</p>`;
+  h+=`<div class="chips stabs" role="tablist" aria-label="Site sections">${SITETABS.map(([k,l])=>`<button class="chip" role="tab" data-sitetab="${k}" aria-pressed="${tab===k}" aria-selected="${tab===k}">${l}</button>`).join("")}</div>`;
+  if(tab==="overview")h+=siteOverview(d);
+  if(tab==="content")h+=siteContent(d);
+  if(tab==="conversion")h+=siteConversion(d);
+  if(tab==="ux")h+=siteUx(d);
+  if(tab==="seo")h+=siteSeo(d);
+  return h+`</div>`;
+}
+function siteOverview(d){
+  const n=d.now,p=d.prev,stat=(label,val,sub)=>`<div class="custat"><span class="sub">${label}</span><b>${val}</b>${sub||""}</div>`;
+  let h=mpanel("At a glance",`Compared with ${esc(d.period.prevFrom)} – ${esc(d.period.prevTo)}`,`<div class="stgrid">
+    ${stat("People",siteNum(n.reach),siteDelta(n.reach,p.reach))}${stat("Inquiries",siteNum(n.contacts),siteDelta(n.contacts,p.contacts))}
+    ${stat("Inquiry rate",sitePct(n.contactRate),`<span class="sub">of ${siteNum(n.visits)} visits with cookies</span>`)}${stat("Page views",siteNum(n.pageviews),siteDelta(n.pageviews,p.pageviews))}
+    ${stat("Engaged visits",sitePct(n.engagedRate),`<span class="sub">10 sec or more, 2 pages, or an inquiry</span>`)}${stat("Time per visit",siteDur(n.avgEngMs),"")}
+    ${stat("New / returning",`${siteNum(n.newVisitors)} / ${siteNum(n.returning)}`,"")}${stat("Without cookies",siteNum(n.anonPageviews),`<span class="sub">page views before or without consent</span>`)}</div>`);
+  h+=mpanel("People by day","",siteBars(d.daily,"people"));
+  h+=`<div class="stduo">`+mpanel("Channels","First page of each visit",siteRows(d.channels,"name",{meta:x=>x.contacts?`${x.contacts} inquir${x.contacts>1?"ies":"y"}`:""}))
+    +mpanel("Sources","",siteRows(d.sources,"name"))+`</div>`;
+  h+=`<div class="stduo">`+mpanel("Countries","",siteRows(d.countries,"name"))+mpanel("Cities","",siteRows(d.cities,"name"))+`</div>`;
+  const orgs=(d.orgs||[]).filter(o=>!o.isp);
+  h+=mpanel("Organisations","Network owners that look like companies or schools, not home or mobile providers",siteRows(orgs,"name",{empty:"None yet. Home and phone networks are left out."}));
+  h+=`<div class="stduo">`+mpanel("Devices","",siteRows(d.devices,"name"))+mpanel("Browsers","",siteRows(d.browsers,"name"))+`</div>`;
+  h+=`<div class="stduo">`+mpanel("Systems","",siteRows(d.os,"name"))+mpanel("Screen widths","",siteRows(d.widths,"name"))+`</div>`;
+  h+=`<div class="stduo">`+mpanel("Languages","",siteRows(d.langs,"name"))+mpanel("Hours","Mac time",`<div class="cubars">${d.hours.map((x,i)=>`<div class="cubar" title="${i}:00 · ${x}"><span class="cur" style="height:${x/Math.max(1,...d.hours)*100}%"></span></div>`).join("")}</div><div class="cuaxis"><span>0</span><span>6</span><span>12</span><span>18</span><span>23</span></div>`)+`</div>`;
+  const c=d.consent;h+=mpanel("Cookie banner",`${siteNum(c.shown)} shown`,`<div class="strows">${[["Allow all",c.allowAll],["Analytics only",c.analyticsOnly],["Reject",c.rejected]].map(([k,v])=>`<div class="strow"><span class="uname">${k}<i class="stbar" style="width:${c.shown?Math.max(2,v/c.shown*100):2}%"></i></span><span class="n">${siteNum(v)}${c.shown?` · ${sitePct(v/c.shown)}`:""}</span></div>`).join("")}</div><p class="sub">Visits with recording on: ${siteNum(c.recorded)}${d.clarity?` · <a href="https://clarity.microsoft.com/projects/view/${esc(d.clarity)}/dashboard" target="_blank" rel="noopener">Open Clarity recordings</a>`:""}</p>`);
+  h+=mpanel("Recent visits","With cookies allowed, newest first",d.recent.length?d.recent.map(v=>`<div class="strow"><span class="uname">${new Date(v.at).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})} · ${esc(v.source)}${v.contact?" · <b>inquiry</b>":""}<small class="sub cumeta">${[v.city,v.cc,v.org,v.dev,v.visit>1?`visit ${v.visit}`:"first visit",v.cases.length?"read: "+v.cases.join(", "):""].filter(Boolean).map(esc).join(" · ")}</small></span><span class="n">${v.pages} pg · ${siteDur(v.ms)}</span></div>`).join(""):`<p class="sub">No visits with cookies yet.</p>`);
+  h+=siteSettings(d);
+  return h;
+}
+function siteContent(d){
+  let h=mpanel("Case studies","Time on screen, most first",siteRows(d.cases.map(x=>({...x,name:x.name.slice(5)})),"name",{key:"ms",fmt:(v,x)=>`${siteDur(v)}`,meta:x=>`${x.visits} visit${x.visits===1?"":"s"} · ${siteDur(x.avgMs)} each`,empty:"No reading time yet."}));
+  h+=mpanel("Sections","Home page, time on screen",siteRows(d.sections,"name",{key:"ms",fmt:v=>siteDur(v),meta:x=>`${x.visits} visit${x.visits===1?"":"s"}`}));
+  h+=mpanel("How far people read","Home page, share of page views with cookies",`<div class="strows">${d.scroll.map(s=>`<div class="strow"><span class="uname">${s.pct}%<i class="stbar" style="width:${Math.max(2,(s.share||0)*100)}%"></i></span><span class="n">${sitePct(s.share)}</span></div>`).join("")}</div>`);
+  h+=mpanel("Where people click","Home page. Dim dots: clicks on things that are not buttons or links",`<div class="sheats">${siteHeat(d.heat.desktop,"Wide screens")}${siteHeat(d.heat.mobile,"Phones")}</div>`);
+  h+=mpanel("Most clicked","",siteRows(d.clickTop.map(x=>({...x,name:x.el+(x.sec?" · "+x.sec:"")})),"name"));
+  h+=`<div class="stduo">`+mpanel("Pages","",siteRows(d.pages,"path"))+mpanel("Copied text",`Selections: ${siteNum(d.selects)} · Prints: ${siteNum(d.prints)}`,siteRows(d.copies,"text",{empty:"Nothing copied yet."}))+`</div>`;
+  return h;
+}
+function siteConversion(d){
+  const f=d.funnel,top=Math.max(1,f[0].n);
+  let h=mpanel("Path to an inquiry","Visits with cookies",`<div class="strows">${f.map((s,i)=>`<div class="strow"><span class="uname">${s.step}<i class="stbar" style="width:${Math.max(2,s.n/top*100)}%"></i>${i?`<small class="sub cumeta">${f[i-1].n?sitePct(s.n/f[i-1].n):"—"} of the step before</small>`:""}</span><span class="n">${siteNum(s.n)}</span></div>`).join("")}</div>`);
+  h+=`<div class="stduo">`+mpanel("How people got in touch","",siteRows(d.contactKinds,"name",{empty:"No inquiries yet."}))+mpanel("Links out","",siteRows(d.outbound,"to",{empty:"No clicks to other sites yet."}))+`</div>`;
+  h+=mpanel("Campaigns (UTM)","Visits and inquiries from tagged links",d.campaigns.length?`<div class="strows">${d.campaigns.map(c=>`<div class="strow"><span class="uname">${esc(c.name)}</span><span class="n">${siteNum(c.visits)} · ${siteNum(c.contacts)} inq.</span></div>`).join("")}</div>`:`<p class="sub">No tagged visits yet. Make a link below.</p>`);
+  h+=mpanel("Make a tagged link","Use it in a message or a post to see what it brings",`<div class="nsgo sutm"><input id="utmSource" placeholder="Where (e.g. linkedin)" aria-label="Source"><input id="utmMedium" placeholder="Kind (e.g. social, email)" aria-label="Medium"><input id="utmCampaign" placeholder="Campaign (optional)" aria-label="Campaign"><button class="btn primary sm" data-siteutm>Make link</button></div>${S.siteUtm?`<div class="nsgo"><code class="sutmurl">${esc(S.siteUtm)}</code><button class="btn sm" data-siteutmcopy>Copy</button></div>`:""}`);
+  if(d.forms.started||d.formQuits.length)h+=mpanel("Forms",`${d.forms.started} started · ${d.forms.sent} sent`,siteRows(d.formQuits.map(x=>({...x,name:`${x.form}: ${x.field}`})),"name",{empty:"Nobody left a form half done."}));
+  if(d.downloads.length)h+=mpanel("Downloads","",siteRows(d.downloads,"file"));
+  return h;
+}
+function siteUx(d){
+  const u=d.ux,V=u.visits||0;
+  const stat=(label,val,sub)=>`<div class="custat"><span class="sub">${label}</span><b>${val}</b><span class="sub">${sub}</span></div>`;
+  let h=mpanel("Signs of trouble",`Out of ${siteNum(V)} visits with cookies`,`<div class="stgrid">${stat("Rage clicks",siteNum(u.rageN),"3 fast clicks in one spot")}${stat("Dead clicks",siteNum(u.deadN),"clicks where nothing happened")}${stat("Back and forth",siteNum(u.xscroll),"scrolling up and down fast")}${stat("Quick backs",siteNum(u.qback),"left and came back within seconds")}</div>`);
+  h+=`<div class="stduo">`+mpanel("Rage clicks on","",siteRows(u.rage.map(x=>({...x,name:x.el+(x.sec?" · "+x.sec:"")})),"name",{empty:"None."}))+mpanel("Dead clicks on","",siteRows(u.dead.map(x=>({...x,name:x.el+(x.sec?" · "+x.sec:"")})),"name",{empty:"None."}))+`</div>`;
+  const word={good:"Good","needs improvement":"Needs work",poor:"Poor"};
+  h+=mpanel("Speed (Core Web Vitals)","The 75th percentile, as Google judges it",`<div class="strows">${d.vitals.map(v=>`<div class="strow"><span class="uname">${v.name} <span class="sub">${v.n} page views · good up to ${v.goodAt}${v.unit}</span><small class="sub cumeta">${v.n?`Good ${v.good} · needs work ${v.ni} · poor ${v.poor}`:"No data yet"}</small></span><span class="n">${v.p75==null?"—":v.unit?Math.round(v.p75)+" "+v.unit:v.p75}${v.rating?`<small class="sub cumeta svit-${v.rating==="good"?"good":"warn"}">${word[v.rating]}</small>`:""}</span></div>`).join("")}</div>`);
+  h+=`<div class="stduo">`+mpanel("Errors on the page","",siteRows(d.errors,"what",{empty:"No errors."}))+mpanel("Missing pages (404)","",siteRows(d.notFound,"path",{empty:"None."}))+`</div>`;
+  h+=mpanel("Recordings",d.clarity?"Microsoft Clarity":"Not set up",d.clarity?`<p class="sub">${siteNum(d.consent.recorded)} visits allowed recording. <a href="https://clarity.microsoft.com/projects/view/${esc(d.clarity)}/impressions" target="_blank" rel="noopener">Open recordings</a> · <a href="https://clarity.microsoft.com/projects/view/${esc(d.clarity)}/heatmaps" target="_blank" rel="noopener">Clarity heat maps</a></p>`:`<p class="sub">Add the Clarity project id under Settings on the Overview tab.</p>`);
+  return h;
+}
+function siteSeo(d){
+  const g=d.gsc||{};let h="";
+  if(!g.connected)h+=mpanel("Search Console","Not connected",`<p class="sub">Connect once with your Google account (read only). Google's page opens in your browser.</p><div class="nsgo"><button class="btn primary sm" data-sitegscconnect ${S.siteBusy?"disabled":""}>Connect Search Console</button></div>`);
+  else if(g.error&&!g.clicks&&g.clicks!==0)h+=mpanel("Search Console",esc(g.error),`<div class="nsgo"><button class="btn sm" data-sitegsc ${S.siteBusy?"disabled":""}>${S.siteBusy==="gsc"?"Reading…":"Read again"}</button><button class="btn sm" data-sitegscconnect>Connect again</button></div>`);
+  else if(!g.daily)h+=mpanel("Search Console",`Connected · ${esc(g.property)}`,`<p class="sub">No numbers yet. Google shows them 2–3 days after a site is added, then Desk reads them every morning.</p><div class="nsgo"><button class="btn sm" data-sitegsc ${S.siteBusy?"disabled":""}>${S.siteBusy==="gsc"?"Reading…":"Read again"}</button></div>`);
+  else{
+    const stat=(label,val)=>`<div class="custat"><span class="sub">${label}</span><b>${val}</b></div>`;
+    h+=mpanel("Google search",`${esc(g.property)} · data up to ${esc(g.lastDate||"")} (Google runs 2–3 days behind)`,`<div class="stgrid">${stat("Clicks",siteNum(g.clicks))}${stat("Shown",siteNum(g.impr))}${stat("Click rate",sitePct(g.ctr))}${stat("Average rank",g.pos??"—")}</div>${g.daily&&g.daily.length?siteBars(g.daily.map(x=>({date:x.date,v:x.impr})),"v"):""}<div class="nsgo"><button class="btn sm" data-sitegsc ${S.siteBusy?"disabled":""}>${S.siteBusy==="gsc"?"Reading…":"Read again"}</button></div>`);
+    const qrow=x=>`<div class="strow sq"><span class="uname">${esc(x.name)}</span><span class="n">${siteNum(x.clicks)}</span><span class="n">${siteNum(x.impr)}</span><span class="n">${x.pos??"—"}</span></div>`;
+    const qhead=`<div class="strow sq uhead"><span></span><span class="n">Clicks</span><span class="n">Shown</span><span class="n">Rank</span></div>`;
+    h+=mpanel("Search words","Most shown first",g.queries&&g.queries.length?qhead+g.queries.map(qrow).join(""):`<p class="sub">No search words yet. New sites take a few weeks.</p>`);
+    h+=`<div class="stduo">`+mpanel("Pages in search","",g.pages&&g.pages.length?qhead+g.pages.map(x=>qrow({...x,name:x.name.replace(/^https:\/\/tany\.im/,"")||"/"})).join(""):`<p class="sub">Nothing yet.</p>`)+mpanel("Countries in search","",g.countries&&g.countries.length?qhead+g.countries.map(qrow).join(""):`<p class="sub">Nothing yet.</p>`)+`</div>`;
+  }
+  h+=mpanel("Crawlers and AI",`${siteNum(d.aiVisits)} visits from AI crawlers`,siteRows(d.bots,"name",{meta:x=>x.ai?"AI":"",empty:"No crawler visits yet."})+(d.botPages.length?`<p class="sub">Pages they read most: ${d.botPages.slice(0,5).map(x=>esc(x.path)+" ("+x.n+")").join(", ")}</p>`:""));
+  const a=d.audit||{},lvl={fix:"Fix",check:"Check",ok:"OK"};
+  const items=(a.pages||[]).flatMap(pg=>(pg.items||[]).map(i=>({...i,where:pg.path}))).concat((a.site||[]).map(i=>({...i,where:"site"})));
+  h+=mpanel("Page check",a.checked?`Checked ${new Date(a.checked).toLocaleDateString("en-US",{month:"short",day:"numeric"})} · once a week`:"Not checked yet",
+    (items.length?`<div class="strows">${items.sort((x,y)=>"fco".indexOf(x.level[0])-"fco".indexOf(y.level[0])).map(i=>`<div class="strow"><span class="uname">${esc(i.msg)}<small class="sub cumeta">${esc(i.where)}</small></span><span class="n ${i.level==="ok"?"sub":""}">${lvl[i.level]||i.level}</span></div>`).join("")}</div>`:"")
+    +`<div class="nsgo"><button class="btn sm" data-siteaudit ${S.siteBusy?"disabled":""}>${S.siteBusy==="audit"?"Checking…":"Check now"}</button></div>`);
+  return h;
+}
+function siteSettings(d){
+  return mpanel("Settings","",`<div class="nsgo"><label class="sub" for="siteClarity">Clarity project id</label><input id="siteClarity" value="${esc(d.clarity||"")}" placeholder="e.g. abcd1234ef" size="14"><button class="btn sm" data-siteclarity>Save</button></div>
+    <p class="sub">The id also has to be in the site's tag (t.js). <a href="https://tany.im/?notrack" target="_blank" rel="noopener">Stop counting this browser</a> — open it once in each browser you use.</p>`);
+}
+document.addEventListener("click",async e=>{
+  const t=e.target.closest?.("[data-sitep],[data-sitetab],[data-siterefresh],[data-sitecustom],[data-siteutm],[data-siteutmcopy],[data-sitegsc],[data-sitegscconnect],[data-siteaudit],[data-siteclarity]");if(!t)return;
+  if(t.dataset.sitep){S.siteP=t.dataset.sitep;S.site=null;if(S.siteP!=="custom")siteLoad();render();if(S.siteP==="custom")siteLoad();return}
+  if(t.dataset.sitetab){S.siteTab=t.dataset.sitetab;render();return}
+  if(t.hasAttribute("data-siterefresh"))return siteAct("refresh",{},"Pulled");
+  if(t.hasAttribute("data-sitecustom")){S.siteFrom=$("#siteFrom").value;S.siteTo=$("#siteTo").value;S.site=null;render();return siteLoad()}
+  if(t.hasAttribute("data-siteutm")){const src=$("#utmSource").value.trim();if(!src){toast("Write where the link goes first");return}
+    try{const r=await api("POST","/api/site/utm",{source:src,medium:$("#utmMedium").value,campaign:$("#utmCampaign").value});S.siteUtm=r.url;render()}catch(err){toast("Could not make the link")}return}
+  if(t.hasAttribute("data-siteutmcopy")){toast(await copyText(S.siteUtm)?"📋 Copied":"Could not copy");return}
+  if(t.hasAttribute("data-sitegsc"))return siteAct("gsc",{},"Read from Search Console");
+  if(t.hasAttribute("data-sitegscconnect")){try{await api("POST","/api/site/gsc-connect",{});toast("Google's page opened in your browser")}catch(err){toast("Could not start")}return}
+  if(t.hasAttribute("data-siteaudit"))return siteAct("audit",{},"Checked");
+  if(t.hasAttribute("data-siteclarity")){try{await api("PUT","/api/site/settings",{clarity:$("#siteClarity").value.trim()});toast("Saved");siteLoad()}catch(err){toast("That does not look like a Clarity id")}}
+});
+setInterval(()=>{if(viewId()==="site"&&!document.hidden)siteLoad()},120000);
+if(LOCALAPI){siteHomeLoad();setInterval(()=>{if(viewId()==="home"&&!document.hidden)siteHomeLoad()},15*60000)}
 function wireNs(){const b=$("#nsRun");if(b)b.onclick=nsStart}
 /* Transcribe: long recordings turned into text on this Mac. The recorder is its own server (desk/transcribe/, 8791) and opens in the default browser,
    which can use the microphone. This view only reads the sessions (desk/transcribe_desk.py) and starts the server when it is not running. */
@@ -6733,6 +6903,7 @@ const FDESC={ // what each screen is for, in plain words (English and Japanese k
   news:"World Desk news edition, predictions ニュース",watch:"Minor Countries watch マイナー国",heritage:"Daily World Heritage, 3 countries a day 世界遺産",
   notes:"Scrapbox-style notes, daily notes ノート メモ",memolink:"import memos from other apps メモ連携",
   money:"Wise payments: overview, charts, budget, trips, savings, advice, receipts, subscriptions お金 家計 予算",
+  site:"tany.im company site visitors, inquiries, search, SEO, heat map アクセス解析 サイト 計測",
   screentime:"time spent in apps and sites スクリーンタイム",pc:"running apps, memory and CPU, close apps PC メモリ",
   netspeed:"measure internet speed 回線 速度 Wi-Fi",webhistory:"Chrome history, search terms, time on sites Web履歴",
   log:"Claude's daily work report Claude Log 日報",timelog:"time tracking 時間",tools:"all tools as cards ツール",
@@ -6895,7 +7066,7 @@ document.addEventListener("keydown",e=>{const t=e.target.tagName;if(t==="INPUT"|
    Seconds are added only while the window is showing and something was touched in the last two minutes.
    The arrangement is two lists of screen ids and an order of card ids; every screen and card is drawn whatever they say. ---------- */
 S.layout=window.LAYOUT||null;
-const HOMECARDS=[["triage","Triage and questions"],["focus","Focus"],["pc","PC status line"],["body","Body summary"],["today","Today's events and habits"],["heritage","Daily World Heritage"],["ideas","This week's ideas"],["claude","Ask Claude"],["panel","Today's tasks"],["wins","Today's wins"],["inflow","Incoming"],["notes","Home notes"],["tools","Daily tools"]];
+const HOMECARDS=[["triage","Triage and questions"],["focus","Focus"],["pc","PC status line"],["site","Site line"],["body","Body summary"],["today","Today's events and habits"],["heritage","Daily World Heritage"],["ideas","This week's ideas"],["claude","Ask Claude"],["panel","Today's tasks"],["wins","Today's wins"],["inflow","Incoming"],["notes","Home notes"],["tools","Daily tools"]];
 function homeOrder(){
   const all=HOMECARDS.map(c=>c[0]), out=(S.layout?.home||[]).filter((id,i,xs)=>all.includes(id)&&xs.indexOf(id)===i);
   all.forEach((id,k)=>{if(out.includes(id))return;const prev=all.slice(0,k).filter(x=>out.includes(x)).pop();out.splice(prev?out.indexOf(prev)+1:0,0,id)});

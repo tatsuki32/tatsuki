@@ -8,6 +8,12 @@
       "port": 4791
     },
     {
+      "name": "desk-site-test",
+      "runtimeExecutable": "/bin/sh",
+      "runtimeArgs": ["-c", "cd desk && DESK_SITE_DIR=/tmp/claude/desk-site-test DESK_PORT=${PORT:-4798} exec python3 server.py"],
+      "port": 4798
+    },
+    {
       "name": "desk-usage-test",
       "runtimeExecutable": "/bin/sh",
       "runtimeArgs": ["-c", "cd desk && DESK_USAGE_DIR=/tmp/claude/desk-usage-test DESK_PORT=${PORT:-4792} exec python3 server.py"],
