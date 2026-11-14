@@ -23,7 +23,7 @@ class Types(unittest.TestCase):
 
     def test_added_types_come_after(self):
         out = ts.all_types([{"name": "Gardening", "group": "Yours"}, {"name": "research"}])
-        self.assertEqual(out[-1], ("Hold", "Gardening"))
+        self.assertEqual(out[-1], ("Yours", "Gardening"))
         self.assertEqual(len(out), 46)
 
 
@@ -108,5 +108,26 @@ class Weekly(unittest.TestCase):
 
     def test_genre_review_leaves_the_persons_genres(self):
         gs = [{"id": "g1", "name": "Video", "by": "claude"}, {"id": "g2", "name": "Videos", "by": "claude"}, {"id": "g3", "name": "Mine", "by": "me"}]
-        out = ts.genre_apply(gs, [{"id": "g2", "mergeInto": "g1"}, {"id": "g3", "rename": "Theirs"}, {"id": "g1", "rename": "Video editing"}], NOW)
+        out, changes = ts.genre_apply(gs, [{"id": "g2", "mergeInto": "g1"}, {"id": "g3", "rename": "Theirs"}, {"id": "g1", "rename": "Video editing"}], NOW)
         self.assertEqual([(g["id"], g.get("mergedInto"), g["name"]) for g in out], [("g2", "g1", "Videos"), ("g1", None, "Video editing")])
+        self.assertEqual([(c["kind"], c["before"]["name"]) for c in changes], [("merge", "Videos"), ("edit", "Video")])
+
+    def test_retire_only_empty_genres_and_add_new_ones(self):
+        gs = [{"id": "g1", "name": "Busy", "by": "claude"}, {"id": "g2", "name": "Empty", "by": "claude"}]
+        out, changes = ts.genre_apply(gs, [{"id": "g1", "retire": True}, {"id": "g2", "retire": True},
+                                           {"add": {"name": "Cooking", "emoji": "🍳", "color": "#86cf73"}}], NOW, {"g1": 3})
+        self.assertEqual([c["kind"] for c in changes], ["retire", "add"])
+        self.assertEqual(out[1]["color"], "#86cf73")
+
+    def test_type_proposals_never_retire_used_or_personal_types(self):
+        items = [task("a", cat="Research", createdAt=NOW)]
+        custom = [{"name": "Gardening", "group": "Hold", "by": "me"}]
+        out = ts.type_propose(items, custom, [], [{"kind": "retire", "name": "Research"}, {"kind": "retire", "name": "Gardening"},
+                                                  {"kind": "retire", "name": "Negotiate", "why": "Unused"}, {"kind": "add", "name": "Podcast", "group": "Make"},
+                                                  {"kind": "add", "name": "Read", "group": "Learn"}], NOW)
+        self.assertEqual([(p["kind"], p["name"]) for p in out], [("retire", "Negotiate"), ("add", "Podcast")])
+
+    def test_a_retired_type_leaves_the_list(self):
+        names = [n for _, n in ts.all_types([{"name": "Negotiate", "retired": True}])]
+        self.assertNotIn("Negotiate", names)
+        self.assertEqual(len(names), 44)

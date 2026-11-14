@@ -33,7 +33,7 @@ python3 desk/write_feed.py gtasks <raw.json>                 # Google タスク�
 | `desk-world-brief` | 毎日 7:17 | 世界ニュース（結果のある出来事と研究を8〜10本。予想の問い、媒体の見比べ、なぜを5回つき。指示は `desk/sync/world-brief-v2.md`、号の形は `WORLD_EDITION.md`） | `editions` |
 | `desk-morning-mail` | 毎日 4:30・15:30（2026-11-15 に 3:00・16:00 から。返信の時間 5:00・16:00 の前にそろえる） | Gmail と WhatsApp の個人トークの確認と返信案（`desk/whatsapp_sync.py`）。相手の返信待ち（`lifeos/02-followup/MORNING_RUN.md`、`run.py whatsapp`）。プレゼントの判定（`desk/presents.py`）。今すぐ返信が要るものに `urgent` の印（Desk の通知が鳴る。`desk/notify.py`）。送信しない | `days`・`tasks`・`desk/data/whatsapp/`・`02-followup/state.json`・`presents` |
 | `desk-task-skip` | 毎日 2:45 | タスクに「やらなかったらどうなるか」・影響小の印・種類・ジャンルを1晩40件まで（`desk/task_skip.py pending|apply`）。本人が直したものは触らない。期日つき・お金・手続き・健康・約束は影響小にしない | `tasks`・`genres` |
-| `desk-task-tidy` | 月曜 6:15 | ジャンルの見直し（Claude の作ったものだけ、100個以内。`task_skip.py genre-review|genre-apply`）と、同じジャンルの似たタスクをまとめる案を10件まで（`merge-pending|merge-add`）。まとめるのは本人がカードで決めたときだけ | `genres`・`mergeprops` |
+| `desk-task-tidy` | 月曜 6:15 | ジャンルを自分で見直す（Claude の作ったものだけ。まとめる・名前・色とスタンプ・外す・足す、100個以内。`task_skip.py genre-review|genre-apply`。変更は `genrelog` に残り本人が Undo できる）。種類の見直しの案を5件まで（`type-review|type-propose`、本人がカードで決める）と、同じジャンルの似たタスクをまとめる案を10件まで（`merge-pending|merge-add`）。まとめるのは本人がカードで決めたときだけ | `genres`・`mergeprops` |
 | `desk-time-calendar` | 毎日 23:30 | 7日以内に終わった5分以上の計測を Google カレンダー「Desk Log」に入れる（`desk/time_calendar.py pending|mark|status`）。題と時間だけ、空き時間・通知なし、二重に入れない。Desk Log が無ければ書かずに `status missing` | `timelog` |
 | `desk-automation-suggest` | 月曜 6:45 | 繰り返している仕事と無料でできる自動化の案を3件まで「💡 Ideas」に（`desk/automation.py facts|save`）。作るのは本人が Do it を押したものだけ | `autos`（`docs/autos/`） |
 | `desk-minor-watch` | 火・金 7:33 | マイナー国ウォッチ | `watch` |
