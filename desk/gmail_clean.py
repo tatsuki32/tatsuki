@@ -430,6 +430,63 @@ def act(sid, action, confirm=False):
     return 200, view()
 
 
+# --- senders added by hand ---
+SHARED = {"gmail.com", "googlemail.com", "yahoo.com", "yahoo.co.jp", "ymail.com", "outlook.com", "outlook.jp",
+          "hotmail.com", "hotmail.co.jp", "live.com", "live.jp", "msn.com", "icloud.com", "me.com", "mac.com",
+          "aol.com", "proton.me", "protonmail.com", "gmx.com", "gmx.net", "mail.ru", "yandex.ru", "yandex.com",
+          "qq.com", "163.com", "naver.com", "docomo.ne.jp", "ezweb.ne.jp", "au.com", "softbank.ne.jp", "i.softbank.jp"}
+_ADDR = re.compile(r"[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@((?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,})")
+_DOMAIN = re.compile(r"(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}")
+
+
+def block_target(raw):
+    """An address (also 'Name <address>'), '@domain' or 'domain' -> (target, kind, error)."""
+    t = (raw or "").strip().lower()
+    m = re.fullmatch(r"[^<>]*<\s*([^<>\s]+)\s*>", t)  # pasted with a display name
+    if m:
+        t = m.group(1)
+    if not t:
+        return "", "", "Enter an email address or a domain."
+    if re.search(r"\s", t) or len(t) > 254:
+        return "", "", "Enter one address or domain, without spaces."
+    if _ADDR.fullmatch(t):
+        return t, "address", ""
+    d = t[1:] if t.startswith("@") else t
+    if "@" not in d and _DOMAIN.fullmatch(d):
+        if d in SHARED:
+            return "", "", f"{d} is shared by many people. Block one address instead."
+        return "@" + d, "domain", ""
+    return "", "", "This doesn't look like an email address or a domain."
+
+
+def block(raw, confirm=False):
+    """Returns (status, body). Only future mail is filtered; past mail is not touched."""
+    target, kind, err = block_target(raw)
+    if err:
+        return 400, {"error": "invalid", "reason": err}
+    key = "m-" + sender_id(target)
+    with LOCK:
+        done = bool(_load("decisions.json", {}).get(key, {}).get("filterId"))
+    if done:
+        return 200, view()  # already blocked: one filter, one row
+    try:
+        me = (gmail("GET", "/profile").get("emailAddress") or "").lower()
+        if me and (me == target or (kind == "domain" and me.endswith(target))):
+            return 400, {"error": "invalid", "reason": "This would block your own mail."}
+        if PROTECT.search(target) and not confirm:
+            return 409, {"error": "protected", "reason": "May be an important sender"}
+        fid = create_filter(target)
+    except NotConnected:
+        return 401, {"error": "connect"}
+    except GmailError as e:
+        return 502, {"error": "gmail", "status": e.status}
+    with LOCK:
+        decisions = _load("decisions.json", {})
+        decisions[key] = {"action": "block", "target": target, "kind": kind, "filterId": fid, "at": int(time.time() * 1000)}
+        _save("decisions.json", decisions)
+    return 200, view()
+
+
 def undo(sid):
     with LOCK:
         decisions = _load("decisions.json", {})
@@ -472,7 +529,10 @@ def view():
             groups["guarded"].append(row)
         else:
             groups["candidates"].append(row)
-    return {"connected": connected(), "scan": scan_state, "at": data.get("at"), "messages": data.get("messages", 0), **groups}
+    blocked = sorted(({"id": k, "target": v["target"], "kind": v.get("kind", ""), "at": v.get("at")}
+                      for k, v in decisions.items() if v.get("action") == "block"), key=lambda r: -(r["at"] or 0))
+    return {"connected": connected(), "scan": scan_state, "at": data.get("at"), "messages": data.get("messages", 0),
+            "blocked": blocked, **groups}
 
 
 if __name__ == "__main__":

@@ -40,6 +40,11 @@ KINDS = ("post", "story", "article", "news")
 NAME = re.compile(r"^[0-9a-f]{16}$")
 POST_ID = re.compile(r"^p-\d{8}-[0-9a-f]{6}$")
 TARGET_ID = re.compile(r"^[a-z0-9][a-z0-9-]{0,30}$")
+URL = re.compile(r"https?://[^\s<>\"'）」』】]+")
+# where a link can go: in the text, only as "link in profile" (Instagram captions do not make links), as a link sticker
+# added by hand (stories), or nowhere
+LINK_MODES = ("inline", "bio", "sticker", "none")
+LINKS_PER_POST = 3
 
 _lock = threading.RLock()
 _build_lock = threading.Lock()
@@ -79,10 +84,18 @@ def settings():
     return s
 
 
+def _link_defaults():
+    return {t.get("id"): t.get("link") for t in _read(EXAMPLE, {}).get("targets", []) if isinstance(t, dict)}
+
+
 def targets(only_on=False):
     out = []
+    defaults = None
     for t in settings().get("targets", []):
         if isinstance(t, dict) and TARGET_ID.match(str(t.get("id", ""))) and t.get("kind") in KINDS:
+            if t.get("link") not in LINK_MODES:  # settings made before links were handled
+                defaults = defaults if defaults is not None else _link_defaults()
+                t = {**t, "link": defaults.get(t["id"]) or ("sticker" if t["kind"] == "story" else "inline")}
             if not only_on or t.get("on"):
                 out.append(t)
     return out
@@ -102,6 +115,8 @@ def save_settings(rec):
             continue
         if isinstance(change.get("on"), bool):
             t["on"] = change["on"]
+        if change.get("link") in LINK_MODES:
+            t["link"] = change["link"]
         for key, kind, top in (("style", str, 600), ("name", str, 60), ("fixedTags", str, 200)):
             if isinstance(change.get(key), kind):
                 t[key] = change[key].strip()[:top]
@@ -276,11 +291,33 @@ def system_prompt(s):
     ])
 
 
-def target_lines(ts):
+LINK_RULES = {
+    "inline": "Put the link(s) in text exactly as given, once, where they read naturally.",
+    "bio": "Write no URL: links in this caption cannot be tapped. If the link matters, say in the target's language that it is in the profile.",
+    "sticker": "Write no URL: the person adds a link sticker by hand. The overlay may invite people to tap the link.",
+    "none": "Write no URL.",
+}
+
+
+def target_lines(ts, links=()):
     return "\n".join(
         f"- target \"{t['id']}\" ({t['name']}): language {t['lang']}, kind {t['kind']}, limit {t['limit']}"
-        f"{' weighted' if t.get('count') == 'x' else ''} characters including hashtags, hashtags {t.get('tags', 0)}. {t.get('style', '')}"
+        f"{' weighted' if t.get('count') == 'x' else ''} characters including hashtags and links, hashtags {t.get('tags', 0)}. {t.get('style', '')}"
+        + (f" Link: {LINK_RULES[t.get('link', 'inline')]}" if links else " Write no URL.")
         for t in ts)
+
+
+def fix_links(t, text, links):
+    """The links follow the target's rule whatever came back: no made-up URLs, none where they cannot be tapped,
+    and every given link once where they can."""
+    keep = t.get("link") == "inline"
+    text = URL.sub(lambda m: m.group(0) if keep and m.group(0).rstrip(".,!?、。") in links else "", text)
+    text = re.sub(r"[ \t]+\n", "\n", re.sub(r"\n{3,}", "\n\n", re.sub(r"(?<=\S)[ \t]{2,}", " ", text))).strip()
+    if keep:
+        missing = [u for u in links if u not in text]
+        if missing:
+            text = (text + "\n\n" + "\n".join(missing)).strip()
+    return text
 
 
 def call(content, max_tokens=16000):
@@ -326,7 +363,7 @@ def photo_blocks(post):
     return blocks
 
 
-def clean_draft(t, d):
+def clean_draft(t, d, links=()):
     tags = []
     for x in d.get("hashtags") or []:
         x = "#" + re.sub(r"[\s#]+", "", str(x))
@@ -336,6 +373,8 @@ def clean_draft(t, d):
            "overlay": str(d.get("overlay") or "").strip()[:200], "hashtags": tags[: t.get("tags", 0)]}
     if t["kind"] == "story":
         out["text"] = ""
+    out["text"] = fix_links(t, out["text"], links)
+    out["overlay"] = fix_links({"link": "none"}, out["overlay"], links)
     out["length"] = length(t, out)
     return out
 
@@ -348,12 +387,14 @@ def write_drafts(post_id, only=None, hint=""):
         when = datetime.fromtimestamp(post["createdAt"] / 1000).strftime("%Y-%m-%d")
         n = len(post["photos"])
         seen = "There is 1 photo above." if n == 1 else f"There are {n} photos above." if n else "There is no photo."
+        links = post.get("links") or []
         ask = (f"Date: {when}.\nThe person's memo:\n{post['memo']}\n\n{seen}\n"
+               + (f"Link(s) to share (you cannot open them; the memo says what they are): {' '.join(links)}\n" if links else "")
                + (f"What the person wants changed this time: {hint}\n" if hint else "")
-               + "Write one draft for each of these targets:\n" + target_lines(ts))
+               + "Write one draft for each of these targets:\n" + target_lines(ts, links))
         out, use = call(photo_blocks(post) + [{"type": "text", "text": ask}])
         got = {d.get("target"): d for d in out.get("drafts", []) if isinstance(d, dict)}
-        drafts = {t["id"]: clean_draft(t, got.get(t["id"]) or {}) for t in ts}
+        drafts = {t["id"]: clean_draft(t, got.get(t["id"]) or {}, links) for t in ts}
         for _ in range(2):
             long = [t for t in ts if drafts[t["id"]]["length"] > t["limit"]]
             if not long:
@@ -361,13 +402,13 @@ def write_drafts(post_id, only=None, hint=""):
             again = "These drafts are too long. Rewrite each one shorter, keeping the meaning:\n" + "\n".join(
                 f"- target \"{t['id']}\": now {drafts[t['id']]['length']}, limit {t['limit']}"
                 f"{' weighted (Japanese counts 2)' if t.get('count') == 'x' else ''}.\nCurrent text:\n{full_text(t, drafts[t['id']]) if t['kind'] != 'story' else drafts[t['id']]['overlay']}"
-                for t in long) + "\n\nTargets:\n" + target_lines(long)
+                for t in long) + "\n\nTargets:\n" + target_lines(long, links)
             more, u2 = call([{"type": "text", "text": f"The person's memo:\n{post['memo']}\n\n{again}"}], max_tokens=8000)
             use = {k: use[k] + u2[k] for k in use}
             for d in more.get("drafts", []):
                 t = target(d.get("target"))
                 if t and t in long:
-                    drafts[t["id"]] = clean_draft(t, d)
+                    drafts[t["id"]] = clean_draft(t, d, links)
         with _lock:
             post = get(post_id)
             for tid, d in drafts.items():
@@ -425,10 +466,17 @@ def create(rec):
         return 400, {"error": "Choose at least one place to post"}
     if len(memo) > 4000:
         return 413, {"error": "The memo can be up to 4,000 characters"}
+    given = rec.get("links") if isinstance(rec.get("links"), list) else [rec.get("links") or ""]
+    links = []
+    for u in URL.findall(" ".join(str(x) for x in given) + " " + memo):
+        u = u.rstrip(".,!?、。")[:500]
+        if u not in links:
+            links.append(u)
+    links = links[:LINKS_PER_POST]
     pid = f"p-{datetime.now():%Y%m%d}-{secrets.token_hex(3)}"
     metas = [{"id": p, **{k: v for k, v in _read(dp("photos", f"{p}.json"), {}).items() if k in ("w", "h", "x", "y")}} for p in photos]
     post = {"id": pid, "createdAt": int(time.time() * 1000), "memo": memo, "photos": metas, "targets": chosen,
-            "status": "making", "error": "", "drafts": {}, "posted": {}, "namesLeftOut": []}
+            "links": links, "status": "making", "error": "", "drafts": {}, "posted": {}, "namesLeftOut": []}
     _save(post)
     _start(pid)
     return 200, public(post)

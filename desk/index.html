@@ -752,6 +752,9 @@ button.hname:hover{color:var(--ink)}
 .mcrow{padding:var(--s2) 0}
 .mcacts{grid-column:1/-1;display:flex;flex-wrap:wrap;align-items:center;gap:var(--s2);margin-top:var(--s1)}
 .btn.mcgo{color:var(--accent);border-color:var(--accent)}
+.mcbform{display:flex;flex-wrap:wrap;gap:var(--s2);margin-bottom:var(--s2)}
+.mcbform .wd-field{flex:1 1 240px;min-width:0}
+.mcbh{font-size:var(--t2);font-weight:700;margin:var(--s4) 0 var(--s1)}
 .mccode{display:block;max-width:100%;overflow-wrap:anywhere;font-size:var(--t1);color:var(--ink);background:var(--line);padding:var(--s2);border-radius:var(--r-s)}
 .nsgo{display:flex;flex-wrap:wrap;gap:var(--s2);align-items:center}
 /* Small Utilities: one tool per tab, each with one focus */
@@ -796,6 +799,11 @@ button.hname:hover{color:var(--ink)}
 .psset1{display:grid;gap:var(--s1);width:100%;padding-top:var(--s3);border-top:1px solid var(--line)}
 .psset1:first-child{border-top:0;padding-top:0}
 .psset1 textarea.wd-field{min-height:64px;font-size:var(--t2)}
+.pslinksel{max-width:220px;min-height:36px;font-size:var(--t2)}
+.pslink{display:grid;gap:var(--s1);min-width:0}
+.pslinkrow{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s2);min-width:0}
+.pslinku{font-size:var(--t1);color:var(--ink-2);overflow-wrap:anywhere;min-width:0;flex:1 1 160px}
+.pslinkrow .btn{min-height:28px;padding:0 var(--s2);font-size:var(--t1)}
 @media (max-width:560px){.psgrid{grid-template-columns:minmax(0,1fr)}.psrow{grid-template-columns:40px minmax(0,1fr) auto}.psrow .nsn{display:none}}
 .utdrop{display:grid;gap:var(--s2);justify-items:start;width:100%}
 .utdrop.on{outline:2px dashed var(--accent);outline-offset:8px}
@@ -981,6 +989,13 @@ a.ev:hover{background:var(--surface-2)}
 .palrow{display:flex;justify-content:space-between;align-items:center;gap:var(--s2);min-width:0}
 .palrow>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .palrow.sel{background:var(--surface-2);box-shadow:inset 3px 0 0 var(--accent)}
+.ask .askturn{padding:var(--s2) 0}
+.ask .askturn+.askturn{border-top:1px solid var(--line)}
+.ask .askq{margin:0 var(--s3) var(--s1);font-weight:700;color:var(--ink);overflow-wrap:anywhere}
+.ask .aska{margin:0 var(--s3) var(--s1);overflow-wrap:anywhere}
+.askpick.sel{background:var(--surface-2);box-shadow:inset 3px 0 0 var(--accent)}
+.askname{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.askname .e{margin-right:var(--s1)}
 .palrow code,.cccmd{font-family:var(--code);font-size:var(--t1);color:var(--muted);font-weight:400}
 .cc{padding-bottom:var(--s3)}
 .ccbig{display:grid;gap:var(--s1);width:calc(100% - 2 * var(--s3));margin:0 var(--s3) var(--s3);text-align:left;cursor:pointer;border:1px solid var(--line-2);background:transparent;color:var(--ink);border-radius:var(--r);padding:var(--s3)}
@@ -4466,13 +4481,13 @@ function snippet(it){
   return (a?"…":"")+esc(src.slice(a,i))+"<b>"+esc(src.slice(i,i+w.length))+"</b>"+esc(src.slice(i+w.length,b))+(b<src.length?"…":"");
 }
 function searchResults(){
-  const q=S.q.trim(); if(!q) return ""; if(isPal(q)) return palette();
+  const q=S.q.trim(); if(!q) return ""; if(isPal(q)) return palette(); if(isAsk(q)) return askView();
   const {hits,via}=runSearch(q);
   const kinds=Object.keys(SKIND).filter(k=>hits.some(h=>h.kind===k));
   const aiState=S.aiBusy?`<span class="sub">Thinking of related words…</span>`:S.sampleOk?`<button class="btn sm" id="aiSearch">Expand with AI</button>`:"";
   const aiWords=(S.aiExp||{})[norm(q)];
   return `<section class="card results" aria-label="Search results">
-    <div class="rhead"><b>“${esc(q)}” ${hits.length} ${hits.length===1?"result":"results"}</b>${via.length?`<span class="sub">Also searched: ${via.map(esc).join(", ")}</span>`:""}${aiWords?`<span class="sub">🤖 ${aiWords.map(esc).join(" · ")}</span>`:""}${aiState}</div>
+    <div class="rhead"><b>“${esc(q)}” ${hits.length} ${hits.length===1?"result":"results"}</b>${via.length?`<span class="sub">Also searched: ${via.map(esc).join(", ")}</span>`:""}${aiWords?`<span class="sub">🤖 ${aiWords.map(esc).join(" · ")}</span>`:""}${aiState}<button class="btn sm" id="askDesk">Ask Desk</button></div>
     ${kinds.map(k=>{const xs=hits.filter(h=>h.kind===k), all=S.qAll===k, shown=all?xs:xs.slice(0,5);
       return `<div class="rgroup"><div class="section-title"><span class="e">${SKIND[k][0]}</span>${SKIND[k][1]} <span class="count">${xs.length}</span></div>
       ${shown.map((h,i)=>`<button class="rrow" data-hit="${k}:${hits.indexOf(h)}"${k==="news"||k==="watch"||k==="task"||k==="heritage"?" data-noauto":""}><b>${esc(h.title)}</b>${h.date?`<span class="sub"> · ${esc(h.date)}</span>`:""}<span class="snip">${snippet(h)}</span></button>`).join("")}
@@ -5337,7 +5352,8 @@ function wireUt(){
    the person copies the text, saves the pictures and posts on each site. */
 const PSLANG=[["ja","Japanese"],["en","English"],["ru","Russian"]];
 const PSKIND={post:"Post",story:"Story",article:"Article",news:"News"};
-const ps=()=>S.ps||(S.ps={tab:"new",memo:"",photos:[],pick:null,cur:null,data:null,busy:false,err:"",n:{},open:{}});
+const PSLINK={inline:"Link in the text",bio:"Link in bio",sticker:"Link sticker",none:"No link"};
+const ps=()=>S.ps||(S.ps={tab:"new",memo:"",link:"",photos:[],pick:null,cur:null,data:null,busy:false,err:"",n:{},open:{}});
 async function psSend(method,path,body){
   const r=await fetch(path,{method,headers:{"Content-Type":"application/json"},body:body?JSON.stringify(body):undefined});
   let v={};try{v=await r.json()}catch(e){}
@@ -5368,6 +5384,7 @@ function psNew(){
   return `<section class="card mfocus psnew">
     <div class="utdrop" id="psDrop"><div class="psthumbs">${thumbs}</div><label class="btn">${p.photos.length?"Add more photos":"Choose photos"}<input type="file" id="psFile" hidden multiple accept="image/*,.heic,.heif"></label><span class="due">${p.upBusy?"Adding photos…":"Up to 10. You can also drag them here."}</span></div>
     <textarea class="wd-field psedit" id="psMemo" placeholder="What did you do? A few words or bullet points are enough." aria-label="What you did">${esc(p.memo)}</textarea>
+    <input class="wd-field psedit" id="psLink" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="Link to share (optional), like an article you wrote" aria-label="Link to share" value="${esc(p.link)}">
     <div class="psgroups">${groups}</div>
     ${d&&!d.key?`<p class="due" role="alert">No Anthropic API key on this Mac yet. The drafts need it (the same key the body photos use).</p>`:""}
     ${p.err?`<p class="due" role="alert">${esc(p.err)}</p>`:""}
@@ -5384,12 +5401,14 @@ function psCard(post,t){
   if(!d)body=`<p class="due">${busy?"Writing…":"No draft yet."}</p>`;
   else if(t.kind==="story")body=`<input class="wd-field psedit" data-psover="${tid}" value="${esc(d.overlay)}" aria-label="Words on the picture"><label class="pschip"><input type="checkbox" data-pstexton="${tid}" ${post.textOn?.[t.id]===false?"":"checked"}><span>Write it on the picture</span></label>`;
   else body=`${t.kind==="article"||t.kind==="news"?`<input class="wd-field psedit" data-pstitle="${tid}" value="${esc(d.title)}" aria-label="Title">`:""}<textarea class="wd-field psedit pstext" data-pstext="${tid}" aria-label="${esc(t.name)} text">${esc(full)}</textarea>`;
+  const where=t.link==="bio"?"Captions here can't hold a tappable link. Put it in your bio:":t.link==="sticker"?"Add it to the story as a link sticker:":"";
+  const linkNote=d&&where&&post.links?.length?`<div class="pslink"><span class="due">${where}</span>${post.links.map(u=>`<span class="pslinkrow"><span class="pslinku">${esc(u)}</span><button class="btn" data-pslinkcopy="${esc(u)}">Copy link</button></span>`).join("")}</div>`:"";
   const url=d?psOpenUrl(t,d):"";
   const acts=!d?"":t.id==="note"?`<button class="btn" data-pscopy="${tid}">Copy Markdown</button><button class="btn" data-pshtml="${tid}">Copy formatted</button>${url?`<a class="btn" href="${esc(url)}" target="_blank" rel="noopener" data-pscopygo="${tid}">Open note ↗</a>`:""}`
     :`${url?`<a class="btn" href="${esc(url)}" target="_blank" rel="noopener" data-pscopygo="${tid}">Copy and open ↗</a>`:""}<button class="btn" data-pscopy="${tid}">Copy</button>`;
   return `<article class="card pscard${posted?" done":""}" aria-label="${esc(t.name)}">
     <header class="pshead"><h3>${esc(t.name)}</h3><span class="due">${PSKIND[t.kind]}${d?` · ${len.toLocaleString("en-US")} / ${t.limit.toLocaleString("en-US")}${t.count==="x"?" (weighted)":""}${over>0?` · ${over} over`:""}`:""}</span></header>
-    ${img}${body}
+    ${img}${body}${linkNote}
     <div class="nsgo">${acts}${post.photos.length?`<button class="btn" data-pssave="${tid}">${post.photos.length>1?`Save ${post.photos.length} pictures`:"Save picture"}</button>`:""}</div>
     <div class="nsgo">${p.open[t.id]?`<input class="wd-field psedit pshint" data-pshint="${tid}" placeholder="What to change (optional)" aria-label="What to change"><button class="btn" data-psregen="${tid}" ${post.running?"disabled":""}>Rewrite</button>`:`<button class="btn" data-psask="${tid}" ${post.running?"disabled":""}>${busy&&post.regen===t.id?"Rewriting…":"Rewrite"}</button>`}
     <label class="pschip"><input type="checkbox" data-psposted="${tid}" ${posted?"checked":""}><span>Posted</span></label></div></article>`;
@@ -5401,6 +5420,7 @@ function psPost(){
   const groups=PSLANG.map(([l,name])=>{const xs=ts.filter(t=>t.lang===l);return xs.length?`<section class="psset"><h2>${name}</h2><div class="psgrid">${xs.map(t=>psCard(post,t)).join("")}</div></section>`:""}).join("");
   return `<section class="pspost" id="psPost"><div class="mpanelh"><h2>Drafts</h2><span class="sub">${esc(when)} · ${done} / ${post.targets.length} posted</span></div>
     <p class="mtalk" data-noauto>${esc(post.memo)}</p>
+    ${post.links?.length?`<p class="due">Link: ${post.links.map(esc).join(" · ")}. It goes in the text only where it can be tapped.</p>`:""}
     ${post.status==="making"?`<p class="due" role="status">Writing the drafts. This takes about a minute.</p>`:""}
     ${post.error?`<p class="due" role="alert">${esc(post.error)}</p>`:""}
     ${post.namesLeftOut?.length?`<p class="due">Names left out of the drafts: ${post.namesLeftOut.map(esc).join(", ")}. Add them yourself if they agreed.</p>`:""}
@@ -5414,6 +5434,7 @@ function psEarlier(){
 function psSettings(){
   const d=ps().data;if(!d)return "";
   const rows=d.targets.map(t=>`<div class="psset1"><label class="pschip"><input type="checkbox" data-pson="${esc(t.id)}" ${t.on?"checked":""}><span><b>${esc(t.name)}</b> <span class="due">${PSKIND[t.kind]} · ${t.lang} · ${t.limit} chars · ${t.tags} tags</span></span></label>
+    <select class="wd-field pslinksel" data-pslinkmode="${esc(t.id)}" aria-label="${esc(t.name)} link">${Object.entries(PSLINK).map(([k,l])=>`<option value="${k}" ${t.link===k?"selected":""}>${l}</option>`).join("")}</select>
     <textarea class="wd-field psedit" data-psstyle="${esc(t.id)}" aria-label="${esc(t.name)} style">${esc(t.style||"")}</textarea>
     <input class="wd-field psedit" data-psfixed="${esc(t.id)}" value="${esc(t.fixedTags||"")}" placeholder="Tags always added, like #ZEN大学" aria-label="${esc(t.name)} tags always added"></div>`).join("");
   const voice=PSLANG.map(([l,name])=>`<label class="psset1"><span class="sub">${name} voice</span><textarea class="wd-field psedit" data-psvoice="${l}">${esc(d.voice?.[l]||"")}</textarea></label>`).join("");
@@ -5448,10 +5469,13 @@ function wirePs(){
   if(zone){zone.ondragover=e=>{e.preventDefault();drop.classList.add("on")};zone.ondragleave=e=>{if(!zone.contains(e.relatedTarget))drop.classList.remove("on")};zone.ondrop=e=>{e.preventDefault();drop.classList.remove("on");psAddFiles(e.dataTransfer.files)}}
   all("[data-psdrop]").forEach(b=>b.onclick=()=>{p.photos.splice(+b.dataset.psdrop,1);psDraw()});
   const memo=$("#psMemo");if(memo)memo.oninput=e=>{p.memo=e.target.value};
+  const link=$("#psLink");if(link)link.oninput=e=>{p.link=e.target.value};
+  all("[data-pslinkcopy]").forEach(b=>b.onclick=async()=>toast(await copyText(b.dataset.pslinkcopy)?"Link copied":"Could not copy"));
+  all("[data-pslinkmode]").forEach(el=>el.onchange=()=>saveSet({targets:[{id:el.dataset.pslinkmode,link:el.value}]}));
   all("[data-pspick]").forEach(c=>c.onchange=()=>{const id=c.dataset.pspick;p.pick=c.checked?[...new Set([...(p.pick||[]),id])]:(p.pick||[]).filter(x=>x!==id)});
   const make=$("#psMake");if(make)make.onclick=async()=>{
     p.busy=true;p.err="";psDraw();
-    try{const post=await psSend("POST","/api/posts",{memo:p.memo,photos:p.photos.map(x=>x.id),targets:p.pick||[]});p.memo="";p.photos=[];p.n={};p.open={};p.busy=false;psOpen(post.id);psLoad();return}
+    try{const post=await psSend("POST","/api/posts",{memo:p.memo,links:[p.link],photos:p.photos.map(x=>x.id),targets:p.pick||[]});p.memo="";p.link="";p.photos=[];p.n={};p.open={};p.busy=false;psOpen(post.id);psLoad();return}
     catch(e){p.err=e.message}p.busy=false;psDraw()};
   all("[data-psload]").forEach(b=>b.onclick=()=>psOpen(b.dataset.psload));
   all("[data-psprev],[data-psnext]").forEach(b=>b.onclick=()=>{const id=b.dataset.psprev||b.dataset.psnext,k=p.cur.photos.length;p.n[id]=((p.n[id]||0)+(b.dataset.psprev?-1:1)+k)%k;psDraw()});
@@ -5725,10 +5749,35 @@ function mcView(){
   const go=running?`<div class="nsgo"><button class="btn primary" disabled>Reading</button><span class="due" id="mcWait" role="status">${esc(mcWait())}</span></div>`:`<div class="nsgo"><button class="btn${d.at?"":" primary"}" id="mcScan">${d.at?"Read again":"Read mail"}</button><span class="due">Last 90 days. Message bodies are not read${d.at?` · read ${esc(mcWhen(d.at))}`:""}</span></div>`;
   const main=`<section class="card mfocus"><p class="mtalk">${d.at?(n?`${n} senders can be stopped.`:"Nothing to stop."):"Not read yet. Press the button to list senders."}</p>${go}${d.scan.error&&d.scan.error!=="connect"?`<p class="due" role="alert">${esc(d.scan.error)}</p>`:""}</section>`;
   const list=(title,sub,rows,group)=>rows.length?mpanel(`${title} (${rows.length})`,sub,rows.map(r=>mcRow(r,group)).join("")):"";
-  return `<div class="money" data-noauto>${head}${main}${list("Suggestions","Most mail first",d.candidates,"candidates")}${list("Protected","Banks, bookings, and similar. Asks before stopping",d.guarded,"guarded")}${list("Decided","",d.done,"done")}</div>`;
+  return `<div class="money" data-noauto>${head}${main}${mcBlockView(d.blocked||[])}${list("Suggestions","Most mail first",d.candidates,"candidates")}${list("Protected","Banks, bookings, and similar. Asks before stopping",d.guarded,"guarded")}${list("Decided","",d.done,"done")}</div>`;
+}
+/* Block a sender by hand: an address or a whole domain gets the same Gmail filter as Stop. Past mail stays. */
+function mcBlockView(rows){
+  const b=S.mcBlock||{},shown=S.mcBlockAll?rows:rows.slice(0,10);
+  const hint=b.ask?`<div class="mcacts" role="alert"><span>${esc(b.ask)}. Block it anyway?</span><button class="btn" id="mcbSure">Block anyway</button><button class="btn" id="mcbNo">Cancel</button></div>`
+    :`<span class="due"${b.err?' role="alert"':""}>${esc(b.err||"New mail from this sender goes to Trash. Past mail stays. A domain blocks every address at it.")}</span>`;
+  const list=shown.map(r=>`<div class="strow mcrow"><span>${esc(r.target)}</span><span class="nsv">${esc(r.at?new Date(r.at).toLocaleDateString("en-US",{month:"short",day:"numeric"}):"")}</span><div class="mcacts"><button class="btn" data-mcundo="${esc(r.id)}">Unblock</button></div></div>`).join("");
+  const more=rows.length>10?`<button class="btn" id="mcbAll">${S.mcBlockAll?"Show fewer":`Show all ${rows.length}`}</button>`:"";
+  return mpanel("Block a sender","",`<form class="mcbform" id="mcbForm"><input class="wd-field" id="mcbIn" type="text" inputmode="email" autocomplete="off" spellcheck="false" placeholder="name@example.com or @example.com" aria-label="Email address or domain" value="${esc(b.val||"")}"><button class="btn mcgo" type="submit"${b.busy?" disabled":""}>Block</button></form>${hint}${rows.length?`<h3 class="mcbh">Blocked (${rows.length})</h3>${list}${more}`:""}`);
+}
+async function mcBlock(confirm){
+  const val=($("#mcbIn")?.value||S.mcBlock?.val||"").trim();
+  S.mcBlock={val,busy:true};render();
+  try{
+    const r=await fetch("/api/mailclean/block",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({target:val,confirm:!!confirm})});
+    const j=await r.json().catch(()=>({}));
+    if(r.ok){S.mc=j;S.mcBlock={};toast("Blocked")}
+    else if(r.status===409)S.mcBlock={val,ask:j.reason||"May be an important sender"};
+    else S.mcBlock={val,err:r.status===401?"Gmail disconnected. Run python3 ~/TatsukiDesk/desk/gmail_clean.py auth in Terminal.":j.reason||"That didn't work. Please try again."};
+  }catch(e){S.mcBlock={val,err:"That didn't work. Please try again."}}
+  render();const i=$("#mcbIn");if(i&&!S.mcBlock.ask)i.focus();
 }
 function wireMc(){
   const a=$("#mcAgain");if(a)a.onclick=()=>mcLoad(true);
+  const f=$("#mcbForm");if(f)f.onsubmit=e=>{e.preventDefault();mcBlock(false)};
+  const bs=$("#mcbSure");if(bs)bs.onclick=()=>mcBlock(true);
+  const bn=$("#mcbNo");if(bn)bn.onclick=()=>{S.mcBlock={val:S.mcBlock?.val};render()};
+  const ba=$("#mcbAll");if(ba)ba.onclick=()=>{S.mcBlockAll=!S.mcBlockAll;render()};
   const b=$("#mcScan");if(b)b.onclick=()=>mcPost("scan",{});
   document.querySelectorAll("[data-mcgo]").forEach(x=>x.onclick=()=>{
     const id=x.dataset.mcgo,row=[...S.mc.guarded].find(r=>r.id===id);
@@ -6379,7 +6428,7 @@ function wire(){
   document.querySelectorAll("#view [data-cc]").forEach(b=>b.onclick=()=>openCC(b.dataset.cc));
   document.querySelectorAll("[data-hit]").forEach(b=>b.onclick=()=>{const [,i]=b.dataset.hit.split(":");const h=runSearch(S.q).hits[+i];if(h)goHit(h)});
   document.querySelectorAll("[data-qall]").forEach(b=>b.onclick=()=>{S.qAll=b.dataset.qall;render()});
-  $("#aiSearch")&&($("#aiSearch").onclick=aiSearch);
+  $("#aiSearch")&&($("#aiSearch").onclick=aiSearch);wireAsk();
   // notes and [links]
   document.querySelectorAll("[data-wiki]").forEach(a=>a.onclick=e=>{e.preventDefault();e.stopPropagation();if($("#modal").firstChild)$("#modal").innerHTML="";openWiki(a.dataset.wiki)});
   document.querySelectorAll("[data-nopen]").forEach(b=>b.onclick=()=>{S.noteId=b.dataset.nopen;render();window.scrollTo(0,0)});
@@ -6508,12 +6557,15 @@ function openNote(){
 }
 $("#noteBtn").onclick=openNote;
 {const q=$("#q"),go=()=>{S.q=q.value;S.qAll=null;render();if(S.q.trim())window.scrollTo(0,0)};
-  q.oninput=e=>{if(!e.isComposing){if(isPal(q.value)&&!isPal(S.q))S.palSel=0;go()}};q.addEventListener("compositionend",go);
+  q.oninput=e=>{if(!e.isComposing){if(isPal(q.value)&&!isPal(S.q))S.palSel=0;if(isAsk(q.value))S.ask.auto=0;go()}};q.addEventListener("compositionend",go);
   q.onkeydown=e=>{if(e.isComposing)return;
     if(isPal(q.value)){ // "/" commands: ↑↓ to choose, Enter to run
       if(e.key==="ArrowDown"){e.preventDefault();return palMove(1)} if(e.key==="ArrowUp"){e.preventDefault();return palMove(-1)}
       if(e.key==="Enter"){e.preventDefault();return palRun(S.palSel||0)}}
-    if(e.key==="Escape"){q.value="";go();q.blur()}}}
+    if(isAsk(q.value)){ // "?" Ask Desk: Enter asks, or opens the chosen place when nothing new is typed
+      if(e.key==="ArrowDown"){e.preventDefault();return askMove(1)} if(e.key==="ArrowUp"){e.preventDefault();return askMove(-1)}
+      if(e.key==="Enter"){e.preventDefault();S.q=q.value;return askEnter()}}
+    if(e.key==="Escape"){S.ask=ASK0();q.value="";go();q.blur()}}}
 
 /* ---------- ⌨️ Claude commands: one button sends a Claude Code command (until it becomes a habit) ---------- */
 /* Mac (localhost): server.py opens Terminal and starts `claude "<command>"` in the repo.
@@ -6606,6 +6658,116 @@ function openAsk(){ // 🤖 button / C key: the same list as the Home card
   $("#scrim").onkeydown=e=>{if(e.key==="Escape")close()};
 }
 
+/* ---------- "?" in the search box: Ask Desk where something is. desk/finder.py asks Claude on this Mac,
+   picking only from the list of places built here. Bodies of tasks, notes and mail are never sent; reply tasks are left out (S.board).
+   The chat lives only while it is open. Without the AI, word matches over the same list are shown. ---------- */
+const isAsk=q=>/^[?？]/.test(q.trim());
+const askQ=q=>q.trim().replace(/^[?？]+/,"").trim();
+const FDESC={ // what each screen is for, in plain words (English and Japanese keywords help the word matches too)
+  home:"overview of today: today's 3, progress, next event ホーム 今日",
+  tasks:"all tasks by timing, add, sort, triage, filter by genre and type タスク やること",
+  replies:"emails, WhatsApp and LINE that need an answer, reply drafts; opens at 5:00 and 16:00 返信 メール返信",
+  notdoing:"tasks you decided not to do, bring them back やらないリスト",
+  genres:"task genres: rename, merge, undo merges ジャンル",
+  calendar:"Google Calendar events and task due dates カレンダー 予定",
+  focus:"block apps and websites to focus (FocusBlock) 集中 ブロック",
+  notices:"Mac notification settings, pause, test お知らせ 通知",
+  habits:"habits, morning and night routines, reward cards 習慣 ルーティン",
+  body:"body summary: sleep, meals, weight, steps, workouts 身体 体",
+  bodysleep:"sleep hours and sleep coach 睡眠",bodymeal:"meals and calories left 食事 カロリー",bodyweight:"weight trend 体重",
+  bodysteps:"steps ring 歩数",bodyworkout:"workout sets and estimated 1RM 筋トレ",bodyhabits:"study time and screen time 学習",
+  wins:"things done today and before できたこと",
+  followups:"people you are waiting to hear back from, nudges 返信待ち 催促",
+  mailclean:"Gmail cleanup: unsubscribe from mailing lists and newsletters, mark spam, keep senders メール整理 配信停止 サブスク解除",
+  presents:"awards, offers, income and kind words プレゼント",
+  ideas:"weekly ideas of things to build from your notes 提案",
+  aidone:"work Claude did on its own, JOINS application drafts, Send for me 応募",
+  news:"World Desk news edition, predictions ニュース",watch:"Minor Countries watch マイナー国",heritage:"Daily World Heritage, 3 countries a day 世界遺産",
+  notes:"Scrapbox-style notes, daily notes ノート メモ",memolink:"import memos from other apps メモ連携",
+  money:"Wise payments: overview, charts, budget, trips, savings, advice, receipts, subscriptions お金 家計 予算",
+  screentime:"time spent in apps and sites スクリーンタイム",pc:"running apps, memory and CPU, close apps PC メモリ",
+  netspeed:"measure internet speed 回線 速度 Wi-Fi",webhistory:"Chrome history, search terms, time on sites Web履歴",
+  log:"Claude's daily work report Claude Log 日報",timelog:"time tracking 時間",tools:"all tools as cards ツール",
+  lifeos:"Life OS small tools ライフOS",gear:"belongings list, export 持ち物",usage:"which parts of Desk you use 使い方",
+  utilities:"QR code, character count, URL shortener, PDF compression 小さな道具 QR 文字数 短縮 PDF圧縮",
+  post:"drafts for social posts from photos and a memo 投稿 SNS",transcribe:"record and transcribe long audio 録音 文字起こし",
+  bank:"bank accounts to share and copy 口座",accounts:"list of sites where you have accounts, how you sign in アカウント ログイン",
+  showcase:"portfolio site and PR photos ポートフォリオ",claudeusage:"Claude token usage and scheduled jobs 使用量",
+};
+function finderCatalog(){
+  const out=[],seen=new Set(),add=(id,kind,name,desc,e,run)=>{if(seen.has(id))return;seen.add(id);out.push({id,kind,name:plain(name).slice(0,120),desc:plain(desc).slice(0,200),e:e||"",run})};
+  VIEWS.filter(v=>v.id!=="project").forEach(v=>add("v:"+v.id,"screen",v.label,FDESC[v.id]||"",v.e,()=>{location.hash=v.id}));
+  projActive().forEach(p=>add("p:"+p.id,"project",p.name,"project board",p.emoji||"📁",()=>{location.hash="project/"+p.id}));
+  S.tools.filter(t=>!t.deleted).forEach(t=>add("t:"+t.id,"tool",t.name,[t.desc,(t.tags||[]).join(" ")].join(" "),"🧩",()=>goHit({kind:"tool",href:S.local&&t.local?t.local:(t.url||t.local||""),go:{}})));
+  (S.lifeos||window.LIFEOS||[]).filter(t=>!t.deleted).forEach(t=>add("l:"+t.id,"Life OS tool",t.name,t.oneline||"","🧩",()=>{location.hash="lifeos"}));
+  palItems().filter(x=>x.g!=="Go to").forEach((x,i)=>add("c:"+norm(x.name).replace(/\s+/g,"-").slice(0,40),x.g==="Claude commands"?"Claude command":"action",x.name,[x.sub,x.kw].join(" "),x.e,x.run));
+  const rank={doing:0,notyet:1,paused:2};
+  S.board.filter(t=>!t.deleted).slice().sort((a,b)=>(rank[a.status]??3)-(rank[b.status]??3)||(b.updatedAt||b.createdAt||0)-(a.updatedAt||a.createdAt||0)).slice(0,300)
+    .forEach(t=>add("k:"+t.id,"task",taskName(t),[t.status,projById(t.projectId)?.name].filter(Boolean).join(" "),"🗂️",()=>openTask(t.id)));
+  noteList().filter(n=>n.title&&!/^\d{4}[-/]\d{1,2}[-/]\d{1,2}/.test(n.title)).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0)).slice(0,300)
+    .forEach(n=>add("n:"+n.id,"note",n.title,"note","📒",()=>goHit({kind:"note",go:{note:n.id}})));
+  return out;
+}
+function askLocal(q,cat){ // word matches over the same list, for when the AI is not available
+  const terms=q.split(/\s+/).filter(Boolean).map(expand); if(!terms.length) return [];
+  return cat.map(c=>{const T=norm(c.name),X=norm(c.desc);let s=0;
+      for(const alts of terms){const b=Math.max(0,...alts.map(a=>a?(T.includes(a)?3:X.includes(a)?1:0):0));if(!b)return null;s+=b}
+      return {c,s:s+(c.kind==="screen"?.5:0)}}).filter(Boolean).sort((a,b)=>b.s-a.s).slice(0,5).map(x=>({id:x.c.id,why:x.c.desc.replace(/[^\x00-\x7F]+/g,"").replace(/\s+/g," ").trim().slice(0,60)}));
+}
+const ASK0=()=>({turns:[],busy:false,sel:0,auto:0});
+S.ask=ASK0();
+async function askSend(){
+  const q=askQ(S.q); if(!q||S.ask.busy) return;
+  const cat=finderCatalog(), byId=Object.fromEntries(cat.map(c=>[c.id,c]));
+  S.ask.busy=q;S.ask.sel=0;render();
+  let res=null;
+  if(LOCALAPI){
+    try{res=await api("POST","/api/finder",{q,places:cat.map(({id,kind,name,desc})=>({id,kind,name,desc})),history:S.ask.turns.map(t=>({q:t.q,a:[t.reply,...t.picks.map(p=>byId[p.id]?.name||p.id)].join(" | ")}))})}
+    catch(e){res=null}
+  }
+  let turn;
+  if(res&&res.ok) turn={q,reply:res.reply,picks:res.picks.filter(p=>byId[p.id])};
+  else{const picks=askLocal(q,cat);turn={q,local:true,reply:picks.length?"AI is not available, so these are word matches.":"AI is not available, and no word matches. Try other words.",picks}}
+  turn.cat=byId;
+  S.ask.turns.push(turn);S.ask.busy=false;
+  const q0=$("#q");if(q0&&askQ(q0.value)===q){q0.value="?";S.q="?"} // ready for the next question
+  if(turn.picks.length===1&&!turn.local){const tok=Date.now();S.ask.auto=tok;setTimeout(()=>{if(S.ask.auto===tok)askGo(S.ask.turns.length-1,0)},1200)}
+  render();
+}
+function askGo(ti,pi){
+  const t=S.ask.turns[ti],p=t&&t.picks[pi],c=p&&t.cat[p.id]; if(!c) return;
+  S.ask=ASK0();S.q="";const q=$("#q");if(q){q.value="";q.blur()}
+  render();c.run();
+}
+function askView(){
+  const A=S.ask,q=askQ(S.q),last=A.turns.length-1;
+  const row=(t,ti,p,pi)=>{const c=t.cat[p.id];if(!c)return"";const on=ti===last&&pi===A.sel;
+    return `<button class="rrow askpick ${on?"sel":""}" data-askgo="${ti}:${pi}"><span class="askname">${c.e?`<span class="e" aria-hidden="true">${esc(c.e)}</span>`:""}<b>${esc(c.name)}</b><span class="sub"> · ${esc(c.kind)}</span></span>${p.why?`<span class="snip">${esc(p.why)}</span>`:""}</button>`};
+  const turns=A.turns.map((t,ti)=>{const n=t.picks.length;
+    const head=n===1&&!t.local?`Found: ${esc(t.cat[t.picks[0].id]?.name||"")}`:n>1?`Found ${n}. Which one?`:"";
+    return `<div class="askturn"><p class="askq">${esc(t.q)}</p>
+      ${head?`<p class="aska"><b>${head}</b></p>`:""}${t.reply?`<p class="aska sub">${esc(t.reply)}</p>`:""}
+      ${t.picks.map((p,pi)=>row(t,ti,p,pi)).join("")}
+      ${ti===last&&A.auto&&n===1?`<p class="aska sub">Going there… <button class="btn sm" id="askStay">Stay</button></p>`:""}</div>`}).join("");
+  const foot=A.busy?`<p class="aska sub">Looking for “${esc(A.busy)}”…</p>`:q?`<p class="aska sub">Press Enter to ask: “${esc(q)}”</p>`:A.turns.length?"":`<p class="aska sub">Ask in your own words where something is in Desk. For example: ?where do I unsubscribe from mail</p>`;
+  return `<section class="card results ask" aria-label="Ask Desk" aria-live="polite"><div class="rhead"><b>Ask Desk</b><span class="sub">Enter to ask · ↑↓ and Enter to choose · Esc to go back</span>${A.turns.length?`<button class="btn sm" id="askNew">New chat</button>`:""}</div>
+    ${turns}${foot}</section>`;
+}
+function askMove(d){
+  const t=S.ask.turns[S.ask.turns.length-1]; if(!t||!t.picks.length) return;
+  S.ask.auto=0;S.ask.sel=(S.ask.sel+d+t.picks.length)%t.picks.length;render();
+}
+function askEnter(){
+  if(askQ(S.q)) return askSend();
+  const t=S.ask.turns.length-1; if(t>=0&&S.ask.turns[t].picks.length) askGo(t,S.ask.sel);
+}
+function wireAsk(){
+  document.querySelectorAll("[data-askgo]").forEach(b=>b.onclick=()=>{const [t,p]=b.dataset.askgo.split(":").map(Number);askGo(t,p)});
+  $("#askStay")&&($("#askStay").onclick=()=>{S.ask.auto=0;render();$("#q")?.focus()});
+  $("#askNew")&&($("#askNew").onclick=()=>{S.ask=ASK0();const q=$("#q");q.value="?";S.q="?";render();q.focus()});
+  $("#askDesk")&&($("#askDesk").onclick=()=>{const q=$("#q"),w=S.q.trim();q.value="?"+w;S.q=q.value;S.ask=ASK0();askSend();q.focus()});
+}
+
 /* ---------- "/" in the search box: a command list like Notion. Every way in (keys, Home card, 🤖) calls the same functions. ---------- */
 const isPal=q=>/^[/／]/.test(q.trim());
 function palItems(){
@@ -6616,6 +6778,7 @@ function palItems(){
     {e:"⌨️",name:"Ask Claude",key:"C",kw:"くろーど claude",run:()=>openAsk()},
     {e:"⚡",name:"Command list (this one)",key:"/ /",kw:"こまんど command palette",run:()=>{const q=$("#q");q.value="/";S.q="/";S.palSel=0;render();q.focus()}},
     {e:"🔎",name:"Search",key:"/",kw:"けんさく search",run:()=>setTimeout(()=>$("#q")?.focus(),0)},
+    {e:"❓",name:"Ask Desk where something is",key:"?",kw:"どこ さがす ask where find AI",run:()=>setTimeout(()=>{const q=$("#q");q.value="?";S.q="?";render();q.focus()},0)},
     {e:"🗂️",name:"Triage unsorted tasks",kw:"しわけ みぶんるい triage",run:()=>openTriage()},
     {e:"🍃",name:"Decide what not to do",kw:"やらない not doing drop decide",run:()=>openDecide()},
     {e:"🧷",name:"Merge similar tasks",kw:"まとめる merge similar",run:()=>openMerge()},

@@ -33,6 +33,7 @@ from urllib.parse import parse_qs, unquote, urlsplit
 import bank
 import accounts
 import netspeed
+import finder
 import transcribe_desk
 import notify
 import pc_monitor
@@ -1035,6 +1036,14 @@ class Handler(BaseHTTPRequestHandler):
             return self.claude(rec)
         if method == "POST" and urlsplit(self.path).path in ("/api/focus/start", "/api/focus/stop"):
             return self.focus(urlsplit(self.path).path.rsplit("/", 1)[1], rec)
+        if method == "POST" and urlsplit(self.path).path == "/api/finder":
+            # Ask Desk: the page sends the list of places; Claude picks from it (desk/finder.py). Nothing is saved
+            if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+                return self.send(415, {"error": "json only"})
+            try:
+                return self.send(200, finder.handle(rec))
+            except ValueError as e:
+                return self.send(400, {"error": str(e)})
         if method == "POST" and urlsplit(self.path).path == "/api/netspeed/run":
             if not (self.headers.get("Content-Type") or "").startswith("application/json"):
                 return self.send(415, {"error": "json only"})
@@ -1061,6 +1070,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(*gmail_clean.act(rec.get("id"), rec.get("action"), rec.get("confirm") is True))
             if step == "undo":
                 return self.send(*gmail_clean.undo(rec.get("id")))
+            if step == "block":
+                return self.send(*gmail_clean.block(rec.get("target"), rec.get("confirm") is True))
             return self.send(404, {"error": "not found"})
         if method == "PUT" and urlsplit(self.path).path.startswith(("/api/body/", "/api/receipts/")):
             if not (self.headers.get("Content-Type") or "").startswith("application/json"):
