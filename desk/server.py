@@ -53,7 +53,7 @@ import wise_sync
 ROOT = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(ROOT, "data")
 PORT = int(os.environ.get("DESK_PORT", "4747"))
-COLLECTIONS = ("memos", "dues", "tasks", "prompts", "notes", "habits", "lifemap", "wins", "worldlog", "presents", "heritagelog", "routines", "routinelog", "rewards", "ideaslog", "gear", "projects", "sections", "jobapps", "replywin")
+COLLECTIONS = ("memos", "dues", "tasks", "prompts", "notes", "habits", "lifemap", "wins", "worldlog", "presents", "heritagelog", "routines", "routinelog", "rewards", "ideaslog", "gear", "projects", "sections", "jobapps", "replywin", "genres", "tasktypes")
 # file in data/, global the page reads, value when the file is missing
 DATA_JS = [
     ("tools.js", "TOOLS", "[]"),
@@ -225,6 +225,17 @@ def keep_clear(old, new):
         new["clear"] = cur
 
 
+def keep_labels(old, new):
+    """Same for what the nightly desk-task-skip writes: "If I don't do it" (skip) and the type and genre (cat, genre)."""
+    cur = old.get("skip")
+    if cur and (not new.get("skip") or (new["skip"].get("at") or 0) < (cur.get("at") or 0)):
+        new["skip"] = cur
+    if (old.get("tagAt") or 0) > (new.get("tagAt") or 0):
+        for k in ("cat", "genre", "tagBy", "tagAt"):
+            if k in old:
+                new[k] = old[k]
+
+
 def upsert(col, doc_id, rec, merge):
     with LOCK:
         items = load(col)
@@ -233,6 +244,7 @@ def upsert(col, doc_id, rec, merge):
                 items[i] = {**x, **rec, "id": doc_id} if merge else {**rec, "id": doc_id}
                 if col == "tasks":
                     keep_clear(x, items[i])
+                    keep_labels(x, items[i])
                 break
         else:
             if merge:
