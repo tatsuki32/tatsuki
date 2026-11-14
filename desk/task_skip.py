@@ -9,7 +9,10 @@
   python3 desk/task_skip.py merge-pending          # open tasks by genre, for finding ones that belong together (weekly)
   python3 desk/task_skip.py merge-add              # stdin [{"title","note","ids":[...]}]: proposals; nothing is merged
   python3 desk/task_skip.py genre-review           # every genre with its counts and who made it (weekly)
-  python3 desk/task_skip.py genre-apply            # stdin [{"id","rename"?,"mergeInto"?,"emoji"?,"desc"?}]; only Claude's genres
+  python3 desk/task_skip.py genre-apply            # stdin [{"id","rename"?,"mergeInto"?,"retire"?,"emoji"?,"color"?,"desc"?} | {"add":{name,emoji,color,desc}}]
+                                                   # only Claude's genres; every change goes to genrelog (the Genres page can undo it)
+  python3 desk/task_skip.py type-review            # how much each type was used in the last 4 weeks, and open tasks with no type
+  python3 desk/task_skip.py type-propose           # stdin [{"kind":"retire","name","why"} | {"kind":"add","name","group","why"}]: cards only
 
 The nightly scheduled task (desk-task-skip) writes here. Rows look like
   {"id": "...", "ifNot": "Nothing breaks. ...", "minor": true, "why": "...", "cat": "Research", "genre": "Georgia company"}
@@ -53,6 +56,10 @@ TYPE_GROUPS = [
     ("Hold", ["Waiting for someone", "Someday"]),
 ]
 NEVER_MINOR_TYPES = set(dict(TYPE_GROUPS)["Paperwork"]) | {"Health and appointments"}
+# one stable color per genre; the same list as TL_COLORS in desk/index.html (mid tones that read on the dark background, no gold, no red)
+GENRE_COLORS = ("#7aa7ff", "#4cc2ad", "#86cf73", "#a98bf5", "#5bc8e8", "#c3d562", "#d48ad4", "#9aa6e0", "#8fd6b8", "#c0a6e8")
+TYPE_UNUSED_MS = 28 * DAY_MS
+TYPE_PROPOSAL_MAX = 5
 
 
 # ---------- small store helpers: through the Desk server when it runs, else the file ----------
@@ -89,19 +96,25 @@ def _put_col(col, rec):
 # ---------- types and genres ----------
 
 def all_types(custom=None):
-    """[(group, name)] — the fixed ones, then the ones the person added (tasktypes)."""
-    out = [(g, n) for g, names in TYPE_GROUPS for n in names]
-    seen = {n.lower() for _, n in out}
-    for x in custom if custom is not None else _load_col("tasktypes"):
+    """[(group, name)] — the fixed ones, then the added ones (tasktypes). A type retired on a card is left out."""
+    custom = custom if custom is not None else _load_col("tasktypes")
+    retired = {text(x.get("name"), NAME_MAX).lower() for x in custom if x.get("retired") and not x.get("deleted")}
+    out = [(g, n) for g, names in TYPE_GROUPS for n in names if n.lower() not in retired]
+    seen = {n.lower() for _, n in out} | retired
+    for x in custom:
         name = text(x.get("name"), NAME_MAX)
-        if name and not x.get("deleted") and name.lower() not in seen:
-            out.append((x.get("group") if x.get("group") in dict(TYPE_GROUPS) else "Hold", name))
+        if name and not x.get("deleted") and not x.get("retired") and name.lower() not in seen:
+            out.append((x.get("group") if x.get("group") in dict(TYPE_GROUPS) else "Yours", name))
             seen.add(name.lower())
     return out
 
 
 def live_genres(items=None):
-    return [g for g in (items if items is not None else _load_col("genres")) if not g.get("deleted") and not g.get("mergedInto")]
+    return [g for g in (items if items is not None else _load_col("genres")) if not g.get("deleted") and not g.get("mergedInto") and not g.get("retired")]
+
+
+def pick_color(row_color, gid):
+    return row_color if row_color in GENRE_COLORS else GENRE_COLORS[sum(map(ord, gid)) % len(GENRE_COLORS)]
 
 
 def slug(name):
@@ -159,11 +172,12 @@ def apply_rows(items, rows, now_ms, genres, types):
             gname = text(row.get("genre"), NAME_MAX)
             g = live.get(gname.lower()) if gname else None
             if gname and not g and len(live) < GENRE_MAX:
-                g = {"id": slug(gname), "name": gname, "emoji": text(row.get("genreEmoji"), 4) or "🏷️",
+                g = {"id": slug(gname), "name": gname, "emoji": text(row.get("genreEmoji"), 4) or "🏷️", "color": None,
                      "desc": text(row.get("genreDesc"), DESC_MAX), "order": len(live), "by": "claude",
                      "createdAt": now_ms, "updatedAt": now_ms, "deleted": False}
                 while any(x["id"] == g["id"] for x in list(live.values()) + new_genres + list(genres)):
                     g["id"] += "-2"
+                g["color"] = pick_color(row.get("genreColor"), g["id"])
                 live[gname.lower()] = g
                 new_genres.append(g)
             if cat:
@@ -249,32 +263,99 @@ def genre_review(items, genres):
             for g in live_genres(genres)]
 
 
-def genre_apply(genres, rows, now_ms):
-    """Only genres Claude made can be renamed or merged here; the person's stay as they are."""
+def genre_apply(genres, rows, now_ms, open_count=None):
+    """Only genres Claude made change here; the person's stay as they are. Returns (records to save, changes for genrelog).
+    retire: only a genre with no open task. add: a new genre (up to 100)."""
     live = {g["id"]: g for g in live_genres(genres)}
     names = {g.get("name", "").lower(): gid for gid, g in live.items()}
-    out = []
+    open_count = open_count or {}
+    out, changes = [], []
+    keep = ("name", "emoji", "color", "desc", "mergedInto", "retired")
     for row in rows if isinstance(rows, list) else []:
-        g = live.get(row.get("id")) if isinstance(row, dict) else None
+        if not isinstance(row, dict):
+            continue
+        if isinstance(row.get("add"), dict):
+            a = row["add"]
+            name = text(a.get("name"), NAME_MAX)
+            if not name or name.lower() in names or len(live) >= GENRE_MAX:
+                continue
+            gid = slug(name)
+            while gid in live or any(x["id"] == gid for x in genres):
+                gid += "-2"
+            g = {"id": gid, "name": name, "emoji": text(a.get("emoji"), 4) or "🏷️", "color": pick_color(a.get("color"), gid),
+                 "desc": text(a.get("desc"), DESC_MAX), "order": len(live), "by": "claude", "createdAt": now_ms, "updatedAt": now_ms, "deleted": False}
+            live[gid], names[name.lower()] = g, gid
+            out.append(g)
+            changes.append({"gid": gid, "kind": "add", "before": None, "after": {k: g.get(k) for k in keep}})
+            continue
+        g = live.get(row.get("id"))
         if not g or g.get("by") == "me":
             continue
         rec = dict(g)
         into = row.get("mergeInto")
+        kind = "edit"
         if into and into in live and into != g["id"]:
-            rec["mergedInto"] = into
+            rec["mergedInto"], kind = into, "merge"
+        elif row.get("retire") and not open_count.get(g["id"]):
+            rec["retired"], kind = True, "retire"
         else:
             name = text(row.get("rename"), NAME_MAX)
             if name and name.lower() not in names:
                 rec["name"] = name
             if text(row.get("emoji"), 4):
                 rec["emoji"] = text(row.get("emoji"), 4)
+            if row.get("color") in GENRE_COLORS:
+                rec["color"] = row["color"]
             if text(row.get("desc"), DESC_MAX):
                 rec["desc"] = text(row.get("desc"), DESC_MAX)
         if rec != g:
             rec["updatedAt"] = now_ms
             out.append(rec)
-            if rec.get("mergedInto"):
+            changes.append({"gid": g["id"], "kind": kind, "before": {k: g.get(k) for k in keep}, "after": {k: rec.get(k) for k in keep}})
+            if rec.get("mergedInto") or rec.get("retired"):
                 live.pop(g["id"], None)
+    return out, changes
+
+
+def type_review(items, custom, now_ms):
+    used = {}
+    for t in items:
+        if t.get("deleted") or not t.get("cat"):
+            continue
+        u = used.setdefault(t["cat"], {"open": 0, "recent": 0})
+        u["open"] += t.get("status") in OPEN
+        u["recent"] += max(t.get("createdAt") or 0, t.get("tagAt") or 0) >= now_ms - TYPE_UNUSED_MS
+    mine = {text(x.get("name"), NAME_MAX).lower() for x in custom if x.get("by") != "claude" and not x.get("deleted")}
+    return {"types": [{"group": g, "name": n, **used.get(n, {"open": 0, "recent": 0}), "yours": n.lower() in mine} for g, n in all_types(custom)],
+            "noType": [{"id": t["id"], "title": t.get("title", "")} for t in items if eligible(t) and not t.get("cat")][:40],
+            "groups": [g for g, _ in TYPE_GROUPS]}
+
+
+def type_propose(items, custom, props, rows, now_ms):
+    """Proposals only: the person decides on a card. A type the person added or edited is never proposed for retiring."""
+    review = {x["name"].lower(): x for x in type_review(items, custom, now_ms)["types"]}
+    open_now = [p for p in props if p.get("status") == "open" and not p.get("deleted")]
+    recent = {(p.get("kind"), (p.get("name") or "").lower()) for p in props if not p.get("deleted") and now_ms - (p.get("createdAt") or 0) < 90 * DAY_MS}
+    out = []
+    for row in rows if isinstance(rows, list) else []:
+        if len(open_now) + len(out) >= TYPE_PROPOSAL_MAX or not isinstance(row, dict):
+            break
+        kind, name, why = row.get("kind"), text(row.get("name"), NAME_MAX), text(row.get("why"), WHY_MAX)
+        if not name or (kind, name.lower()) in recent:
+            continue
+        if kind == "retire":
+            r = review.get(name.lower())
+            if not r or r["yours"] or r["open"] or r["recent"]:
+                continue
+            rec = {"kind": "retire", "name": r["name"], "group": r["group"]}
+        elif kind == "add":
+            if name.lower() in review or row.get("group") not in dict(TYPE_GROUPS):
+                continue
+            rec = {"kind": "add", "name": name, "group": row["group"]}
+        else:
+            continue
+        out.append({"id": f"tp-{now_ms}-{len(out)}", **rec, "why": why, "status": "open", "by": "claude", "createdAt": now_ms, "updatedAt": now_ms, "deleted": False})
+        recent.add((kind, name.lower()))
     return out
 
 
@@ -312,10 +393,26 @@ def main(argv):
     elif cmd == ["genre-review"]:
         print(json.dumps(genre_review(tasks._load(), _load_col("genres")), ensure_ascii=False, indent=1))
     elif cmd == ["genre-apply"]:
-        recs = genre_apply(_load_col("genres"), json.load(sys.stdin), now_ms)
+        items = tasks._load()
+        open_count = {}
+        for t in items:
+            if eligible(t) and t.get("genre"):
+                open_count[t["genre"]] = open_count.get(t["genre"], 0) + 1
+        recs, changes = genre_apply(_load_col("genres"), json.load(sys.stdin), now_ms, open_count)
         for g in recs:
             _put_col("genres", g)
+        if changes:
+            day = time.strftime("%Y-%m-%d")
+            old = next((x for x in _load_col("genrelog") if x["id"] == day), {})
+            _put_col("genrelog", {"id": day, "date": day, "changes": (old.get("changes") or []) + changes, "at": now_ms})
         print(f"Genres changed {len(recs)}")
+    elif cmd == ["type-review"]:
+        print(json.dumps(type_review(tasks._load(), _load_col("tasktypes"), now_ms), ensure_ascii=False, indent=1))
+    elif cmd == ["type-propose"]:
+        new = type_propose(tasks._load(), _load_col("tasktypes"), _load_col("typeprops"), json.load(sys.stdin), now_ms)
+        for p in new:
+            _put_col("typeprops", p)
+        print(f"Type proposals {len(new)}")
     elif cmd == ["stats"]:
         print(json.dumps(stats(tasks._load(), _load_col("genres"), now_ms), indent=1))
     else:
