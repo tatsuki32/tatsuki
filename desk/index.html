@@ -1004,6 +1004,9 @@ a.ev:hover{background:var(--surface-2)}
 .askpick.sel{background:var(--surface-2);box-shadow:inset 3px 0 0 var(--accent)}
 .askname{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .askname .e{margin-right:var(--s1)}
+.askform{display:flex;gap:var(--s2);margin:var(--s2) var(--s3) var(--s2);min-width:0}
+.askform input{flex:1;min-width:0;font:inherit;font-size:var(--t2);color:var(--ink);background:var(--bg);border:1px solid var(--line-2);border-radius:8px;padding:8px 12px}
+.askform input:focus{outline:none;border-color:var(--accent)}
 .palrow code,.cccmd{font-family:var(--code);font-size:var(--t1);color:var(--muted);font-weight:400}
 .cc{padding-bottom:var(--s3)}
 .ccbig{display:grid;gap:var(--s1);width:calc(100% - 2 * var(--s3));margin:0 var(--s3) var(--s3);text-align:left;cursor:pointer;border:1px solid var(--line-2);background:transparent;color:var(--ink);border-radius:var(--r);padding:var(--s3)}
@@ -6601,11 +6604,12 @@ function openNote(){
 }
 $("#noteBtn").onclick=openNote;
 {const q=$("#q"),go=()=>{S.q=q.value;S.qAll=null;render();if(S.q.trim())window.scrollTo(0,0)};
-  q.oninput=e=>{if(!e.isComposing){if(isPal(q.value)&&!isPal(S.q))S.palSel=0;if(isAsk(q.value))S.ask.auto=0;go()}};q.addEventListener("compositionend",go);
+  q.oninput=e=>{if(!e.isComposing){if(isPal(q.value)&&!isPal(S.q))S.palSel=0;if(isAsk(q.value)){S.ask.auto=0;if(!askQ(q.value))S.ask.focus=true}go()}};q.addEventListener("compositionend",go);
   q.onkeydown=e=>{if(e.isComposing)return;
     if(isPal(q.value)){ // "/" commands: ↑↓ to choose, Enter to run
       if(e.key==="ArrowDown"){e.preventDefault();return palMove(1)} if(e.key==="ArrowUp"){e.preventDefault();return palMove(-1)}
       if(e.key==="Enter"){e.preventDefault();return palRun(S.palSel||0)}}
+    if(e.keyCode===229) return; // IME is still confirming a word
     if(isAsk(q.value)){ // "?" Ask Desk: Enter asks, or opens the chosen place when nothing new is typed
       if(e.key==="ArrowDown"){e.preventDefault();return askMove(1)} if(e.key==="ArrowUp"){e.preventDefault();return askMove(-1)}
       if(e.key==="Enter"){e.preventDefault();S.q=q.value;return askEnter()}}
@@ -6760,8 +6764,10 @@ function askLocal(q,cat){ // word matches over the same list, for when the AI is
 }
 const ASK0=()=>({turns:[],busy:false,sel:0,auto:0});
 S.ask=ASK0();
-async function askSend(){
-  const q=askQ(S.q); if(!q||S.ask.busy) return;
+const askTyping=()=>document.activeElement?.id==="askIn";
+async function askSend(text){
+  const q=String(text??askQ(S.q)).trim(); if(!q||S.ask.busy) return;
+  if(text!=null){S.ask.draft="";S.ask.focus=true;const q0=$("#q");if(q0&&isAsk(q0.value)){q0.value="?";S.q="?"}} // asked from the card: the search box starts fresh
   const cat=finderCatalog(), byId=Object.fromEntries(cat.map(c=>[c.id,c]));
   S.ask.busy=q;S.ask.sel=0;render();
   let res=null;
@@ -6773,7 +6779,7 @@ async function askSend(){
   if(res&&res.ok) turn={q,reply:res.reply,picks:res.picks.filter(p=>byId[p.id])};
   else{const picks=askLocal(q,cat);turn={q,local:true,reply:picks.length?"AI is not available, so these are word matches.":"AI is not available, and no word matches. Try other words.",picks}}
   turn.cat=byId;
-  S.ask.turns.push(turn);S.ask.busy=false;
+  S.ask.turns.push(turn);S.ask.busy=false;S.ask.focus=S.ask.focus||askTyping();
   const q0=$("#q");if(q0&&askQ(q0.value)===q){q0.value="?";S.q="?"} // ready for the next question
   if(turn.picks.length===1&&!turn.local){const tok=Date.now();S.ask.auto=tok;setTimeout(()=>{if(S.ask.auto===tok)askGo(S.ask.turns.length-1,0)},1200)}
   render();
@@ -6793,13 +6799,14 @@ function askView(){
       ${head?`<p class="aska"><b>${head}</b></p>`:""}${t.reply?`<p class="aska sub">${esc(t.reply)}</p>`:""}
       ${t.picks.map((p,pi)=>row(t,ti,p,pi)).join("")}
       ${ti===last&&A.auto&&n===1?`<p class="aska sub">Going there… <button class="btn sm" id="askStay">Stay</button></p>`:""}</div>`}).join("");
-  const foot=A.busy?`<p class="aska sub">Looking for “${esc(A.busy)}”…</p>`:q?`<p class="aska sub">Press Enter to ask: “${esc(q)}”</p>`:A.turns.length?"":`<p class="aska sub">Ask in your own words where something is in Desk. For example: ?where do I unsubscribe from mail</p>`;
-  return `<section class="card results ask" aria-label="Ask Desk" aria-live="polite"><div class="rhead"><b>Ask Desk</b><span class="sub">Enter to ask · ↑↓ and Enter to choose · Esc to go back</span>${A.turns.length?`<button class="btn sm" id="askNew">New chat</button>`:""}</div>
-    ${turns}${foot}</section>`;
+  const foot=A.busy?`<p class="aska sub">Looking for “${esc(A.busy)}”…</p>`:q?`<p class="aska sub">Press Enter to ask: “${esc(q)}”</p>`:A.turns.length?"":`<p class="aska sub">Ask in your own words where something is in Desk.</p>`;
+  const form=`<form class="askform" id="askForm"><input id="askIn" type="text" autocomplete="off" aria-label="Ask Desk where something is" placeholder="${A.turns.length?"Ask again, or say what you meant":"e.g. where do I unsubscribe from mail"}" value="${esc(A.draft||"")}"><button class="btn primary" type="submit"${A.busy?" disabled":""}>Ask</button></form>`;
+  return `<section class="card results ask" aria-label="Ask Desk" aria-live="polite"><div class="rhead"><b>Ask Desk</b><span class="sub">Enter to ask · ↑↓ to choose · Esc to close</span>${A.turns.length?`<button class="btn sm" id="askNew">New chat</button>`:""}</div>
+    ${turns}${foot}${form}</section>`;
 }
 function askMove(d){
   const t=S.ask.turns[S.ask.turns.length-1]; if(!t||!t.picks.length) return;
-  S.ask.auto=0;S.ask.sel=(S.ask.sel+d+t.picks.length)%t.picks.length;render();
+  S.ask.auto=0;S.ask.sel=(S.ask.sel+d+t.picks.length)%t.picks.length;S.ask.focus=askTyping();render();
 }
 function askEnter(){
   if(askQ(S.q)) return askSend();
@@ -6807,8 +6814,19 @@ function askEnter(){
 }
 function wireAsk(){
   document.querySelectorAll("[data-askgo]").forEach(b=>b.onclick=()=>{const [t,p]=b.dataset.askgo.split(":").map(Number);askGo(t,p)});
-  $("#askStay")&&($("#askStay").onclick=()=>{S.ask.auto=0;render();$("#q")?.focus()});
-  $("#askNew")&&($("#askNew").onclick=()=>{S.ask=ASK0();const q=$("#q");q.value="?";S.q="?";render();q.focus()});
+  $("#askStay")&&($("#askStay").onclick=()=>{S.ask.auto=0;S.ask.focus=true;render()});
+  $("#askNew")&&($("#askNew").onclick=()=>{S.ask=ASK0();S.ask.focus=true;const q=$("#q");q.value="?";S.q="?";render()});
+  const inp=$("#askIn");
+  if(inp){ // the chat box inside the card; typing here never re-renders the page
+    inp.oninput=()=>{S.ask.draft=inp.value;S.ask.auto=0};
+    inp.onkeydown=e=>{if(e.isComposing||e.keyCode===229)return;
+      if(e.key==="Enter"){e.preventDefault();if(inp.value.trim())askSend(inp.value);else{const t=S.ask.turns.length-1;if(t>=0&&S.ask.turns[t].picks.length)askGo(t,S.ask.sel)}}
+      if(e.key==="ArrowDown"&&!inp.value){e.preventDefault();askMove(1)} if(e.key==="ArrowUp"&&!inp.value){e.preventDefault();askMove(-1)}
+      if(e.key==="Escape"){S.ask=ASK0();const q=$("#q");q.value="";S.q="";render()}};
+    $("#askForm").onsubmit=e=>{e.preventDefault();askSend(inp.value)};
+    inp.onfocus=()=>{S.ask.had=true};inp.onblur=()=>{if(inp.isConnected)S.ask.had=false}; // a re-render keeps the cursor here
+    if(S.ask.focus||S.ask.had){S.ask.focus=false;inp.focus();inp.setSelectionRange(inp.value.length,inp.value.length)}
+  }
   $("#askDesk")&&($("#askDesk").onclick=()=>{const q=$("#q"),w=S.q.trim();q.value="?"+w;S.q=q.value;S.ask=ASK0();askSend();q.focus()});
 }
 
@@ -6822,7 +6840,7 @@ function palItems(){
     {e:"⌨️",name:"Ask Claude",key:"C",kw:"くろーど claude",run:()=>openAsk()},
     {e:"⚡",name:"Command list (this one)",key:"/ /",kw:"こまんど command palette",run:()=>{const q=$("#q");q.value="/";S.q="/";S.palSel=0;render();q.focus()}},
     {e:"🔎",name:"Search",key:"/",kw:"けんさく search",run:()=>setTimeout(()=>$("#q")?.focus(),0)},
-    {e:"❓",name:"Ask Desk where something is",key:"?",kw:"どこ さがす ask where find AI",run:()=>setTimeout(()=>{const q=$("#q");q.value="?";S.q="?";render();q.focus()},0)},
+    {e:"❓",name:"Ask Desk where something is",key:"?",kw:"どこ さがす ask where find AI",run:()=>setTimeout(()=>{const q=$("#q");q.value="?";S.q="?";S.ask.focus=true;render()},0)},
     {e:"🗂️",name:"Triage unsorted tasks",kw:"しわけ みぶんるい triage",run:()=>openTriage()},
     {e:"🍃",name:"Decide what not to do",kw:"やらない not doing drop decide",run:()=>openDecide()},
     {e:"🧷",name:"Merge similar tasks",kw:"まとめる merge similar",run:()=>openMerge()},
