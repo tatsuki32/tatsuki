@@ -108,10 +108,14 @@ def read_client(path):
 
 def auth(path=None):
     path = path or find_client_file()
-    if not path:
+    saved = _key_get("client")
+    if path:
+        client = read_client(path)
+    elif saved:
+        client = json.loads(saved)  # reconnect with the client already in the keychain
+    else:
         print("Connection file not found. Put the JSON file that starts with client_secret in ~/Downloads.")
         return 1
-    client = read_client(path)
     state, verifier = secrets.token_urlsafe(24), secrets.token_urlsafe(64)
     challenge = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest()).rstrip(b"=").decode()
     got = {}
@@ -153,7 +157,7 @@ def auth(path=None):
         return 1
     _key_set("client", json.dumps(client))
     _key_set("refresh", data["refresh_token"])
-    print("Connected. You can delete the file that was read: " + path)
+    print("Connected." + (" You can delete the file that was read: " + path if path else ""))
     return 0
 
 
