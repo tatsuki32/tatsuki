@@ -9,7 +9,10 @@ set -euo pipefail
 cd "$(dirname "$0")"
 export WRANGLER_SEND_METRICS=false
 
-key="$(LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 32)"
+# a finite read (head first), so nothing in the pipe is cut off; pipefail would stop the script silently
+key="$(head -c 1024 /dev/urandom | LC_ALL=C tr -dc 'A-Za-z0-9' | cut -c1-32)"
+if [ "${#key}" -lt 32 ]; then echo "Couldn't make a passphrase. Nothing was changed."; exit 1; fi
+echo "Setting SIFT_KEY…"
 security add-generic-password -U -s tatsuki-desk-sift -a sift -w "$key"
 printf '%s' "$key" | npx wrangler secret put SIFT_KEY >/dev/null
 printf '%s' "$key" | pbcopy
