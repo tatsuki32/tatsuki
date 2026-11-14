@@ -1165,6 +1165,9 @@ h1 .inedit{font-size:var(--t4);font-weight:700}
 .tline time{color:var(--ink-2)}
 .tline span:last-child{overflow-wrap:anywhere;color:var(--ink-2)}
 .sheet .nav{gap:0}
+.tcal{display:grid;gap:var(--s2);min-width:0}
+.tcal[hidden],#tCalOn:empty{display:none}
+.tcaltext{white-space:pre-wrap;overflow-wrap:anywhere;color:var(--ink-2);font-size:var(--t1)}
 .sheet .nav a{min-height:44px}
 .sheet .railbtn{min-height:44px}
 .toast{position:fixed;z-index:50;left:50%;bottom:calc(24px + var(--tabbar) + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);font-weight:700;padding:10px var(--s3);border-radius:999px;font-size:var(--t2);max-width:calc(100vw - 32px)}
@@ -1289,7 +1292,7 @@ S.projects=[];S.sections=[];S.projFilter="all";S.pDone=false; // projects: lists
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const okUrl=u=>/^(https:\/\/|file:\/\/|#)/.test(u||"");
-const viewId=()=>{const h=(location.hash||"").slice(1);if(h==="mail")return "tasks";if(h==="inbox")return "presents";if(/^project\//.test(h))return "project";return VIEWS.some(v=>v.id===h&&v.g!=="hidden")?h:"home"}; // the morning mail screen moved into the tasks
+const viewId=()=>{const h=(location.hash||"").slice(1);if(h==="mail")return "tasks";if(h==="inbox")return "presents";if(/^project\//.test(h))return "project";if(/^task\//.test(h))return "tasks";return VIEWS.some(v=>v.id===h&&v.g!=="hidden")?h:"home"}; // the morning mail screen moved into the tasks
 const viewLabel=id=>(VIEWS.find(v=>v.id===id)||{}).label||id;
 /* Old mail data has Japanese topics: keep those titles in Japanese, new ones in English */
 const JA_RE=/[ぁ-んァ-ン一-龥]/;
@@ -1735,7 +1738,7 @@ function taskCard(t,ps){
   return `<article class="task ${open?"":"closed"}" data-noauto draggable="true" data-task="${esc(t.id)}">
     <button class="tt" data-topen="${esc(t.id)}" data-noauto>${esc(taskName(t))}</button>
     ${open&&clearOn(t)&&t.clear.first?`<p class="tfirstline">First: ${esc(t.clear.first)}</p>`:""}
-    <div class="tm">${t.url&&okUrl(t.url)?`<a href="${esc(t.url)}" target="_blank" rel="noopener" title="Open (${src})" aria-label="Open (${src})">${ic}</a>`:`<span title="${src}" aria-label="${src}">${ic}</span>`}${t.projectId?projTag(t):""}${t.mail?`<span class="from">${esc(t.mail.sub)}</span>`:t.due!=null?`<span>Due ${esc(fmtDue(t.due))}</span>`:""}${open&&t.deadline!=null?dlChip(t):""}${open&&est!=null?`<span>${t.estMin!=null?"":"est. "}${fmtMin(est)}</span>`:""}${ai?`<button class="chip aiplan" data-taiplan="${esc(t.id)}" title="Claude's suggestion. Press to accept">Suggested: ${tPeriodOf(ai,ps)[1]}</button>`:""}
+    <div class="tm">${t.url&&okUrl(t.url)?`<a href="${esc(t.url)}" target="_blank" rel="noopener" title="Open (${src})" aria-label="Open (${src})">${ic}</a>`:`<span title="${src}" aria-label="${src}">${ic}</span>`}${t.projectId?projTag(t):""}${t.mail?`<span class="from">${esc(t.mail.sub)}</span>`:t.due!=null?`<span>Due ${esc(fmtDue(t.due))}</span>`:""}${open&&t.calAt>Date.now()-HOUR?`<span>${esc(calOnText(t))}</span>`:""}${open&&t.deadline!=null?dlChip(t):""}${open&&est!=null?`<span>${t.estMin!=null?"":"est. "}${fmtMin(est)}</span>`:""}${ai?`<button class="chip aiplan" data-taiplan="${esc(t.id)}" title="Claude's suggestion. Press to accept">Suggested: ${tPeriodOf(ai,ps)[1]}</button>`:""}
       <span class="tsel">${open?`<select data-tplan="${esc(t.id)}" aria-label="When">${planSel(t,ps)}</select>`:""}<select data-tstatus="${esc(t.id)}" aria-label="Status">${TSTATUS.map(([k,l])=>`<option value="${k}" ${k===t.status?"selected":""}>${l}</option>`).join("")}</select></span></div>
   </article>`;
 }
@@ -1867,7 +1870,7 @@ function topThree(){
   const slot=freeSlot(30);
   const why=t=>whyText(t,r);
   const row=(t,i)=>`<div class="t3row ${i?"":"first"}"><span class="t3n">${i+1}</span><div style="min-width:0"><button class="tt" data-topen="${esc(t.id)}" data-noauto>${esc(taskName(t))}</button><div class="due">${esc(why(t))}${t.deadline!=null?` · ${dlChip(t)}`:""}</div>
-    <div class="t3acts">${t.status==="notyet"?`<button class="btn ${i?"sm":"primary"}" data-t3="doing" data-id="${esc(t.id)}">Start</button>`:""}${mailUrl(t)?`<a class="btn ${i?"sm":""}" href="${esc(mailUrl(t))}" target="_blank" rel="noopener">Reply</a>`:""}${slot&&!i?`<a class="btn" href="${esc(calLink(t.title,slot))}" target="_blank" rel="noopener" title="30 minutes from ${esc(fmtDue(slot))}">Block time</a>`:""}<button class="btn ${i?"sm":""}" data-t3="done" data-id="${esc(t.id)}">Done</button></div></div></div>`;
+    <div class="t3acts">${t.status==="notyet"?`<button class="btn ${i?"sm":"primary"}" data-t3="doing" data-id="${esc(t.id)}">Start</button>`:""}${mailUrl(t)?`<a class="btn ${i?"sm":""}" href="${esc(mailUrl(t))}" target="_blank" rel="noopener">Reply</a>`:""}${slot&&!i?`<a class="btn" href="${esc(calLink(t,slot))}" target="_blank" rel="noopener" title="30 minutes from ${esc(fmtDue(slot))}">Block time</a>`:""}<button class="btn ${i?"sm":""}" data-t3="done" data-id="${esc(t.id)}">Done</button></div></div></div>`;
   return `<section class="card t3" aria-label="Today's Three">${list.length?list.map(row).join(""):`<div class="empty"><b>Nothing in Today's Three</b>Take it easy. Press T to add a task.</div>`}</section>`;
 }
 const t3Mode=()=>new Date(Date.now()+HCMC).getUTCHours()<12?"Focus time (until noon)":"Admin time";
@@ -1938,8 +1941,37 @@ function freeSlot(min){
   while(t+len<=stop){const hit=busy.find(([a,b])=>a<t+len&&b>t);if(!hit)return t;t=Math.ceil(hit[1]/step)*step}
   return null;
 }
-const gcalTime=ms=>new Date(ms).toISOString().replace(/[-:]/g,"").replace(/\.\d{3}/,"");
-const calLink=(title,ms)=>"https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent(title)+"&dates="+gcalTime(ms)+"/"+gcalTime(ms+30*6e4);
+/* Add to calendar: Google's own "new event" page, filled in. The Desk sends nothing to Google; Tatsuki presses Save there.
+   Times are wall times in the Mac's own time zone (ctz), so they follow the country he is in. */
+const localTz=()=>{try{return Intl.DateTimeFormat().resolvedOptions().timeZone||"UTC"}catch(e){return "UTC"}};
+const tzName=()=>{const z=localTz(), city={"Asia/Saigon":"Ho Chi Minh City","Asia/Ho_Chi_Minh":"Ho Chi Minh City"}[z]||z.split("/").pop().replace(/_/g," ");return `${city} time (${z})`};
+const wallTime=ms=>{const d=new Date(ms);return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`};
+const CALMAX=1500, CALLENS=[[15,"15m"],[30,"30m"],[60,"1h"],[120,"2h"]];
+function calDetails(t){
+  const c=t.clear||{}, out=[], reply=REPLYSRC.has(t.source);
+  if(reply) out.push("Reply task. The message and the draft reply are in the Desk.");
+  else{
+    if(c.first) out.push("First 5 minutes: "+c.first);
+    if(c.steps?.length) out.push("Steps:",...c.steps.map((x,i)=>`${i+1}. ${x}`));
+    if(c.done) out.push("Done when: "+c.done);
+    if(t.note) out.push("Notes: "+t.note);
+  }
+  if(t.due!=null) out.push("Due: "+fmtDue(t.due));
+  const p=projById(t.projectId), s=secById(t.sectionId);if(p) out.push("Project: "+p.name+(s?" / "+s.name:""));
+  const src=reply?[]:(c.sources||[]).filter(x=>/^https:\/\//.test(x.url||""));if(src.length) out.push("Sources:",...src.map(x=>`- ${x.label?x.label+" ":""}${x.url}`));
+  let text=out.join("\n");if(text.length>CALMAX) text=text.slice(0,CALMAX-20).trimEnd()+"… (more in Desk)";
+  return (text?text+"\n\n":"")+"Open in Desk (Mac): http://localhost:4747/#task/"+encodeURIComponent(t.id);
+}
+const calUrl=(title,ms,min,details)=>"https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent(title)+"&dates="+wallTime(ms)+"/"+wallTime(ms+min*6e4)+"&ctz="+encodeURIComponent(localTz())+(details?"&details="+encodeURIComponent(details):"");
+const calLink=(t,ms)=>calUrl(taskName(t),ms,30,calDetails(t));
+const calLen=t=>Math.min(480,Math.max(5,Math.round(+t.calMin||+t.estMin||parseInt(t.estAi,10)||30)));
+const calLens=m=>CALLENS.some(x=>x[0]===m)?CALLENS:[...CALLENS,[m,m<60?m+"m":Math.floor(m/60)+"h"+(m%60?" "+m%60+"m":"")]].sort((a,b)=>a[0]-b[0]); // the task's own length gets its own button
+/* where the picker starts: the last time it was put on the calendar (if still ahead) → a due date with a time → the next free half hour today → the next full hour */
+function calStart(t,min){const now=Date.now();
+  if(t.calAt>now) return t.calAt;
+  if(t.due!=null&&dueParts(t.due)[1]&&t.due>now) return t.due;
+  return freeSlot(min)??Math.ceil(now/36e5)*36e5}
+const calOnText=t=>t.calAt?"On calendar: "+new Date(t.calAt).toLocaleString("en-US",{weekday:"short",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}):"";
 
 /* ---------- Body: photos become records (desk/lifelog.py). A value below a target is only a number: nothing here turns red or blames. ---------- */
 async function bodyLoad(force){
@@ -2668,14 +2700,15 @@ function openTask(id,preset){
     <label class="sub" for="tStatus">Status</label><select id="tStatus">${TSTATUS.map(([k,l])=>`<option value="${k}" ${k===(t?.status||"notyet")?"selected":""}>${l}</option>`).join("")}</select>
     ${isLinked?"":projFields(t||pre)}
     <label class="sub" for="tNote">Notes</label><textarea id="tNote" class="tnote" placeholder="Details if needed. [word] links to a note">${esc(t?.note||"")}</textarea>${t&&linksIn(t.note).length?`<p class="hint">🔗 ${linksIn(t.note).map(x=>wlink(x)).join(" ")}</p>`:""}
-    <div class="row"><button class="btn primary" id="tSave">Save <kbd>⌘/Ctrl + Enter</kbd></button><button class="btn" id="tCancel">Cancel</button>${t?`<button class="btn" id="tCopy">Copy as text</button>`:""}${t&&!isLinked?`<button class="btn" id="tDel" style="margin-left:auto;color:var(--red)">Delete</button>`:""}</div>
+    ${t?`<p class="hint" id="tCalOn">${esc(calOnText(t))}</p><div id="tCal" class="tcal" hidden></div>`:""}
+    <div class="row"><button class="btn primary" id="tSave">Save <kbd>⌘/Ctrl + Enter</kbd></button><button class="btn" id="tCancel">Cancel</button>${t?`<button class="btn" id="tCopy">Copy as text</button><button class="btn" id="tCalBtn" aria-expanded="false" aria-controls="tCal">Add to calendar</button>`:""}${t&&!isLinked?`<button class="btn" id="tDel" style="margin-left:auto;color:var(--red)">Delete</button>`:""}</div>
   </div></div>`;
   const ti=$("#tTitle");ti.focus();ti.setSelectionRange(ti.value.length,ti.value.length);
   wireWa(t);wireLine(t);
   const close=()=>{$("#modal").innerHTML=""}, plan0=$("#tPlan").value;
   wireJobs(t);wireMail(t,close);wireClear(t,close);wireProjFields(t||pre);
-  const dueIn=$("#tDue"), dueT=$("#tDueT"), dueHint=()=>{$("#tDueHint").textContent=dueT.value?"Goes on the calendar 3 days before, at the same time":""};
-  if(dueT){dueT.oninput=dueHint;dueHint()}
+  const dueIn=$("#tDue"), dueT=$("#tDueT");
+  t&&wireCal(t);
   const save=async()=>{const title=ti.value.trim();if(!title){ti.focus();toast("Enter a title");return}
     if(dueT&&dueT.value&&!dueIn.value){dueIn.focus();toast("Enter a date too");return}
     const due=dueIn?dueFromParts(dueIn.value,dueT.value):null;
@@ -2687,6 +2720,33 @@ function openTask(id,preset){
     catch(e){toast("Couldn't save. Your input is still here")}};
   $("#tSave").onclick=save;$("#tCancel").onclick=close;$("#xTask").onclick=close;
   $("#tCopy")&&($("#tCopy").onclick=async()=>{toast(await copyText(taskFormText($("#scrim .pop")))?"📋 Copied as text":"Couldn't copy")});
+/* "Add to calendar" inside the task dialog: pick a date, a start and a length, then Google Calendar opens filled in.
+   calAt / calMin / calTz record that it was opened (the Desk cannot see whether Save was pressed there). */
+function wireCal(t){
+  const btn=$("#tCalBtn"), box=$("#tCal");if(!btn||!box)return;
+  const save=$("#tSave"), show=on=>{box.hidden=!on;btn.setAttribute("aria-expanded",String(on));btn.textContent=on?"Hide calendar":"Add to calendar";save.classList.toggle("primary",!on)}; // one gold button at a time
+  const close=()=>show(false);
+  btn.onclick=()=>{
+    if(!box.hidden)return close();
+    let min=calLen(t);const [d,tm]=toLocalInput(calStart(t,min)).split("T");
+    box.innerHTML=`<div class="tduein"><div><label class="sub" for="tCalD">Date</label><input type="date" id="tCalD" value="${d}"></div><div><label class="sub" for="tCalT">Start</label><input type="time" id="tCalT" step="300" value="${tm}"></div></div>
+      <div class="chips" role="group" aria-label="Length">${calLens(min).map(([m,l])=>`<button class="chip" data-tcalmin="${m}" aria-pressed="${m===min}">${l}</button>`).join("")}</div>
+      <p class="hint">Times in ${esc(tzName())}. Google Calendar opens with everything filled in. Press Save there.</p>
+      <details class="tmore"><summary>What goes in the description</summary><p class="tcaltext" id="tCalTxt"></p></details>
+      <div class="row"><a class="btn primary" id="tCalGo" href="#" target="_blank" rel="noopener">Open Google Calendar</a></div>`;
+    show(true);
+    const di=$("#tCalD"), ti=$("#tCalT"), go=$("#tCalGo");
+    const cur=()=>({...t,note:($("#tNote")?.value??t.note??"").trim()}); // the notes as typed now, saved or not
+    const at=()=>di.value&&ti.value?new Date(`${di.value}T${ti.value}`).getTime():NaN;
+    const upd=()=>{const ms=at(), x=cur(), txt=calDetails(x);$("#tCalTxt").textContent=txt;go.href=isNaN(ms)?"#":calUrl(taskName(x),ms,min,txt)};
+    di.oninput=ti.oninput=upd;
+    box.querySelectorAll("[data-tcalmin]").forEach(c=>c.onclick=()=>{min=+c.dataset.tcalmin;box.querySelectorAll("[data-tcalmin]").forEach(o=>o.setAttribute("aria-pressed",String(o===c)));upd()});
+    go.onclick=e=>{const ms=at();if(isNaN(ms)){e.preventDefault();(di.value?ti:di).focus();toast("Pick a date and a start time");return}
+      upd();const mark={calAt:ms,calMin:min,calTz:localTz()};Object.assign(t,mark); // the dialog's own Save keeps it too
+      store.putTask({...(findTask(t.id)||t),...mark}).catch(()=>{});
+      $("#tCalOn").textContent=calOnText(t);close();toast("📅 Opened Google Calendar. Press Save there")};
+    upd();di.focus()};
+}
   $("#tDel")&&($("#tDel").onclick=async e=>{const b=e.currentTarget;if(!b.dataset.sure){b.dataset.sure="1";b.textContent="Really delete?";return}
     try{await store.putTask({...t,deleted:true});close();toast("🗑️ Deleted")}catch(err){toast("Couldn't delete")}});
   $("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};
@@ -4621,6 +4681,7 @@ async function trOpen(e){
   render();
 }
 function trView(){
+  {const m=/^#task\/(.+)$/.exec(location.hash||""), tk=m&&findTask(decodeURIComponent(m[1]));if(tk){history.replaceState(null,"","#tasks");openTask(tk.id)}} // the link at the end of a calendar event's description
   const d=S.tr,head=`<h1>Transcribe</h1>`;
   if(S.trErr)return `<div class="money trp">${head}<p class="due">Could not load. Restarting the server may help.</p></div>`;
   if(!d)return `<div class="money trp">${head}<p class="due">Loading…</p></div>`;

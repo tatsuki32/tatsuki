@@ -27,7 +27,7 @@ python3 desk/write_feed.py gtasks <raw.json>                 # Google タスク�
 | `desk-daily-note` | 毎日 16:00 | 3min Daily Note のメールを本人へ送り、当日のタスクを作る（`lifeos/19-daily-note/`） | `tasks` |
 | `desk-lifelog-drive` | 毎時 | Drive の `Daily_Photos_Inbox` の新しい写真を待ち行列に入れ、読む（`desk/lifelog.py`。Drive のファイルは動かさない。1回10枚まで） | `lifelog/`・`body/`・`wise/receipts.json` |
 | `desk-sleep-coach` | 毎日 7:00 | 睡眠の記事を決めた出典から1本読み、本人の記録に当てはめた助言を作る（`desk/lifelog.py`。医療の助言はしない） | `body/sleep_coach.json` |
-| `desk-task-calendar` | 毎時 | 未着手で時刻つき期日のタスクを Google カレンダーへ（`desk/task_calendar.py`） | `calendar-sync.json` |
+| `desk-task-calendar` | 停止中（2026-11-14〜） | 前は未着手で時刻つき期日のタスクを Google カレンダーへ（`desk/task_calendar.py`）。今は Desk の「Add to calendar」で1件ずつ | `calendar-sync.json` |
 | `desk-task-clarify` | 毎晩 2:30 | 未整理のタスクを30件まで、具体的なタイトル・まず5分・手順・出典・頼む文面に整える（`desk/task_clarify.py`。送信しない） | `tasks` の `clear` |
 | `desk-task-estimate` | 毎日 6:40 | タスクにかかる時間の目安と時期の案（`desk/task_estimate.py`。本人の選択は変えない） | `tasks` の `estAi`・`planAi` |
 | `desk-world-brief` | 毎日 7:17 | 世界ニュース（結果のある出来事と研究を8〜10本。予想の問い、媒体の見比べ、なぜを5回つき。指示は `desk/sync/world-brief-v2.md`、号の形は `WORLD_EDITION.md`） | `editions` |
