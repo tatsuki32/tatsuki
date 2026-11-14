@@ -36,6 +36,12 @@
       "runtimeExecutable": "/bin/sh",
       "runtimeArgs": ["-c", "cd desk && NOTIFY_DIR=/tmp/claude/desk-notify-test DESK_PORT=${PORT:-4793} exec python3 server.py"],
       "port": 4793
+    },
+    {
+      "name": "sift-dev",
+      "runtimeExecutable": "/bin/sh",
+      "runtimeArgs": ["-c", "cd sift && WRANGLER_SEND_METRICS=false WRANGLER_LOG_PATH=/tmp/claude/wl exec npx wrangler dev --test-scheduled --port ${PORT:-8799} --ip 127.0.0.1"],
+      "port": 8799
     }
   ]
 }

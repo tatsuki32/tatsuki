@@ -40,6 +40,7 @@ import tg_notify
 import pc_monitor
 import routine_alarm
 import routine_sync
+import news_sync
 import chrome_web_sync
 import gmail_clean
 import lifelog
@@ -1297,6 +1298,7 @@ if __name__ == "__main__":
         threading.Thread(target=tg_notify.watch, daemon=True).start()  # tasks and events to Telegram
         threading.Thread(target=routine_alarm.watch, daemon=True).start()  # morning / evening routine start alarm
         threading.Thread(target=routine_sync.watch, daemon=True).start()  # routines <-> the Routine app on the phone
+        threading.Thread(target=news_sync.watch, daemon=True).start()  # Sift Daily's "Make it a task" -> Desk tasks, every 5 minutes
         threading.Thread(target=transcribe_desk.watch, daemon=True).start()  # the transcriber on 8791, kept running
         threading.Thread(target=site_sync.watch, daemon=True).start()  # tany.im analytics pulled every 15 minutes
     try:

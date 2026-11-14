@@ -1,0 +1,28 @@
+# Sift Daily — https://sift.tany.im  (your sources only, one email a day)
+# Test:    cd sift && npm test
+# Local:   npx wrangler d1 execute sift --local --file schema.sql && npx wrangler dev --test-scheduled
+# Deploy:  npx wrangler d1 execute sift --remote --file schema.sql && npx wrangler deploy
+# Secrets (never in this repo): npx wrangler secret put SIFT_KEY | ANTHROPIC_KEY | MAIL_TO
+# Email: Cloudflare Email Routing must be on for tany.im, with MAIL_TO verified as a destination.
+name = "tatsuki-sift"
+main = "src/index.js"
+compatibility_date = "2026-11-01"
+workers_dev = false
+
+routes = [{ pattern = "sift.tany.im", custom_domain = true }]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "sift"
+database_id = "8bcaf2ef-0352-4c94-a4d8-a203ef3f1cbd"
+
+# send_email with no fixed address: Cloudflare still only delivers to verified destinations
+[[send_email]]
+name = "MAIL"
+
+# UTC. 07:30 = 14:30 in Ho Chi Minh: check sources + AI summaries. 08:00 = 15:00: the daily email.
+[triggers]
+crons = ["30 7 * * *", "0 8 * * *"]
+
+[vars]
+BASE_URL = "https://sift.tany.im"
