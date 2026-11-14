@@ -1,0 +1,20 @@
+# 2026-11-14 求人チェックを JOINS だけにして Claude に任せた
+
+## ひとこと
+- いま：JOINS の応募文を Claude が週1で作る
+- 次：本人が下書きを見て自分で応募
+- 待ち：金曜15時の初回の自動実行
+
+## やったこと
+- 毎日の求人チェックのタスク（`daily-jobs-<日付>`、`linkedTasks`）を出さないようにした。Skill Shift は終了。`PROMPTS` は JOINS だけ。
+- Desk に「🤝 Done by Claude」（`#aidone`、`aiView`・`wireAi`）を追加。`by:"claude"` のタスクは `S.board` から外し、ここに並ぶ。`taskRecord` は `by` を残す。
+- 新しいコレクション `jobapps`（`server.py` の `COLLECTIONS`、`sync.py` の `TWO_WAY`）。応募文は欄ごとに Copy、「I applied」「Skip」「Undo」。
+- 定期タスク `desk-joins-weekly`（金 15:00）。JOINS のメールと公開一覧から、リモート可で期限内の案件だけ。経歴はホームページの元データ（`<script>` の中の日本語）と `prompts` の `joins` の事実だけ。送信しない。
+
+## 気づいたこと
+- JOINS の新着メールは金曜の昼（日本時間）に来る。リモート可は少ない（11/14 時点で期限内2件のうち1件）。
+- 応募フォームはスクリプトで描画され、欄名と字数は WebFetch で読めない。詳細ページの「ご応募の際にお聞きしたいこと」が欄の代わりになる。
+- ホームページ（pages.dev）も本文が JS 描画で、WebFetch では読めない。元ファイルの `<script>` から取り出す。
+
+## 次の一手
+- 初回の自動実行（11/20 金）の結果を「Done by Claude」で確かめる。

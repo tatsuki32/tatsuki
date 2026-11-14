@@ -16,7 +16,7 @@ python3 desk/write_feed.py calendar <raw.json>               # 予定：必要�
 python3 desk/write_feed.py gtasks <raw.json>                 # Google タスク：同上
 ```
 
-- 使えるコレクション：`editions`、`days`、`watch`、`reports`、`calendar`、`gtasks`、`tools`、`memos`、`tasks`、`notes`、`habits`、`wins`、`presents`。
+- 使えるコレクション：`editions`、`days`、`watch`、`reports`、`calendar`、`gtasks`、`tools`、`memos`、`tasks`、`notes`、`habits`、`wins`、`presents`、`jobapps`。
 - `memos` や `tasks` はサーバー経由で書きます。`desk/data/*.json` を手で書き換えません。
 - メール本文やメモの中身を、報告やログに書きません。一時ファイルは使い終わったら消します。
 
@@ -33,6 +33,7 @@ python3 desk/write_feed.py gtasks <raw.json>                 # Google タスク�
 | `desk-world-brief` | 毎日 7:17 | 世界ニュース（結果のある出来事と研究を8〜10本。予想の問い、媒体の見比べ、なぜを5回つき。指示は `desk/sync/world-brief-v2.md`、号の形は `WORLD_EDITION.md`） | `editions` |
 | `desk-morning-mail` | 毎日 4:30・15:30（2026-11-15 に 3:00・16:00 から。返信の時間 5:00・16:00 の前にそろえる） | Gmail と WhatsApp の個人トークの確認と返信案（`desk/whatsapp_sync.py`）。相手の返信待ち（`lifeos/02-followup/MORNING_RUN.md`、`run.py whatsapp`）。プレゼントの判定（`desk/presents.py`）。今すぐ返信が要るものに `urgent` の印（Desk の通知が鳴る。`desk/notify.py`）。送信しない | `days`・`tasks`・`desk/data/whatsapp/`・`02-followup/state.json`・`presents` |
 | `desk-minor-watch` | 火・金 7:33 | マイナー国ウォッチ | `watch` |
+| `desk-joins-weekly` | 金 15:00 | JOINS の新着案件メールから、リモートで働ける案件だけに応募フォームの欄ごとの下書きを作る（2026-11-14〜。Skill Shift と毎日の求人チェックのタスクは終了）。経歴はホームページの元データと `prompts` の事実だけ。応募・入力・送信はしない。やったことは `by:"claude"` のタスク（本人の一覧には出ない） | `jobapps`・`tasks` |
 | `desk-heritage-daily` | 毎日 7:05 | 毎日世界遺産。まだ出ていない国を3カ国、国の紹介と遺産を写真つきで（`desk/heritage.py`。休んだ日の分は作らない） | `heritage`・`desk/data/heritage/photos/` |
 | `desk-claude-daily-report` | 毎日 7:40 | 前日の Claude の作業レポート | `reports` |
 | `desk-money-upcoming` | 毎日 7:50 | カレンダーと予約メールから今後の支出（読むだけ。本文は残さない） | `desk/data/wise/upcoming.json` |
