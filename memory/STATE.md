@@ -25,6 +25,7 @@
 - アカウント一覧（`desk/accounts.py`、🔑 Accounts）：仮の版を実装。パスワードは持たない。鍵つきのパスワード欄は次の段階（要件定義から）。ポートフォリオは Cloudflare Pages に移した。 会社のサイトの計測（tany.im、`desk/site_sync.py`、「📈 Site」）：本番で動作。Search Console の数字は2〜3日後から。
 - やることを減らす・時間計測（要件定義 9pc5JCfnvLoB6FiU15RDwR）：B（返信の時間）・A＋F（やらないと決める・種類とジャンル・まとめる案）・C（時間計測）・D（自動化の提案）は main に。E は計測が2週間たまってから質問。「Desk Log」カレンダーは本人が作る。
 - Telegram 通知（`desk/tg_notify.py`）：main に入った。本人がボットを作り、キーと予定の iCal URL をキーチェーンに入れて Connect するまで動かない。本物での送信は未確認。
+- Post Studio（`#post`、`desk/posts.py`）：写真とメモから12の投稿先の案、go.tany.im の短縮リンクと計測、自動投稿（Instagram 英・露と Threads 露、今すぐ・予約・ルーティン）。試しの1件を投稿済み。残りは Desk のタスク6件（英語の Threads、R2 と動画、Facebook ページ、LinkedIn、DM）。記録 `memory/episodic/sessions/2026-11-15-post-studio.md`。
 ## 決定済みの事項
 - 作ったものは必ず main に入れる（どの Claude も。`.claude/rules/main-branch.md`）。Mac は main だけを取り込む。
 - デザインの本を読む作業はしない（2026-11-15、全作業）。UI は `.claude/rules/design-ui.md` と `design-nondesigner.md` のルールで作る。
