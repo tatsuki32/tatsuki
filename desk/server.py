@@ -65,6 +65,7 @@ DATA_JS = [
     ("watch.js", "WATCH", "[]"),
     ("heritage.js", "HERITAGE", "[]"),
     ("ideas.js", "IDEAS", "[]"),
+    ("autos.js", "AUTOS", "[]"),
 ]
 # what the scheduled tasks and the tools view write: one file per doc in data/docs/<collection>/, joined into the page's
 # data/*.js. collection -> (file, global, newest docs kept in the page; the docs stay on disk)
@@ -76,6 +77,7 @@ FEEDS = {
     "watch": ("watch.js", "WATCH", 30),
     "heritage": ("heritage.js", "HERITAGE", None),
     "ideas": ("ideas.js", "IDEAS", 52),
+    "autos": ("autos.js", "AUTOS", 52),  # automation ideas (desk/automation.py), weekly
     "calendar": ("calendar.js", "CAL", "upcoming"),
     "gtasks": ("gtasks.js", "GTASKS", "current"),
 }

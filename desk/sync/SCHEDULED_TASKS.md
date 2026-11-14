@@ -35,6 +35,7 @@ python3 desk/write_feed.py gtasks <raw.json>                 # Google タスク�
 | `desk-task-skip` | 毎日 2:45 | タスクに「やらなかったらどうなるか」・影響小の印・種類・ジャンルを1晩40件まで（`desk/task_skip.py pending|apply`）。本人が直したものは触らない。期日つき・お金・手続き・健康・約束は影響小にしない | `tasks`・`genres` |
 | `desk-task-tidy` | 月曜 6:15 | ジャンルの見直し（Claude の作ったものだけ、100個以内。`task_skip.py genre-review|genre-apply`）と、同じジャンルの似たタスクをまとめる案を10件まで（`merge-pending|merge-add`）。まとめるのは本人がカードで決めたときだけ | `genres`・`mergeprops` |
 | `desk-time-calendar` | 毎日 23:30 | 7日以内に終わった5分以上の計測を Google カレンダー「Desk Log」に入れる（`desk/time_calendar.py pending|mark|status`）。題と時間だけ、空き時間・通知なし、二重に入れない。Desk Log が無ければ書かずに `status missing` | `timelog` |
+| `desk-automation-suggest` | 月曜 6:45 | 繰り返している仕事と無料でできる自動化の案を3件まで「💡 Ideas」に（`desk/automation.py facts|save`）。作るのは本人が Do it を押したものだけ | `autos`（`docs/autos/`） |
 | `desk-minor-watch` | 火・金 7:33 | マイナー国ウォッチ | `watch` |
 | `desk-joins-weekly` | 金 15:00 | JOINS の新着案件メールから、リモートで働ける案件だけに応募フォームの欄ごとの下書きを作る（2026-11-14〜。Skill Shift と毎日の求人チェックのタスクは終了）。経歴はホームページの元データと `prompts` の事実だけ。応募・入力・送信はしない。やったことは `by:"claude"` のタスク（本人の一覧には出ない） | `jobapps`・`tasks` |
 | `desk-heritage-daily` | 毎日 7:05 | 毎日世界遺産。まだ出ていない国を3カ国、国の紹介と遺産を写真つきで（`desk/heritage.py`。休んだ日の分は作らない） | `heritage`・`desk/data/heritage/photos/` |

@@ -4869,11 +4869,24 @@ function ideaItem(i,main){
     <p class="ia"><span class="ilab">Next step · Estimate ${esc(i.effort)}</span>${esc(i.next)}</p>
     <div class="row"><button class="btn${main?" primary":""}" data-ideado="${esc(i.id)}">Do it</button><button class="btn" data-ideapass="${esc(i.id)}">Skip</button></div></article>`;
 }
+/* D. Automation ideas: work that keeps coming back and a free way to automate it (desk/automation.py, Monday 6:45). Same Do / Skip (ideaslog). */
+const autoIssues=()=>(window.AUTOS||[]).filter(d=>!d.deleted);
+function autoItem(i){const st=ideaState(i), log=S.ideaLog?.[i.id];
+  if(st!=="open") return `<div class="card idone"><b>${esc(i.title)}</b><span class="due">${st==="doing"?"Doing":"Skipped"}</span>${st==="doing"&&findTask(log?.taskId)?`<button class="btn" data-ideatask="${esc(log.taskId)}">Open task</button>`:""}<button class="btn" data-ideaundo="${esc(i.id)}">Undo</button></div>`;
+  return `<article class="card idea"><h2>${esc(i.title)}</h2>
+    <p class="ia"><span class="ilab">What repeats${i.perMonth?" · "+esc(i.perMonth)+" a month":""}</span>${esc(i.repeat)}</p>
+    ${i.why?`<p class="ia"><span class="ilab">The idea</span>${esc(i.why)}</p>`:""}
+    <p class="ia"><span class="ilab">Tool · Effort ${esc(i.effort)}</span>${esc(i.tool)}</p>
+    <p class="ia"><span class="ilab">Stays with you</span>${esc(i.notAuto)}</p>
+    <div class="row"><button class="btn" data-autodo="${esc(i.id)}">Do it</button><button class="btn" data-ideapass="${esc(i.id)}">Skip</button></div></article>`}
+function autosBlock(){const d=autoIssues()[0];if(!d)return "";
+  return `<section class="ilist" style="margin-top:var(--s5)" data-noauto aria-label="Automation ideas"><div class="section-title">Automate the repeats · ${esc(ideaDay(d.date))}</div>${(d.items||[]).map(autoItem).join("")}</section>`}
 function ideasView(){
   const docs=ideaIssues(), head=sub=>`<header class="head"><div><p class="eyebrow">${sub}</p><h1>Ideas</h1></div></header>`;
-  if(!docs.length) return head("Incoming")+`<div class="card empty"><b>Arrives Monday morning</b>Up to 5 things you could build, drawn from what you wrote in Drive and Cosense.</div>`;
+  if(!docs.length) return head("Incoming")+`<div class="card empty"><b>Arrives Monday morning</b>Up to 5 things you could build, drawn from what you wrote in Drive and Cosense.</div>`+autosBlock();
   const [now,...old]=docs, firstOpen=(now.items||[]).find(i=>ideaState(i)==="open");
   return head(`Ideas for ${esc(ideaDay(now.date))} · ${(now.items||[]).length} items`)+`<div class="ilist" data-noauto>${(now.items||[]).map(i=>ideaItem(i,i===firstOpen)).join("")}</div>
+  ${autosBlock()}
   ${old.length?`<section class="ilist" style="margin-top:var(--s5)" data-noauto><div class="section-title">Past ideas</div>${old.map(d=>`<details class="card iold" data-ideaold="${esc(d.id)}" ${S.ideaOpen?.[d.id]?"open":""}><summary>${esc(ideaDay(d.date))} · ${(d.items||[]).length} items</summary><div class="ilist">${(d.items||[]).map(i=>ideaItem(i,false)).join("")}</div></details>`).join("")}</section>`:""}`;
 }
 async function ideaMark(id,rec){const out={...rec,updatedAt:Date.now()};await api("PUT","/api/ideaslog/"+encodeURIComponent(id),out);S.ideaLog={...S.ideaLog};if(rec.deleted)delete S.ideaLog[id];else S.ideaLog[id]={id,...out};render()}
@@ -4882,6 +4895,10 @@ function wireIdeas(){
   document.querySelectorAll("[data-ideado]").forEach(b=>b.onclick=async()=>{const i=item(b.dataset.ideado);if(!i)return;
     const t={id:newTaskId(),title:"Build: "+i.title,source:"idea",sourceRef:i.id,status:"notyet",createdAt:Date.now(),
       note:[i.advice,"Next step: "+i.next,"Estimate: "+i.effort,...(i.quotes||[]).map(q=>`“${q.text}” ${q.title} ${q.url}`)].join("\n")};
+    try{await store.putTask(t);await ideaMark(i.id,{status:"doing",taskId:t.id});toast("🗂️ Added to tasks")}catch(e){fail()}});
+  document.querySelectorAll("[data-autodo]").forEach(b=>b.onclick=async()=>{const i=autoIssues().flatMap(d=>d.items||[]).find(x=>x.id===b.dataset.autodo);if(!i)return;
+    const t={id:newTaskId(),title:"Automate: "+i.title,source:"idea",sourceRef:i.id,status:"notyet",createdAt:Date.now(),cat:"Build software",
+      note:["What repeats: "+i.repeat,i.why?"The idea: "+i.why:"","Tool: "+i.tool,"Effort: "+i.effort,"Stays with you: "+i.notAuto,"Ask Claude to build it."].filter(Boolean).join("\n")};
     try{await store.putTask(t);await ideaMark(i.id,{status:"doing",taskId:t.id});toast("🗂️ Added to tasks")}catch(e){fail()}});
   document.querySelectorAll("[data-ideapass]").forEach(b=>b.onclick=async()=>{try{await ideaMark(b.dataset.ideapass,{status:"passed"});toast("Skipped. This idea won't come back")}catch(e){fail()}});
   document.querySelectorAll("[data-ideaundo]").forEach(b=>b.onclick=async()=>{const id=b.dataset.ideaundo,t=findTask(S.ideaLog?.[id]?.taskId);
