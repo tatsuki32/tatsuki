@@ -1,8 +1,8 @@
 """Start alarm for the morning and evening routines (Desk > Habits > Morning & Evening Routines).
 
 server.py runs watch() every 60 seconds, on 4747 only. At the start time in the routine settings
-(routinelog doc "settings": morningAt, nightAt, alarm, voice), this Mac plays an alarm sound, says it is
-time, and opens the routine player at http://localhost:4747/#play/<when>.
+(routinelog doc "settings": lists [{id, name, at, alarm}] for up to 5 routines, voice), this Mac plays an alarm sound, says it is
+time, and opens the Routine app at http://localhost:4747/routine/#alarm/<when>.
 
 - Times are Ho Chi Minh City time, the same clock the page uses for routines.
 - It rings once per routine per day, and not at all if that routine already ran today (log[when+"Run"]).
@@ -26,11 +26,7 @@ HCMC = 7 * 3600
 LATE = 30 * 60  # still ring this long after the start time (a Mac that just woke up)
 DEFAULT = {"morningAt": "04:00", "nightAt": "17:00", "alarm": True, "cutoff": 4, "voice": "en"}
 SOUND = "/System/Library/Sounds/Glass.aiff"
-SAY = {
-    "en": {"morning": "It's time for your morning routine.", "night": "It's time for your evening routine."},
-    "ja": {"morning": "朝のルーティンの時間です。", "night": "夜のルーティンの時間です。"},
-    "ru": {"morning": "Пора начинать утреннюю рутину.", "night": "Пора начинать вечернюю рутину."},
-}
+SAY = {"en": "It's time for {}.", "ja": "{}の時間です。", "ru": "Пора: {}."}  # {} = the routine's name
 VOICE = {"ja": "Kyoko", "ru": "Milena"}  # macOS voices; the default voice is used when one is missing
 
 
@@ -52,6 +48,14 @@ def settings(docs):
     if s.get("voice") not in SAY:
         s["voice"] = "en"
     return s
+
+
+def routines(s):
+    """Up to 5 routines from settings "lists" ({id, name, at, alarm}); older settings had only morningAt / nightAt."""
+    ls = s.get("lists")
+    if not isinstance(ls, list) or not ls:
+        ls = [{"id": "morning", "name": "Morning routine", "at": s["morningAt"]}, {"id": "night", "name": "Evening routine", "at": s["nightAt"]}]
+    return [l for l in ls if isinstance(l, dict) and isinstance(l.get("id"), str) and l["id"]][:5]
 
 
 def day_of(now, cutoff):
@@ -76,25 +80,28 @@ def due(now=None):
         return []
     state = read(STATE, {})
     out = []
-    for when in ("morning", "night"):
-        at = start_of(now, s[when + "At"])
+    for r in routines(s):
+        when = r["id"]
+        if r.get("alarm") is False or not r.get("at"):
+            continue
+        at = start_of(now, r["at"])
         if at is None or not (at <= now < at + LATE):
             continue
         day = day_of(at, s["cutoff"])
         if state.get(when) == day or (docs.get(day) or {}).get(when + "Run"):
             continue
-        out.append((when, day, s))
+        out.append((when, day, {**s, "name": r.get("name") or "your routine"}))
     return out
 
 
 def ring(when, s):
-    say = SAY[s["voice"]][when]
+    say = SAY[s["voice"]].format(s.get("name") or "your routine")
     for i in range(3):
         subprocess.run(["/usr/bin/afplay", SOUND], capture_output=True, timeout=10)
     cmd = ["/usr/bin/say"] + (["-v", VOICE[s["voice"]]] if s["voice"] in VOICE else []) + [say]
     if subprocess.run(cmd, capture_output=True, timeout=30).returncode != 0:
         subprocess.run(["/usr/bin/say", say], capture_output=True, timeout=30)
-    subprocess.run(["/usr/bin/open", f"http://localhost:{PORT}/#play/{when}"], capture_output=True, timeout=10)
+    subprocess.run(["/usr/bin/open", f"http://localhost:{PORT}/routine/#alarm/{when}"], capture_output=True, timeout=10)
 
 
 def tick(now=None):
@@ -121,9 +128,12 @@ if __name__ == "__main__":
     arg = sys.argv[1:] or ["plan"]
     if arg[0] == "plan":
         s = settings(log_docs())
-        print(json.dumps({"settings": {k: s[k] for k in ("morningAt", "nightAt", "alarm", "voice")},
+        print(json.dumps({"routines": [{k: r.get(k) for k in ("id", "name", "at", "alarm")} for r in routines(s)], "settings": {k: s[k] for k in ("alarm", "voice")},
                           "due": [w for w, _, _ in due()], "state": read(STATE, {})}, ensure_ascii=False))
-    elif arg[0] == "ring" and len(arg) > 1 and arg[1] in ("morning", "night"):
-        ring(arg[1], settings(log_docs()))
+    elif arg[0] == "ring" and len(arg) > 1:
+        s = settings(log_docs())
+        r = next((x for x in routines(s) if x["id"] == arg[1]), None)
+        if r:
+            ring(arg[1], {**s, "name": r.get("name")})
     else:
         print(__doc__)

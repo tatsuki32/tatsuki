@@ -3,3 +3,6 @@ __pycache__/
 .DS_Store
 tools/banned-words.local.txt
 node_modules/
+routine/dist/
+routine/.wrangler/
+.wrangler/

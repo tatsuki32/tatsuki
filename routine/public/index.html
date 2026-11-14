@@ -1,0 +1,638 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Routine</title>
+<meta name="theme-color" content="#ffb78c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Routine">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+/* Routine: a Routinery-style morning and evening routine app. One file, no libraries.
+   Served two ways: by the Mac Desk at http://localhost:4747/routine/ (reads and writes the Desk's data directly),
+   and on Cloudflare Pages (keeps a copy on the phone and syncs it through /api/sync with a passphrase).
+   Data shapes are the Desk's: routines {id, when, order, icon, title, how, sec, lang, deleted, updatedAt},
+   routinelog day docs {id: YYYY-MM-DD, morning:{itemId:ms}, night:{...}, morningRun, nightRun, totals} and doc "settings". */
+:root{
+  --bg:#fff6ee; --card:#ffffff; --ink:#3a2034; --ink-2:#6d5266; --muted:#9a8494; --line:#f0dfd6; --soft:#fbeee6;
+  --go:#ff6f61; --go-ink:#fff; --green:#2f9e6a; --pink:#d81b60;
+  --font:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP",system-ui,sans-serif;
+  --r:22px; color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{--bg:#120f1f;--card:#1d1930;--ink:#f3efff;--ink-2:#c9c0e0;--muted:#8f86a8;--line:#2e2847;--soft:#262040;color-scheme:dark}}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--go);outline-offset:2px;border-radius:10px}
+.wrap{max-width:720px;margin:0 auto;padding:calc(16px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(32px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:grid;gap:16px}
+.top{display:flex;align-items:center;gap:8px}
+.top h1{margin:0;font-size:28px;line-height:1.2;flex:1}
+.sub{color:var(--muted);font-size:13px}
+.ibtn{border:0;background:var(--soft);border-radius:999px;min-width:44px;min-height:44px;padding:0 14px;cursor:pointer;font-size:15px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:6px;color:var(--ink);text-decoration:none}
+.ibtn.go{background:var(--go);color:var(--go-ink)}
+.ibtn:active{transform:scale(.97)}
+.rcard{border-radius:28px;padding:20px;display:grid;gap:12px;color:#3a2034;box-shadow:0 10px 30px rgba(120,60,80,.12)}
+.rcard.sunrise{background:linear-gradient(160deg,#ffe3a6 0%,#ffb78c 45%,#f590b3 100%)}
+.rcard.mint{background:linear-gradient(160deg,#e3f9d8 0%,#a8e6c3 50%,#7fd1c7 100%)}
+.rcard.ocean{background:linear-gradient(160deg,#dff1ff 0%,#9fd3f5 50%,#7aa7ef 100%)}
+.rcard.lavender{background:linear-gradient(160deg,#f6e8ff 0%,#d9c2fb 50%,#b39ddb 100%)}
+.racts .start.mint{background:#2f9e6a}.racts .start.ocean{background:#2f6fd0}.racts .start.lavender{background:#8a5cd6}
+.rcard.night{background:radial-gradient(1.5px 1.5px at 15% 20%,#fff9 50%,transparent 51%),radial-gradient(1px 1px at 80% 15%,#fffb 50%,transparent 51%),radial-gradient(1px 1px at 60% 70%,#fff8 50%,transparent 51%),linear-gradient(165deg,#1d1b4f 0%,#3b2a6e 100%);color:#f3efff}
+.rhead{display:flex;align-items:center;gap:12px}
+.rhead .em{font-size:40px;line-height:1}
+.rhead h2{margin:0;font-size:22px;flex:1}
+.rmeta{display:flex;flex-wrap:wrap;gap:8px}
+.chip{background:rgba(255,255,255,.45);border-radius:999px;padding:3px 12px;font-size:13px;font-weight:700}
+.night .chip{background:rgba(255,255,255,.14)}
+.rbar{height:10px;border-radius:999px;background:rgba(255,255,255,.4);overflow:hidden}
+.night .rbar{background:rgba(255,255,255,.14)}
+.rbar i{display:block;height:100%;border-radius:999px;background:#fff}
+.night .rbar i{background:#cfc4ff}
+.racts{display:flex;gap:8px;flex-wrap:wrap}
+.racts .start{flex:1;min-height:56px;border:0;border-radius:999px;font-size:20px;font-weight:700;cursor:pointer;background:#ff6f61;color:#fff;box-shadow:0 8px 20px rgba(0,0,0,.15)}
+.night .racts .start{background:#a99aff;color:#14102e}
+.racts .ibtn{background:rgba(255,255,255,.45);color:inherit}
+.night .racts .ibtn{background:rgba(255,255,255,.14)}
+.newr{border:2px dashed var(--line);background:transparent;border-radius:28px;min-height:72px;font-size:17px;font-weight:700;cursor:pointer;color:var(--ink-2);display:flex;gap:8px;align-items:center;justify-content:center}
+.themes{display:flex;flex-wrap:wrap;gap:8px}
+.themes button{border:2px solid transparent;border-radius:999px;min-height:40px;padding:0 14px;cursor:pointer;font-weight:700;font-size:14px}
+.themes button[aria-pressed="true"]{border-color:var(--ink)}
+.tsunrise{background:linear-gradient(120deg,#ffe3a6,#f590b3);color:#3a2034}.tnight{background:linear-gradient(120deg,#1d1b4f,#3b2a6e);color:#f3efff}.tmint{background:linear-gradient(120deg,#e3f9d8,#7fd1c7);color:#16352b}.tocean{background:linear-gradient(120deg,#dff1ff,#7aa7ef);color:#13294b}.tlavender{background:linear-gradient(120deg,#f6e8ff,#b39ddb);color:#2e1f4a}
+.card{background:var(--card);border-radius:var(--r);padding:16px;display:grid;gap:12px;border:1px solid var(--line)}
+.card h2{margin:0;font-size:17px}
+.grid14{display:grid;grid-template-columns:auto repeat(14,minmax(0,1fr));gap:3px;align-items:center;font-size:11px}
+.grid14 span.c{aspect-ratio:1;border-radius:6px;background:var(--soft);display:grid;place-items:center;color:var(--muted)}
+.grid14 span.c.on{background:color-mix(in srgb,var(--go) calc(var(--p)*100%),var(--soft));color:var(--ink);font-weight:700}
+.syncline{font-size:13px;color:var(--muted);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.dotok{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block}
+.dotno{width:8px;height:8px;border-radius:50%;background:var(--muted);display:inline-block}
+/* edit list */
+.erow{display:grid;grid-template-columns:36px minmax(0,1fr) auto;gap:4px 10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.erow:first-child{border-top:0}
+.erow .em{font-size:24px;text-align:center}
+.erow b{display:block;overflow-wrap:anywhere;font-weight:700}
+.erow .acts{display:flex;gap:4px}
+.erow .acts .ibtn{min-width:40px;min-height:40px;padding:0 10px}
+.field{display:grid;gap:4px}
+.field label{font-size:13px;color:var(--muted);font-weight:700}
+.field input,.field select,.field textarea{width:100%;min-height:48px;border-radius:14px;border:1px solid var(--line);background:var(--bg);color:var(--ink);padding:0 14px;font:inherit;font-size:16px}
+.field textarea{min-height:80px;padding:10px 14px;resize:vertical}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.note{font-size:14px;color:var(--ink-2);margin:0}
+.note code{font-size:12px;background:var(--soft);padding:2px 6px;border-radius:6px;overflow-wrap:anywhere}
+.sheetbg{position:fixed;inset:0;z-index:60;background:rgba(20,10,30,.45);display:flex;align-items:flex-end;justify-content:center}
+.sheet{width:min(560px,100%);max-height:92vh;overflow:auto;background:var(--card);color:var(--ink);border-radius:26px 26px 0 0;padding:20px 16px calc(20px + env(safe-area-inset-bottom,0px));display:grid;gap:12px}
+@media (min-width:700px){.sheetbg{align-items:center}.sheet{border-radius:26px}}
+.sheet h2{margin:0;font-size:20px}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap}
+.btnrow .ibtn{flex:1}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:80;background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;font-weight:700;font-size:14px;max-width:calc(100vw - 32px);text-align:center}
+
+/* ---------- player ---------- */
+.rp{position:fixed;inset:0;z-index:50;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(0,1fr) auto;gap:8px;color:var(--rp-ink);background:var(--rp-bg);overflow:hidden;outline:none;
+  padding:calc(12px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.rp[data-when="sunrise"]{--rp-bg:linear-gradient(165deg,#ffe3a6 0%,#ffb78c 36%,#f590b3 70%,#b49ddc 100%);--rp-ink:#3a2034;--rp-soft:rgba(255,255,255,.45);--rp-go:#ff6f61;--rp-go-ink:#fff;--rp-ring:#fff;--rp-track:rgba(255,255,255,.4);--rp-over:#d81b60;--rp-panel:rgba(255,248,242,.94)}
+.rp[data-when="mint"]{--rp-bg:linear-gradient(165deg,#e3f9d8 0%,#a8e6c3 45%,#7fd1c7 100%);--rp-ink:#16352b;--rp-soft:rgba(255,255,255,.45);--rp-go:#2f9e6a;--rp-go-ink:#fff;--rp-ring:#fff;--rp-track:rgba(255,255,255,.4);--rp-over:#c2185b;--rp-panel:rgba(244,255,248,.94)}
+.rp[data-when="ocean"]{--rp-bg:linear-gradient(165deg,#dff1ff 0%,#9fd3f5 45%,#7aa7ef 100%);--rp-ink:#13294b;--rp-soft:rgba(255,255,255,.45);--rp-go:#2f6fd0;--rp-go-ink:#fff;--rp-ring:#fff;--rp-track:rgba(255,255,255,.4);--rp-over:#c2185b;--rp-panel:rgba(244,250,255,.94)}
+.rp[data-when="lavender"]{--rp-bg:linear-gradient(165deg,#f6e8ff 0%,#d9c2fb 45%,#b39ddb 100%);--rp-ink:#2e1f4a;--rp-soft:rgba(255,255,255,.45);--rp-go:#8a5cd6;--rp-go-ink:#fff;--rp-ring:#fff;--rp-track:rgba(255,255,255,.4);--rp-over:#c2185b;--rp-panel:rgba(250,245,255,.94)}
+.rp[data-when="night"]{--rp-bg:radial-gradient(1.5px 1.5px at 12% 18%,#ffffffaa 50%,transparent 51%),radial-gradient(1px 1px at 78% 12%,#ffffffbb 50%,transparent 51%),radial-gradient(1.5px 1.5px at 64% 30%,#ffffff88 50%,transparent 51%),radial-gradient(1px 1px at 30% 42%,#ffffff99 50%,transparent 51%),radial-gradient(1px 1px at 90% 55%,#ffffff88 50%,transparent 51%),radial-gradient(1.5px 1.5px at 8% 72%,#ffffff77 50%,transparent 51%),linear-gradient(170deg,#0c1033 0%,#1d1b4f 55%,#3b2a6e 100%);
+  --rp-ink:#f3efff;--rp-soft:rgba(255,255,255,.12);--rp-go:#a99aff;--rp-go-ink:#14102e;--rp-ring:#cfc4ff;--rp-track:rgba(255,255,255,.13);--rp-over:#ff8fab;--rp-panel:rgba(22,18,52,.95)}
+.rptop{display:flex;align-items:center;gap:8px;max-width:760px;width:100%;margin:0 auto}
+.rpbtn{border:0;background:var(--rp-soft);color:var(--rp-ink);border-radius:999px;min-width:44px;min-height:44px;padding:0 14px;font:inherit;font-size:15px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;-webkit-user-select:none;user-select:none}
+.rpbtn:active{transform:scale(.97)}
+.rp :focus-visible{outline:3px solid var(--rp-ink)}
+.rpbar{flex:1;height:8px;border-radius:999px;background:var(--rp-track);overflow:hidden}
+.rpbar i{display:block;height:100%;border-radius:999px;background:var(--rp-ring);transition:width .4s ease}
+.rpcount{font-size:13px;font-weight:700;white-space:nowrap}
+.rpmain{display:grid;justify-items:center;align-content:center;gap:14px;text-align:center;min-height:0;overflow-y:auto;padding:4px 0}
+.rpring{position:relative;width:min(70vw,320px,38vh);aspect-ratio:1}
+.rpring svg{width:100%;height:100%;transform:rotate(-90deg);display:block}
+.rpring circle{fill:none;stroke-width:12}
+.rptrack{stroke:var(--rp-track)}
+.rparc{stroke:var(--rp-ring);stroke-linecap:round;transition:stroke-dashoffset .25s linear,stroke .3s}
+.rp.over .rparc{stroke:var(--rp-over)}
+.rp.over .rpring{animation:rppulse 1.2s ease-in-out infinite}
+.rpcenter{position:absolute;inset:0;display:grid;justify-items:center;align-content:center;gap:2px}
+.rpicon{font-size:clamp(40px,8vh,72px);line-height:1.1;animation:rpbounce .5s ease-out}
+.rptime{font-size:clamp(36px,7.5vh,60px);font-weight:700;line-height:1.1}
+.rp.over .rptime{color:var(--rp-over)}
+.rpstate{font-size:12px;font-weight:700;opacity:.75}
+.rptitle{margin:0;font-size:clamp(22px,4vh,32px);line-height:1.3;max-width:20em;overflow-wrap:anywhere}
+.rphow{margin:0;font-size:16px;opacity:.8;max-width:28em;overflow-wrap:anywhere}
+.rpnext{margin:0;font-size:14px;opacity:.85;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center;overflow-wrap:anywhere}
+.rppace{font-size:12px;font-weight:700;background:var(--rp-soft);border-radius:999px;padding:2px 12px}
+.rppace:empty{display:none}
+.rpctl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) minmax(0,1.6fr);gap:8px;max-width:760px;width:100%;margin:0 auto}
+.rpctl .rpbtn{flex-direction:column;gap:0;min-height:64px;border-radius:22px;font-size:20px;padding:0 8px}
+.rpctl .rpbtn span{font-size:12px}
+.rpctl .rpgo{background:var(--rp-go);color:var(--rp-go-ink);font-size:26px;box-shadow:0 10px 28px rgba(0,0,0,.18)}
+.rpstamp{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}
+.rpstamp b{font-size:clamp(80px,18vh,140px);color:var(--rp-go);animation:rpstamp .6s ease-out forwards}
+.rpbig{min-height:64px;padding:0 40px;font-size:20px;background:var(--rp-go);color:var(--rp-go-ink);box-shadow:0 12px 30px rgba(0,0,0,.2)}
+.rpscore{font-size:clamp(64px,15vh,120px);font-weight:700;line-height:1}
+.rpstats{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;max-width:36em}
+.rpstats span{background:var(--rp-soft);border-radius:999px;padding:4px 14px;font-size:14px}
+.rpmsg{margin:0;font-size:clamp(20px,3.4vh,28px);font-weight:700}
+.rpskipped{margin:0;font-size:14px;opacity:.8;max-width:32em;overflow-wrap:anywhere}
+.rpacts{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
+/* the list of the whole routine while it runs: a bottom sheet on a phone, a column on a wide screen */
+.rplist{position:absolute;left:0;right:0;bottom:0;z-index:2;max-height:78%;display:grid;grid-template-rows:auto minmax(0,1fr) auto;background:var(--rp-panel);color:var(--rp-ink);border-radius:26px 26px 0 0;box-shadow:0 -10px 40px rgba(0,0,0,.25);padding:14px 14px calc(14px + env(safe-area-inset-bottom,0px));gap:8px;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+.rplist[hidden]{display:none}
+.rplhead{display:flex;align-items:center;gap:8px}
+.rplhead b{flex:1;font-size:16px}
+.rplbody{overflow-y:auto;display:grid;align-content:start;gap:2px;-webkit-overflow-scrolling:touch}
+.rpli{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;align-items:center;padding:6px 4px;border-radius:14px}
+.rplpick{all:unset;display:grid;grid-template-columns:28px minmax(0,1fr);gap:8px;align-items:center;min-width:0;min-height:44px;cursor:pointer;border-radius:12px}
+span.rplpick{cursor:default}
+.rplpick:focus-visible{outline:3px solid var(--rp-ink)}
+.rpli.now{background:var(--rp-soft)}
+.rpli.done .t,.rpli.skip .t{opacity:.55}
+.rpli.done .t{text-decoration:line-through}
+.rpli .em{font-size:20px;text-align:center}
+.rpli .t{overflow-wrap:anywhere;font-size:15px}
+.rpli .t small{display:block;font-size:12px;opacity:.7}
+.rpli .a{display:flex;gap:4px}
+.rpli .a .rpbtn{min-width:38px;min-height:40px;padding:0 9px;font-size:13px}
+.rpladd{display:grid;grid-template-columns:minmax(0,1fr) 84px auto;gap:6px}
+.rpladd input{min-height:44px;border-radius:14px;border:0;background:var(--rp-soft);color:var(--rp-ink);padding:0 12px;font:inherit;font-size:16px;min-width:0}
+.rpladd input::placeholder{color:inherit;opacity:.6}
+.rpladd label{grid-column:1/-1;font-size:13px;display:flex;gap:6px;align-items:center;opacity:.85}
+@media (min-width:1000px){.rp.listopen{grid-template-columns:minmax(0,1fr) 380px}.rp.listopen>.rptop,.rp.listopen>.rpmain,.rp.listopen>.rpctl{grid-column:1}
+  .rp.listopen .rplist{position:static;grid-column:2;grid-row:1/4;max-height:none;border-radius:26px;box-shadow:none}}
+@keyframes rpbounce{0%{transform:scale(.4)}70%{transform:scale(1.15)}100%{transform:scale(1)}}
+@keyframes rppulse{50%{transform:scale(1.03)}}
+@keyframes rpstamp{0%{transform:scale(2.4) rotate(-20deg);opacity:0}40%{transform:scale(.9) rotate(-8deg);opacity:1}100%{transform:scale(1) rotate(-8deg);opacity:0}}
+.confetti{position:fixed;inset:0;pointer-events:none;z-index:70;overflow:hidden}
+.confetti i{position:absolute;left:50%;top:40%;width:9px;height:13px;border-radius:2px;opacity:0;animation:fly var(--d) cubic-bezier(.15,.7,.35,1) var(--w) forwards}
+@keyframes fly{0%{opacity:1;transform:translate(0,0) rotate(0)}100%{opacity:0;transform:translate(var(--x),var(--y)) rotate(var(--r))}}
+@media (prefers-reduced-motion:reduce){.rpicon,.rp.over .rpring,.rpstamp b{animation:none}.rparc,.rpbar i{transition:none}.confetti{display:none}}
+@media (max-width:560px){.rpctl{grid-template-columns:repeat(3,minmax(0,1fr))}.rpctl .rpgo{grid-column:1/-1;order:-1;min-height:72px}.row2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div id="app" class="wrap"></div>
+<script>
+"use strict";
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pad=n=>String(n).padStart(2,"0");
+const HCMC=7*3600e3, DAY=864e5;
+/* Where the data lives: the Mac Desk's API when the Desk serves this page, otherwise this phone + the cloud. */
+const MODE=/^(localhost|127\.0\.0\.1)$/.test(location.hostname)&&location.port==="4747"?"desk":"cloud";
+const S={routines:[],log:[],sync:{state:MODE==="desk"?"desk":"",at:0}};
+function toast(t){const el=document.createElement("div");el.className="toast";el.textContent=t;document.body.appendChild(el);setTimeout(()=>el.remove(),2400)}
+
+/* ---------- data ---------- */
+const settings=()=>{const s={morningAt:"04:00",nightAt:"17:00",voice:"en",nag:30,alarm:true,cutoff:4,...(S.log.find(x=>x.id==="settings")||{})};if(!RPL[s.voice])s.voice="en";return s};
+const dayKey=ms=>new Date(ms+HCMC-(Number(settings().cutoff)||0)*3600e3).toISOString().slice(0,10);
+const today=()=>dayKey(Date.now());
+const dayOff=(d,n)=>new Date(Date.parse(d+"T12:00:00Z")+n*DAY).toISOString().slice(0,10);
+const items=w=>S.routines.filter(x=>x.when===w&&!x.deleted).sort((a,b)=>(+a.order||0)-(+b.order||0));
+const dayDoc=d=>S.log.find(x=>x.id===d)||{id:d,morning:{},night:{},totals:{}};
+/* the routines: up to 5, kept in the settings doc as lists:[{id,name,emoji,at,theme,alarm}]. The first two keep the ids
+   "morning" and "night", so the records from before stay theirs. */
+const MAXR=5, THEMES={sunrise:"Sunrise",night:"Night sky",mint:"Mint",ocean:"Ocean",lavender:"Lavender"};
+function lists(){
+  const s=S.log.find(x=>x.id==="settings")||{};
+  const ls=Array.isArray(s.lists)&&s.lists.length?s.lists:[{id:"morning",name:"Morning",emoji:"🌅",at:s.morningAt||"04:00",theme:"sunrise"},{id:"night",name:"Evening",emoji:"🌙",at:s.nightAt||"17:00",theme:"night"}];
+  return ls.filter(l=>l&&typeof l.id==="string"&&l.id).slice(0,MAXR).map(l=>({name:"Routine",emoji:"✨",at:"",theme:"sunrise",alarm:true,...l,theme:THEMES[l.theme]?l.theme:"sunrise"}));
+}
+const listOf=id=>lists().find(l=>l.id===id)||{id,name:"Routine",emoji:"✨",at:"",theme:"sunrise",alarm:false};
+const hmMin=t=>/^\d\d:\d\d$/.test(t||"")?+t.slice(0,2)*60+ +t.slice(3):null;
+/* by start time, starting with the one whose time came last (the one to do now) */
+function sortedLists(){const now=new Date(Date.now()+HCMC),m=now.getUTCHours()*60+now.getUTCMinutes(),ls=lists().sort((a,b)=>(hmMin(a.at)??9999)-(hmMin(b.at)??9999));
+  let k=-1;ls.forEach((l,i)=>{const t=hmMin(l.at);if(t!=null&&t<=m)k=i});return k<0?ls:[...ls.slice(k),...ls.slice(0,k)]}
+async function saveLists(ls){const cur=S.log.find(x=>x.id==="settings")||{cutoff:4};const mo=ls.find(l=>l.id==="morning"),ni=ls.find(l=>l.id==="night");
+  await saveDoc("routinelog",{...cur,id:"settings",lists:ls.slice(0,MAXR),...(mo?{morningAt:mo.at}:{}),...(ni?{nightAt:ni.at}:{})})}
+const totals=()=>Object.fromEntries(lists().map(l=>[l.id,items(l.id).length]));
+function persist(){if(MODE!=="cloud")return;try{localStorage.setItem("rt-state",JSON.stringify({routines:S.routines,routinelog:S.log}))}catch(e){}}
+async function saveDoc(col,doc){
+  doc={...doc,updatedAt:Date.now()};const k=col==="routines"?"routines":"log";
+  S[k]=[...S[k].filter(x=>x.id!==doc.id),doc];persist();
+  if(MODE==="desk"){const {id,...body}=doc;try{const r=await fetch("/api/"+col+"/"+encodeURIComponent(id),{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});if(!r.ok)throw 0}catch(e){toast("Couldn't save to the Desk")}}
+  else syncSoon();
+}
+async function load(){
+  if(MODE==="desk"){
+    try{const [r,l]=await Promise.all([fetch("/api/routines").then(x=>x.json()),fetch("/api/routinelog").then(x=>x.json())]);S.routines=r;S.log=l}catch(e){toast("The Desk isn't answering")}
+    return;
+  }
+  try{const v=JSON.parse(localStorage.getItem("rt-state")||"null");if(v){S.routines=v.routines||[];S.log=v.routinelog||[]}}catch(e){}
+  if(!S.routines.length){try{const v=await fetch("seed.json",{cache:"no-store"}).then(x=>x.json());S.routines=v.routines||[];S.log=v.routinelog||[];persist()}catch(e){}}
+}
+/* sync: send everything, get back the merged state (the server merges per doc, newest wins; a day's checks are joined) */
+const syncKey=()=>{try{return localStorage.getItem("rt-key")||""}catch(e){return ""}};
+let syncT=0, syncing=false;
+const syncSoon=()=>{clearTimeout(syncT);syncT=setTimeout(sync,1500)};
+async function sync(){
+  if(MODE!=="cloud"||syncing)return;const key=syncKey();
+  if(!key){S.sync={state:"nokey"};paintSync();return}
+  if(!navigator.onLine){S.sync={...S.sync,state:"offline"};paintSync();return}
+  syncing=true;
+  try{const r=await fetch("api/sync",{method:"POST",headers:{"Content-Type":"application/json","x-sync-key":key},body:JSON.stringify({routines:S.routines,routinelog:S.log})});
+    if(r.status===401){S.sync={state:"badkey"};return}
+    if(!r.ok)throw new Error(r.status);
+    const j=await r.json();const before=JSON.stringify([S.routines,S.log]);S.routines=j.routines||[];S.log=j.routinelog||[];persist();S.sync={state:"ok",at:Date.now()};
+    if(before!==JSON.stringify([S.routines,S.log])&&!P)render();
+  }catch(e){S.sync={...S.sync,state:"offline"}}
+  finally{syncing=false;paintSync()}
+}
+function syncText(){const s=S.sync;
+  if(s.state==="desk")return `<span class="dotok"></span>Saved in the Mac Desk`;
+  if(s.state==="ok")return `<span class="dotok"></span>Synced ${new Date(s.at).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"})}`;
+  if(s.state==="nokey")return `<span class="dotno"></span>Only on this phone · <a href="#settings">turn on sync</a>`;
+  if(s.state==="badkey")return `<span class="dotno"></span>The sync passphrase is wrong · <a href="#settings">fix it</a>`;
+  if(s.state==="offline")return `<span class="dotno"></span>Offline · saved on this phone, syncs when back online`;
+  return `<span class="dotno"></span>Syncing…`;
+}
+function paintSync(){const el=$("#syncline");if(el)el.innerHTML=syncText()}
+
+/* ---------- small helpers ---------- */
+const RPL={en:"en-US",ja:"ja-JP",ru:"ru-RU"}, RPLN={en:"English",ja:"Japanese",ru:"Russian"};
+const rpLang=it=>RPL[it.lang]?it.lang:/[\u3040-\u30ff\u4e00-\u9fff]/.test(it.title||"")?"ja":/[\u0400-\u04ff]/.test(it.title||"")?"ru":"en";
+const rpSec=it=>Math.max(5,Math.round(Number(it.sec)||60));
+const rpFmt=s=>{s=Math.max(0,Math.round(s));return Math.floor(s/60)+":"+pad(s%60)};
+const rpDur=s=>{s=Math.round(s);const m=Math.floor(s/60),r=s%60;return m?(r?`${m}m ${r}s`:`${m}m`):`${r}s`};
+function parseDur(v){
+  v=String(v||"").trim().toLowerCase().replace(/分/g,"m").replace(/秒/g,"s");if(!v)return null;
+  let m=/^(\d+):(\d{1,2})$/.exec(v);if(m)return +m[1]*60+ +m[2];
+  if(/^\d+(\.\d+)?$/.test(v))return Math.round(parseFloat(v)*60);
+  const mm=/(\d+(?:\.\d+)?)\s*m/.exec(v),ss=/(\d+)\s*s/.exec(v);if(!mm&&!ss)return null;
+  return Math.round((mm?parseFloat(mm[1])*60:0)+(ss?+ss[1]:0))||null;
+}
+const newId=()=>"rt"+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+const run=(d,w)=>dayDoc(d)[w+"Run"]||null;
+/* streak: days in a row (today, or up to yesterday while today is still open) with a run of that routine */
+function streak(w){
+  let d=today(),n=0;if(!run(d,w))d=dayOff(d,-1);
+  while(run(d,w)&&n<3650){n++;d=dayOff(d,-1)}
+  return n;
+}
+function best(w){const days=S.log.filter(x=>/^\d{4}-\d\d-\d\d$/.test(x.id)&&x[w+"Run"]).map(x=>x.id).sort();let b=0,c=0,prev=null;
+  days.forEach(d=>{c=prev&&dayOff(prev,1)===d?c+1:1;b=Math.max(b,c);prev=d});return b}
+
+/* ---------- home ---------- */
+function routineCard(w){
+  const its=items(w),log=dayDoc(today()),marks=log[w]||{},n=its.filter(i=>marks[i.id]).length,r=run(today(),w),c=settings(),st=streak(w),b=best(w);
+  const mins=Math.round(its.reduce((s,it)=>s+rpSec(it),0)/60);
+  const L=listOf(w);
+  return `<section class="rcard ${L.theme}" aria-label="${esc(L.name)}"><div class="rhead"><span class="em">${esc(L.emoji)}</span><h2>${esc(L.name)}</h2>${L.at?`<span class="chip">${L.alarm===false?"🔕 ":""}${esc(L.at)}</span>`:""}</div>
+    <div class="rmeta"><span class="chip">${its.length} items · ${mins} min</span><span class="chip">${r?`Today ${r.score}%`:`${n} / ${its.length} today`}</span>${st?`<span class="chip">🔥 ${st} day${st>1?"s":""} in a row</span>`:b?`<span class="chip">Best ${b} days</span>`:""}</div>
+    <div class="rbar"><i style="width:${its.length?Math.round(n/its.length*100):0}%"></i></div>
+    <div class="racts"><button class="start ${L.theme}" data-start="${esc(w)}">▶ Start</button><a class="ibtn" href="#edit/${esc(w)}" aria-label="Edit ${esc(L.name)}">✏️ Edit</a></div></section>`;
+}
+function history(){
+  const t=today(),days=[...Array(14)].map((_,i)=>dayOff(t,i-13));
+  const cell=(d,w)=>{const r=run(d,w),p=r?r.score/100:0;return `<span class="c ${r?"on":""}" style="--p:${Math.max(.25,p)}" title="${d} ${esc(listOf(w).name)} ${r?r.score+"%":"—"}">${+d.slice(8)}</span>`};
+  return `<section class="card"><h2>Last 14 days</h2><div class="grid14">${sortedLists().map(l=>`<span class="sub" title="${esc(l.name)}">${esc(l.emoji)}</span>${days.map(d=>cell(d,l.id)).join("")}`).join("")}</div></section>`;
+}
+function home(){
+  const h=new Date(Date.now()+HCMC).getUTCHours(),ls=sortedLists();
+  return `<header class="top"><h1>${h<11?"Good morning":h<18?"Hello":"Good evening"}</h1><a class="ibtn" href="#settings" aria-label="Settings">⚙️</a></header>
+  ${ls.map(l=>routineCard(l.id)).join("")}${ls.length<MAXR?`<button class="newr" data-newr>＋ New routine <span class="sub">${ls.length} of ${MAXR}</span></button>`:""}${history()}
+  <p class="syncline" id="syncline">${syncText()}</p>`;
+}
+
+/* ---------- edit ---------- */
+function editView(w){
+  const its=items(w);
+  const L=listOf(w);
+  return `<header class="top"><a class="ibtn" href="#" aria-label="Back">‹</a><h1>${esc(L.emoji)} ${esc(L.name)}</h1><button class="ibtn go" data-add="${esc(w)}">＋ Add</button></header>
+  <form class="card" id="listForm" data-list="${esc(w)}"><h2>This routine</h2>
+    <div class="row2"><div class="field"><label for="lName">Name</label><input id="lName" maxlength="40" value="${esc(L.name)}"></div><div class="field"><label for="lEmoji">Emoji</label><input id="lEmoji" maxlength="4" value="${esc(L.emoji)}"></div></div>
+    <div class="row2"><div class="field"><label for="lAt">Starts at</label><input type="time" id="lAt" value="${esc(L.at)}"></div><div class="field"><label for="lAlarm">Start alarm</label><select id="lAlarm"><option value="1" ${L.alarm!==false?"selected":""}>On</option><option value="0" ${L.alarm===false?"selected":""}>Off</option></select></div></div>
+    <div class="field"><label>Colors</label><div class="themes" role="group" aria-label="Colors">${Object.entries(THEMES).map(([k,v])=>`<button type="button" class="t${k}" data-theme="${k}" aria-pressed="${L.theme===k}">${v}</button>`).join("")}</div></div>
+    <div class="btnrow"><button class="ibtn go">Save</button>${lists().length>1?`<button class="ibtn" type="button" id="lDel">Delete this routine</button>`:""}</div></form>
+  <section class="card"><p class="sub" style="margin:0">${its.length} items · about ${Math.round(its.reduce((s,it)=>s+rpSec(it),0)/60)} min. Tap an item to change it.</p>
+  <div>${its.map((it,i)=>`<div class="erow"><span class="em">${esc(it.icon||"✨")}</span><button style="all:unset;cursor:pointer;min-width:0" data-edit="${esc(it.id)}"><b>${esc(it.title)}</b><span class="sub">${rpDur(rpSec(it))}${it.lang?" · "+RPLN[it.lang]:""}${it.how?" · "+esc(it.how.slice(0,40)):""}</span></button>
+    <span class="acts"><button class="ibtn" data-up="${esc(it.id)}" aria-label="Move up" ${i?"":"disabled"}>↑</button><button class="ibtn" data-down="${esc(it.id)}" aria-label="Move down" ${i<its.length-1?"":"disabled"}>↓</button></span></div>`).join("")||`<p class="note">No items yet. Press ＋ Add.</p>`}</div></section>`;
+}
+function itemSheet(w,it,after){
+  return new Promise(res=>{
+    const bg=document.createElement("div");bg.className="sheetbg";
+    bg.innerHTML=`<div class="sheet" role="dialog" aria-modal="true" aria-label="${it?"Edit item":"Add an item"}"><h2>${it?"Edit item":"Add to "+esc(listOf(w).name)}</h2>
+      <div class="row2"><div class="field"><label for="fIcon">Emoji</label><input id="fIcon" maxlength="4" value="${esc(it?.icon||"")}" placeholder="✨"></div>
+      <div class="field"><label for="fSec">Time</label><input id="fSec" value="${it?rpDur(rpSec(it)):"1m"}" placeholder="30s, 1m, 2m 30s" inputmode="text"></div></div>
+      <div class="field"><label for="fTitle">What to do</label><input id="fTitle" maxlength="120" value="${esc(it?.title||"")}" placeholder="Drink water"></div>
+      <div class="field"><label for="fHow">How to start in one second (optional)</label><textarea id="fHow" maxlength="200">${esc(it?.how||"")}</textarea></div>
+      <div class="field"><label for="fLang">Read it in</label><select id="fLang"><option value="">Guess from the words</option>${Object.entries(RPLN).map(([k,l])=>`<option value="${k}" ${it?.lang===k?"selected":""}>${l}</option>`).join("")}</select></div>
+      <div class="btnrow"><button class="ibtn go" id="fOk">Save</button><button class="ibtn" id="fNo">Cancel</button>${it?`<button class="ibtn" id="fDel">Remove</button>`:""}</div></div>`;
+    document.body.appendChild(bg);$("#fTitle").focus();
+    const done=v=>{bg.remove();res(v)};
+    bg.onclick=e=>{if(e.target===bg)done(null)};
+    $("#fNo").onclick=()=>done(null);
+    $("#fOk").onclick=()=>{const title=$("#fTitle").value.trim(),sec=parseDur($("#fSec").value);if(!title){$("#fTitle").focus();return}if(!sec){toast("Enter a time like 30s or 2m");$("#fSec").focus();return}
+      done({icon:$("#fIcon").value.trim(),title,how:$("#fHow").value.trim(),sec,lang:$("#fLang").value})};
+    $("#fDel")&&($("#fDel").onclick=e=>{const b=e.currentTarget;if(!b.dataset.sure){b.dataset.sure="1";b.textContent="Remove it?";return}done({deleted:true})});
+  });
+}
+async function editItem(w,id){
+  const it=S.routines.find(x=>x.id===id),v=await itemSheet(w,it);if(!v)return;
+  await saveDoc("routines",{...it,...v});render();toast(v.deleted?"Removed":"Saved");
+}
+async function addItem(w){
+  const v=await itemSheet(w,null);if(!v)return;const its=items(w);
+  await saveDoc("routines",{id:newId(),when:w,order:(its.length?+its[its.length-1].order||0:0)+1,...v});render();toast("Added");
+}
+/* ＋ New routine: up to 5, each with a color nobody else uses yet if one is left */
+async function newRoutine(){
+  const ls=lists();if(ls.length>=MAXR){toast(`Up to ${MAXR} routines`);return}
+  const used=new Set(ls.map(l=>l.theme)),theme=Object.keys(THEMES).find(k=>!used.has(k))||"sunrise",id="r"+Date.now().toString(36);
+  await saveLists([...ls,{id,name:"New routine",emoji:"✨",at:"",theme,alarm:true}]);location.hash="edit/"+id;
+}
+async function moveItem(id,dir){
+  const it=S.routines.find(x=>x.id===id);if(!it)return;const its=items(it.when),i=its.findIndex(x=>x.id===id),j=i+dir;if(j<0||j>=its.length)return;
+  const o=its.map((x,k)=>({x,o:k+1}));[o[i].o,o[j].o]=[o[j].o,o[i].o];
+  for(const {x,o:ord} of o)if(+x.order!==ord)await saveDoc("routines",{...x,order:ord});
+  render();
+}
+
+/* ---------- settings ---------- */
+function settingsView(){
+  const c=settings(),url=location.origin+location.pathname;
+  return `<header class="top"><a class="ibtn" href="#" aria-label="Back">‹</a><h1>Settings</h1></header>
+  <form class="card" id="setForm"><h2>Routines</h2>
+    <p class="note">Each routine's name, start time and colors are on its ✏️ Edit page.</p>
+    <div class="row2"><div class="field"><label for="sV">Voice for guidance</label><select id="sV">${Object.entries(RPLN).map(([k,l])=>`<option value="${k}" ${c.voice===k?"selected":""}>${l}</option>`).join("")}</select></div>
+    <div class="field"><label for="sG">When time is up</label><select id="sG">${[[30,"Remind every 30 seconds"],[60,"Remind every minute"],[0,"Don't remind"]].map(([v,l])=>`<option value="${v}" ${+c.nag===v?"selected":""}>${l}</option>`).join("")}</select></div></div>
+    <div class="btnrow"><button class="ibtn go">Save</button><button class="ibtn" type="button" id="sTest">🔔 Test sound and voice</button></div></form>
+  ${MODE==="cloud"?`<section class="card"><h2>Sync with the Mac Desk</h2><p class="note">Enter the passphrase once on each phone. Your routines, checks and scores then match the Mac.</p>
+    <div class="field"><label for="sK">Passphrase</label><input id="sK" type="password" autocomplete="off" value="${esc(syncKey())}"></div>
+    <div class="btnrow"><button class="ibtn go" id="sKOk">Save and sync</button></div><p class="syncline" id="syncline">${syncText()}</p></section>`:""}
+  <section class="card"><h2>Start alarm on iPhone</h2><p class="note">A web page can't ring while it's closed, so let the Clock app ring and open this page:</p>
+    <p class="note">1. Clock app: set an alarm at each start time.<br>2. Shortcuts › Automation › ＋ › Alarm › “Is Stopped” › Run Immediately.<br>3. Action: Open URLs → the link of that routine:</p>
+    <p class="note">${lists().map(l=>`${esc(l.emoji)} ${esc(l.name)}${l.at?" ("+esc(l.at)+")":""}: <code>${esc(url)}#alarm/${esc(l.id)}</code>`).join("<br>")}</p>
+    <p class="note">While this page is open, it also rings by itself at the start time.</p></section>
+  <section class="card"><h2>Put it on your home screen</h2><p class="note">Safari › Share › Add to Home Screen. It opens full screen and works without the internet. Turn the ring/silent switch to ring for the chime; the voice plays either way.</p></section>`;
+}
+
+/* ---------- render and routes ---------- */
+function render(){
+  if(P)return; // the player draws itself
+  const h=location.hash.slice(1);let m;
+  $("#app").innerHTML=(m=/^edit\/([\w-]+)$/.exec(h))&&lists().some(l=>l.id===m[1])?editView(m[1]):h==="settings"?settingsView():home();
+  wire();
+}
+function wire(){
+  document.querySelectorAll("[data-start]").forEach(b=>b.onclick=()=>rpOpen(b.dataset.start));
+  document.querySelectorAll("[data-add]").forEach(b=>b.onclick=()=>addItem(b.dataset.add));
+  document.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>{const it=S.routines.find(x=>x.id===b.dataset.edit);if(it)editItem(it.when,it.id)});
+  document.querySelectorAll("[data-up]").forEach(b=>b.onclick=()=>moveItem(b.dataset.up,-1));
+  document.querySelectorAll("[data-down]").forEach(b=>b.onclick=()=>moveItem(b.dataset.down,1));
+  const f=$("#setForm");if(f)f.onsubmit=async e=>{e.preventDefault();
+    await saveDoc("routinelog",{...(S.log.find(x=>x.id==="settings")||{cutoff:4}),id:"settings",voice:$("#sV").value,nag:+$("#sG").value});toast("Saved")};
+  document.querySelectorAll("[data-newr]").forEach(b=>b.onclick=newRoutine);
+  const lf=$("#listForm");if(lf){const w=lf.dataset.list;
+    lf.querySelectorAll("[data-theme]").forEach(b=>b.onclick=()=>lf.querySelectorAll("[data-theme]").forEach(x=>x.setAttribute("aria-pressed",x===b)));
+    lf.onsubmit=async e=>{e.preventDefault();const name=$("#lName").value.trim(),at=$("#lAt").value;if(!name){$("#lName").focus();return}
+      const theme=lf.querySelector('[data-theme][aria-pressed="true"]')?.dataset.theme||"sunrise";
+      await saveLists(lists().map(l=>l.id===w?{...l,name,emoji:$("#lEmoji").value.trim()||"✨",at:/^\d\d:\d\d$/.test(at)?at:"",alarm:$("#lAlarm").value==="1",theme}:l));render();toast("Saved")};
+    $("#lDel")&&($("#lDel").onclick=async e=>{const b=e.currentTarget;if(!b.dataset.sure){b.dataset.sure="1";b.textContent="Delete it and its items?";return}
+      for(const it of items(w))await saveDoc("routines",{...it,deleted:true});await saveLists(lists().filter(l=>l.id!==w));location.hash="";toast("Deleted")});}
+  $("#sTest")&&($("#sTest").onclick=()=>{rpUnlock();RPS.chime();const v=settings().voice;setTimeout(()=>rpSay(RPW.time[v](lists()[0]?.name||"Routine"),v),700)});
+  $("#sKOk")&&($("#sKOk").onclick=async()=>{try{localStorage.setItem("rt-key",$("#sK").value.trim())}catch(e){}S.sync={state:""};paintSync();await sync();toast(S.sync.state==="ok"?"Synced":S.sync.state==="badkey"?"That passphrase didn't work":"Saved. It syncs when online")});
+}
+function route(){
+  const h=location.hash.slice(1);let m;
+  if(m=/^key=(.+)$/.exec(h)){try{localStorage.setItem("rt-key",decodeURIComponent(m[1]))}catch(e){}history.replaceState(null,"",location.pathname);toast("Sync is on");sync();return render()}
+  if((m=/^(start|alarm)\/([\w-]+)$/.exec(h))&&lists().some(l=>l.id===m[2])){history.replaceState(null,"",location.pathname+"#");render();return rpOpen(m[2],m[1]==="alarm"?"alarm":"")}
+  render();
+}
+window.addEventListener("hashchange",route);
+
+/* ---------- the player ---------- */
+/* One item at a time: a chime, the item read aloud, a ring that counts down. Nothing moves on by itself: past zero the ring turns
+   pink, counts up (+0:30) and says so every 30 seconds until Done or Skip. ☰ shows the whole routine: pick what comes next, move
+   items, add one. Done items are the day's checks (log[when][id]); the run is log[when+"Run"]. */
+const ruN=(n,a,b,c)=>{const t=n%100,o=n%10;return t>10&&t<20?c:o===1?a:o>=2&&o<=4?b:c};
+const RPW={
+  dur:{en:s=>{const m=Math.floor(s/60),r=s%60;return [m?m+(m>1?" minutes":" minute"):"",r?r+" seconds":""].filter(Boolean).join(" ")},
+    ja:s=>{const m=Math.floor(s/60),r=s%60;return (m?m+"分":"")+(r?r+"秒":"")},
+    ru:s=>{const m=Math.floor(s/60),r=s%60;return [m?m+" "+ruN(m,"минута","минуты","минут"):"",r?r+" "+ruN(r,"секунда","секунды","секунд"):""].filter(Boolean).join(" ")}},
+  up:{en:"Time's up. Press Done when you finish.",ja:"時間です。終わったら完了を押してね。",ru:"Время вышло. Нажми «Готово», когда закончишь."},
+  over:{en:s=>`${RPW.dur.en(s)} over.`,ja:s=>`${RPW.dur.ja(s)}、過ぎています。`,ru:s=>`Уже ${RPW.dur.ru(s)} сверх времени.`},
+  time:{en:n=>`It's time for ${n}.`,ja:n=>`${n}の時間です。`,ru:n=>`Пора: ${n}.`},
+  end:{morning:{en:"All done. Let's make today a great day!",ja:"おつかれさま。今日も一日がんばろう！",ru:"Готово. Хорошего дня!"},
+    night:{en:"All done. Great work today. Sleep well.",ja:"おつかれさま。今日もよくがんばったね。ゆっくり休んでね。",ru:"Готово. Отличный день. Спокойной ночи."}},
+  part:{morning:{en:"Good start. Let's make today a great day!",ja:"おつかれさま。できた分でOK。今日も一日がんばろう！",ru:"Хорошее начало. Хорошего дня!"},
+    night:{en:"Good work today. What you did counts. Sleep well.",ja:"おつかれさま。できた分でOK。ゆっくり休んでね。",ru:"Хорошая работа. Спокойной ночи."},
+    other:{en:"Good work. What you did counts.",ja:"おつかれさま。できた分でOK！",ru:"Хорошая работа."}}
+};
+RPW.end.other={en:"All done. Great job!",ja:"おつかれさま。よくがんばったね！",ru:"Готово. Отличная работа!"};
+const rpMsg=(set,w)=>RPW[set][w==="morning"||w==="night"?w:"other"];
+const rpPref=()=>{let v={};try{v=JSON.parse(localStorage.getItem("rt-pref")||"{}")||{}}catch(e){}return {sound:v.sound!==false,voice:v.voice!==false}};
+function rpPrefToggle(k){const p=rpPref();p[k]=!p[k];try{localStorage.setItem("rt-pref",JSON.stringify(p))}catch(e){}if(k==="voice"&&!p.voice)try{speechSynthesis.cancel()}catch(e){}
+  const b=$(`#rp [data-rp="${k}"]`);if(b){b.setAttribute("aria-pressed",p[k]);b.textContent=k==="sound"?(p.sound?"🔔":"🔕"):(p.voice?"🗣️":"🤐")}}
+const rpToggles=()=>{const p=rpPref();return `<button class="rpbtn" data-rp="sound" aria-pressed="${p.sound}" aria-label="Sound">${p.sound?"🔔":"🔕"}</button><button class="rpbtn" data-rp="voice" aria-pressed="${p.voice}" aria-label="Read aloud">${p.voice?"🗣️":"🤐"}</button>`};
+let rpVoices=[];
+const rpLoadVoices=()=>{try{rpVoices=speechSynthesis.getVoices()||[]}catch(e){}};
+if(window.speechSynthesis){rpLoadVoices();try{speechSynthesis.addEventListener("voiceschanged",rpLoadVoices)}catch(e){}}
+function rpSay(text,lang,queue){
+  if(!window.speechSynthesis||!rpPref().voice||!text)return;
+  try{if(!queue)speechSynthesis.cancel();const tag=RPL[lang]||"en-US",u=new SpeechSynthesisUtterance(text);u.lang=tag;
+    const vs=rpVoices.filter(v=>String(v.lang).replace("_","-").toLowerCase().startsWith(tag.slice(0,2)));
+    u.voice=vs.find(v=>String(v.lang).replace("_","-")===tag&&v.localService)||vs.find(v=>v.localService)||vs[0]||null;
+    speechSynthesis.speak(u)}catch(e){}
+}
+let actx=null;
+function rpCtx(){if(!actx){try{actx=new (window.AudioContext||window.webkitAudioContext)()}catch(e){return null}}if(actx.state==="suspended")actx.resume();return actx}
+/* phones only allow sound and speech after a tap: the first tap unlocks both, and asks iOS to play even with the silent switch on */
+function rpUnlock(){try{if(navigator.audioSession)navigator.audioSession.type="playback"}catch(e){}rpCtx();try{if(window.speechSynthesis&&!rpUnlock.done){const u=new SpeechSynthesisUtterance(" ");u.volume=0;speechSynthesis.speak(u);rpUnlock.done=true}}catch(e){}}
+["pointerdown","keydown"].forEach(t=>document.addEventListener(t,()=>{if(!actx)rpUnlock()},{capture:true,passive:true}));
+function rpTone(notes,type,vol){
+  if(!rpPref().sound)return;const a=rpCtx();if(!a)return;const t0=a.currentTime+.02;
+  notes.forEach(([f,d,len=.45])=>{const o=a.createOscillator(),g=a.createGain();o.type=type;o.frequency.value=f;
+    g.gain.setValueAtTime(0,t0+d);g.gain.linearRampToValueAtTime(vol,t0+d+.012);g.gain.exponentialRampToValueAtTime(.0001,t0+d+len);
+    o.connect(g).connect(a.destination);o.start(t0+d);o.stop(t0+d+len+.05)});
+}
+const RPS={chime:()=>rpTone([[784,0],[988,.09],[1175,.18],[1568,.27,.9]],"triangle",.22),
+  warn:()=>rpTone([[1320,0,.12],[1320,.18,.12]],"sine",.15),
+  up:()=>rpTone([[880,0,.25],[660,.28,.25],[880,.56,.25],[660,.84,.5]],"square",.07),
+  nag:()=>rpTone([[523,0,.2],[392,.24,.4]],"triangle",.22),
+  done:()=>rpTone([[1047,0,.15],[1568,.1,.45]],"triangle",.2),
+  alarm:()=>rpTone([[988,0,.18],[1319,.2,.18],[988,.4,.18],[1319,.6,.18],[988,.8,.18],[1319,1,.45]],"square",.09)};
+let rpLock=null;
+async function rpWake(on){try{if(on&&!rpLock&&navigator.wakeLock&&document.visibilityState==="visible"){rpLock=await navigator.wakeLock.request("screen");rpLock.addEventListener("release",()=>{rpLock=null})}
+  if(!on&&rpLock){const l=rpLock;rpLock=null;await l.release()}}catch(e){}}
+let P=null, rpTimer=0;
+const RPC=2*Math.PI*88;
+function rpOpen(when,from){
+  if(P)return;const its=items(when);if(!its.length){toast("No items yet. Add some first");location.hash="edit/"+when;return}
+  P={when,all:[...its],items:[...its],from,phase:"ready",results:{},i:0,pausedAll:0,moved:false};
+  const el=document.createElement("div");el.id="rp";el.className="rp";el.dataset.when=listOf(when).theme;el.tabIndex=-1;el.setAttribute("role","dialog");el.setAttribute("aria-modal","true");el.setAttribute("aria-label",listOf(when).name);
+  el.onclick=rpClick;document.body.appendChild(el);document.documentElement.style.overflow="hidden";
+  rpDrawReady();
+  if(from==="alarm"){let n=0;const ring=()=>{if(!P||P.phase!=="ready")return;RPS.alarm();if(n%3===0){const v=settings().voice;rpSay(RPW.time[v](listOf(when).name),v,true)}if(++n<45)P.ringT=setTimeout(ring,4000)};ring()}
+}
+function rpClose(){if(P)clearTimeout(P.ringT);clearInterval(rpTimer);rpTimer=0;try{speechSynthesis.cancel()}catch(e){}rpWake(false);P=null;$("#rp")?.remove();document.documentElement.style.overflow="";render();sync()}
+function rpDrawReady(){
+  const total=P.items.reduce((s,it)=>s+rpSec(it),0),c=settings(),r=run(today(),P.when),st=streak(P.when);
+  $("#rp").innerHTML=`<header class="rptop"><button class="rpbtn" data-rp="close" aria-label="Close">✕</button><span style="flex:1"></span>${rpToggles()}</header>
+  <main class="rpmain"><span class="rpicon">${esc(listOf(P.when).emoji)}</span><h2 class="rptitle">${esc(listOf(P.when).name)}</h2>
+    <p class="rphow">${P.items.length} items · about ${Math.round(total/60)} min${P.from==="alarm"&&listOf(P.when).at?` · It's ${esc(listOf(P.when).at)}`:""}${r?` · Today so far: ${r.score}%`:""}${st?` · 🔥 ${st} in a row`:""}</p>
+    <button class="rpbtn rpbig" data-rp="start">▶ Start</button><p class="rpnext">The screen stays on while it runs</p></main><footer></footer>`;
+  $("#rp").focus();
+}
+function rpStart(){
+  if(!P)return;clearTimeout(P.ringT);rpUnlock();try{speechSynthesis.cancel()}catch(e){}
+  P.phase="run";P.startedAt=P.startedAt||Date.now();P.day=today();P.i=0;rpWake(true);rpStep();
+  clearInterval(rpTimer);rpTimer=setInterval(rpTick,200);
+}
+const rpEl=()=>Date.now()-P.stepAt-P.paused-(P.pauseAt?Date.now()-P.pauseAt:0);
+const rpLeft=()=>rpSec(P.items[P.i])*1000+P.extra-rpEl();
+function rpStep(){
+  const it=P.items[P.i];Object.assign(P,{stepAt:Date.now(),paused:0,pauseAt:0,extra:0,warned:false,upSaid:false,nagAt:0,busy:false});
+  rpDrawStep();RPS.chime();
+  const lang=rpLang(it);setTimeout(()=>{if(P&&P.phase==="run"&&P.items[P.i]===it&&!P.pauseAt)rpSay(`${it.title}. ${RPW.dur[lang](rpSec(it))}.`,lang)},700);
+}
+function rpDrawStep(){
+  const it=P.items[P.i],nx=P.items[P.i+1],doneN=Object.values(P.results).filter(r=>r.status==="done").length,n=P.all.length,open=!!P.list;
+  const el=$("#rp");el.classList.toggle("listopen",open);
+  el.innerHTML=`<header class="rptop"><button class="rpbtn" data-rp="end" aria-label="End the routine">✕</button><div class="rpbar" role="progressbar" aria-label="Done" aria-valuemin="0" aria-valuemax="${n}" aria-valuenow="${doneN}"><i style="width:${doneN/n*100}%"></i></div><span class="rpcount">${P.i+1} / ${P.items.length}</span><button class="rpbtn" data-rp="list" aria-pressed="${open}" aria-label="Show the whole routine">☰</button>${rpToggles()}</header>
+  <main class="rpmain"><div class="rpring"><svg viewBox="0 0 200 200" aria-hidden="true"><circle class="rptrack" cx="100" cy="100" r="88"/><circle class="rparc" cx="100" cy="100" r="88" stroke-dasharray="${RPC}" stroke-dashoffset="0"/></svg>
+      <div class="rpcenter"><span class="rpicon" aria-hidden="true">${esc(it.icon||"✨")}</span><b class="rptime">${rpFmt(rpSec(it))}</b><span class="rpstate">left</span></div><div class="rpstamp"></div></div>
+    <h2 class="rptitle">${esc(it.title)}</h2>${it.how?`<p class="rphow">${esc(it.how)}</p>`:""}
+    <p class="rpnext"><span class="rppace"></span><span>${nx?`Next: ${esc(nx.icon||"")} ${esc(nx.title)} · ${rpDur(rpSec(nx))}`:"Last one"}</span></p></main>
+  <footer class="rpctl"><button class="rpbtn" data-rp="pause">⏸<span>Pause</span></button><button class="rpbtn" data-rp="skip">⏭<span>Skip</span></button><button class="rpbtn" data-rp="add">＋1<span>+1 min</span></button><button class="rpbtn rpgo" data-rp="done">✓<span>Done</span></button></footer>
+  <section class="rplist" id="rplist" aria-label="The whole routine" ${open?"":"hidden"}>${rpListHtml()}</section>`;
+  if(P.pauseAt){const b=$('#rp [data-rp="pause"]');if(b)b.innerHTML="▶<span>Resume</span>"}
+  wireAdd();el.focus();rpTick();
+}
+/* ☰ the whole routine: progress, time left, every item with its state; upcoming and skipped items can come next */
+function rpListHtml(){
+  const doneN=Object.values(P.results).filter(r=>r.status==="done").length,n=P.all.length,pct=Math.round(doneN/n*100);
+  const leftSec=P.items.slice(P.i).reduce((s,it)=>s+rpSec(it),0);
+  const row=(it,k)=>{const r=P.results[it.id],now=k===P.i,cls=now?"now":r?.status==="done"?"done":r?.status==="skip"?"skip":"";
+    const mark=now?"▶":r?.status==="done"?"✓":r?.status==="skip"?"⏭":"";
+    const canNext=!now&&r?.status!=="done"&&k!==P.i+1, upcoming=k>P.i;
+    const acts=upcoming?`<button class="rpbtn" data-rpnow="${esc(it.id)}" aria-label="Do ${esc(it.title)} now">Now</button>${k>P.i+1?`<button class="rpbtn" data-rpup="${esc(it.id)}" aria-label="Move up">↑</button>`:""}${k<P.items.length-1?`<button class="rpbtn" data-rpdown="${esc(it.id)}" aria-label="Move down">↓</button>`:""}`:"";
+    const label=`<span class="em">${esc(it.icon||"✨")}</span><span class="t">${esc(it.title)}<small>${now?"▶ now · ":k===P.i+1?"next · ":mark?mark+" · ":""}${rpDur(rpSec(it))}${canNext?" · tap to do next":""}</small></span>`;
+    return `<div class="rpli ${cls}">${canNext?`<button class="rplpick" data-rpnext="${esc(it.id)}">${label}</button>`:`<span class="rplpick">${label}</span>`}<span class="a">${acts}</span></div>`};
+  return `<div class="rplhead"><b>${doneN} of ${n} done · ${pct}% · about ${Math.max(1,Math.round(leftSec/60))} min left</b>${P.moved?`<button class="rpbtn" data-rp="saveorder">Keep this order</button>`:""}<button class="rpbtn" data-rp="list" aria-label="Close the list">✕</button></div>
+  <div class="rplbody">${P.items.map(row).join("")}</div>
+  <form class="rpladd" id="rpAdd" autocomplete="off" onsubmit="return false"><input id="rpAddT" maxlength="120" placeholder="Add an item" aria-label="New item, added after this one"><input id="rpAddS" value="1m" aria-label="Time"><button class="rpbtn">Add</button>
+    <label><input type="checkbox" id="rpAddKeep" checked> Keep it in the routine for next time</label></form>`;
+}
+const rpScrollNow=()=>{const r=$("#rplist .rpli.now");if(r)r.scrollIntoView({block:"center"})};
+function rpRedrawList(){const l=$("#rplist");if(l){const y=l.querySelector(".rplbody")?.scrollTop||0;l.innerHTML=rpListHtml();wireAdd();const b=l.querySelector(".rplbody");if(b)b.scrollTop=y}const nx=P.items[P.i+1],el=$("#rp .rpnext span:last-child");if(el)el.textContent=nx?`Next: ${nx.icon||""} ${nx.title} · ${rpDur(rpSec(nx))}`:"Last one"}
+function wireAdd(){const f=$("#rpAdd");if(f)f.onsubmit=async e=>{e.preventDefault();const title=$("#rpAddT").value.trim(),sec=parseDur($("#rpAddS").value);if(!title){$("#rpAddT").focus();return}if(!sec){toast("Enter a time like 30s or 2m");return}
+  const cur=P.items[P.i],nx=P.items[P.i+1],keep=$("#rpAddKeep").checked;
+  const it={id:newId(),when:P.when,order:nx?((+cur.order||0)+(+nx.order||0))/2:(+cur.order||0)+1,icon:"✨",title,how:"",sec,lang:""};
+  if(keep)await saveDoc("routines",it);
+  P.items.splice(P.i+1,0,it);P.all.push(it);rpRedrawList();toast(keep?"Added, and kept for next time":"Added for today");$("#rpAddT").focus()}}
+function rpMoveTo(id,pos){const k=P.items.findIndex(x=>x.id===id);if(k<0)return;const [it]=P.items.splice(k,1);if(k<P.i)P.i--;P.items.splice(Math.min(pos(),P.items.length),0,it);P.moved=true}
+function rpDoNext(id){rpMoveTo(id,()=>P.i+1);rpRedrawList()}
+function rpDoNow(id){if(P.busy)return;rpMoveTo(id,()=>P.i);try{speechSynthesis.cancel()}catch(e){}rpStep()} // the current item goes back to next, unrecorded
+function rpShift(id,d){const k=P.items.findIndex(x=>x.id===id),j=k+d;if(k<=P.i||j<=P.i||j>=P.items.length)return;[P.items[k],P.items[j]]=[P.items[j],P.items[k]];P.moved=true;rpRedrawList()}
+async function rpSaveOrder(){ // done and skipped first as they ran, then what is left in its new order
+  const seq=[...P.items],base=items(P.when).filter(x=>!seq.some(y=>y.id===x.id));let o=1;
+  for(const it of [...seq,...base]){const cur=S.routines.find(x=>x.id===it.id);if(cur&&+cur.order!==o)await saveDoc("routines",{...cur,order:o});o++}
+  P.moved=false;rpRedrawList();toast("Saved as the order for next time");
+}
+function rpTick(){
+  if(!P||P.phase!=="run")return;const el=$("#rp");if(!el)return;
+  const it=P.items[P.i],tot=rpSec(it)*1000+P.extra,left=rpLeft(),over=left<0,c=settings();
+  el.classList.toggle("over",over);
+  const t=el.querySelector(".rptime"),st=el.querySelector(".rpstate"),arc=el.querySelector(".rparc"),pace=el.querySelector(".rppace");
+  if(t)t.textContent=over?"+"+rpFmt(Math.floor(-left/1000)):rpFmt(Math.ceil(left/1000));
+  if(st)st.textContent=P.pauseAt?"paused":over?"over time":"left";
+  if(arc)arc.setAttribute("stroke-dashoffset",over?"0":String(RPC*(1-left/tot)));
+  if(pace){const runMs=Date.now()-P.startedAt-P.pausedAll-(P.pauseAt?Date.now()-P.pauseAt:0),plan=Object.values(P.results).reduce((s,r)=>s+r.planned,0)*1000+Math.min(rpEl(),tot),d=Math.round((runMs-plan)/1000);
+    pace.textContent=P.i===0&&!over?"":Math.abs(d)<15?"On time":d>0?`${rpDur(d)} behind`:`${rpDur(-d)} ahead`}
+  if(P.pauseAt)return;
+  if(!over&&left<=10000&&tot>15000&&!P.warned){P.warned=true;RPS.warn()}
+  if(over&&!P.upSaid){P.upSaid=true;P.nagAt=Date.now();RPS.up();setTimeout(()=>{if(P&&P.phase==="run"&&P.items[P.i]===it&&!P.pauseAt)rpSay(RPW.up[c.voice],c.voice)},1200)}
+  else if(over&&+c.nag>0&&Date.now()-P.nagAt>=c.nag*1000){P.nagAt=Date.now();RPS.nag();const s=Math.max(c.nag,Math.round(-left/1000/c.nag)*c.nag);setTimeout(()=>{if(P&&P.items[P.i]===it)rpSay(RPW.over[c.voice](s),c.voice)},600)}
+}
+function rpPause(){
+  if(!P||P.phase!=="run")return;const b=$('#rp [data-rp="pause"]');
+  if(P.pauseAt){const d=Date.now()-P.pauseAt;P.paused+=d;P.pausedAll+=d;P.pauseAt=0;if(b)b.innerHTML="⏸<span>Pause</span>";rpWake(true)}
+  else{P.pauseAt=Date.now();try{speechSynthesis.cancel()}catch(e){}if(b)b.innerHTML="▶<span>Resume</span>"}
+  rpTick();
+}
+function rpAdd(){if(!P||P.phase!=="run")return;P.extra+=60000;if(rpLeft()>0){P.upSaid=false;P.warned=rpLeft()<=10000}rpTick()}
+/* the day doc with every item this run has done, even if the copy on screen is older than the run */
+function rpLogNow(){const log=JSON.parse(JSON.stringify(dayDoc(P.day))),m=log[P.when]||(log[P.when]={});
+  Object.entries(P.results).forEach(([id,r])=>{if(r.status==="done"&&!m[id])m[id]=r.at});log.totals=totals();return log}
+function rpNext(status){
+  if(!P||P.phase!=="run"||P.busy)return;const it=P.items[P.i];P.busy=true;
+  if(P.pauseAt)rpPause();
+  P.results[it.id]={status,planned:rpSec(it),actual:Math.round(rpEl()/1000),at:Date.now()};
+  try{speechSynthesis.cancel()}catch(e){}
+  if(status==="done"){RPS.done();saveDoc("routinelog",rpLogNow());const s=$("#rp .rpstamp");if(s)s.innerHTML="<b>✓</b>"}
+  P.i++;const wait=status==="done"?500:0;
+  setTimeout(()=>{if(!P||P.phase!=="run")return;if(P.i>=P.items.length)rpFinish();else rpStep()},wait);
+}
+function rpEnd(){
+  if(!P||P.phase!=="run")return;
+  if(Date.now()-(P.endAsk||0)>3000){P.endAsk=Date.now();toast("Press ✕ again to end");return}
+  if(P.pauseAt)rpPause();rpFinish();
+}
+function confetti(){const host=document.createElement("div");host.className="confetti";const colors=["#ff6f61","#ffd166","#7bdcb5","#8ecae6","#cdb4ff"],R=(a,b)=>a+Math.random()*(b-a);
+  host.innerHTML=Array.from({length:90},(_,i)=>{const a=R(0,6.283),r=R(120,Math.max(innerWidth,innerHeight)*.6);return `<i style="background:${colors[i%5]};--x:${Math.round(Math.cos(a)*r)}px;--y:${Math.round(Math.sin(a)*r+140)}px;--r:${Math.round(R(-540,540))}deg;--d:${Math.round(R(900,1600))}ms;--w:${Math.round(R(0,150))}ms"></i>`}).join("");
+  document.body.appendChild(host);setTimeout(()=>host.remove(),2200)}
+function rpFinish(){
+  clearInterval(rpTimer);rpTimer=0;rpWake(false);P.phase="end";P.endAt=Date.now();
+  const all=P.all,res=all.map(it=>({it,r:P.results[it.id]})),done=res.filter(x=>x.r?.status==="done"),skipped=res.filter(x=>x.r?.status==="skip"),left=res.filter(x=>!x.r);
+  const score=Math.round(done.length/all.length*100),plan=all.reduce((s,it)=>s+rpSec(it),0),real=Math.round((P.endAt-P.startedAt-P.pausedAll)/1000);
+  const c=settings(),log=rpLogNow();
+  log[P.when+"Run"]={start:P.startedAt,end:P.endAt,score,done:done.length,total:all.length,skipped:skipped.map(x=>x.it.id),notReached:left.map(x=>x.it.id),planned:plan,actual:real,
+    over:Object.fromEntries(res.filter(x=>x.r&&x.r.status==="done"&&x.r.actual>x.r.planned).map(x=>[x.it.id,x.r.actual-x.r.planned]))};
+  saveDoc("routinelog",log);
+  if(MODE==="desk"&&done.length){const id=("routine-"+P.day+"-"+P.when).replace(/[^\w-]/g,"_");
+    fetch("/api/wins/"+id,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({kind:"self",title:`${listOf(P.when).name} ${score}%`,sub:"",date:P.day,at:Date.now(),ref:"",createdAt:Date.now(),updatedAt:Date.now(),deleted:false})}).catch(()=>{})}
+  const st=streak(P.when),rest=skipped.length+left.length,msg=rpMsg(rest?"part":"end",P.when);
+  const el=$("#rp");el.classList.remove("over","listopen");
+  el.innerHTML=`<header class="rptop"><span style="flex:1"></span>${rpToggles()}</header>
+  <main class="rpmain"><span class="rpicon">${score>=80?"🏆":score>=50?"🌟":"🌱"}</span><b class="rpscore">${score}%</b><p class="rpmsg">${esc(msg.en)}</p>
+    <div class="rpstats"><span>✓ ${done.length} of ${all.length} done</span>${skipped.length?`<span>⏭ ${skipped.length} skipped</span>`:""}${left.length?`<span>${left.length} not reached</span>`:""}<span>⏱ ${rpDur(real)} · planned ${rpDur(plan)}</span><span>🔥 ${st} day${st===1?"":"s"} in a row</span></div>
+    ${skipped.length?`<p class="rpskipped">Skipped: ${skipped.map(x=>esc(x.it.title)).join(" · ")}</p>`:""}
+    <div class="rpacts">${rest?`<button class="rpbtn" data-rp="again">Do the ${rest} left</button>`:""}<button class="rpbtn rpbig" data-rp="close">Close</button></div></main><footer></footer>`;
+  el.focus();if(done.length)confetti();
+  setTimeout(()=>{if(P&&P.phase==="end")rpSay(msg[c.voice],c.voice)},400);
+}
+function rpAgain(){
+  if(!P||P.phase!=="end")return;const rest=P.all.filter(it=>P.results[it.id]?.status!=="done");if(!rest.length)return;
+  rest.forEach(it=>delete P.results[it.id]);
+  P.pausedAll+=Date.now()-P.endAt;P.items=rest;P.phase="run";P.i=0;rpWake(true);rpStep();clearInterval(rpTimer);rpTimer=setInterval(rpTick,200);
+}
+function rpClick(e){
+  const b=e.target.closest("button");if(!b||!P)return;let id;
+  if(id=b.dataset.rpnext)return rpDoNext(id);
+  if(id=b.dataset.rpnow)return rpDoNow(id);
+  if(id=b.dataset.rpup)return rpShift(id,-1);
+  if(id=b.dataset.rpdown)return rpShift(id,1);
+  ({start:rpStart,close:rpClose,end:rpEnd,pause:rpPause,skip:()=>rpNext("skip"),done:()=>rpNext("done"),add:rpAdd,again:rpAgain,saveorder:rpSaveOrder,
+    list:()=>{P.list=!P.list;const el=$("#rp"),l=$("#rplist");el.classList.toggle("listopen",P.list);if(l){l.hidden=!P.list;if(P.list){l.innerHTML=rpListHtml();wireAdd();rpScrollNow()}}const t=$('#rp .rptop [data-rp="list"]');if(t)t.setAttribute("aria-pressed",P.list)},
+    sound:()=>rpPrefToggle("sound"),voice:()=>rpPrefToggle("voice")})[b.dataset.rp]?.();
+}
+document.addEventListener("keydown",e=>{
+  if(!P||!$("#rp")||e.metaKey||e.ctrlKey||e.altKey)return;if(/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName))return;const k=e.key;
+  if(P.phase==="ready"){if(k===" "||k==="Enter"){e.preventDefault();rpStart()}else if(k==="Escape")rpClose();return}
+  if(P.phase==="end"){if(k==="Escape"||k==="Enter"){e.preventDefault();rpClose()}return}
+  if(k===" "){e.preventDefault();rpPause()}else if(k==="Enter"||k==="ArrowRight"){e.preventDefault();rpNext("done")}else if(k==="s"||k==="S")rpNext("skip");else if(k==="+"||k==="=")rpAdd();else if(k==="l"||k==="L")$('#rp [data-rp="list"]')?.click();else if(k==="Escape")rpEnd();
+});
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"){if(P&&P.phase==="run")rpWake(true);sync()}});
+window.addEventListener("online",sync);
+/* the start alarm while this page is open (on the Mac, desk/routine_alarm.py rings even when it is closed) */
+setInterval(()=>{
+  if(P||document.visibilityState!=="visible")return;const c=settings();if(c.alarm===false)return;const now=new Date(Date.now()+HCMC).toISOString().slice(11,16);
+  lists().filter(l=>l.alarm!==false&&l.at).forEach(l=>{const w=l.id;if(P||now!==l.at)return;const key=today()+w;let last="";try{last=localStorage.getItem("rt-alarm")||""}catch(e){}
+    if(last===key||run(today(),w))return;try{localStorage.setItem("rt-alarm",key)}catch(e){}rpOpen(w,"alarm")});
+},15000);
+
+/* ---------- start ---------- */
+(async()=>{
+  await load();route();sync();setInterval(()=>{if(!P||P.phase!=="run")sync()},60000);
+  if(MODE==="desk")setInterval(async()=>{if(P)return;const was=JSON.stringify([S.routines,S.log]);await load();if(was!==JSON.stringify([S.routines,S.log]))render()},30000);
+  if("serviceWorker" in navigator&&MODE==="cloud")navigator.serviceWorker.register("sw.js").catch(()=>{});
+})();
+</script>
+</body>
+</html>

@@ -37,6 +37,7 @@ import transcribe_desk
 import notify
 import pc_monitor
 import routine_alarm
+import routine_sync
 import chrome_web_sync
 import gmail_clean
 import lifelog
@@ -720,12 +721,38 @@ class Handler(BaseHTTPRequestHandler):
             return p[1], (unquote(p[2]) if len(p) > 2 else None)
         return None, None
 
+    ROUTINE_TYPES = {".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".png": "image/png",
+                     ".webmanifest": "application/manifest+json", ".svg": "image/svg+xml"}
+
+    def routine_file(self, path):
+        """The Routine app (routine/public) at /routine/. Here it reads and writes this Desk's routines directly.
+        Only plain file names in that one folder are served."""
+        if path == "/routine":
+            self.send_response(301)
+            self.send_header("Location", "/routine/")
+            self.end_headers()
+            return
+        name = path[len("/routine/"):] or "index.html"
+        ext = os.path.splitext(name)[1]
+        if "/" in name or name.startswith(".") or ext not in self.ROUTINE_TYPES:
+            return self.send(404, {"error": "not found"})
+        try:
+            with open(os.path.join(ROOT, "..", "routine", "public", name), "rb") as f:
+                return self.send(200, f.read(), self.ROUTINE_TYPES[ext])
+        except OSError:
+            return self.send(404, {"error": "not found"})
+
     def do_GET(self):
         if not self.allowed():
             return self.send(403, {"error": "forbidden"})
         path = urlsplit(self.path).path
         if path in ("/", "/index.html"):
             return self.send(200, page(), "text/html; charset=utf-8")
+        if path == "/routine" or path.startswith("/routine/"):
+            return self.routine_file(path)
+        if path == "/api/routine-link":  # the phone's one-time setup link; the passphrase rides in the # part, never sent to a server
+            k = routine_sync.key()
+            return self.send(200, {"url": routine_sync.APP + ("#key=" + urllib.parse.quote(k, safe="") if k else ""), "sync": bool(k)})
         if path.startswith("/uploads/"):
             return self.upload_get(path.rsplit("/", 1)[1])
         if path.startswith("/heritage-photos/"):
@@ -1107,6 +1134,7 @@ if __name__ == "__main__":
     if PORT == 4747:  # a test server on another port shows nothing
         threading.Thread(target=notify.watch, daemon=True).start()
         threading.Thread(target=routine_alarm.watch, daemon=True).start()  # morning / evening routine start alarm
+        threading.Thread(target=routine_sync.watch, daemon=True).start()  # routines <-> the Routine app on the phone
         threading.Thread(target=transcribe_desk.watch, daemon=True).start()  # the transcriber on 8791, kept running
     try:
         srv.serve_forever()

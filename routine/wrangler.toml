@@ -1,0 +1,10 @@
+# Routine app on Cloudflare Pages: https://tatsuki-routine.pages.dev
+# Build and deploy: python3 routine/build.py && (cd routine && npx wrangler pages deploy)
+# The sync passphrase is the SYNC_KEY secret (wrangler pages secret put SYNC_KEY), never in this repo.
+name = "tatsuki-routine"
+pages_build_output_dir = "dist"
+compatibility_date = "2026-11-01"
+
+[[kv_namespaces]]
+binding = "ROUTINE"
+id = "0824fd59797b4d40b55bb4ee22ba2811"
