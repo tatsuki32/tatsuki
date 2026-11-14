@@ -241,7 +241,8 @@ function sourcesView() {
     for (const f of off) h += '<div class="src" data-id="' + f.id + '"><div class="n">' + esc(f.name) + '</div><div class="acts"><button class="btn small" data-on="1">Resubscribe</button></div></div>';
     h += "</details>";
   }
-  h += '<div class="card" style="margin-top:40px"><h3>Today\\'s email</h3><p class="small muted">Check the sources now, or send the email now instead of waiting for 3:00 PM.</p><div class="bar"><button class="btn" data-run="fetch">Check sources now</button><button class="btn" data-run="mail">Send today\\'s email now</button></div></div>';
+  if (S.me && S.me.langs) h += '<div class="card" style="margin-top:40px"><h3>Summary language</h3><p class="small muted">The language of the one-line summaries and the daily brief. Titles stay as the site wrote them.</p><select id="lang" aria-label="Summary language">' + S.me.langs.map((l) => '<option value="' + l.id + '"' + (l.id === S.me.lang ? " selected" : "") + ">" + esc(l.name) + "</option>").join("") + "</select></div>";
+  h += '<div class="card" style="margin-top:16px"><h3>Today\\'s email</h3><p class="small muted">Check the sources now, or send the email now instead of waiting for 3:00 PM.</p><div class="bar"><button class="btn" data-run="fetch">Check sources now</button><button class="btn" data-run="mail">Send today\\'s email now</button></div></div>';
   return h;
 }
 
@@ -313,6 +314,7 @@ document.addEventListener("change", async (e) => {
   try {
     if (e.target.id === "day") { S.day = e.target.value; await loadNews(); return render(); }
     if (e.target.id === "folder") { S.folder = e.target.value; return render(); }
+    if (e.target.id === "lang") { await call("/api/me", { method: "PUT", body: { lang: e.target.value } }); S.me = await call("/api/me"); note("Summaries will be in " + e.target.selectedOptions[0].text + " from the next check."); return; }
     if (e.target.dataset.folder) {
       const id = e.target.closest(".src").dataset.id;
       await call("/api/feeds/" + id, { method: "PUT", body: { folder: e.target.value } });

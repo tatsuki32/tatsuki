@@ -7,13 +7,18 @@ import { AI_MODEL } from "./plans.js";
 
 export const MAX_ITEMS = 60;
 
-const SYSTEM = `You write a short daily news digest in plain American English.
+// summary languages a user can pick; the rest of the page and email stays in English
+export const LANGS = {
+  en: { name: "English", rule: "Write every line and the brief in plain American English. Translate titles and descriptions that are not in English." },
+  ja: { name: "Japanese", rule: "Write every line and the brief in natural, concise Japanese (plain form, not です・ます), each line at most about 60 characters. Keep names of people, places and organizations as they are usually written in Japanese news, or in the original spelling if unsure." },
+};
+
+const SYSTEM = `You write a short daily news digest.
 You get numbered articles: the site, the title and the feed's own short description.
 Rules:
 - Use only what the title and description say. Never add facts, numbers, names or causes they don't contain.
 - "lines": one entry per article number. "line" is one sentence of at most 25 words saying what the article is about. If the description adds nothing to the title, use "".
-- "brief": 3 to 5 short sentences on the day as a whole: the main threads across the articles. No intro, no sign-off, no hype.
-- Translate titles and descriptions that are not in English.`;
+- "brief": 3 to 5 short sentences on the day as a whole: the main threads across the articles. No intro, no sign-off, no hype.`;
 
 export const SCHEMA = {
   type: "object",
@@ -47,14 +52,14 @@ export function readAnswer(json, n) {
 }
 
 // → { lines: [string], brief, tin, tout }. client is for tests.
-export async function summarize(env, items, client = null) {
+export async function summarize(env, items, client = null, lang = "en") {
   if (!client && !env.ANTHROPIC_KEY) throw new Error("no ANTHROPIC_KEY secret");
   const c = client || new Anthropic({ apiKey: env.ANTHROPIC_KEY, maxRetries: 2 });
   const list = items.slice(0, MAX_ITEMS);
   const r = await c.messages.create({
     model: AI_MODEL,
     max_tokens: 16000,
-    system: SYSTEM,
+    system: `${SYSTEM}\n- Language: ${(LANGS[lang] || LANGS.en).rule}`,
     output_config: { effort: "low", format: { type: "json_schema", schema: SCHEMA } },
     messages: [{ role: "user", content: prompt(list) }],
   });

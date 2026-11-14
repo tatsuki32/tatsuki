@@ -56,3 +56,11 @@ test("summarize: a stop other than end_turn is an error with its reason and toke
   const c = fakeClient({ stop_reason: "max_tokens", content: [], usage: { input_tokens: 5, output_tokens: 16000 } });
   await assert.rejects(summarize({}, [{ site: "S", title: "T" }], c), (e) => /max_tokens/.test(e.message) && e.tout === 16000);
 });
+
+test("summarize: the user's language goes into the instructions", async () => {
+  const c = fakeClient({ stop_reason: "end_turn", content: [{ type: "text", text: '{"lines":[],"brief":"B"}' }], usage: {} });
+  await summarize({}, [{ site: "S", title: "T" }], c, "ja");
+  assert.match(fakeClient.sent.system, /Japanese/);
+  await summarize({}, [{ site: "S", title: "T" }], c, "xx");
+  assert.match(fakeClient.sent.system, /American English/);
+});

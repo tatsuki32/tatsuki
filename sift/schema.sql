@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS users (
   plan TEXT NOT NULL DEFAULT 'free',      -- free | pro (see PLANS in src/plans.js)
   tz TEXT NOT NULL DEFAULT 'Asia/Ho_Chi_Minh',
   mail INTEGER NOT NULL DEFAULT 1,        -- 0 = no daily email
+  lang TEXT NOT NULL DEFAULT 'en',        -- language of the AI summaries (LANGS in src/summary.js)
   createdAt INTEGER NOT NULL,
   lastSeen INTEGER
 );

@@ -4,7 +4,7 @@
 // Secrets (never in this repo): SIFT_KEY (owner passphrase, also the Desk's sync key), ANTHROPIC_KEY, MAIL_TO (the owner's inbox).
 import { EmailMessage } from "cloudflare:email";
 import { discover, get, parseFeed, cleanUrl } from "./feed.js";
-import { summarize, MAX_ITEMS } from "./summary.js";
+import { summarize, MAX_ITEMS, LANGS } from "./summary.js";
 import { digestEmail, mime } from "./mail.js";
 import { PLANS, plan, AI_PRICE } from "./plans.js";
 import { landingPage, appPage, adminPage, loginPage, markPage } from "./pages.js";
@@ -106,7 +106,7 @@ async function summarizeUser(env, user, now) {
   ).bind(user.id, now - 3 * DAY, MAX_ITEMS).all();
   if (!results.length) return { skipped: "nothing new" };
   try {
-    const s = await summarize(env, results);
+    const s = await summarize(env, results, null, user.lang || "en");
     const st = env.DB.prepare("UPDATE items SET line = ? WHERE id = ?");
     await env.DB.batch(results.map((it, i) => st.bind(s.lines[i] || "", it.id)));
     const day = localDay(now, user.tz);
@@ -199,7 +199,13 @@ async function api(req, env, user, path) {
 
   if (p[1] === "me" && m === "GET") {
     const n = await env.DB.prepare("SELECT COUNT(*) AS n FROM feeds WHERE userId = ? AND active = 1").bind(user.id).first();
-    return json({ id: user.id, role: user.role, plan: plan(user.plan), feeds: n.n, tz: user.tz, mail: !!user.mail, hasEmail: !!user.email });
+    return json({ id: user.id, role: user.role, plan: plan(user.plan), feeds: n.n, tz: user.tz, mail: !!user.mail, hasEmail: !!user.email, lang: user.lang || "en", langs: Object.entries(LANGS).map(([id, l]) => ({ id, name: l.name })) });
+  }
+  if (p[1] === "me" && m === "PUT") {
+    const b = await body(req);
+    if (b.lang !== undefined && !LANGS[b.lang]) return json({ error: "no such language" }, 400);
+    if (b.lang !== undefined) await env.DB.prepare("UPDATE users SET lang = ? WHERE id = ?").bind(b.lang, user.id).run();
+    return json({ ok: true });
   }
 
   if (p[1] === "feeds") {
