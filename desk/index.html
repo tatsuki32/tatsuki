@@ -1177,9 +1177,27 @@ a.shelfbtn{text-decoration:none;display:inline-flex;align-items:center}
 .tltitle{flex:1 1 160px;min-width:0;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tlclock{font-variant-numeric:tabular-nums;font-weight:700}
 .tlbars{display:flex;flex-direction:column;gap:var(--s2)}
-.tlbar{display:grid;grid-template-columns:minmax(80px,140px) 1fr auto;align-items:center;gap:var(--s2);font-size:var(--t2)}
+.tlbar{display:grid;grid-template-columns:minmax(90px,180px) 1fr minmax(56px,auto);align-items:center;gap:var(--s2);font-size:var(--t2)}
 .tltrack{height:8px;border-radius:4px;background:var(--line);overflow:hidden}
-.tltrack span{display:block;height:100%;background:var(--muted)}
+.tltrack span{display:block;height:100%;border-radius:4px}
+.tldot{display:inline-block;flex:none;width:8px;height:8px;border-radius:50%;margin-right:var(--s2);vertical-align:middle}
+.tlname{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tlh{font-variant-numeric:tabular-nums;color:var(--ink-2);text-align:right}
+.tlall{align-self:flex-start}
+.dpanel>.tlbars{padding:0 var(--s3) var(--s3)}
+.tlday>div:last-child{padding:0 var(--s3) var(--s2)}
+.dpanel>p.sub{padding:0 var(--s3)}
+.tlest>div{padding-bottom:var(--s2)}
+.tlest summary{padding:var(--s3)}
+.tlentry{display:grid;grid-template-columns:auto 1fr auto auto;align-items:start;gap:var(--s1) var(--s3);padding:var(--s2) 0 var(--s2) var(--s3);border-left:3px solid var(--c);margin:var(--s1) 0}
+.tlentry+.tlentry{border-top:1px solid var(--line)}
+.tltime,.tldur{font-variant-numeric:tabular-nums;white-space:nowrap}
+.tltime{color:var(--ink-2)}
+.tldur{font-weight:700}
+.tlmain{min-width:0}
+.tlest summary{cursor:pointer;list-style:none}
+.tlest summary h2{display:inline}
+@media (max-width:560px){.tlentry{grid-template-columns:1fr auto}.tlentry .tltime{grid-column:1/-1}}
 .gedit{display:flex;flex-wrap:wrap;gap:var(--s2);margin-top:var(--s2)}
 .gedit input,.gedit select{min-height:36px;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:0 var(--s3);font:inherit;font-size:var(--t2);max-width:100%}
 .pop.qa{width:min(520px,100%)}
@@ -1366,7 +1384,7 @@ if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="followups")+1,0,{id:"mailcl
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="presents")+1,0,{id:"ideas",e:"💡",label:"Ideas",g:"in"});
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="ideas")+1,0,{id:"aidone",e:"🤝",label:"Done by Claude",g:"in"}); // work Claude does on its own (tasks with by:"claude", JOINS application drafts); never on your task list // once a week, from what was already written (desk/ideas.py)
 VIEWS.splice(VIEWS.findIndex(v=>v.id==="replies")+1,0,{id:"notdoing",e:"🍃",label:"Not doing",g:"today"},{id:"genres",e:"🏷️",label:"Genres",g:"today"});
-VIEWS.splice(VIEWS.findIndex(v=>v.id==="tools"),0,{id:"timelog",e:"⏱️",label:"Time",g:"write"});
+VIEWS.splice(VIEWS.findIndex(v=>v.id==="replies")+1,0,{id:"timelog",e:"⏱️",label:"Time",g:"today"}); // 4th in Today (Home, Tasks, Replies, Time)
 if(LOCALAPI) VIEWS.splice(4,0,{id:"focus",e:"🎯",label:"Focus",g:"today"}); // blocks apps on this Mac, so the Mac version only
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="focus")+1,0,{id:"notices",e:"🔔",label:"Notifications",g:"today"}); // Mac notifications: desk/notify.py decides, this page lists and sets
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="memolink")+1,0,{id:"money",e:"💰",label:"Money",g:"write"}); // statements stay on this Mac
@@ -2027,7 +2045,7 @@ const tlRecs=()=>(S.timelog||[]).filter(r=>r&&r.id!=="_calendar"&&!r.deleted&&ty
 const tlRunning=()=>tlRecs().filter(r=>!r.end).sort((a,b)=>a.start-b.start);
 const tlMs=(r,now=Date.now())=>{const end=r.end||now, paused=(r.pausedMs||0)+(r.pausedAt&&!r.end?end-r.pausedAt:0);return Math.max(0,end-r.start-paused)};
 const tlFmt=ms=>{const m=Math.floor(ms/6e4),h=Math.floor(m/60);return h?`${h}h ${pad(m%60)}m`:`${m}m ${pad(Math.floor(ms%6e4/1e3))}s`};
-const tlMin=ms=>{const m=Math.round(ms/6e4);return m>=60?`${Math.floor(m/60)}h ${m%60}m`:m+" min"};
+const tlMin=ms=>{const m=Math.round(ms/6e4);if(ms>0&&m<1)return "<1 min";return m>=60?`${Math.floor(m/60)}h ${m%60}m`:m+" min"};
 const tlTitle=r=>{const t=findTask(r.taskId);return t?taskName(t):r.title||"Task"};
 async function tlPut(r){const {id,...rec}={...r,updatedAt:Date.now()};await api("PUT","/api/timelog/"+encodeURIComponent(id),rec);S.timelog=[...(S.timelog||[]).filter(x=>x.id!==id),{id,...rec}]}
 async function startTimer(taskId){const t=findTask(taskId);if(!t)return;
@@ -2053,7 +2071,7 @@ function stopTimer(id){const r=(S.timelog||[]).find(x=>x.id===id);if(!r||r.end||
 function timerBar(){const xs=tlRunning();const el=$("#timerBar");if(!el)return;
   if(!xs.length){el.hidden=true;el.innerHTML="";return}
   el.hidden=false;
-  el.innerHTML=xs.map(r=>`<div class="tlrow" data-noauto><button class="tt tltitle" data-topen="${esc(r.taskId)}">${esc(tlTitle(r))}</button><span class="tlclock" data-tlrun="${esc(r.id)}">${tlFmt(tlMs(r))}</span>${Date.now()-r.start>TL_LONG?`<span class="sub">Over 4h · still going?</span>`:""}${r.pausedAt?`<span class="sub">Paused</span>`:""}<button class="btn sm" data-tlpause="${esc(r.id)}">${r.pausedAt?"Resume":"Pause"}</button><button class="btn sm" data-tlstop="${esc(r.id)}">Stop</button></div>`).join("");
+  el.innerHTML=xs.map(r=>`<div class="tlrow" data-noauto><i class="tldot" style="background:${genreColor(tlGenre(r))}" aria-hidden="true"></i><button class="tt tltitle" data-topen="${esc(r.taskId)}">${esc(tlTitle(r))}</button><span class="tlclock" data-tlrun="${esc(r.id)}">${tlFmt(tlMs(r))}</span>${Date.now()-r.start>TL_LONG?`<span class="sub">Over 4h · still going?</span>`:""}${r.pausedAt?`<span class="sub">Paused</span>`:""}<button class="btn sm" data-tlpause="${esc(r.id)}">${r.pausedAt?"Resume":"Pause"}</button><button class="btn sm" data-tlstop="${esc(r.id)}">Stop</button></div>`).join("")+`<a class="shelfbtn tlall" href="#timelog">See all times →</a>`;
   el.querySelectorAll("[data-topen]").forEach(b=>b.onclick=()=>openTask(b.dataset.topen));
   el.querySelectorAll("[data-tlpause]").forEach(b=>b.onclick=()=>pauseTimer(b.dataset.tlpause));
   el.querySelectorAll("[data-tlstop]").forEach(b=>b.onclick=()=>stopTimer(b.dataset.tlstop))}
@@ -2068,29 +2086,48 @@ function tlRange(k){const d=new Date(),day=new Date(d.getFullYear(),d.getMonth()
 function tlClip(r,a,b){const s=Math.max(r.start,a),e=Math.min(r.end||Date.now(),b);if(e<=s)return 0;const whole=(r.end||Date.now())-r.start;return whole>0?tlMs(r)*(e-s)/whole:0}
 function tlUnion(rs,a,b){const iv=rs.map(r=>[Math.max(r.start,a),Math.min(r.end||Date.now(),b)]).filter(x=>x[1]>x[0]).sort((x,y)=>x[0]-y[0]);let tot=0,cs=null,ce=null;
   iv.forEach(([s,e])=>{if(ce==null||s>ce){if(ce!=null)tot+=ce-cs;cs=s;ce=e}else ce=Math.max(ce,e)});if(ce!=null)tot+=ce-cs;return tot}
+/* one stable color per genre (from its id) and per type group, the same on the bars, the day list and the running timers.
+   Mid-tone hues that read on the black background; no gold (kept for focus) and no red (never a warning here). */
+const TL_COLORS=["#7aa7ff","#4cc2ad","#86cf73","#a98bf5","#5bc8e8","#c3d562","#d48ad4","#9aa6e0","#8fd6b8","#c0a6e8"], TL_NONE="#6b6b73";
+const GROUP_COLOR={Talk:"#7aa7ff",Make:"#a98bf5",Think:"#5bc8e8",Paperwork:"#9aa6e0","Out and about":"#86cf73",Learn:"#c3d562","Body and home":"#4cc2ad",Hold:"#8a8a93",Yours:"#c0a6e8"};
+const strHash=x=>{let h=0;for(const c of String(x))h=(h*31+c.codePointAt(0))>>>0;return h};
+const genreColor=g=>g?TL_COLORS[strHash(g.id)%TL_COLORS.length]:TL_NONE;
+const tlTask=r=>findTask(r.taskId);
+const tlGenre=r=>genreOf(tlTask(r));
+const tlType=r=>{const t=tlTask(r);return t?typeOf(t):r.cat||""};
+const hm24=ms=>{const d=new Date(ms);return pad(d.getHours())+":"+pad(d.getMinutes())};
+const dayKey=ms=>{const d=new Date(ms);return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`};
+function tlBars(rows,label){const max=Math.max(1,...rows.map(x=>x[2]));
+  return `<div class="tlbars">${rows.map(([name,color,ms])=>`<div class="tlbar"><span class="tlname"><i class="tldot" style="background:${color}"></i>${esc(name)}</span><span class="tltrack"><span style="width:${(ms/max*100).toFixed(1)}%;background:${color}"></span></span><span class="tlh">${esc(tlMin(ms))}</span></div>`).join("")}</div>`}
 function timelogView(){
   const k=S.tlPeriod||"week", [a,b]=tlRange(k), rs=tlRecs().filter(r=>tlClip(r,a,b)>0), sum=rs.reduce((x,r)=>x+tlClip(r,a,b),0), wall=tlUnion(rs,a,b);
-  const typeOfRec=r=>{const t=findTask(r.taskId);return t?typeOf(t):r.cat||""};
-  const byG={},byT={},byTask={};rs.forEach(r=>{const ms=tlClip(r,a,b),ty=typeOfRec(r)||"No type",g=typeGroup(ty)||"No type";byG[g]=(byG[g]||0)+ms;byT[ty]=(byT[ty]||0)+ms;(byTask[r.taskId||r.id]||=[0,r])[0]+=ms});
-  const max=Math.max(1,...Object.values(byG)), bars=Object.entries(byG).sort((x,y)=>y[1]-x[1]);
-  const tasksSorted=Object.entries(byTask).sort((x,y)=>y[1][0]-x[1][0]);
+  const pname={today:"Today",week:"This week","30":"Last 30 days"}[k];
+  const byGen={},byGrp={},byTask={};
+  rs.forEach(r=>{const ms=tlClip(r,a,b),g=tlGenre(r),ty=tlType(r),gr=typeGroup(ty)||"No type";
+    const gk=g?g.id:"";(byGen[gk]||=[g?g.name:"No genre",genreColor(g),0])[2]+=ms;(byGrp[gr]||=[gr,GROUP_COLOR[gr]||TL_NONE,0])[2]+=ms;(byTask[r.taskId||r.id]||=[0,r])[0]+=ms});
+  const sortV=o=>Object.values(o).sort((x,y)=>y[2]-x[2]);
   const est=t=>t?.estMin||t?.estAi||null;
   const diff=(ms,e)=>{if(!e)return "";const d=Math.round(ms/6e4)-e;return d===0?"on estimate":(d>0?"+":"−")+Math.abs(d)+" min"};
+  const tasksSorted=Object.entries(byTask).sort((x,y)=>y[1][0]-x[1][0]);
   const needed=tasksSorted.filter(([id,[ms]])=>{const t=findTask(id);return t&&t.skip?.minor&&OPENISH.has(t.status)&&ms>=30*6e4});
   const status=(S.timelog||[]).find(r=>r.id==="_calendar");
   const local=ms=>{const d=new Date(ms);return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`};
-  const when=ms=>new Date(ms).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
-  return `<header class="head"><div><p class="eyebrow">Write & reflect</p><h1>Time</h1></div></header>
+  const days=new Map();rs.slice().sort((x,y)=>y.start-x.start).forEach(r=>{const d=dayKey(r.start);(days.get(d)||days.set(d,[]).get(d)).push(r)});
+  const dayName=d=>{const t=dayKey(Date.now()),y=dayKey(Date.now()-DAY);return d===t?"Today":d===y?"Yesterday":new Date(d+"T12:00:00").toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"})};
+  const entry=r=>{const g=tlGenre(r),ty=tlType(r);
+    return `<div class="tlentry" data-noauto style="--c:${genreColor(g)}"><span class="tltime">${hm24(r.start)}–${r.end?hm24(r.end):"now"}</span><div class="tlmain"><span class="wt">${tlTask(r)?`<button class="tt" data-topen="${esc(r.taskId)}">${esc(tlTitle(r))}</button>`:esc(tlTitle(r))}</span>
+      <div class="due">${[g?g.name:"",ty,r.via==="chrome"?"Chrome":""].filter(Boolean).map(esc).join(" · ")}</div>
+      <div class="gedit" id="tle-${esc(r.id)}" hidden><input type="datetime-local" aria-label="Start" data-tls="${esc(r.id)}" value="${local(r.start)}">${r.end?`<input type="datetime-local" aria-label="End" data-tle="${esc(r.id)}" value="${local(r.end)}">`:""}<button class="btn sm" data-tlsave="${esc(r.id)}">Save</button><button class="btn sm" data-tldel="${esc(r.id)}">Delete</button></div></div>
+      <span class="tldur">${esc(tlMin(tlMs(r)))}</span><button class="btn sm" data-tledit="${esc(r.id)}">Edit</button></div>`};
+  return `<header class="head"><div><p class="eyebrow">Today</p><h1>Time</h1></div></header>
   <div class="chips" role="group" aria-label="Period">${[["today","Today"],["week","This week"],["30","Last 30 days"]].map(([x,l])=>`<button class="chip" data-tlper="${x}" aria-pressed="${k===x}">${l}</button>`).join("")}</div>
   ${status?.calendar==="missing"?`<p class="hint">To copy your times to Google Calendar each night, create a calendar named “Desk Log” there once.</p>`:""}
-  ${rs.length?`<section class="card ndsum" aria-label="Total"><div class="ndn"><b>${esc(tlMin(sum))}</b><span>Measured</span></div>${Math.abs(sum-wall)>6e4?`<div class="ndn"><b>${esc(tlMin(wall))}</b><span>Clock time (overlaps once)</span></div>`:""}<div class="ndn"><b>${rs.length}</b><span>Runs</span></div></section>
-  <section class="card dpanel" aria-label="By group"><div class="dhead"><h2>By group</h2></div><div class="tlbars">${bars.map(([g,ms])=>`<div class="tlbar"><span>${esc(g)}</span><span class="tltrack"><span style="width:${(ms/max*100).toFixed(1)}%"></span></span><span class="sub">${esc(tlMin(ms))}</span></div>`).join("")}</div>
-    <p class="sub">${Object.entries(byT).sort((x,y)=>y[1]-x[1]).slice(0,10).map(([ty,ms])=>`${esc(ty)} ${esc(tlMin(ms))}`).join(" · ")}</p></section>
+  ${rs.length?`<section class="card ndsum" aria-label="Total"><div class="ndn"><b>${esc(tlMin(sum))}</b><span>${esc(pname)}</span></div>${Math.abs(sum-wall)>6e4?`<div class="ndn"><b>${esc(tlMin(wall))}</b><span>Clock time (overlaps once)</span></div>`:""}<div class="ndn"><b>${rs.length}</b><span>Entries</span></div></section>
+  <section class="card dpanel" aria-label="By genre"><div class="dhead"><h2>${esc(pname)} by genre</h2></div>${tlBars(sortV(byGen))}</section>
+  <section class="card dpanel" aria-label="By type group"><div class="dhead"><h2>By type group</h2></div>${tlBars(sortV(byGrp))}</section>
+  ${[...days].map(([d,xs])=>`<section class="card dpanel tlday" aria-label="${esc(dayName(d))}"><div class="dhead"><h2>${esc(dayName(d))}</h2><span class="tlh">${esc(tlMin(xs.reduce((x,r)=>x+tlMs(r),0)))}</span></div><div>${xs.map(entry).join("")}</div></section>`).join("")}
   ${needed.length?`<section class="card dpanel" aria-label="Is this really needed?"><div class="dhead"><h2>Is this really needed?</h2>${dropCands().length?`<button class="shelfbtn" data-tdecide>Decide →</button>`:""}</div><p class="sub">These took 30 minutes or more and are marked minor impact.</p><div>${needed.map(([id,[ms]])=>{const t=findTask(id);return `<div class="drow" data-noauto><span class="e" aria-hidden="true">⏱️</span><div style="min-width:0"><button class="tt" data-topen="${esc(id)}">${esc(taskName(t))}</button><div class="due">${esc(tlMin(ms))} · ${esc(t.skip.ifNot||"")}</div></div></div>`}).join("")}</div></section>`:""}
-  <section class="card dpanel" aria-label="By task"><div class="dhead"><h2>By task</h2><span class="sub">Estimate and actual</span></div><div>${tasksSorted.slice(0,30).map(([id,[ms,r]])=>{const t=findTask(id),e=est(t);return `<div class="drow" data-noauto><span class="e" aria-hidden="true">⏱️</span><div style="min-width:0">${t?`<button class="tt" data-topen="${esc(id)}">${esc(taskName(t))}</button>`:`<span class="wt">${esc(r.title||"Task")}</span>`}<div class="due">${[tlMin(ms),e?"estimate "+e+" min":"",diff(ms,e)].filter(Boolean).map(esc).join(" · ")}</div></div></div>`}).join("")}</div></section>
-  <section class="card dpanel" aria-label="Runs"><div class="dhead"><h2>Runs</h2></div><div>${rs.slice().sort((x,y)=>y.start-x.start).slice(0,60).map(r=>`<div class="drow" data-noauto><span class="e" aria-hidden="true">⏱️</span><div style="min-width:0"><span class="wt">${esc(tlTitle(r))}</span><div class="due">${esc(when(r.start))}${r.end?" – "+esc(new Date(r.end).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"})):" · running"} · ${esc(tlMin(tlMs(r)))} · ${r.via==="chrome"?"Chrome":"Desk"}</div>
-    <div class="gedit" id="tle-${esc(r.id)}" hidden><input type="datetime-local" aria-label="Start" data-tls="${esc(r.id)}" value="${local(r.start)}">${r.end?`<input type="datetime-local" aria-label="End" data-tle="${esc(r.id)}" value="${local(r.end)}">`:""}<button class="btn sm" data-tlsave="${esc(r.id)}">Save</button><button class="btn sm" data-tldel="${esc(r.id)}">Delete</button></div></div>
-    <div class="dacts"><button class="btn sm" data-tledit="${esc(r.id)}">Edit</button></div></div>`).join("")}</div></section>`
+  <details class="card dpanel tlest"><summary><h2>Estimate and actual</h2></summary><div>${tasksSorted.slice(0,30).map(([id,[ms,r]])=>{const t=findTask(id),e=est(t);return `<div class="drow" data-noauto><span class="e" aria-hidden="true">⏱️</span><div style="min-width:0">${t?`<button class="tt" data-topen="${esc(id)}">${esc(taskName(t))}</button>`:`<span class="wt">${esc(r.title||"Task")}</span>`}<div class="due">${[tlMin(ms),e?"estimate "+e+" min":"",diff(ms,e)].filter(Boolean).map(esc).join(" · ")}</div></div></div>`}).join("")}</div></details>`
   :`<div class="card empty"><b>Nothing measured ${k==="today"?"today":"in this period"}</b>Press “Start timer” on a task, or use the Task Desk extension in Chrome.</div>`}`;
 }
 async function tlEditSave(id){const r=(S.timelog||[]).find(x=>x.id===id);if(!r)return;
@@ -2144,10 +2181,17 @@ async function readSkipFields(t){
 const tFilt=()=>{try{return JSON.parse(localStorage.getItem("desk-tfilter")||"{}")||{}}catch(e){return {}}};
 const tFiltSet=v=>{try{localStorage.setItem("desk-tfilter",JSON.stringify(v))}catch(e){}};
 function tFiltApply(list){const f=tFilt();return list.filter(t=>(!f.genre||(f.genre==="none"?!genreOf(t):genreOf(t)?.id===f.genre))&&(!f.type||(f.type==="none"?!typeOf(t):typeOf(t)===f.type||typeGroup(typeOf(t))===f.type)))}
-function tFiltBar(){const f=tFilt(), used=new Set(S.board.map(typeOf).filter(Boolean));
-  if(!genreList().length&&!used.size)return "";
-  return `<label class="tsort">Genre<select id="tFGenre"><option value="">All</option>${genreList().map(g=>`<option value="${esc(g.id)}" ${f.genre===g.id?"selected":""}>${esc(g.name)}</option>`).join("")}<option value="none" ${f.genre==="none"?"selected":""}>No genre</option></select></label>
-  <label class="tsort">Type<select id="tFType"><option value="">All</option>${TYPE_GROUPS.map(([g,ns])=>`<optgroup label="${esc(g)}"><option value="${esc(g)}" ${f.type===g?"selected":""}>All ${esc(g)}</option>${ns.filter(n=>used.has(n)).map(n=>`<option value="${esc(n)}" ${f.type===n?"selected":""}>${esc(n)}</option>`).join("")}</optgroup>`).join("")}<option value="none" ${f.type==="none"?"selected":""}>No type</option></select></label>`}
+/* counts are the open tasks (Not started + In progress) the board would show under the other filter and the project chip; most first, every type still listed */
+function tFiltBar(base){const f=tFilt(), open=(base||S.board).filter(t=>TOPEN.has(t.status));
+  const byGenre=open.filter(t=>!f.type||(f.type==="none"?!typeOf(t):typeOf(t)===f.type||typeGroup(typeOf(t))===f.type));
+  const byType=open.filter(t=>!f.genre||(f.genre==="none"?!genreOf(t):genreOf(t)?.id===f.genre));
+  const cnt=(xs,fn)=>{const c={};xs.forEach(t=>{const k=fn(t);c[k]=(c[k]||0)+1});return c};
+  const gc=cnt(byGenre,t=>genreOf(t)?.id||""), tc=cnt(byType,t=>typeOf(t)||""), grc=cnt(byType,t=>typeGroup(typeOf(t))||"");
+  const order=(xs,c,key)=>xs.map((x,i)=>[x,c[key(x)]||0,i]).sort((a,b)=>b[1]-a[1]||a[2]-b[2]);
+  const o=(cur,v,label,n)=>`<option value="${esc(v)}" ${cur===v?"selected":""}>${esc(label)} (${n})</option>`;
+  const groups=[...TYPE_GROUPS.map(x=>x[0]),...(allTypes().some(x=>x[0]==="Yours")?["Yours"]:[])];
+  return `<label class="tsort">Genre<select id="tFGenre">${o(f.genre||"","","All",byGenre.length)}${order(genreList(),gc,g=>g.id).map(([g,n])=>o(f.genre,g.id,g.name,n)).join("")}${o(f.genre,"none","No genre",gc[""]||0)}</select></label>
+  <label class="tsort">Type<select id="tFType">${o(f.type||"","","All",byType.length)}<optgroup label="Groups">${order(groups,grc,g=>g).map(([g,n])=>o(f.type,g,"All "+g,n)).join("")}</optgroup><optgroup label="Types">${order(allTypes().map(x=>x[1]),tc,x=>x).map(([n,c])=>o(f.type,n,n,c)).join("")}</optgroup>${o(f.type,"none","No type",tc[""]||0)}</select></label>`}
 /* Genres: open tasks, let go, and (once timing exists) measured time per genre. Rename or merge here. */
 function genresView(){
   const gs=genreList(), all=S.board.filter(t=>!t.deleted), tl=typeof timeByTask==="function"?timeByTask():{};
@@ -2186,7 +2230,7 @@ function tasks(){
   <header class="head"><div><p class="eyebrow">Tasks</p><h1>To-do</h1></div><div class="row"><button class="btn primary" id="newTask">+ New task <kbd>T</kbd></button></div></header>
   ${notesHere("tasks")}
   ${projChips(f)}
-  <div class="taskbar"><label class="tsort">Sort<select id="tSort">${TSORT.map(([k,l])=>`<option value="${k}" ${k===S.taskSort?"selected":""}>${l}</option>`).join("")}</select></label><nav class="shelfnav" aria-label="Stopped tasks">${TSHELF.map(k=>`<button class="shelfbtn" data-tshelf="${k}" aria-expanded="${S.taskShelf===k}">${tLabel(k)} ${shelf(k).length}</button>`).join("")}${(q=>q?`<button class="shelfbtn" data-tqs>Open questions ${q}</button>`:"")(waitingQs().reduce((a,t)=>a+openQs(t).length,0))}${dropEntry()}${mergeEntry()}<a class="shelfbtn" href="#notdoing">Not doing ${list.filter(t=>t.status==="dropped").length}</a><span class="sub tnotyet">Not yet clarified ${notCleared()}</span></nav>${tFiltBar()}</div>
+  <div class="taskbar"><label class="tsort">Sort<select id="tSort">${TSORT.map(([k,l])=>`<option value="${k}" ${k===S.taskSort?"selected":""}>${l}</option>`).join("")}</select></label><nav class="shelfnav" aria-label="Stopped tasks">${TSHELF.map(k=>`<button class="shelfbtn" data-tshelf="${k}" aria-expanded="${S.taskShelf===k}">${tLabel(k)} ${shelf(k).length}</button>`).join("")}${(q=>q?`<button class="shelfbtn" data-tqs>Open questions ${q}</button>`:"")(waitingQs().reduce((a,t)=>a+openQs(t).length,0))}${dropEntry()}${mergeEntry()}<a class="shelfbtn" href="#notdoing">Not doing ${list.filter(t=>t.status==="dropped").length}</a><span class="sub tnotyet">Not yet clarified ${notCleared()}</span></nav>${tFiltBar(f==="all"?S.board:S.board.filter(t=>t.projectId===f))}</div>
   ${S.taskShelf?`<section class="shelf" aria-label="${tLabel(S.taskShelf)}">${shelf(S.taskShelf).map(t=>taskCard(t,ps)).join("")||`<p class="sub">No ${tLabel(S.taskShelf).toLowerCase()} tasks</p>`}</section>`:""}
   <div class="chips colTabs" role="group" aria-label="Column to show">${TCOLS.map(k=>`<button class="chip" data-tcol="${k}" aria-pressed="${S.taskCol===k}">${tLabel(k)} ${col(k).length}</button>`).join("")}</div>
   <div class="board">${TCOLS.map(k=>{const items=col(k);return `<section class="col ${S.taskCol===k?"show":""}" data-col="${k}" aria-label="${tLabel(k)}">
