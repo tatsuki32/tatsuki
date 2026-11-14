@@ -19,3 +19,10 @@ CREATE TABLE IF NOT EXISTS clicks (
 );
 CREATE INDEX IF NOT EXISTS clicks_code_at ON clicks (code, at);
 CREATE INDEX IF NOT EXISTS links_created ON links (created);
+CREATE TABLE IF NOT EXISTS oauth_states (state TEXT PRIMARY KEY, provider TEXT NOT NULL, created INTEGER NOT NULL);
+-- connected social accounts. token is AES-GCM encrypted with the TOKEN_KEY secret; Desk never receives it
+CREATE TABLE IF NOT EXISTS accounts (
+  id TEXT PRIMARY KEY,          -- provider:account
+  provider TEXT NOT NULL, account TEXT NOT NULL, handle TEXT NOT NULL DEFAULT '',
+  token TEXT NOT NULL, expires INTEGER NOT NULL DEFAULT 0, updated INTEGER NOT NULL, problem TEXT NOT NULL DEFAULT ''
+);

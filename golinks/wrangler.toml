@@ -14,3 +14,13 @@ routes = [{ pattern = "go.tany.im", custom_domain = true }]
 binding = "DB"
 database_name = "tatsuki-go"
 database_id = "5dc5958c-9692-44f3-bed0-311ff4f9cf17"
+
+# once a day: renew platform tokens that have less than 10 days left
+[triggers]
+crons = ["17 3 * * *"]
+
+# Meta app "Tatsuki Post Studio" (ids are public; the secrets are META_APP_SECRET and THREADS_APP_SECRET)
+[vars]
+META_APP_ID = "1709651817192222"
+META_CONFIG_ID = "1123461540280904"
+THREADS_APP_ID = "1498510273338181"

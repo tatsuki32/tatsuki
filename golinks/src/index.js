@@ -2,6 +2,8 @@
 // A click is counted (time, country, referring site, kind of device, robot or not) and sent on with a 302.
 // No IP address and no cookie is kept. The /api/ part answers only to Desk's key (DESK_KEY secret).
 
+import * as accounts from "./accounts.js";
+
 const ALPHABET = "abcdefghijkmnpqrstuvwxyz23456789"; // no l, o, 0, 1: easy to read out loud
 const BOTS = /bot|crawl|spider|slurp|preview|facebookexternalhit|meta-externalagent|facebot|twitterbot|linkedinbot|slackbot|telegrambot|whatsapp|discordbot|skypeuripreview|embedly|quora link|pinterest|vkshare|redditbot|applebot|google-inspectiontool|headless|curl|wget|python-requests|httpclient|okhttp|go-http/i;
 const SOURCES = new Set(["instagram", "threads", "x", "facebook", "linkedin", "note", "site", "reddit", "youtube", "tiktok", "other"]);
@@ -80,6 +82,12 @@ async function api(request, env, url) {
   const path = url.pathname.slice(5);
   if (request.method === "POST" && path === "links") return make(env, await request.json().catch(() => ({})));
   if (request.method === "GET" && path === "stats") return stats(env, url);
+  if (request.method === "POST" && path === "oauth/start") {
+    const r = await accounts.start(env, (await request.json().catch(() => ({}))).provider);
+    return json(r, r.error ? 400 : 200);
+  }
+  if (request.method === "GET" && path === "accounts") return json(await accounts.list(env));
+  if (request.method === "DELETE" && path.startsWith("accounts/")) return json(await accounts.remove(env, decodeURIComponent(path.slice(9))));
   if (request.method === "DELETE" && path.startsWith("links/")) {
     await env.DB.prepare("UPDATE links SET off = 1 WHERE code = ?").bind(path.slice(6)).run();
     return json({ ok: true });
@@ -95,6 +103,13 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     if (url.pathname.startsWith("/api/")) return api(request, env, url);
+    const gone = url.pathname.match(/^\/oauth\/(threads)-(uninstall|delete)$/);
+    if (gone) return json(await accounts.forget(env, gone[1]));
+    const back = url.pathname.match(/^\/oauth\/([a-z]+)$/);
+    if (back) {
+      const r = await accounts.callback(env, back[1], url);
+      return page(r.ok ? "Connected" : "Not connected", r.text.replace(/[<>&]/g, ""), r.ok ? 200 : 400);
+    }
     const c = url.pathname.slice(1).toLowerCase();
     if (!c) return Response.redirect("https://tany.im/", 302);
     if (!/^[a-z0-9]{4,12}$/.test(c)) return page("Not found", "This link does not exist.", 404);
@@ -109,5 +124,9 @@ export default {
         .bind(c, Date.now(), (request.cf && request.cf.country) || "", ref.slice(0, 120), device(ua), BOTS.test(ua) || request.method === "HEAD" ? 1 : 0).run());
     }
     return new Response(null, { status: 302, headers: { location: link.dest, "cache-control": "no-store", "referrer-policy": "no-referrer-when-downgrade" } });
+  },
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(accounts.refreshAll(env));
+    ctx.waitUntil(env.DB.prepare("DELETE FROM oauth_states WHERE created < ?").bind(Date.now() - 3600000).run());
   },
 };
