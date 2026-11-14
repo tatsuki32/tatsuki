@@ -27,7 +27,7 @@ sys.path.insert(0, ROOT)
 sys.path.insert(0, os.path.dirname(ROOT))
 from server import FEEDS, LOCK, doc_path, feed_docs, followup_core, lifeos_tools, load, put_doc, rebuild_feed, save, upsert  # noqa: E402
 
-TWO_WAY = ("memos", "dues", "tasks", "prompts", "notes", "habits", "lifemap", "wins", "presents", "gear", "projects", "sections")
+TWO_WAY = ("memos", "dues", "tasks", "prompts", "notes", "habits", "lifemap", "wins", "presents", "gear", "projects", "sections", "jobapps")
 
 
 def ts(x):
