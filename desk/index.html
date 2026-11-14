@@ -795,6 +795,11 @@ button.hname:hover{color:var(--ink)}
 .psset1{display:grid;gap:var(--s1);width:100%;padding-top:var(--s3);border-top:1px solid var(--line)}
 .psset1:first-child{border-top:0;padding-top:0}
 .psset1 textarea.wd-field{min-height:64px;font-size:var(--t2)}
+.pslinksel{max-width:220px;min-height:36px;font-size:var(--t2)}
+.pslink{display:grid;gap:var(--s1);min-width:0}
+.pslinkrow{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s2);min-width:0}
+.pslinku{font-size:var(--t1);color:var(--ink-2);overflow-wrap:anywhere;min-width:0;flex:1 1 160px}
+.pslinkrow .btn{min-height:28px;padding:0 var(--s2);font-size:var(--t1)}
 @media (max-width:560px){.psgrid{grid-template-columns:minmax(0,1fr)}.psrow{grid-template-columns:40px minmax(0,1fr) auto}.psrow .nsn{display:none}}
 .utdrop{display:grid;gap:var(--s2);justify-items:start;width:100%}
 .utdrop.on{outline:2px dashed var(--accent);outline-offset:8px}
@@ -5237,7 +5242,8 @@ function wireUt(){
    the person copies the text, saves the pictures and posts on each site. */
 const PSLANG=[["ja","Japanese"],["en","English"],["ru","Russian"]];
 const PSKIND={post:"Post",story:"Story",article:"Article",news:"News"};
-const ps=()=>S.ps||(S.ps={tab:"new",memo:"",photos:[],pick:null,cur:null,data:null,busy:false,err:"",n:{},open:{}});
+const PSLINK={inline:"Link in the text",bio:"Link in bio",sticker:"Link sticker",none:"No link"};
+const ps=()=>S.ps||(S.ps={tab:"new",memo:"",link:"",photos:[],pick:null,cur:null,data:null,busy:false,err:"",n:{},open:{}});
 async function psSend(method,path,body){
   const r=await fetch(path,{method,headers:{"Content-Type":"application/json"},body:body?JSON.stringify(body):undefined});
   let v={};try{v=await r.json()}catch(e){}
@@ -5268,6 +5274,7 @@ function psNew(){
   return `<section class="card mfocus psnew">
     <div class="utdrop" id="psDrop"><div class="psthumbs">${thumbs}</div><label class="btn">${p.photos.length?"Add more photos":"Choose photos"}<input type="file" id="psFile" hidden multiple accept="image/*,.heic,.heif"></label><span class="due">${p.upBusy?"Adding photos…":"Up to 10. You can also drag them here."}</span></div>
     <textarea class="wd-field psedit" id="psMemo" placeholder="What did you do? A few words or bullet points are enough." aria-label="What you did">${esc(p.memo)}</textarea>
+    <input class="wd-field psedit" id="psLink" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="Link to share (optional), like an article you wrote" aria-label="Link to share" value="${esc(p.link)}">
     <div class="psgroups">${groups}</div>
     ${d&&!d.key?`<p class="due" role="alert">No Anthropic API key on this Mac yet. The drafts need it (the same key the body photos use).</p>`:""}
     ${p.err?`<p class="due" role="alert">${esc(p.err)}</p>`:""}
@@ -5284,12 +5291,14 @@ function psCard(post,t){
   if(!d)body=`<p class="due">${busy?"Writing…":"No draft yet."}</p>`;
   else if(t.kind==="story")body=`<input class="wd-field psedit" data-psover="${tid}" value="${esc(d.overlay)}" aria-label="Words on the picture"><label class="pschip"><input type="checkbox" data-pstexton="${tid}" ${post.textOn?.[t.id]===false?"":"checked"}><span>Write it on the picture</span></label>`;
   else body=`${t.kind==="article"||t.kind==="news"?`<input class="wd-field psedit" data-pstitle="${tid}" value="${esc(d.title)}" aria-label="Title">`:""}<textarea class="wd-field psedit pstext" data-pstext="${tid}" aria-label="${esc(t.name)} text">${esc(full)}</textarea>`;
+  const where=t.link==="bio"?"Captions here can't hold a tappable link. Put it in your bio:":t.link==="sticker"?"Add it to the story as a link sticker:":"";
+  const linkNote=d&&where&&post.links?.length?`<div class="pslink"><span class="due">${where}</span>${post.links.map(u=>`<span class="pslinkrow"><span class="pslinku">${esc(u)}</span><button class="btn" data-pslinkcopy="${esc(u)}">Copy link</button></span>`).join("")}</div>`:"";
   const url=d?psOpenUrl(t,d):"";
   const acts=!d?"":t.id==="note"?`<button class="btn" data-pscopy="${tid}">Copy Markdown</button><button class="btn" data-pshtml="${tid}">Copy formatted</button>${url?`<a class="btn" href="${esc(url)}" target="_blank" rel="noopener" data-pscopygo="${tid}">Open note ↗</a>`:""}`
     :`${url?`<a class="btn" href="${esc(url)}" target="_blank" rel="noopener" data-pscopygo="${tid}">Copy and open ↗</a>`:""}<button class="btn" data-pscopy="${tid}">Copy</button>`;
   return `<article class="card pscard${posted?" done":""}" aria-label="${esc(t.name)}">
     <header class="pshead"><h3>${esc(t.name)}</h3><span class="due">${PSKIND[t.kind]}${d?` · ${len.toLocaleString("en-US")} / ${t.limit.toLocaleString("en-US")}${t.count==="x"?" (weighted)":""}${over>0?` · ${over} over`:""}`:""}</span></header>
-    ${img}${body}
+    ${img}${body}${linkNote}
     <div class="nsgo">${acts}${post.photos.length?`<button class="btn" data-pssave="${tid}">${post.photos.length>1?`Save ${post.photos.length} pictures`:"Save picture"}</button>`:""}</div>
     <div class="nsgo">${p.open[t.id]?`<input class="wd-field psedit pshint" data-pshint="${tid}" placeholder="What to change (optional)" aria-label="What to change"><button class="btn" data-psregen="${tid}" ${post.running?"disabled":""}>Rewrite</button>`:`<button class="btn" data-psask="${tid}" ${post.running?"disabled":""}>${busy&&post.regen===t.id?"Rewriting…":"Rewrite"}</button>`}
     <label class="pschip"><input type="checkbox" data-psposted="${tid}" ${posted?"checked":""}><span>Posted</span></label></div></article>`;
@@ -5301,6 +5310,7 @@ function psPost(){
   const groups=PSLANG.map(([l,name])=>{const xs=ts.filter(t=>t.lang===l);return xs.length?`<section class="psset"><h2>${name}</h2><div class="psgrid">${xs.map(t=>psCard(post,t)).join("")}</div></section>`:""}).join("");
   return `<section class="pspost" id="psPost"><div class="mpanelh"><h2>Drafts</h2><span class="sub">${esc(when)} · ${done} / ${post.targets.length} posted</span></div>
     <p class="mtalk" data-noauto>${esc(post.memo)}</p>
+    ${post.links?.length?`<p class="due">Link: ${post.links.map(esc).join(" · ")}. It goes in the text only where it can be tapped.</p>`:""}
     ${post.status==="making"?`<p class="due" role="status">Writing the drafts. This takes about a minute.</p>`:""}
     ${post.error?`<p class="due" role="alert">${esc(post.error)}</p>`:""}
     ${post.namesLeftOut?.length?`<p class="due">Names left out of the drafts: ${post.namesLeftOut.map(esc).join(", ")}. Add them yourself if they agreed.</p>`:""}
@@ -5314,6 +5324,7 @@ function psEarlier(){
 function psSettings(){
   const d=ps().data;if(!d)return "";
   const rows=d.targets.map(t=>`<div class="psset1"><label class="pschip"><input type="checkbox" data-pson="${esc(t.id)}" ${t.on?"checked":""}><span><b>${esc(t.name)}</b> <span class="due">${PSKIND[t.kind]} · ${t.lang} · ${t.limit} chars · ${t.tags} tags</span></span></label>
+    <select class="wd-field pslinksel" data-pslinkmode="${esc(t.id)}" aria-label="${esc(t.name)} link">${Object.entries(PSLINK).map(([k,l])=>`<option value="${k}" ${t.link===k?"selected":""}>${l}</option>`).join("")}</select>
     <textarea class="wd-field psedit" data-psstyle="${esc(t.id)}" aria-label="${esc(t.name)} style">${esc(t.style||"")}</textarea>
     <input class="wd-field psedit" data-psfixed="${esc(t.id)}" value="${esc(t.fixedTags||"")}" placeholder="Tags always added, like #ZEN大学" aria-label="${esc(t.name)} tags always added"></div>`).join("");
   const voice=PSLANG.map(([l,name])=>`<label class="psset1"><span class="sub">${name} voice</span><textarea class="wd-field psedit" data-psvoice="${l}">${esc(d.voice?.[l]||"")}</textarea></label>`).join("");
@@ -5348,10 +5359,13 @@ function wirePs(){
   if(zone){zone.ondragover=e=>{e.preventDefault();drop.classList.add("on")};zone.ondragleave=e=>{if(!zone.contains(e.relatedTarget))drop.classList.remove("on")};zone.ondrop=e=>{e.preventDefault();drop.classList.remove("on");psAddFiles(e.dataTransfer.files)}}
   all("[data-psdrop]").forEach(b=>b.onclick=()=>{p.photos.splice(+b.dataset.psdrop,1);psDraw()});
   const memo=$("#psMemo");if(memo)memo.oninput=e=>{p.memo=e.target.value};
+  const link=$("#psLink");if(link)link.oninput=e=>{p.link=e.target.value};
+  all("[data-pslinkcopy]").forEach(b=>b.onclick=async()=>toast(await copyText(b.dataset.pslinkcopy)?"Link copied":"Could not copy"));
+  all("[data-pslinkmode]").forEach(el=>el.onchange=()=>saveSet({targets:[{id:el.dataset.pslinkmode,link:el.value}]}));
   all("[data-pspick]").forEach(c=>c.onchange=()=>{const id=c.dataset.pspick;p.pick=c.checked?[...new Set([...(p.pick||[]),id])]:(p.pick||[]).filter(x=>x!==id)});
   const make=$("#psMake");if(make)make.onclick=async()=>{
     p.busy=true;p.err="";psDraw();
-    try{const post=await psSend("POST","/api/posts",{memo:p.memo,photos:p.photos.map(x=>x.id),targets:p.pick||[]});p.memo="";p.photos=[];p.n={};p.open={};p.busy=false;psOpen(post.id);psLoad();return}
+    try{const post=await psSend("POST","/api/posts",{memo:p.memo,links:[p.link],photos:p.photos.map(x=>x.id),targets:p.pick||[]});p.memo="";p.link="";p.photos=[];p.n={};p.open={};p.busy=false;psOpen(post.id);psLoad();return}
     catch(e){p.err=e.message}p.busy=false;psDraw()};
   all("[data-psload]").forEach(b=>b.onclick=()=>psOpen(b.dataset.psload));
   all("[data-psprev],[data-psnext]").forEach(b=>b.onclick=()=>{const id=b.dataset.psprev||b.dataset.psnext,k=p.cur.photos.length;p.n[id]=((p.n[id]||0)+(b.dataset.psprev?-1:1)+k)%k;psDraw()});
