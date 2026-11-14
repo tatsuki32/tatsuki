@@ -14,6 +14,12 @@
       "port": 4792
     },
     {
+      "name": "tany-site",
+      "runtimeExecutable": "/bin/sh",
+      "runtimeArgs": ["-c", "cd desk/data/tany/site/public && exec python3 -m http.server ${PORT:-4795} --bind 127.0.0.1"],
+      "port": 4795
+    },
+    {
       "name": "desk-notify-test",
       "runtimeExecutable": "/bin/sh",
       "runtimeArgs": ["-c", "cd desk && NOTIFY_DIR=/tmp/claude/desk-notify-test DESK_PORT=${PORT:-4793} exec python3 server.py"],
