@@ -1,0 +1,21 @@
+-- go.tany.im. No IP address and no cookie is ever stored.
+CREATE TABLE IF NOT EXISTS links (
+  code TEXT PRIMARY KEY,        -- the part after go.tany.im/
+  dest TEXT NOT NULL,           -- where it goes, with the UTM already added
+  original TEXT NOT NULL,       -- the link as the person gave it
+  source TEXT NOT NULL DEFAULT '', -- instagram, threads, x, facebook, linkedin, note, site, reddit, other
+  campaign TEXT NOT NULL DEFAULT '', -- the Post Studio post id, or a word the person chose
+  label TEXT NOT NULL DEFAULT '',
+  created INTEGER NOT NULL,
+  off INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE IF NOT EXISTS clicks (
+  code TEXT NOT NULL,
+  at INTEGER NOT NULL,          -- milliseconds
+  country TEXT NOT NULL DEFAULT '',
+  referrer TEXT NOT NULL DEFAULT '', -- the host only
+  device TEXT NOT NULL DEFAULT '',   -- mobile, tablet, desktop
+  bot INTEGER NOT NULL DEFAULT 0     -- link previews and crawlers, kept apart from people
+);
+CREATE INDEX IF NOT EXISTS clicks_code_at ON clicks (code, at);
+CREATE INDEX IF NOT EXISTS links_created ON links (created);

@@ -44,6 +44,7 @@ import gmail_clean
 import lifelog
 import utilities
 import posts
+import golinks
 import showcase
 import screentime_sync
 import usage
@@ -730,6 +731,12 @@ class Handler(BaseHTTPRequestHandler):
         """Post Studio: the list, one post, its pictures. Photos are served only by their own hashed names."""
         if not step:
             return self.send(200, posts.view())
+        if step == ["links"]:  # go.tany.im counts, read from the Worker
+            try:
+                days = int(parse_qs(urlsplit(self.path).query).get("days", ["30"])[0])
+                return self.send(200, golinks.stats(days))
+            except (RuntimeError, ValueError) as e:
+                return self.send(502, {"error": str(e)})
         if len(step) == 2 and step[0] == "photo":
             p = posts.photo_path(step[1].removesuffix(".jpg"), "api") or posts.photo_path(step[1].removesuffix(".jpg"))
             return self.image_file(p)
@@ -773,6 +780,17 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(400, {"error": "bad json"})
         if method == "POST" and not step:
             return self.send(*posts.create(rec))
+        if method == "POST" and step == ["links"]:  # a short link made by hand on the Links tab
+            try:
+                return self.send(200, {"short": golinks.shorten(str(rec.get("dest") or ""), str(rec.get("source") or "other"),
+                                                                 str(rec.get("campaign") or "")[:60], str(rec.get("label") or "")[:120])})
+            except RuntimeError as e:
+                return self.send(400, {"error": str(e)})
+        if method == "POST" and len(step) == 3 and step[0] == "links" and step[2] == "off":
+            try:
+                return self.send(200, golinks.turn_off(step[1]))
+            except RuntimeError as e:
+                return self.send(502, {"error": str(e)})
         if method == "PUT" and step == ["settings"]:
             return self.send(*posts.save_settings(rec))
         if method == "POST" and step == ["copy"]:

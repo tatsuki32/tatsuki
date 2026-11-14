@@ -24,6 +24,7 @@ import urllib.error
 import urllib.request
 from datetime import datetime
 
+import golinks  # go.tany.im short links, one per place a post goes
 import lifelog  # the Anthropic key in the keychain and the API settings
 import utilities  # downloads go through its one-hour file tokens (the Desk window hands those to the browser)
 
@@ -299,12 +300,43 @@ LINK_RULES = {
 }
 
 
-def target_lines(ts, links=()):
+def target_lines(ts, per=None):
+    """per: {target: [its links]}. Each place has its own short link, so the line says which one to use."""
+    per = per or {}
+    def link(t):
+        mine = per.get(t["id"]) or []
+        if not mine:
+            return " Write no URL."
+        return f" Link: {LINK_RULES[t.get('link', 'inline')]}" + (f" This target's link(s): {' '.join(mine)}" if t.get("link") == "inline" else "")
     return "\n".join(
         f"- target \"{t['id']}\" ({t['name']}): language {t['lang']}, kind {t['kind']}, limit {t['limit']}"
         f"{' weighted' if t.get('count') == 'x' else ''} characters including hashtags and links, hashtags {t.get('tags', 0)}. {t.get('style', '')}"
-        + (f" Link: {LINK_RULES[t.get('link', 'inline')]}" if links else " Write no URL.")
-        for t in ts)
+        + link(t) for t in ts)
+
+
+def short_links(post_id, ts):
+    """{target: [links to use]}: the go.tany.im ones, made once per post and kept; the originals when that fails."""
+    post = get(post_id)
+    links = post.get("links") or []
+    if not links:
+        return {}
+    have = post.get("short") or {}
+    need = [t["id"] for t in ts if t["id"] not in have or any(u not in have[t["id"]] for u in links)]
+    if need:
+        try:
+            made = golinks.for_post(post_id, links, need)
+            with _lock:
+                post = get(post_id)
+                post.setdefault("short", {}).update(made)
+                post["shortError"] = ""
+                _save(post)
+            have = post["short"]
+        except RuntimeError as e:
+            with _lock:
+                post = get(post_id)
+                post["shortError"] = str(e)
+                _save(post)
+    return {t["id"]: [have.get(t["id"], {}).get(u, u) for u in links] for t in ts}
 
 
 def fix_links(t, text, links):
@@ -388,13 +420,14 @@ def write_drafts(post_id, only=None, hint=""):
         n = len(post["photos"])
         seen = "There is 1 photo above." if n == 1 else f"There are {n} photos above." if n else "There is no photo."
         links = post.get("links") or []
+        per = short_links(post_id, ts)
         ask = (f"Date: {when}.\nThe person's memo:\n{post['memo']}\n\n{seen}\n"
-               + (f"Link(s) to share (you cannot open them; the memo says what they are): {' '.join(links)}\n" if links else "")
+               + (f"Link(s) to share (you cannot open them; the memo says what they are): {' '.join(links)}. Each target has its own short version of it, listed on its line; use that one.\n" if links else "")
                + (f"What the person wants changed this time: {hint}\n" if hint else "")
-               + "Write one draft for each of these targets:\n" + target_lines(ts, links))
+               + "Write one draft for each of these targets:\n" + target_lines(ts, per))
         out, use = call(photo_blocks(post) + [{"type": "text", "text": ask}])
         got = {d.get("target"): d for d in out.get("drafts", []) if isinstance(d, dict)}
-        drafts = {t["id"]: clean_draft(t, got.get(t["id"]) or {}, links) for t in ts}
+        drafts = {t["id"]: clean_draft(t, got.get(t["id"]) or {}, per.get(t["id"], [])) for t in ts}
         for _ in range(2):
             long = [t for t in ts if drafts[t["id"]]["length"] > t["limit"]]
             if not long:
@@ -402,13 +435,13 @@ def write_drafts(post_id, only=None, hint=""):
             again = "These drafts are too long. Rewrite each one shorter, keeping the meaning:\n" + "\n".join(
                 f"- target \"{t['id']}\": now {drafts[t['id']]['length']}, limit {t['limit']}"
                 f"{' weighted (Japanese counts 2)' if t.get('count') == 'x' else ''}.\nCurrent text:\n{full_text(t, drafts[t['id']]) if t['kind'] != 'story' else drafts[t['id']]['overlay']}"
-                for t in long) + "\n\nTargets:\n" + target_lines(long, links)
+                for t in long) + "\n\nTargets:\n" + target_lines(long, per)
             more, u2 = call([{"type": "text", "text": f"The person's memo:\n{post['memo']}\n\n{again}"}], max_tokens=8000)
             use = {k: use[k] + u2[k] for k in use}
             for d in more.get("drafts", []):
                 t = target(d.get("target"))
                 if t and t in long:
-                    drafts[t["id"]] = clean_draft(t, d, links)
+                    drafts[t["id"]] = clean_draft(t, d, per.get(t["id"], []))
         with _lock:
             post = get(post_id)
             for tid, d in drafts.items():

@@ -1,0 +1,16 @@
+# go.tany.im — short links for Post Studio, with a count of who came from where.
+# Deploy: cd golinks && npx wrangler deploy
+# Tables: npx wrangler d1 execute tatsuki-go --remote --file schema.sql
+# The key Desk uses is the DESK_KEY secret (npx wrangler secret put DESK_KEY) and the macOS keychain item
+# tatsuki-desk-go. It is never in this repo.
+name = "tatsuki-go"
+main = "src/index.js"
+compatibility_date = "2026-11-01"
+workers_dev = false
+
+routes = [{ pattern = "go.tany.im", custom_domain = true }]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "tatsuki-go"
+database_id = "5dc5958c-9692-44f3-bed0-311ff4f9cf17"

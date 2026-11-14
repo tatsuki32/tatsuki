@@ -21,3 +21,9 @@
 - 投稿先ごとの `link`：`inline`（本文に1回）、`bio`（Instagram の投稿。本文に入れず「プロフィールに」）、`sticker`（ストーリー。リンクスタンプは手で足す）、`none`。
 - `fix_links` が、渡していない URL を消し、本文に入れない先からは URL を消し、入れる先で抜けていれば最後に足す。古い `targets.json` には例のファイルから既定を補う。
 - 短縮リンクと計測（Bitly や Meta Pixel のようなもの）は作っていない。作るなら Cloudflare Workers の転送＋クリックの記録で、Pixel は自分のサイトにだけ置ける。
+
+## 短縮リンク go.tany.im（同じ日。要件定義 https://claude.ai/artifact/TG14nCDMK33m9qRCryDqxR の1番）
+- Worker `golinks/`（`tatsuki-go`、custom domain go.tany.im、D1 `tatsuki-go`）。`/api/` は `DESK_KEY` の Bearer だけ。同じリンク・同じ先・同じ投稿なら同じ短縮リンクを返す。
+- Desk は `desk/golinks.py`。Post Studio は案を作る前に投稿先ごとの短縮リンクを作って `post.short` に残し、Claude にはその先の分だけを渡す。
+- ロボットの判定は User-Agent の正規表現と HEAD。試験のリンクは `DELETE /api/links/<code>` で止めた。
+- 次：要件定義の2番（予約の土台：Queue、ルーティン、R2、5分ごとの送信）。
