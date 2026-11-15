@@ -1126,7 +1126,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.site_action(method, urlsplit(self.path).path.rsplit("/", 1)[1], rec)
         if method == "POST" and urlsplit(self.path).path == "/api/claude":
             return self.claude(rec)
-        if method == "POST" and urlsplit(self.path).path in ("/api/focus/start", "/api/focus/stop"):
+        if method == "POST" and urlsplit(self.path).path in ("/api/focus/start", "/api/focus/stop",
+                                                                  "/api/focus/pass", "/api/focus/passend"):
             return self.focus(urlsplit(self.path).path.rsplit("/", 1)[1], rec)
         if method == "POST" and urlsplit(self.path).path == "/api/finder":
             # Ask Desk: the page sends the list of places; Claude picks from it (desk/finder.py). Nothing is saved
@@ -1245,7 +1246,9 @@ class Handler(BaseHTTPRequestHandler):
         # same protection as claude(): Host/Origin checked, and JSON from another origin needs a preflight
         if not (self.headers.get("Content-Type") or "").startswith("application/json"):
             return self.send(415, {"error": "json only"})
-        keys = ("end", "apps", "web") if action == "start" else ("password",)
+        # pass: the Mac password typed 3 times only passes through to FocusBlock (PAM check); never saved or logged
+        keys = {"start": ("end", "apps", "web"), "stop": ("password",),
+                "pass": ("passwords",), "passend": ()}[action]
         body = {k: rec.get(k) for k in keys}
         if action == "stop":
             body["scope"] = "focus"  # schedules with their own lists (night SNS, Brave) keep running

@@ -134,6 +134,76 @@ def parse_hm(s):
     return datetime.time(int(h), int(m))
 
 
+# ---------------------------------------------------------------- 5-minute site pass
+# The Mac login password, typed 3 times, opens websites (not apps) for 5 minutes.
+# The password is checked with PAM (the same check as the Mac login), in memory only:
+# never saved, logged, or passed as a command-line argument.
+PASS_SECONDS = 5 * 60
+PASS_TRIES = 3
+PASS_WAIT = 30  # seconds to wait after a wrong password
+_pass_fail_until = 0
+_pam = None
+
+
+def _pam_lib():
+    global _pam
+    if _pam is None:
+        import ctypes
+        import ctypes.util
+        from ctypes import c_char_p, c_int, c_void_p, POINTER, Structure, CFUNCTYPE
+
+        class Msg(Structure):
+            _fields_ = [("msg_style", c_int), ("msg", c_char_p)]
+
+        class Resp(Structure):
+            _fields_ = [("resp", c_void_p), ("resp_retcode", c_int)]
+
+        conv_t = CFUNCTYPE(c_int, c_int, POINTER(POINTER(Msg)), POINTER(POINTER(Resp)), c_void_p)
+
+        class Conv(Structure):
+            _fields_ = [("conv", conv_t), ("appdata_ptr", c_void_p)]
+
+        lib = ctypes.CDLL("/usr/lib/libpam.2.dylib")
+        libc = ctypes.CDLL(ctypes.util.find_library("c"))
+        libc.calloc.restype = c_void_p
+        libc.calloc.argtypes = [ctypes.c_size_t, ctypes.c_size_t]
+        libc.strdup.restype = c_void_p
+        libc.strdup.argtypes = [c_char_p]
+        lib.pam_start.argtypes = [c_char_p, c_char_p, POINTER(Conv), POINTER(c_void_p)]
+        lib.pam_authenticate.argtypes = [c_void_p, c_int]
+        lib.pam_end.argtypes = [c_void_p, c_int]
+        _pam = (ctypes, lib, libc, Msg, Resp, conv_t, Conv)
+    return _pam
+
+
+def mac_password_ok(user, pw):
+    ctypes, lib, libc, Msg, Resp, conv_t, Conv = _pam_lib()
+    pwb = pw.encode("utf-8")
+
+    @conv_t
+    def conv(n, msgs, resp, _):
+        arr = ctypes.cast(libc.calloc(n, ctypes.sizeof(Resp)), ctypes.POINTER(Resp))
+        for i in range(n):
+            if msgs[i].contents.msg_style == 1:  # PAM_PROMPT_ECHO_OFF
+                arr[i].resp = libc.strdup(pwb)
+        resp[0] = arr
+        return 0
+
+    h = ctypes.c_void_p()
+    c = Conv(conv, None)
+    if lib.pam_start(b"chkpasswd", user.encode(), ctypes.byref(c), ctypes.byref(h)) != 0:
+        return False
+    rc = lib.pam_authenticate(h, 0)
+    lib.pam_end(h, rc)
+    return rc == 0
+
+
+def pass_end(now=None):
+    p = CFG.get("pass") or {}
+    end = p.get("end", 0)
+    return end if end > (now or time.time()) else 0
+
+
 # ---------------------------------------------------------------- attempts
 # How many times a blocked site or app was opened, per local day. Only the
 # list entry (e.g. "youtube.com") and a count are kept; never full URLs.
@@ -160,13 +230,14 @@ ATTEMPTS = {}
 def record_attempt(kind, name):
     now = time.time()
     key = (kind, name)
-    if now - _attempt_last.get(key, 0) < ATTEMPT_GAP:
+    if kind != "passes" and now - _attempt_last.get(key, 0) < ATTEMPT_GAP:
         _attempt_last[key] = now
         return
     _attempt_last[key] = now
     day = datetime.date.fromtimestamp(now).isoformat()
     with LOCK:
         d = ATTEMPTS.setdefault(day, {"sites": {}, "apps": {}})
+        d.setdefault(kind, {})
         d[kind][name] = d[kind].get(name, 0) + 1
         for old in sorted(ATTEMPTS)[:-ATTEMPT_DAYS]:
             del ATTEMPTS[old]
@@ -182,7 +253,8 @@ def record_attempt(kind, name):
 def attempts_today():
     day = datetime.date.today().isoformat()
     d = ATTEMPTS.get(day) or {"sites": {}, "apps": {}}
-    return {"date": day, "sites": dict(d["sites"]), "apps": dict(d["apps"])}
+    return {"date": day, "sites": dict(d["sites"]), "apps": dict(d["apps"]),
+            "passes": dict(d.get("passes", {})).get("count", 0)}
 
 
 def schedule_window(sch, now):
@@ -236,6 +308,9 @@ def active_state(now=None):
                               "name": sch.get("name") or "スケジュール", "end": win[1]})
     if st["sources"]:
         st["end"] = max(s["end"] for s in st["sources"])
+    st["passEnd"] = pass_end(now)
+    if st["passEnd"]:  # 5-minute pass: websites open, apps stay blocked
+        st["webGlobal"], st["webExtra"] = False, []
     st["appsExtra"] = sorted(set(st["appsExtra"]))
     st["webExtra"] = sorted(set(st["webExtra"]))
     st["apps"] = st["appsGlobal"] or bool(st["appsExtra"])
@@ -673,6 +748,31 @@ class Handler(BaseHTTPRequestHandler):
             CFG["session"] = {"start": now, "end": end, "apps": apps, "web": web}
             save_config()
             log("session started until", time.ctime(end), "apps" if apps else "", "web" if web else "")
+            return 200, public_state()
+        if p == "/api/pass":
+            global _pass_fail_until
+            if now < _pass_fail_until:
+                return 429, {"error": "Wait %d seconds and try again" % (_pass_fail_until - now + 1)}
+            pws = body.get("passwords")
+            if not isinstance(pws, list) or len(pws) != PASS_TRIES or not all(isinstance(x, str) and x for x in pws):
+                return 400, {"error": "Type the Mac password 3 times"}
+            if len(set(pws)) != 1:
+                _pass_fail_until = now + PASS_WAIT
+                return 403, {"error": "The 3 passwords do not match"}
+            user, _ = console_user()
+            ok = bool(user) and user != "root" and mac_password_ok(user, pws[0])
+            pws = body = None
+            if not ok:
+                _pass_fail_until = now + PASS_WAIT
+                return 403, {"error": "Wrong Mac password"}
+            CFG["pass"] = {"start": now, "end": now + PASS_SECONDS}
+            save_config()
+            record_attempt("passes", "count")
+            log("site pass for 5 minutes")
+            return 200, public_state()
+        if p == "/api/passend":
+            CFG["pass"] = None
+            save_config()
             return 200, public_state()
         if p == "/api/stop":
             if not check_password(body.get("password")):

@@ -15,3 +15,8 @@
 ## 結果
 - 入れ直し済み。Night SNS（0:00〜5:00）と No Brave / YouTube（1日中）を入れた。youtube.com は止まり、google.com は通る。止めた回数も数えている。
 - Desk の「Always on」の欄は、Desk のサーバーが次に再起動したあとに出る。
+
+## 5分だけ使う（同じ日の続き）
+- Mac のログインパスワードを3回入れると、サイトだけ5分開く（`/api/pass`、`CFG["pass"]`）。アプリは止めたまま。終わると自動で戻る。「Block again」で早く戻せる。
+- パスワードの確認は PAM（サービス `chkpasswd`、`/usr/lib/libpam.2.dylib` を ctypes で）。dscl は引数にパスワードが出るので使わない。3つが違う・間違いは30秒待ち。
+- Desk の集中の画面と FocusBlock の設定画面にボタン。今日使った回数を出す。

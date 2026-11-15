@@ -77,6 +77,7 @@ dialog::backdrop { background: rgba(0,0,0,.4); }
         <div class="sub" id="stDetail"></div>
       </div>
       <button id="stopBtn" class="hidden">パスワードで解除</button>
+      <button id="passBtn" class="hidden">5分だけサイトを使う</button>
     </section>
 
     <section class="card">
@@ -200,6 +201,8 @@ function renderStatus() {
   const a = S.active, on = a.active;
   $("status").classList.toggle("on", on);
   $("stopBtn").classList.toggle("hidden", !on);
+  const pass = (a.passEnd || 0) > Date.now() / 1000;
+  $("passBtn").classList.toggle("hidden", !a.web || pass);
   if (!on) {
     $("stLabel").textContent = "待機中"; $("stTime").textContent = "ブロックしていません";
     $("stDetail").textContent = ""; return;
@@ -209,6 +212,7 @@ function renderStatus() {
   $("stLabel").textContent = "ブロック中（" + targets + "）";
   $("stTime").textContent = fmtRemain(a.end - (Date.now() / 1000 - offset));
   $("stDetail").textContent = a.sources.map((s) => s.name + "：" + fmtClock(s.end) + " まで").join(" / ");
+  if ((a.passEnd || 0) > Date.now() / 1000) $("stDetail").textContent += " / サイトは " + fmtClock(a.passEnd) + " まで開いています";
 }
 
 function renderDurations() {
@@ -332,6 +336,17 @@ $("startBtn").onclick = async () => {
     await api("/api/start", { end, apps: $("qApps").checked, web: $("qWeb").checked });
     toast("ブロックを開始しました"); refresh();
   } catch (e) { toast(e.message); }
+};
+
+$("passBtn").onclick = async () => {
+  const pws = [];
+  for (const t of ["Mac のログインパスワード（1回目）", "もう一度（2回目）", "もう一度（3回目）"]) {
+    const pw = await askPassword(t);
+    if (pw === null) return;
+    pws.push(pw);
+  }
+  try { await api("/api/pass", { passwords: pws }); toast("5分だけサイトを開けます（アプリは止めたまま）"); refresh(); }
+  catch (e) { toast(e.message); }
 };
 
 $("stopBtn").onclick = async () => {
