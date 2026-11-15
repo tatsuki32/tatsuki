@@ -777,7 +777,12 @@ button.hname:hover{color:var(--ink)}
 .psnew{max-width:640px}
 .psnew>*{max-width:100%}
 .psthumbs{display:flex;flex-wrap:wrap;gap:var(--s2)}
-.psthumb{display:grid;gap:var(--s1);justify-items:start}
+.psthumb{display:grid;gap:var(--s1);justify-items:start;position:relative}
+.pssel{position:absolute;top:4px;left:4px;width:24px;height:24px;display:grid;place-items:center;background:rgba(0,0,0,.6);border-radius:var(--r-s);cursor:pointer}
+.pssel input{accent-color:var(--accent);width:16px;height:16px;margin:0;cursor:pointer}
+.psthumb.on img{outline:2px solid var(--accent);outline-offset:-2px}
+.psbulk{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s1)}
+.psbulk .btn{min-height:28px;padding:0 var(--s2);font-size:var(--t1)}
 .psthumb img{width:96px;height:96px;object-fit:cover;border-radius:var(--r-s);display:block}
 .psthumb .btn{min-height:28px;padding:0 var(--s2);font-size:var(--t1)}
 .psgroups{display:grid;gap:var(--s3);width:100%}
@@ -6196,15 +6201,37 @@ window.addEventListener("beforeunload",()=>{if(cp().dirty)cpFlush()});
 const psFull=(t,d)=>{if(!d)return "";if(t.kind==="story")return d.overlay||"";let s=(d.text||"").trim();const tags=[...(d.hashtags||[])];(t.fixedTags||"").split(/[\s,]+/).filter(x=>x.startsWith("#")&&!tags.includes(x)).forEach(x=>tags.push(x));if(tags.length)s+="\n\n"+tags.join(" ");return s};
 const psLen=(t,s)=>{if(t.count!=="x")return [...s].length;let n=0;s=s.replace(/https?:\/\/\S+/g,()=>{n+=23;return ""});for(const ch of s){const c=ch.codePointAt(0);n+=(c<=4351||(c>=8192&&c<=8205)||(c>=8208&&c<=8223)||(c>=8242&&c<=8247))?1:2}return n};
 const psOpenUrl=(t,d)=>t.open?t.open.replace("{text}",encodeURIComponent(t.kind==="story"?"":psFull(t,d))).replace("{title}",encodeURIComponent(d?.title||"")):"";
+// pick several pictures and take them out at once (the New form and a post's strip share this)
+const psSel=ctx=>{const p=ps();p.sel=p.sel||{};return p.sel[ctx]=p.sel[ctx]||[]};
+const psTick=(ctx,id,i)=>`<label class="pssel" title="Select"><input type="checkbox" data-pssel="${ctx}|${esc(id)}" aria-label="Select picture ${i+1}" ${psSel(ctx).includes(id)?"checked":""}></label>`;
+function psBulk(ctx,count){
+  const p=ps(),n=psSel(ctx).length,undo=p.undo?.ctx===ctx;
+  if(count<2&&!undo)return "";
+  return `<div class="psbulk">${n?`<button class="btn" data-psbulk="${ctx}|sel">Remove ${n} selected</button><button class="btn" data-psbulk="${ctx}|none">Clear selection</button>`:count>1?`<button class="btn" data-psbulk="${ctx}|every">Select all</button>`:""}${count>1?`<button class="btn" data-psbulk="${ctx}|all">Remove all ${count}</button>`:""}${undo?`<button class="btn" data-psbulk="${ctx}|undo">Undo remove</button>`:""}${count>1&&!n?`<span class="due">Tick pictures to remove several at once.</span>`:""}</div>`;
+}
+// ids: the current list of ids; set(list): saves a new list
+function wirePsBulk(ctx,ids,set){
+  const p=ps(),all=s=>document.querySelectorAll(s);
+  all(`[data-pssel^="${ctx}|"]`).forEach(c=>c.onchange=()=>{const id=c.dataset.pssel.slice(ctx.length+1),l=psSel(ctx);
+    if(c.checked){if(!l.includes(id))l.push(id)}else l.splice(l.indexOf(id),1);psDraw()});
+  all(`[data-psbulk^="${ctx}|"]`).forEach(b=>b.onclick=()=>{const k=b.dataset.psbulk.split("|")[1],now=ids();
+    if(k==="none"){p.sel[ctx]=[];return psDraw()}
+    if(k==="every"){p.sel[ctx]=[...now];return psDraw()}
+    if(k==="undo"){const back=p.undo.list;p.undo=null;return set(back)}
+    const out=k==="all"?now:psSel(ctx).filter(id=>now.includes(id));if(!out.length)return;
+    if(k==="all"&&!confirm(`Remove all ${now.length} pictures from this ${ctx==="new"?"list":"post"}?`))return;
+    p.undo={ctx,list:now};p.sel[ctx]=[];set(now.filter(id=>!out.includes(id)))});
+}
 function psNew(){
   const p=ps(),d=p.data,on=(d?.targets||[]).filter(t=>t.on);
-  const thumbs=p.photos.map((x,i)=>`<span class="psthumb"><img src="/api/posts/photo/${esc(x.id)}.jpg" alt="Photo ${i+1}"><button class="btn" data-psdrop="${i}" aria-label="Remove photo ${i+1}">Remove</button></span>`).join("")
+  psSel("new").splice(0,1e9,...psSel("new").filter(id=>p.photos.some(x=>x.id===id)));
+  const thumbs=p.photos.map((x,i)=>`<span class="psthumb${psSel("new").includes(x.id)?" on":""}"><img src="/api/posts/photo/${esc(x.id)}.jpg" alt="Photo ${i+1}">${p.photos.length>1?psTick("new",x.id,i):""}<button class="btn" data-psdrop="${i}" aria-label="Remove photo ${i+1}">Remove</button></span>`).join("")
     +(p.video?`<span class="psthumb psvid"><img src="/api/posts/photo/${esc(p.video.frames?.[0]||"")}.jpg" alt="Video"><span class="psbadge">Video · ${psDur(p.video.sec)}</span><button class="btn" data-psdropvid aria-label="Remove the video">Remove</button></span>`:"");
   const docs=(p.docs||[]).map((d,i)=>`<span class="psdoc"><span>PDF · ${esc(d.name)} · ${d.total} page${d.total===1?"":"s"}${d.total>d.pages.length?` (first ${d.pages.length} as pictures)`:""}${d.chars?"":" · no text inside"}</span><button class="btn" data-psdropdoc="${i}" aria-label="Remove ${esc(d.name)}">Remove</button></span>`).join("");
   const groups=PSLANG.map(([l,name])=>{const xs=on.filter(t=>t.lang===l);if(!xs.length)return "";
     return `<fieldset class="psgroup"><legend class="sub">${name}</legend>${xs.map(t=>`<label class="pschip"><input type="checkbox" data-pspick="${esc(t.id)}" ${p.pick?.includes(t.id)?"checked":""}><span>${esc(t.name)}</span></label>`).join("")}</fieldset>`}).join("");
   return `<section class="card mfocus psnew">
-    <div class="utdrop" id="psDrop"><div class="psthumbs">${thumbs}</div>${docs}<label class="btn">${p.photos.length||p.video||p.docs?.length?"Add more":"Choose photos, a PDF or a video"}<input type="file" id="psFile" hidden multiple accept="image/*,.heic,.heif,application/pdf,.pdf,video/mp4,video/quicktime,.mov,.mp4,.m4v"></label><span class="due">${p.upBusy?esc(p.upBusy):"Up to 10 pictures (a PDF's pages count), one video. You can also drag them here."}</span></div>
+    <div class="utdrop" id="psDrop"><div class="psthumbs">${thumbs}</div>${psBulk("new",p.photos.length)}${docs}<label class="btn">${p.photos.length||p.video||p.docs?.length?"Add more":"Choose photos, a PDF or a video"}<input type="file" id="psFile" hidden multiple accept="image/*,.heic,.heif,application/pdf,.pdf,video/mp4,video/quicktime,.mov,.mp4,.m4v"></label><span class="due">${p.upBusy?esc(p.upBusy):"Up to 10 pictures (a PDF's pages count), one video. You can also drag them here."}</span></div>
     <textarea class="wd-field psedit" id="psMemo" placeholder="What did you do? A few words or bullet points are enough." aria-label="What you did">${esc(p.memo)}</textarea>
     <input class="wd-field psedit" id="psLink" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="Link to share (optional), like an article you wrote" aria-label="Link to share" value="${esc(p.link)}">
     <div class="psgroups">${groups}</div>
@@ -6278,9 +6305,10 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape"&&viewId()==="post"&&
 // the post's pictures: add, take out, change the order (the first is the cover everywhere)
 function psStrip(post){
   if(post.video||post.status==="making")return "";
-  const xs=post.photos.map((x,i)=>`<span class="psthumb" draggable="true" data-psord="${i}"><img src="/api/posts/photo/${esc(x.id)}.jpg" alt="Picture ${i+1}${i===0?", the cover":""}" draggable="false">
+  psSel("strip").splice(0,1e9,...psSel("strip").filter(id=>post.photos.some(x=>x.id===id)));
+  const xs=post.photos.map((x,i)=>`<span class="psthumb${psSel("strip").includes(x.id)?" on":""}" draggable="true" data-psord="${i}"><img src="/api/posts/photo/${esc(x.id)}.jpg" alt="Picture ${i+1}${i===0?", the cover":""}" draggable="false">${post.photos.length>1?psTick("strip",x.id,i):""}
     <span class="psthumbbar"><button class="btn" data-psmove="${i}|-1" aria-label="Move picture ${i+1} earlier" ${i===0?"disabled":""}>‹</button><button class="btn" data-psmove="${i}|1" aria-label="Move picture ${i+1} later" ${i===post.photos.length-1?"disabled":""}>›</button><button class="btn" data-psrm="${i}" aria-label="Remove picture ${i+1}">Remove</button></span></span>`).join("");
-  return `<div class="psstrip"><div class="psthumbs">${xs}</div>
+  return `<div class="psstrip"><div class="psthumbs">${xs}</div>${psBulk("strip",post.photos.length)}
     <div class="nsgo">${post.photos.length<10?`<label class="btn">${ps().stripBusy?"Adding…":"Add pictures"}<input type="file" id="psStripFile" hidden multiple accept="image/*,.heic,.heif,application/pdf,.pdf"></label>`:""}<span class="due">The first picture is the cover. The drafts' words stay as they are.</span></div></div>`;
 }
 function wirePsStrip(){
@@ -6288,7 +6316,8 @@ function wirePsStrip(){
   const p=ps(),post=p.cur;if(!post)return;const ids=()=>post.photos.map(x=>x.id);
   const save=list=>psPut({photos:list}).then(()=>{p.n={};psDraw()});
   all("[data-psmove]").forEach(b=>b.onclick=()=>{const [i,d]=b.dataset.psmove.split("|").map(Number),l=ids();[l[i],l[i+d]]=[l[i+d],l[i]];save(l)});
-  all("[data-psrm]").forEach(b=>b.onclick=()=>{if(post.photos.length===1&&!confirm("Remove the last picture?"))return;const l=ids();l.splice(+b.dataset.psrm,1);save(l)});
+  all("[data-psrm]").forEach(b=>b.onclick=()=>{if(post.photos.length===1&&!confirm("Remove the last picture?"))return;const l=ids();p.undo={ctx:"strip",list:[...l]};l.splice(+b.dataset.psrm,1);save(l)});
+  wirePsBulk("strip",ids,save);
   let from=-1;
   all("[data-psord]").forEach(el=>{el.ondragstart=()=>{from=+el.dataset.psord};el.ondragover=e=>e.preventDefault();
     el.ondrop=e=>{e.preventDefault();const to=+el.dataset.psord;if(from<0||from===to)return;const l=ids(),[x]=l.splice(from,1);l.splice(to,0,x);from=-1;save(l)}});
@@ -6433,7 +6462,9 @@ function wirePs(){
   const file=$("#psFile");if(file)file.onchange=e=>psAddFiles(e.target.files);
   const drop=$("#psDrop"),zone=drop?.closest(".psnew");
   if(zone){zone.ondragover=e=>{e.preventDefault();drop.classList.add("on")};zone.ondragleave=e=>{if(!zone.contains(e.relatedTarget))drop.classList.remove("on")};zone.ondrop=e=>{e.preventDefault();drop.classList.remove("on");psAddFiles(e.dataTransfer.files)}}
-  all("[data-psdrop]").forEach(b=>b.onclick=()=>{p.photos.splice(+b.dataset.psdrop,1);psDraw()});
+  all("[data-psdrop]").forEach(b=>b.onclick=()=>{p.undo={ctx:"new",list:p.photos.map(x=>x.id)};p.photos.splice(+b.dataset.psdrop,1);psDraw()});
+  p.seenPh=p.seenPh||{};p.photos.forEach(x=>p.seenPh[x.id]=x);  // so Undo can bring a removed picture back
+  wirePsBulk("new",()=>p.photos.map(x=>x.id),list=>{p.photos=list.map(id=>p.seenPh[id]).filter(Boolean);psDraw()});
   all("[data-psdropvid]").forEach(b=>b.onclick=()=>{p.video=null;psDraw()});
   all("[data-psdropdoc]").forEach(b=>b.onclick=()=>{const d=p.docs.splice(+b.dataset.psdropdoc,1)[0];p.photos=p.photos.filter(x=>!d.pages.some(y=>y.id===x.id));psDraw()});
   const memo=$("#psMemo");if(memo)memo.oninput=e=>{p.memo=e.target.value};
