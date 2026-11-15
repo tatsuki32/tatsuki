@@ -563,10 +563,13 @@ def host_blocked(host):
     return not hit
 
 
+PIPE_IDLE = 15 * 60  # close a tunnel that has been silent this long (frees its sockets)
+
+
 async def pipe(reader, writer):
     try:
         while True:
-            data = await reader.read(65536)
+            data = await asyncio.wait_for(reader.read(65536), PIPE_IDLE)
             if not data:
                 break
             writer.write(data)
@@ -581,6 +584,7 @@ async def pipe(reader, writer):
 
 
 async def handle_proxy(reader, writer):
+    w2 = None
     try:
         head = await asyncio.wait_for(reader.readuntil(b"\r\n\r\n"), 30)
         lines = head.decode("latin-1").split("\r\n")
@@ -614,8 +618,20 @@ async def handle_proxy(reader, writer):
             req = "%s %s %s\r\n%s\r\nConnection: close\r\n\r\n" % (method, path, version, "\r\n".join(headers))
             r2, w2 = await asyncio.wait_for(asyncio.open_connection(host, url.port or 80), 15)
             w2.write(req.encode("latin-1"))
-        await asyncio.gather(pipe(reader, w2), pipe(r2, writer))
+        try:
+            await asyncio.gather(pipe(reader, w2), pipe(r2, writer))
+        finally:
+            for w in (w2, writer):
+                try:
+                    w.close()
+                except Exception:
+                    pass
     except Exception:
+        if w2 is not None:
+            try:
+                w2.close()
+            except Exception:
+                pass
         try:
             writer.write(b"HTTP/1.1 502 Bad Gateway\r\nContent-Length: 0\r\nConnection: close\r\n\r\n")
             await writer.drain()
@@ -818,6 +834,16 @@ def main():
     DATA_DIR = os.path.join(HERE, "dev-data") if DEV else ROOT_DATA_DIR
     if not DEV and os.geteuid() != 0:
         sys.exit("root で実行してください (sudo)")
+    # launchd gives 256 open files. Every page goes through the proxy while a schedule
+    # is on (two sockets per connection), so raise it or the proxy stops accepting.
+    try:
+        import resource
+        soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
+        want = 16384 if hard == resource.RLIM_INFINITY else min(16384, hard)
+        if soft < want:
+            resource.setrlimit(resource.RLIMIT_NOFILE, (want, hard))
+    except Exception as e:
+        log("could not raise the open-file limit:", repr(e))
     load_config()
     ATTEMPTS.update(load_attempts())
 
