@@ -48,3 +48,8 @@
 - LinkedIn：コードは入れた（`linkedin` プロバイダー、60日で再サインイン）。開発者アプリ（会社ページにひもづけが必要）と `LINKEDIN_CLIENT_ID`・`LINKEDIN_CLIENT_SECRET` 待ち。
 - Facebook ページの投稿には、投稿先ごとの「毎回つける一行」（`footer`）で個人アカウントへのリンクを入れる。人のプロフィールへのメンションは API でできない。
 - つまずき：別セッションが posts.py を書き換えた後、サーバーが古いまま「Could not reach Anthropic」を返した。サーバーを再起動すると直る。
+
+## 追記（同日・夜）：R2 と LinkedIn
+- R2：本人がカードを入れて申し込み。バケット `tatsuki-go-videos`（ライフサイクルで2日で削除）を Worker の `VIDEOS` に。パートの受け取りは `request.arrayBuffer()`（ストリームのままだと長さが分からず遅い）。Cloudflare の予算アラート $1 を本人の Gmail に。
+- LinkedIn：会社ページ TANY LLC（linkedin.com/company/tany-llc）を作り、開発者アプリ「Tatsuki Post Studio」をひもづけ。Products は Share on LinkedIn と Sign In with LinkedIn using OpenID Connect。リダイレクト `https://go.tany.im/oauth/linkedin`。Client ID は Claude が、Client Secret は本人が Worker の秘密へ。OAuth は本人のパスワード入力が要った。最初の投稿（note の記事から英語）に成功。
+- つまずき：LinkedIn の開発者画面（Ember）は execCommand や cmd+a で入れた値が崩れて保存される。空の欄をクリックして普通に打つ。新しい会社ページは名前の検索に出ないので、アプリ作成では会社ページの URL を貼る。アプリのロゴは必須で、ページの中で canvas で描いた画像を入れた。
