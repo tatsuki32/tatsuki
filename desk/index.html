@@ -2052,7 +2052,9 @@ function openDeck(o){
   const draw=html=>{$("#modal").innerHTML=`<div class="scrim" id="scrim">${html}</div>`;$("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};$("#dkCard").focus()};
   const close=()=>{document.removeEventListener("keydown",onKey,true);cur=null;$("#modal").innerHTML=""};
   const fly=(dir,then)=>{const c=$("#dkCard");if(!c||matchMedia("(prefers-reduced-motion:reduce)").matches)return then();busy=true;c.classList.remove("drag");c.style.transform=`translateX(${dir*120}%) rotate(${dir*6}deg)`;setTimeout(()=>{busy=false;then()},120)};
-  const pick=side=>{if(busy||!cur)return;const t=cur;past.push({t,side});seen++;later(()=>(side>0?o.right:o.left).act(t));fly(side,()=>{cur=null;next()})};
+  const extra=o.extra||[]; // more choices besides ← and →, each {id,label,key,act}
+  const pick=side=>{if(busy||!cur)return;const t=cur,ch=typeof side==="number"?(side>0?o.right:o.left):extra.find(x=>x.id===side);if(!ch)return;
+    past.push({t,side});seen++;later(()=>ch.act(t));fly(side===-1?-1:1,()=>{cur=null;next()})};
   const undo=()=>{const p=past.pop();if(!p||busy)return;if(cur)queue.unshift(cur.id);seen=Math.max(0,seen-1);later(()=>o.undo(p.t,p.side));cur=null;card(p.t)};
   const pause=msg=>{cur=null;draw(`<div class="pop tri" id="dkCard" tabindex="-1" role="dialog" aria-modal="true" aria-label="${esc(o.label)}"><h2>${esc(msg)}</h2>
     <div class="row">${queue.length?`<button class="btn primary" id="dkGo">Continue <kbd>Enter</kbd></button>`:""}<button class="btn" id="dkClose">Close</button>${past.length?`<button class="btn sm" id="dkUndo">Undo one <kbd>Z</kbd></button>`:""}</div></div>`);
@@ -2062,8 +2064,8 @@ function openDeck(o){
   const card=t=>{cur=t;draw(`<div class="pop tri dk" id="dkCard" tabindex="-1" role="dialog" aria-modal="true" aria-label="${esc(o.label)}">
       <div class="top"><span class="sub">${seen+1}/${TRI_BATCH} · ${queue.length+1} left</span><span class="trhint" id="dkHint" aria-live="polite"></span><button class="ibtn" id="dkClose" aria-label="Close">✕</button></div>
       ${o.body(t)}
-      <div class="row trrow"><button class="btn" id="dkLeft"><kbd>←</kbd> ${esc(o.left.label)}</button><button class="btn primary" id="dkRight">${esc(o.right.label)} <kbd>→</kbd></button>${past.length?`<button class="btn sm" id="dkUndo">Undo one <kbd>Z</kbd></button>`:""}</div></div>`);
-    const c=$("#dkCard"),hint=$("#dkHint");$("#dkClose").onclick=close;$("#dkLeft").onclick=()=>pick(-1);$("#dkRight").onclick=()=>pick(1);$("#dkUndo")&&($("#dkUndo").onclick=undo);
+      <div class="row trrow"><button class="btn" id="dkLeft"><kbd>←</kbd> ${esc(o.left.label)}</button><button class="btn primary" id="dkRight">${esc(o.right.label)} <kbd>→</kbd></button>${extra.map(x=>`<button class="btn sm" data-dkx="${esc(x.id)}">${esc(x.label)} <kbd>${esc(x.key)}</kbd></button>`).join("")}${past.length?`<button class="btn sm" id="dkUndo">Undo one <kbd>Z</kbd></button>`:""}</div></div>`);
+    const c=$("#dkCard"),hint=$("#dkHint");$("#dkClose").onclick=close;$("#dkLeft").onclick=()=>pick(-1);$("#dkRight").onclick=()=>pick(1);c.querySelectorAll("[data-dkx]").forEach(b=>b.onclick=()=>pick(b.dataset.dkx));$("#dkUndo")&&($("#dkUndo").onclick=undo);
     let sx=null,dx=0;
     c.onpointerdown=e=>{if(e.button||e.target.closest("input,textarea,select,button,a,label"))return;sx=e.clientX;dx=0;c.setPointerCapture(e.pointerId);c.classList.add("drag")};
     c.onpointermove=e=>{if(sx==null)return;dx=e.clientX-sx;c.style.transform=`translateX(${dx}px) rotate(${dx/40}deg)`;hint.textContent=dx>TRI_SWIPE/2?o.right.label:dx<-TRI_SWIPE/2?o.left.label:""};
@@ -2081,6 +2083,7 @@ function openDeck(o){
     if(!cur){if(e.key==="Enter"&&queue.length){seen=0;next()}return}
     if(e.key==="ArrowRight")return pick(1);
     if(e.key==="ArrowLeft")return pick(-1);
+    const ex=extra.find(x=>x.key.toLowerCase()===e.key.toLowerCase());if(ex)return pick(ex.id);
   }
   document.addEventListener("keydown",onKey,true);
   next();
@@ -2092,8 +2095,13 @@ function openDecide(){
       <p class="sub">${[typeOf(t),genreOf(t)?.name,estOf(t)!=null?estOf(t)+" min":""].filter(Boolean).map(esc).join(" · ")}</p>`,
     right:{label:"Not doing",act:t=>dropTask(t,"quiet")},
     left:{label:"Keep",act:t=>store.putTask({...t,skip:{...t.skip,kept:Date.now()}})},
-    undo:async(t,side)=>{await store.putTask(t);if(side>0){const w=S.wins.find(x=>x.id===winId("drop-"+t.id));if(w)await store.putWin({...w,deleted:true})}},
-    done:past=>{const n=past.filter(p=>p.side>0).length;return n?`${n} let go. ${PRAISE[n%PRAISE.length]}`:"All decided"}});
+    /* already did it while looking at the card, or starting it right now */
+    extra:[{id:"done",label:"Done",key:"D",act:async t=>{await store.putTask({...t,status:"done"});await taskWin(t,"done")}},
+      {id:"doing",label:"In progress",key:"P",act:t=>store.putTask({...t,status:"doing",skip:{...t.skip,kept:Date.now()}})}],
+    undo:async(t,side)=>{await store.putTask(t);if(side==="done"){const w=S.wins.find(x=>x.id===winId("task-"+t.id));if(w)await store.putWin({...w,deleted:true})}if(side===1){const w=S.wins.find(x=>x.id===winId("drop-"+t.id));if(w)await store.putWin({...w,deleted:true})}},
+    done:past=>{const n=past.filter(p=>p.side===1).length,d=past.filter(p=>p.side==="done").length,g=past.filter(p=>p.side==="doing").length;
+      const more=[d?`${d} done`:"",g?`${g} started`:""].filter(Boolean).join(", ");
+      return n?`${n} let go${more?`, ${more}`:""}. ${PRAISE[n%PRAISE.length]}`:more?`All decided. ${more[0].toUpperCase()+more.slice(1)}.`:"All decided"}});
 }
 function dropEntry(){const n=dropCands().length;return n?`<button class="shelfbtn" data-tdecide>Decide what not to do ${n} →</button>`:""}
 /* F. Merge similar tasks: Claude proposes once a week (mergeprops); nothing merges until you swipe right.
