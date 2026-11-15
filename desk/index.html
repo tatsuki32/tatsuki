@@ -3082,7 +3082,7 @@ function replyRow(t){
     <button class="tt" data-topen="${esc(t.id)}" data-noauto>${esc(t.title)}</button>
     ${r.about?`<div class="rabout" data-noauto>About: ${esc(clip(r.about,180))}</div>`:""}
     <div class="due">${[src[2],r.who,r.when,t.deadline!=null&&t.due!=null?"Due "+fmtDue(t.due):""].filter(Boolean).map(esc).join(" · ")}</div></div>
-    <div class="dacts"><button class="btn" data-rtask="${esc(t.id)}" title="Move this to the task board">→ Make it a task</button></div></div>`;
+    <div class="dacts"><button class="btn" data-rdone="${esc(t.id)}" title="Mark this as answered">Done</button><button class="btn" data-rarch="${esc(t.id)}" title="Archive without answering">Archive</button><button class="btn" data-rtask="${esc(t.id)}" title="Move this to the task board">→ Make it a task</button></div></div>`;
 }
 function repliesView(){
   const xs=replyList(), moved=(S.all||[]).filter(t=>replyKind(t)&&t.asTask&&TOPEN.has(t.status));
@@ -3090,7 +3090,7 @@ function repliesView(){
   <div class="card empty rwclosed"><b>${xs.length} waiting · opens at ${esc(rwTime(rwNext()))}</b>Replies open at 5:00 and 16:00. Until then, nothing here needs you.</div>`;
   const groups=RSRC.map(([k,e,l])=>[e,l,xs.filter(t=>replyKind(t)===k)]).filter(g=>g[2].length);
   return `<header class="head"><div><p class="eyebrow">Today</p><h1>Replies</h1></div><button class="btn primary" id="rwDone">Replies done</button></header>
-  <p class="sub">Email, WhatsApp, LINE and follow-ups that need an answer. They stay here, off your task board. Press “Make it a task” for one that is real work. “Replies done” hides them until ${esc(rwTime(rwNext()))}.</p>
+  <p class="sub">Email, WhatsApp, LINE and follow-ups that need an answer. They stay here, off your task board. Press “Done” when answered, “Archive” for one that needs no answer, or “Make it a task” for one that is real work. “Replies done” hides them until ${esc(rwTime(rwNext()))}.</p>
   ${groups.length?groups.map(([e,l,ts])=>`<section class="card dpanel" aria-label="${l}"><div class="dhead"><h2><span class="e">${e}</span>${l}</h2><span class="sub">${ts.length}</span></div><div>${ts.map(replyRow).join("")}</div></section>`).join(""):`<div class="card empty"><b>No replies waiting</b>New email, WhatsApp and LINE messages show up here after each import.</div>`}
   ${moved.length?`<p class="sub">Moved to Tasks: ${moved.map(t=>`<button class="tt" data-topen="${esc(t.id)}" data-noauto>${esc(clip(t.title,60))}</button> <button class="ibtn" data-rtask="${esc(t.id)}" data-back="1" title="Back to Replies" aria-label="Back to Replies">↩︎</button>`).join(" · ")}</p>`:""}`;
 }
@@ -6818,6 +6818,8 @@ function wire(){
   $("#newTask")&&($("#newTask").onclick=()=>openTask(null));
   document.querySelectorAll("[data-topen]").forEach(b=>b.onclick=()=>openTask(b.dataset.topen));
   document.querySelectorAll("[data-rtask]").forEach(b=>b.onclick=()=>replyToTask(b.dataset.rtask,b.dataset.back==="1"));
+  document.querySelectorAll("[data-rdone]").forEach(b=>b.onclick=()=>setTaskStatus(b.dataset.rdone,"done"));
+  document.querySelectorAll("[data-rarch]").forEach(b=>b.onclick=()=>setTaskStatus(b.dataset.rarch,"archived"));
   const rwB=$("#rwDone");if(rwB)rwB.onclick=()=>{rwB.disabled=true;repliesDone()};
   document.querySelectorAll("[data-story]").forEach(b=>b.onclick=()=>{S.ed=b.dataset.ed;S.region="All";S.focus=+b.dataset.story;if(location.hash==="#news")render();else location.hash="news"});
   $("#digest")&&($("#digest").ontoggle=e=>{S.digestOpen=e.target.open});
