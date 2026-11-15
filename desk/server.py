@@ -568,9 +568,41 @@ def focus_state():
     code, st = focus_call("/api/state")
     if code != 200:
         return code, st
+    own = [{"name": x.get("name") or "Schedule", "start": x.get("start"), "end": x.get("end"),
+            "days": x.get("days", []), "enabled": x.get("enabled", True),
+            "appList": x.get("appList") or [], "siteList": x.get("siteList") or []}
+           for x in st.get("schedules", []) if x.get("appList") or x.get("siteList")]
+    sites = sorted({d for x in own for d in x["siteList"]})
     return 200, {"hasPassword": st["hasPassword"], "active": st["active"],
                  "apps": {"mode": st["apps"]["mode"], "count": len(st["apps"]["list"])},
-                 "web": {"mode": st["web"]["mode"], "count": len(st["web"]["list"])}}
+                 "web": {"mode": st["web"]["mode"], "count": len(st["web"]["list"])},
+                 "own": own, "attempts": st.get("attempts"), "opens": focus_opens(sites)}
+
+
+def focus_opens(sites):
+    """Times each watched site was opened in Chrome today (Web history). A visit after
+    10 minutes away counts as a new open. Only site names and counts leave this function."""
+    path = os.path.join(DATA, "webhistory", "history.db")
+    if not sites or not os.path.exists(path):
+        return {}
+    import sqlite3
+    t = time.localtime()
+    start = time.mktime((t.tm_year, t.tm_mon, t.tm_mday, 0, 0, 0, 0, 0, -1))
+    try:
+        con = sqlite3.connect("file:%s?mode=ro" % path, uri=True, timeout=2)
+        rows = con.execute("select at, site from visits where deleted=0 and at>=? order by at", (start,)).fetchall()
+        con.close()
+    except sqlite3.Error:
+        return {}
+    out, last = {}, {}
+    for at, site in rows:
+        hit = next((d for d in sites if site == d or site.endswith("." + d)), None)
+        if not hit:
+            continue
+        if at - last.get(hit, 0) > 600:
+            out[hit] = out.get(hit, 0) + 1
+        last[hit] = at
+    return out
 
 
 UPLOADS = os.path.join(DATA, "uploads")
@@ -1214,7 +1246,10 @@ class Handler(BaseHTTPRequestHandler):
         if not (self.headers.get("Content-Type") or "").startswith("application/json"):
             return self.send(415, {"error": "json only"})
         keys = ("end", "apps", "web") if action == "start" else ("password",)
-        code, out = focus_call("/api/" + action, {k: rec.get(k) for k in keys})
+        body = {k: rec.get(k) for k in keys}
+        if action == "stop":
+            body["scope"] = "focus"  # schedules with their own lists (night SNS, Brave) keep running
+        code, out = focus_call("/api/" + action, body)
         if code != 200:
             return self.send(code, out)
         return self.send(*focus_state())

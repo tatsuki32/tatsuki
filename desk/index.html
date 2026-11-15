@@ -1112,7 +1112,12 @@ h1 .inedit{font-size:var(--t4);font-weight:700}
 .fbgroup{display:grid;gap:var(--s2)}
 .fbuntil{display:flex;align-items:center;gap:var(--s2);flex-wrap:wrap;margin-top:var(--s1)}
 .fbuntil input{min-height:32px;background:var(--bg);color:var(--ink);border:1px solid var(--line-2);border-radius:var(--r-s);padding:0 var(--s2);font:inherit;font-size:var(--t2);color-scheme:dark}
-.fbform,.fbfoot{max-width:40em}
+.fbform,.fbfoot,.fbalways{max-width:40em}
+.fbalways{padding:var(--s3);display:grid;gap:var(--s2)}
+.fbalways .fbrule p{margin:0}
+.fbalways ul{list-style:none;margin:var(--s1) 0 0;padding:0;display:grid;gap:var(--s1)}
+.fbalways li{display:flex;justify-content:space-between;gap:var(--s2);flex-wrap:wrap;min-width:0}
+.fbalways li span{overflow-wrap:anywhere}
 .fbfoot{display:grid;gap:var(--s2);justify-items:start}
 .fbfoot p{margin:0}
 .fbsrc{margin:var(--s2) 0 0}
@@ -3082,7 +3087,7 @@ function replyRow(t){
     <button class="tt" data-topen="${esc(t.id)}" data-noauto>${esc(t.title)}</button>
     ${r.about?`<div class="rabout" data-noauto>About: ${esc(clip(r.about,180))}</div>`:""}
     <div class="due">${[src[2],r.who,r.when,t.deadline!=null&&t.due!=null?"Due "+fmtDue(t.due):""].filter(Boolean).map(esc).join(" · ")}</div></div>
-    <div class="dacts"><button class="btn" data-rdone="${esc(t.id)}" title="Mark this as answered">Done</button><button class="btn" data-rarch="${esc(t.id)}" title="Archive without answering">Archive</button><button class="btn" data-rtask="${esc(t.id)}" title="Move this to the task board">→ Make it a task</button></div></div>`;
+    <div class="dacts"><button class="btn" data-rtask="${esc(t.id)}" title="Move this to the task board">→ Make it a task</button></div></div>`;
 }
 function repliesView(){
   const xs=replyList(), moved=(S.all||[]).filter(t=>replyKind(t)&&t.asTask&&TOPEN.has(t.status));
@@ -3090,7 +3095,7 @@ function repliesView(){
   <div class="card empty rwclosed"><b>${xs.length} waiting · opens at ${esc(rwTime(rwNext()))}</b>Replies open at 5:00 and 16:00. Until then, nothing here needs you.</div>`;
   const groups=RSRC.map(([k,e,l])=>[e,l,xs.filter(t=>replyKind(t)===k)]).filter(g=>g[2].length);
   return `<header class="head"><div><p class="eyebrow">Today</p><h1>Replies</h1></div><button class="btn primary" id="rwDone">Replies done</button></header>
-  <p class="sub">Email, WhatsApp, LINE and follow-ups that need an answer. They stay here, off your task board. Press “Done” when answered, “Archive” for one that needs no answer, or “Make it a task” for one that is real work. “Replies done” hides them until ${esc(rwTime(rwNext()))}.</p>
+  <p class="sub">Email, WhatsApp, LINE and follow-ups that need an answer. They stay here, off your task board. Press “Make it a task” for one that is real work. “Replies done” hides them until ${esc(rwTime(rwNext()))}.</p>
   ${groups.length?groups.map(([e,l,ts])=>`<section class="card dpanel" aria-label="${l}"><div class="dhead"><h2><span class="e">${e}</span>${l}</h2><span class="sub">${ts.length}</span></div><div>${ts.map(replyRow).join("")}</div></section>`).join(""):`<div class="card empty"><b>No replies waiting</b>New email, WhatsApp and LINE messages show up here after each import.</div>`}
   ${moved.length?`<p class="sub">Moved to Tasks: ${moved.map(t=>`<button class="tt" data-topen="${esc(t.id)}" data-noauto>${esc(clip(t.title,60))}</button> <button class="ibtn" data-rtask="${esc(t.id)}" data-back="1" title="Back to Replies" aria-label="Back to Replies">↩︎</button>`).join(" · ")}</p>`:""}`;
 }
@@ -6818,8 +6823,6 @@ function wire(){
   $("#newTask")&&($("#newTask").onclick=()=>openTask(null));
   document.querySelectorAll("[data-topen]").forEach(b=>b.onclick=()=>openTask(b.dataset.topen));
   document.querySelectorAll("[data-rtask]").forEach(b=>b.onclick=()=>replyToTask(b.dataset.rtask,b.dataset.back==="1"));
-  document.querySelectorAll("[data-rdone]").forEach(b=>b.onclick=()=>setTaskStatus(b.dataset.rdone,"done"));
-  document.querySelectorAll("[data-rarch]").forEach(b=>b.onclick=()=>setTaskStatus(b.dataset.rarch,"archived"));
   const rwB=$("#rwDone");if(rwB)rwB.onclick=()=>{rwB.disabled=true;repliesDone()};
   document.querySelectorAll("[data-story]").forEach(b=>b.onclick=()=>{S.ed=b.dataset.ed;S.region="All";S.focus=+b.dataset.story;if(location.hash==="#news")render();else location.hash="news"});
   $("#digest")&&($("#digest").ontoggle=e=>{S.digestOpen=e.target.open});
@@ -7308,7 +7311,21 @@ window.addEventListener("hashchange",()=>{uEnter();S.confirm=null;hideSelMenu();
 
 /* ---------- focus: starts and lifts FocusBlock on this Mac, through desk/server.py. Mac only; nothing is stored in Desk. ---------- */
 S.fb={state:null,err:null,min:25,until:"",apps:true,web:true};
-const fbActive=()=>!!S.fb.state?.active?.active;
+const fbActive=()=>{const a=S.fb.state?.active;return !!a?.active&&(a.appsGlobal===undefined||a.appsGlobal||a.webGlobal)};
+const fbHm=t=>{const [h,m]=String(t||"0:0").split(":").map(Number);return new Date(2000,0,1,h,m).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"})};
+function fbAlways(){
+  const st=S.fb.state, own=(st?.own||[]).filter(x=>x.enabled);
+  if(!own.length) return "";
+  const at=st.attempts||{sites:{},apps:{}}, op=st.opens||{};
+  const when=x=>x.start===x.end?"All day":fbHm(x.start)+"–"+fbHm(x.end);
+  const item=(name,kind)=>{const n=(kind==="app"?at.apps:at.sites)[name]||0,o=kind==="app"?0:op[name]||0;
+    const bits=[n?`stopped ${n}×`:"",o?`opened ${o}×`:""].filter(Boolean).join(" · ");
+    return `<li><span>${esc(name)}</span><span class="sub">${bits||"0 today"}</span></li>`};
+  const tried=Object.values(at.sites).concat(Object.values(at.apps)).reduce((a,b)=>a+b,0);
+  return `<section class="card fbalways" aria-label="Always on"><div class="dhead"><h2>Always on</h2><span class="sub">${tried?`Stopped ${tried}× today`:"Nothing stopped today"}</span></div>
+    ${own.map(x=>`<div class="fbrule"><p class="sub">${esc(x.name)} · ${esc(when(x))}</p><ul>${x.appList.map(a=>item(a,"app")).join("")}${x.siteList.map(d=>item(d,"site")).join("")}</ul></div>`).join("")}
+    <p class="sub" style="margin:0">“Stopped” counts tries while blocked, once a minute. “Opened” counts Chrome visits today, 10 minutes apart. Unlocking a focus session leaves these on.</p></section>`;
+}
 const fbEndMs=()=>(S.fb.state?.active?.end||0)*1000;
 const FB_SETTINGS="http://127.0.0.1:47800";
 function fbLeft(ms){ms=Math.max(0,ms);const s=Math.round(ms/1000),h=Math.floor(s/3600),m=Math.floor(s%3600/60);return (h?h+":"+pad(m):m)+":"+pad(s%60)}
@@ -7340,6 +7357,7 @@ function focusView(){
     ${f.err?`<div class="card empty"><b>${esc(f.err)}</b>Wait a moment and open it again. If a block is on, you can lift it from FocusBlock in the Applications folder.</div>`:""}`;
   if(fbActive()){const a=st.active;
     return `<header class="head"><div><p class="eyebrow">Focus · Blocking ${esc(fbTargets(a))}</p><h1 class="fbclock" data-fleft="${fbEndMs()}">${fbLeft(fbEndMs()-Date.now())}</h1><p class="sub fbsrc">${a.sources.map(s=>esc(s.name)+": until "+esc(fmtDue(s.end*1000))).join(" / ")}</p></div><button class="btn" data-fbstop>Unlock with password</button></header>
+    ${fbAlways()}
     ${FB_FOOT}
     ${notesHere("focus")}`;
   }
@@ -7353,6 +7371,7 @@ function focusView(){
     ${!st.hasPassword?`<p class="todo" style="margin:0">Set an unlock password in the settings first.</p>`:warn?`<p class="todo" style="margin:0">${esc(warn)}</p>`:""}
     <div class="row"><button class="btn primary" id="fbStart" ${ok?"":"disabled"}>${warn&&st.hasPassword?"Start anyway":"Start"}</button></div>
   </section>
+  ${fbAlways()}
   ${FB_FOOT}
   ${notesHere("focus")}`;
 }

@@ -134,6 +134,57 @@ def parse_hm(s):
     return datetime.time(int(h), int(m))
 
 
+# ---------------------------------------------------------------- attempts
+# How many times a blocked site or app was opened, per local day. Only the
+# list entry (e.g. "youtube.com") and a count are kept; never full URLs.
+ATTEMPT_GAP = 60  # one page opens many connections; count once a minute per item
+ATTEMPT_DAYS = 14
+_attempt_last = {}
+
+
+def attempts_path():
+    return os.path.join(DATA_DIR, "attempts.json")
+
+
+def load_attempts():
+    try:
+        with open(attempts_path()) as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+ATTEMPTS = {}
+
+
+def record_attempt(kind, name):
+    now = time.time()
+    key = (kind, name)
+    if now - _attempt_last.get(key, 0) < ATTEMPT_GAP:
+        _attempt_last[key] = now
+        return
+    _attempt_last[key] = now
+    day = datetime.date.fromtimestamp(now).isoformat()
+    with LOCK:
+        d = ATTEMPTS.setdefault(day, {"sites": {}, "apps": {}})
+        d[kind][name] = d[kind].get(name, 0) + 1
+        for old in sorted(ATTEMPTS)[:-ATTEMPT_DAYS]:
+            del ATTEMPTS[old]
+        try:
+            tmp = attempts_path() + ".tmp"
+            with open(tmp, "w") as f:
+                json.dump(ATTEMPTS, f)
+            os.replace(tmp, attempts_path())
+        except Exception as e:
+            log("attempts save error:", repr(e))
+
+
+def attempts_today():
+    day = datetime.date.today().isoformat()
+    d = ATTEMPTS.get(day) or {"sites": {}, "apps": {}}
+    return {"date": day, "sites": dict(d["sites"]), "apps": dict(d["apps"])}
+
+
 def schedule_window(sch, now):
     """Return (start, end) epochs of this schedule's window containing `now`, or None."""
     try:
@@ -333,6 +384,8 @@ def enforce_apps(mode, names):
                 log("[dev] would quit", name, pid)
                 _last_notice[name] = now
             continue
+        if pid not in _kill_seen:
+            record_attempt("apps", name)
         first = _kill_seen.setdefault(pid, now)
         try:
             os.kill(pid, signal.SIGKILL if now - first > 3 else signal.SIGTERM)
@@ -421,12 +474,18 @@ def host_blocked(host):
     h = host.lower().strip("[]").rstrip(".")
     if any(h == d or h.endswith("." + d) for d in ALWAYS_ALLOWED_HOSTS):
         return False
-    if any(h == d or h.endswith("." + d) for d in POLICY.get("extra", [])):
-        return True
+    for d in POLICY.get("extra", []):
+        if h == d or h.endswith("." + d):
+            record_attempt("sites", d)
+            return True
     if not POLICY.get("global", True):
         return False
-    hit = any(h == d or h.endswith("." + d) for d in POLICY["list"])
-    return hit if POLICY["mode"] == "block" else not hit
+    hit = next((d for d in POLICY["list"] if h == d or h.endswith("." + d)), None)
+    if POLICY["mode"] == "block":
+        if hit:
+            record_attempt("sites", hit)
+        return bool(hit)
+    return not hit
 
 
 async def pipe(reader, writer):
@@ -510,6 +569,7 @@ def public_state():
         "apps": CFG["apps"],
         "web": CFG["web"],
         "schedules": CFG["schedules"],
+        "attempts": attempts_today(),
         "dev": DEV,
     }
 
@@ -618,8 +678,11 @@ class Handler(BaseHTTPRequestHandler):
             if not check_password(body.get("password")):
                 return 403, {"error": "パスワードが違います"}
             CFG["session"] = None
+            # scope "focus" (from Desk) lifts the session and schedules that use the
+            # main lists, and leaves schedules with their own lists running.
+            own = {x.get("id") for x in CFG.get("schedules", []) if x.get("appList") or x.get("siteList")}
             for src in active_state(now)["sources"]:
-                if src["type"] == "schedule":
+                if src["type"] == "schedule" and not (body.get("scope") == "focus" and src["id"] in own):
                     CFG["skips"][src["id"]] = src["end"]
             CFG["skips"] = {k: v for k, v in CFG["skips"].items() if v > now}
             save_config()
@@ -656,6 +719,7 @@ def main():
     if not DEV and os.geteuid() != 0:
         sys.exit("root で実行してください (sudo)")
     load_config()
+    ATTEMPTS.update(load_attempts())
 
     if args.restore_proxy:
         restore_proxy()
