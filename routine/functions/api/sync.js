@@ -2,7 +2,8 @@
    GET /api/sync returns the state. Both need the header x-sync-key = the SYNC_KEY secret.
    Storage: one KV value "state" = {routines:[...], routinelog:[...]} in the ROUTINE namespace.
    Merge, per doc id: the newer updatedAt wins. A day doc (id YYYY-MM-DD) is joined instead: for every routine (up to 5, keyed by
-   its id), every check from either side is kept (earliest time), and its run ("<id>Run") is the one that ended last. So a run on the phone and checks on the Mac never erase each other.
+   its id), every check from either side is kept (earliest time), and its run ("<id>Run") is the one that ended last.
+   The day's goal counts ("goals") can go down as well as up, so they come from the newer doc as they are. So a run on the phone and checks on the Mac never erase each other.
    (An unchecked box can come back if the other side still has it; that is the price of never losing a check.) */
 const DAY = /^\d{4}-\d\d-\d\d$/;
 const MAX_BODY = 2_000_000;
@@ -39,7 +40,7 @@ function mergeDoc(a, b, isLog) {
   const isObj = v => v && typeof v === "object" && !Array.isArray(v);
   // every routine (up to 5): "<id>" holds that day's checks, "<id>Run" its run
   for (const k of new Set([...Object.keys(a), ...Object.keys(b)])) {
-    if (k === "totals" || k === "id") continue;
+    if (k === "totals" || k === "id" || k === "goals") continue; // goal counts go up and down: the newer doc's counts win
     if (k.endsWith("Run")) {
       const ra = a[k], rb = b[k];
       if (ra || rb) out[k] = !ra ? rb : !rb ? ra : (+rb.end || 0) > (+ra.end || 0) ? rb : ra;

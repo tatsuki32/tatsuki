@@ -64,6 +64,25 @@ a{color:inherit}
 .themes button{border:2px solid transparent;border-radius:999px;min-height:40px;padding:0 14px;cursor:pointer;font-weight:700;font-size:14px}
 .themes button[aria-pressed="true"]{border-color:var(--ink)}
 .tsunrise{background:linear-gradient(120deg,#ffe3a6,#f590b3);color:#3a2034}.tnight{background:linear-gradient(120deg,#1d1b4f,#3b2a6e);color:#f3efff}.tmint{background:linear-gradient(120deg,#e3f9d8,#7fd1c7);color:#16352b}.tocean{background:linear-gradient(120deg,#dff1ff,#7aa7ef);color:#13294b}.tlavender{background:linear-gradient(120deg,#f6e8ff,#b39ddb);color:#2e1f4a}
+.goals{gap:4px;padding:14px 16px}
+.ghead{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.ghead h2{flex:1}
+.ibtn.sm{min-width:36px;min-height:36px;padding:0 10px;font-size:14px}
+.gp{font-size:12px;font-weight:700;color:var(--muted);margin-top:6px}
+.grow{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:8px;align-items:center;padding:6px 0}
+.grow .em{font-size:20px;text-align:center}
+.gt{min-width:0}
+.gt b{display:block;font-size:15px;overflow-wrap:anywhere}
+.gt small{display:block;font-size:12px;color:var(--muted)}
+.grow.ok .gt b{color:var(--green)}
+.grow.ok .gt small{color:var(--green)}
+.gctl{display:flex;align-items:center;gap:4px}
+.gbtn{border:0;background:var(--soft);color:var(--ink);border-radius:999px;width:40px;height:40px;font-size:20px;font-weight:700;cursor:pointer;line-height:1}
+.gbtn:disabled{opacity:.35;cursor:default}
+.gbtn.plus{background:var(--go);color:var(--go-ink)}
+.grow.ok .gbtn.plus{background:var(--green)}
+.gn{min-width:2.6em;text-align:center;font-weight:700;font-size:17px}
+.gn small{font-size:12px;color:var(--muted);font-weight:400}
 .card{background:var(--card);border-radius:var(--r);padding:16px;display:grid;gap:12px;border:1px solid var(--line)}
 .card h2{margin:0;font-size:17px}
 .grid14{display:grid;grid-template-columns:auto repeat(14,minmax(0,1fr));gap:3px;align-items:center;font-size:11px}
@@ -295,7 +314,7 @@ function history(){
 function home(){
   const h=new Date(Date.now()+HCMC).getUTCHours(),ls=sortedLists();
   return `<header class="top"><h1>${h<11?"Good morning":h<18?"Hello":"Good evening"}</h1><a class="ibtn" href="#settings" aria-label="Settings">⚙️</a></header>
-  ${ls.map(l=>routineCard(l.id)).join("")}${ls.length<MAXR?`<button class="newr" data-newr>＋ New routine <span class="sub">${ls.length} of ${MAXR}</span></button>`:""}${history()}
+  ${ls.slice(0,1).map(l=>routineCard(l.id)).join("")}${goalsCard()}${ls.slice(1).map(l=>routineCard(l.id)).join("")}${ls.length<MAXR?`<button class="newr" data-newr>＋ New routine <span class="sub">${ls.length} of ${MAXR}</span></button>`:""}${history()}
   <p class="syncline" id="syncline">${syncText()}</p>`;
 }
 
@@ -353,6 +372,79 @@ async function moveItem(id,dir){
   render();
 }
 
+/* ---------- goals: things to do sometime in the day, the week or the month (not part of a routine) ----------
+   A goal is a doc in "routines" with kind:"goal" and no "when", so routine lists and the Desk checklist never see it:
+   {id, kind:"goal", icon, title, period: day|week|month, target (count), remindAt (HH:MM or ""), easy (a lighter version that
+   still counts), order}. The count is kept per day in the day doc as goals:{goalId:n}; a week (Monday first) or a month adds its
+   days up. Missing a day shows nothing red. */
+const PERIODS={day:["Daily","today"],week:["Weekly","this week"],month:["Monthly","this month"]};
+const MAXG=10;
+const goals=()=>S.routines.filter(x=>x.kind==="goal"&&!x.deleted).sort((a,b)=>(+a.order||0)-(+b.order||0));
+const isDay=id=>/^\d{4}-\d\d-\d\d$/.test(id);
+function periodDays(p,d){
+  if(p==="week"){const wd=(new Date(d+"T12:00:00Z").getUTCDay()+6)%7,mon=dayOff(d,-wd);return [...Array(7)].map((_,i)=>dayOff(mon,i))}
+  if(p==="month"){const m=d.slice(0,7),out=[];for(let x=m+"-01";x.slice(0,7)===m;x=dayOff(x,1))out.push(x);return out}
+  return [d];
+}
+const gOn=(g,d)=>+((dayDoc(d).goals||{})[g.id])||0;
+const gCount=(g,d=today())=>periodDays(g.period,d).reduce((s,x)=>s+gOn(g,x),0);
+const gTarget=g=>Math.max(1,Math.round(+g.target||1));
+async function gBump(id,delta){
+  const g=goals().find(x=>x.id===id);if(!g)return;const d=today(),before=gCount(g);
+  let on=d;
+  if(delta<0&&!gOn(g,d)){on=periodDays(g.period,d).filter(x=>x<=d).reverse().find(x=>gOn(g,x)>0);if(!on)return} // − takes back the latest one in this period
+  const doc=JSON.parse(JSON.stringify(dayDoc(on))),gs=doc.goals||(doc.goals={});
+  gs[id]=Math.max(0,(+gs[id]||0)+delta);
+  await saveDoc("routinelog",doc);
+  if(delta>0&&before<gTarget(g)&&before+1>=gTarget(g)){rpUnlock();RPS.done();toast(`✓ ${g.title}: done ${PERIODS[g.period][1]}`);confetti()}
+  render();
+}
+function goalsCard(){
+  const gs=goals();
+  if(!gs.length)return `<button class="newr" onclick="location.hash='goals'">＋ Daily, weekly or monthly goals</button>`;
+  const row=g=>{const n=gCount(g),t=gTarget(g),ok=n>=t;
+    return `<div class="grow ${ok?"ok":""}"><span class="em">${esc(g.icon||"✨")}</span><div class="gt"><b>${esc(g.title)}</b><small>${ok?"✓ Done "+PERIODS[g.period][1]:`${t>1?t+" times ":""}${PERIODS[g.period][1]}`}${g.easy?" · "+esc(g.easy):""}${g.remindAt&&!ok?" · 🔔 "+esc(g.remindAt):""}</small></div>
+      <div class="gctl"><button class="gbtn" data-gminus="${esc(g.id)}" aria-label="One less" ${n?"":"disabled"}>−</button><span class="gn" aria-label="${n} of ${t}">${n}<small>/${t}</small></span><button class="gbtn plus" data-gplus="${esc(g.id)}" aria-label="One more">＋</button></div></div>`};
+  const groups=Object.keys(PERIODS).map(p=>[p,gs.filter(g=>g.period===p)]).filter(([,xs])=>xs.length);
+  const done=gs.filter(g=>gCount(g)>=gTarget(g)).length;
+  return `<section class="card goals" aria-label="Goals"><div class="ghead"><h2>Goals</h2><span class="sub">${done} of ${gs.length} done</span><a class="ibtn sm" href="#goals" aria-label="Edit goals">✏️</a></div>
+    ${groups.map(([p,xs])=>`<div class="gp">${PERIODS[p][0]}</div>${xs.map(row).join("")}`).join("")}</section>`;
+}
+function goalsView(){
+  const gs=goals();
+  return `<header class="top"><a class="ibtn" href="#" aria-label="Back">‹</a><h1>🎯 Goals</h1>${gs.length<MAXG?`<button class="ibtn go" data-gadd>＋ Add</button>`:""}</header>
+  <section class="card"><p class="sub" style="margin:0">Things to do once in the day, the week or the month, apart from the routines. Keep it to a few. Tap one to change it.</p>
+  <div>${gs.map((g,i)=>`<div class="erow"><span class="em">${esc(g.icon||"✨")}</span><button style="all:unset;cursor:pointer;min-width:0" data-gedit="${esc(g.id)}"><b>${esc(g.title)}</b><span class="sub">${PERIODS[g.period][0]} · ${gTarget(g)} time${gTarget(g)>1?"s":""}${g.remindAt?" · 🔔 "+esc(g.remindAt):""}${g.easy?" · "+esc(g.easy):""}</span></button>
+    <span class="acts"><button class="ibtn" data-gup="${esc(g.id)}" aria-label="Move up" ${i?"":"disabled"}>↑</button><button class="ibtn" data-gdown="${esc(g.id)}" aria-label="Move down" ${i<gs.length-1?"":"disabled"}>↓</button></span></div>`).join("")||`<p class="note">No goals yet. Press ＋ Add.</p>`}</div></section>
+  <p class="note">A reminder rings while this app is open, and on the Mac Desk even when it's closed. It stays quiet once the goal is done.</p>`;
+}
+function goalSheet(g){
+  return new Promise(res=>{
+    const bg=document.createElement("div");bg.className="sheetbg";
+    bg.innerHTML=`<div class="sheet" role="dialog" aria-modal="true" aria-label="${g?"Edit goal":"Add a goal"}"><h2>${g?"Edit goal":"Add a goal"}</h2>
+      <div class="row2"><div class="field"><label for="gIcon">Emoji</label><input id="gIcon" maxlength="4" value="${esc(g?.icon||"")}" placeholder="✨"></div>
+      <div class="field"><label for="gPer">How often</label><select id="gPer">${Object.entries(PERIODS).map(([k,[l]])=>`<option value="${k}" ${(g?.period||"day")===k?"selected":""}>${l}</option>`).join("")}</select></div></div>
+      <div class="field"><label for="gTitle">What to do</label><input id="gTitle" maxlength="120" value="${esc(g?.title||"")}" placeholder="Take a shower in the morning or at noon"></div>
+      <div class="row2"><div class="field"><label for="gTgt">Times to count as done</label><input id="gTgt" type="number" min="1" max="99" inputmode="numeric" value="${gTarget(g||{})}"></div>
+      <div class="field"><label for="gRem">Remind me at (if not done)</label><input id="gRem" type="time" value="${esc(g?.remindAt||"")}"></div></div>
+      <div class="field"><label for="gEasy">Easy version that still counts (optional)</label><input id="gEasy" maxlength="80" value="${esc(g?.easy||"")}" placeholder="Just rinse your body"></div>
+      <div class="btnrow"><button class="ibtn go" id="gOk">Save</button><button class="ibtn" id="gNo">Cancel</button>${g?`<button class="ibtn" id="gDel">Remove</button>`:""}</div></div>`;
+    document.body.appendChild(bg);$("#gTitle").focus();
+    const done=v=>{bg.remove();res(v)};
+    bg.onclick=e=>{if(e.target===bg)done(null)};
+    $("#gNo").onclick=()=>done(null);
+    $("#gOk").onclick=()=>{const title=$("#gTitle").value.trim();if(!title){$("#gTitle").focus();return}const rem=$("#gRem").value;
+      done({icon:$("#gIcon").value.trim(),title,period:$("#gPer").value,target:Math.max(1,Math.min(99,Math.round(+$("#gTgt").value||1))),remindAt:/^\d\d:\d\d$/.test(rem)?rem:"",easy:$("#gEasy").value.trim()})};
+    $("#gDel")&&($("#gDel").onclick=e=>{const b=e.currentTarget;if(!b.dataset.sure){b.dataset.sure="1";b.textContent="Remove it?";return}done({deleted:true})});
+  });
+}
+async function editGoal(id){const g=goals().find(x=>x.id===id),v=await goalSheet(g);if(!v)return;await saveDoc("routines",{...g,...v});render();toast(v.deleted?"Removed":"Saved")}
+async function addGoal(){if(goals().length>=MAXG){toast(`Up to ${MAXG} goals`);return}const v=await goalSheet(null);if(!v)return;const gs=goals();
+  await saveDoc("routines",{id:"g"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),kind:"goal",when:"",order:(gs.length?+gs[gs.length-1].order||0:0)+1,...v});render();toast("Added")}
+async function moveGoal(id,dir){const gs=goals(),i=gs.findIndex(x=>x.id===id),j=i+dir;if(i<0||j<0||j>=gs.length)return;
+  const o=gs.map((x,k)=>({x,o:k+1}));[o[i].o,o[j].o]=[o[j].o,o[i].o];for(const {x,o:ord} of o)if(+x.order!==ord)await saveDoc("routines",{...x,order:ord});render()}
+const GW={en:(t,p)=>`${t}: not done ${p} yet.`,ja:(t,p)=>`${p==="today"?"今日":p==="this week"?"今週":"今月"}の「${t}」はまだです。`,ru:(t,p)=>`«${t}» ещё не сделано.`};
+
 /* ---------- settings ---------- */
 function settingsView(){
   const c=settings(),url=location.origin+location.pathname;
@@ -376,7 +468,7 @@ function settingsView(){
 function render(){
   if(P)return; // the player draws itself
   const h=location.hash.slice(1);let m;
-  $("#app").innerHTML=(m=/^edit\/([\w-]+)$/.exec(h))&&lists().some(l=>l.id===m[1])?editView(m[1]):h==="settings"?settingsView():home();
+  $("#app").innerHTML=(m=/^edit\/([\w-]+)$/.exec(h))&&lists().some(l=>l.id===m[1])?editView(m[1]):h==="settings"?settingsView():h==="goals"?goalsView():home();
   wire();
 }
 function wire(){
@@ -388,6 +480,12 @@ function wire(){
   const f=$("#setForm");if(f)f.onsubmit=async e=>{e.preventDefault();
     await saveDoc("routinelog",{...(S.log.find(x=>x.id==="settings")||{cutoff:4}),id:"settings",voice:$("#sV").value,nag:+$("#sG").value});toast("Saved")};
   document.querySelectorAll("[data-newr]").forEach(b=>b.onclick=newRoutine);
+  document.querySelectorAll("[data-gplus]").forEach(b=>b.onclick=()=>gBump(b.dataset.gplus,1));
+  document.querySelectorAll("[data-gminus]").forEach(b=>b.onclick=()=>gBump(b.dataset.gminus,-1));
+  document.querySelectorAll("[data-gadd]").forEach(b=>b.onclick=addGoal);
+  document.querySelectorAll("[data-gedit]").forEach(b=>b.onclick=()=>editGoal(b.dataset.gedit));
+  document.querySelectorAll("[data-gup]").forEach(b=>b.onclick=()=>moveGoal(b.dataset.gup,-1));
+  document.querySelectorAll("[data-gdown]").forEach(b=>b.onclick=()=>moveGoal(b.dataset.gdown,1));
   const lf=$("#listForm");if(lf){const w=lf.dataset.list;
     lf.querySelectorAll("[data-theme]").forEach(b=>b.onclick=()=>lf.querySelectorAll("[data-theme]").forEach(x=>x.setAttribute("aria-pressed",x===b)));
     lf.onsubmit=async e=>{e.preventDefault();const name=$("#lName").value.trim(),at=$("#lAt").value;if(!name){$("#lName").focus();return}
@@ -627,6 +725,10 @@ setInterval(()=>{
   if(P||document.visibilityState!=="visible")return;const c=settings();if(c.alarm===false)return;const now=new Date(Date.now()+HCMC).toISOString().slice(11,16);
   lists().filter(l=>l.alarm!==false&&l.at).forEach(l=>{const w=l.id;if(P||now!==l.at)return;const key=today()+w;let last="";try{last=localStorage.getItem("rt-alarm")||""}catch(e){}
     if(last===key||run(today(),w))return;try{localStorage.setItem("rt-alarm",key)}catch(e){}rpOpen(w,macQuiet()?"":"alarm")});
+  // goal reminders: once a day per goal, only if it isn't done yet for its day, week or month
+  goals().filter(g=>g.remindAt===now&&gCount(g)<gTarget(g)).forEach(g=>{const key="rt-g-"+g.id;let last="";try{last=localStorage.getItem(key)||""}catch(e){}
+    if(last===today())return;try{localStorage.setItem(key,today())}catch(e){}
+    const v=settings().voice,p=PERIODS[g.period][1];toast(`🔔 ${g.title}: not done ${p} yet`);if(!macQuiet()){RPS.chime();setTimeout(()=>rpSay(GW[v](g.title,p),v),700)}});
 },15000);
 
 /* ---------- start ---------- */

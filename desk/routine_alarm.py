@@ -9,6 +9,9 @@ time, and opens the Routine app at http://localhost:4747/routine/#alarm/<when>.
 - If the Mac was asleep at the start time, it rings when it wakes, up to 30 minutes late.
 - Quiet hours (QUIET, 22:00-07:00 Ho Chi Minh City time; everyone at home is asleep): no sound and no voice.
   It only opens the Routine app's start screen (#start/<when>), which does not ring either.
+- Goals (routines docs with kind "goal": things to do in the day, week or month): at a goal's remindAt, if it isn't done yet for
+  its day / week / month (counts in the day docs' "goals"), a Mac notification and the voice say so. Once a day per goal.
+  In quiet hours only the silent notification.
 - Nothing is written except its own small state file (data/routine-alarm.json).
 
   python3 desk/routine_alarm.py plan     what would ring now
@@ -97,6 +100,62 @@ def due(now=None):
     return out
 
 
+GOAL_SAY = {"en": "{}: not done {} yet.", "ja": "{}の「{}」はまだです。", "ru": "«{}» ещё не сделано."}
+GOAL_WHEN = {"day": ("today", "今日"), "week": ("this week", "今週"), "month": ("this month", "今月")}
+NOTE = ("on run argv", "display notification (item 1 of argv) with title (item 2 of argv)", "end run")
+
+
+def period_days(period, day):
+    t = time.strptime(day, "%Y-%m-%d")
+    base = time.mktime((t.tm_year, t.tm_mon, t.tm_mday, 12, 0, 0, 0, 0, -1))
+    if period == "week":
+        mon = base - t.tm_wday * 86400
+        return [time.strftime("%Y-%m-%d", time.localtime(mon + i * 86400)) for i in range(7)]
+    if period == "month":
+        return [d for d in (time.strftime("%Y-%m-%d", time.localtime(base + (i - t.tm_mday + 1) * 86400)) for i in range(31)) if d[:7] == day[:7]]
+    return [day]
+
+
+def goals_due(now=None):
+    now = now or time.time()
+    docs = log_docs()
+    s = settings(docs)
+    items = read(os.path.join(DATA, "routines.json"), [])
+    state = read(STATE, {})
+    out = []
+    for g in items if isinstance(items, list) else []:
+        if not isinstance(g, dict) or g.get("kind") != "goal" or g.get("deleted") or not g.get("remindAt"):
+            continue
+        at = start_of(now, g["remindAt"])
+        if at is None or not (at <= now < at + LATE):
+            continue
+        day = day_of(now, s["cutoff"])
+        if state.get("g:" + g["id"]) == day:
+            continue
+        period = g.get("period") if g.get("period") in GOAL_WHEN else "day"
+        n = sum(int((docs.get(d) or {}).get("goals", {}).get(g["id"]) or 0) for d in period_days(period, day))
+        if n >= max(1, int(g.get("target") or 1)):
+            continue
+        out.append((g, period, day, s))
+    return out
+
+
+def remind(g, period, s, now=None):
+    title = g.get("title") or "Goal"
+    en, ja = GOAL_WHEN[period]
+    text = GOAL_SAY["ja"].format(ja, title) if s["voice"] == "ja" else GOAL_SAY["ru"].format(title) if s["voice"] == "ru" else GOAL_SAY["en"].format(title, en)
+    cmd = ["/usr/bin/osascript"]
+    for line in NOTE:
+        cmd += ["-e", line]
+    subprocess.run(cmd + [text, "Routine"], capture_output=True, timeout=10)  # the words go in as arguments, never into the script
+    if quiet(now):
+        return
+    subprocess.run(["/usr/bin/afplay", SOUND], capture_output=True, timeout=10)
+    vc = ["/usr/bin/say"] + (["-v", VOICE[s["voice"]]] if s["voice"] in VOICE else []) + [text]
+    if subprocess.run(vc, capture_output=True, timeout=30).returncode != 0:
+        subprocess.run(["/usr/bin/say", text], capture_output=True, timeout=30)
+
+
 def quiet(now=None):
     h = time.gmtime((now or time.time()) + HCMC).tm_hour
     a, b = QUIET
@@ -125,6 +184,14 @@ def tick(now=None):
             json.dump(state, f)
         os.replace(tmp, STATE)
         ring(when, s, now)
+    for g, period, day, s in goals_due(now):
+        state = read(STATE, {})
+        state["g:" + g["id"]] = day
+        tmp = STATE + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(state, f)
+        os.replace(tmp, STATE)
+        remind(g, period, s, now)
 
 
 def watch():
@@ -141,7 +208,7 @@ if __name__ == "__main__":
     if arg[0] == "plan":
         s = settings(log_docs())
         print(json.dumps({"routines": [{k: r.get(k) for k in ("id", "name", "at", "alarm")} for r in routines(s)], "settings": {k: s[k] for k in ("alarm", "voice")},
-                          "due": [w for w, _, _ in due()], "quietNow": quiet(), "state": read(STATE, {})}, ensure_ascii=False))
+                          "due": [w for w, _, _ in due()], "goalsDue": [g["title"] for g, _, _, _ in goals_due()], "quietNow": quiet(), "state": read(STATE, {})}, ensure_ascii=False))
     elif arg[0] == "ring" and len(arg) > 1:
         s = settings(log_docs())
         r = next((x for x in routines(s) if x["id"] == arg[1]), None)
