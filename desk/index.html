@@ -364,6 +364,10 @@ details.draft .sent-as summary{cursor:pointer;display:block;padding:var(--s2) 0;
 .task .tsel{margin-left:auto;display:flex;gap:var(--s1);flex:none;max-width:100%}
 .task select{min-width:0;max-width:100%}
 .task .dl.hot,.task .dl.over{color:var(--ink-2);background:var(--surface-2);font-weight:400} /* "Today" already says it: no red on the board */
+.findbox{display:flex;align-items:center;gap:var(--s2);margin:0 0 var(--s2)}
+.findbox input{flex:1;min-width:0;max-width:480px;font:inherit;font-size:var(--t2);color:var(--ink);background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r-s);padding:var(--s2) var(--s4)}
+.findbox input:focus{outline:2px solid var(--accent);outline-offset:1px}
+.findbox .sub{white-space:nowrap}
 .taskbar{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s2) var(--s4)}
 .tsort{display:flex;align-items:center;gap:var(--s2);font-size:var(--t1);color:var(--muted)}
 .tgroup{display:grid;gap:var(--s2)}
@@ -2351,8 +2355,13 @@ function boardHtml(list,hint,pid){
   <div class="board">${TCOLS.map(k=>{const items=col(k);return `<section class="col ${S.taskCol===k?"show":""}" data-col="${k}" aria-label="${tLabel(k)}">
     <h2>${tLabel(k)}<span class="count">${items.length}</span>${colAdd(k,pid)}</h2>${items.map(t=>taskCard(t,ps)).join("")||`<p class="hint">${hint[k]}</p>`}</section>`}).join("")}</div>`;
 }
+/* search box on Tasks and Replies: every word must appear (title, clear title, memo, genre, type; replies add sender, subject and summary). Kept only while Desk is open. */
+const findNorm=x=>String(x||"").toLowerCase().normalize("NFKC");
+function findHit(q,parts){const ws=findNorm(q).split(/\s+/).filter(Boolean);if(!ws.length)return true;const hay=findNorm(parts.filter(Boolean).join(" "));return ws.every(w=>hay.includes(w))}
+const taskHay=t=>[t.title,t.clear?.title,t.memo,t.desc,t.note,genreOf(t)?.name,typeOf(t),t.dateLabel];
+const findBox=(id,q,ph,n)=>`<div class="findbox"><input type="search" id="${id}" value="${esc(q||"")}" placeholder="${esc(ph)}" aria-label="${esc(ph)}" autocomplete="off" spellcheck="false">${q?`<span class="sub">${n} found</span><button class="btn sm" data-findclear="${id}">Clear</button>`:""}</div>`;
 function tasks(){
-  const f=projActive().some(p=>p.id===S.projFilter)?S.projFilter:"all", list=tFiltApply(f==="all"?S.board:S.board.filter(t=>t.projectId===f));
+  const f=projActive().some(p=>p.id===S.projFilter)?S.projFilter:"all", list=tFiltApply(f==="all"?S.board:S.board.filter(t=>t.projectId===f)).filter(t=>findHit(S.tq,taskHay(t)));
   const ps=tPeriods(), col=k=>list.filter(t=>t.status===k).sort(taskCmp(S.taskSort,k==="done"));
   const shelf=k=>list.filter(t=>t.status===k).sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
   const hint={notyet:"New tasks and mail that needs action",doing:"Drag here to start",done:"Finished things go here"};
@@ -2361,6 +2370,7 @@ function tasks(){
   ${notesHere("tasks")}
   ${decideBar()}
   ${projChips(f)}
+  ${findBox("tFind",S.tq,"Search tasks",list.filter(t=>!["archived","dropped","paused"].includes(t.status)).length)}
   <div class="taskbar"><label class="tsort">Sort<select id="tSort">${TSORT.map(([k,l])=>`<option value="${k}" ${k===S.taskSort?"selected":""}>${l}</option>`).join("")}</select></label><nav class="shelfnav" aria-label="Stopped tasks">${TSHELF.map(k=>`<button class="shelfbtn" data-tshelf="${k}" aria-expanded="${S.taskShelf===k}">${tLabel(k)} ${shelf(k).length}</button>`).join("")}<a class="shelfbtn" href="#notdoing">Not doing ${list.filter(t=>t.status==="dropped").length}</a><span class="sub tnotyet">Not yet clarified ${notCleared()}</span></nav>${tFiltBar(f==="all"?S.board:S.board.filter(t=>t.projectId===f))}</div>
   ${S.taskShelf?`<section class="shelf" aria-label="${tLabel(S.taskShelf)}">${shelf(S.taskShelf).map(t=>taskCard(t,ps)).join("")||`<p class="sub">No ${tLabel(S.taskShelf).toLowerCase()} tasks</p>`}</section>`:""}
   <div class="chips colTabs" role="group" aria-label="Column to show">${TCOLS.map(k=>`<button class="chip" data-tcol="${k}" aria-pressed="${S.taskCol===k}">${tLabel(k)} ${col(k).length}</button>`).join("")}</div>
@@ -3092,13 +3102,14 @@ function replyRow(t){
     <div class="dacts"><button class="btn" data-rtask="${esc(t.id)}" title="Move this to the task board">→ Make it a task</button></div></div>`;
 }
 function repliesView(){
-  const xs=replyList(), moved=(S.all||[]).filter(t=>replyKind(t)&&t.asTask&&TOPEN.has(t.status));
+  const all=replyList(), xs=all.filter(t=>{const r=replyInfo(t);return findHit(S.rq,[t.title,r.about,r.who,r.subj,t.memo])}), moved=(S.all||[]).filter(t=>replyKind(t)&&t.asTask&&TOPEN.has(t.status));
   if(!replyOpen()) return `<header class="head"><div><p class="eyebrow">Today</p><h1>Replies</h1></div></header>
   <div class="card empty rwclosed"><b>${xs.length} waiting · opens at ${esc(rwTime(rwNext()))}</b>Replies open at 5:00 and 16:00. Until then, nothing here needs you.</div>`;
   const groups=RSRC.map(([k,e,l])=>[e,l,xs.filter(t=>replyKind(t)===k)]).filter(g=>g[2].length);
   return `<header class="head"><div><p class="eyebrow">Today</p><h1>Replies</h1></div><button class="btn primary" id="rwDone">Replies done</button></header>
   <p class="sub">Email, WhatsApp, LINE and follow-ups that need an answer. They stay here, off your task board. Press “Make it a task” for one that is real work. “Replies done” hides them until ${esc(rwTime(rwNext()))}.</p>
-  ${groups.length?groups.map(([e,l,ts])=>`<section class="card dpanel" aria-label="${l}"><div class="dhead"><h2><span class="e">${e}</span>${l}</h2><span class="sub">${ts.length}</span></div><div>${ts.map(replyRow).join("")}</div></section>`).join(""):`<div class="card empty"><b>No replies waiting</b>New email, WhatsApp and LINE messages show up here after each import.</div>`}
+  ${all.length?findBox("rFind",S.rq,"Search replies (email, name, subject)",xs.length):""}
+  ${groups.length?groups.map(([e,l,ts])=>`<section class="card dpanel" aria-label="${l}"><div class="dhead"><h2><span class="e">${e}</span>${l}</h2><span class="sub">${ts.length}</span></div><div>${ts.map(replyRow).join("")}</div></section>`).join(""):`${S.rq&&all.length?`<div class="card empty"><b>Nothing matches “${esc(S.rq)}”</b>Try another word, or press Clear.</div>`:`<div class="card empty"><b>No replies waiting</b>New email, WhatsApp and LINE messages show up here after each import.</div>`}`}
   ${moved.length?`<p class="sub">Moved to Tasks: ${moved.map(t=>`<button class="tt" data-topen="${esc(t.id)}" data-noauto>${esc(clip(t.title,60))}</button> <button class="ibtn" data-rtask="${esc(t.id)}" data-back="1" title="Back to Replies" aria-label="Back to Replies">↩︎</button>`).join(" · ")}</p>`:""}`;
 }
 /* "Replies done": closes the window until the next 5:00 or 16:00 and adds one win for this sitting (replies-<date>-am|pm) */
@@ -6850,6 +6861,13 @@ function wire(){
   document.querySelectorAll("[data-tldel]").forEach(b=>b.onclick=async()=>{const r=(S.timelog||[]).find(x=>x.id===b.dataset.tldel);if(!r)return;try{await tlPut({...r,deleted:true});toast("Deleted");render()}catch(e){toast("Couldn't save")}});
   document.querySelectorAll("[data-mundo]").forEach(b=>b.onclick=async()=>{b.disabled=true;try{await undoMerge(b.dataset.mundo)}catch(e){toast("Couldn't save. Please try again")}render()});
   document.querySelectorAll("[data-tback]").forEach(b=>b.onclick=()=>bringBack(b.dataset.tback));
+  [["tFind","tq"],["rFind","rq"]].forEach(([id,k])=>{const el=document.getElementById(id);if(!el)return;let tm=0;
+    const go=()=>{clearTimeout(tm);tm=setTimeout(()=>{S[k]=el.value;S.findFocus=id;S.findPos=el.selectionStart;render()},150)};
+    el.oninput=e=>{if(!e.isComposing)go()};el.addEventListener("compositionend",go);
+    el.onkeydown=e=>{if(e.key==="Escape"){e.preventDefault();if(el.value){S[k]="";S.findFocus=id;S.findPos=0;render()}else el.blur()}};
+    el.onblur=()=>{if(S.findFocus===id)S.findFocus=null};
+    if(S.findFocus===id){el.focus();const p=Math.min(S.findPos??el.value.length,el.value.length);el.setSelectionRange(p,p)}});
+  document.querySelectorAll("[data-findclear]").forEach(b=>b.onclick=()=>{const id=b.dataset.findclear;S[id==="tFind"?"tq":"rq"]="";S.findFocus=id;S.findPos=0;render()});
   [["#tFGenre","genre"],["#tFType","type"]].forEach(([q,k])=>{const el=$(q);if(el)el.onchange=()=>{tFiltSet({...tFilt(),[k]:el.value});render()}});
   document.querySelectorAll("[data-gedit]").forEach(b=>b.onclick=()=>{const box=document.getElementById("ge-"+b.dataset.gedit);if(box)box.hidden=!box.hidden});
   document.querySelectorAll("[data-gsave]").forEach(b=>b.onclick=()=>saveGenre(b.dataset.gsave));
