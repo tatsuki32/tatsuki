@@ -1673,6 +1673,7 @@ const TSRC={manual:["✍️","Manual"],memo:["📝","From a note"],mail:["✉️
 /* Nudges that chase an answer (Life OS 02, "Email nudge …", "WhatsApp催促 …") are replies too. desk/replywin.py has the same rule. */
 const REPLYSRC=new Set(["mail","whatsapp","line"]);
 function replyKind(t){if(!t)return null;const s=t.source||"", ti=String(t.title||"");
+  if(s==="manual")return null; // a task you made yourself stays on the board, whatever its title
   if(s==="lifeos-02"||/^\s*(?:Email nudge|WhatsApp nudge|メール催促|WhatsApp催促)/i.test(ti))return "nudge";
   if(REPLYSRC.has(s))return s;
   if(/^\s*(?:Email|WhatsApp|LINE)\s+(?:reply|nudge)\b|^\s*(?:メール|WhatsApp|LINE)\s*(?:返信|催促)/i.test(ti))return /^\s*(?:Email|メール)/i.test(ti)?"mail":/^\s*WhatsApp/i.test(ti)?"whatsapp":"line";

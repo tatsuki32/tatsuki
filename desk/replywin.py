@@ -28,6 +28,8 @@ def reply_kind(t):
     if not isinstance(t, dict):
         return None
     src, title = t.get("source") or "", str(t.get("title") or "")
+    if src == "manual":
+        return None  # a task you made yourself stays on the board, whatever its title
     if src == "lifeos-02" or re.match(r"^\s*(?:Email nudge|WhatsApp nudge|メール催促|WhatsApp催促)", title, re.I):
         return "nudge"
     if src in ("mail", "whatsapp", "line"):
