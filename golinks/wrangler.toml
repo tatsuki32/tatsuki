@@ -29,3 +29,8 @@ THREADS_APP_ID = "1498510273338181"
 [[kv_namespaces]]
 binding = "MEDIA"
 id = "ea41cf63df7040d3827b12a4c256aaed"
+
+# videos waiting for Instagram, Threads and Facebook to fetch them (deleted after two days, also by a bucket lifecycle rule)
+[[r2_buckets]]
+binding = "VIDEOS"
+bucket_name = "tatsuki-go-videos"

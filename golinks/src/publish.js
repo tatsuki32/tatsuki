@@ -48,7 +48,8 @@ export async function videoStart(env) {
 
 export async function videoPart(env, key, upload, n, request) {
   if (!env.VIDEOS || !isVideo(key) || !(n >= 1 && n <= 100)) return { error: "bad part" };
-  const part = await env.VIDEOS.resumeMultipartUpload(key, upload).uploadPart(n, request.body);
+  // read the part first: R2 needs to know its length, and a streamed body from the request does not carry it
+  const part = await env.VIDEOS.resumeMultipartUpload(key, upload).uploadPart(n, await request.arrayBuffer());
   return { partNumber: part.partNumber, etag: part.etag };
 }
 
