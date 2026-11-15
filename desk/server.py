@@ -50,6 +50,7 @@ import golinks
 import youtube
 import instagram_dm  # Instagram DMs in Replies (read and sent through go.tany.im)
 import showcase
+import campus  # 地球キャンパス通信: issues on this Mac, readers only in the tany.im Worker
 import screentime_sync
 import usage
 import site_sync
@@ -990,6 +991,11 @@ class Handler(BaseHTTPRequestHandler):
             return self.posts_get(path.split("/")[3:])
         if path == "/api/showcase":
             return self.send(200, showcase.view())
+        if path.startswith("/api/campus/issues/") and path.endswith("/preview"):
+            page_ = campus.preview(path.split("/")[4])
+            return self.send(200, page_, "text/html; charset=utf-8") if page_ else self.send(404, {"error": "not found"})
+        if path == "/api/campus" or path.startswith("/api/campus/"):
+            return self.send(*campus.handle("GET", [x for x in path.split("/")[3:] if x], {}))
         if path == "/api/mailclean":
             return self.send(200, gmail_clean.view())
         if path == "/api/body":
@@ -1265,6 +1271,10 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(415, {"error": "json only"})
             transcribe_desk.start()
             return self.send(200, transcribe_desk.view())
+        if urlsplit(self.path).path.startswith("/api/campus/") and method in ("POST", "PUT"):
+            if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+                return self.send(415, {"error": "json only"})
+            return self.send(*campus.handle(method, [x for x in urlsplit(self.path).path.split("/")[3:] if x], rec if isinstance(rec, dict) else {}))
         if method == "POST" and urlsplit(self.path).path == "/api/showcase/open-local":
             if not (self.headers.get("Content-Type") or "").startswith("application/json"):
                 return self.send(415, {"error": "json only"})

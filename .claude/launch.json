@@ -42,6 +42,18 @@
       "runtimeExecutable": "/bin/sh",
       "runtimeArgs": ["-c", "cd sift && WRANGLER_SEND_METRICS=false WRANGLER_LOG_PATH=/tmp/claude/wl exec npx wrangler dev --test-scheduled --port ${PORT:-8799} --ip 127.0.0.1"],
       "port": 8799
+    },
+    {
+      "name": "desk-campus-test",
+      "runtimeExecutable": "/bin/sh",
+      "runtimeArgs": ["-c", "cd desk && DESK_CAMPUS_DIR=/tmp/claude/campus-test/data DESK_TANY_SITE=/tmp/claude/campus-test/site DESK_TANY_DEPLOY=echo DESK_CAMPUS_WORKER=http://127.0.0.1:8797 DESK_CAMPUS_KEY=testkey DESK_PORT=${PORT:-4797} exec python3 server.py"],
+      "port": 4797
+    },
+    {
+      "name": "tany-campus-worker",
+      "runtimeExecutable": "/bin/sh",
+      "runtimeArgs": ["-c", "cd /tmp/claude/campus-test/site && WRANGLER_SEND_METRICS=false WRANGLER_LOG_PATH=/tmp/claude/wl exec npx wrangler dev --local --test-scheduled --port ${PORT:-8797} --ip 127.0.0.1 --var CAMPUS_FAKE_SEND:1 --var CAMPUS_KEY:testkey --var RESEND_KEY:fake"],
+      "port": 8797
     }
   ]
 }

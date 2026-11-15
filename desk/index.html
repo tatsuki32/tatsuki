@@ -827,6 +827,53 @@ button.hname:hover{color:var(--ink)}
 .utdrop{display:grid;gap:var(--s2);justify-items:start;width:100%}
 .utdrop.on{outline:2px dashed var(--accent);outline-offset:8px}
 .utdrop label{cursor:pointer}
+/* Campus Letter (#campus): a quiet place to write the newsletter. Only Send to readers is gold. */
+.cp{display:grid;grid-template-columns:232px minmax(0,1fr);gap:var(--s4);align-items:start}
+.cplist{position:sticky;top:var(--s4);display:grid;gap:var(--s2);max-height:calc(100vh - 48px);overflow-y:auto}
+.cpstat{font-size:var(--t1);color:var(--muted);line-height:1.6}
+.cpstat b{color:var(--ink);font-size:var(--t3)}
+.cpgroup{font-size:var(--t1);color:var(--muted);margin:var(--s3) 0 0}
+.cpitem{display:block;width:100%;text-align:left;background:transparent;border:0;border-radius:var(--r-s);padding:var(--s2);cursor:pointer;color:var(--ink-2)}
+.cpitem:hover{background:var(--surface)}
+.cpitem[aria-current="true"]{background:var(--surface-2);color:var(--ink)}
+.cpitem .t{display:block;font-size:var(--t2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cpitem .m{display:block;font-size:var(--t1);color:var(--muted)}
+.cpmain{min-width:0;display:grid;gap:var(--s3)}
+.cpbar{display:flex;flex-wrap:wrap;gap:var(--s2);align-items:center}
+.cpbar .sp{flex:1}
+.cpedit{max-width:680px;width:100%;margin:0 auto;display:grid;gap:var(--s2)}
+.cpedit input,.cpedit textarea{font:inherit;color:var(--ink);background:transparent;border:0;outline:none;width:100%;padding:0}
+.cpedit .cpseries{font-size:var(--t1);color:var(--accent)}
+.cpedit .cptitle{font-size:var(--t5);font-weight:700;line-height:1.4}
+.cpedit .cpbody{font-size:var(--t3);line-height:1.95;min-height:60vh;resize:none;overflow:hidden}
+.cpedit .cpbody.on{outline:2px dashed var(--accent);outline-offset:8px;border-radius:var(--r-s)}
+.cpedit input::placeholder,.cpedit textarea::placeholder{color:var(--muted)}
+.cpedit [readonly]{color:var(--ink-2)}
+.cpteaser{border-top:1px solid var(--line);padding-top:var(--s3);margin-top:var(--s4);display:grid;gap:var(--s2)}
+.cpteaser label{font-size:var(--t1);color:var(--muted)}
+.cpteaser textarea{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-s);padding:var(--s2) 12px;font-size:var(--t2);line-height:1.8;min-height:96px;resize:vertical}
+.cpfoot{max-width:680px;width:100%;margin:0 auto;font-size:var(--t1);color:var(--muted);display:flex;flex-wrap:wrap;gap:var(--s3)}
+.cpbox{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:var(--s3);display:grid;gap:var(--s2);max-width:680px;width:100%;margin:0 auto}
+.cpbox h3{font-size:var(--t3);margin:0}
+.cpbox p{margin:0;font-size:var(--t2);color:var(--ink-2);line-height:1.7}
+.cpbox .row{display:flex;flex-wrap:wrap;gap:var(--s2)}
+.cpbox pre{white-space:pre-wrap;font:inherit;font-size:var(--t2);line-height:1.8;background:var(--bg);border-radius:var(--r-s);padding:12px;margin:0;max-height:50vh;overflow:auto}
+.cpbox ul{margin:0;padding-left:20px;font-size:var(--t2);color:var(--ink-2)}
+.cpbox label{display:grid;gap:var(--s1);font-size:var(--t1);color:var(--muted)}
+.cpbox input{font:inherit;font-size:var(--t2);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:var(--r-s);padding:var(--s2) 12px;min-width:0}
+.cpbox.warn{border-color:var(--accent-2)}
+.cperr{color:var(--red);font-size:var(--t2)}
+.cpframe{width:100%;max-width:680px;margin:0 auto;display:block;height:70vh;border:1px solid var(--line);border-radius:var(--r);background:#F6F5F0}
+.cpweb{max-width:680px;width:100%;margin:0 auto;background:#F6F5F0;color:#1B1B18;border-radius:var(--r);padding:var(--s4) var(--s3)}
+.cpweb .meta{font-size:13px;color:#6d685e;margin:0 0 8px}
+.cpweb h1{font-size:24px;line-height:1.5;margin:0 0 16px}
+.cpweb p{line-height:1.9;margin:0 0 16px}
+.cpweb .cta{border:1px solid #e3ddcf;border-radius:12px;padding:16px;background:#fffdf8;font-size:14px}
+.cpmobile{display:none}
+body.cpfocus .rail,body.cpfocus #tabs,body.cpfocus .cplist,body.cpfocus .cpbar .cpx{display:none!important}
+body.cpfocus .app{grid-template-columns:minmax(0,1fr)}
+body.cpfocus .cp{grid-template-columns:minmax(0,1fr)}
+@media (max-width:760px){.cp{grid-template-columns:minmax(0,1fr)}.cplist{position:static;max-height:none;display:none}.cp.lists .cplist{display:grid}.cp.lists .cpmain{display:none}.cpmobile{display:inline-flex}.cpedit .cptitle{font-size:var(--t4)}}
 .nsu{font-size:var(--t2);font-weight:400}
 .strow a{color:inherit;text-decoration:none}
 .strow a:hover{text-decoration:underline}
@@ -1525,6 +1572,7 @@ if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="screentime")+1,0,{id:"pc",e
 if(LOCALAPI) VIEWS.push({id:"usage",e:"📊",label:"Usage",g:"write"}); // which parts of Desk get used, and the weekly re-arrangement (desk/usage.py)
 if(LOCALAPI) VIEWS.push({id:"utilities",e:"🧰",label:"Small Utilities",g:"write"}); // QR, character count, is.gd and PDF compression (desk/utilities.py)
 if(LOCALAPI) VIEWS.push({id:"post",e:"📣",label:"Post Studio",g:"write"}); // photos and a memo become drafts for each social account; nothing is posted from Desk (desk/posts.py)
+if(LOCALAPI) VIEWS.push({id:"campus",e:"✉️",label:"Campus Letter",g:"write"}); // the free newsletter 地球キャンパス通信: written here, readers only on tany.im (desk/campus.py) // photos and a memo become drafts for each social account; nothing is posted from Desk (desk/posts.py)
 if(LOCALAPI) VIEWS.push({id:"transcribe",e:"🎙️",label:"Transcribe",g:"write"}); // long recordings to text on this Mac (desk/transcribe/, its own server on 8791)
 if(LOCALAPI) VIEWS.push({id:"bank",e:"🏦",label:"Bank Accounts",g:"tool"}); // same: from Tools and the / list. Details stay on this Mac (desk/bank.py)
 if(LOCALAPI) VIEWS.push({id:"accounts",e:"🔑",label:"Accounts",g:"tool"}); // where you have accounts and how you sign in; no passwords yet (desk/accounts.py)
@@ -5296,6 +5344,8 @@ function render(){
   if(viewId()==="netspeed"){nsLoad();$("#view").innerHTML=searchResults()+nsView();wire();wireNs();return}
   if(viewId()==="transcribe"){trLoad();$("#view").innerHTML=searchResults()+trView();wire();wireTr();return}
   if(viewId()==="post"){if(!ps().data&&!ps().loading)psLoad();if(!document.activeElement?.closest?.(".psedit")||!$("#psView"))psDraw();return} // a redraw from elsewhere never takes the text being typed
+  if(viewId()!=="campus")document.body.classList.remove("cpfocus");
+  if(viewId()==="campus"){if(!cp().data&&!cp().loading)cpLoad();if(!document.activeElement?.closest?.(".cpedit,.cpbox")||!$("#cpView"))cpDraw();return} // a redraw from elsewhere never takes the text being typed
   if(viewId()==="utilities"){if(!document.activeElement?.closest?.(".utfield")||!$("#utView"))utDraw();return} // a redraw from elsewhere never takes the text being typed
   if(viewId()==="notices"){ntLoad();$("#view").innerHTML=searchResults()+ntView();wire();wireNt();return}
   if(viewId()==="accounts"){acLoad();$("#view").innerHTML=searchResults()+acView();wire();wireAc();return}
@@ -5958,6 +6008,176 @@ async function psOpen(id){
 }
 function psRedraw(){if(viewId()!=="post")return;const keep=document.activeElement?.closest?.(".psedit");if(keep&&$("#psView"))return;psDraw()}
 function psDraw(){$("#view").innerHTML=searchResults()+psView();wire();wirePs()}
+/* ---------- Campus Letter (#campus): 地球キャンパス通信. desk/campus.py keeps the issues; readers are only on tany.im ---------- */
+const cp=()=>S.cp||(S.cp={data:null,loading:false,cur:null,doc:null,mode:"write",pv:"mail",err:"",saving:false,savedAt:0,dirty:false,tidy:null,busy:"",confirm:null,settings:false,lists:false,msg:""});
+const cpPost=(path,body)=>fetch(path,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body||{})}).then(async r=>{let v={};try{v=await r.json()}catch(e){}if(!r.ok)throw new Error(v.error||("Error "+r.status));return v});
+const cpPut=(path,body)=>fetch(path,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(body||{})}).then(async r=>{let v={};try{v=await r.json()}catch(e){}if(!r.ok)throw new Error(v.error||("Error "+r.status));return v});
+const cpRefresh=()=>{if(viewId()==="campus")cpDraw()};
+async function cpLoad(pick){
+  const c=cp();c.loading=true;
+  try{c.data=await api("GET","/api/campus");c.err=""}catch(e){c.err="Could not load. Restarting the server may help"}
+  c.loading=false;
+  const list=c.data?.issues||[];
+  const id=pick||c.cur||(list.find(x=>x.status!=="sent")||list[0]||{}).id;
+  if(id&&(!c.doc||c.doc.id!==id))await cpOpen(id,true);
+  cpRefresh();
+}
+async function cpOpen(id,quiet){
+  const c=cp();await cpFlush();
+  try{c.doc=await api("GET","/api/campus/issues/"+encodeURIComponent(id));c.cur=id;c.tidy=null;c.confirm=null;c.msg="";c.lists=false}catch(e){c.err="Could not open that issue"}
+  if(!quiet)cpRefresh();
+}
+async function cpNew(){
+  const c=cp();await cpFlush();
+  try{const d=await cpPost("/api/campus/issues");c.doc=d;c.cur=d.id;c.mode="write";c.tidy=null;c.confirm=null;c.lists=false;await cpLoad(d.id);setTimeout(()=>$("#cpTitle")?.focus(),0)}catch(e){toast("Could not start a new issue")}
+}
+let cpTimer=null;
+function cpChanged(){const c=cp();c.dirty=true;clearTimeout(cpTimer);cpTimer=setTimeout(cpFlush,800);cpFoot()}
+async function cpFlush(){
+  const c=cp();clearTimeout(cpTimer);
+  if(!c.dirty||!c.doc||c.doc.status==="sent")return;
+  c.dirty=false;c.saving=true;cpFoot();
+  const d=c.doc,body={title:d.title,body:d.body,teaser:d.teaser,series:d.series};
+  try{const v=await cpPut("/api/campus/issues/"+encodeURIComponent(d.id),body);c.savedAt=Date.now();c.err="";
+    const it=(c.data?.issues||[]).find(x=>x.id===d.id);if(it){it.title=v.title;it.updatedAt=v.updatedAt}
+    const li=document.querySelector(`[data-cpopen="${d.id}"] .t`);if(li)li.textContent=v.title||"Untitled";
+  }catch(e){c.dirty=true;c.err="Not saved yet. It will try again when you type"}
+  c.saving=false;cpFoot();
+}
+const cpCount=t=>{const n=String(t||"").replace(/!\[[^\]]*\]\([^)]*\)/g,"").replace(/\]\([^)]*\)/g,"").replace(/[#>*_`\-\[\]\s]/g,"").length;return [n,n?Math.max(1,Math.round(n/500)):0]};
+function cpFoot(){
+  const c=cp(),el=$("#cpFoot");if(!el||!c.doc)return;
+  const [n,m]=cpCount(c.doc.body);
+  const st=c.doc.status==="sent"?`Sent ${new Date(c.doc.sentAt).toLocaleDateString("en-US",{month:"short",day:"numeric"})}`:c.saving?"Saving…":c.dirty?"Unsaved":c.savedAt?`Saved ${new Date(c.savedAt).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"})}`:"Saved";
+  el.innerHTML=`<span>${n.toLocaleString("en-US")} characters</span><span>${m?`About ${m} min to read`:""}</span><span>${st}</span>${c.err?`<span class="cperr">${esc(c.err)}</span>`:""}`;
+}
+function cpGrow(el){if(!el)return;el.style.height="auto";el.style.height=Math.max(el.scrollHeight,window.innerHeight*.6)+"px"}
+const cpNeed={worker:"Connect sending (keychain tatsuki-desk-campus and the tany.im secrets)",sender:"Add your sender name, postal address and contact address in Settings",site:"The tany.im site files are not on this Mac"};
+function cpStats(){
+  const c=cp(),st=c.data?.stats;
+  if(!st)return `<div class="cpstat">Readers appear here once sending is connected.</div>`;
+  if(st.error)return `<div class="cpstat">${esc(st.error)}</div>`;
+  return `<div class="cpstat"><b>${st.active}</b> readers · ${st.newWeek} new this week${st.pending?` · ${st.pending} not confirmed yet`:""}${st.stoppedWeek?` · ${st.stoppedWeek} stopped this week`:""}</div>`;
+}
+function cpListHtml(){
+  const c=cp(),list=c.data?.issues||[],drafts=list.filter(x=>x.status!=="sent"),sent=list.filter(x=>x.status==="sent");
+  const item=x=>`<button class="cpitem" data-cpopen="${esc(x.id)}" aria-current="${x.id===c.cur}"><span class="t">${esc(x.title||"Untitled")}</span><span class="m">${x.status==="sent"?`#${x.no} · ${x.sentCount||0} sent`:`${(x.chars||0).toLocaleString("en-US")} characters`}</span></button>`;
+  return `<aside class="cplist" aria-label="Issues">${cpStats()}<button class="btn" id="cpNew">New issue</button>
+    <p class="cpgroup">Drafts</p>${drafts.map(item).join("")||`<p class="cpstat">No drafts</p>`}
+    ${sent.length?`<p class="cpgroup">Sent</p>${sent.map(item).join("")}`:""}
+    <p class="cpgroup">Signup page</p><a class="btn sm" href="https://tany.im/campus/" target="_blank" rel="noopener">tany.im/campus ↗</a><button class="btn sm" id="cpSet">Settings</button></aside>`;
+}
+function cpEditor(){
+  const c=cp(),d=c.doc,sent=d.status==="sent",ro=sent?"readonly":"";
+  return `<div class="cpedit">
+    <input class="cpseries" id="cpSeries" value="${esc(d.series||"")}" placeholder="Series (optional), e.g. 途上の人類" maxlength="120" ${ro} aria-label="Series">
+    <input class="cptitle" id="cpTitle" value="${esc(d.title||"")}" placeholder="Title" maxlength="120" ${ro} aria-label="Title">
+    <textarea class="cpbody" id="cpBody" placeholder="Write freely. ## for a heading, - for a list, > for a quote. Paste or drop photos here." ${ro} aria-label="Body">${esc(d.body||"")}</textarea>
+    <div class="cpteaser"><label for="cpTeaser">Teaser for tany.im — the page shows only this; the rest is in the email (<span id="cpTn">${[...(d.teaser||"")].length}</span>/200)</label>
+      <textarea id="cpTeaser" maxlength="400" placeholder="A few lines that make people want to read the rest. Empty = the first 200 characters.">${esc(d.teaser||"")}</textarea>
+      ${sent?`<div class="row"><button class="btn sm" id="cpTeaserSave">Update teaser on tany.im</button></div>`:""}</div>
+  </div>`;
+}
+function cpPreview(){
+  const c=cp(),d=c.doc;
+  const tabs=`<div class="mtabs" role="tablist" aria-label="Preview">${[["mail","Email"],["web","tany.im teaser"]].map(([k,l])=>`<button role="tab" class="mtab" data-cppv="${k}" aria-selected="${c.pv===k}">${l}</button>`).join("")}</div>`;
+  if(c.pv==="mail")return tabs+`<iframe class="cpframe" title="Email preview" src="/api/campus/issues/${encodeURIComponent(d.id)}/preview?v=${d.updatedAt||0}"></iframe>`;
+  const t=(d.teaser||"").trim()||String(d.body||"").replace(/!\[[^\]]*\]\([^)]*\)/g,"").replace(/[#>*_`]/g,"").replace(/\s+/g," ").slice(0,200);
+  return tabs+`<div class="cpweb"><p class="meta">地球キャンパス通信 #${d.no||c.data?.nextNo||1}${d.series?`　${esc(d.series)}`:""}</p><h1>${esc(d.title||"Untitled")}</h1><p>${esc(t)}</p><div class="cta"><b>この号の続きは、メールで読めます</b><br>メールアドレス ［無料で登録する］</div></div>`;
+}
+function cpBoxes(){
+  const c=cp(),d=c.doc,rd=c.data?.ready||{need:[]},st=c.data?.stats;let h="";
+  if(c.msg)h+=`<div class="cpbox"><p>${esc(c.msg)}</p></div>`;
+  if(c.settings){const s=c.data?.settings||{};
+    h+=`<div class="cpbox" id="cpSettings"><h3>Settings</h3><p>Every email shows the sender's name, postal address and a contact address (Japan's law on commercial email). These stay on this Mac.</p>
+      <label>Sender name<input id="cpsName" value="${esc(s.fromName||"")}" maxlength="200"></label>
+      <label>Postal address<input id="cpsAddr" value="${esc(s.address||"")}" maxlength="200"></label>
+      <label>Contact email<input id="cpsContact" type="email" value="${esc(s.contact||"")}" maxlength="200"></label>
+      <label>Test address (Send test goes here)<input id="cpsTest" type="email" value="${esc(s.testTo||"")}" maxlength="200"></label>
+      <div class="row"><button class="btn" id="cpsSave">Save</button><button class="btn" id="cpsClose">Close</button><button class="btn" id="cpsLanding" ${c.busy?"disabled":""}>${c.busy==="landing"?"Publishing…":"Publish signup page"}</button></div>
+      <p>Publish signup page puts tany.im/campus/ up (or updates it) and deploys the site.</p></div>`}
+  if(rd.need&&rd.need.length)h+=`<div class="cpbox warn"><h3>Before the first send</h3><ul>${rd.need.map(k=>`<li>${esc(cpNeed[k]||k)}</li>`).join("")}</ul><p>You can keep writing in the meantime.</p></div>`;
+  if(c.tidy){const t=c.tidy;
+    h+=`<div class="cpbox"><h3>Tidied version</h3>${t.notes?.length?`<ul>${t.notes.map(n=>`<li>${esc(n)}</li>`).join("")}</ul>`:""}<pre>${esc(t.body)}</pre><p><b>Teaser</b></p><pre>${esc(t.teaser)}</pre>
+      <div class="row"><button class="btn" id="cpTidyUse">Use this</button><button class="btn" id="cpTidyTeaser">Use only the teaser</button><button class="btn" id="cpTidyNo">Keep mine</button></div></div>`}
+  if(c.confirm){
+    h+=`<div class="cpbox"><h3>Send #${d.no||c.data?.nextNo} to ${c.confirm.active} readers?</h3><p>The teaser goes up on tany.im/campus/ first, then the email goes out. A sent issue can't be edited or unsent.${c.confirm.active>(st?.daily||100)?` Resend's free plan sends ${st?.daily||100} a day, so the rest go out tomorrow.`:""}</p>
+      <div class="row"><button class="btn primary" id="cpSendGo" ${c.busy?"disabled":""}>${c.busy==="send"?"Sending…":"Send now"}</button><button class="btn" id="cpSendNo">Cancel</button></div></div>`}
+  return h;
+}
+function cpView(){
+  const c=cp();
+  if(!c.data)return `<div class="money" id="cpView"><h1>Campus Letter</h1><p class="sub">${c.err?esc(c.err):"Loading…"}</p></div>`;
+  const d=c.doc,rd=c.data.ready||{};
+  const main=!d?`<section class="cpmain"><div class="cpbox"><h3>地球キャンパス通信</h3><p>${esc(c.data.subtitle)}. Start your first issue.</p><div class="row"><button class="btn primary" id="cpNew2">New issue</button></div></div>${cpBoxes()}</section>`
+    :`<section class="cpmain"><div class="cpbar"><button class="btn sm cpmobile" id="cpLists">Issues</button>
+      <div class="mtabs cpx" role="tablist" aria-label="Mode">${[["write","Write"],["preview","Preview"]].map(([k,l])=>`<button role="tab" class="mtab" data-cpmode="${k}" aria-selected="${c.mode===k}">${l}</button>`).join("")}</div>
+      <span class="sp"></span>
+      <button class="btn sm" id="cpFocus" title="Focus (⌘.)">${document.body.classList.contains("cpfocus")?"Exit focus":"Focus"}</button>
+      ${d.status!=="sent"?`<button class="btn sm cpx" id="cpTidy" ${c.busy?"disabled":""}>${c.busy==="tidy"?"Tidying…":"Tidy up"}</button>
+      <button class="btn sm cpx" id="cpTest" ${c.busy||!rd.test?"disabled":""} title="${rd.test?"":"Connect sending and add a test address first"}">${c.busy==="test"?"Sending…":"Send test"}</button>
+      <button class="btn sm primary cpx" id="cpSend" ${c.busy||!rd.send?"disabled":""}>Send to readers</button>
+      <button class="btn sm cpx" id="cpDel" ${c.busy?"disabled":""}>Delete</button>`:`<a class="btn sm cpx" href="${esc(d.url||"https://tany.im/campus/")}" target="_blank" rel="noopener">On tany.im ↗</a>`}
+    </div>${cpBoxes()}${c.mode==="preview"?cpPreview():cpEditor()}<div class="cpfoot" id="cpFoot"></div></section>`;
+  return `<div class="cp${c.lists?" lists":""}" id="cpView" data-noauto>${cpListHtml()}${main}</div>`;
+}
+function cpDraw(){$("#view").innerHTML=searchResults()+cpView();wire();wireCp();cpFoot();cpGrow($("#cpBody"))}
+async function cpUpload(files,el){
+  const imgs=[...files].filter(f=>/^image\//.test(f.type));if(!imgs.length)return;
+  for(const f of imgs){
+    try{const r=await fetch("/api/uploads",{method:"POST",headers:{"X-Desk-Upload":"1","Content-Type":f.type},body:f});const v=await r.json();if(!r.ok)throw new Error(v.error||"");
+      const c=cp(),at=el.selectionStart??el.value.length,ins=`\n![](${v.url})\n`;
+      el.value=el.value.slice(0,at)+ins+el.value.slice(el.selectionEnd??at);c.doc.body=el.value;el.selectionStart=el.selectionEnd=at+ins.length;cpGrow(el);cpChanged()}
+    catch(e){toast("Could not add the photo"+(e.message?": "+e.message:""))}
+  }
+}
+function wireCp(){
+  const c=cp(),d=c.doc;
+  document.querySelectorAll("[data-cpopen]").forEach(b=>b.onclick=()=>cpOpen(b.dataset.cpopen));
+  $("#cpNew")&&($("#cpNew").onclick=cpNew);$("#cpNew2")&&($("#cpNew2").onclick=cpNew);
+  $("#cpLists")&&($("#cpLists").onclick=()=>{c.lists=true;cpDraw()});
+  $("#cpSet")&&($("#cpSet").onclick=()=>{c.settings=!c.settings;c.lists=false;cpDraw()});
+  document.querySelectorAll("[data-cpmode]").forEach(b=>b.onclick=async()=>{await cpFlush();c.mode=b.dataset.cpmode;cpDraw()});
+  document.querySelectorAll("[data-cppv]").forEach(b=>b.onclick=()=>{c.pv=b.dataset.cppv;cpDraw()});
+  $("#cpFocus")&&($("#cpFocus").onclick=()=>{document.body.classList.toggle("cpfocus");cpDraw();$("#cpBody")?.focus()});
+  if(d&&d.status!=="sent"){
+    const bind=(id,k)=>{const el=$(id);if(el)el.oninput=()=>{d[k]=el.value;if(k==="body")cpGrow(el);if(k==="teaser")$("#cpTn").textContent=[...el.value].length;cpChanged()}};
+    bind("#cpSeries","series");bind("#cpTitle","title");bind("#cpBody","body");bind("#cpTeaser","teaser");
+    const b=$("#cpBody");
+    if(b){b.onpaste=e=>{if(e.clipboardData?.files?.length){e.preventDefault();cpUpload(e.clipboardData.files,b)}};
+      b.ondragover=e=>{e.preventDefault();b.classList.add("on")};b.ondragleave=()=>b.classList.remove("on");
+      b.ondrop=e=>{e.preventDefault();b.classList.remove("on");cpUpload(e.dataTransfer.files,b)}}
+    $("#cpTitle")&&($("#cpTitle").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();$("#cpBody").focus()}});
+  }else if(d){
+    const t=$("#cpTeaser");if(t)t.oninput=()=>{d.teaser=t.value;$("#cpTn").textContent=[...t.value].length};
+    $("#cpTeaserSave")&&($("#cpTeaserSave").onclick=async()=>{c.busy="teaser";try{await cpPut("/api/campus/issues/"+d.id,{teaser:d.teaser});toast("Teaser updated on tany.im")}catch(e){toast(e.message)}c.busy="";cpDraw()});
+  }
+  $("#cpTidy")&&($("#cpTidy").onclick=async()=>{await cpFlush();c.busy="tidy";c.tidy=null;cpDraw();
+    try{c.tidy=await cpPost(`/api/campus/issues/${d.id}/tidy`)}catch(e){c.msg=e.message}c.busy="";cpDraw()});
+  $("#cpTidyUse")&&($("#cpTidyUse").onclick=()=>{d.body=c.tidy.body;d.teaser=c.tidy.teaser;c.tidy=null;c.dirty=true;cpFlush().then(cpDraw)});
+  $("#cpTidyTeaser")&&($("#cpTidyTeaser").onclick=()=>{d.teaser=c.tidy.teaser;c.tidy=null;c.dirty=true;cpFlush().then(cpDraw)});
+  $("#cpTidyNo")&&($("#cpTidyNo").onclick=()=>{c.tidy=null;cpDraw()});
+  $("#cpTest")&&($("#cpTest").onclick=async()=>{await cpFlush();c.busy="test";cpDraw();
+    try{const v=await cpPost(`/api/campus/issues/${d.id}/test`);c.msg=`Test sent to ${v.to}. Photos show only in the real send.`}catch(e){c.msg=e.message}c.busy="";cpDraw()});
+  $("#cpSend")&&($("#cpSend").onclick=async()=>{await cpFlush();c.busy="count";
+    try{const st=await api("GET","/api/campus/stats");if(st.error)throw new Error(st.error);c.data.stats=st;c.confirm={active:st.active}}catch(e){c.msg=e.message||"Could not count the readers"}c.busy="";cpDraw()});
+  $("#cpSendNo")&&($("#cpSendNo").onclick=()=>{c.confirm=null;cpDraw()});
+  $("#cpSendGo")&&($("#cpSendGo").onclick=async()=>{c.busy="send";cpDraw();
+    try{const v=await cpPost(`/api/campus/issues/${d.id}/send`,{expect:c.confirm.active});c.doc=v.issue;c.confirm=null;
+      c.msg=`Sent #${v.issue.no} to ${v.result.sent} readers.${v.result.pending?` ${v.result.pending} more go out tomorrow (daily limit).`:""}`;await cpLoad(d.id)}
+    catch(e){c.confirm=null;c.msg=e.message}c.busy="";cpDraw()});
+  $("#cpDel")&&($("#cpDel").onclick=async()=>{if(!confirm("Delete this draft?"))return;try{await cpPost(`/api/campus/issues/${d.id}/remove`);c.doc=null;c.cur=null;await cpLoad()}catch(e){toast(e.message)}});
+  $("#cpsClose")&&($("#cpsClose").onclick=()=>{c.settings=false;cpDraw()});
+  $("#cpsSave")&&($("#cpsSave").onclick=async()=>{try{c.data.settings=await cpPut("/api/campus/settings",{fromName:$("#cpsName").value,address:$("#cpsAddr").value,contact:$("#cpsContact").value,testTo:$("#cpsTest").value});c.settings=false;c.msg="Settings saved";await cpLoad()}catch(e){c.msg=e.message;cpDraw()}});
+  $("#cpsLanding")&&($("#cpsLanding").onclick=async()=>{if(!confirm("Publish tany.im/campus/ now? The site is deployed."))return;c.busy="landing";cpDraw();try{const v=await cpPost("/api/campus/publish-landing");c.msg="Signup page is up: "+v.url}catch(e){c.msg=e.message}c.busy="";cpDraw()});
+}
+document.addEventListener("keydown",e=>{
+  if(viewId()!=="campus"||!(e.metaKey||e.ctrlKey))return;
+  if(e.key==="."){e.preventDefault();document.body.classList.toggle("cpfocus");cpDraw();$("#cpBody")?.focus()}
+  else if(e.shiftKey&&(e.key==="p"||e.key==="P")){e.preventDefault();cpFlush().then(()=>{const c=cp();c.mode=c.mode==="preview"?"write":"preview";cpDraw()})}
+  else if(e.key==="s"){e.preventDefault();cpFlush()}
+});
+window.addEventListener("beforeunload",()=>{if(cp().dirty)cpFlush()});
 const psFull=(t,d)=>{if(!d)return "";if(t.kind==="story")return d.overlay||"";let s=(d.text||"").trim();const tags=[...(d.hashtags||[])];(t.fixedTags||"").split(/[\s,]+/).filter(x=>x.startsWith("#")&&!tags.includes(x)).forEach(x=>tags.push(x));if(tags.length)s+="\n\n"+tags.join(" ");return s};
 const psLen=(t,s)=>{if(t.count!=="x")return [...s].length;let n=0;s=s.replace(/https?:\/\/\S+/g,()=>{n+=23;return ""});for(const ch of s){const c=ch.codePointAt(0);n+=(c<=4351||(c>=8192&&c<=8205)||(c>=8208&&c<=8223)||(c>=8242&&c<=8247))?1:2}return n};
 const psOpenUrl=(t,d)=>t.open?t.open.replace("{text}",encodeURIComponent(t.kind==="story"?"":psFull(t,d))).replace("{title}",encodeURIComponent(d?.title||"")):"";
@@ -7387,7 +7607,7 @@ const FDESC={ // what each screen is for, in plain words (English and Japanese k
   log:"Claude's daily work report Claude Log 日報",timelog:"time tracking 時間",tools:"all tools as cards ツール",
   lifeos:"Life OS small tools ライフOS",gear:"belongings list, export 持ち物",usage:"which parts of Desk you use 使い方",
   utilities:"QR code, character count, URL shortener, PDF compression 小さな道具 QR 文字数 短縮 PDF圧縮",
-  post:"drafts for social posts from photos and a memo 投稿 SNS",transcribe:"record and transcribe long audio 録音 文字起こし",
+  post:"drafts for social posts from photos and a memo 投稿 SNS",campus:"write and send the free newsletter 地球キャンパス通信 メルマガ newsletter readers signup page",transcribe:"record and transcribe long audio 録音 文字起こし",
   bank:"bank accounts to share and copy 口座",accounts:"list of sites where you have accounts, how you sign in アカウント ログイン",
   showcase:"portfolio site and PR photos ポートフォリオ",claudeusage:"Claude token usage and scheduled jobs 使用量",
 };
