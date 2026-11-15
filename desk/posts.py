@@ -271,7 +271,7 @@ def _add_photo_file(path, name):
         if helper:
             r = subprocess.run([helper, "focus", final], capture_output=True, text=True, timeout=60)
             try:
-                meta = {k: v for k, v in json.loads(r.stdout).items() if k in ("w", "h", "x", "y")}
+                meta = {k: v for k, v in json.loads(r.stdout).items() if k in ("w", "h", "x", "y", "cam")}
             except ValueError:
                 pass
         _write(dp("photos", f"{name}.json"), meta)
@@ -463,6 +463,33 @@ def save_video(post_id, tid):
     return 200, {"file": utilities._token({"path": p, "name": name, "ctype": "video/mp4"})}
 
 
+def camera(photo_id):
+    """True for a camera photo (the file names its camera), checked once (older photos the first time they are shown)."""
+    meta = _read(dp("photos", f"{photo_id}.json"), {})
+    if "cam" not in meta:
+        helper, src = tool(), photo_path(photo_id)
+        if not helper or not src:
+            return True
+        try:
+            r = subprocess.run([helper, "focus", src], capture_output=True, text=True, timeout=60)
+            meta["cam"] = bool(json.loads(r.stdout).get("cam"))
+        except (ValueError, OSError, subprocess.SubprocessError):
+            return True
+        meta.pop("t", None)
+        _write(dp("photos", f"{photo_id}.json"), meta)
+    return meta["cam"]
+
+
+def whole(post, tid, n):
+    """True: the whole picture sits in the frame (nothing cut). The person's choice on the card, else camera photos
+    fill the frame and everything else (slides, screenshots, PDF pages) is whole, so no words are cut."""
+    ph = post["photos"][n]
+    v = (post.get("fit") or {}).get(f"{tid}/{ph['id']}")
+    if isinstance(v, bool):
+        return v
+    return not camera(ph["id"])
+
+
 def image(post_id, tid, n):
     """The picture for one target: cut around the photo's focus, at the target's size. Made once per focus and line."""
     post = get(post_id)
@@ -477,14 +504,15 @@ def image(post_id, tid, n):
     d = (post.get("drafts") or {}).get(tid) or {}
     words = (d.get("overlay") or "").strip() if t["kind"] == "story" and n == 0 and post.get("textOn", {}).get(tid, True) else ""
     w, h = t.get("size") or [1080, 1350]
-    key = hashlib.sha1(json.dumps([ph["id"], ph.get("x"), ph.get("y"), w, h, words]).encode()).hexdigest()[:12]
+    fit = whole(post, tid, n)
+    key = hashlib.sha1(json.dumps([ph["id"], ph.get("x"), ph.get("y"), w, h, words, fit]).encode()).hexdigest()[:12]
     out = dp("out", post_id, f"{tid}-{n}-{key}.jpg")
     if not os.path.exists(out):
         os.makedirs(os.path.dirname(out), exist_ok=True)
         for old in os.listdir(os.path.dirname(out)):
             if old.startswith(f"{tid}-{n}-"):
                 os.remove(dp("out", post_id, old))
-        args = [helper, "crop", src, out, str(w), str(h), str(ph.get("x", 0.5)), str(ph.get("y", 0.45))] + ([words] if words else [])
+        args = [helper, "crop", src, out, str(w), str(h), str(ph.get("x", 0.5)), str(ph.get("y", 0.45))] + [words, "fit" if fit else "fill"]
         r = subprocess.run(args, capture_output=True, timeout=120)
         if r.returncode or not os.path.exists(out):
             return None
@@ -1189,6 +1217,10 @@ def change(post_id, rec):
         for tid, v in (rec.get("textOn") or {}).items():
             if tid in post["targets"] and isinstance(v, bool):
                 post.setdefault("textOn", {})[tid] = v
+        for k, v in (rec.get("fit") or {}).items():
+            tid, _, pid = str(k).partition("/")
+            if tid in post["targets"] and any(ph["id"] == pid for ph in post["photos"]) and isinstance(v, bool):
+                post.setdefault("fit", {})[f"{tid}/{pid}"] = v
         for n, xy in (rec.get("focus") or {}).items():
             try:
                 ph = post["photos"][int(n)]
@@ -1203,7 +1235,8 @@ def public(post):
     """What the page needs. The text of the drafts is in it; the pictures come by their own URLs."""
     ts = {t["id"]: t for t in targets()}
     return {**{k: v for k, v in post.items() if k != "usage"}, "running": post["id"] in _running,
-            "limits": {tid: ts[tid]["limit"] for tid in post["targets"] if tid in ts}}
+            "limits": {tid: ts[tid]["limit"] for tid in post["targets"] if tid in ts},
+            "whole": {f"{tid}/{ph['id']}": whole(post, tid, n) for tid in post["targets"] for n, ph in enumerate(post.get("photos") or [])}}
 
 
 def view():

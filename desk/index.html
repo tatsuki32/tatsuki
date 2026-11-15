@@ -827,53 +827,6 @@ button.hname:hover{color:var(--ink)}
 .utdrop{display:grid;gap:var(--s2);justify-items:start;width:100%}
 .utdrop.on{outline:2px dashed var(--accent);outline-offset:8px}
 .utdrop label{cursor:pointer}
-/* Campus Letter (#campus): a quiet place to write the newsletter. Only Send to readers is gold. */
-.cp{display:grid;grid-template-columns:232px minmax(0,1fr);gap:var(--s4);align-items:start}
-.cplist{position:sticky;top:var(--s4);display:grid;gap:var(--s2);max-height:calc(100vh - 48px);overflow-y:auto}
-.cpstat{font-size:var(--t1);color:var(--muted);line-height:1.6}
-.cpstat b{color:var(--ink);font-size:var(--t3)}
-.cpgroup{font-size:var(--t1);color:var(--muted);margin:var(--s3) 0 0}
-.cpitem{display:block;width:100%;text-align:left;background:transparent;border:0;border-radius:var(--r-s);padding:var(--s2);cursor:pointer;color:var(--ink-2)}
-.cpitem:hover{background:var(--surface)}
-.cpitem[aria-current="true"]{background:var(--surface-2);color:var(--ink)}
-.cpitem .t{display:block;font-size:var(--t2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.cpitem .m{display:block;font-size:var(--t1);color:var(--muted)}
-.cpmain{min-width:0;display:grid;gap:var(--s3)}
-.cpbar{display:flex;flex-wrap:wrap;gap:var(--s2);align-items:center}
-.cpbar .sp{flex:1}
-.cpedit{max-width:680px;width:100%;margin:0 auto;display:grid;gap:var(--s2)}
-.cpedit input,.cpedit textarea{font:inherit;color:var(--ink);background:transparent;border:0;outline:none;width:100%;padding:0}
-.cpedit .cpseries{font-size:var(--t1);color:var(--accent)}
-.cpedit .cptitle{font-size:var(--t5);font-weight:700;line-height:1.4}
-.cpedit .cpbody{font-size:var(--t3);line-height:1.95;min-height:60vh;resize:none;overflow:hidden}
-.cpedit .cpbody.on{outline:2px dashed var(--accent);outline-offset:8px;border-radius:var(--r-s)}
-.cpedit input::placeholder,.cpedit textarea::placeholder{color:var(--muted)}
-.cpedit [readonly]{color:var(--ink-2)}
-.cpteaser{border-top:1px solid var(--line);padding-top:var(--s3);margin-top:var(--s4);display:grid;gap:var(--s2)}
-.cpteaser label{font-size:var(--t1);color:var(--muted)}
-.cpteaser textarea{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-s);padding:var(--s2) 12px;font-size:var(--t2);line-height:1.8;min-height:96px;resize:vertical}
-.cpfoot{max-width:680px;width:100%;margin:0 auto;font-size:var(--t1);color:var(--muted);display:flex;flex-wrap:wrap;gap:var(--s3)}
-.cpbox{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:var(--s3);display:grid;gap:var(--s2);max-width:680px;width:100%;margin:0 auto}
-.cpbox h3{font-size:var(--t3);margin:0}
-.cpbox p{margin:0;font-size:var(--t2);color:var(--ink-2);line-height:1.7}
-.cpbox .row{display:flex;flex-wrap:wrap;gap:var(--s2)}
-.cpbox pre{white-space:pre-wrap;font:inherit;font-size:var(--t2);line-height:1.8;background:var(--bg);border-radius:var(--r-s);padding:12px;margin:0;max-height:50vh;overflow:auto}
-.cpbox ul{margin:0;padding-left:20px;font-size:var(--t2);color:var(--ink-2)}
-.cpbox label{display:grid;gap:var(--s1);font-size:var(--t1);color:var(--muted)}
-.cpbox input{font:inherit;font-size:var(--t2);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:var(--r-s);padding:var(--s2) 12px;min-width:0}
-.cpbox.warn{border-color:var(--accent-2)}
-.cperr{color:var(--red);font-size:var(--t2)}
-.cpframe{width:100%;max-width:680px;margin:0 auto;display:block;height:70vh;border:1px solid var(--line);border-radius:var(--r);background:#F6F5F0}
-.cpweb{max-width:680px;width:100%;margin:0 auto;background:#F6F5F0;color:#1B1B18;border-radius:var(--r);padding:var(--s4) var(--s3)}
-.cpweb .meta{font-size:13px;color:#6d685e;margin:0 0 8px}
-.cpweb h1{font-size:24px;line-height:1.5;margin:0 0 16px}
-.cpweb p{line-height:1.9;margin:0 0 16px}
-.cpweb .cta{border:1px solid #e3ddcf;border-radius:12px;padding:16px;background:#fffdf8;font-size:14px}
-.cpmobile{display:none}
-body.cpfocus .rail,body.cpfocus #tabs,body.cpfocus .cplist,body.cpfocus .cpbar .cpx{display:none!important}
-body.cpfocus .app{grid-template-columns:minmax(0,1fr)}
-body.cpfocus .cp{grid-template-columns:minmax(0,1fr)}
-@media (max-width:760px){.cp{grid-template-columns:minmax(0,1fr)}.cplist{position:static;max-height:none;display:none}.cp.lists .cplist{display:grid}.cp.lists .cpmain{display:none}.cpmobile{display:inline-flex}.cpedit .cptitle{font-size:var(--t4)}}
 .nsu{font-size:var(--t2);font-weight:400}
 .strow a{color:inherit;text-decoration:none}
 .strow a:hover{text-decoration:underline}
@@ -1444,55 +1397,6 @@ a.shelfbtn{text-decoration:none;display:inline-flex;align-items:center}
 .lmmeta{font-size:var(--t1);color:var(--muted)}
 .lmitem p,.lmtext{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.6;color:var(--ink-2)}
 @media (max-width:560px){.lbody{padding-left:var(--s3)}.lmain{display:contents}.lone{grid-column:2/-1;grid-row:2}}
-/* ---------- Workout Board: a free board like a whiteboard. Cards sit where you drop them; on a phone they fall into one column ---------- */
-.wk-bar{display:flex;align-items:center;gap:var(--s2);flex-wrap:wrap}
-.wk-bar .chip{display:inline-flex;align-items:center;gap:6px}
-.wk-add{display:flex;gap:var(--s2);align-items:center;flex-wrap:wrap}
-.wk-add input{flex:1;min-width:200px;min-height:40px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:var(--r-s);padding:0 12px;font:inherit;font-size:var(--t2)}
-.wk-add input:focus{outline:none;border-color:var(--accent)}
-.wk-wrap{position:relative;border:1px solid var(--line);border-radius:var(--r);background:var(--rail);overflow:auto;height:min(76vh,860px);overscroll-behavior:contain}
-.wk-wrap.over{border-color:var(--accent);background:var(--accent-soft)}
-.wk-canvas{position:relative;background-image:radial-gradient(var(--line) 1px,transparent 1px);background-size:24px 24px}
-.wcard{position:absolute;display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r);overflow:hidden;box-shadow:0 8px 22px rgba(0,0,0,.3)}
-.wcard.dragging{box-shadow:0 18px 40px rgba(0,0,0,.55);border-color:var(--accent)}
-.wcard .wh{display:flex;align-items:center;gap:6px;padding:2px 2px 2px 10px;border-bottom:1px solid var(--line);cursor:grab;user-select:none;-webkit-user-select:none;touch-action:none;min-width:0}
-.wcard .wh .e{font-size:13px}
-.wcard .wh .t{flex:1;min-width:0;font-size:var(--t1);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink-2)}
-.wcard .wh .ibtn{min-height:28px;min-width:28px;font-size:13px}
-.wcard .wb{flex:1;min-height:0;position:relative;display:flex;flex-direction:column}
-.wcard iframe,.wcard video,.wcard .wbimg{width:100%;height:100%;border:0;display:block;background:#000;object-fit:contain}
-.wcard .wsz{position:absolute;right:0;bottom:0;width:18px;height:18px;cursor:nwse-resize;touch-action:none;background:linear-gradient(135deg,transparent 55%,var(--line-2) 55%,var(--line-2) 62%,transparent 62%,transparent 75%,var(--line-2) 75%,var(--line-2) 82%,transparent 82%)}
-.wthumb{position:relative;flex:1;border:0;padding:0;cursor:pointer;background:#000 center/cover no-repeat;display:grid;place-items:center;min-height:0}
-.wthumb .play{width:54px;height:38px;border-radius:12px;background:rgba(0,0,0,.7);display:grid;place-items:center;font-size:18px;color:#fff}
-.wthumb:hover .play{background:#e33}
-.wcard .wfoot{display:flex;gap:var(--s2);align-items:center;padding:4px 10px;font-size:var(--t1);color:var(--muted);border-top:1px solid var(--line)}
-.wcard .wfoot a{color:var(--ink-2);text-decoration:none;margin-left:auto}
-.wcard .wfoot a:hover{color:var(--accent)}
-.wnote{flex:1;width:100%;resize:none;border:0;padding:10px 12px;font:inherit;font-size:var(--t2);line-height:1.55;color:#1d1a12;background:transparent;outline:none}
-.wcard.wnc .wh{border-bottom-color:rgba(0,0,0,.12)}
-.wcard.wnc .wh .t,.wcard.wnc .wh .ibtn{color:rgba(0,0,0,.65)}
-.wlink{flex:1;display:grid;align-content:start;gap:4px;padding:12px;text-decoration:none;min-width:0}
-.wlink b{font-size:var(--t2);line-height:1.4;overflow-wrap:anywhere}
-.wlink span{font-size:var(--t1);color:var(--muted);overflow-wrap:anywhere}
-.wlink:hover b{color:var(--accent)}
-.wk-help{font-size:var(--t1);color:var(--muted);margin:0}
-.wk-colors{display:flex;gap:6px}
-.wk-colors button{width:28px;height:28px;border-radius:999px;border:2px solid transparent;cursor:pointer}
-.wk-colors button[aria-pressed="true"]{border-color:var(--ink)}
-.wkgo{display:flex;align-items:center;gap:var(--s2);padding:12px var(--s3);text-decoration:none}
-.wkgo:hover{border-color:var(--line-2)}
-.wkgo .sub{margin-left:auto}
-@media (max-width:760px){
-  .wk-wrap{height:auto;overflow:visible;border:0;background:transparent}
-  .wk-canvas{width:auto!important;height:auto!important;min-width:0!important;min-height:0!important;background:none;display:grid;gap:12px}
-  .wcard{position:relative;left:auto!important;top:auto!important;width:auto!important;height:auto!important;z-index:auto!important}
-  .wcard .wh{cursor:default}
-  .wcard .wsz{display:none}
-  .wcard.k-video .wb,.wcard.k-embed .wb,.wcard.k-image .wb{aspect-ratio:16/9}
-  .wcard.k-pdf .wb{height:70vh}
-  .wcard.wnc .wb{min-height:140px}
-  .wk-add input{min-width:0;flex-basis:100%}
-}
 </style>
 
 <div class="app">
@@ -1537,7 +1441,6 @@ const PRIO={"Action needed":0,"Reply drafted":1,"FYI":2};
 const S={tools:[],editions:[],days:[],memos:[],ed:null,day:null,region:"All",q:"",confirm:null,busy:null,notes:{},local:false,dues:{},dl:[],dlMap:{},dlAll:false,quietUntil:0,tasks:[],board:[],taskCol:"notyet",cal:null,gtasks:null,reports:[],logDay:null,prompts:{},watch:[],watchId:null,focus:null,wnotes:[],noteId:null,habits:[],memory:null,nextSkip:0,wins:[],winsDays:14,wread:null,wmode:"gist",wlog:{},presents:[],heritage:[],hcountries:[],hlog:{},hId:null,hCode:null,hTab:"today"};
 let db=null;
 S.gear=[]; // Belongings: everything owned, grams, packing check
-S.wboards=[];S.wcards=[];S.wkBoard=null; // Workout Board: boards and the cards pinned on them
 S.projects=[];S.sections=[];S.projFilter="all";S.pDone=false; // projects: lists split into boxes; every project task is still an ordinary task
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -1555,7 +1458,7 @@ function toast(t){if(t.startsWith("✨")&&$("#cheerHost .cheer"))return;const el
 /* ---------- store: claude db online, browser storage on the PC ---------- */
 /* Notes are never hard-deleted: deleted:true + updatedAt lets the hourly sync merge the Mac and the cloud safely. */
 const LOCALAPI=/^https?:$/.test(location.protocol)&&/^(localhost|127\.0\.0\.1)$/.test(location.hostname);
-if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="habits")+1,0,{id:"body",e:"🫀",label:"Summary",g:"body"},{id:"bodysleep",e:"😴",label:"Sleep",g:"body"},{id:"bodymeal",e:"🍽️",label:"Meals & Calories",g:"body"},{id:"bodyweight",e:"⚖️",label:"Weight",g:"body"},{id:"bodysteps",e:"👟",label:"Steps",g:"body"},{id:"bodyworkout",e:"💪",label:"Workouts",g:"body"},{id:"workoutboard",e:"🧘",label:"Workout Board",g:"body"},{id:"bodyhabits",e:"📚",label:"Study & Screen Time",g:"body"}); // photos and health records stay on this Mac
+if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="habits")+1,0,{id:"body",e:"🫀",label:"Summary",g:"body"},{id:"bodysleep",e:"😴",label:"Sleep",g:"body"},{id:"bodymeal",e:"🍽️",label:"Meals & Calories",g:"body"},{id:"bodyweight",e:"⚖️",label:"Weight",g:"body"},{id:"bodysteps",e:"👟",label:"Steps",g:"body"},{id:"bodyworkout",e:"💪",label:"Workouts",g:"body"},{id:"bodyhabits",e:"📚",label:"Study & Screen Time",g:"body"}); // photos and health records stay on this Mac
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="followups")+1,0,{id:"mailclean",e:"🧹",label:"Inbox Cleanup",g:"in"});
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="presents")+1,0,{id:"ideas",e:"💡",label:"Ideas",g:"in"});
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="presents")+1,0,{id:"site",e:"📈",label:"Site",g:"in"}); // tany.im analytics (desk/site_sync.py)
@@ -1572,7 +1475,6 @@ if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="screentime")+1,0,{id:"pc",e
 if(LOCALAPI) VIEWS.push({id:"usage",e:"📊",label:"Usage",g:"write"}); // which parts of Desk get used, and the weekly re-arrangement (desk/usage.py)
 if(LOCALAPI) VIEWS.push({id:"utilities",e:"🧰",label:"Small Utilities",g:"write"}); // QR, character count, is.gd and PDF compression (desk/utilities.py)
 if(LOCALAPI) VIEWS.push({id:"post",e:"📣",label:"Post Studio",g:"write"}); // photos and a memo become drafts for each social account; nothing is posted from Desk (desk/posts.py)
-if(LOCALAPI) VIEWS.push({id:"campus",e:"✉️",label:"Campus Letter",g:"write"}); // the free newsletter 地球キャンパス通信: written here, readers only on tany.im (desk/campus.py) // photos and a memo become drafts for each social account; nothing is posted from Desk (desk/posts.py)
 if(LOCALAPI) VIEWS.push({id:"transcribe",e:"🎙️",label:"Transcribe",g:"write"}); // long recordings to text on this Mac (desk/transcribe/, its own server on 8791)
 if(LOCALAPI) VIEWS.push({id:"bank",e:"🏦",label:"Bank Accounts",g:"tool"}); // same: from Tools and the / list. Details stay on this Mac (desk/bank.py)
 if(LOCALAPI) VIEWS.push({id:"accounts",e:"🔑",label:"Accounts",g:"tool"}); // where you have accounts and how you sign in; no passwords yet (desk/accounts.py)
@@ -1583,11 +1485,9 @@ async function loadApiMemos(){try{
   S.wlog=Object.fromEntries(wlog.filter(x=>x&&x.id&&!x.deleted).map(x=>[x.id,x]));
   S.hlog=Object.fromEntries(hlog.filter(x=>x&&x.id&&!x.deleted).map(x=>[x.id,x]));
   S.wa=await api("GET","/api/whatsapp").catch(()=>({}));
-  try{const [wb,wc]=await Promise.all([api("GET","/api/wboards"),api("GET","/api/wcards")]);S.wboards=wb.filter(x=>!x.deleted);if(!S.wkDrag)S.wcards=wc.filter(x=>!x.deleted)}catch(e){}
   S.gear=gear.filter(g=>!g.deleted);S.projects=projects.filter(p=>!p.deleted);S.sections=sections.filter(x=>!x.deleted);
   S.fu=await api("GET","/api/followups").catch(()=>S.fu);
   S.line=await api("GET","/api/line").catch(()=>({}));lineAlert();
-  S.ig=await api("GET","/api/instagram").catch(()=>({}));
   S.replyWin=((await api("GET","/api/replywin").catch(()=>[]))||[]).find(x=>x&&x.id==="state")||{};
   S.genres=await api("GET","/api/genres").catch(()=>S.genres||[]);S.ttypes=await api("GET","/api/tasktypes").catch(()=>S.ttypes||[]);S.mprops=await api("GET","/api/mergeprops").catch(()=>S.mprops||[]);S.timelog=await api("GET","/api/timelog").catch(()=>S.timelog||[]);S.genrelog=await api("GET","/api/genrelog").catch(()=>S.genrelog||[]);S.typeprops=await api("GET","/api/typeprops").catch(()=>S.typeprops||[]);
   S.habits=habits.filter(h=>!h.deleted);S.wins=wins.filter(w=>!w.deleted);S.presents=presents.filter(p=>!p.deleted);S.memos=memos.filter(m=>!m.deleted&&!m.movedTo);S.dues=duesById(dues);S.tasks=tasks.filter(t=>!t.deleted);S.prompts=promptsById(prompts);S.wnotes=notes.filter(n=>!n.deleted);render();absorbMemos()}catch(e){toast("Cannot reach the Desk server. Is it running?")}}
@@ -1779,10 +1679,10 @@ const toLocalInput=ms=>{const d=new Date(ms);return `${d.getFullYear()}-${pad(d.
    A task's due date is the real one; like mail, its countdown runs to it. */
 const TSTATUS=[["notyet","Not started"],["doing","In progress"],["done","Done"],["paused","Paused"],["archived","Archived"],["dropped","Not doing"]];
 const TCOLS=["notyet","doing","done"], TSHELF=["paused","archived"], TOPEN=new Set(["notyet","doing"]);
-const TSRC={manual:["✍️","Manual"],memo:["📝","From a note"],mail:["✉️","From email"],whatsapp:["💬","WhatsApp"],line:["💬","LINE"],instagram:["📷","Instagram"],calendar:["📅","From the calendar"],gtasks:["☑️","Google Tasks"],claude:["🤖","Claude"],daily:["☀️","Daily"]};
+const TSRC={manual:["✍️","Manual"],memo:["📝","From a note"],mail:["✉️","From email"],whatsapp:["💬","WhatsApp"],line:["💬","LINE"],calendar:["📅","From the calendar"],gtasks:["☑️","Google Tasks"],claude:["🤖","Claude"],daily:["☀️","Daily"]};
 /* Email, WhatsApp and LINE replies live in their own "Replies" screen, not on the task board, unless "Make it a task" set asTask */
 /* Nudges that chase an answer (Life OS 02, "Email nudge …", "WhatsApp催促 …") are replies too. desk/replywin.py has the same rule. */
-const REPLYSRC=new Set(["mail","whatsapp","line","instagram"]);
+const REPLYSRC=new Set(["mail","whatsapp","line"]);
 function replyKind(t){if(!t)return null;const s=t.source||"", ti=String(t.title||"");
   if(s==="manual")return null; // a task you made yourself stays on the board, whatever its title
   if(s==="lifeos-02"||/^\s*(?:Email nudge|WhatsApp nudge|メール催促|WhatsApp催促)/i.test(ti))return "nudge";
@@ -1799,7 +1699,7 @@ const rwLast=(now=Date.now())=>rwSlot(now,-1), rwNext=(now=Date.now())=>rwSlot(n
 const replyOpen=()=>{const c=S.replyWin?.closedAt;return typeof c!=="number"||c<rwLast()};
 const rwTime=ms=>new Date(ms).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});
 const hideReply=t=>isReply(t)&&!replyOpen();
-const LINKED=new Set(["mail","whatsapp","line","instagram","calendar","gtasks","claude","daily"]); // these come from elsewhere: their title and due date live at the source
+const LINKED=new Set(["mail","whatsapp","line","calendar","gtasks","claude","daily"]); // these come from elsewhere: their title and due date live at the source
 const tLabel=k=>(TSTATUS.find(s=>s[0]===k)||[k,k])[1];
 const mailTaskId=uid=>"t"+dueDocId(uid);
 const newTaskId=()=>"t"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
@@ -2770,9 +2670,6 @@ function bdStepsTab(d,w){
 }
 /* Workouts */
 function bdWorkoutTab(d,w){
-  return `<a class="card wkgo" href="#workoutboard"><span>🧘</span><b>Workout Board</b><span class="sub">Videos, PDFs and notes to follow along →</span></a>`+bdWorkoutRecords(d,w);
-}
-function bdWorkoutRecords(d,w){
   const v=d.workouts||{exercises:[],weeks:[]},list=v.exercises;
   const legacy=bdWorkoutExtra(d);
   if(!list.length)return `<div class="card empty"><b>No records yet</b>Send the bot something like "bench 60x8x3" and it logs 60 kg × 8 reps × 3 sets and replies with the change from last time.</div>${legacy}${bdFullTable(d,"workout",w)}`;
@@ -3194,11 +3091,10 @@ async function toggleGearPack(id){const g=S.gear.find(x=>x.id===id);if(!g)return
 async function resetGearPack(){for(const g of S.gear.filter(x=>!x.deleted&&x.packed)){try{await store.putGear({...g,packed:false,packedAt:null})}catch(e){}}toast("Unpacked everything")}
 /* ---------- Replies: email, WhatsApp and LINE that need an answer, apart from the task board ---------- */
 /* Each row: title, then "About …" from the summary the import wrote. "Make it a task" moves it to Tasks (asTask), "Back to Replies" undoes it. */
-const RSRC=[["mail","✉️","Email"],["whatsapp","🟢","WhatsApp"],["line","💚","LINE"],["instagram","📷","Instagram"],["nudge","⏳","Follow-ups"]];
+const RSRC=[["mail","✉️","Email"],["whatsapp","🟢","WhatsApp"],["line","💚","LINE"],["nudge","⏳","Follow-ups"]];
 const replyList=()=>(S.all||[]).filter(t=>isReply(t)&&TOPEN.has(t.status)).sort(byDeadline);
 function replyInfo(t){
   if(t.source==="mail"){const i=mailItem(t);return {about:i?.summary||t.mail?.sum||"",who:i?.from||"",when:i?.received||"",subj:i?.subject_ja||i?.subject||t.mail?.sub||""}}
-  if(t.source==="instagram"){const g=((S.ig||{}).items||{})[t.id];return {about:g?.summary||"",who:g?"@"+g.name:"",when:g?.theirAt?new Date(g.theirAt).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}):"",subj:""}}
   const i=t.source==="line"?((S.line||{}).items||{})[t.id]:(S.wa||{})[t.id];
   const when=i?.lastAt?new Date(i.lastAt*1000).toLocaleString("en-US",{timeZone:"Asia/Ho_Chi_Minh",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}):"";
   const last=(i?.texts||[]).filter(x=>x&&!/^\(.*\)$/.test(x)).slice(-1)[0]||"";
@@ -3302,33 +3198,6 @@ function lineBlock(t){
     ${i.body?`<div class="row"><button class="btn primary" id="lineCopy">Copy reply</button></div>`:""}
   </div>`;
 }
-/* Instagram DMs (desk/instagram_dm.py): the messages, a draft in their language, Send only when pressed and within 24 hours */
-function igBlock(t){
-  const i=((S.ig||{}).items||{})[t.id];
-  if(!i) return `<p class="hint">📷 Instagram</p>`;
-  const fmt=ms=>new Date(ms).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
-  const msgs=(i.messages||[]).map(m=>`${m.mine?"You":"@"+i.name} · ${fmt(m.at)}\n${m.text}`).join("\n\n");
-  return `<div class="mailbox">
-    <p class="due">Instagram · @${esc(i.handle)} · from @${esc(i.name)} · ${esc(fmt(i.theirAt))}</p>
-    ${i.summary?`<p class="msum">${esc(i.summary)}</p>`:""}
-    <details class="draft" open><summary><span>Conversation</span></summary><pre>${esc(msgs)}</pre></details>
-    ${i.needsReply===false?`<p class="hint">This may not need a reply.</p>`:""}
-    <label class="sub" for="igText">Reply</label><textarea class="wd-field" id="igText" rows="5">${esc(i.body||"")}</textarea>
-    ${i.body_en?`<details class="sent-as"><summary>In English</summary><pre>${esc(i.body_en)}</pre></details>`:""}
-    <div class="row">${i.canSend?`<button class="btn primary" id="igSend">Send</button>`:`<span class="hint">More than 24 hours have passed, so it can only be answered in Instagram.</span>`}<button class="btn" id="igCopy">Copy</button><a class="btn" href="https://www.instagram.com/direct/inbox/" target="_blank" rel="noopener">Open in Instagram ↗</a></div>
-  </div>`;
-}
-function wireIg(t){
-  const i=((S.ig||{}).items||{})[t?.id]; if(!i) return;
-  const c=$("#igCopy"); if(c) c.onclick=async()=>toast(await copyText($("#igText").value)?"📋 Copied":"Couldn't copy");
-  const s=$("#igSend"); if(s) s.onclick=async()=>{const text=$("#igText").value.trim();if(!text){toast("Write the reply first");return}
-    if(!confirm(`Send this to @${i.name} on Instagram?\n\n${text}`))return; s.disabled=true;
-    const r=await fetch("/api/instagram/send",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({task:t.id,text})});let v={};try{v=await r.json()}catch(e){}
-    if(!r.ok){toast(v.error||"Couldn't send");s.disabled=false;return}
-    toast("Sent on Instagram");S.ig=await api("GET","/api/instagram").catch(()=>({}));
-    const cur=findTask(t.id);if(cur)try{await store.putTask({...cur,status:"done",doneAt:Date.now()});await taskWin(cur,"done")}catch(e){}
-    $("#modal").innerHTML="";render()};
-}
 function wireLine(t){
   const b=$("#lineCopy"), i=((S.line||{}).items||{})[t?.id]; if(!b||!i) return;
   b.onclick=async()=>toast(await copyText(i.body)?"📋 Copied":"Couldn't copy");
@@ -3372,7 +3241,7 @@ function openTask(id,preset){
     <div class="top"><h2>🗂️ ${t?"Task":"New task"}</h2><button class="ibtn" id="xTask" aria-label="Close">✕</button></div>
     <label class="sub" for="tTitle">Title</label><input type="text" id="tTitle" value="${esc(taskName(t))}" placeholder="e.g., Send the documents to FWO" autocomplete="off">
     ${clearBlock(t)}${t?.source==="lifeos-02"?fuBlock(t):""}
-    ${t?.source==="daily"&&t.sourceRef==="jobs"?jobsBlock():isMail?mailBlock(t):t?.source==="whatsapp"?waBlock(t):t?.source==="line"?lineBlock(t):t?.source==="instagram"?igBlock(t)
+    ${t?.source==="daily"&&t.sourceRef==="jobs"?jobsBlock():isMail?mailBlock(t):t?.source==="whatsapp"?waBlock(t):t?.source==="line"?lineBlock(t)
       :isLinked?`<p class="hint">${TSRC[t.source][0]} ${TSRC[t.source][1]}${t.due!=null?" · Due "+esc(fmtDue(t.due)):""} · Change the due date and title at the source${okUrl(t.url)?` · <a href="${esc(t.url)}" target="_blank" rel="noopener">Open ↗</a>`:""}${t.source==="gtasks"?"<br>Marking it Done also completes it in Google Tasks at the next sync.":""}</p>`
       :`<div class="tduein"><div><label class="sub" for="tDue">Due date (optional)</label><input type="date" id="tDue" value="${dueParts(t?.due)[0]}"></div><div><label class="sub" for="tDueT">Time (optional)</label><input type="time" id="tDueT" value="${dueParts(t?.due)[1]}"></div></div><p class="hint" id="tDueHint"></p>`}
     <div class="tduein"><div><label class="sub" for="tPlan">When</label><select id="tPlan">${planSel(t||{},tPeriods())}</select></div><div><label class="sub" for="tEst">Time needed (min)</label><input type="number" id="tEst" min="1" step="5" inputmode="numeric" value="${t?.estMin??""}" placeholder="${t?.estAi?"Estimate "+t.estAi:""}"></div></div>
@@ -3384,7 +3253,7 @@ function openTask(id,preset){
     <div class="row"><button class="btn primary" id="tSave">Save <kbd>⌘/Ctrl + Enter</kbd></button><button class="btn" id="tCancel">Cancel</button>${t?`${timerBtn(t,"btn")}<button class="btn" id="tCopy">Copy as text</button><button class="btn" id="tCalBtn" aria-expanded="false" aria-controls="tCal">Add to calendar</button>`:""}${t&&!isLinked?`<button class="btn" id="tDel" style="margin-left:auto;color:var(--red)">Delete</button>`:""}</div>
   </div></div>`;
   const ti=$("#tTitle");ti.focus();ti.setSelectionRange(ti.value.length,ti.value.length);
-  wireWa(t);wireLine(t);wireIg(t);
+  wireWa(t);wireLine(t);
   const close=()=>{$("#modal").innerHTML=""}, plan0=$("#tPlan").value;
   wireJobs(t);wireMail(t,close);wireClear(t,close);wireProjFields(t||pre);
   const dueIn=$("#tDue"), dueT=$("#tDueT");
@@ -5335,17 +5204,11 @@ function render(){
   if(viewId()==="webhistory"){webLoad();$("#view").innerHTML=searchResults()+webView();wire();wireWeb();return}
   if(viewId()==="pc"){pcLoad();$("#view").innerHTML=searchResults()+pcView();wire();wirePc();return}
   if(viewId().startsWith("body")){bodyLoad();$("#view").innerHTML=searchResults()+bodyView();wire();wireBody();return}
-  if(viewId()==="workoutboard"){ // keep the board on screen and only touch what changed, so a playing video is not reset
-    if($("#wkCanvas")&&S.wkShown===S.wkBoard&&wkCurrent()&&!S.q){$("#wkBar").innerHTML=wkBar();wkSync();wkWire();return}
-    S.wkShown=S.wkBoard;$("#view").innerHTML=searchResults()+workoutBoard();wire();wkSync();wkWire();return}
-  S.wkShown=null;
   if(viewId()==="mailclean"){mcLoad();$("#view").innerHTML=searchResults()+mcView();wire();wireMc();return}
   if(viewId()==="site"){siteLoad();$("#view").innerHTML=searchResults()+siteView();wire();return}
   if(viewId()==="netspeed"){nsLoad();$("#view").innerHTML=searchResults()+nsView();wire();wireNs();return}
   if(viewId()==="transcribe"){trLoad();$("#view").innerHTML=searchResults()+trView();wire();wireTr();return}
   if(viewId()==="post"){if(!ps().data&&!ps().loading)psLoad();if(!document.activeElement?.closest?.(".psedit")||!$("#psView"))psDraw();return} // a redraw from elsewhere never takes the text being typed
-  if(viewId()!=="campus")document.body.classList.remove("cpfocus");
-  if(viewId()==="campus"){if(!cp().data&&!cp().loading)cpLoad();if(!document.activeElement?.closest?.(".cpedit,.cpbox")||!$("#cpView"))cpDraw();return} // a redraw from elsewhere never takes the text being typed
   if(viewId()==="utilities"){if(!document.activeElement?.closest?.(".utfield")||!$("#utView"))utDraw();return} // a redraw from elsewhere never takes the text being typed
   if(viewId()==="notices"){ntLoad();$("#view").innerHTML=searchResults()+ntView();wire();wireNt();return}
   if(viewId()==="accounts"){acLoad();$("#view").innerHTML=searchResults()+acView();wire();wireAc();return}
@@ -5361,245 +5224,6 @@ function render(){
   wire();
   if(v==="news"&&S.focus!=null){const el=document.getElementById("story-"+S.focus);S.focus=null;if(el){el.classList.add("flash");setTimeout(()=>el.scrollIntoView({block:"start"}),0)}}
   if(S.flash&&S.flash.kind!=="task") flashSentence();
-}
-/* Workout Board: a free board for exercise material. YouTube / Vimeo / Drive links, your own MP4s, PDFs, images, sticky notes and links.
-   Boards live in "wboards", cards in "wcards" (desk/data/wboards.json, wcards.json). Images and PDFs go to /api/uploads (data/uploads/),
-   videos to data/videos/ (out of the private backup), streamed with byte ranges. Cards are moved in place so a playing video keeps playing. */
-const WBKIND={video:["🎬","Video"],embed:["🗂️","Drive"],pdf:["📄","PDF"],image:["🖼️","Image"],note:["📝","Note"],link:["🔗","Link"]};
-const WSIZE={video:[400,292],embed:[400,292],pdf:[360,470],image:[320,250],note:[240,200],link:[280,124]};
-const WCOLORS=["#f6e7a8","#f7c8b8","#c9e8c4","#c4d8f7","#e2cdf2"];
-const wkId=p=>p+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
-const wkBoards=()=>S.wboards.filter(b=>!b.deleted).sort((a,b)=>(a.order??0)-(b.order??0)||(a.createdAt||0)-(b.createdAt||0));
-const wkCards=()=>S.wcards.filter(c=>!c.deleted&&c.board===S.wkBoard);
-function wkCurrent(){const bs=wkBoards();if(!bs.some(b=>b.id===S.wkBoard)){let saved=null;try{saved=localStorage.getItem("desk-wk-board")}catch(e){}S.wkBoard=(bs.find(b=>b.id===saved)||bs[0]||{}).id||null}return bs.find(b=>b.id===S.wkBoard)||null}
-function ytId(u){const m=/(?:youtube(?:-nocookie)?\.com\/(?:watch\?(?:[^#]*&)?v=|embed\/|shorts\/|live\/|watch\/|v\/)|youtu\.be\/)([\w-]{11})/.exec(u||"");return m?m[1]:null}
-const vimeoId=u=>(/vimeo\.com\/(?:video\/)?(\d{5,})/.exec(u||"")||[])[1]||null;
-const driveId=u=>(/drive\.google\.com\/(?:file\/d\/|open\?id=)([\w-]{20,})/.exec(u||"")||[])[1]||null;
-function kindOfUrl(u){
-  if(ytId(u)||vimeoId(u)) return "video";
-  if(driveId(u)) return "embed";
-  const path=(()=>{try{return new URL(u).pathname.toLowerCase()}catch(e){return ""}})();
-  if(/\.(mp4|webm|mov|m4v)$/.test(path)) return "video";
-  if(/\.pdf$/.test(path)) return "pdf";
-  if(/\.(png|jpe?g|gif|webp)$/.test(path)) return "image";
-  return "link";
-}
-const hostOf=u=>{try{return new URL(u).hostname.replace(/^www\./,"")}catch(e){return ""}};
-const wkFileSrc=f=>f&&/^\/(uploads|videos)\/[0-9a-f]{32}\.\w+$/.test(f.url||"")?f.url:null;
-const fmtSize=n=>n>=1048576?(n/1048576).toFixed(1)+" MB":Math.max(1,Math.round(n/1024))+" KB";
-
-/* saving: the screen changes first, then the server; a failed save says so and the next load shows the truth */
-async function wkPut(col,rec){
-  rec={...rec,updatedAt:Date.now()};
-  S[col]=[...S[col].filter(x=>x.id!==rec.id),rec].filter(x=>!x.deleted);
-  if(viewId()==="workoutboard") render();
-  if(!LOCALAPI){toast("Open the Desk app to save the board");return}
-  try{await api("PUT","/api/"+col+"/"+encodeURIComponent(rec.id),rec)}catch(e){toast("Couldn't save. Try again in a moment.")}
-}
-function wkFreeSpot(w,h,board){
-  const cs=S.wcards.filter(c=>!c.deleted&&c.board===(board||S.wkBoard)), hit=(x,y)=>cs.some(c=>x<c.x+c.w+16&&x+w+16>c.x&&y<c.y+c.h+16&&y+h+16>c.y);
-  const wrap=$("#wkWrap"), maxX=Math.max(600,(wrap?.clientWidth||900)-w-24);
-  for(let y=24;y<8000;y+=24) for(let x=24;x<=maxX;x+=24) if(!hit(x,y)) return [x,y];
-  return [24,24];
-}
-async function wkAdd(p,at){
-  if(!S.wkBoard){toast("Make a board first");return null}
-  const [w,h]=WSIZE[p.kind]||[300,220], [x,y]=at||wkFreeSpot(w,h);
-  const z=Math.max(0,...wkCards().map(c=>c.z||0))+1;
-  const rec={id:wkId("wc"),board:S.wkBoard,kind:p.kind,title:p.title||"",url:p.url||"",file:p.file||null,text:p.text||"",color:p.color||"",x:Math.round(x),y:Math.round(y),w,h,z,createdAt:Date.now(),deleted:false};
-  await wkPut("wcards",rec);
-  return rec;
-}
-async function wkAddUrl(raw,at){
-  const u=(raw||"").trim();
-  if(!/^https:\/\/\S+$/i.test(u)){toast("Paste a link that starts with https://");return}
-  const kind=kindOfUrl(u), id=ytId(u), url=id?"https://www.youtube.com/watch?v="+id:u;
-  const rec=await wkAdd({kind,url,title:id?"":hostOf(u)},at);
-  if(!rec) return;
-  toast(`${WBKIND[kind][0]} Pinned`);
-  if(id){ // the title from YouTube; nothing else is sent
-    try{const r=await fetch("https://www.youtube.com/oembed?format=json&url="+encodeURIComponent(url));if(r.ok){const j=await r.json();const cur=S.wcards.find(c=>c.id===rec.id);if(cur&&!cur.title&&j.title)await wkPut("wcards",{...cur,title:String(j.title).slice(0,200)})}}catch(e){}
-  }
-}
-async function wkUpload(file,at){
-  if(!S.wkBoard){toast("Make a board first");return}
-  if(!LOCALAPI){toast("Open the Desk app to add files");return}
-  const t=file.type||"", ext=(file.name.split(".").pop()||"").toLowerCase();
-  const kind=/^video\//.test(t)||/^(mp4|mov|m4v|webm)$/.test(ext)?"video":t==="application/pdf"||ext==="pdf"?"pdf":/^image\//.test(t)?"image":null;
-  if(!kind){toast("Videos (MP4, MOV, WebM), PDFs and images can be pinned");return}
-  if(kind!=="video"&&file.size>20*1048576){toast("PDFs and images can be up to 20 MB");return}
-  toast("Uploading "+file.name+"…");
-  let out;
-  try{const r=await fetch("/api/uploads",{method:"POST",headers:{"X-Desk-Upload":"1","Content-Type":"application/octet-stream"},body:file});
-    out=await r.json().catch(()=>({}));if(!r.ok)throw new Error(out.error||r.status)}
-  catch(e){toast("Couldn't upload: "+(e.message||"try again"));return}
-  await wkAdd({kind,file:{url:out.url,name:file.name.slice(0,200),size:file.size,type:t},title:file.name.replace(/\.[^.]+$/,"").slice(0,200)},at);
-  toast(`${WBKIND[kind][0]} ${file.name} pinned`);
-}
-
-/* drawing */
-function workoutBoard(){
-  const b=wkCurrent();
-  return `
-  <header class="head"><div><p class="eyebrow"><a href="#bodyworkout">Body · Workouts</a></p><h1>Workout Board</h1></div></header>
-  <div class="wk-bar" id="wkBar">${wkBar()}</div>
-  ${b?`<div class="wk-add"><input id="wkUrl" type="url" inputmode="url" placeholder="Paste a link (YouTube, PDF, article, Drive…)" aria-label="Paste a link to pin it" autocomplete="off">
-    <button class="btn" id="wkUrlAdd">＋ Pin</button><button class="btn" id="wkNote">📝 Note</button><button class="btn" id="wkFile">📁 File</button>
-    <input type="file" id="wkFileIn" accept="video/*,application/pdf,image/*" multiple hidden></div>
-  <div class="wk-wrap" id="wkWrap"><div class="wk-canvas" id="wkCanvas"></div></div>
-  <p class="wk-help">Drag a card by its top bar and resize it from the bottom-right corner. You can also drop files or links onto the board, or paste a link anywhere on this page. Videos can be any size; PDFs and images up to 20 MB.</p>`
-  :`<div class="card empty"><b>No boards yet</b>Make one with “＋ Board”, for example “Neck & shoulder stretches”.</div>`}`;
-}
-function wkBar(){
-  return wkBoards().map(b=>`<button class="chip" data-wkb="${esc(b.id)}" aria-pressed="${b.id===S.wkBoard}">${esc(b.name)} <span class="sub">${S.wcards.filter(c=>!c.deleted&&c.board===b.id).length}</span></button>`).join("")
-    +`<button class="chip" id="wkNewBoard">＋ Board</button>${S.wkBoard?`<button class="ibtn" id="wkBoardMenu" title="Rename or delete this board" aria-label="Rename or delete this board">⋯</button>`:""}`;
-}
-function wkBody(c){
-  const src=wkFileSrc(c.file);
-  if(c.kind==="video"){
-    if(src) return `<video src="${esc(src)}" controls playsinline preload="metadata"></video>`;
-    const y=ytId(c.url), v=vimeoId(c.url);
-    if(y) return `<button class="wthumb" data-wplay="${esc(c.id)}" style="background-image:url('https://i.ytimg.com/vi/${y}/hqdefault.jpg')" aria-label="Play"><span class="play">▶</span></button>`;
-    if(v) return `<button class="wthumb" data-wplay="${esc(c.id)}" aria-label="Play"><span class="play">▶</span></button>`;
-    if(okUrl(c.url)) return `<video src="${esc(c.url)}" controls playsinline preload="metadata"></video>`;
-  }
-  if(c.kind==="embed"&&driveId(c.url)) return `<button class="wthumb" data-wplay="${esc(c.id)}" aria-label="Open"><span class="play">▶</span></button>`;
-  if(c.kind==="pdf"){const u=src||(okUrl(c.url)?c.url:"");if(u)return `<iframe src="${esc(u)}" title="${esc(c.title||"PDF")}" loading="lazy"></iframe>`}
-  if(c.kind==="image"){const u=src||(okUrl(c.url)?c.url:"");if(u)return `<img class="wbimg" src="${esc(u)}" alt="${esc(c.title||"")}" loading="lazy">`}
-  if(c.kind==="note") return `<textarea class="wnote" data-wtext="${esc(c.id)}" placeholder="Write a note" aria-label="Note">${esc(c.text||"")}</textarea>`;
-  return `<a class="wlink" href="${esc(okUrl(c.url)?c.url:"#")}" target="_blank" rel="noopener"><b>${esc(c.title||c.url)}</b><span>${esc(hostOf(c.url))} ↗</span></a>`;
-}
-function wkFoot(c){
-  const src=wkFileSrc(c.file);
-  if(src) return `<div class="wfoot"><span>${esc(fmtSize(c.file.size||0))}</span><a href="${esc(src)}" target="_blank" rel="noopener">Open large ↗</a></div>`;
-  if(["video","embed","pdf","image"].includes(c.kind)&&okUrl(c.url)) return `<div class="wfoot"><span>${esc(hostOf(c.url))}</span><a href="${esc(c.url)}" target="_blank" rel="noopener">Original ↗</a></div>`;
-  return "";
-}
-function wkCardEl(c){
-  const el=document.createElement("article");
-  el.className=`wcard k-${c.kind}${c.kind==="note"?" wnc":""}`;el.dataset.wcard=c.id;
-  if(c.kind==="note") el.style.background=c.color||WCOLORS[0];
-  const [ic,label]=WBKIND[c.kind]||WBKIND.link;
-  el.innerHTML=`<div class="wh" data-wdrag="${esc(c.id)}"><span class="e" aria-hidden="true">${ic}</span><span class="t">${esc(c.title||label)}</span><button class="ibtn" data-wmenu="${esc(c.id)}" title="Edit, move or delete" aria-label="Edit, move or delete">⋯</button></div><div class="wb">${wkBody(c)}</div>${wkFoot(c)}<span class="wsz" data-wsize="${esc(c.id)}" aria-hidden="true"></span>`;
-  return el;
-}
-const wkSig=c=>JSON.stringify([c.kind,c.url,c.file&&c.file.url,c.title,c.color]);
-function wkSync(){
-  const canvas=$("#wkCanvas"); if(!canvas) return;
-  const cards=wkCards(), keep=new Set(cards.map(c=>c.id));
-  canvas.querySelectorAll("[data-wcard]").forEach(el=>{if(!keep.has(el.dataset.wcard))el.remove()});
-  const order=[...cards].sort((a,b)=>a.y-b.y||a.x-b.x).map(c=>c.id);
-  cards.forEach(c=>{
-    let el=canvas.querySelector(`[data-wcard="${CSS.escape(c.id)}"]`);
-    if(!el||el.dataset.sig!==wkSig(c)){const n=wkCardEl(c);n.dataset.sig=wkSig(c);el?el.replaceWith(n):canvas.appendChild(n);el=n}
-    if(S.wkDrag?.id!==c.id) Object.assign(el.style,{left:c.x+"px",top:c.y+"px",width:c.w+"px",height:c.h+"px",zIndex:c.z||1});
-    el.style.order=order.indexOf(c.id);
-    const ta=el.querySelector("textarea");if(ta&&document.activeElement!==ta&&ta.value!==(c.text||""))ta.value=c.text||"";
-  });
-  Object.assign(canvas.style,{width:Math.max(0,...cards.map(c=>c.x+c.w))+600+"px",height:Math.max(0,...cards.map(c=>c.y+c.h))+400+"px",minWidth:"100%",minHeight:"100%"});
-}
-function wkPlay(id){
-  const c=S.wcards.find(x=>x.id===id), wb=document.querySelector(`[data-wcard="${CSS.escape(id)}"] .wb`); if(!c||!wb) return;
-  const y=ytId(c.url), v=vimeoId(c.url), d=driveId(c.url);
-  const src=y?`https://www.youtube-nocookie.com/embed/${y}?autoplay=1&rel=0&playsinline=1`:v?`https://player.vimeo.com/video/${v}?autoplay=1`:d?`https://drive.google.com/file/d/${d}/preview`:null;
-  if(src) wb.innerHTML=`<iframe src="${esc(src)}" title="${esc(c.title||"Video")}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>`;
-}
-/* moving and resizing with the pointer; saved once when you let go */
-function wkPointer(e){
-  const h=e.target.closest("[data-wdrag],[data-wsize]"); if(!h||e.button>0||e.target.closest("button")) return;
-  if(matchMedia("(max-width:760px)").matches) return;
-  const id=h.dataset.wdrag||h.dataset.wsize, c=S.wcards.find(x=>x.id===id), el=h.closest(".wcard"); if(!c||!el) return;
-  e.preventDefault();
-  const resize=!!h.dataset.wsize, sx=e.clientX, sy=e.clientY, z=Math.max(0,...wkCards().map(x=>x.z||0))+1;
-  S.wkDrag={id,x:c.x,y:c.y,w:c.w,h:c.h,moved:false};
-  el.classList.add("dragging");el.style.zIndex=z;
-  document.querySelectorAll("#wkCanvas iframe").forEach(f=>f.style.pointerEvents="none");
-  const move=ev=>{const dx=ev.clientX-sx, dy=ev.clientY-sy, d=S.wkDrag;if(!d)return;d.moved=d.moved||Math.abs(dx)+Math.abs(dy)>3;
-    if(resize){d.w=Math.max(180,c.w+dx);d.h=Math.max(110,c.h+dy);el.style.width=d.w+"px";el.style.height=d.h+"px"}
-    else{d.x=Math.max(0,c.x+dx);d.y=Math.max(0,c.y+dy);el.style.left=d.x+"px";el.style.top=d.y+"px"}};
-  const up=()=>{removeEventListener("pointermove",move);removeEventListener("pointerup",up);removeEventListener("pointercancel",up);
-    const d=S.wkDrag;S.wkDrag=null;el.classList.remove("dragging");
-    document.querySelectorAll("#wkCanvas iframe").forEach(f=>f.style.pointerEvents="");
-    if(d&&d.moved) wkPut("wcards",{...c,x:Math.round(d.x),y:Math.round(d.y),w:Math.round(d.w),h:Math.round(d.h),z});
-    else if(d&&(c.z||0)<z-1) wkPut("wcards",{...c,z})};
-  addEventListener("pointermove",move);addEventListener("pointerup",up);addEventListener("pointercancel",up);
-}
-const wkDropPoint=e=>{const cv=$("#wkCanvas").getBoundingClientRect();return [Math.max(0,e.clientX-cv.left-40),Math.max(0,e.clientY-cv.top-16)]};
-const wkTimers={};
-const wkSaveText=(id,v)=>{clearTimeout(wkTimers[id]);const c=S.wcards.find(x=>x.id===id);if(c&&c.text!==v)wkPut("wcards",{...c,text:v.slice(0,20000)})};
-function wkWire(){
-  document.querySelectorAll("[data-wkb]").forEach(b=>b.onclick=()=>{S.wkBoard=b.dataset.wkb;try{localStorage.setItem("desk-wk-board",S.wkBoard)}catch(e){}render()});
-  $("#wkNewBoard")&&($("#wkNewBoard").onclick=()=>wkBoardPop(null));
-  $("#wkBoardMenu")&&($("#wkBoardMenu").onclick=()=>wkBoardPop(wkCurrent()));
-  const wrap=$("#wkWrap"); if(!wrap) return;
-  const url=$("#wkUrl"), add=()=>{const v=url.value.trim();if(!v){url.focus();return}url.value="";wkAddUrl(v)};
-  $("#wkUrlAdd").onclick=add;url.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();add()}};
-  $("#wkNote").onclick=async()=>{const r=await wkAdd({kind:"note",color:WCOLORS[0]});if(r)setTimeout(()=>document.querySelector(`[data-wtext="${CSS.escape(r.id)}"]`)?.focus(),50)};
-  $("#wkFile").onclick=()=>$("#wkFileIn").click();
-  $("#wkFileIn").onchange=async e=>{for(const f of [...e.target.files]) await wkUpload(f);e.target.value=""};
-  wrap.ondragover=e=>{if([...e.dataTransfer.types].some(t=>t==="Files"||t==="text/uri-list")){e.preventDefault();wrap.classList.add("over")}};
-  wrap.ondragleave=e=>{if(!wrap.contains(e.relatedTarget))wrap.classList.remove("over")};
-  wrap.ondrop=async e=>{e.preventDefault();wrap.classList.remove("over");const at=wkDropPoint(e), fs=[...e.dataTransfer.files];
-    if(fs.length){for(const [i,f] of fs.entries()) await wkUpload(f,[at[0]+i*24,at[1]+i*24]);return}
-    const u=(e.dataTransfer.getData("text/uri-list")||e.dataTransfer.getData("text/plain")||"").split("\n")[0].trim();if(u)wkAddUrl(u,at)};
-  const cv=$("#wkCanvas");
-  cv.onpointerdown=wkPointer;
-  cv.onclick=e=>{const p=e.target.closest("[data-wplay]");if(p)return wkPlay(p.dataset.wplay);const m=e.target.closest("[data-wmenu]");if(m)wkCardPop(m.dataset.wmenu)};
-  cv.oninput=e=>{const ta=e.target.closest("[data-wtext]");if(!ta)return;const id=ta.dataset.wtext;clearTimeout(wkTimers[id]);wkTimers[id]=setTimeout(()=>wkSaveText(id,ta.value),700)};
-  cv.onfocusout=e=>{const ta=e.target.closest?.("[data-wtext]");if(ta)wkSaveText(ta.dataset.wtext,ta.value)};
-}
-/* pasting a link or a file anywhere on the Workout Board pins it */
-document.addEventListener("paste",e=>{if(viewId()!=="workoutboard"||!$("#wkWrap"))return;const t=e.target.tagName;if(t==="INPUT"||t==="TEXTAREA")return;
-  const fs=[...(e.clipboardData?.files||[])];if(fs.length){e.preventDefault();fs.forEach(f=>wkUpload(f));return}
-  const s=(e.clipboardData?.getData("text")||"").trim();if(/^https:\/\/\S+$/i.test(s)){e.preventDefault();wkAddUrl(s)}});
-function wkBoardPop(b){
-  if($("#modal").firstChild) return;
-  const n=b?S.wcards.filter(c=>!c.deleted&&c.board===b.id).length:0;
-  $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop" role="dialog" aria-modal="true" aria-label="${b?"Edit board":"New board"}">
-    <div class="top"><h2>🧘 ${b?"Board":"New board"}</h2><button class="ibtn" id="xWb" aria-label="Close">✕</button></div>
-    <label class="sub" for="wbName">Name</label><input type="text" id="wbName" value="${esc(b?.name||"")}" placeholder="e.g. Strength" autocomplete="off">
-    <div class="row"><button class="btn primary" id="wbSave">Save</button><button class="btn" id="wbCancel">Cancel</button>${b?`<button class="btn" id="wbDel" style="margin-left:auto;color:var(--red)">Delete board</button>`:""}</div>
-  </div></div>`;
-  const inp=$("#wbName");inp.focus();inp.select();
-  const close=()=>{$("#modal").innerHTML=""};
-  const save=async()=>{const name=inp.value.trim().slice(0,60);if(!name){inp.focus();return}
-    close();
-    if(b) return wkPut("wboards",{...b,name});
-    const id=wkId("wb");S.wkBoard=id;try{localStorage.setItem("desk-wk-board",id)}catch(e){}
-    await wkPut("wboards",{id,name,order:Math.max(0,...wkBoards().map(x=>x.order||0))+1,createdAt:Date.now(),deleted:false})};
-  $("#wbSave").onclick=save;$("#wbCancel").onclick=close;$("#xWb").onclick=close;
-  $("#wbDel")&&($("#wbDel").onclick=async ev=>{const btn=ev.currentTarget;if(!btn.dataset.sure){btn.dataset.sure="1";btn.textContent=n?`Delete it and its ${n} card${n>1?"s":""}?`:"Delete it?";return}
-    close();for(const c of S.wcards.filter(c=>!c.deleted&&c.board===b.id)) await wkPut("wcards",{...c,deleted:true});
-    S.wkBoard=null;await wkPut("wboards",{...b,deleted:true});toast("Board deleted")});
-  $("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};
-  $("#scrim").onkeydown=e=>{if(e.key==="Enter"&&e.target===inp){e.preventDefault();save()}if(e.key==="Escape")close()};
-}
-function wkCardPop(id){
-  const c=S.wcards.find(x=>x.id===id); if(!c||$("#modal").firstChild) return;
-  const [ic,label]=WBKIND[c.kind]||WBKIND.link;
-  $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop" role="dialog" aria-modal="true" aria-label="Edit card">
-    <div class="top"><h2>${ic} ${label}</h2><button class="ibtn" id="xWc" aria-label="Close">✕</button></div>
-    <label class="sub" for="wcTitle">Title</label><input type="text" id="wcTitle" value="${esc(c.title||"")}" placeholder="${esc(label)}" autocomplete="off">
-    ${c.kind!=="note"&&!c.file?`<label class="sub" for="wcUrl">Link</label><input type="text" id="wcUrl" value="${esc(c.url||"")}" autocomplete="off">`:""}
-    ${c.kind==="note"?`<span class="sub">Color</span><div class="wk-colors" role="group" aria-label="Color">${WCOLORS.map((k,i)=>`<button style="background:${k}" data-wcol="${k}" aria-pressed="${(c.color||WCOLORS[0])===k}" aria-label="Color ${i+1}"></button>`).join("")}</div>`:""}
-    <label class="sub" for="wcBoard">Board</label><select id="wcBoard">${wkBoards().map(b=>`<option value="${esc(b.id)}" ${b.id===c.board?"selected":""}>${esc(b.name)}</option>`).join("")}</select>
-    <div class="row"><button class="btn primary" id="wcSave">Save</button><button class="btn" id="wcCancel">Cancel</button><button class="btn" id="wcDel" style="margin-left:auto;color:var(--red)">Delete</button></div>
-  </div></div>`;
-  let color=c.color||WCOLORS[0];
-  document.querySelectorAll("[data-wcol]").forEach(b=>b.onclick=()=>{color=b.dataset.wcol;document.querySelectorAll("[data-wcol]").forEach(x=>x.setAttribute("aria-pressed",x===b))});
-  const ti=$("#wcTitle");ti.focus();
-  const close=()=>{$("#modal").innerHTML=""};
-  const save=async()=>{const u=$("#wcUrl"), url=u?u.value.trim():c.url;
-    if(u&&url&&!/^https:\/\//i.test(url)){u.focus();toast("Use a link that starts with https://");return}
-    const board=$("#wcBoard").value, moved=board!==c.board;
-    const next={...c,title:ti.value.trim().slice(0,200),url,color:c.kind==="note"?color:c.color,board};
-    if(u&&url!==c.url){next.kind=kindOfUrl(url);const y=ytId(url);if(y)next.url="https://www.youtube.com/watch?v="+y}
-    if(moved){[next.x,next.y]=wkFreeSpot(next.w,next.h,board)}
-    close();await wkPut("wcards",next);if(moved)toast("Moved to “"+(wkBoards().find(b=>b.id===board)?.name||"")+"”")};
-  $("#wcSave").onclick=save;$("#wcCancel").onclick=close;$("#xWc").onclick=close;
-  $("#wcDel").onclick=async ev=>{const b=ev.currentTarget;if(!b.dataset.sure){b.dataset.sure="1";b.textContent="Delete it?";return}close();await wkPut("wcards",{...c,deleted:true});toast("Deleted")};
-  $("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};
-  $("#scrim").onkeydown=e=>{if(e.key==="Enter"&&e.target.tagName==="INPUT"){e.preventDefault();save()}if(e.key==="Escape")close()};
 }
 /* Money: Wise activity on this Mac (desk/wise_sync.py). Reads files only; opening the view never calls Wise.
    Totals are in USD; each tab answers one question. Numbers come from desk/wise_analysis.py and nothing here blames. */
@@ -6008,176 +5632,6 @@ async function psOpen(id){
 }
 function psRedraw(){if(viewId()!=="post")return;const keep=document.activeElement?.closest?.(".psedit");if(keep&&$("#psView"))return;psDraw()}
 function psDraw(){$("#view").innerHTML=searchResults()+psView();wire();wirePs()}
-/* ---------- Campus Letter (#campus): 地球キャンパス通信. desk/campus.py keeps the issues; readers are only on tany.im ---------- */
-const cp=()=>S.cp||(S.cp={data:null,loading:false,cur:null,doc:null,mode:"write",pv:"mail",err:"",saving:false,savedAt:0,dirty:false,tidy:null,busy:"",confirm:null,settings:false,lists:false,msg:""});
-const cpPost=(path,body)=>fetch(path,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body||{})}).then(async r=>{let v={};try{v=await r.json()}catch(e){}if(!r.ok)throw new Error(v.error||("Error "+r.status));return v});
-const cpPut=(path,body)=>fetch(path,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(body||{})}).then(async r=>{let v={};try{v=await r.json()}catch(e){}if(!r.ok)throw new Error(v.error||("Error "+r.status));return v});
-const cpRefresh=()=>{if(viewId()==="campus")cpDraw()};
-async function cpLoad(pick){
-  const c=cp();c.loading=true;
-  try{c.data=await api("GET","/api/campus");c.err=""}catch(e){c.err="Could not load. Restarting the server may help"}
-  c.loading=false;
-  const list=c.data?.issues||[];
-  const id=pick||c.cur||(list.find(x=>x.status!=="sent")||list[0]||{}).id;
-  if(id&&(!c.doc||c.doc.id!==id))await cpOpen(id,true);
-  cpRefresh();
-}
-async function cpOpen(id,quiet){
-  const c=cp();await cpFlush();
-  try{c.doc=await api("GET","/api/campus/issues/"+encodeURIComponent(id));c.cur=id;c.tidy=null;c.confirm=null;c.msg="";c.lists=false}catch(e){c.err="Could not open that issue"}
-  if(!quiet)cpRefresh();
-}
-async function cpNew(){
-  const c=cp();await cpFlush();
-  try{const d=await cpPost("/api/campus/issues");c.doc=d;c.cur=d.id;c.mode="write";c.tidy=null;c.confirm=null;c.lists=false;await cpLoad(d.id);setTimeout(()=>$("#cpTitle")?.focus(),0)}catch(e){toast("Could not start a new issue")}
-}
-let cpTimer=null;
-function cpChanged(){const c=cp();c.dirty=true;clearTimeout(cpTimer);cpTimer=setTimeout(cpFlush,800);cpFoot()}
-async function cpFlush(){
-  const c=cp();clearTimeout(cpTimer);
-  if(!c.dirty||!c.doc||c.doc.status==="sent")return;
-  c.dirty=false;c.saving=true;cpFoot();
-  const d=c.doc,body={title:d.title,body:d.body,teaser:d.teaser,series:d.series};
-  try{const v=await cpPut("/api/campus/issues/"+encodeURIComponent(d.id),body);c.savedAt=Date.now();c.err="";
-    const it=(c.data?.issues||[]).find(x=>x.id===d.id);if(it){it.title=v.title;it.updatedAt=v.updatedAt}
-    const li=document.querySelector(`[data-cpopen="${d.id}"] .t`);if(li)li.textContent=v.title||"Untitled";
-  }catch(e){c.dirty=true;c.err="Not saved yet. It will try again when you type"}
-  c.saving=false;cpFoot();
-}
-const cpCount=t=>{const n=String(t||"").replace(/!\[[^\]]*\]\([^)]*\)/g,"").replace(/\]\([^)]*\)/g,"").replace(/[#>*_`\-\[\]\s]/g,"").length;return [n,n?Math.max(1,Math.round(n/500)):0]};
-function cpFoot(){
-  const c=cp(),el=$("#cpFoot");if(!el||!c.doc)return;
-  const [n,m]=cpCount(c.doc.body);
-  const st=c.doc.status==="sent"?`Sent ${new Date(c.doc.sentAt).toLocaleDateString("en-US",{month:"short",day:"numeric"})}`:c.saving?"Saving…":c.dirty?"Unsaved":c.savedAt?`Saved ${new Date(c.savedAt).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"})}`:"Saved";
-  el.innerHTML=`<span>${n.toLocaleString("en-US")} characters</span><span>${m?`About ${m} min to read`:""}</span><span>${st}</span>${c.err?`<span class="cperr">${esc(c.err)}</span>`:""}`;
-}
-function cpGrow(el){if(!el)return;el.style.height="auto";el.style.height=Math.max(el.scrollHeight,window.innerHeight*.6)+"px"}
-const cpNeed={worker:"Connect sending (keychain tatsuki-desk-campus and the tany.im secrets)",sender:"Add your sender name, postal address and contact address in Settings",site:"The tany.im site files are not on this Mac"};
-function cpStats(){
-  const c=cp(),st=c.data?.stats;
-  if(!st)return `<div class="cpstat">Readers appear here once sending is connected.</div>`;
-  if(st.error)return `<div class="cpstat">${esc(st.error)}</div>`;
-  return `<div class="cpstat"><b>${st.active}</b> readers · ${st.newWeek} new this week${st.pending?` · ${st.pending} not confirmed yet`:""}${st.stoppedWeek?` · ${st.stoppedWeek} stopped this week`:""}</div>`;
-}
-function cpListHtml(){
-  const c=cp(),list=c.data?.issues||[],drafts=list.filter(x=>x.status!=="sent"),sent=list.filter(x=>x.status==="sent");
-  const item=x=>`<button class="cpitem" data-cpopen="${esc(x.id)}" aria-current="${x.id===c.cur}"><span class="t">${esc(x.title||"Untitled")}</span><span class="m">${x.status==="sent"?`#${x.no} · ${x.sentCount||0} sent`:`${(x.chars||0).toLocaleString("en-US")} characters`}</span></button>`;
-  return `<aside class="cplist" aria-label="Issues">${cpStats()}<button class="btn" id="cpNew">New issue</button>
-    <p class="cpgroup">Drafts</p>${drafts.map(item).join("")||`<p class="cpstat">No drafts</p>`}
-    ${sent.length?`<p class="cpgroup">Sent</p>${sent.map(item).join("")}`:""}
-    <p class="cpgroup">Signup page</p><a class="btn sm" href="https://tany.im/campus/" target="_blank" rel="noopener">tany.im/campus ↗</a><button class="btn sm" id="cpSet">Settings</button></aside>`;
-}
-function cpEditor(){
-  const c=cp(),d=c.doc,sent=d.status==="sent",ro=sent?"readonly":"";
-  return `<div class="cpedit">
-    <input class="cpseries" id="cpSeries" value="${esc(d.series||"")}" placeholder="Series (optional), e.g. 途上の人類" maxlength="120" ${ro} aria-label="Series">
-    <input class="cptitle" id="cpTitle" value="${esc(d.title||"")}" placeholder="Title" maxlength="120" ${ro} aria-label="Title">
-    <textarea class="cpbody" id="cpBody" placeholder="Write freely. ## for a heading, - for a list, > for a quote. Paste or drop photos here." ${ro} aria-label="Body">${esc(d.body||"")}</textarea>
-    <div class="cpteaser"><label for="cpTeaser">Teaser for tany.im — the page shows only this; the rest is in the email (<span id="cpTn">${[...(d.teaser||"")].length}</span>/200)</label>
-      <textarea id="cpTeaser" maxlength="400" placeholder="A few lines that make people want to read the rest. Empty = the first 200 characters.">${esc(d.teaser||"")}</textarea>
-      ${sent?`<div class="row"><button class="btn sm" id="cpTeaserSave">Update teaser on tany.im</button></div>`:""}</div>
-  </div>`;
-}
-function cpPreview(){
-  const c=cp(),d=c.doc;
-  const tabs=`<div class="mtabs" role="tablist" aria-label="Preview">${[["mail","Email"],["web","tany.im teaser"]].map(([k,l])=>`<button role="tab" class="mtab" data-cppv="${k}" aria-selected="${c.pv===k}">${l}</button>`).join("")}</div>`;
-  if(c.pv==="mail")return tabs+`<iframe class="cpframe" title="Email preview" src="/api/campus/issues/${encodeURIComponent(d.id)}/preview?v=${d.updatedAt||0}"></iframe>`;
-  const t=(d.teaser||"").trim()||String(d.body||"").replace(/!\[[^\]]*\]\([^)]*\)/g,"").replace(/[#>*_`]/g,"").replace(/\s+/g," ").slice(0,200);
-  return tabs+`<div class="cpweb"><p class="meta">地球キャンパス通信 #${d.no||c.data?.nextNo||1}${d.series?`　${esc(d.series)}`:""}</p><h1>${esc(d.title||"Untitled")}</h1><p>${esc(t)}</p><div class="cta"><b>この号の続きは、メールで読めます</b><br>メールアドレス ［無料で登録する］</div></div>`;
-}
-function cpBoxes(){
-  const c=cp(),d=c.doc,rd=c.data?.ready||{need:[]},st=c.data?.stats;let h="";
-  if(c.msg)h+=`<div class="cpbox"><p>${esc(c.msg)}</p></div>`;
-  if(c.settings){const s=c.data?.settings||{};
-    h+=`<div class="cpbox" id="cpSettings"><h3>Settings</h3><p>Every email shows the sender's name, postal address and a contact address (Japan's law on commercial email). These stay on this Mac.</p>
-      <label>Sender name<input id="cpsName" value="${esc(s.fromName||"")}" maxlength="200"></label>
-      <label>Postal address<input id="cpsAddr" value="${esc(s.address||"")}" maxlength="200"></label>
-      <label>Contact email<input id="cpsContact" type="email" value="${esc(s.contact||"")}" maxlength="200"></label>
-      <label>Test address (Send test goes here)<input id="cpsTest" type="email" value="${esc(s.testTo||"")}" maxlength="200"></label>
-      <div class="row"><button class="btn" id="cpsSave">Save</button><button class="btn" id="cpsClose">Close</button><button class="btn" id="cpsLanding" ${c.busy?"disabled":""}>${c.busy==="landing"?"Publishing…":"Publish signup page"}</button></div>
-      <p>Publish signup page puts tany.im/campus/ up (or updates it) and deploys the site.</p></div>`}
-  if(rd.need&&rd.need.length)h+=`<div class="cpbox warn"><h3>Before the first send</h3><ul>${rd.need.map(k=>`<li>${esc(cpNeed[k]||k)}</li>`).join("")}</ul><p>You can keep writing in the meantime.</p></div>`;
-  if(c.tidy){const t=c.tidy;
-    h+=`<div class="cpbox"><h3>Tidied version</h3>${t.notes?.length?`<ul>${t.notes.map(n=>`<li>${esc(n)}</li>`).join("")}</ul>`:""}<pre>${esc(t.body)}</pre><p><b>Teaser</b></p><pre>${esc(t.teaser)}</pre>
-      <div class="row"><button class="btn" id="cpTidyUse">Use this</button><button class="btn" id="cpTidyTeaser">Use only the teaser</button><button class="btn" id="cpTidyNo">Keep mine</button></div></div>`}
-  if(c.confirm){
-    h+=`<div class="cpbox"><h3>Send #${d.no||c.data?.nextNo} to ${c.confirm.active} readers?</h3><p>The teaser goes up on tany.im/campus/ first, then the email goes out. A sent issue can't be edited or unsent.${c.confirm.active>(st?.daily||100)?` Resend's free plan sends ${st?.daily||100} a day, so the rest go out tomorrow.`:""}</p>
-      <div class="row"><button class="btn primary" id="cpSendGo" ${c.busy?"disabled":""}>${c.busy==="send"?"Sending…":"Send now"}</button><button class="btn" id="cpSendNo">Cancel</button></div></div>`}
-  return h;
-}
-function cpView(){
-  const c=cp();
-  if(!c.data)return `<div class="money" id="cpView"><h1>Campus Letter</h1><p class="sub">${c.err?esc(c.err):"Loading…"}</p></div>`;
-  const d=c.doc,rd=c.data.ready||{};
-  const main=!d?`<section class="cpmain"><div class="cpbox"><h3>地球キャンパス通信</h3><p>${esc(c.data.subtitle)}. Start your first issue.</p><div class="row"><button class="btn primary" id="cpNew2">New issue</button></div></div>${cpBoxes()}</section>`
-    :`<section class="cpmain"><div class="cpbar"><button class="btn sm cpmobile" id="cpLists">Issues</button>
-      <div class="mtabs cpx" role="tablist" aria-label="Mode">${[["write","Write"],["preview","Preview"]].map(([k,l])=>`<button role="tab" class="mtab" data-cpmode="${k}" aria-selected="${c.mode===k}">${l}</button>`).join("")}</div>
-      <span class="sp"></span>
-      <button class="btn sm" id="cpFocus" title="Focus (⌘.)">${document.body.classList.contains("cpfocus")?"Exit focus":"Focus"}</button>
-      ${d.status!=="sent"?`<button class="btn sm cpx" id="cpTidy" ${c.busy?"disabled":""}>${c.busy==="tidy"?"Tidying…":"Tidy up"}</button>
-      <button class="btn sm cpx" id="cpTest" ${c.busy||!rd.test?"disabled":""} title="${rd.test?"":"Connect sending and add a test address first"}">${c.busy==="test"?"Sending…":"Send test"}</button>
-      <button class="btn sm primary cpx" id="cpSend" ${c.busy||!rd.send?"disabled":""}>Send to readers</button>
-      <button class="btn sm cpx" id="cpDel" ${c.busy?"disabled":""}>Delete</button>`:`<a class="btn sm cpx" href="${esc(d.url||"https://tany.im/campus/")}" target="_blank" rel="noopener">On tany.im ↗</a>`}
-    </div>${cpBoxes()}${c.mode==="preview"?cpPreview():cpEditor()}<div class="cpfoot" id="cpFoot"></div></section>`;
-  return `<div class="cp${c.lists?" lists":""}" id="cpView" data-noauto>${cpListHtml()}${main}</div>`;
-}
-function cpDraw(){$("#view").innerHTML=searchResults()+cpView();wire();wireCp();cpFoot();cpGrow($("#cpBody"))}
-async function cpUpload(files,el){
-  const imgs=[...files].filter(f=>/^image\//.test(f.type));if(!imgs.length)return;
-  for(const f of imgs){
-    try{const r=await fetch("/api/uploads",{method:"POST",headers:{"X-Desk-Upload":"1","Content-Type":f.type},body:f});const v=await r.json();if(!r.ok)throw new Error(v.error||"");
-      const c=cp(),at=el.selectionStart??el.value.length,ins=`\n![](${v.url})\n`;
-      el.value=el.value.slice(0,at)+ins+el.value.slice(el.selectionEnd??at);c.doc.body=el.value;el.selectionStart=el.selectionEnd=at+ins.length;cpGrow(el);cpChanged()}
-    catch(e){toast("Could not add the photo"+(e.message?": "+e.message:""))}
-  }
-}
-function wireCp(){
-  const c=cp(),d=c.doc;
-  document.querySelectorAll("[data-cpopen]").forEach(b=>b.onclick=()=>cpOpen(b.dataset.cpopen));
-  $("#cpNew")&&($("#cpNew").onclick=cpNew);$("#cpNew2")&&($("#cpNew2").onclick=cpNew);
-  $("#cpLists")&&($("#cpLists").onclick=()=>{c.lists=true;cpDraw()});
-  $("#cpSet")&&($("#cpSet").onclick=()=>{c.settings=!c.settings;c.lists=false;cpDraw()});
-  document.querySelectorAll("[data-cpmode]").forEach(b=>b.onclick=async()=>{await cpFlush();c.mode=b.dataset.cpmode;cpDraw()});
-  document.querySelectorAll("[data-cppv]").forEach(b=>b.onclick=()=>{c.pv=b.dataset.cppv;cpDraw()});
-  $("#cpFocus")&&($("#cpFocus").onclick=()=>{document.body.classList.toggle("cpfocus");cpDraw();$("#cpBody")?.focus()});
-  if(d&&d.status!=="sent"){
-    const bind=(id,k)=>{const el=$(id);if(el)el.oninput=()=>{d[k]=el.value;if(k==="body")cpGrow(el);if(k==="teaser")$("#cpTn").textContent=[...el.value].length;cpChanged()}};
-    bind("#cpSeries","series");bind("#cpTitle","title");bind("#cpBody","body");bind("#cpTeaser","teaser");
-    const b=$("#cpBody");
-    if(b){b.onpaste=e=>{if(e.clipboardData?.files?.length){e.preventDefault();cpUpload(e.clipboardData.files,b)}};
-      b.ondragover=e=>{e.preventDefault();b.classList.add("on")};b.ondragleave=()=>b.classList.remove("on");
-      b.ondrop=e=>{e.preventDefault();b.classList.remove("on");cpUpload(e.dataTransfer.files,b)}}
-    $("#cpTitle")&&($("#cpTitle").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();$("#cpBody").focus()}});
-  }else if(d){
-    const t=$("#cpTeaser");if(t)t.oninput=()=>{d.teaser=t.value;$("#cpTn").textContent=[...t.value].length};
-    $("#cpTeaserSave")&&($("#cpTeaserSave").onclick=async()=>{c.busy="teaser";try{await cpPut("/api/campus/issues/"+d.id,{teaser:d.teaser});toast("Teaser updated on tany.im")}catch(e){toast(e.message)}c.busy="";cpDraw()});
-  }
-  $("#cpTidy")&&($("#cpTidy").onclick=async()=>{await cpFlush();c.busy="tidy";c.tidy=null;cpDraw();
-    try{c.tidy=await cpPost(`/api/campus/issues/${d.id}/tidy`)}catch(e){c.msg=e.message}c.busy="";cpDraw()});
-  $("#cpTidyUse")&&($("#cpTidyUse").onclick=()=>{d.body=c.tidy.body;d.teaser=c.tidy.teaser;c.tidy=null;c.dirty=true;cpFlush().then(cpDraw)});
-  $("#cpTidyTeaser")&&($("#cpTidyTeaser").onclick=()=>{d.teaser=c.tidy.teaser;c.tidy=null;c.dirty=true;cpFlush().then(cpDraw)});
-  $("#cpTidyNo")&&($("#cpTidyNo").onclick=()=>{c.tidy=null;cpDraw()});
-  $("#cpTest")&&($("#cpTest").onclick=async()=>{await cpFlush();c.busy="test";cpDraw();
-    try{const v=await cpPost(`/api/campus/issues/${d.id}/test`);c.msg=`Test sent to ${v.to}. Photos show only in the real send.`}catch(e){c.msg=e.message}c.busy="";cpDraw()});
-  $("#cpSend")&&($("#cpSend").onclick=async()=>{await cpFlush();c.busy="count";
-    try{const st=await api("GET","/api/campus/stats");if(st.error)throw new Error(st.error);c.data.stats=st;c.confirm={active:st.active}}catch(e){c.msg=e.message||"Could not count the readers"}c.busy="";cpDraw()});
-  $("#cpSendNo")&&($("#cpSendNo").onclick=()=>{c.confirm=null;cpDraw()});
-  $("#cpSendGo")&&($("#cpSendGo").onclick=async()=>{c.busy="send";cpDraw();
-    try{const v=await cpPost(`/api/campus/issues/${d.id}/send`,{expect:c.confirm.active});c.doc=v.issue;c.confirm=null;
-      c.msg=`Sent #${v.issue.no} to ${v.result.sent} readers.${v.result.pending?` ${v.result.pending} more go out tomorrow (daily limit).`:""}`;await cpLoad(d.id)}
-    catch(e){c.confirm=null;c.msg=e.message}c.busy="";cpDraw()});
-  $("#cpDel")&&($("#cpDel").onclick=async()=>{if(!confirm("Delete this draft?"))return;try{await cpPost(`/api/campus/issues/${d.id}/remove`);c.doc=null;c.cur=null;await cpLoad()}catch(e){toast(e.message)}});
-  $("#cpsClose")&&($("#cpsClose").onclick=()=>{c.settings=false;cpDraw()});
-  $("#cpsSave")&&($("#cpsSave").onclick=async()=>{try{c.data.settings=await cpPut("/api/campus/settings",{fromName:$("#cpsName").value,address:$("#cpsAddr").value,contact:$("#cpsContact").value,testTo:$("#cpsTest").value});c.settings=false;c.msg="Settings saved";await cpLoad()}catch(e){c.msg=e.message;cpDraw()}});
-  $("#cpsLanding")&&($("#cpsLanding").onclick=async()=>{if(!confirm("Publish tany.im/campus/ now? The site is deployed."))return;c.busy="landing";cpDraw();try{const v=await cpPost("/api/campus/publish-landing");c.msg="Signup page is up: "+v.url}catch(e){c.msg=e.message}c.busy="";cpDraw()});
-}
-document.addEventListener("keydown",e=>{
-  if(viewId()!=="campus"||!(e.metaKey||e.ctrlKey))return;
-  if(e.key==="."){e.preventDefault();document.body.classList.toggle("cpfocus");cpDraw();$("#cpBody")?.focus()}
-  else if(e.shiftKey&&(e.key==="p"||e.key==="P")){e.preventDefault();cpFlush().then(()=>{const c=cp();c.mode=c.mode==="preview"?"write":"preview";cpDraw()})}
-  else if(e.key==="s"){e.preventDefault();cpFlush()}
-});
-window.addEventListener("beforeunload",()=>{if(cp().dirty)cpFlush()});
 const psFull=(t,d)=>{if(!d)return "";if(t.kind==="story")return d.overlay||"";let s=(d.text||"").trim();const tags=[...(d.hashtags||[])];(t.fixedTags||"").split(/[\s,]+/).filter(x=>x.startsWith("#")&&!tags.includes(x)).forEach(x=>tags.push(x));if(tags.length)s+="\n\n"+tags.join(" ");return s};
 const psLen=(t,s)=>{if(t.count!=="x")return [...s].length;let n=0;s=s.replace(/https?:\/\/\S+/g,()=>{n+=23;return ""});for(const ch of s){const c=ch.codePointAt(0);n+=(c<=4351||(c>=8192&&c<=8205)||(c>=8208&&c<=8223)||(c>=8242&&c<=8247))?1:2}return n};
 const psOpenUrl=(t,d)=>t.open?t.open.replace("{text}",encodeURIComponent(t.kind==="story"?"":psFull(t,d))).replace("{title}",encodeURIComponent(d?.title||"")):"";
@@ -6214,14 +5668,12 @@ function psCard(post,t){
   const where=t.link==="bio"?"Captions here can't hold a tappable link. Put it in your bio:":t.link==="sticker"?"Add it to the story as a link sticker:":"";
   const linkNote=d&&where&&post.links?.length?`<div class="pslink"><span class="due">${where}</span>${post.links.map(u=>post.short?.[t.id]?.[u]||u).map(u=>`<span class="pslinkrow"><span class="pslinku">${esc(u)}</span><button class="btn" data-pslinkcopy="${esc(u)}">Copy link</button></span>`).join("")}</div>`:"";
   const url=d?psOpenUrl(t,d):"";
-  const nd=post.noteDraft,noteOn=(p.data?.accounts||[]).some(a=>a.provider==="note");
-  const noteRow=d&&t.id==="note"?`<div class="nsgo psgo">${noteOn?`<button class="btn" data-psnote ${p.noteBusy?"disabled":""}>${p.noteBusy?"Saving to note…":nd?"Update the note draft":"Save to note as draft"}</button>`:`<span class="due">note is not connected. See Connections in Settings.</span>`}${nd?`<a class="btn" href="${esc(nd.editUrl)}" target="_blank" rel="noopener">Open the draft on note ↗</a><span class="due">Saved ${esc(psWhen(nd.at))}${nd.cover?"":" · add the header picture on note"}. Add the hashtags and publish (or schedule) on note.</span>`:""}</div>`:"";
   const acts=!d?"":t.id==="note"?`<button class="btn" data-pscopy="${tid}">Copy Markdown</button><button class="btn" data-pshtml="${tid}">Copy formatted</button>${url?`<a class="btn" href="${esc(url)}" target="_blank" rel="noopener" data-pscopygo="${tid}">Open note ↗</a>`:""}`
     :`${url?`<a class="btn" href="${esc(url)}" target="_blank" rel="noopener" data-pscopygo="${tid}">Copy and open ↗</a>`:""}<button class="btn" data-pscopy="${tid}">Copy</button>`;
   return `<article class="card pscard${posted?" done":""}" aria-label="${esc(t.name)}">
     <header class="pshead"><h3>${esc(t.name)}</h3><span class="due">${PSKIND[t.kind]}${d?` · ${len.toLocaleString("en-US")} / ${t.limit.toLocaleString("en-US")}${t.count==="x"?" (weighted)":""}${over>0?` · ${over} over`:""}`:""}</span></header>
     ${img}${body}${linkNote}
-    ${d&&psCan(t)?psSend2(post,t):""}${d&&t.kind==="news"?psSite(post):""}${noteRow}
+    ${d&&psCan(t)?psSend2(post,t):""}${d&&t.kind==="news"?psSite(post):""}
     <div class="nsgo">${acts}${vid?`<button class="btn" data-pssavevid="${tid}">Save video</button>`:post.photos.length?`<button class="btn" data-pssave="${tid}">${post.photos.length>1?`Save ${post.photos.length} pictures`:"Save picture"}</button>`:""}${PSWHOLEPDF.includes(t.kind)||t.id.startsWith("fb-")&&!psCan(t)?(post.docs||[]).map(x=>`<button class="btn" data-pssavedoc="${esc(x.id)}">Save PDF</button>`).join(""):""}</div>
     <div class="nsgo">${p.open[t.id]?`<input class="wd-field psedit pshint" data-pshint="${tid}" placeholder="What to change (optional)" aria-label="What to change"><button class="btn" data-psregen="${tid}" ${post.running?"disabled":""}>Rewrite</button>`:`<button class="btn" data-psask="${tid}" ${post.running?"disabled":""}>${busy&&post.regen===t.id?"Rewriting…":"Rewrite"}</button>`}
     <label class="pschip"><input type="checkbox" data-psposted="${tid}" ${posted?"checked":""}><span>Posted</span></label></div></article>`;
@@ -6292,7 +5744,6 @@ function psSettings(){
   const yt=(d.accounts||[]).find(a=>a.provider==="youtube");
   const conn=`<section class="card mfocus"><p class="mtalk">Connections</p><p class="due">Instagram, Threads and Facebook Pages are connected on go.tany.im. YouTube uploads go straight from this Mac.</p><div class="nsgo"><span class="due">${yt?`YouTube: ${esc(yt.handle)}`:"YouTube: not connected"}</span><button class="btn" id="psYtConnect">${yt?"Connect again":"Connect YouTube"}</button></div>
     ${[["linkedin","LinkedIn"],["x","X"],["threads","Threads"],["meta","Instagram and Facebook"]].map(([k,l])=>{const a=(d.accounts||[]).filter(x=>k==="meta"?["instagram","facebook"].includes(x.provider):x.provider===k);return `<div class="nsgo"><span class="due">${l}: ${a.length?a.map(x=>esc(x.handle)+(x.problem?` (${esc(x.problem)})`:"")).join(", "):"not connected"}</span><button class="btn" data-psconnect="${k}">${a.length?"Connect again":"Connect"}</button></div>`}).join("")}
-    ${(n=>`<div class="nsgo"><span class="due">note: ${n?esc(n.handle)+" (drafts only; you publish on note)":"not connected. In Terminal, run the command, sign in to note in Chrome and paste its session cookie"}</span><button class="btn" data-pscopycmd="python3 ~/TatsukiDesk/desk/note_post.py connect">${n?"Copy the command to connect again":"Copy the command"}</button></div>`)((d.accounts||[]).find(a=>a.provider==="note"))}
     ${(d.accounts||[]).some(a=>a.provider==="x")?`<p class="due">X charges for each post: about $0.015, and about $0.20 when the post has a link.</p>`:""}</section>`;
   return `<section class="card mfocus"><p class="mtalk">How each account sounds, and where to post. Saved when you leave a box.</p>${voice}</section>${conn}<section class="card mfocus">${rows}</section>`;
 }
@@ -6378,9 +5829,6 @@ function wirePs(){
   all("[data-psconnect]").forEach(b=>b.onclick=async()=>{try{const v=await psSend("POST","/api/posts/connect",{provider:b.dataset.psconnect});
     if(v.url){window.open(v.url,"_blank","noopener");toast("Sign in on the page that opened, then come back")}else{toast("Connected: "+v.handle);psLoad()}}catch(e){toast(e.message)}});
   const ytc=$("#psYtConnect");if(ytc)ytc.onclick=async()=>{try{await psSend("POST","/api/posts/youtube-connect",{});toast("Google's page opened in your browser. Allow it, then come back");setTimeout(psLoad,30000)}catch(e){toast(e.message)}};
-  all("[data-psnote]").forEach(b=>b.onclick=async()=>{p.noteBusy=true;psDraw();
-    try{p.cur=await psSend("POST",`/api/posts/${encodeURIComponent(p.cur.id)}/note`,{});toast("Saved as a draft on note. Nothing is public yet")}catch(e){toast(e.message)}p.noteBusy=false;psDraw()});
-  all("[data-pscopycmd]").forEach(b=>b.onclick=async()=>toast(await copyText(b.dataset.pscopycmd)?"Copied. Paste it in Terminal":"Could not copy"));
   all("[data-pssavedoc]").forEach(b=>b.onclick=async()=>{try{const v=await psSend("POST",`/api/posts/${encodeURIComponent(p.cur.id)}/savedoc`,{doc:b.dataset.pssavedoc});
     const a=document.createElement("a");a.href="/api/utilities/file/"+v.file;a.download="";document.body.append(a);a.click();a.remove();toast("Saving to Downloads")}catch(e){toast(e.message)}});
   all("[data-psask]").forEach(b=>b.onclick=()=>{p.open[b.dataset.psask]=true;psDraw();$(`[data-pshint="${b.dataset.psask}"]`)?.focus()});
@@ -7591,7 +7039,7 @@ const FDESC={ // what each screen is for, in plain words (English and Japanese k
   habits:"habits, morning and night routines, reward cards 習慣 ルーティン",
   body:"body summary: sleep, meals, weight, steps, workouts 身体 体",
   bodysleep:"sleep hours and sleep coach 睡眠",bodymeal:"meals and calories left 食事 カロリー",bodyweight:"weight trend 体重",
-  bodysteps:"steps ring 歩数",bodyworkout:"workout sets and estimated 1RM 筋トレ",workoutboard:"a free board of exercise videos, YouTube links, MP4s, PDFs and sticky notes ストレッチ 動画 運動",bodyhabits:"study time and screen time 学習",
+  bodysteps:"steps ring 歩数",bodyworkout:"workout sets and estimated 1RM 筋トレ",bodyhabits:"study time and screen time 学習",
   wins:"things done today and before できたこと",
   followups:"people you are waiting to hear back from, nudges 返信待ち 催促",
   mailclean:"Gmail cleanup: unsubscribe from mailing lists and newsletters, mark spam, keep senders メール整理 配信停止 サブスク解除",
@@ -7607,7 +7055,7 @@ const FDESC={ // what each screen is for, in plain words (English and Japanese k
   log:"Claude's daily work report Claude Log 日報",timelog:"time tracking 時間",tools:"all tools as cards ツール",
   lifeos:"Life OS small tools ライフOS",gear:"belongings list, export 持ち物",usage:"which parts of Desk you use 使い方",
   utilities:"QR code, character count, URL shortener, PDF compression 小さな道具 QR 文字数 短縮 PDF圧縮",
-  post:"drafts for social posts from photos and a memo 投稿 SNS",campus:"write and send the free newsletter 地球キャンパス通信 メルマガ newsletter readers signup page",transcribe:"record and transcribe long audio 録音 文字起こし",
+  post:"drafts for social posts from photos and a memo 投稿 SNS",transcribe:"record and transcribe long audio 録音 文字起こし",
   bank:"bank accounts to share and copy 口座",accounts:"list of sites where you have accounts, how you sign in アカウント ログイン",
   showcase:"portfolio site and PR photos ポートフォリオ",claudeusage:"Claude token usage and scheduled jobs 使用量",
 };

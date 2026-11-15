@@ -48,22 +48,61 @@ func focus(_ img: CGImage) -> (Double, Double) {
     return (Double(all.midX), Double(1 - all.midY))
 }
 
-func crop(_ img: CGImage, w: Int, h: Int, x: Double, y: Double, text: String?) -> CGImage? {
+// taken with a camera (its maker is in the file): a photo, which fills the frame. Slides, screenshots and PDF pages have none
+func fromCamera(_ path: String) -> Bool {
+    guard let src = CGImageSourceCreateWithURL(URL(fileURLWithPath: path) as CFURL, nil),
+          let props = CGImageSourceCopyPropertiesAtIndex(src, 0, nil) as? [CFString: Any],
+          let tiff = props[kCGImagePropertyTIFFDictionary] as? [CFString: Any] else { return false }
+    return !((tiff[kCGImagePropertyTIFFMake] as? String) ?? "").isEmpty
+}
+
+// the average colour of the picture's outer edge, to fill the space around a whole picture
+func edgeColor(_ img: CGImage) -> CGColor {
+    let iw = img.width, ih = img.height, b = max(2, min(iw, ih) / 40)
+    var r = 0.0, g = 0.0, bl = 0.0, n = 0.0
+    for rect in [CGRect(x: 0, y: 0, width: iw, height: b), CGRect(x: 0, y: ih - b, width: iw, height: b),
+                 CGRect(x: 0, y: 0, width: b, height: ih), CGRect(x: iw - b, y: 0, width: b, height: ih)] {
+        guard let part = img.cropping(to: rect) else { continue }
+        var px = [UInt8](repeating: 0, count: 4)
+        guard let c = CGContext(data: &px, width: 1, height: 1, bitsPerComponent: 8, bytesPerRow: 4,
+                                space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue) else { continue }
+        c.interpolationQuality = .medium
+        c.draw(part, in: CGRect(x: 0, y: 0, width: 1, height: 1))
+        r += Double(px[0]); g += Double(px[1]); bl += Double(px[2]); n += 1
+    }
+    if n == 0 { return CGColor(gray: 0.1, alpha: 1) }
+    return CGColor(srgbRed: r / n / 255, green: g / n / 255, blue: bl / n / 255, alpha: 1)
+}
+
+func crop(_ img: CGImage, w: Int, h: Int, x: Double, y: Double, text: String?, fit: Bool = false) -> CGImage? {
     let iw = Double(img.width), ih = Double(img.height), want = Double(w) / Double(h)
-    var cw = iw, ch = iw / want
-    if ch > ih { ch = ih; cw = ih * want }
-    let cx = min(max(x * iw - cw / 2, 0), iw - cw), cy = min(max(y * ih - ch / 2, 0), ih - ch)
-    guard let part = img.cropping(to: CGRect(x: cx.rounded(), y: cy.rounded(), width: cw.rounded(), height: ch.rounded())),
-          let ctx = CGContext(data: nil, width: w, height: h, bitsPerComponent: 8, bytesPerRow: 0,
+    guard let ctx = CGContext(data: nil, width: w, height: h, bitsPerComponent: 8, bytesPerRow: 0,
                               space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue) else { return nil }
     ctx.interpolationQuality = .high
-    ctx.draw(part, in: CGRect(x: 0, y: 0, width: w, height: h))
+    var bg: CGColor? = nil
+    if fit {
+        // the whole picture, nothing cut: it sits in the frame and the edge colour fills the rest
+        bg = edgeColor(img)
+        ctx.setFillColor(bg!)
+        ctx.fill(CGRect(x: 0, y: 0, width: w, height: h))
+        // with story words, the picture stays above them and below the top 14% the app covers
+        let room = (text ?? "").isEmpty ? CGRect(x: 0, y: 0, width: Double(w), height: Double(h))
+                                        : CGRect(x: Double(w) * 0.03, y: Double(h) * 0.47, width: Double(w) * 0.94, height: Double(h) * 0.39)
+        let s = min(room.width / iw, room.height / ih), dw = iw * s, dh = ih * s
+        ctx.draw(img, in: CGRect(x: (room.midX - dw / 2).rounded(), y: (room.midY - dh / 2).rounded(), width: dw.rounded(), height: dh.rounded()))
+    } else {
+        var cw = iw, ch = iw / want
+        if ch > ih { ch = ih; cw = ih * want }
+        let cx = min(max(x * iw - cw / 2, 0), iw - cw), cy = min(max(y * ih - ch / 2, 0), ih - ch)
+        guard let part = img.cropping(to: CGRect(x: cx.rounded(), y: cy.rounded(), width: cw.rounded(), height: ch.rounded())) else { return nil }
+        ctx.draw(part, in: CGRect(x: 0, y: 0, width: w, height: h))
+    }
     if let text = text, !text.isEmpty {
         // stories cover the top 14% and the bottom 20% with buttons, so the words sit above that
         let band = CGRect(x: 0, y: Double(h) * 0.20, width: Double(w), height: Double(h) * 0.26)
         let fade = CGGradient(colorsSpace: CGColorSpace(name: CGColorSpace.sRGB)!,
                               colors: [CGColor(gray: 0, alpha: 0), CGColor(gray: 0, alpha: 0.62)] as CFArray, locations: [0, 1])!
-        ctx.drawLinearGradient(fade, start: CGPoint(x: 0, y: band.maxY), end: CGPoint(x: 0, y: band.minY + band.height * 0.35), options: [.drawsAfterEndLocation])
+        if bg == nil { ctx.drawLinearGradient(fade, start: CGPoint(x: 0, y: band.maxY), end: CGPoint(x: 0, y: band.minY + band.height * 0.35), options: [.drawsAfterEndLocation]) }
         let g = NSGraphicsContext(cgContext: ctx, flipped: false)
         NSGraphicsContext.saveGraphicsState()
         NSGraphicsContext.current = g
@@ -73,9 +112,13 @@ func crop(_ img: CGImage, w: Int, h: Int, x: Double, y: Double, text: String?) -
         para.lineSpacing = 6
         var size = Double(w) * 0.062
         let box = CGRect(x: Double(w) * 0.07, y: band.minY + 24, width: Double(w) * 0.86, height: band.height - 48)
+        // white on the dark fade; on a plain edge colour, black or white, whichever reads
+        var ink = NSColor.white
+        if let c = bg?.converted(to: CGColorSpace(name: CGColorSpace.sRGB)!, intent: .defaultIntent, options: nil)?.components, c.count >= 3,
+           0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2] > 0.55 { ink = NSColor(white: 0.08, alpha: 1) }
         var attr: [NSAttributedString.Key: Any] = [:]
         repeat { // smaller until it fits the band
-            attr = [.font: NSFont.systemFont(ofSize: size, weight: .bold), .foregroundColor: NSColor.white, .paragraphStyle: para]
+            attr = [.font: NSFont.systemFont(ofSize: size, weight: .bold), .foregroundColor: ink, .paragraphStyle: para]
             let need = (text as NSString).boundingRect(with: box.size, options: [.usesLineFragmentOrigin], attributes: attr)
             if need.height <= box.height { break }
             size -= 4
@@ -183,11 +226,12 @@ case "focus":
     guard args.count == 3 else { exit(2) }
     guard let img = load(args[2]) else { exit(4) }
     let (x, y) = focus(img)
-    print(String(format: "{\"w\":%d,\"h\":%d,\"x\":%.4f,\"y\":%.4f}", img.width, img.height, x, y))
+    print(String(format: "{\"w\":%d,\"h\":%d,\"x\":%.4f,\"y\":%.4f,\"cam\":%@}", img.width, img.height, x, y, fromCamera(args[2]) ? "true" : "false"))
 case "crop":
     guard args.count >= 8, let w = Int(args[4]), let h = Int(args[5]), let x = Double(args[6]), let y = Double(args[7]), w > 0, h > 0 else { exit(2) }
     guard let img = load(args[2]) else { exit(4) }
-    guard let out = crop(img, w: w, h: h, x: x, y: y, text: args.count > 8 ? args[8] : nil),
+    // args[8]: the story's words ("" for none), args[9]: "fit" keeps the whole picture
+    guard let out = crop(img, w: w, h: h, x: x, y: y, text: args.count > 8 ? args[8] : nil, fit: args.count > 9 && args[9] == "fit"),
           let dest = CGImageDestinationCreateWithURL(URL(fileURLWithPath: args[3]) as CFURL, UTType.jpeg.identifier as CFString, 1, nil) else { exit(6) }
     CGImageDestinationAddImage(dest, out, [kCGImageDestinationLossyCompressionQuality: 0.9] as CFDictionary)
     guard CGImageDestinationFinalize(dest) else { exit(6) }

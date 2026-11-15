@@ -59,3 +59,8 @@
 - `desk/note_post.py`。サインインは `_note_session_v5` Cookie を `python3 desk/note_post.py connect` に貼る（キーチェーン `tatsuki-desk-note`、パスワードは持たない）。XSRF は `/api/v2/current_user` の応答から取る。本文は Markdown → note の HTML（ブロックごとに name/id の uuid）。
 - Post Studio の note カードに「Save to note as draft」（もう一度押すと同じ下書きを更新）。`POST /api/posts/<id>/note`、記録は post の `noteDraft`。
 - 2026-11-15 に本物で試した：下書き・見出し画像・写真3枚・見出し4つは note に入り、下書き一覧にも出る。ただし押すと編集画面が開かない（404）。原因は未特定（Desk のタスクあり）。note が中身を変えると止まる。そのときは Copy で続ける。
+
+## 画像を切らない「Show the whole picture」（2026-11-15 夜）
+- スライドや図が投稿先の枠で切れていた。カメラの写真（ファイルにカメラの機種がある）は今までどおり枠いっぱい、それ以外（スライド・スクショ・PDF のページ）は全体を収め、余白は絵の縁の色で埋める。
+- カードの「Show the whole picture」で1枚ずつ切り替え（`post.fit["<投稿先>/<写真id>"]`、判定は `posts.whole`、カメラかどうかは写真の json の `cam`）。ストーリーで文字を入れるときは、絵を上、文字を下の空きに置き、文字色は背景の明るさで黒か白。
+- 文字の量（Vision の文字認識）での判定は試したが、iPhone の写真よりスライドの方が低く出る枚もあり使わなかった。
