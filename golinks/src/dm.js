@@ -26,13 +26,20 @@ async function pageFor(env, igId) {
 
 export async function conversations(env, igId) {
   const { token, page } = await pageFor(env, igId);
-  const fields = "participants,updated_time,messages.limit(10){id,message,from,created_time,attachments}";
+  // Meta sometimes answers "reduce the amount of data": then ask again for fewer chats and fewer messages each
   let v;
-  if (page) {
-    v = await get(`${GRAPH}/${page.id}/conversations?platform=instagram&fields=${enc(fields)}&limit=25&access_token=${enc(page.access_token)}`);
-  } else {
-    // no linked Page: try the Instagram account itself (works only for some account setups)
-    v = await get(`${GRAPH}/${igId}/conversations?platform=instagram&fields=${enc(fields)}&limit=25&access_token=${enc(token)}`);
+  for (const [chats, each] of [[25, 10], [10, 5], [5, 3], [3, 1]]) {
+    const fields = `participants,updated_time,messages.limit(${each}){id,message,from,created_time,attachments}`;
+    const url = page
+      ? `${GRAPH}/${page.id}/conversations?platform=instagram&fields=${enc(fields)}&limit=${chats}&access_token=${enc(page.access_token)}`
+      // no linked Page: the Instagram account itself (works only for some account setups)
+      : `${GRAPH}/${igId}/conversations?platform=instagram&fields=${enc(fields)}&limit=${chats}&access_token=${enc(token)}`;
+    try {
+      v = await get(url);
+      break;
+    } catch (e) {
+      if (!/reduce the amount of data|unknown error/i.test(e.message) || chats === 3) throw e;
+    }
   }
   const out = [];
   for (const c of v.data || []) {
