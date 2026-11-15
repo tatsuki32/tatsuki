@@ -1,0 +1,9 @@
+# tatsuki.tany.im — portfolio (profile site, 9 languages)
+# Source lives outside this repo (personal career text): see sites/README.md
+name = "tatsuki-site"
+compatibility_date = "2026-11-01"
+routes = [{ pattern = "tatsuki.tany.im", custom_domain = true }]
+
+[assets]
+directory = "./build"
+not_found_handling = "single-page-application"
