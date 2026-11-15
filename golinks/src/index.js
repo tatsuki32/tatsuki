@@ -4,6 +4,7 @@
 
 import * as accounts from "./accounts.js";
 import * as dm from "./dm.js";
+import * as legal from "./legal.js";
 import * as publish from "./publish.js";
 
 const ALPHABET = "abcdefghijkmnpqrstuvwxyz23456789"; // no l, o, 0, 1: easy to read out loud
@@ -141,6 +142,8 @@ export default {
       const r = await accounts.callback(env, back[1], url);
       return page(r.ok ? "Connected" : "Not connected", r.text.replace(/[<>&]/g, ""), r.ok ? 200 : 400);
     }
+    if (url.pathname === "/privacy") return legal.privacy();
+    if (url.pathname === "/data-deletion") return legal.deletion();
     const c = url.pathname.slice(1).toLowerCase();
     if (!c) return Response.redirect("https://tany.im/", 302);
     if (!/^[a-z0-9]{4,12}$/.test(c)) return page("Not found", "This link does not exist.", 404);
