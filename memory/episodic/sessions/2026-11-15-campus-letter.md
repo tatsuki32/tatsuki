@@ -28,3 +28,8 @@
 - Worker の秘密 `CAMPUS_KEY`（キーチェーン `tatsuki-desk-campus` と同じ）・`RESEND_KEY`（Sending access、tany.im だけ）。deploy 済み。登録ページ tany.im/campus/ を公開。
 - テスト送信が Gmail の受信箱に届いた（迷惑メールではない）。
 - ハマりどころ：`wrangler secret put` に手で貼ると別の文字が入ることがあった。鍵はコピーのボタン → `pbpaste | tr -d '[:space:]' | npx wrangler secret put RESEND_KEY` で入れる。鍵が正しいかは `pbpaste` の鍵で `api.resend.com` を叩けば分かる（Sending access の鍵は 401 restricted_api_key が正常）。
+
+## 載せる場所を広げた（同じ日）
+- 仕事用プロフィール tatsuki.tany.im：日本語版だけの「出版物」にメルマガ（`PUB` の4つ目の値 `"ja"` で言語を絞る）。`bash sites/deploy.sh tatsuki`。
+- プライベート用 tatsuki-about.tany.im（元は `desk/data/manual/public/`、Worker `tatsuki-about`）：連絡・SNS のシートと最後の段落にリンク。
+- tany.im：トップにお知らせとは別の「メルマガ」欄、メニューに「メルマガ」「代表」、代表ページ `/founder/`（本文はプロフィールの事実だけ。site フォルダに置く）。一覧は `campus._lists()` が送信のたびに差し替える。

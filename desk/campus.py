@@ -350,6 +350,8 @@ def _shell(title, desc, main, depth, canonical, image=None):
         t = t.replace("</head>", f'<link rel="canonical" href="{e(canonical)}">\n</head>', 1)
     up = "../" * depth
     t = t.replace('href="../../', f'href="{up}').replace('src="../../', f'src="{up}')
+    if f'href="{up}campus/"' not in t:  # the menu links to the newsletter and the founder page
+        t = t.replace(f'<a href="{up}news/">お知らせ</a>', f'<a href="{up}news/">お知らせ</a><a href="{up}campus/">メルマガ</a><a href="{up}founder/">代表</a>', 1)
     return re.sub(r"<main id=\"top\">.*?</main>", lambda m: f'<main id="top">\n{main}\n</main>', t, count=1, flags=re.S)
 
 
@@ -492,11 +494,44 @@ def _sitemap():
         return
     src = re.sub(r"\s*<url><loc>https://tany\.im/campus/[^<]*</loc>.*?</url>", "", src)
     today = datetime.now(HCM).strftime("%Y-%m-%d")
+    src = re.sub(r"\s*<url><loc>https://tany\.im/founder/</loc>.*?</url>", "", src)
     lines = [f"  <url><loc>{site_news.BASE}/campus/</loc><lastmod>{today}</lastmod></url>"]
+    if os.path.exists(os.path.join(site_news.PUBLIC, "founder", "index.html")):
+        lines.append(f"  <url><loc>{site_news.BASE}/founder/</loc><lastmod>{today}</lastmod></url>")
     lines += [f"  <url><loc>{site_news.BASE}/campus/{d['no']}/</loc><lastmod>{_date(d.get('sentAt'))}</lastmod></url>" for d in _sent()]
     src = src.replace("</urlset>", "\n".join(lines) + "\n</urlset>")
     with open(p, "w", encoding="utf-8") as f:
         f.write(src)
+
+
+LIST = re.compile(r"(<!-- campus:list -->).*?(\s*<!-- /campus:list -->)", re.S)
+LISTS = (("index.html", "campus/", 3), ("founder/index.html", "../campus/", 5))  # pages on tany.im that show the newest issues
+
+
+def _lists():
+    """The newest issues between <!-- campus:list --> markers on the top page and the founder page (separate from the news).
+    A page without the markers is left as it is."""
+    e = html.escape
+    sent = _sent()
+    for rel, prefix, keep in LISTS:
+        p = os.path.join(site_news.PUBLIC, rel)
+        try:
+            with open(p, encoding="utf-8") as f:
+                src = f.read()
+        except OSError:
+            continue
+        if not LIST.search(src):
+            continue
+        if sent:
+            rows = "\n".join(
+                f'        <li><a href="{prefix}{d["no"]}/"><time datetime="{_date(d.get("sentAt"))}">{_date(d.get("sentAt")).replace("-", ".")}</time>'
+                f'<span><span class="tag">#{d["no"]}</span><span class="nt">{e(d.get("title") or "")}</span></span></a></li>' for d in sent[:keep])
+            block = f'\n      <ul class="news">\n{rows}\n      </ul>'
+        else:
+            block = '\n      <p>第1号を準備しています。登録すると、最初の号から届きます。</p>'
+        src = LIST.sub(lambda m: m.group(1) + block + m.group(2), src, count=1)
+        with open(p, "w", encoding="utf-8") as f:
+            f.write(src)
 
 
 def write_pages(d=None):
@@ -513,6 +548,7 @@ def write_pages(d=None):
         _put(f"{d['no']}/index.html", issue_page(d, pics))
     _put("index.html", landing_page())
     _put("thanks/index.html", thanks_page())
+    _lists()
     _sitemap()
     return pics
 
