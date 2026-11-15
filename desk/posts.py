@@ -480,10 +480,49 @@ def camera(photo_id):
     return meta["cam"]
 
 
+# the shapes each place accepts through its publishing tools, the first is the suggested one, and how many pictures it takes
+# (checked 2026-11-15 against the publishers' guides; Instagram's app takes 3:4 too, but its publishing API stops at 4:5)
+RATIOS = {"4:5": [1080, 1350], "1:1": [1080, 1080], "1.91:1": [1200, 628], "16:9": [1600, 900], "3:4": [1080, 1440], "9:16": [1080, 1920]}
+
+
+def shapes(t):
+    """(the ratios this place accepts, best first; how many pictures it takes). targets.json may set ratios and maxPhotos."""
+    if t.get("ratios"):
+        rs = [r for r in t["ratios"] if r in RATIOS]
+    elif t["kind"] in ("story", "video"):
+        rs = ["9:16"]
+    elif t["id"] == "x":
+        rs = ["16:9", "1:1", "3:4"]
+    elif t["id"] == "linkedin":
+        rs = ["1:1", "4:5", "1.91:1"]
+    elif t["kind"] in ("article", "news") and t["id"] != "reddit":
+        rs = []  # the header picture has one size
+    else:
+        rs = ["4:5", "1:1", "1.91:1"]
+    most = t.get("maxPhotos") or {"x": 4, "linkedin": 9}.get(t["id"], PHOTOS_PER_POST)
+    return rs, most
+
+
+def frame(post, t):
+    """The picture size for this place: the ratio the person chose, else the place's own size."""
+    r = (post.get("ratio") or {}).get(t["id"])
+    rs, _ = shapes(t)
+    return RATIOS[r] if r in rs else (t.get("size") or [1080, 1350])
+
+
+def used(post, tid):
+    """Which photos (their numbers in the post) go to this place: the ones not left out, up to what it takes."""
+    t = target(tid)
+    out = [n for n, ph in enumerate(post.get("photos") or []) if ph["id"] not in ((post.get("skip") or {}).get(tid) or [])]
+    return out[: shapes(t)[1]] if t else out
+
+
 def whole(post, tid, n):
     """True: the whole picture sits in the frame (nothing cut). The person's choice on the card, else camera photos
     fill the frame and everything else (slides, screenshots, PDF pages) is whole, so no words are cut."""
     ph = post["photos"][n]
+    if (post.get("crop") or {}).get(f"{tid}/{ph['id']}"):
+        return False
     v = (post.get("fit") or {}).get(f"{tid}/{ph['id']}")
     if isinstance(v, bool):
         return v
@@ -503,17 +542,42 @@ def image(post_id, tid, n):
         return None
     d = (post.get("drafts") or {}).get(tid) or {}
     words = (d.get("overlay") or "").strip() if t["kind"] == "story" and n == 0 and post.get("textOn", {}).get(tid, True) else ""
-    w, h = t.get("size") or [1080, 1350]
+    w, h = frame(post, t)
     fit = whole(post, tid, n)
-    key = hashlib.sha1(json.dumps([ph["id"], ph.get("x"), ph.get("y"), w, h, words, fit]).encode()).hexdigest()[:12]
+    box = (post.get("crop") or {}).get(f"{tid}/{ph['id']}")
+    rot, light = ph.get("rot") or 0, ph.get("light") or [0, 1]
+    key = hashlib.sha1(json.dumps([ph["id"], ph.get("x"), ph.get("y"), w, h, words, fit, box, rot, light]).encode()).hexdigest()[:12]
     out = dp("out", post_id, f"{tid}-{n}-{key}.jpg")
     if not os.path.exists(out):
         os.makedirs(os.path.dirname(out), exist_ok=True)
         for old in os.listdir(os.path.dirname(out)):
             if old.startswith(f"{tid}-{n}-"):
                 os.remove(dp("out", post_id, old))
-        args = [helper, "crop", src, out, str(w), str(h), str(ph.get("x", 0.5)), str(ph.get("y", 0.45))] + [words, "fit" if fit else "fill"]
+        args = [helper, "crop", src, out, str(w), str(h), str(ph.get("x", 0.5)), str(ph.get("y", 0.45))] + [words, "fit" if fit else "fill", f"rot={rot}", "light=%s,%s" % tuple(light)] + (["box=" + ",".join(str(v) for v in box)] if box else [])
         r = subprocess.run(args, capture_output=True, timeout=120)
+        if r.returncode or not os.path.exists(out):
+            return None
+    return out
+
+
+def source(post_id, n):
+    """The whole photo as the crop box sees it: turned and lightened like the pictures, at most 1600 px."""
+    post = get(post_id)
+    if not post or not (0 <= n < len(post["photos"])):
+        return None
+    ph = post["photos"][n]
+    src, helper = photo_path(ph["id"]), tool()
+    if not src or not helper:
+        return None
+    rot, light = ph.get("rot") or 0, ph.get("light") or [0, 1]
+    key = hashlib.sha1(json.dumps([ph["id"], rot, light]).encode()).hexdigest()[:12]
+    out = dp("out", post_id, f"src-{n}-{key}.jpg")
+    if not os.path.exists(out):
+        os.makedirs(os.path.dirname(out), exist_ok=True)
+        for old in os.listdir(os.path.dirname(out)):
+            if old.startswith(f"src-{n}-"):
+                os.remove(dp("out", post_id, old))
+        r = subprocess.run([helper, "source", src, out, f"rot={rot}", "light=%s,%s" % tuple(light)], capture_output=True, timeout=120)
         if r.returncode or not os.path.exists(out):
             return None
     return out
@@ -526,7 +590,7 @@ def save_image(post_id, tid, n):
         return 404, {"error": "The picture could not be made"}
     with open(p, "rb") as f:
         data = f.read()
-    w, h = t.get("size") or [0, 0]
+    w, h = frame(get(post_id), t)
     name = f"{datetime.now():%Y-%m-%d} {t['name']} {n + 1} ({w}x{h}).jpg"
     return 200, {"file": utilities._token({"data": data, "name": name, "ctype": "image/jpeg"})}
 
@@ -546,7 +610,7 @@ def news_preview(post_id):
     if not d:
         return None
     site = post.get("site") or {}
-    pics = [f"/api/posts/{post_id}/img/{t['id']}/{n}.jpg" for n in range(len(post["photos"]))]
+    pics = [f"/api/posts/{post_id}/img/{t['id']}/{n}.jpg" for n in used(post, t["id"])]
     doc = (post.get("docs") or [None])[0]
     date = datetime.fromtimestamp((site.get("at") or time.time() * 1000) / 1000).strftime("%Y-%m-%d")
     return site_news.page(d.get("title") or "お知らせ", date, site.get("tag") or site_news.TAGS[0], d.get("text") or "", pics,
@@ -559,7 +623,7 @@ def _publish_now(post_id):
     site = post.get("site") or {}
     try:
         pics = []
-        for n in range(len(post["photos"])):
+        for n in used(post, t["id"]):
             p = image(post_id, t["id"], n)
             if p:
                 pics.append(p)
@@ -983,7 +1047,7 @@ def approve(post_id, rec):
         return 200, public(get(post_id))
     try:
         keys = []
-        for n in range(len(post["photos"])):
+        for n in used(post, tid):
             p = image(post_id, tid, n)
             if not p:
                 return 500, {"error": "The picture could not be made"}
@@ -1099,8 +1163,9 @@ def note_save(post_id):
     if not post or not t or not d:
         return 404, {"error": "There is no note draft yet"}
     try:
-        cover = image(post_id, "note", 0) if post["photos"] else None
-        more = [x for x in (photo_path(ph["id"], "api") or photo_path(ph["id"]) for ph in post["photos"][1:]) if x]
+        ns = used(post, "note")
+        cover = image(post_id, "note", ns[0]) if ns else None
+        more = [x for x in (source(post_id, n) for n in ns[1:]) if x]
         prev = (post.get("noteDraft") or {}).get("id")
         try:
             r = note_post.save_draft(d.get("title") or "", full_text(t, d), cover, more, prev)
@@ -1221,6 +1286,56 @@ def change(post_id, rec):
             tid, _, pid = str(k).partition("/")
             if tid in post["targets"] and any(ph["id"] == pid for ph in post["photos"]) and isinstance(v, bool):
                 post.setdefault("fit", {})[f"{tid}/{pid}"] = v
+        if isinstance(rec.get("photos"), list):  # the order, with pictures added or taken out
+            have = {ph["id"]: ph for ph in post["photos"]}
+            out = []
+            for pid in rec["photos"][:PHOTOS_PER_POST]:
+                pid = str(pid)
+                if pid in have:
+                    out.append(have[pid])
+                elif photo_path(pid) and pid not in [x["id"] for x in out]:
+                    out.append({"id": pid, **{k: v for k, v in _read(dp("photos", f"{pid}.json"), {}).items() if k in ("w", "h", "x", "y")}})
+            post["photos"] = out
+        for tid, r in (rec.get("ratio") or {}).items():
+            t = target(tid)
+            if t and tid in post["targets"]:
+                if r in shapes(t)[0]:
+                    post.setdefault("ratio", {})[tid] = r
+                    # a box drawn for another shape no longer fits
+                    post["crop"] = {k: v for k, v in (post.get("crop") or {}).items() if not k.startswith(tid + "/")}
+                elif r is None:
+                    (post.get("ratio") or {}).pop(tid, None)
+        for k, box in (rec.get("crop") or {}).items():
+            tid, _, pid = str(k).partition("/")
+            if tid not in post["targets"] or not any(ph["id"] == pid for ph in post["photos"]):
+                continue
+            if box is None:
+                (post.get("crop") or {}).pop(f"{tid}/{pid}", None)
+                if k not in (rec.get("fit") or {}):  # Reset: back to the automatic choice
+                    (post.get("fit") or {}).pop(f"{tid}/{pid}", None)
+                continue
+            try:
+                x, y, w, h = [min(max(float(v), 0), 1) for v in box]
+            except (TypeError, ValueError):
+                continue
+            if w > 0.02 and h > 0.02:
+                post.setdefault("crop", {})[f"{tid}/{pid}"] = [round(x, 4), round(y, 4), round(min(w, 1 - x), 4), round(min(h, 1 - y), 4)]
+        for pid, e in (rec.get("edit") or {}).items():  # turning and light, for every place
+            ph = next((x for x in post["photos"] if x["id"] == pid), None)
+            if not ph or not isinstance(e, dict):
+                continue
+            if e.get("rot") in (0, 90, 180, 270):
+                if (ph.get("rot") or 0) != e["rot"]:
+                    post["crop"] = {k: v for k, v in (post.get("crop") or {}).items() if not k.endswith("/" + pid)}
+                ph["rot"] = e["rot"]
+            if isinstance(e.get("light"), list) and len(e["light"]) == 2:
+                try:
+                    ph["light"] = [round(min(max(float(e["light"][0]), -0.4), 0.4), 2), round(min(max(float(e["light"][1]), 0.6), 1.6), 2)]
+                except (TypeError, ValueError):
+                    pass
+        for tid, ids in (rec.get("skip") or {}).items():
+            if tid in post["targets"] and isinstance(ids, list):
+                post.setdefault("skip", {})[tid] = [str(x) for x in ids if any(ph["id"] == str(x) for ph in post["photos"])]
         for n, xy in (rec.get("focus") or {}).items():
             try:
                 ph = post["photos"][int(n)]
@@ -1236,6 +1351,8 @@ def public(post):
     ts = {t["id"]: t for t in targets()}
     return {**{k: v for k, v in post.items() if k != "usage"}, "running": post["id"] in _running,
             "limits": {tid: ts[tid]["limit"] for tid in post["targets"] if tid in ts},
+            "shapes": {tid: {"ratios": shapes(ts[tid])[0], "max": shapes(ts[tid])[1], "size": frame(post, ts[tid])} for tid in post["targets"] if tid in ts},
+            "used": {tid: used(post, tid) for tid in post["targets"] if tid in ts},
             "whole": {f"{tid}/{ph['id']}": whole(post, tid, n) for tid in post["targets"] for n, ph in enumerate(post.get("photos") or [])}}
 
 

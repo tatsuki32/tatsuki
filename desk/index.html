@@ -796,6 +796,20 @@ button.hname:hover{color:var(--ink)}
 .psimg{display:grid;gap:var(--s1);justify-items:start;overflow:hidden}
 .psimg img{max-width:100%;max-height:340px;border-radius:var(--r-s);display:block;cursor:grab;touch-action:none;user-select:none}
 .psnav{display:flex;align-items:center;gap:var(--s2)}
+.psimg img.psoff{opacity:.35}
+.psratio{display:flex;flex-wrap:wrap;gap:var(--s1)}
+.psratio .psr{min-height:28px;padding:0 var(--s2);font-size:var(--t1)}
+.psratio .psr[aria-pressed="true"]{border-color:var(--accent);color:var(--ink)}
+.pscrop{display:grid;gap:var(--s2);min-width:0}
+.pscropstage{position:relative;justify-self:start;max-width:100%;line-height:0;user-select:none}
+.pscropstage img{max-width:100%;max-height:420px;display:block;border-radius:var(--r-s)}
+.pscropframe{position:absolute;box-shadow:0 0 0 9999px rgba(0,0,0,.55);outline:2px solid var(--accent);cursor:move;touch-action:none}
+.pscropstage{overflow:hidden;border-radius:var(--r-s)}
+.pscropcorner{position:absolute;right:-8px;bottom:-8px;width:16px;height:16px;background:var(--accent);border-radius:50%;cursor:nwse-resize}
+.psslide{display:grid;grid-template-columns:88px minmax(0,1fr);align-items:center;gap:var(--s2);width:100%}
+.psstrip{display:grid;gap:var(--s2)}
+.psthumbbar{display:flex;gap:var(--s1)}
+.psthumb[draggable="true"]{cursor:grab}
 .psnav .btn{min-height:28px;padding:0 var(--s2)}
 .pscard .wd-field{max-width:100%;font-size:var(--t2)}
 .pscard textarea.pstext{min-height:160px}
@@ -5931,6 +5945,7 @@ async function utShorten(){
   if(u.shortBusy)return;
   u.shortBusy=true;u.short="";u.shortErr="";utRefresh();
   try{u.short=(await utPost("/api/utilities/shorten",{url:u.url})).short}catch(e){u.shortErr=e.message}
+  if(ps().cur?.id!==id)ps().crop=null;
   u.shortBusy=false;utRefresh();
 }
 function wireUt(){
@@ -6130,6 +6145,92 @@ async function cpUpload(files,el){
       el.value=el.value.slice(0,at)+ins+el.value.slice(el.selectionEnd??at);c.doc.body=el.value;el.selectionStart=el.selectionEnd=at+ins.length;cpGrow(el);cpChanged()}
     catch(e){toast("Could not add the photo"+(e.message?": "+e.message:""))}
   }
+// Pictures on a card: the shapes this place takes, Crop, whether this picture is used here, and a hint when the shapes differ
+const psShapeWord=r=>r>1.4?"wide":r>1.05?"a little wide":r>.95?"square":r>.7?"a little tall":"tall";
+function psPics(post,t,n){
+  const p=ps(),tid=esc(t.id),ph=post.photos[n],key=t.id+"/"+ph.id,sh=post.shapes?.[t.id]||{ratios:[],max:10,size:t.size},use=post.used?.[t.id]||[];
+  if(p.crop?.tid===t.id)return psCropper(post,t,sh);
+  const on=!!post.whole?.[key],cropped=!!post.crop?.[key],inUse=use.includes(n),left=!(post.skip?.[t.id]||[]).includes(ph.id);
+  const cur=(post.ratio||{})[t.id]||"";
+  const [W,H]=sh.size,turned=(ph.rot||0)%180,pr=ph.w&&ph.h?(turned?ph.h/ph.w:ph.w/ph.h):0,tr=W/H;
+  const hint=on&&pr&&Math.abs(Math.log(pr/tr))>.3?`<span class="due">This picture is ${psShapeWord(pr)} and ${esc(t.name)} is ${psShapeWord(tr)}, so there is space ${pr>tr?"above and below":"on the sides"}. Crop it or choose another shape.</span>`:"";
+  const ratios=sh.ratios.length>1?`<div class="psratio" role="group" aria-label="${esc(t.name)} shape">${sh.ratios.map((r,i)=>`<button class="btn psr" data-psratio="${tid}|${r}" aria-pressed="${(cur||sh.ratios.find(x=>{const v=PSR[x];return v&&v[0]===W&&v[1]===H})||"")===r}">${r}${i===0?" · best":""}</button>`).join("")}</div>`:"";
+  const extra=post.photos.length-post.photos.filter(x=>(post.skip?.[t.id]||[]).includes(x.id)).length>sh.max?`<span class="due">${esc(t.name)} takes ${sh.max} pictures. The ones after the ${sh.max}th are left out.</span>`:"";
+  return `<div class="psimg" data-psimg="${tid}"><img class="${inUse?"":"psoff"}" src="/api/posts/${esc(post.id)}/img/${tid}/${n}.jpg?k=${post.updatedAt}" alt="${esc(t.name)} picture ${n+1}" draggable="false">
+    ${post.photos.length>1?`<div class="psnav"><button class="btn" data-psprev="${tid}" aria-label="Previous photo">‹</button><span class="due">${n+1} / ${post.photos.length}</span><button class="btn" data-psnext="${tid}" aria-label="Next photo">›</button></div>`:""}
+    ${ratios}
+    <div class="nsgo"><button class="btn" data-pscrop="${tid}|${n}">Crop</button>${post.photos.length>1?`<label class="pschip"><input type="checkbox" data-psuse="${tid}/${esc(ph.id)}" ${left?"checked":""}><span>Use in this post</span></label>`:""}</div>
+    <span class="due">${W}×${H} · ${!inUse?"not used here":cropped?"your crop":on?"whole picture; the edge color fills the rest":"drag the picture to move the frame"}</span>${hint}${extra}</div>`;
+}
+const PSR={"4:5":[1080,1350],"1:1":[1080,1080],"1.91:1":[1200,628],"16:9":[1600,900],"3:4":[1080,1440],"9:16":[1080,1920]};
+function psCropper(post,t,sh){
+  const p=ps(),c=p.crop,tid=esc(t.id),ph=post.photos[c.n],light=ph.light||[0,1],[W,H]=sh.size,key=t.id+"/"+ph.id;
+  const b=c.box||[0,0,1,1];
+  return `<div class="pscrop" data-pscropper="${tid}">
+    <div class="pscropstage"><img id="psCropImg" src="/api/posts/${esc(post.id)}/src/${c.n}.jpg?k=${esc(String((ph.rot||0))+light.join("_"))}" alt="The whole picture ${c.n+1}" draggable="false">
+      <div class="pscropframe" id="psCropFrame" style="left:${b[0]*100}%;top:${b[1]*100}%;width:${b[2]*100}%;height:${b[3]*100}%"><span class="pscropcorner" id="psCropCorner" aria-hidden="true"></span></div></div>
+    <span class="due">${W}×${H}. Drag the frame to move it, the corner to resize it.</span>
+    ${sh.ratios.length>1?`<div class="psratio" role="group" aria-label="${esc(t.name)} shape">${sh.ratios.map((r,i)=>`<button class="btn psr" data-psratio="${tid}|${r}" aria-pressed="${PSR[r][0]===W&&PSR[r][1]===H}">${r}${i===0?" · best":""}</button>`).join("")}</div>`:""}
+    <label class="pschip"><input type="checkbox" id="psCropWhole" ${post.whole?.[key]&&!post.crop?.[key]?"checked":""}><span>Show the whole picture instead</span></label>
+    <div class="nsgo"><button class="btn" data-psrot="270">Rotate left</button><button class="btn" data-psrot="90">Rotate right</button></div>
+    <label class="psslide"><span class="due">Brightness</span><input type="range" id="psLightB" min="-0.4" max="0.4" step="0.05" value="${light[0]}"></label>
+    <label class="psslide"><span class="due">Contrast</span><input type="range" id="psLightC" min="0.6" max="1.6" step="0.05" value="${light[1]}"></label>
+    <span class="due">Turning and light change this picture for every place.</span>
+    <div class="nsgo"><button class="btn primary" id="psCropSave">Save</button><button class="btn" id="psCropReset">Reset</button><button class="btn" id="psCropCancel">Cancel</button></div></div>`;
+}
+// the frame on the whole picture: moved and resized at the shape of the place
+function wirePsCrop(){
+  const all=s=>document.querySelectorAll(s);
+  const p=ps(),c=p.crop,img=$("#psCropImg"),fr=$("#psCropFrame");if(!c||!img||!fr)return;
+  const post=p.cur,t=(p.data?.targets||[]).find(x=>x.id===c.tid),sh=post.shapes?.[c.tid],ph=post.photos[c.n],key=c.tid+"/"+ph.id;if(!t||!sh)return;
+  const R=sh.size[0]/sh.size[1];
+  const place=()=>{const b=c.box;fr.style.left=b[0]*100+"%";fr.style.top=b[1]*100+"%";fr.style.width=b[2]*100+"%";fr.style.height=b[3]*100+"%"};
+  const start=()=>{const iw=img.naturalWidth,ih=img.naturalHeight;if(!iw)return;c.ar=iw/ih;
+    if(!c.box){const had=post.crop?.[key];
+      if(had)c.box=[...had];else{let w=1,h=c.ar/R;if(h>1){h=1;w=R/c.ar}const fx=ph.x??.5,fy=ph.y??.45;c.box=[Math.min(Math.max(fx-w/2,0),1-w),Math.min(Math.max(fy-h/2,0),1-h),w,h]}}
+    place()};
+  if(img.complete)start();else img.onload=start;
+  const clamp=b=>{b[2]=Math.min(b[2],1);b[3]=b[2]*c.ar/R;if(b[3]>1){b[3]=1;b[2]=R/c.ar}b[0]=Math.min(Math.max(b[0],0),1-b[2]);b[1]=Math.min(Math.max(b[1],0),1-b[3]);return b};
+  fr.onpointerdown=e=>{if(!c.box)return;e.preventDefault();const w=$("#psCropWhole");if(w)w.checked=false;fr.setPointerCapture(e.pointerId);const r=img.getBoundingClientRect(),sx=e.clientX,sy=e.clientY,b0=[...c.box],resize=e.target.id==="psCropCorner";
+    fr.onpointermove=m=>{const dx=(m.clientX-sx)/r.width,dy=(m.clientY-sy)/r.height;
+      if(resize){const w=Math.max(.08,b0[2]+Math.max(dx,dy*R/c.ar));c.box=clamp([b0[0],b0[1],Math.min(w,1-b0[0],(1-b0[1])*R/c.ar),0])}
+      else c.box=clamp([b0[0]+dx,b0[1]+dy,b0[2],b0[3]]);place()};
+    fr.onpointerup=()=>{fr.onpointermove=fr.onpointerup=null}};
+  const close=()=>{p.crop=null;psDraw()};
+  $("#psCropCancel").onclick=close;
+  $("#psCropSave").onclick=async()=>{const whole=$("#psCropWhole").checked;
+    await psPut(whole?{crop:{[key]:null},fit:{[key]:true}}:{crop:{[key]:c.box.map(v=>+v.toFixed(4))}});close()};
+  $("#psCropReset").onclick=async()=>{await psPut({crop:{[key]:null}});close()};
+  const edit=async e=>{await psPut({edit:{[ph.id]:e}});c.box=null;psDraw()};
+  all("[data-psrot]").forEach(b=>b.onclick=()=>edit({rot:((ph.rot||0)+ +b.dataset.psrot)%360}));
+  const lit=()=>edit({light:[+$("#psLightB").value,+$("#psLightC").value]});
+  $("#psLightB").onchange=lit;$("#psLightC").onchange=lit;
+}
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&viewId()==="post"&&ps().crop){ps().crop=null;psDraw()}});
+// the post's pictures: add, take out, change the order (the first is the cover everywhere)
+function psStrip(post){
+  if(post.video||post.status==="making")return "";
+  const xs=post.photos.map((x,i)=>`<span class="psthumb" draggable="true" data-psord="${i}"><img src="/api/posts/photo/${esc(x.id)}.jpg" alt="Picture ${i+1}${i===0?", the cover":""}" draggable="false">
+    <span class="psthumbbar"><button class="btn" data-psmove="${i}|-1" aria-label="Move picture ${i+1} earlier" ${i===0?"disabled":""}>‹</button><button class="btn" data-psmove="${i}|1" aria-label="Move picture ${i+1} later" ${i===post.photos.length-1?"disabled":""}>›</button><button class="btn" data-psrm="${i}" aria-label="Remove picture ${i+1}">Remove</button></span></span>`).join("");
+  return `<div class="psstrip"><div class="psthumbs">${xs}</div>
+    <div class="nsgo">${post.photos.length<10?`<label class="btn">${ps().stripBusy?"Adding…":"Add pictures"}<input type="file" id="psStripFile" hidden multiple accept="image/*,.heic,.heif,application/pdf,.pdf"></label>`:""}<span class="due">The first picture is the cover. The drafts' words stay as they are.</span></div></div>`;
+}
+function wirePsStrip(){
+  const all=s=>document.querySelectorAll(s);
+  const p=ps(),post=p.cur;if(!post)return;const ids=()=>post.photos.map(x=>x.id);
+  const save=list=>psPut({photos:list}).then(()=>{p.n={};psDraw()});
+  all("[data-psmove]").forEach(b=>b.onclick=()=>{const [i,d]=b.dataset.psmove.split("|").map(Number),l=ids();[l[i],l[i+d]]=[l[i+d],l[i]];save(l)});
+  all("[data-psrm]").forEach(b=>b.onclick=()=>{if(post.photos.length===1&&!confirm("Remove the last picture?"))return;const l=ids();l.splice(+b.dataset.psrm,1);save(l)});
+  let from=-1;
+  all("[data-psord]").forEach(el=>{el.ondragstart=()=>{from=+el.dataset.psord};el.ondragover=e=>e.preventDefault();
+    el.ondrop=e=>{e.preventDefault();const to=+el.dataset.psord;if(from<0||from===to)return;const l=ids(),[x]=l.splice(from,1);l.splice(to,0,x);from=-1;save(l)}});
+  const f=$("#psStripFile");if(f)f.onchange=async()=>{p.stripBusy=true;psDraw();const l=ids();
+    for(const file of f.files){if(l.length>=10){toast("10 pictures is the most one post can hold");break}
+      try{const r=await fetch("/api/posts/photo",{method:"POST",headers:{"Content-Type":"application/octet-stream","X-Desk-Upload":"1","X-File-Name":encodeURIComponent(file.name||"")},body:file});
+        let v={};try{v=await r.json()}catch(e){}if(!r.ok)throw new Error(v.error||"Could not add "+(file.name||"the file"));
+        (v.kind==="pdf"?v.pages:v.kind==="photo"?[v]:[]).forEach(x=>{if(l.length<10&&!l.includes(x.id))l.push(x.id)})}catch(e){toast(e.message)}}
+    p.stripBusy=false;save(l)};
+}
 }
 function wireCp(){
   const c=cp(),d=c.doc;
@@ -6163,6 +6264,7 @@ function wireCp(){
     try{const st=await api("GET","/api/campus/stats");if(st.error)throw new Error(st.error);c.data.stats=st;c.confirm={active:st.active}}catch(e){c.msg=e.message||"Could not count the readers"}c.busy="";cpDraw()});
   $("#cpSendNo")&&($("#cpSendNo").onclick=()=>{c.confirm=null;cpDraw()});
   $("#cpSendGo")&&($("#cpSendGo").onclick=async()=>{c.busy="send";cpDraw();
+    ${psStrip(post)}
     try{const v=await cpPost(`/api/campus/issues/${d.id}/send`,{expect:c.confirm.active});c.doc=v.issue;c.confirm=null;
       c.msg=`Sent #${v.issue.no} to ${v.result.sent} readers.${v.result.pending?` ${v.result.pending} more go out tomorrow (daily limit).`:""}`;await cpLoad(d.id)}
     catch(e){c.confirm=null;c.msg=e.message}c.busy="";cpDraw()});
@@ -6204,10 +6306,7 @@ function psCard(post,t){
   const vid=post.video&&["post","story","video"].includes(t.kind);
   const img=vid?`<div class="psimg psvid"><img src="/api/posts/${esc(post.id)}/vimg/${tid}.jpg?k=${post.updatedAt}" alt="${esc(t.name)} video, first frame"><span class="psbadge">Video · ${psDur(t.kind==="story"?Math.min(post.video.sec,60):post.video.sec)}</span>
     <span class="due">${t.kind==="story"||t.id.startsWith("ig-")||t.id==="yt-short"?"1080×1920":"Its own shape"}${t.kind==="story"&&post.video.sec>60?" · the first 60 seconds":""}</span></div>`
-    :post.photos.length?`<div class="psimg" data-psimg="${tid}"><img src="/api/posts/${esc(post.id)}/img/${tid}/${n}.jpg?k=${post.updatedAt}" alt="${esc(t.name)} picture ${n+1}" draggable="false">
-    ${post.photos.length>1?`<div class="psnav"><button class="btn" data-psprev="${tid}" aria-label="Previous photo">‹</button><span class="due">${n+1} / ${post.photos.length}</span><button class="btn" data-psnext="${tid}" aria-label="Next photo">›</button></div>`:""}
-    ${(()=>{const ph=post.photos[n],on=!!post.whole?.[t.id+"/"+ph.id];return `<label class="pschip"><input type="checkbox" data-psfit="${tid}/${esc(ph.id)}" ${on?"checked":""}><span>Show the whole picture</span></label>
-    <span class="due">${t.size[0]}×${t.size[1]} · ${on?"nothing is cut; the edge color fills the rest":"drag the picture to move the frame"}</span>`})()}</div>`:"";
+    :post.photos.length?psPics(post,t,n):"";
   let body="";
   if(!d)body=`<p class="due">${busy?"Writing…":"No draft yet."}</p>`;
   else if(t.kind==="story")body=`<input class="wd-field psedit" data-psover="${tid}" value="${esc(d.overlay)}" aria-label="Words on the picture"><label class="pschip"><input type="checkbox" data-pstexton="${tid}" ${post.textOn?.[t.id]===false?"":"checked"}><span>Write it on the picture</span></label>`;
@@ -6223,7 +6322,7 @@ function psCard(post,t){
     <header class="pshead"><h3>${esc(t.name)}</h3><span class="due">${PSKIND[t.kind]}${d?` · ${len.toLocaleString("en-US")} / ${t.limit.toLocaleString("en-US")}${t.count==="x"?" (weighted)":""}${over>0?` · ${over} over`:""}`:""}</span></header>
     ${img}${body}${linkNote}
     ${d&&psCan(t)?psSend2(post,t):""}${d&&t.kind==="news"?psSite(post):""}${noteRow}
-    <div class="nsgo">${acts}${vid?`<button class="btn" data-pssavevid="${tid}">Save video</button>`:post.photos.length?`<button class="btn" data-pssave="${tid}">${post.photos.length>1?`Save ${post.photos.length} pictures`:"Save picture"}</button>`:""}${PSWHOLEPDF.includes(t.kind)||t.id.startsWith("fb-")&&!psCan(t)?(post.docs||[]).map(x=>`<button class="btn" data-pssavedoc="${esc(x.id)}">Save PDF</button>`).join(""):""}</div>
+    <div class="nsgo">${acts}${vid?`<button class="btn" data-pssavevid="${tid}">Save video</button>`:(post.used?.[t.id]||[]).length?`<button class="btn" data-pssave="${tid}">${post.used[t.id].length>1?`Save ${post.used[t.id].length} pictures`:"Save picture"}</button>`:""}${PSWHOLEPDF.includes(t.kind)||t.id.startsWith("fb-")&&!psCan(t)?(post.docs||[]).map(x=>`<button class="btn" data-pssavedoc="${esc(x.id)}">Save PDF</button>`).join(""):""}</div>
     <div class="nsgo">${p.open[t.id]?`<input class="wd-field psedit pshint" data-pshint="${tid}" placeholder="What to change (optional)" aria-label="What to change"><button class="btn" data-psregen="${tid}" ${post.running?"disabled":""}>Rewrite</button>`:`<button class="btn" data-psask="${tid}" ${post.running?"disabled":""}>${busy&&post.regen===t.id?"Rewriting…":"Rewrite"}</button>`}
     <label class="pschip"><input type="checkbox" data-psposted="${tid}" ${posted?"checked":""}><span>Posted</span></label></div></article>`;
 }
@@ -6291,6 +6390,10 @@ function psSettings(){
     <input class="wd-field psedit" data-psfixed="${esc(t.id)}" value="${esc(t.fixedTags||"")}" placeholder="Tags always added, like #ZEN大学" aria-label="${esc(t.name)} tags always added"></div>`).join("");
   const voice=PSLANG.map(([l,name])=>`<label class="psset1"><span class="sub">${name} voice</span><textarea class="wd-field psedit" data-psvoice="${l}">${esc(d.voice?.[l]||"")}</textarea></label>`).join("");
   const yt=(d.accounts||[]).find(a=>a.provider==="youtube");
+  all("[data-psratio]").forEach(b=>b.onclick=async()=>{const [tid,r]=b.dataset.psratio.split("|");await psPut({ratio:{[tid]:r}});if(p.crop)p.crop.box=null;psDraw()});
+  all("[data-pscrop]").forEach(b=>b.onclick=()=>{const [tid,n]=b.dataset.pscrop.split("|");p.crop={tid,n:+n,box:null};psDraw()});
+  all("[data-psuse]").forEach(c=>c.onchange=()=>{const [tid,pid]=c.dataset.psuse.split("/"),cur=(p.cur.skip?.[tid]||[]).filter(x=>x!==pid);if(!c.checked)cur.push(pid);psPut({skip:{[tid]:cur}}).then(psDraw)});
+  wirePsCrop();wirePsStrip();
   const conn=`<section class="card mfocus"><p class="mtalk">Connections</p><p class="due">Instagram, Threads and Facebook Pages are connected on go.tany.im. YouTube uploads go straight from this Mac.</p><div class="nsgo"><span class="due">${yt?`YouTube: ${esc(yt.handle)}`:"YouTube: not connected"}</span><button class="btn" id="psYtConnect">${yt?"Connect again":"Connect YouTube"}</button></div>
     ${[["linkedin","LinkedIn"],["x","X"],["threads","Threads"],["meta","Instagram and Facebook"]].map(([k,l])=>{const a=(d.accounts||[]).filter(x=>k==="meta"?["instagram","facebook"].includes(x.provider):x.provider===k);return `<div class="nsgo"><span class="due">${l}: ${a.length?a.map(x=>esc(x.handle)+(x.problem?` (${esc(x.problem)})`:"")).join(", "):"not connected"}</span><button class="btn" data-psconnect="${k}">${a.length?"Connect again":"Connect"}</button></div>`}).join("")}
     ${(n=>`<div class="nsgo"><span class="due">note: ${n?esc(n.handle)+" (drafts only; you publish on note)":"not connected. In Terminal, run the command, sign in to note in Chrome and paste its session cookie"}</span><button class="btn" data-pscopycmd="python3 ~/TatsukiDesk/desk/note_post.py connect">${n?"Copy the command to connect again":"Copy the command"}</button></div>`)((d.accounts||[]).find(a=>a.provider==="note"))}
@@ -6368,7 +6471,7 @@ function wirePs(){
   all("[data-pshtml]").forEach(b=>b.onclick=async()=>{const id=b.dataset.pshtml,t=tOf(id),d=dOf(id),src=psFull(t,d);
     try{await psSend("POST","/api/posts/copy",{html:(d.title?`<h1>${esc(d.title)}</h1>`:"")+md(src),plain:(d.title?d.title+"\n\n":"")+src});toast("Copied with formatting. Paste it into note")}catch(e){toast(e.message)}});
   all("[data-pssave]").forEach(b=>b.onclick=async()=>{const id=b.dataset.pssave;
-    for(let n=0;n<p.cur.photos.length;n++){try{const v=await psSend("POST",`/api/posts/${encodeURIComponent(p.cur.id)}/save`,{target:id,n});
+    for(const n of p.cur.used?.[id]||[]){try{const v=await psSend("POST",`/api/posts/${encodeURIComponent(p.cur.id)}/save`,{target:id,n});
       const a=document.createElement("a");a.href="/api/utilities/file/"+v.file;a.download="";document.body.append(a);a.click();a.remove()}catch(e){toast(e.message);break}}
     toast("Saving to Downloads")});
   const pub=async(body,ask)=>{if(ask&&!confirm(ask))return;try{p.cur=await psSend("POST",`/api/posts/${encodeURIComponent(p.cur.id)}/publish`,{tag:$("[data-pstag]")?.value,...body});toast(body.when==="at"?"Scheduled":"Publishing")}catch(e){toast(e.message)}psDraw();psOpen(p.cur.id)};

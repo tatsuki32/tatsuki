@@ -1,7 +1,10 @@
 // Tatsuki's Desk — the pictures for Post Studio, made on this Mac with Vision, ImageIO and AppKit. Nothing is sent anywhere.
 // Usage:
 //   postcrop focus <image>                       prints {"w":..,"h":..,"x":..,"y":..} — the middle of what stands out (0..1, top-left origin)
-//   postcrop crop <image> <out.jpg> <W> <H> <x> <y> [text]
+//   postcrop crop <image> <out.jpg> <W> <H> <x> <y> [text] [fit|fill] [rot=90] [light=0.1,1.2] [box=x,y,w,h]
+//                                                rot turns the photo, light is brightness (-0.4..0.4) and contrast (0.6..1.6),
+//                                                box is the person's frame on the turned photo (0..1, top-left origin)
+//   postcrop source <image> <out.jpg> [rot=..] [light=..]   the whole photo turned and lightened, at most 1600 px (for the crop box)
 //                                                cuts the largest W:H frame around (x, y), scales it to W×H, and, when text is given,
 //                                                writes it in the lower safe zone on a soft dark band (for stories)
 //   postcrop clip-html <file.html> <file.txt>    puts formatted text on the clipboard, with the plain text beside it (for note)
@@ -130,6 +133,38 @@ func crop(_ img: CGImage, w: Int, h: Int, x: Double, y: Double, text: String?, f
     return ctx.makeImage()
 }
 
+func option(_ name: String) -> String? {
+    args.dropFirst(4).first { $0.hasPrefix(name + "=") }.map { String($0.dropFirst(name.count + 1)) }
+}
+
+// the photo turned (90, 180 or 270 degrees, clockwise) and with the person's brightness and contrast
+func prepared(_ img: CGImage) -> CGImage {
+    let rot = Int(option("rot") ?? "0") ?? 0
+    let light = (option("light") ?? "0,1").split(separator: ",").compactMap { Double($0) }
+    let b = light.count == 2 ? light[0] : 0, c = light.count == 2 ? light[1] : 1
+    if rot % 360 == 0 && b == 0 && c == 1 { return img }
+    var ci = CIImage(cgImage: img)
+    switch rot { case 90: ci = ci.oriented(.right); case 180: ci = ci.oriented(.down); case 270: ci = ci.oriented(.left); default: break }
+    if b != 0 || c != 1 {
+        let f = CIFilter(name: "CIColorControls")!
+        f.setValue(ci, forKey: kCIInputImageKey)
+        f.setValue(b, forKey: kCIInputBrightnessKey)
+        f.setValue(c, forKey: kCIInputContrastKey)
+        ci = f.outputImage ?? ci
+    }
+    let ctx = CIContext(options: [.workingColorSpace: CGColorSpace(name: CGColorSpace.sRGB)!])
+    return ctx.createCGImage(ci, from: ci.extent.integral) ?? img
+}
+
+// the person's frame (0..1 of the turned photo, top-left origin)
+func boxed(_ img: CGImage) -> CGImage {
+    let v = (option("box") ?? "").split(separator: ",").compactMap { Double($0) }
+    guard v.count == 4, v[2] > 0, v[3] > 0 else { return img }
+    let iw = Double(img.width), ih = Double(img.height)
+    let r = CGRect(x: (v[0] * iw).rounded(), y: (v[1] * ih).rounded(), width: (v[2] * iw).rounded(), height: (v[3] * ih).rounded())
+    return img.cropping(to: r.intersection(CGRect(x: 0, y: 0, width: iw, height: ih))) ?? img
+}
+
 func writeJPEG(_ img: CGImage, _ path: String, _ q: Double = 0.9) -> Bool {
     guard let dest = CGImageDestinationCreateWithURL(URL(fileURLWithPath: path) as CFURL, UTType.jpeg.identifier as CFString, 1, nil) else { return false }
     CGImageDestinationAddImage(dest, img, [kCGImageDestinationLossyCompressionQuality: q] as CFDictionary)
@@ -229,12 +264,25 @@ case "focus":
     print(String(format: "{\"w\":%d,\"h\":%d,\"x\":%.4f,\"y\":%.4f,\"cam\":%@}", img.width, img.height, x, y, fromCamera(args[2]) ? "true" : "false"))
 case "crop":
     guard args.count >= 8, let w = Int(args[4]), let h = Int(args[5]), let x = Double(args[6]), let y = Double(args[7]), w > 0, h > 0 else { exit(2) }
-    guard let img = load(args[2]) else { exit(4) }
-    // args[8]: the story's words ("" for none), args[9]: "fit" keeps the whole picture
-    guard let out = crop(img, w: w, h: h, x: x, y: y, text: args.count > 8 ? args[8] : nil, fit: args.count > 9 && args[9] == "fit"),
+    guard let raw = load(args[2]) else { exit(4) }
+    let turned = prepared(raw), img = boxed(turned), hasBox = option("box") != nil
+    // args[8]: the story's words ("" for none), args[9]: "fit" keeps the whole picture; a box is used as it is
+    guard let out = crop(img, w: w, h: h, x: hasBox ? 0.5 : x, y: hasBox ? 0.5 : y, text: args.count > 8 ? args[8] : nil,
+                         fit: !hasBox && args.count > 9 && args[9] == "fit"),
           let dest = CGImageDestinationCreateWithURL(URL(fileURLWithPath: args[3]) as CFURL, UTType.jpeg.identifier as CFString, 1, nil) else { exit(6) }
     CGImageDestinationAddImage(dest, out, [kCGImageDestinationLossyCompressionQuality: 0.9] as CFDictionary)
     guard CGImageDestinationFinalize(dest) else { exit(6) }
+case "source":
+    guard args.count >= 4, let raw = load(args[2]) else { exit(4) }
+    var img = prepared(raw)
+    let side = max(img.width, img.height)
+    if side > 1600, let ctx = CGContext(data: nil, width: img.width * 1600 / side, height: img.height * 1600 / side, bitsPerComponent: 8, bytesPerRow: 0,
+                                        space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue) {
+        ctx.interpolationQuality = .high
+        ctx.draw(img, in: CGRect(x: 0, y: 0, width: ctx.width, height: ctx.height))
+        img = ctx.makeImage() ?? img
+    }
+    guard writeJPEG(img, args[3], 0.85) else { exit(6) }
 case "clip-html":
     guard args.count == 4, let html = try? String(contentsOfFile: args[2], encoding: .utf8),
           let plain = try? String(contentsOfFile: args[3], encoding: .utf8) else { exit(2) }
