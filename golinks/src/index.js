@@ -88,6 +88,7 @@ async function api(request, env, url) {
     return json(r, r.error ? 400 : 200);
   }
   if (request.method === "GET" && path === "accounts") return json(await accounts.list(env));
+  if (request.method === "POST" && path === "x/connect") { const r = await accounts.connectX(env); return json(r, r.error ? 400 : 200); }
   if (request.method === "POST" && path === "media/video") { const r = await publish.videoStart(env); return json(r, r.error ? 400 : 200); }
   const vp = path.match(/^media\/video\/([0-9a-f]{48}\.mp4)\/([^/]{1,1000})\/(\d{1,3}|done)$/);
   if (vp) {

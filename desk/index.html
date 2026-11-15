@@ -5563,8 +5563,8 @@ function wireUt(){
 const PSLANG=[["ja","Japanese"],["en","English"],["ru","Russian"]];
 const PSKIND={post:"Post",story:"Story",article:"Article",news:"News",video:"Video"};
 const PSLINK={inline:"Link in the text",bio:"Link in bio",sticker:"Link sticker",none:"No link"};
-const PSCAN={instagram:["post","story"],threads:["post"],facebook:["post","story"],youtube:["video"]};
-const psAccProv=t=>t.id.startsWith("ig-")?"instagram":t.id.startsWith("threads-")?"threads":t.id.startsWith("fb-page")?"facebook":t.id.startsWith("yt-")?"youtube":""; // which connected accounts a target can use
+const PSCAN={instagram:["post","story"],threads:["post"],facebook:["post","story"],youtube:["video"],linkedin:["post"],x:["post"]};
+const psAccProv=t=>t.id.startsWith("ig-")?"instagram":t.id.startsWith("threads-")?"threads":t.id.startsWith("fb-page")?"facebook":t.id.startsWith("yt-")?"youtube":t.id==="linkedin"?"linkedin":t.id==="x"?"x":""; // which connected accounts a target can use
 const psProv=t=>(t.account||"").split(":")[0];
 const psCan=t=>!!PSCAN[psProv(t)]?.includes(t.kind);
 const psHandle=t=>{const a=(ps().data?.accounts||[]).find(x=>x.id===t.account);return a?(["facebook","youtube"].includes(a.provider)?"":"@")+a.handle:"the account"};
@@ -5723,7 +5723,9 @@ function psSettings(){
     <input class="wd-field psedit" data-psfixed="${esc(t.id)}" value="${esc(t.fixedTags||"")}" placeholder="Tags always added, like #ZEN大学" aria-label="${esc(t.name)} tags always added"></div>`).join("");
   const voice=PSLANG.map(([l,name])=>`<label class="psset1"><span class="sub">${name} voice</span><textarea class="wd-field psedit" data-psvoice="${l}">${esc(d.voice?.[l]||"")}</textarea></label>`).join("");
   const yt=(d.accounts||[]).find(a=>a.provider==="youtube");
-  const conn=`<section class="card mfocus"><p class="mtalk">Connections</p><p class="due">Instagram, Threads and Facebook Pages are connected on go.tany.im. YouTube uploads go straight from this Mac.</p><div class="nsgo"><span class="due">${yt?`YouTube: ${esc(yt.handle)}`:"YouTube: not connected"}</span><button class="btn" id="psYtConnect">${yt?"Connect again":"Connect YouTube"}</button></div></section>`;
+  const conn=`<section class="card mfocus"><p class="mtalk">Connections</p><p class="due">Instagram, Threads and Facebook Pages are connected on go.tany.im. YouTube uploads go straight from this Mac.</p><div class="nsgo"><span class="due">${yt?`YouTube: ${esc(yt.handle)}`:"YouTube: not connected"}</span><button class="btn" id="psYtConnect">${yt?"Connect again":"Connect YouTube"}</button></div>
+    ${[["linkedin","LinkedIn"],["x","X"],["threads","Threads"],["meta","Instagram and Facebook"]].map(([k,l])=>{const a=(d.accounts||[]).filter(x=>k==="meta"?["instagram","facebook"].includes(x.provider):x.provider===k);return `<div class="nsgo"><span class="due">${l}: ${a.length?a.map(x=>esc(x.handle)+(x.problem?` (${esc(x.problem)})`:"")).join(", "):"not connected"}</span><button class="btn" data-psconnect="${k}">${a.length?"Connect again":"Connect"}</button></div>`}).join("")}
+    ${(d.accounts||[]).some(a=>a.provider==="x")?`<p class="due">X charges for each post: about $0.015, and about $0.20 when the post has a link.</p>`:""}</section>`;
   return `<section class="card mfocus"><p class="mtalk">How each account sounds, and where to post. Saved when you leave a box.</p>${voice}</section>${conn}<section class="card mfocus">${rows}</section>`;
 }
 function psView(){
@@ -5805,6 +5807,8 @@ function wirePs(){
   all("[data-psunpub]").forEach(b=>b.onclick=async()=>{if(!confirm(p.cur.site?.status==="live"?"Take this article off tany.im?":"Cancel the scheduled article?"))return;try{p.cur=await psSend("POST",`/api/posts/${encodeURIComponent(p.cur.id)}/unpublish`,{})}catch(e){toast(e.message)}psDraw()});
   all("[data-pssavevid]").forEach(b=>b.onclick=async()=>{b.disabled=true;b.textContent="Making the video…";try{const v=await psSend("POST",`/api/posts/${encodeURIComponent(p.cur.id)}/savevideo`,{target:b.dataset.pssavevid});
     const a=document.createElement("a");a.href="/api/utilities/file/"+v.file;a.download="";document.body.append(a);a.click();a.remove();toast("Saving to Downloads")}catch(e){toast(e.message)}b.disabled=false;b.textContent="Save video"});
+  all("[data-psconnect]").forEach(b=>b.onclick=async()=>{try{const v=await psSend("POST","/api/posts/connect",{provider:b.dataset.psconnect});
+    if(v.url){window.open(v.url,"_blank","noopener");toast("Sign in on the page that opened, then come back")}else{toast("Connected: "+v.handle);psLoad()}}catch(e){toast(e.message)}});
   const ytc=$("#psYtConnect");if(ytc)ytc.onclick=async()=>{try{await psSend("POST","/api/posts/youtube-connect",{});toast("Google's page opened in your browser. Allow it, then come back");setTimeout(psLoad,30000)}catch(e){toast(e.message)}};
   all("[data-pssavedoc]").forEach(b=>b.onclick=async()=>{try{const v=await psSend("POST",`/api/posts/${encodeURIComponent(p.cur.id)}/savedoc`,{doc:b.dataset.pssavedoc});
     const a=document.createElement("a");a.href="/api/utilities/file/"+v.file;a.download="";document.body.append(a);a.click();a.remove();toast("Saving to Downloads")}catch(e){toast(e.message)}});

@@ -1,3 +1,4 @@
+import { xCall } from "./xauth.js";
 // Connecting social accounts for Post Studio's automatic posting.
 // Desk asks for a sign-in link (/api/oauth/start), the person signs in and allows it on the platform's own page,
 // the platform sends them back to go.tany.im/oauth/<platform>, and the token is kept here, encrypted with TOKEN_KEY.
@@ -71,6 +72,22 @@ export const PROVIDERS = {
       return { token: r.access_token, expires: Date.now() + (r.expires_in || 0) * 1000 };
     },
   },
+  // LinkedIn, the person's own profile ("Share on LinkedIn" + "Sign In with OpenID Connect", no review needed).
+  // The token lasts 60 days and cannot be renewed without LinkedIn's partner program, so Desk asks to sign in again.
+  linkedin: {
+    name: "LinkedIn",
+    id: (env) => env.LINKEDIN_CLIENT_ID, secret: (env) => env.LINKEDIN_CLIENT_SECRET,
+    scope: "openid profile w_member_social",
+    authorize: "https://www.linkedin.com/oauth/v2/authorization",
+    async token(env, code, redirect) {
+      const r = await form("https://www.linkedin.com/oauth/v2/accessToken", {
+        grant_type: "authorization_code", code, redirect_uri: redirect, client_id: env.LINKEDIN_CLIENT_ID, client_secret: env.LINKEDIN_CLIENT_SECRET,
+      });
+      const me = await fetch("https://api.linkedin.com/v2/userinfo", { headers: { authorization: `Bearer ${r.access_token}` } }).then((x) => x.json());
+      if (!me.sub) throw new Error("LinkedIn did not say who signed in");
+      return { account: me.sub, handle: me.name || "LinkedIn", token: r.access_token, expires: Date.now() + (r.expires_in || 5184000) * 1000 };
+    },
+  },
   threads: {
     name: "Threads",
     id: (env) => env.THREADS_APP_ID, secret: (env) => env.THREADS_APP_SECRET,
@@ -93,7 +110,7 @@ export const PROVIDERS = {
 
 const enc = encodeURIComponent;
 // secrets pasted by hand can carry a stray space or line break
-const clean = (env) => { for (const k of ["META_APP_SECRET", "THREADS_APP_SECRET", "IG_APP_SECRET"]) if (typeof env[k] === "string") env[k] = env[k].trim(); };
+const clean = (env) => { for (const k of ["META_APP_SECRET", "THREADS_APP_SECRET", "IG_APP_SECRET", "LINKEDIN_CLIENT_SECRET", "X_API_SECRET", "X_ACCESS_SECRET", "X_API_KEY", "X_ACCESS_TOKEN"]) if (typeof env[k] === "string") env[k] = env[k].trim(); };
 
 async function get(url) {
   const r = await fetch(url);
@@ -183,6 +200,20 @@ export async function callback(env, provider, url) {
   }
 }
 
+// X: the four keys from the person's own X developer app are Worker secrets (X_API_KEY, X_API_SECRET, X_ACCESS_TOKEN,
+// X_ACCESS_SECRET). Connecting only checks them and records which account they belong to.
+export async function connectX(env) {
+  clean(env);
+  if (!env.X_API_KEY || !env.X_API_SECRET || !env.X_ACCESS_TOKEN || !env.X_ACCESS_SECRET) return { error: "The X keys are not on go.tany.im yet" };
+  const me = await xCall(env, "GET", "https://api.x.com/2/users/me");
+  if (!me.data) return { error: "X did not accept the keys" + (me.title ? `: ${me.title}` : "") };
+  await env.DB.prepare(
+    "INSERT INTO accounts (id, provider, account, handle, token, expires, updated, problem) VALUES (?, 'x', ?, ?, ?, 0, ?, '') " +
+    "ON CONFLICT(id) DO UPDATE SET handle = excluded.handle, updated = excluded.updated, problem = ''"
+  ).bind(`x:${me.data.id}`, me.data.id, me.data.username, await seal(env, "secrets"), Date.now()).run();
+  return { ok: true, handle: me.data.username };
+}
+
 export async function forget(env, provider) {
   await env.DB.prepare("DELETE FROM accounts WHERE provider = ?").bind(provider).run();
   const code = [...crypto.getRandomValues(new Uint8Array(8))].map((b) => b.toString(16).padStart(2, "0")).join("");
@@ -191,7 +222,9 @@ export async function forget(env, provider) {
 
 export async function list(env) {
   const rows = (await env.DB.prepare("SELECT id, provider, account, handle, expires, updated, problem FROM accounts ORDER BY provider, handle").all()).results;
-  return { accounts: rows, ready: Object.fromEntries(Object.entries(PROVIDERS).map(([k, p]) => [k, !!(p.id(env) && p.secret(env))])) };
+  const ready = Object.fromEntries(Object.entries(PROVIDERS).map(([k, p]) => [k, !!(p.id(env) && p.secret(env))]));
+  ready.x = !!(env.X_API_KEY && env.X_ACCESS_TOKEN);
+  return { accounts: rows, ready };
 }
 
 export async function remove(env, id) {
@@ -202,8 +235,13 @@ export async function remove(env, id) {
 // tokens last about 60 days; this keeps each one fresh when it has less than 10 days left
 export async function refreshAll(env) {
   const soon = Date.now() + 10 * 86400000;
-  const rows = (await env.DB.prepare("SELECT id, provider, token FROM accounts WHERE expires < ? AND expires > ?").bind(soon, Date.now()).all()).results;
+  const rows = (await env.DB.prepare("SELECT id, provider, token, expires FROM accounts WHERE expires < ? AND expires > ?").bind(soon, Date.now()).all()).results;
   for (const r of rows) {
+    if (!PROVIDERS[r.provider] || !PROVIDERS[r.provider].refresh) {
+      // no way to renew (LinkedIn): Desk shows this and the person signs in again
+      await env.DB.prepare("UPDATE accounts SET problem = ? WHERE id = ?").bind(`Sign in again before ${new Date(r.expires || 0).toISOString().slice(0, 10)}`, r.id).run();
+      continue;
+    }
     try {
       const t = await PROVIDERS[r.provider].refresh(await open(env, r.token));
       await env.DB.prepare("UPDATE accounts SET token = ?, expires = ?, updated = ?, problem = '' WHERE id = ?").bind(await seal(env, t.token), t.expires, Date.now(), r.id).run();

@@ -831,6 +831,15 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(400, {"error": "bad json"})
         if method == "POST" and not step:
             return self.send(*posts.create(rec))
+        if method == "POST" and step == ["connect"]:  # LinkedIn or Threads: the platform's own sign-in page; X: checks the keys on go.tany.im
+            try:
+                if rec.get("provider") == "x":
+                    return self.send(200, {"handle": golinks.connect_x()})
+                if rec.get("provider") in ("linkedin", "threads", "meta"):
+                    return self.send(200, {"url": golinks.sign_in_link(rec["provider"])})
+            except RuntimeError as e:
+                return self.send(400, {"error": str(e)})
+            return self.send(400, {"error": "unknown"})
         if method == "POST" and step == ["youtube-connect"]:  # opens Google's page in the default browser
             threading.Thread(target=youtube.auth, daemon=True).start()
             return self.send(200, {"ok": True})

@@ -3,6 +3,7 @@
 // Pictures wait in KV (MEDIA) under random names for two days, because Instagram and Threads fetch them by URL.
 
 import { open } from "./accounts.js";
+import { xCall } from "./xauth.js";
 
 const GRAPH = "https://graph.facebook.com/v23.0";
 const THREADS = "https://graph.threads.net/v1.0";
@@ -99,6 +100,7 @@ export async function add(env, rec) {
   if (media.some(isVideo) && media.length > 1) return { error: "One video per post" };
   if (acc.provider === "facebook" && kind === "story" && media.some(isVideo)) return { error: "Video stories on a Facebook Page are not supported yet" };
   if (acc.provider === "instagram" && !media.length) return { error: "Instagram needs a picture" };
+  if (["x", "linkedin"].includes(acc.provider) && kind === "story") return { error: "No stories there" };
   const text = String(rec.text || "").slice(0, 10000);
   const at = Number(rec.at) > 0 ? Number(rec.at) : Date.now();
   const id = `q-${rid(8)}`;
@@ -257,7 +259,64 @@ async function facebook(env, item, token) {
   return { id, link };
 }
 
-const PUBLISH = { instagram, threads, facebook };
+// LinkedIn: the person's profile. Pictures go up first (images API), then one post with them.
+const LI = "https://api.linkedin.com/rest";
+const LI_VERSION = "202609";
+// LinkedIn's "little text": these characters mean something there, so they are written with a backslash
+const liText = (t) => t.replace(/[\\|{}@\[\]()<>#*_~]/g, (c) => "\\" + c);
+
+async function linkedin(env, item, token) {
+  if (item.media.some(isVideo)) throw new Error("Videos on LinkedIn are not supported yet");
+  const author = `urn:li:person:${item.account.split(":")[1]}`;
+  const h = { authorization: `Bearer ${token}`, "LinkedIn-Version": LI_VERSION, "X-Restli-Protocol-Version": "2.0.0", "content-type": "application/json" };
+  const images = [];
+  for (const k of item.media) {
+    const init = await fetch(`${LI}/images?action=initializeUpload`, { method: "POST", headers: h, body: JSON.stringify({ initializeUploadRequest: { owner: author } }) });
+    const v = await init.json().catch(() => ({}));
+    if (!init.ok || !v.value) throw new Error(`LinkedIn would not take the picture (${init.status}${v.message ? ": " + v.message : ""})`);
+    const bytes = await env.MEDIA.get(k, { type: "arrayBuffer" });
+    if (!bytes) throw new Error("The picture has expired; approve the post again");
+    const up = await fetch(v.value.uploadUrl, { method: "PUT", headers: { authorization: `Bearer ${token}` }, body: bytes });
+    if (!up.ok) throw new Error(`The picture did not upload to LinkedIn (${up.status})`);
+    images.push(v.value.image);
+  }
+  const body = {
+    author, commentary: liText(item.text), visibility: "PUBLIC", lifecycleState: "PUBLISHED", isReshareDisabledByAuthor: false,
+    distribution: { feedDistribution: "MAIN_FEED", targetEntities: [], thirdPartyDistributionChannels: [] },
+  };
+  if (images.length === 1) body.content = { media: { id: images[0] } };
+  if (images.length > 1) body.content = { multiImage: { images: images.map((id) => ({ id })) } };
+  const r = await fetch(`${LI}/posts`, { method: "POST", headers: h, body: JSON.stringify(body) });
+  if (!r.ok) {
+    const v = await r.json().catch(() => ({}));
+    throw new Error(`LinkedIn said no (${r.status}${v.message ? ": " + v.message : ""})`);
+  }
+  const id = r.headers.get("x-restli-id") || "";
+  return { id, link: id ? `https://www.linkedin.com/feed/update/${id}/` : "" };
+}
+
+// X: pictures through the v2 media upload, then the post. Each post is paid for (pay-per-use).
+async function x(env, item) {
+  if (item.media.some(isVideo)) throw new Error("Videos on X are not supported yet");
+  const ids = [];
+  for (const k of item.media.slice(0, 4)) {
+    const bytes = await env.MEDIA.get(k, { type: "arrayBuffer" });
+    if (!bytes) throw new Error("The picture has expired; approve the post again");
+    const fd = new FormData();
+    fd.append("media", new Blob([bytes], { type: k.endsWith(".png") ? "image/png" : "image/jpeg" }), k);
+    fd.append("media_category", "tweet_image");
+    const v = await xCall(env, "POST", "https://api.x.com/2/media/upload", fd);
+    const id = (v.data && v.data.id) || v.media_id_string;
+    if (!id) throw new Error("X would not take the picture" + (v.title ? `: ${v.title}${v.detail ? " — " + v.detail : ""}` : ""));
+    ids.push(id);
+  }
+  const v = await xCall(env, "POST", "https://api.x.com/2/tweets", ids.length ? { text: item.text, media: { media_ids: ids } } : { text: item.text });
+  if (!v.data) throw new Error("X said no" + (v.title ? `: ${v.title}${v.detail ? " — " + v.detail : ""}` : ""));
+  const me = item.account.split(":")[1];
+  return { id: v.data.id, link: `https://x.com/i/web/status/${v.data.id}` || `https://x.com/${me}` };
+}
+
+const PUBLISH = { instagram, threads, facebook, linkedin, x };
 
 export async function send(env, id) {
   // the row is claimed first, so two runs never send the same post twice

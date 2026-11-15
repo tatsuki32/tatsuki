@@ -160,6 +160,18 @@ def upload_video(path):
     return start["key"]
 
 
+def sign_in_link(provider):
+    """The platform's own sign-in page for go.tany.im (Instagram/Facebook: "meta", "threads", "linkedin")."""
+    return _call("POST", "/api/oauth/start", {"provider": provider})["url"]
+
+
+def connect_x():
+    """Checks the X keys kept on go.tany.im and records the account. Returns its handle."""
+    r = _call("POST", "/api/x/connect", {})
+    _accounts["at"] = 0
+    return r.get("handle", "")
+
+
 def queue_add(rec):
     return _call("POST", "/api/queue", rec)
 

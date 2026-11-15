@@ -120,7 +120,7 @@ def save_settings(rec):
             t["on"] = change["on"]
         if change.get("link") in LINK_MODES:
             t["link"] = change["link"]
-        if isinstance(change.get("account"), str) and (change["account"] == "" or re.match(r"^((instagram|threads|facebook):\d{3,30}|youtube:UC[\w-]{20,30})$", change["account"])):
+        if isinstance(change.get("account"), str) and (change["account"] == "" or re.match(r"^((instagram|threads|facebook|x):\d{3,30}|youtube:UC[\w-]{20,30}|linkedin:[\w-]{3,40})$", change["account"])):
             t["account"] = change["account"]
         if isinstance(change.get("slots"), list):
             t["slots"] = [x for x in (clean_slot(v) for v in change["slots"][:14]) if x]
@@ -857,7 +857,8 @@ def _start(post_id, only=None, hint=""):
 # ---------- automatic posting ----------
 
 DAYS = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
-POSTABLE = {"instagram": ("post", "story"), "threads": ("post",), "facebook": ("post", "story"), "youtube": ("video",)}
+POSTABLE = {"instagram": ("post", "story"), "threads": ("post",), "facebook": ("post", "story"), "youtube": ("video",),
+            "linkedin": ("post",), "x": ("post",)}
 
 
 def clean_slot(v):
