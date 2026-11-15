@@ -48,6 +48,7 @@ import utilities
 import posts
 import golinks
 import youtube
+import instagram_dm  # Instagram DMs in Replies (read and sent through go.tany.im)
 import showcase
 import screentime_sync
 import usage
@@ -949,6 +950,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, whatsapp_view())
         if path == "/api/line":
             return self.send(200, line_view())
+        if path == "/api/instagram":
+            return self.send(200, instagram_dm.view())
         if path == "/api/bank":
             try:
                 return self.send(200, bank.view())
@@ -1115,6 +1118,14 @@ class Handler(BaseHTTPRequestHandler):
             return self.utilities_post(urlsplit(self.path).path)
         if urlsplit(self.path).path == "/api/posts" or urlsplit(self.path).path.startswith("/api/posts/"):
             return self.posts_write(method, urlsplit(self.path).path.split("/")[3:])
+        if method == "POST" and urlsplit(self.path).path == "/api/instagram/send":  # the person pressed Send on an Instagram reply
+            if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+                return self.send(415, {"error": "json only"})
+            try:
+                rec = self.body()
+            except (ValueError, json.JSONDecodeError):
+                return self.send(400, {"error": "bad json"})
+            return self.send(*instagram_dm.send(str(rec.get("task") or ""), rec.get("text")))
         col, doc_id = self.route()
         try:
             rec = self.body()
@@ -1374,6 +1385,7 @@ if __name__ == "__main__":
     if PORT == 4747:  # a test server on another port shows nothing
         threading.Thread(target=notify.watch, daemon=True).start()
         threading.Thread(target=tg_notify.watch, daemon=True).start()  # tasks and events to Telegram
+        threading.Thread(target=instagram_dm.watch, daemon=True).start()  # Instagram DMs to Replies, every 5 minutes
         threading.Thread(target=posts.watch, daemon=True).start()  # Post Studio: company-site news scheduled for later
         threading.Thread(target=routine_alarm.watch, daemon=True).start()  # routine start alarm (quiet 22:00-07:00)
         threading.Thread(target=routine_sync.watch, daemon=True).start()  # routines <-> the Routine app on the phone

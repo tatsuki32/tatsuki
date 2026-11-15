@@ -32,7 +32,7 @@ def reply_kind(t):
         return None  # a task you made yourself stays on the board, whatever its title
     if src == "lifeos-02" or re.match(r"^\s*(?:Email nudge|WhatsApp nudge|メール催促|WhatsApp催促)", title, re.I):
         return "nudge"
-    if src in ("mail", "whatsapp", "line"):
+    if src in ("mail", "whatsapp", "line", "instagram"):
         return src
     if REPLY_TITLE.match(title):
         return "mail" if re.match(r"^\s*(?:Email|メール)", title, re.I) else "whatsapp" if re.match(r"^\s*WhatsApp", title, re.I) else "line"

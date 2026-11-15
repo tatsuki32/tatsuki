@@ -1488,6 +1488,7 @@ async function loadApiMemos(){try{
   S.gear=gear.filter(g=>!g.deleted);S.projects=projects.filter(p=>!p.deleted);S.sections=sections.filter(x=>!x.deleted);
   S.fu=await api("GET","/api/followups").catch(()=>S.fu);
   S.line=await api("GET","/api/line").catch(()=>({}));lineAlert();
+  S.ig=await api("GET","/api/instagram").catch(()=>({}));
   S.replyWin=((await api("GET","/api/replywin").catch(()=>[]))||[]).find(x=>x&&x.id==="state")||{};
   S.genres=await api("GET","/api/genres").catch(()=>S.genres||[]);S.ttypes=await api("GET","/api/tasktypes").catch(()=>S.ttypes||[]);S.mprops=await api("GET","/api/mergeprops").catch(()=>S.mprops||[]);S.timelog=await api("GET","/api/timelog").catch(()=>S.timelog||[]);S.genrelog=await api("GET","/api/genrelog").catch(()=>S.genrelog||[]);S.typeprops=await api("GET","/api/typeprops").catch(()=>S.typeprops||[]);
   S.habits=habits.filter(h=>!h.deleted);S.wins=wins.filter(w=>!w.deleted);S.presents=presents.filter(p=>!p.deleted);S.memos=memos.filter(m=>!m.deleted&&!m.movedTo);S.dues=duesById(dues);S.tasks=tasks.filter(t=>!t.deleted);S.prompts=promptsById(prompts);S.wnotes=notes.filter(n=>!n.deleted);render();absorbMemos()}catch(e){toast("Cannot reach the Desk server. Is it running?")}}
@@ -1679,10 +1680,10 @@ const toLocalInput=ms=>{const d=new Date(ms);return `${d.getFullYear()}-${pad(d.
    A task's due date is the real one; like mail, its countdown runs to it. */
 const TSTATUS=[["notyet","Not started"],["doing","In progress"],["done","Done"],["paused","Paused"],["archived","Archived"],["dropped","Not doing"]];
 const TCOLS=["notyet","doing","done"], TSHELF=["paused","archived"], TOPEN=new Set(["notyet","doing"]);
-const TSRC={manual:["✍️","Manual"],memo:["📝","From a note"],mail:["✉️","From email"],whatsapp:["💬","WhatsApp"],line:["💬","LINE"],calendar:["📅","From the calendar"],gtasks:["☑️","Google Tasks"],claude:["🤖","Claude"],daily:["☀️","Daily"]};
+const TSRC={manual:["✍️","Manual"],memo:["📝","From a note"],mail:["✉️","From email"],whatsapp:["💬","WhatsApp"],line:["💬","LINE"],instagram:["📷","Instagram"],calendar:["📅","From the calendar"],gtasks:["☑️","Google Tasks"],claude:["🤖","Claude"],daily:["☀️","Daily"]};
 /* Email, WhatsApp and LINE replies live in their own "Replies" screen, not on the task board, unless "Make it a task" set asTask */
 /* Nudges that chase an answer (Life OS 02, "Email nudge …", "WhatsApp催促 …") are replies too. desk/replywin.py has the same rule. */
-const REPLYSRC=new Set(["mail","whatsapp","line"]);
+const REPLYSRC=new Set(["mail","whatsapp","line","instagram"]);
 function replyKind(t){if(!t)return null;const s=t.source||"", ti=String(t.title||"");
   if(s==="manual")return null; // a task you made yourself stays on the board, whatever its title
   if(s==="lifeos-02"||/^\s*(?:Email nudge|WhatsApp nudge|メール催促|WhatsApp催促)/i.test(ti))return "nudge";
@@ -1699,7 +1700,7 @@ const rwLast=(now=Date.now())=>rwSlot(now,-1), rwNext=(now=Date.now())=>rwSlot(n
 const replyOpen=()=>{const c=S.replyWin?.closedAt;return typeof c!=="number"||c<rwLast()};
 const rwTime=ms=>new Date(ms).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});
 const hideReply=t=>isReply(t)&&!replyOpen();
-const LINKED=new Set(["mail","whatsapp","line","calendar","gtasks","claude","daily"]); // these come from elsewhere: their title and due date live at the source
+const LINKED=new Set(["mail","whatsapp","line","instagram","calendar","gtasks","claude","daily"]); // these come from elsewhere: their title and due date live at the source
 const tLabel=k=>(TSTATUS.find(s=>s[0]===k)||[k,k])[1];
 const mailTaskId=uid=>"t"+dueDocId(uid);
 const newTaskId=()=>"t"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
@@ -3091,10 +3092,11 @@ async function toggleGearPack(id){const g=S.gear.find(x=>x.id===id);if(!g)return
 async function resetGearPack(){for(const g of S.gear.filter(x=>!x.deleted&&x.packed)){try{await store.putGear({...g,packed:false,packedAt:null})}catch(e){}}toast("Unpacked everything")}
 /* ---------- Replies: email, WhatsApp and LINE that need an answer, apart from the task board ---------- */
 /* Each row: title, then "About …" from the summary the import wrote. "Make it a task" moves it to Tasks (asTask), "Back to Replies" undoes it. */
-const RSRC=[["mail","✉️","Email"],["whatsapp","🟢","WhatsApp"],["line","💚","LINE"],["nudge","⏳","Follow-ups"]];
+const RSRC=[["mail","✉️","Email"],["whatsapp","🟢","WhatsApp"],["line","💚","LINE"],["instagram","📷","Instagram"],["nudge","⏳","Follow-ups"]];
 const replyList=()=>(S.all||[]).filter(t=>isReply(t)&&TOPEN.has(t.status)).sort(byDeadline);
 function replyInfo(t){
   if(t.source==="mail"){const i=mailItem(t);return {about:i?.summary||t.mail?.sum||"",who:i?.from||"",when:i?.received||"",subj:i?.subject_ja||i?.subject||t.mail?.sub||""}}
+  if(t.source==="instagram"){const g=((S.ig||{}).items||{})[t.id];return {about:g?.summary||"",who:g?"@"+g.name:"",when:g?.theirAt?new Date(g.theirAt).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}):"",subj:""}}
   const i=t.source==="line"?((S.line||{}).items||{})[t.id]:(S.wa||{})[t.id];
   const when=i?.lastAt?new Date(i.lastAt*1000).toLocaleString("en-US",{timeZone:"Asia/Ho_Chi_Minh",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}):"";
   const last=(i?.texts||[]).filter(x=>x&&!/^\(.*\)$/.test(x)).slice(-1)[0]||"";
@@ -3198,6 +3200,33 @@ function lineBlock(t){
     ${i.body?`<div class="row"><button class="btn primary" id="lineCopy">Copy reply</button></div>`:""}
   </div>`;
 }
+/* Instagram DMs (desk/instagram_dm.py): the messages, a draft in their language, Send only when pressed and within 24 hours */
+function igBlock(t){
+  const i=((S.ig||{}).items||{})[t.id];
+  if(!i) return `<p class="hint">📷 Instagram</p>`;
+  const fmt=ms=>new Date(ms).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
+  const msgs=(i.messages||[]).map(m=>`${m.mine?"You":"@"+i.name} · ${fmt(m.at)}\n${m.text}`).join("\n\n");
+  return `<div class="mailbox">
+    <p class="due">Instagram · @${esc(i.handle)} · from @${esc(i.name)} · ${esc(fmt(i.theirAt))}</p>
+    ${i.summary?`<p class="msum">${esc(i.summary)}</p>`:""}
+    <details class="draft" open><summary><span>Conversation</span></summary><pre>${esc(msgs)}</pre></details>
+    ${i.needsReply===false?`<p class="hint">This may not need a reply.</p>`:""}
+    <label class="sub" for="igText">Reply</label><textarea class="wd-field" id="igText" rows="5">${esc(i.body||"")}</textarea>
+    ${i.body_en?`<details class="sent-as"><summary>In English</summary><pre>${esc(i.body_en)}</pre></details>`:""}
+    <div class="row">${i.canSend?`<button class="btn primary" id="igSend">Send</button>`:`<span class="hint">More than 24 hours have passed, so it can only be answered in Instagram.</span>`}<button class="btn" id="igCopy">Copy</button><a class="btn" href="https://www.instagram.com/direct/inbox/" target="_blank" rel="noopener">Open in Instagram ↗</a></div>
+  </div>`;
+}
+function wireIg(t){
+  const i=((S.ig||{}).items||{})[t?.id]; if(!i) return;
+  const c=$("#igCopy"); if(c) c.onclick=async()=>toast(await copyText($("#igText").value)?"📋 Copied":"Couldn't copy");
+  const s=$("#igSend"); if(s) s.onclick=async()=>{const text=$("#igText").value.trim();if(!text){toast("Write the reply first");return}
+    if(!confirm(`Send this to @${i.name} on Instagram?\n\n${text}`))return; s.disabled=true;
+    const r=await fetch("/api/instagram/send",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({task:t.id,text})});let v={};try{v=await r.json()}catch(e){}
+    if(!r.ok){toast(v.error||"Couldn't send");s.disabled=false;return}
+    toast("Sent on Instagram");S.ig=await api("GET","/api/instagram").catch(()=>({}));
+    const cur=findTask(t.id);if(cur)try{await store.putTask({...cur,status:"done",doneAt:Date.now()});await taskWin(cur,"done")}catch(e){}
+    $("#modal").innerHTML="";render()};
+}
 function wireLine(t){
   const b=$("#lineCopy"), i=((S.line||{}).items||{})[t?.id]; if(!b||!i) return;
   b.onclick=async()=>toast(await copyText(i.body)?"📋 Copied":"Couldn't copy");
@@ -3241,7 +3270,7 @@ function openTask(id,preset){
     <div class="top"><h2>🗂️ ${t?"Task":"New task"}</h2><button class="ibtn" id="xTask" aria-label="Close">✕</button></div>
     <label class="sub" for="tTitle">Title</label><input type="text" id="tTitle" value="${esc(taskName(t))}" placeholder="e.g., Send the documents to FWO" autocomplete="off">
     ${clearBlock(t)}${t?.source==="lifeos-02"?fuBlock(t):""}
-    ${t?.source==="daily"&&t.sourceRef==="jobs"?jobsBlock():isMail?mailBlock(t):t?.source==="whatsapp"?waBlock(t):t?.source==="line"?lineBlock(t)
+    ${t?.source==="daily"&&t.sourceRef==="jobs"?jobsBlock():isMail?mailBlock(t):t?.source==="whatsapp"?waBlock(t):t?.source==="line"?lineBlock(t):t?.source==="instagram"?igBlock(t)
       :isLinked?`<p class="hint">${TSRC[t.source][0]} ${TSRC[t.source][1]}${t.due!=null?" · Due "+esc(fmtDue(t.due)):""} · Change the due date and title at the source${okUrl(t.url)?` · <a href="${esc(t.url)}" target="_blank" rel="noopener">Open ↗</a>`:""}${t.source==="gtasks"?"<br>Marking it Done also completes it in Google Tasks at the next sync.":""}</p>`
       :`<div class="tduein"><div><label class="sub" for="tDue">Due date (optional)</label><input type="date" id="tDue" value="${dueParts(t?.due)[0]}"></div><div><label class="sub" for="tDueT">Time (optional)</label><input type="time" id="tDueT" value="${dueParts(t?.due)[1]}"></div></div><p class="hint" id="tDueHint"></p>`}
     <div class="tduein"><div><label class="sub" for="tPlan">When</label><select id="tPlan">${planSel(t||{},tPeriods())}</select></div><div><label class="sub" for="tEst">Time needed (min)</label><input type="number" id="tEst" min="1" step="5" inputmode="numeric" value="${t?.estMin??""}" placeholder="${t?.estAi?"Estimate "+t.estAi:""}"></div></div>
@@ -3253,7 +3282,7 @@ function openTask(id,preset){
     <div class="row"><button class="btn primary" id="tSave">Save <kbd>⌘/Ctrl + Enter</kbd></button><button class="btn" id="tCancel">Cancel</button>${t?`${timerBtn(t,"btn")}<button class="btn" id="tCopy">Copy as text</button><button class="btn" id="tCalBtn" aria-expanded="false" aria-controls="tCal">Add to calendar</button>`:""}${t&&!isLinked?`<button class="btn" id="tDel" style="margin-left:auto;color:var(--red)">Delete</button>`:""}</div>
   </div></div>`;
   const ti=$("#tTitle");ti.focus();ti.setSelectionRange(ti.value.length,ti.value.length);
-  wireWa(t);wireLine(t);
+  wireWa(t);wireLine(t);wireIg(t);
   const close=()=>{$("#modal").innerHTML=""}, plan0=$("#tPlan").value;
   wireJobs(t);wireMail(t,close);wireClear(t,close);wireProjFields(t||pre);
   const dueIn=$("#tDue"), dueT=$("#tDueT");

@@ -3,6 +3,7 @@
 // No IP address and no cookie is kept. The /api/ part answers only to Desk's key (DESK_KEY secret).
 
 import * as accounts from "./accounts.js";
+import * as dm from "./dm.js";
 import * as publish from "./publish.js";
 
 const ALPHABET = "abcdefghijkmnpqrstuvwxyz23456789"; // no l, o, 0, 1: easy to read out loud
@@ -88,6 +89,13 @@ async function api(request, env, url) {
     return json(r, r.error ? 400 : 200);
   }
   if (request.method === "GET" && path === "accounts") return json(await accounts.list(env));
+  const dmm = path.match(/^dm\/(\d{5,30})(?:\/(send))?$/);
+  if (dmm) {
+    try {
+      if (request.method === "GET" && !dmm[2]) return json(await dm.conversations(env, dmm[1]));
+      if (request.method === "POST" && dmm[2]) { const rec = await request.json().catch(() => ({})); const r = await dm.send(env, dmm[1], String(rec.to || ""), rec.text); return json(r, r.error ? 400 : 200); }
+    } catch (e) { return json({ error: String(e.message || e) }, 400); }
+  }
   if (request.method === "POST" && path === "x/connect") { const r = await accounts.connectX(env); return json(r, r.error ? 400 : 200); }
   if (request.method === "POST" && path === "media/video") { const r = await publish.videoStart(env); return json(r, r.error ? 400 : 200); }
   const vp = path.match(/^media\/video\/([0-9a-f]{48}\.mp4)\/([^/]{1,1000})\/(\d{1,3}|done)$/);
