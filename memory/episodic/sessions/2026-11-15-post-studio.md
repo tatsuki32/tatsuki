@@ -41,3 +41,10 @@
 - Facebook ページは「Tatsuki Mitsuhashi Official」（英語向け）を使う。Meta アプリの「ページの管理」ユースケースに `pages_manage_posts`・`pages_read_engagement` を足し、設定「Post Studio publishing」のアセットに「ページ」と3つの許可を入れてから、サインインし直した。最初の投稿は Post Studio から成功。
 - つまずき：内蔵ブラウザはファイルを選べない（プロフィール写真は本人が入れた）。ページ作成は「最近作ったページが多すぎる」で断られることがある。Meta の設定画面は狭い窓だとボタンが画面外になるので、窓の幅を広げてから押す。
 - 残り：R2 の申し込み（本人）、YouTube Data API の有効化と Connect YouTube、ページのカテゴリ（アーティストのまま）。
+
+## 追記（同日・夕方）：YouTube・X・LinkedIn
+- YouTube：Google Cloud「Tatsuki Desk」で YouTube Data API v3 を有効にし、Connect YouTube で接続（`desk/youtube.py`）。まだ投稿なし。
+- X：console.x.com（Developer Console、クレジット制）で開発者登録、既定のアプリを Read and write にして OAuth 1.0a の4つのキーを Worker の秘密（`X_API_KEY`・`X_API_SECRET`・`X_ACCESS_TOKEN`・`X_ACCESS_SECRET`）へ。署名は `golinks/src/xauth.js`（公式の例と一致を確認）。クレジットを買う前は「Payment Required — credits depleted」で断られる。X の投稿先はリンクなし（リンク入りは1件約 $0.20）。最初の投稿は note の記事から作って成功。
+- LinkedIn：コードは入れた（`linkedin` プロバイダー、60日で再サインイン）。開発者アプリ（会社ページにひもづけが必要）と `LINKEDIN_CLIENT_ID`・`LINKEDIN_CLIENT_SECRET` 待ち。
+- Facebook ページの投稿には、投稿先ごとの「毎回つける一行」（`footer`）で個人アカウントへのリンクを入れる。人のプロフィールへのメンションは API でできない。
+- つまずき：別セッションが posts.py を書き換えた後、サーバーが古いまま「Could not reach Anthropic」を返した。サーバーを再起動すると直る。
