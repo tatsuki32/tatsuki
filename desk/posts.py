@@ -28,6 +28,7 @@ import golinks  # go.tany.im short links, one per place a post goes
 import lifelog  # the Anthropic key in the keychain and the API settings
 import site_news  # the company site's news pages on tany.im
 import youtube  # YouTube uploads straight from this Mac
+import note_post  # note drafts (note has no public API; only drafts, never published from here)
 import utilities  # downloads go through its one-hour file tokens (the Desk window hands those to the browser)
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -1059,6 +1060,35 @@ def sync(post_id):
     return post
 
 
+# ---------- note (a draft only) ----------
+
+def note_save(post_id):
+    """The person pressed Save to note as draft. The first picture becomes the header; the rest go after the lead.
+    Pressing it again updates the same draft. Publishing stays on note's page."""
+    post = get(post_id)
+    t = target("note")
+    d = post and (post.get("drafts") or {}).get("note")
+    if not post or not t or not d:
+        return 404, {"error": "There is no note draft yet"}
+    try:
+        cover = image(post_id, "note", 0) if post["photos"] else None
+        more = [x for x in (photo_path(ph["id"], "api") or photo_path(ph["id"]) for ph in post["photos"][1:]) if x]
+        prev = (post.get("noteDraft") or {}).get("id")
+        try:
+            r = note_post.save_draft(d.get("title") or "", full_text(t, d), cover, more, prev)
+        except note_post.NoteError:
+            if not prev:
+                raise
+            r = note_post.save_draft(d.get("title") or "", full_text(t, d), cover, more)  # the old draft was deleted on note
+    except note_post.NoteError as e:
+        return 502, {"error": str(e)}
+    with _lock:
+        post = get(post_id)
+        post["noteDraft"] = {**r, "at": int(time.time() * 1000)}
+        _save(post)
+    return 200, post
+
+
 # ---------- the posts ----------
 
 def _all():
@@ -1182,6 +1212,9 @@ def view():
         acc = [{k: a[k] for k in ("id", "provider", "handle", "problem")} for a in golinks.accounts()]
     except RuntimeError:
         acc = []
+    note = note_post.status()
+    if note.get("connected"):
+        acc.append({"id": "note:" + note["handle"], "provider": "note", "handle": note["handle"], "problem": ""})
     ch = youtube.channel()
     if ch:
         acc.append({"id": "youtube:" + ch["id"], "provider": "youtube", "handle": ch["title"], "problem": ""})

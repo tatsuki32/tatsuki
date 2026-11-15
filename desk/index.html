@@ -5994,12 +5994,14 @@ function psCard(post,t){
   const where=t.link==="bio"?"Captions here can't hold a tappable link. Put it in your bio:":t.link==="sticker"?"Add it to the story as a link sticker:":"";
   const linkNote=d&&where&&post.links?.length?`<div class="pslink"><span class="due">${where}</span>${post.links.map(u=>post.short?.[t.id]?.[u]||u).map(u=>`<span class="pslinkrow"><span class="pslinku">${esc(u)}</span><button class="btn" data-pslinkcopy="${esc(u)}">Copy link</button></span>`).join("")}</div>`:"";
   const url=d?psOpenUrl(t,d):"";
+  const nd=post.noteDraft,noteOn=(p.data?.accounts||[]).some(a=>a.provider==="note");
+  const noteRow=d&&t.id==="note"?`<div class="nsgo psgo">${noteOn?`<button class="btn" data-psnote ${p.noteBusy?"disabled":""}>${p.noteBusy?"Saving to note…":nd?"Update the note draft":"Save to note as draft"}</button>`:`<span class="due">note is not connected. See Connections in Settings.</span>`}${nd?`<a class="btn" href="${esc(nd.editUrl)}" target="_blank" rel="noopener">Open the draft on note ↗</a><span class="due">Saved ${esc(psWhen(nd.at))}${nd.cover?"":" · add the header picture on note"}. Add the hashtags and publish (or schedule) on note.</span>`:""}</div>`:"";
   const acts=!d?"":t.id==="note"?`<button class="btn" data-pscopy="${tid}">Copy Markdown</button><button class="btn" data-pshtml="${tid}">Copy formatted</button>${url?`<a class="btn" href="${esc(url)}" target="_blank" rel="noopener" data-pscopygo="${tid}">Open note ↗</a>`:""}`
     :`${url?`<a class="btn" href="${esc(url)}" target="_blank" rel="noopener" data-pscopygo="${tid}">Copy and open ↗</a>`:""}<button class="btn" data-pscopy="${tid}">Copy</button>`;
   return `<article class="card pscard${posted?" done":""}" aria-label="${esc(t.name)}">
     <header class="pshead"><h3>${esc(t.name)}</h3><span class="due">${PSKIND[t.kind]}${d?` · ${len.toLocaleString("en-US")} / ${t.limit.toLocaleString("en-US")}${t.count==="x"?" (weighted)":""}${over>0?` · ${over} over`:""}`:""}</span></header>
     ${img}${body}${linkNote}
-    ${d&&psCan(t)?psSend2(post,t):""}${d&&t.kind==="news"?psSite(post):""}
+    ${d&&psCan(t)?psSend2(post,t):""}${d&&t.kind==="news"?psSite(post):""}${noteRow}
     <div class="nsgo">${acts}${vid?`<button class="btn" data-pssavevid="${tid}">Save video</button>`:post.photos.length?`<button class="btn" data-pssave="${tid}">${post.photos.length>1?`Save ${post.photos.length} pictures`:"Save picture"}</button>`:""}${PSWHOLEPDF.includes(t.kind)||t.id.startsWith("fb-")&&!psCan(t)?(post.docs||[]).map(x=>`<button class="btn" data-pssavedoc="${esc(x.id)}">Save PDF</button>`).join(""):""}</div>
     <div class="nsgo">${p.open[t.id]?`<input class="wd-field psedit pshint" data-pshint="${tid}" placeholder="What to change (optional)" aria-label="What to change"><button class="btn" data-psregen="${tid}" ${post.running?"disabled":""}>Rewrite</button>`:`<button class="btn" data-psask="${tid}" ${post.running?"disabled":""}>${busy&&post.regen===t.id?"Rewriting…":"Rewrite"}</button>`}
     <label class="pschip"><input type="checkbox" data-psposted="${tid}" ${posted?"checked":""}><span>Posted</span></label></div></article>`;
@@ -6070,6 +6072,7 @@ function psSettings(){
   const yt=(d.accounts||[]).find(a=>a.provider==="youtube");
   const conn=`<section class="card mfocus"><p class="mtalk">Connections</p><p class="due">Instagram, Threads and Facebook Pages are connected on go.tany.im. YouTube uploads go straight from this Mac.</p><div class="nsgo"><span class="due">${yt?`YouTube: ${esc(yt.handle)}`:"YouTube: not connected"}</span><button class="btn" id="psYtConnect">${yt?"Connect again":"Connect YouTube"}</button></div>
     ${[["linkedin","LinkedIn"],["x","X"],["threads","Threads"],["meta","Instagram and Facebook"]].map(([k,l])=>{const a=(d.accounts||[]).filter(x=>k==="meta"?["instagram","facebook"].includes(x.provider):x.provider===k);return `<div class="nsgo"><span class="due">${l}: ${a.length?a.map(x=>esc(x.handle)+(x.problem?` (${esc(x.problem)})`:"")).join(", "):"not connected"}</span><button class="btn" data-psconnect="${k}">${a.length?"Connect again":"Connect"}</button></div>`}).join("")}
+    ${(n=>`<div class="nsgo"><span class="due">note: ${n?esc(n.handle)+" (drafts only; you publish on note)":"not connected. In Terminal, run the command, sign in to note in Chrome and paste its session cookie"}</span><button class="btn" data-pscopycmd="python3 ~/TatsukiDesk/desk/note_post.py connect">${n?"Copy the command to connect again":"Copy the command"}</button></div>`)((d.accounts||[]).find(a=>a.provider==="note"))}
     ${(d.accounts||[]).some(a=>a.provider==="x")?`<p class="due">X charges for each post: about $0.015, and about $0.20 when the post has a link.</p>`:""}</section>`;
   return `<section class="card mfocus"><p class="mtalk">How each account sounds, and where to post. Saved when you leave a box.</p>${voice}</section>${conn}<section class="card mfocus">${rows}</section>`;
 }
@@ -6155,6 +6158,9 @@ function wirePs(){
   all("[data-psconnect]").forEach(b=>b.onclick=async()=>{try{const v=await psSend("POST","/api/posts/connect",{provider:b.dataset.psconnect});
     if(v.url){window.open(v.url,"_blank","noopener");toast("Sign in on the page that opened, then come back")}else{toast("Connected: "+v.handle);psLoad()}}catch(e){toast(e.message)}});
   const ytc=$("#psYtConnect");if(ytc)ytc.onclick=async()=>{try{await psSend("POST","/api/posts/youtube-connect",{});toast("Google's page opened in your browser. Allow it, then come back");setTimeout(psLoad,30000)}catch(e){toast(e.message)}};
+  all("[data-psnote]").forEach(b=>b.onclick=async()=>{p.noteBusy=true;psDraw();
+    try{p.cur=await psSend("POST",`/api/posts/${encodeURIComponent(p.cur.id)}/note`,{});toast("Saved as a draft on note. Nothing is public yet")}catch(e){toast(e.message)}p.noteBusy=false;psDraw()});
+  all("[data-pscopycmd]").forEach(b=>b.onclick=async()=>toast(await copyText(b.dataset.pscopycmd)?"Copied. Paste it in Terminal":"Could not copy"));
   all("[data-pssavedoc]").forEach(b=>b.onclick=async()=>{try{const v=await psSend("POST",`/api/posts/${encodeURIComponent(p.cur.id)}/savedoc`,{doc:b.dataset.pssavedoc});
     const a=document.createElement("a");a.href="/api/utilities/file/"+v.file;a.download="";document.body.append(a);a.click();a.remove();toast("Saving to Downloads")}catch(e){toast(e.message)}});
   all("[data-psask]").forEach(b=>b.onclick=()=>{p.open[b.dataset.psask]=true;psDraw();$(`[data-pshint="${b.dataset.psask}"]`)?.focus()});

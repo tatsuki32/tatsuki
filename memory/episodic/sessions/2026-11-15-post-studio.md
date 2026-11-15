@@ -53,3 +53,9 @@
 - R2：本人がカードを入れて申し込み。バケット `tatsuki-go-videos`（ライフサイクルで2日で削除）を Worker の `VIDEOS` に。パートの受け取りは `request.arrayBuffer()`（ストリームのままだと長さが分からず遅い）。Cloudflare の予算アラート $1 を本人の Gmail に。
 - LinkedIn：会社ページ TANY LLC（linkedin.com/company/tany-llc）を作り、開発者アプリ「Tatsuki Post Studio」をひもづけ。Products は Share on LinkedIn と Sign In with LinkedIn using OpenID Connect。リダイレクト `https://go.tany.im/oauth/linkedin`。Client ID は Claude が、Client Secret は本人が Worker の秘密へ。OAuth は本人のパスワード入力が要った。最初の投稿（note の記事から英語）に成功。
 - つまずき：LinkedIn の開発者画面（Ember）は execCommand や cmd+a で入れた値が崩れて保存される。空の欄をクリックして普通に打つ。新しい会社ページは名前の検索に出ないので、アプリ作成では会社ページの URL を貼る。アプリのロゴは必須で、ページの中で canvas で描いた画像を入れた。
+
+## note の下書き保存（2026-11-15 夕方）
+- note は公式 API がない。エディタが使う内部 API（`/api/v1/text_notes?user_id=` で空の下書き → `/api/v1/text_notes/draft_save?id=`、画像は `/api/v3/images/upload/presigned_post` → S3、見出し画像は `/api/v1/image_upload/note_eyecatch`）で**下書きだけ**作る。公開・タグ・予約は本人が note で。
+- `desk/note_post.py`。サインインは `_note_session_v5` Cookie を `python3 desk/note_post.py connect` に貼る（キーチェーン `tatsuki-desk-note`、パスワードは持たない）。XSRF は `/api/v2/current_user` の応答から取る。本文は Markdown → note の HTML（ブロックごとに name/id の uuid）。
+- Post Studio の note カードに「Save to note as draft」（もう一度押すと同じ下書きを更新）。`POST /api/posts/<id>/note`、記録は post の `noteDraft`。
+- 本物では未確認（本人の接続待ち）。note が中身を変えると止まる。そのときは Copy で続ける。
