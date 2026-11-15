@@ -58,7 +58,7 @@ DATA_DIR = ROOT_DATA_DIR
 LOCK = threading.RLock()
 CFG = {}
 # Snapshot read by the proxy without taking the lock.
-POLICY = {"active": False, "mode": "block", "list": []}
+POLICY = {"active": False, "global": False, "mode": "block", "list": [], "extra": []}
 
 
 def log(*args):
@@ -156,11 +156,14 @@ def schedule_window(sch, now):
 
 def active_state(now=None):
     now = now or time.time()
-    st = {"apps": False, "web": False, "end": None, "sources": []}
+    # appsGlobal/webGlobal: use the main lists. appsExtra/webExtra: a schedule's own
+    # block lists (appList/siteList), which leave the main lists alone.
+    st = {"apps": False, "web": False, "end": None, "sources": [],
+          "appsGlobal": False, "webGlobal": False, "appsExtra": [], "webExtra": []}
     sess = CFG.get("session")
     if sess and sess.get("end", 0) > now:
-        st["apps"] |= bool(sess.get("apps"))
-        st["web"] |= bool(sess.get("web"))
+        st["appsGlobal"] |= bool(sess.get("apps"))
+        st["webGlobal"] |= bool(sess.get("web"))
         st["sources"].append({"type": "session", "name": "手動セッション", "end": sess["end"]})
     for sch in CFG.get("schedules", []):
         if not sch.get("enabled", True):
@@ -168,12 +171,24 @@ def active_state(now=None):
         win = schedule_window(sch, now)
         if not win or CFG.get("skips", {}).get(sch.get("id"), 0) >= win[1]:
             continue
-        st["apps"] |= bool(sch.get("apps"))
-        st["web"] |= bool(sch.get("web"))
+        if sch.get("apps"):
+            if sch.get("appList"):
+                st["appsExtra"] += sch["appList"]
+            else:
+                st["appsGlobal"] = True
+        if sch.get("web"):
+            if sch.get("siteList"):
+                st["webExtra"] += sch["siteList"]
+            else:
+                st["webGlobal"] = True
         st["sources"].append({"type": "schedule", "id": sch.get("id"),
                               "name": sch.get("name") or "スケジュール", "end": win[1]})
     if st["sources"]:
         st["end"] = max(s["end"] for s in st["sources"])
+    st["appsExtra"] = sorted(set(st["appsExtra"]))
+    st["webExtra"] = sorted(set(st["webExtra"]))
+    st["apps"] = st["appsGlobal"] or bool(st["appsExtra"])
+    st["web"] = st["webGlobal"] or bool(st["webExtra"])
     st["active"] = st["apps"] or st["web"]
     return st
 
@@ -369,11 +384,13 @@ def enforcer():
                 st = active_state()
                 apps_cfg = dict(CFG["apps"])
                 web_cfg = dict(CFG["web"])
-            want_web = st["web"] and (web_cfg["mode"] == "allow" or bool(web_cfg["list"]))
+            want_global = st["webGlobal"] and (web_cfg["mode"] == "allow" or bool(web_cfg["list"]))
+            want_web = want_global or bool(st["webExtra"])
             hosts = list(web_cfg["list"])
             if web_cfg["mode"] == "allow":
                 hosts += ALLOWLIST_EXTRA_HOSTS
-            POLICY.update({"active": want_web, "mode": web_cfg["mode"], "list": hosts})
+            POLICY.update({"active": want_web, "global": want_global, "mode": web_cfg["mode"],
+                           "list": hosts, "extra": list(st["webExtra"])})
             if want_web and (not proxy_on or time.time() - last_check > 15):
                 if not proxy_on or not proxy_still_applied():
                     apply_proxy()
@@ -381,8 +398,10 @@ def enforcer():
             elif not want_web and proxy_on:
                 restore_proxy()
                 proxy_on = False
-            if st["apps"] and (apps_cfg["mode"] == "allow" or apps_cfg["list"]):
+            if st["appsGlobal"] and (apps_cfg["mode"] == "allow" or apps_cfg["list"]):
                 enforce_apps(apps_cfg["mode"], apps_cfg["list"])
+            if st["appsExtra"]:
+                enforce_apps("block", st["appsExtra"])
         except Exception as e:
             log("enforcer error:", repr(e))
         time.sleep(1)
@@ -401,6 +420,10 @@ def host_blocked(host):
         return False
     h = host.lower().strip("[]").rstrip(".")
     if any(h == d or h.endswith("." + d) for d in ALWAYS_ALLOWED_HOSTS):
+        return False
+    if any(h == d or h.endswith("." + d) for d in POLICY.get("extra", [])):
+        return True
+    if not POLICY.get("global", True):
         return False
     hit = any(h == d or h.endswith("." + d) for d in POLICY["list"])
     return hit if POLICY["mode"] == "block" else not hit
@@ -510,6 +533,10 @@ def clean_settings(body):
             "start": s["start"], "end": s["end"],
             "apps": bool(s.get("apps")), "web": bool(s.get("web")),
             "enabled": bool(s.get("enabled", True)),
+            # Optional own block lists. Empty = use the main lists.
+            "appList": sorted({str(a).strip()[:80] for a in s.get("appList", []) or [] if str(a).strip()}),
+            "siteList": sorted({normalize_domain(str(d)) for d in s.get("siteList", []) or []
+                                if normalize_domain(str(d))}),
         })
     return out
 

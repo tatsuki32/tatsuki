@@ -268,7 +268,16 @@ function renderSchedules() {
         <input type="time" data-k="start"> 〜 <input type="time" data-k="end">
         <label class="check"><input type="checkbox" data-k="apps"> アプリ</label>
         <label class="check"><input type="checkbox" data-k="web"> Webサイト</label>
+      </div>
+      <div class="row">
+        <textarea data-l="appList" rows="2" placeholder="このスケジュールだけで止めるアプリ（1行に1つ。空なら上のリスト）" style="flex:1;min-width:160px"></textarea>
+        <textarea data-l="siteList" rows="2" placeholder="このスケジュールだけで止めるサイト（1行に1つ。空なら上のリスト）" style="flex:1;min-width:160px"></textarea>
       </div>`;
+    el.querySelectorAll("[data-l]").forEach((ta) => {
+      const k = ta.dataset.l;
+      ta.value = (s[k] || []).join("\n");
+      ta.oninput = () => { s[k] = ta.value.split("\n").map((x) => x.trim()).filter(Boolean); markDirty(); };
+    });
     el.querySelectorAll("[data-k]").forEach((inp) => {
       const k = inp.dataset.k;
       if (inp.type === "checkbox") inp.checked = !!s[k]; else inp.value = s[k] || "";
