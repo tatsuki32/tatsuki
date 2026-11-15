@@ -1,9 +1,9 @@
 # 2026-11-15 メルマガ「地球キャンパス通信」
 
 ## ひとこと
-- いま：メルマガの仕組みができた
-- 次：Resend の登録と公開
-- 待ち：送り主の住所を入れる
+- いま：メルマガを送れる状態になった
+- 次：第1号を書いて送る
+- 待ち：なし
 
 ## やったこと
 - 費用を比べた（まぐまぐは売上の50%、自作は Stripe の3.6%だけ）。まずは無料で自作に決めた。
@@ -22,3 +22,9 @@
 - Worker の deploy（`cd desk/data/tany/site && npx wrangler deploy`）と、Desk の Settings に送り主の名前・住所・問い合わせ先・テスト先。
 - Send test のメールでは写真が出ない（写真は本番の送信で tany.im に上がってから出る）。
 - 次の段階：Post Studio へ回す、SNS のお知らせ、予約送信、開封数、有料版。
+
+## 公開（同じ日の夕方）
+- Resend に tany.im（東京）を登録。Cloudflare の DNS に4件（`send`・`rsend` の CNAME、`resend._domainkey` と `_dmarc` の TXT）。受信用の MX は入れていない（tany.im の受信は Cloudflare のメール転送のまま）。
+- Worker の秘密 `CAMPUS_KEY`（キーチェーン `tatsuki-desk-campus` と同じ）・`RESEND_KEY`（Sending access、tany.im だけ）。deploy 済み。登録ページ tany.im/campus/ を公開。
+- テスト送信が Gmail の受信箱に届いた（迷惑メールではない）。
+- ハマりどころ：`wrangler secret put` に手で貼ると別の文字が入ることがあった。鍵はコピーのボタン → `pbpaste | tr -d '[:space:]' | npx wrangler secret put RESEND_KEY` で入れる。鍵が正しいかは `pbpaste` の鍵で `api.resend.com` を叩けば分かる（Sending access の鍵は 401 restricted_api_key が正常）。

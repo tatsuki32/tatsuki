@@ -24,7 +24,7 @@
 - LINE の返信タスク化（`desk/line_sync.py`）：実装・未コミット。流れは本番で確認。未読のあるトークはまだ本番で未確認。お知らせ（Mac の通知。`desk/notify.py`）：実装・未コミット。本番で動作中。実際の音と表示、まとめの実走、`urgent` の印は確認待ち。使い方の計測と週1回の並び替え（`desk/usage.py`）：実装・未コミット。数え始めは 2026-11-06、最初の並び替えは 11-23。 週1回の提案（`desk/ideas.py`、`desk-idea-suggest`）：main に入った。
 - アカウント一覧（`desk/accounts.py`、🔑 Accounts）：仮の版を実装。パスワードは持たない。鍵つきのパスワード欄は次の段階（要件定義から）。ポートフォリオは Cloudflare Pages に移した。 会社のサイトの計測（tany.im、`desk/site_sync.py`、「📈 Site」）：本番で動作。Search Console の数字は2〜3日後から。
 - やることを減らす・時間計測（要件定義 9pc5JCfnvLoB6FiU15RDwR）：B（返信の時間）・A＋F（やらないと決める・種類とジャンル・まとめる案）・C（時間計測）・D（自動化の提案）は main に。E は計測が2週間たまってから質問。「Desk Log」カレンダーは本人が作る。
-- メルマガ「地球キャンパス通信」（`desk/campus.py`、`#campus`、Worker は `desk/data/tany/site/campus.js`）：main に入った。手元の試験で登録→確認→送信→停止まで通った。本番は未公開：Resend の登録・DNS・秘密の登録と Worker の deploy、送り主の住所の入力が要る。
+- メルマガ「地球キャンパス通信」（`desk/campus.py`、`#campus`、Worker は `desk/data/tany/site/campus.js`）：公開済み。tany.im/campus/ で登録を受け、Resend（tany.im、東京）で送れる。テスト送信は受信箱に届いた。第1号はまだ。
 - Telegram 通知（`desk/tg_notify.py`）：main に入った。本人がボットを作り、キーと予定の iCal URL をキーチェーンに入れて Connect するまで動かない。本物での送信は未確認。
 - Post Studio（`#post`、`desk/posts.py`）：写真・PDF・動画から投稿先ごとの案。自動投稿は Instagram（英・露）・Threads 露・Facebook ページ（英語）・X（リンクなし、1件約 $0.015）・LinkedIn（個人、60日で再サインイン）で動作。YouTube 接続済み・R2（動画）有効だがどちらも未投稿。会社のお知らせは tany.im へ直接公開。残り：英語の Threads、Instagram の DM、TikTok（審査）。記録 `memory/episodic/sessions/2026-11-15-post-studio.md`。
 ## 決定済みの事項
