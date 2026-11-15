@@ -1,9 +1,9 @@
 # 2026-11-15 夜のブロック（FocusBlock）
 
 ## ひとこと
-- いま：夜のSNSとBraveを止める
-- 次：入れ直してから設定
-- 待ち：sudo での入れ直し
+- いま：夜SNSとBraveを止めた
+- 次：数日使って回数を見る
+- 待ち：なし
 
 ## やったこと
 - FocusBlock のスケジュールに専用の止めるリスト（`appList`・`siteList`）を足した。空なら今までどおり上のリストを使う。
@@ -12,5 +12,6 @@
 - Desk の「Unlock」は `scope:"focus"` を送り、専用リストのスケジュールは止めない。1日中のスケジュールは集中中と見なさない（`appsGlobal`・`webGlobal`）。
 - 1日中のスケジュールは start と end を同じ時刻にする（`schedule_window` が翌日まで伸ばす）。
 
-## 次の一手
-- `sudo ./focusblock/install.sh` のあと、`/api/state` に `attempts` があるのを確かめてから2つのスケジュールを入れる：Night SNS（0:00〜5:00、SNS）と No Brave / YouTube（1日中、Brave Browser と youtube.com・youtu.be）。古い daemon に送ると専用リストが消えて全部止まるので、先に送らない。
+## 結果
+- 入れ直し済み。Night SNS（0:00〜5:00）と No Brave / YouTube（1日中）を入れた。youtube.com は止まり、google.com は通る。止めた回数も数えている。
+- Desk の「Always on」の欄は、Desk のサーバーが次に再起動したあとに出る。
