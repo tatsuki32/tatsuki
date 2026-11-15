@@ -58,4 +58,4 @@
 - note は公式 API がない。エディタが使う内部 API（`/api/v1/text_notes?user_id=` で空の下書き → `/api/v1/text_notes/draft_save?id=`、画像は `/api/v3/images/upload/presigned_post` → S3、見出し画像は `/api/v1/image_upload/note_eyecatch`）で**下書きだけ**作る。公開・タグ・予約は本人が note で。
 - `desk/note_post.py`。サインインは `_note_session_v5` Cookie を `python3 desk/note_post.py connect` に貼る（キーチェーン `tatsuki-desk-note`、パスワードは持たない）。XSRF は `/api/v2/current_user` の応答から取る。本文は Markdown → note の HTML（ブロックごとに name/id の uuid）。
 - Post Studio の note カードに「Save to note as draft」（もう一度押すと同じ下書きを更新）。`POST /api/posts/<id>/note`、記録は post の `noteDraft`。
-- 本物では未確認（本人の接続待ち）。note が中身を変えると止まる。そのときは Copy で続ける。
+- 2026-11-15 に本物で確認：下書き・見出し画像・本文の写真3枚・見出し4つが入った。note が中身を変えると止まる。そのときは Copy で続ける。
