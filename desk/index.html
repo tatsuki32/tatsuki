@@ -1397,6 +1397,55 @@ a.shelfbtn{text-decoration:none;display:inline-flex;align-items:center}
 .lmmeta{font-size:var(--t1);color:var(--muted)}
 .lmitem p,.lmtext{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.6;color:var(--ink-2)}
 @media (max-width:560px){.lbody{padding-left:var(--s3)}.lmain{display:contents}.lone{grid-column:2/-1;grid-row:2}}
+/* ---------- Workout Board: a free board like a whiteboard. Cards sit where you drop them; on a phone they fall into one column ---------- */
+.wk-bar{display:flex;align-items:center;gap:var(--s2);flex-wrap:wrap}
+.wk-bar .chip{display:inline-flex;align-items:center;gap:6px}
+.wk-add{display:flex;gap:var(--s2);align-items:center;flex-wrap:wrap}
+.wk-add input{flex:1;min-width:200px;min-height:40px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:var(--r-s);padding:0 12px;font:inherit;font-size:var(--t2)}
+.wk-add input:focus{outline:none;border-color:var(--accent)}
+.wk-wrap{position:relative;border:1px solid var(--line);border-radius:var(--r);background:var(--rail);overflow:auto;height:min(76vh,860px);overscroll-behavior:contain}
+.wk-wrap.over{border-color:var(--accent);background:var(--accent-soft)}
+.wk-canvas{position:relative;background-image:radial-gradient(var(--line) 1px,transparent 1px);background-size:24px 24px}
+.wcard{position:absolute;display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r);overflow:hidden;box-shadow:0 8px 22px rgba(0,0,0,.3)}
+.wcard.dragging{box-shadow:0 18px 40px rgba(0,0,0,.55);border-color:var(--accent)}
+.wcard .wh{display:flex;align-items:center;gap:6px;padding:2px 2px 2px 10px;border-bottom:1px solid var(--line);cursor:grab;user-select:none;-webkit-user-select:none;touch-action:none;min-width:0}
+.wcard .wh .e{font-size:13px}
+.wcard .wh .t{flex:1;min-width:0;font-size:var(--t1);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink-2)}
+.wcard .wh .ibtn{min-height:28px;min-width:28px;font-size:13px}
+.wcard .wb{flex:1;min-height:0;position:relative;display:flex;flex-direction:column}
+.wcard iframe,.wcard video,.wcard .wbimg{width:100%;height:100%;border:0;display:block;background:#000;object-fit:contain}
+.wcard .wsz{position:absolute;right:0;bottom:0;width:18px;height:18px;cursor:nwse-resize;touch-action:none;background:linear-gradient(135deg,transparent 55%,var(--line-2) 55%,var(--line-2) 62%,transparent 62%,transparent 75%,var(--line-2) 75%,var(--line-2) 82%,transparent 82%)}
+.wthumb{position:relative;flex:1;border:0;padding:0;cursor:pointer;background:#000 center/cover no-repeat;display:grid;place-items:center;min-height:0}
+.wthumb .play{width:54px;height:38px;border-radius:12px;background:rgba(0,0,0,.7);display:grid;place-items:center;font-size:18px;color:#fff}
+.wthumb:hover .play{background:#e33}
+.wcard .wfoot{display:flex;gap:var(--s2);align-items:center;padding:4px 10px;font-size:var(--t1);color:var(--muted);border-top:1px solid var(--line)}
+.wcard .wfoot a{color:var(--ink-2);text-decoration:none;margin-left:auto}
+.wcard .wfoot a:hover{color:var(--accent)}
+.wnote{flex:1;width:100%;resize:none;border:0;padding:10px 12px;font:inherit;font-size:var(--t2);line-height:1.55;color:#1d1a12;background:transparent;outline:none}
+.wcard.wnc .wh{border-bottom-color:rgba(0,0,0,.12)}
+.wcard.wnc .wh .t,.wcard.wnc .wh .ibtn{color:rgba(0,0,0,.65)}
+.wlink{flex:1;display:grid;align-content:start;gap:4px;padding:12px;text-decoration:none;min-width:0}
+.wlink b{font-size:var(--t2);line-height:1.4;overflow-wrap:anywhere}
+.wlink span{font-size:var(--t1);color:var(--muted);overflow-wrap:anywhere}
+.wlink:hover b{color:var(--accent)}
+.wk-help{font-size:var(--t1);color:var(--muted);margin:0}
+.wk-colors{display:flex;gap:6px}
+.wk-colors button{width:28px;height:28px;border-radius:999px;border:2px solid transparent;cursor:pointer}
+.wk-colors button[aria-pressed="true"]{border-color:var(--ink)}
+.wkgo{display:flex;align-items:center;gap:var(--s2);padding:12px var(--s3);text-decoration:none}
+.wkgo:hover{border-color:var(--line-2)}
+.wkgo .sub{margin-left:auto}
+@media (max-width:760px){
+  .wk-wrap{height:auto;overflow:visible;border:0;background:transparent}
+  .wk-canvas{width:auto!important;height:auto!important;min-width:0!important;min-height:0!important;background:none;display:grid;gap:12px}
+  .wcard{position:relative;left:auto!important;top:auto!important;width:auto!important;height:auto!important;z-index:auto!important}
+  .wcard .wh{cursor:default}
+  .wcard .wsz{display:none}
+  .wcard.k-video .wb,.wcard.k-embed .wb,.wcard.k-image .wb{aspect-ratio:16/9}
+  .wcard.k-pdf .wb{height:70vh}
+  .wcard.wnc .wb{min-height:140px}
+  .wk-add input{min-width:0;flex-basis:100%}
+}
 </style>
 
 <div class="app">
@@ -1441,6 +1490,7 @@ const PRIO={"Action needed":0,"Reply drafted":1,"FYI":2};
 const S={tools:[],editions:[],days:[],memos:[],ed:null,day:null,region:"All",q:"",confirm:null,busy:null,notes:{},local:false,dues:{},dl:[],dlMap:{},dlAll:false,quietUntil:0,tasks:[],board:[],taskCol:"notyet",cal:null,gtasks:null,reports:[],logDay:null,prompts:{},watch:[],watchId:null,focus:null,wnotes:[],noteId:null,habits:[],memory:null,nextSkip:0,wins:[],winsDays:14,wread:null,wmode:"gist",wlog:{},presents:[],heritage:[],hcountries:[],hlog:{},hId:null,hCode:null,hTab:"today"};
 let db=null;
 S.gear=[]; // Belongings: everything owned, grams, packing check
+S.wboards=[];S.wcards=[];S.wkBoard=null; // Workout Board: boards and the cards pinned on them
 S.projects=[];S.sections=[];S.projFilter="all";S.pDone=false; // projects: lists split into boxes; every project task is still an ordinary task
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -1458,7 +1508,7 @@ function toast(t){if(t.startsWith("✨")&&$("#cheerHost .cheer"))return;const el
 /* ---------- store: claude db online, browser storage on the PC ---------- */
 /* Notes are never hard-deleted: deleted:true + updatedAt lets the hourly sync merge the Mac and the cloud safely. */
 const LOCALAPI=/^https?:$/.test(location.protocol)&&/^(localhost|127\.0\.0\.1)$/.test(location.hostname);
-if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="habits")+1,0,{id:"body",e:"🫀",label:"Summary",g:"body"},{id:"bodysleep",e:"😴",label:"Sleep",g:"body"},{id:"bodymeal",e:"🍽️",label:"Meals & Calories",g:"body"},{id:"bodyweight",e:"⚖️",label:"Weight",g:"body"},{id:"bodysteps",e:"👟",label:"Steps",g:"body"},{id:"bodyworkout",e:"💪",label:"Workouts",g:"body"},{id:"bodyhabits",e:"📚",label:"Study & Screen Time",g:"body"}); // photos and health records stay on this Mac
+if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="habits")+1,0,{id:"body",e:"🫀",label:"Summary",g:"body"},{id:"bodysleep",e:"😴",label:"Sleep",g:"body"},{id:"bodymeal",e:"🍽️",label:"Meals & Calories",g:"body"},{id:"bodyweight",e:"⚖️",label:"Weight",g:"body"},{id:"bodysteps",e:"👟",label:"Steps",g:"body"},{id:"bodyworkout",e:"💪",label:"Workouts",g:"body"},{id:"workoutboard",e:"🧘",label:"Workout Board",g:"body"},{id:"bodyhabits",e:"📚",label:"Study & Screen Time",g:"body"}); // photos and health records stay on this Mac
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="followups")+1,0,{id:"mailclean",e:"🧹",label:"Inbox Cleanup",g:"in"});
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="presents")+1,0,{id:"ideas",e:"💡",label:"Ideas",g:"in"});
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="presents")+1,0,{id:"site",e:"📈",label:"Site",g:"in"}); // tany.im analytics (desk/site_sync.py)
@@ -1485,6 +1535,7 @@ async function loadApiMemos(){try{
   S.wlog=Object.fromEntries(wlog.filter(x=>x&&x.id&&!x.deleted).map(x=>[x.id,x]));
   S.hlog=Object.fromEntries(hlog.filter(x=>x&&x.id&&!x.deleted).map(x=>[x.id,x]));
   S.wa=await api("GET","/api/whatsapp").catch(()=>({}));
+  try{const [wb,wc]=await Promise.all([api("GET","/api/wboards"),api("GET","/api/wcards")]);S.wboards=wb.filter(x=>!x.deleted);if(!S.wkDrag)S.wcards=wc.filter(x=>!x.deleted)}catch(e){}
   S.gear=gear.filter(g=>!g.deleted);S.projects=projects.filter(p=>!p.deleted);S.sections=sections.filter(x=>!x.deleted);
   S.fu=await api("GET","/api/followups").catch(()=>S.fu);
   S.line=await api("GET","/api/line").catch(()=>({}));lineAlert();
@@ -2670,6 +2721,9 @@ function bdStepsTab(d,w){
 }
 /* Workouts */
 function bdWorkoutTab(d,w){
+  return `<a class="card wkgo" href="#workoutboard"><span>🧘</span><b>Workout Board</b><span class="sub">Videos, PDFs and notes to follow along →</span></a>`+bdWorkoutRecords(d,w);
+}
+function bdWorkoutRecords(d,w){
   const v=d.workouts||{exercises:[],weeks:[]},list=v.exercises;
   const legacy=bdWorkoutExtra(d);
   if(!list.length)return `<div class="card empty"><b>No records yet</b>Send the bot something like "bench 60x8x3" and it logs 60 kg × 8 reps × 3 sets and replies with the change from last time.</div>${legacy}${bdFullTable(d,"workout",w)}`;
@@ -5204,6 +5258,10 @@ function render(){
   if(viewId()==="webhistory"){webLoad();$("#view").innerHTML=searchResults()+webView();wire();wireWeb();return}
   if(viewId()==="pc"){pcLoad();$("#view").innerHTML=searchResults()+pcView();wire();wirePc();return}
   if(viewId().startsWith("body")){bodyLoad();$("#view").innerHTML=searchResults()+bodyView();wire();wireBody();return}
+  if(viewId()==="workoutboard"){ // keep the board on screen and only touch what changed, so a playing video is not reset
+    if($("#wkCanvas")&&S.wkShown===S.wkBoard&&wkCurrent()&&!S.q){$("#wkBar").innerHTML=wkBar();wkSync();wkWire();return}
+    S.wkShown=S.wkBoard;$("#view").innerHTML=searchResults()+workoutBoard();wire();wkSync();wkWire();return}
+  S.wkShown=null;
   if(viewId()==="mailclean"){mcLoad();$("#view").innerHTML=searchResults()+mcView();wire();wireMc();return}
   if(viewId()==="site"){siteLoad();$("#view").innerHTML=searchResults()+siteView();wire();return}
   if(viewId()==="netspeed"){nsLoad();$("#view").innerHTML=searchResults()+nsView();wire();wireNs();return}
@@ -5224,6 +5282,245 @@ function render(){
   wire();
   if(v==="news"&&S.focus!=null){const el=document.getElementById("story-"+S.focus);S.focus=null;if(el){el.classList.add("flash");setTimeout(()=>el.scrollIntoView({block:"start"}),0)}}
   if(S.flash&&S.flash.kind!=="task") flashSentence();
+}
+/* Workout Board: a free board for exercise material. YouTube / Vimeo / Drive links, your own MP4s, PDFs, images, sticky notes and links.
+   Boards live in "wboards", cards in "wcards" (desk/data/wboards.json, wcards.json). Images and PDFs go to /api/uploads (data/uploads/),
+   videos to data/videos/ (out of the private backup), streamed with byte ranges. Cards are moved in place so a playing video keeps playing. */
+const WBKIND={video:["🎬","Video"],embed:["🗂️","Drive"],pdf:["📄","PDF"],image:["🖼️","Image"],note:["📝","Note"],link:["🔗","Link"]};
+const WSIZE={video:[400,292],embed:[400,292],pdf:[360,470],image:[320,250],note:[240,200],link:[280,124]};
+const WCOLORS=["#f6e7a8","#f7c8b8","#c9e8c4","#c4d8f7","#e2cdf2"];
+const wkId=p=>p+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const wkBoards=()=>S.wboards.filter(b=>!b.deleted).sort((a,b)=>(a.order??0)-(b.order??0)||(a.createdAt||0)-(b.createdAt||0));
+const wkCards=()=>S.wcards.filter(c=>!c.deleted&&c.board===S.wkBoard);
+function wkCurrent(){const bs=wkBoards();if(!bs.some(b=>b.id===S.wkBoard)){let saved=null;try{saved=localStorage.getItem("desk-wk-board")}catch(e){}S.wkBoard=(bs.find(b=>b.id===saved)||bs[0]||{}).id||null}return bs.find(b=>b.id===S.wkBoard)||null}
+function ytId(u){const m=/(?:youtube(?:-nocookie)?\.com\/(?:watch\?(?:[^#]*&)?v=|embed\/|shorts\/|live\/|watch\/|v\/)|youtu\.be\/)([\w-]{11})/.exec(u||"");return m?m[1]:null}
+const vimeoId=u=>(/vimeo\.com\/(?:video\/)?(\d{5,})/.exec(u||"")||[])[1]||null;
+const driveId=u=>(/drive\.google\.com\/(?:file\/d\/|open\?id=)([\w-]{20,})/.exec(u||"")||[])[1]||null;
+function kindOfUrl(u){
+  if(ytId(u)||vimeoId(u)) return "video";
+  if(driveId(u)) return "embed";
+  const path=(()=>{try{return new URL(u).pathname.toLowerCase()}catch(e){return ""}})();
+  if(/\.(mp4|webm|mov|m4v)$/.test(path)) return "video";
+  if(/\.pdf$/.test(path)) return "pdf";
+  if(/\.(png|jpe?g|gif|webp)$/.test(path)) return "image";
+  return "link";
+}
+const hostOf=u=>{try{return new URL(u).hostname.replace(/^www\./,"")}catch(e){return ""}};
+const wkFileSrc=f=>f&&/^\/(uploads|videos)\/[0-9a-f]{32}\.\w+$/.test(f.url||"")?f.url:null;
+const fmtSize=n=>n>=1048576?(n/1048576).toFixed(1)+" MB":Math.max(1,Math.round(n/1024))+" KB";
+
+/* saving: the screen changes first, then the server; a failed save says so and the next load shows the truth */
+async function wkPut(col,rec){
+  rec={...rec,updatedAt:Date.now()};
+  S[col]=[...S[col].filter(x=>x.id!==rec.id),rec].filter(x=>!x.deleted);
+  if(viewId()==="workoutboard") render();
+  if(!LOCALAPI){toast("Open the Desk app to save the board");return}
+  try{await api("PUT","/api/"+col+"/"+encodeURIComponent(rec.id),rec)}catch(e){toast("Couldn't save. Try again in a moment.")}
+}
+function wkFreeSpot(w,h,board){
+  const cs=S.wcards.filter(c=>!c.deleted&&c.board===(board||S.wkBoard)), hit=(x,y)=>cs.some(c=>x<c.x+c.w+16&&x+w+16>c.x&&y<c.y+c.h+16&&y+h+16>c.y);
+  const wrap=$("#wkWrap"), maxX=Math.max(600,(wrap?.clientWidth||900)-w-24);
+  for(let y=24;y<8000;y+=24) for(let x=24;x<=maxX;x+=24) if(!hit(x,y)) return [x,y];
+  return [24,24];
+}
+async function wkAdd(p,at){
+  if(!S.wkBoard){toast("Make a board first");return null}
+  const [w,h]=WSIZE[p.kind]||[300,220], [x,y]=at||wkFreeSpot(w,h);
+  const z=Math.max(0,...wkCards().map(c=>c.z||0))+1;
+  const rec={id:wkId("wc"),board:S.wkBoard,kind:p.kind,title:p.title||"",url:p.url||"",file:p.file||null,text:p.text||"",color:p.color||"",x:Math.round(x),y:Math.round(y),w,h,z,createdAt:Date.now(),deleted:false};
+  await wkPut("wcards",rec);
+  return rec;
+}
+async function wkAddUrl(raw,at){
+  const u=(raw||"").trim();
+  if(!/^https:\/\/\S+$/i.test(u)){toast("Paste a link that starts with https://");return}
+  const kind=kindOfUrl(u), id=ytId(u), url=id?"https://www.youtube.com/watch?v="+id:u;
+  const rec=await wkAdd({kind,url,title:id?"":hostOf(u)},at);
+  if(!rec) return;
+  toast(`${WBKIND[kind][0]} Pinned`);
+  if(id){ // the title from YouTube; nothing else is sent
+    try{const r=await fetch("https://www.youtube.com/oembed?format=json&url="+encodeURIComponent(url));if(r.ok){const j=await r.json();const cur=S.wcards.find(c=>c.id===rec.id);if(cur&&!cur.title&&j.title)await wkPut("wcards",{...cur,title:String(j.title).slice(0,200)})}}catch(e){}
+  }
+}
+async function wkUpload(file,at){
+  if(!S.wkBoard){toast("Make a board first");return}
+  if(!LOCALAPI){toast("Open the Desk app to add files");return}
+  const t=file.type||"", ext=(file.name.split(".").pop()||"").toLowerCase();
+  const kind=/^video\//.test(t)||/^(mp4|mov|m4v|webm)$/.test(ext)?"video":t==="application/pdf"||ext==="pdf"?"pdf":/^image\//.test(t)?"image":null;
+  if(!kind){toast("Videos (MP4, MOV, WebM), PDFs and images can be pinned");return}
+  if(kind!=="video"&&file.size>20*1048576){toast("PDFs and images can be up to 20 MB");return}
+  toast("Uploading "+file.name+"…");
+  let out;
+  try{const r=await fetch("/api/uploads",{method:"POST",headers:{"X-Desk-Upload":"1","Content-Type":"application/octet-stream"},body:file});
+    out=await r.json().catch(()=>({}));if(!r.ok)throw new Error(out.error||r.status)}
+  catch(e){toast("Couldn't upload: "+(e.message||"try again"));return}
+  await wkAdd({kind,file:{url:out.url,name:file.name.slice(0,200),size:file.size,type:t},title:file.name.replace(/\.[^.]+$/,"").slice(0,200)},at);
+  toast(`${WBKIND[kind][0]} ${file.name} pinned`);
+}
+
+/* drawing */
+function workoutBoard(){
+  const b=wkCurrent();
+  return `
+  <header class="head"><div><p class="eyebrow"><a href="#bodyworkout">Body · Workouts</a></p><h1>Workout Board</h1></div></header>
+  <div class="wk-bar" id="wkBar">${wkBar()}</div>
+  ${b?`<div class="wk-add"><input id="wkUrl" type="url" inputmode="url" placeholder="Paste a link (YouTube, PDF, article, Drive…)" aria-label="Paste a link to pin it" autocomplete="off">
+    <button class="btn" id="wkUrlAdd">＋ Pin</button><button class="btn" id="wkNote">📝 Note</button><button class="btn" id="wkFile">📁 File</button>
+    <input type="file" id="wkFileIn" accept="video/*,application/pdf,image/*" multiple hidden></div>
+  <div class="wk-wrap" id="wkWrap"><div class="wk-canvas" id="wkCanvas"></div></div>
+  <p class="wk-help">Drag a card by its top bar and resize it from the bottom-right corner. You can also drop files or links onto the board, or paste a link anywhere on this page. Videos can be any size; PDFs and images up to 20 MB.</p>`
+  :`<div class="card empty"><b>No boards yet</b>Make one with “＋ Board”, for example “Neck & shoulder stretches”.</div>`}`;
+}
+function wkBar(){
+  return wkBoards().map(b=>`<button class="chip" data-wkb="${esc(b.id)}" aria-pressed="${b.id===S.wkBoard}">${esc(b.name)} <span class="sub">${S.wcards.filter(c=>!c.deleted&&c.board===b.id).length}</span></button>`).join("")
+    +`<button class="chip" id="wkNewBoard">＋ Board</button>${S.wkBoard?`<button class="ibtn" id="wkBoardMenu" title="Rename or delete this board" aria-label="Rename or delete this board">⋯</button>`:""}`;
+}
+function wkBody(c){
+  const src=wkFileSrc(c.file);
+  if(c.kind==="video"){
+    if(src) return `<video src="${esc(src)}" controls playsinline preload="metadata"></video>`;
+    const y=ytId(c.url), v=vimeoId(c.url);
+    if(y) return `<button class="wthumb" data-wplay="${esc(c.id)}" style="background-image:url('https://i.ytimg.com/vi/${y}/hqdefault.jpg')" aria-label="Play"><span class="play">▶</span></button>`;
+    if(v) return `<button class="wthumb" data-wplay="${esc(c.id)}" aria-label="Play"><span class="play">▶</span></button>`;
+    if(okUrl(c.url)) return `<video src="${esc(c.url)}" controls playsinline preload="metadata"></video>`;
+  }
+  if(c.kind==="embed"&&driveId(c.url)) return `<button class="wthumb" data-wplay="${esc(c.id)}" aria-label="Open"><span class="play">▶</span></button>`;
+  if(c.kind==="pdf"){const u=src||(okUrl(c.url)?c.url:"");if(u)return `<iframe src="${esc(u)}" title="${esc(c.title||"PDF")}" loading="lazy"></iframe>`}
+  if(c.kind==="image"){const u=src||(okUrl(c.url)?c.url:"");if(u)return `<img class="wbimg" src="${esc(u)}" alt="${esc(c.title||"")}" loading="lazy">`}
+  if(c.kind==="note") return `<textarea class="wnote" data-wtext="${esc(c.id)}" placeholder="Write a note" aria-label="Note">${esc(c.text||"")}</textarea>`;
+  return `<a class="wlink" href="${esc(okUrl(c.url)?c.url:"#")}" target="_blank" rel="noopener"><b>${esc(c.title||c.url)}</b><span>${esc(hostOf(c.url))} ↗</span></a>`;
+}
+function wkFoot(c){
+  const src=wkFileSrc(c.file);
+  if(src) return `<div class="wfoot"><span>${esc(fmtSize(c.file.size||0))}</span><a href="${esc(src)}" target="_blank" rel="noopener">Open large ↗</a></div>`;
+  if(["video","embed","pdf","image"].includes(c.kind)&&okUrl(c.url)) return `<div class="wfoot"><span>${esc(hostOf(c.url))}</span><a href="${esc(c.url)}" target="_blank" rel="noopener">Original ↗</a></div>`;
+  return "";
+}
+function wkCardEl(c){
+  const el=document.createElement("article");
+  el.className=`wcard k-${c.kind}${c.kind==="note"?" wnc":""}`;el.dataset.wcard=c.id;
+  if(c.kind==="note") el.style.background=c.color||WCOLORS[0];
+  const [ic,label]=WBKIND[c.kind]||WBKIND.link;
+  el.innerHTML=`<div class="wh" data-wdrag="${esc(c.id)}"><span class="e" aria-hidden="true">${ic}</span><span class="t">${esc(c.title||label)}</span><button class="ibtn" data-wmenu="${esc(c.id)}" title="Edit, move or delete" aria-label="Edit, move or delete">⋯</button></div><div class="wb">${wkBody(c)}</div>${wkFoot(c)}<span class="wsz" data-wsize="${esc(c.id)}" aria-hidden="true"></span>`;
+  return el;
+}
+const wkSig=c=>JSON.stringify([c.kind,c.url,c.file&&c.file.url,c.title,c.color]);
+function wkSync(){
+  const canvas=$("#wkCanvas"); if(!canvas) return;
+  const cards=wkCards(), keep=new Set(cards.map(c=>c.id));
+  canvas.querySelectorAll("[data-wcard]").forEach(el=>{if(!keep.has(el.dataset.wcard))el.remove()});
+  const order=[...cards].sort((a,b)=>a.y-b.y||a.x-b.x).map(c=>c.id);
+  cards.forEach(c=>{
+    let el=canvas.querySelector(`[data-wcard="${CSS.escape(c.id)}"]`);
+    if(!el||el.dataset.sig!==wkSig(c)){const n=wkCardEl(c);n.dataset.sig=wkSig(c);el?el.replaceWith(n):canvas.appendChild(n);el=n}
+    if(S.wkDrag?.id!==c.id) Object.assign(el.style,{left:c.x+"px",top:c.y+"px",width:c.w+"px",height:c.h+"px",zIndex:c.z||1});
+    el.style.order=order.indexOf(c.id);
+    const ta=el.querySelector("textarea");if(ta&&document.activeElement!==ta&&ta.value!==(c.text||""))ta.value=c.text||"";
+  });
+  Object.assign(canvas.style,{width:Math.max(0,...cards.map(c=>c.x+c.w))+600+"px",height:Math.max(0,...cards.map(c=>c.y+c.h))+400+"px",minWidth:"100%",minHeight:"100%"});
+}
+function wkPlay(id){
+  const c=S.wcards.find(x=>x.id===id), wb=document.querySelector(`[data-wcard="${CSS.escape(id)}"] .wb`); if(!c||!wb) return;
+  const y=ytId(c.url), v=vimeoId(c.url), d=driveId(c.url);
+  const src=y?`https://www.youtube-nocookie.com/embed/${y}?autoplay=1&rel=0&playsinline=1`:v?`https://player.vimeo.com/video/${v}?autoplay=1`:d?`https://drive.google.com/file/d/${d}/preview`:null;
+  if(src) wb.innerHTML=`<iframe src="${esc(src)}" title="${esc(c.title||"Video")}" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>`;
+}
+/* moving and resizing with the pointer; saved once when you let go */
+function wkPointer(e){
+  const h=e.target.closest("[data-wdrag],[data-wsize]"); if(!h||e.button>0||e.target.closest("button")) return;
+  if(matchMedia("(max-width:760px)").matches) return;
+  const id=h.dataset.wdrag||h.dataset.wsize, c=S.wcards.find(x=>x.id===id), el=h.closest(".wcard"); if(!c||!el) return;
+  e.preventDefault();
+  const resize=!!h.dataset.wsize, sx=e.clientX, sy=e.clientY, z=Math.max(0,...wkCards().map(x=>x.z||0))+1;
+  S.wkDrag={id,x:c.x,y:c.y,w:c.w,h:c.h,moved:false};
+  el.classList.add("dragging");el.style.zIndex=z;
+  document.querySelectorAll("#wkCanvas iframe").forEach(f=>f.style.pointerEvents="none");
+  const move=ev=>{const dx=ev.clientX-sx, dy=ev.clientY-sy, d=S.wkDrag;if(!d)return;d.moved=d.moved||Math.abs(dx)+Math.abs(dy)>3;
+    if(resize){d.w=Math.max(180,c.w+dx);d.h=Math.max(110,c.h+dy);el.style.width=d.w+"px";el.style.height=d.h+"px"}
+    else{d.x=Math.max(0,c.x+dx);d.y=Math.max(0,c.y+dy);el.style.left=d.x+"px";el.style.top=d.y+"px"}};
+  const up=()=>{removeEventListener("pointermove",move);removeEventListener("pointerup",up);removeEventListener("pointercancel",up);
+    const d=S.wkDrag;S.wkDrag=null;el.classList.remove("dragging");
+    document.querySelectorAll("#wkCanvas iframe").forEach(f=>f.style.pointerEvents="");
+    if(d&&d.moved) wkPut("wcards",{...c,x:Math.round(d.x),y:Math.round(d.y),w:Math.round(d.w),h:Math.round(d.h),z});
+    else if(d&&(c.z||0)<z-1) wkPut("wcards",{...c,z})};
+  addEventListener("pointermove",move);addEventListener("pointerup",up);addEventListener("pointercancel",up);
+}
+const wkDropPoint=e=>{const cv=$("#wkCanvas").getBoundingClientRect();return [Math.max(0,e.clientX-cv.left-40),Math.max(0,e.clientY-cv.top-16)]};
+const wkTimers={};
+const wkSaveText=(id,v)=>{clearTimeout(wkTimers[id]);const c=S.wcards.find(x=>x.id===id);if(c&&c.text!==v)wkPut("wcards",{...c,text:v.slice(0,20000)})};
+function wkWire(){
+  document.querySelectorAll("[data-wkb]").forEach(b=>b.onclick=()=>{S.wkBoard=b.dataset.wkb;try{localStorage.setItem("desk-wk-board",S.wkBoard)}catch(e){}render()});
+  $("#wkNewBoard")&&($("#wkNewBoard").onclick=()=>wkBoardPop(null));
+  $("#wkBoardMenu")&&($("#wkBoardMenu").onclick=()=>wkBoardPop(wkCurrent()));
+  const wrap=$("#wkWrap"); if(!wrap) return;
+  const url=$("#wkUrl"), add=()=>{const v=url.value.trim();if(!v){url.focus();return}url.value="";wkAddUrl(v)};
+  $("#wkUrlAdd").onclick=add;url.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();add()}};
+  $("#wkNote").onclick=async()=>{const r=await wkAdd({kind:"note",color:WCOLORS[0]});if(r)setTimeout(()=>document.querySelector(`[data-wtext="${CSS.escape(r.id)}"]`)?.focus(),50)};
+  $("#wkFile").onclick=()=>$("#wkFileIn").click();
+  $("#wkFileIn").onchange=async e=>{for(const f of [...e.target.files]) await wkUpload(f);e.target.value=""};
+  wrap.ondragover=e=>{if([...e.dataTransfer.types].some(t=>t==="Files"||t==="text/uri-list")){e.preventDefault();wrap.classList.add("over")}};
+  wrap.ondragleave=e=>{if(!wrap.contains(e.relatedTarget))wrap.classList.remove("over")};
+  wrap.ondrop=async e=>{e.preventDefault();wrap.classList.remove("over");const at=wkDropPoint(e), fs=[...e.dataTransfer.files];
+    if(fs.length){for(const [i,f] of fs.entries()) await wkUpload(f,[at[0]+i*24,at[1]+i*24]);return}
+    const u=(e.dataTransfer.getData("text/uri-list")||e.dataTransfer.getData("text/plain")||"").split("\n")[0].trim();if(u)wkAddUrl(u,at)};
+  const cv=$("#wkCanvas");
+  cv.onpointerdown=wkPointer;
+  cv.onclick=e=>{const p=e.target.closest("[data-wplay]");if(p)return wkPlay(p.dataset.wplay);const m=e.target.closest("[data-wmenu]");if(m)wkCardPop(m.dataset.wmenu)};
+  cv.oninput=e=>{const ta=e.target.closest("[data-wtext]");if(!ta)return;const id=ta.dataset.wtext;clearTimeout(wkTimers[id]);wkTimers[id]=setTimeout(()=>wkSaveText(id,ta.value),700)};
+  cv.onfocusout=e=>{const ta=e.target.closest?.("[data-wtext]");if(ta)wkSaveText(ta.dataset.wtext,ta.value)};
+}
+/* pasting a link or a file anywhere on the Workout Board pins it */
+document.addEventListener("paste",e=>{if(viewId()!=="workoutboard"||!$("#wkWrap"))return;const t=e.target.tagName;if(t==="INPUT"||t==="TEXTAREA")return;
+  const fs=[...(e.clipboardData?.files||[])];if(fs.length){e.preventDefault();fs.forEach(f=>wkUpload(f));return}
+  const s=(e.clipboardData?.getData("text")||"").trim();if(/^https:\/\/\S+$/i.test(s)){e.preventDefault();wkAddUrl(s)}});
+function wkBoardPop(b){
+  if($("#modal").firstChild) return;
+  const n=b?S.wcards.filter(c=>!c.deleted&&c.board===b.id).length:0;
+  $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop" role="dialog" aria-modal="true" aria-label="${b?"Edit board":"New board"}">
+    <div class="top"><h2>🧘 ${b?"Board":"New board"}</h2><button class="ibtn" id="xWb" aria-label="Close">✕</button></div>
+    <label class="sub" for="wbName">Name</label><input type="text" id="wbName" value="${esc(b?.name||"")}" placeholder="e.g. Strength" autocomplete="off">
+    <div class="row"><button class="btn primary" id="wbSave">Save</button><button class="btn" id="wbCancel">Cancel</button>${b?`<button class="btn" id="wbDel" style="margin-left:auto;color:var(--red)">Delete board</button>`:""}</div>
+  </div></div>`;
+  const inp=$("#wbName");inp.focus();inp.select();
+  const close=()=>{$("#modal").innerHTML=""};
+  const save=async()=>{const name=inp.value.trim().slice(0,60);if(!name){inp.focus();return}
+    close();
+    if(b) return wkPut("wboards",{...b,name});
+    const id=wkId("wb");S.wkBoard=id;try{localStorage.setItem("desk-wk-board",id)}catch(e){}
+    await wkPut("wboards",{id,name,order:Math.max(0,...wkBoards().map(x=>x.order||0))+1,createdAt:Date.now(),deleted:false})};
+  $("#wbSave").onclick=save;$("#wbCancel").onclick=close;$("#xWb").onclick=close;
+  $("#wbDel")&&($("#wbDel").onclick=async ev=>{const btn=ev.currentTarget;if(!btn.dataset.sure){btn.dataset.sure="1";btn.textContent=n?`Delete it and its ${n} card${n>1?"s":""}?`:"Delete it?";return}
+    close();for(const c of S.wcards.filter(c=>!c.deleted&&c.board===b.id)) await wkPut("wcards",{...c,deleted:true});
+    S.wkBoard=null;await wkPut("wboards",{...b,deleted:true});toast("Board deleted")});
+  $("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};
+  $("#scrim").onkeydown=e=>{if(e.key==="Enter"&&e.target===inp){e.preventDefault();save()}if(e.key==="Escape")close()};
+}
+function wkCardPop(id){
+  const c=S.wcards.find(x=>x.id===id); if(!c||$("#modal").firstChild) return;
+  const [ic,label]=WBKIND[c.kind]||WBKIND.link;
+  $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop" role="dialog" aria-modal="true" aria-label="Edit card">
+    <div class="top"><h2>${ic} ${label}</h2><button class="ibtn" id="xWc" aria-label="Close">✕</button></div>
+    <label class="sub" for="wcTitle">Title</label><input type="text" id="wcTitle" value="${esc(c.title||"")}" placeholder="${esc(label)}" autocomplete="off">
+    ${c.kind!=="note"&&!c.file?`<label class="sub" for="wcUrl">Link</label><input type="text" id="wcUrl" value="${esc(c.url||"")}" autocomplete="off">`:""}
+    ${c.kind==="note"?`<span class="sub">Color</span><div class="wk-colors" role="group" aria-label="Color">${WCOLORS.map((k,i)=>`<button style="background:${k}" data-wcol="${k}" aria-pressed="${(c.color||WCOLORS[0])===k}" aria-label="Color ${i+1}"></button>`).join("")}</div>`:""}
+    <label class="sub" for="wcBoard">Board</label><select id="wcBoard">${wkBoards().map(b=>`<option value="${esc(b.id)}" ${b.id===c.board?"selected":""}>${esc(b.name)}</option>`).join("")}</select>
+    <div class="row"><button class="btn primary" id="wcSave">Save</button><button class="btn" id="wcCancel">Cancel</button><button class="btn" id="wcDel" style="margin-left:auto;color:var(--red)">Delete</button></div>
+  </div></div>`;
+  let color=c.color||WCOLORS[0];
+  document.querySelectorAll("[data-wcol]").forEach(b=>b.onclick=()=>{color=b.dataset.wcol;document.querySelectorAll("[data-wcol]").forEach(x=>x.setAttribute("aria-pressed",x===b))});
+  const ti=$("#wcTitle");ti.focus();
+  const close=()=>{$("#modal").innerHTML=""};
+  const save=async()=>{const u=$("#wcUrl"), url=u?u.value.trim():c.url;
+    if(u&&url&&!/^https:\/\//i.test(url)){u.focus();toast("Use a link that starts with https://");return}
+    const board=$("#wcBoard").value, moved=board!==c.board;
+    const next={...c,title:ti.value.trim().slice(0,200),url,color:c.kind==="note"?color:c.color,board};
+    if(u&&url!==c.url){next.kind=kindOfUrl(url);const y=ytId(url);if(y)next.url="https://www.youtube.com/watch?v="+y}
+    if(moved){[next.x,next.y]=wkFreeSpot(next.w,next.h,board)}
+    close();await wkPut("wcards",next);if(moved)toast("Moved to “"+(wkBoards().find(b=>b.id===board)?.name||"")+"”")};
+  $("#wcSave").onclick=save;$("#wcCancel").onclick=close;$("#xWc").onclick=close;
+  $("#wcDel").onclick=async ev=>{const b=ev.currentTarget;if(!b.dataset.sure){b.dataset.sure="1";b.textContent="Delete it?";return}close();await wkPut("wcards",{...c,deleted:true});toast("Deleted")};
+  $("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};
+  $("#scrim").onkeydown=e=>{if(e.key==="Enter"&&e.target.tagName==="INPUT"){e.preventDefault();save()}if(e.key==="Escape")close()};
 }
 /* Money: Wise activity on this Mac (desk/wise_sync.py). Reads files only; opening the view never calls Wise.
    Totals are in USD; each tab answers one question. Numbers come from desk/wise_analysis.py and nothing here blames. */
@@ -7039,7 +7336,7 @@ const FDESC={ // what each screen is for, in plain words (English and Japanese k
   habits:"habits, morning and night routines, reward cards 習慣 ルーティン",
   body:"body summary: sleep, meals, weight, steps, workouts 身体 体",
   bodysleep:"sleep hours and sleep coach 睡眠",bodymeal:"meals and calories left 食事 カロリー",bodyweight:"weight trend 体重",
-  bodysteps:"steps ring 歩数",bodyworkout:"workout sets and estimated 1RM 筋トレ",bodyhabits:"study time and screen time 学習",
+  bodysteps:"steps ring 歩数",bodyworkout:"workout sets and estimated 1RM 筋トレ",workoutboard:"a free board of exercise videos, YouTube links, MP4s, PDFs and sticky notes ストレッチ 動画 運動",bodyhabits:"study time and screen time 学習",
   wins:"things done today and before できたこと",
   followups:"people you are waiting to hear back from, nudges 返信待ち 催促",
   mailclean:"Gmail cleanup: unsubscribe from mailing lists and newsletters, mark spam, keep senders メール整理 配信停止 サブスク解除",

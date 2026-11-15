@@ -60,7 +60,7 @@ import wise_sync
 ROOT = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(ROOT, "data")
 PORT = int(os.environ.get("DESK_PORT", "4747"))
-COLLECTIONS = ("memos", "dues", "tasks", "prompts", "notes", "habits", "lifemap", "wins", "worldlog", "presents", "heritagelog", "routines", "routinelog", "rewards", "ideaslog", "gear", "projects", "sections", "jobapps", "replywin", "genres", "tasktypes", "mergeprops", "timelog", "genrelog", "typeprops")
+COLLECTIONS = ("memos", "dues", "tasks", "prompts", "notes", "habits", "lifemap", "wins", "worldlog", "presents", "heritagelog", "routines", "routinelog", "rewards", "ideaslog", "gear", "projects", "sections", "jobapps", "replywin", "genres", "tasktypes", "mergeprops", "timelog", "genrelog", "typeprops", "wboards", "wcards")
 # file in data/, global the page reads, value when the file is missing
 DATA_JS = [
     ("tools.js", "TOOLS", "[]"),
@@ -611,6 +611,20 @@ UPLOAD_MAX = 20 * 1024 * 1024
 UPLOAD_NAME = re.compile(r"^[0-9a-f]{32}\.(png|jpg|gif|webp|heic|pdf)$")
 UPLOAD_TYPES = {"png": "image/png", "jpg": "image/jpeg", "gif": "image/gif", "webp": "image/webp",
                 "heic": "image/heic", "pdf": "application/pdf"}
+# Videos for the Workout Board: kept in data/videos/ (out of the private backup, they are large), streamed with byte ranges.
+VIDEOS = os.path.join(DATA, "videos")
+VIDEO_MAX = 2 * 1024 ** 3
+VIDEO_NAME = re.compile(r"^[0-9a-f]{32}\.(mp4|mov|webm)$")
+VIDEO_TYPES = {"mp4": "video/mp4", "mov": "video/quicktime", "webm": "video/webm"}
+
+
+def video_kind(head):
+    """mp4 / mov / webm from the first bytes, or None. HEIC also uses the ftyp box, so its brands are left to upload_kind."""
+    if head[4:8] == b"ftyp" and head[8:12] not in (b"heic", b"heix", b"hevc", b"mif1", b"msf1"):
+        return "mov" if head[8:12] == b"qt  " else "mp4"
+    if head.startswith(b"\x1a\x45\xdf\xa3"):
+        return "webm"
+    return None
 
 
 def upload_kind(data):
@@ -932,6 +946,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, {"url": routine_sync.APP + ("#key=" + urllib.parse.quote(k, safe="") if k else ""), "sync": bool(k)})
         if path.startswith("/uploads/"):
             return self.upload_get(path.rsplit("/", 1)[1])
+        if path.startswith("/videos/"):
+            return self.video_get(path.rsplit("/", 1)[1])
         if path.startswith("/heritage-photos/"):
             return self.heritage_photo(path.rsplit("/", 1)[1])
         col, doc_id = self.route()
@@ -1043,16 +1059,96 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    def video_post(self, head, n):
+        """A video, written to disk as it arrives (never whole in memory) and named by its content."""
+        if n > VIDEO_MAX:
+            self.close_connection = True
+            return self.send(413, {"error": "The limit is 2GB"})
+        os.makedirs(VIDEOS, exist_ok=True)
+        tmp = os.path.join(VIDEOS, ".up-" + secrets.token_hex(6) + ".tmp")
+        h, left = hashlib.sha256(head), n - len(head)
+        try:
+            with open(tmp, "wb") as f:
+                f.write(head)
+                while left > 0:
+                    chunk = self.rfile.read(min(1 << 20, left))
+                    if not chunk:
+                        break
+                    h.update(chunk)
+                    f.write(chunk)
+                    left -= len(chunk)
+            if left:
+                os.remove(tmp)
+                return self.send(400, {"error": "The upload stopped part way"})
+            name = h.hexdigest()[:32] + "." + video_kind(head)
+            path = os.path.join(VIDEOS, name)
+            if os.path.exists(path):
+                os.remove(tmp)
+            else:
+                os.replace(tmp, path)
+            return self.send(200, {"url": "/videos/" + name, "size": n})
+        except OSError:
+            try:
+                os.remove(tmp)
+            except OSError:
+                pass
+            return self.send(500, {"error": "Could not save"})
+
+    def video_get(self, name):
+        """Byte ranges: Safari and the Desk window will not play an MP4 without them, and seeking uses them everywhere."""
+        m = VIDEO_NAME.match(name)
+        path = os.path.join(VIDEOS, name) if m else ""
+        if not m or not os.path.isfile(path):
+            return self.send(404, {"error": "no such file"})
+        size = os.path.getsize(path)
+        start, end = 0, size - 1
+        r = re.match(r"^bytes=(\d*)-(\d*)$", self.headers.get("Range") or "")
+        if r and (r[1] or r[2]):
+            if r[1]:
+                start, end = int(r[1]), min(int(r[2]), size - 1) if r[2] else size - 1
+            else:
+                start = max(0, size - int(r[2]))
+            if start > end or start >= size:
+                self.send_response(416)
+                self.send_header("Content-Range", "bytes */%d" % size)
+                self.end_headers()
+                return
+            self.send_response(206)
+            self.send_header("Content-Range", "bytes %d-%d/%d" % (start, end, size))
+        else:
+            self.send_response(200)
+        self.send_header("Content-Type", VIDEO_TYPES[m.group(1)])
+        self.send_header("Accept-Ranges", "bytes")
+        self.send_header("Content-Length", str(end - start + 1))
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("Cache-Control", "max-age=31536000, immutable")
+        self.end_headers()
+        try:
+            with open(path, "rb") as f:
+                f.seek(start)
+                left = end - start + 1
+                while left > 0:
+                    chunk = f.read(min(1 << 20, left))
+                    if not chunk:
+                        break
+                    self.wfile.write(chunk)
+                    left -= len(chunk)
+        except (BrokenPipeError, ConnectionResetError):
+            pass
+
     def upload_post(self):
         # the custom header needs a CORS preflight this server never answers, so another site's page cannot post here
         if self.headers.get("X-Desk-Upload") != "1":
             return self.send(415, {"error": "upload header required"})
         n = int(self.headers.get("Content-Length") or 0)
+        head = self.rfile.read(min(n, 64))
+        if video_kind(head) and not upload_kind(head):
+            return self.video_post(head, n)
         if n > UPLOAD_MAX:
             self.close_connection = True
             return self.send(413, {"error": "The limit is 20MB"})
         try:
-            return self.send(200, {"url": save_upload(self.rfile.read(n))})
+            return self.send(200, {"url": save_upload(head + self.rfile.read(n - len(head)))})
         except ValueError as e:
             return self.send(415, {"error": str(e)})
         except OSError:
