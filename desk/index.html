@@ -2257,6 +2257,17 @@ async function readSkipFields(t){
 /* Tasks: filter by genre and type (kept on this device) */
 const tFilt=()=>{try{return JSON.parse(localStorage.getItem("desk-tfilter")||"{}")||{}}catch(e){return {}}};
 const tFiltSet=v=>{try{localStorage.setItem("desk-tfilter",JSON.stringify(v))}catch(e){}};
+/* a task made on the Tasks screen takes the project, genre and type you are looking at, so the filters don't hide it */
+function tFiltPreset(){const f=tFilt(),o={};
+  if(projActive().some(p=>p.id===S.projFilter))o.projectId=S.projFilter;
+  if(f.genre&&f.genre!=="none")o.genre=f.genre;
+  if(f.type&&f.type!=="none"&&allTypes().some(x=>x[1]===f.type))o.cat=f.type;
+  return o}
+/* still hidden (you changed a field, or the filter is a whole group of types): clear the filters so the new task shows */
+function tFiltReveal(id){const r=findTask(id);if(!r)return;let off=false;
+  if(S.projFilter&&S.projFilter!=="all"&&r.projectId!==S.projFilter){S.projFilter="all";off=true}
+  if(!tFiltApply([r]).length){tFiltSet({});off=true}
+  if(off){render();toast("Filters cleared so the new task shows")}}
 function tFiltApply(list){const f=tFilt();return list.filter(t=>(!f.genre||(f.genre==="none"?!genreOf(t):genreOf(t)?.id===f.genre))&&(!f.type||(f.type==="none"?!typeOf(t):typeOf(t)===f.type||typeGroup(typeOf(t))===f.type)))}
 /* counts are the open tasks (Not started + In progress) the board would show under the other filter and the project chip; most first, every type still listed */
 function tFiltBar(base){const f=tFilt(), open=(base||S.board).filter(t=>TOPEN.has(t.status));
@@ -3199,7 +3210,7 @@ function wireMail(t,close){
 function openTask(id,preset){
   if($("#modal").firstChild) return;
   if(id&&hideReply(findTask(id))){toast(`💬 Replies open at ${rwTime(rwNext())}`);return}
-  const t=id?findTask(id):null, pre=preset||{}, isMail=t?.source==="mail", isLinked=LINKED.has(t?.source);
+  const t=id?findTask(id):null, onTasks=!id&&/^#tasks\b/.test(location.hash), pre={...(onTasks?tFiltPreset():{}),...(preset||{})}, isMail=t?.source==="mail", isLinked=LINKED.has(t?.source);
   $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop" role="dialog" aria-modal="true" aria-label="${t?"Edit task":"New task"}">
     <div class="top"><h2>🗂️ ${t?"Task":"New task"}</h2><button class="ibtn" id="xTask" aria-label="Close">✕</button></div>
     <label class="sub" for="tTitle">Title</label><input type="text" id="tTitle" value="${esc(taskName(t))}" placeholder="e.g., Send the documents to FWO" autocomplete="off">
@@ -3209,7 +3220,7 @@ function openTask(id,preset){
       :`<div class="tduein"><div><label class="sub" for="tDue">Due date (optional)</label><input type="date" id="tDue" value="${dueParts(t?.due)[0]}"></div><div><label class="sub" for="tDueT">Time (optional)</label><input type="time" id="tDueT" value="${dueParts(t?.due)[1]}"></div></div><p class="hint" id="tDueHint"></p>`}
     <div class="tduein"><div><label class="sub" for="tPlan">When</label><select id="tPlan">${planSel(t||{},tPeriods())}</select></div><div><label class="sub" for="tEst">Time needed (min)</label><input type="number" id="tEst" min="1" step="5" inputmode="numeric" value="${t?.estMin??""}" placeholder="${t?.estAi?"Estimate "+t.estAi:""}"></div></div>
     <label class="sub" for="tStatus">Status</label><select id="tStatus">${TSTATUS.map(([k,l])=>`<option value="${k}" ${k===(t?.status||pre.status||"notyet")?"selected":""}>${l}</option>`).join("")}</select>
-    ${skipFields(t)}
+    ${skipFields(t||pre)}
     ${isLinked?"":projFields(t||pre)}
     <label class="sub" for="tNote">Notes</label><textarea id="tNote" class="tnote" placeholder="Details if needed. [word] links to a note">${esc(t?.note||"")}</textarea>${t&&linksIn(t.note).length?`<p class="hint">🔗 ${linksIn(t.note).map(x=>wlink(x)).join(" ")}</p>`:""}
     ${t?`<p class="hint" id="tCalOn">${esc(calOnText(t))}</p><div id="tCal" class="tcal" hidden></div>`:""}
@@ -3229,7 +3240,7 @@ function openTask(id,preset){
     const st=$("#tStatus").value, plan=$("#tPlan").value, est=parseInt($("#tEst").value,10);
     const planDate=plan===plan0?base.planDate||null:tPeriods().find(p=>p[0]===plan)?.[2]||null; // untouched: keeps the date it had
     const named=t?nameEdit(base,title):{title};
-    try{const lab=await readSkipFields(t);await store.putTask({...base,...readProjFields(t||pre),...named,...lab,due:isNaN(due)?null:due,status:st,note:$("#tNote").value.trim(),planDate,estMin:est>0?est:null});await taskWin({...base,...named,...lab},st);close();toast(st==="done"&&base.status!=="done"?"✨ Done. Added to Wins":t?"🗂️ Saved":"🗂️ Task added")}
+    try{const lab=await readSkipFields(t);await store.putTask({...base,...readProjFields(t||pre),...named,...lab,due:isNaN(due)?null:due,status:st,note:$("#tNote").value.trim(),planDate,estMin:est>0?est:null});await taskWin({...base,...named,...lab},st);close();toast(st==="done"&&base.status!=="done"?"✨ Done. Added to Wins":t?"🗂️ Saved":"🗂️ Task added");if(onTasks)tFiltReveal(base.id)}
     catch(e){toast("Couldn't save. Your input is still here")}};
   $("#tSave").onclick=save;$("#tCancel").onclick=close;$("#xTask").onclick=close;
   $("#tCopy")&&($("#tCopy").onclick=async()=>{toast(await copyText(taskFormText($("#scrim .pop")))?"📋 Copied as text":"Couldn't copy")});
