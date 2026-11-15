@@ -13,3 +13,7 @@
 
 ## 残り
 - `tatsuki-routine.pages.dev`（Functions と KV を使うので Worker への書き換えが要る）、`tatsuki-slots.pages.dev` も移せる。
+
+## 追記：言語を URL に出す
+- 言語を切り替えると `?lang=ja` などがアドレスに付くようにした（`setLang` で `history.replaceState`）。連絡先カード（vCard）の URL も新しいドメインに。
+- この環境のプロキシが Cloudflare の API への接続を切ることがある（`fetch failed`）。そのときは `env -u HTTPS_PROXY -u HTTP_PROXY bash sites/deploy.sh <名前>` で通る。
