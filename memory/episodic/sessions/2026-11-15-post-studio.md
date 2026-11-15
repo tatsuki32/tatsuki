@@ -35,3 +35,9 @@
 - R2 は未申し込み（code 10042）なので画像は KV `tatsuki-go-media`。動画は R2 の申し込みが要る。
 - 試しの1件を tatsu_languages の Threads に投稿できた（本人の OK のあと）。
 - 次：動画（リール・YouTube・TikTok）、Facebook ページ、LinkedIn、DM を Replies へ。
+
+## 追記（同日・午後）：PDF・動画・YouTube・会社サイト・Facebook ページ
+- 足したもの：PDF（ページを画像に、文字を案の材料に）、動画（各 SNS の形に切る・Save video、自動投稿は R2 待ち）、YouTube（Mac から直接、未接続）、会社サイトのお知らせを Desk から公開（`desk/site_news.py`）、Facebook ページ（統合ログインでページのトークンも保存）。
+- Facebook ページは「Tatsuki Mitsuhashi Official」（英語向け）を使う。Meta アプリの「ページの管理」ユースケースに `pages_manage_posts`・`pages_read_engagement` を足し、設定「Post Studio publishing」のアセットに「ページ」と3つの許可を入れてから、サインインし直した。最初の投稿は Post Studio から成功。
+- つまずき：内蔵ブラウザはファイルを選べない（プロフィール写真は本人が入れた）。ページ作成は「最近作ったページが多すぎる」で断られることがある。Meta の設定画面は狭い窓だとボタンが画面外になるので、窓の幅を広げてから押す。
+- 残り：R2 の申し込み（本人）、YouTube Data API の有効化と Connect YouTube、ページのカテゴリ（アーティストのまま）。
