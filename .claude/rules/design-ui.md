@@ -14,3 +14,6 @@ Drive の本を探す・全文を読む・PDF から文字を取り出す、の�
 
 ## 公開前チェックリスト
 - [ ] 375px で横スクロールが出ない
+
+## 参照先
+- 画面の構造と操作の参照は1社だけ：Linear（`memory/semantic/patterns/design-reference-linear.md`）。
