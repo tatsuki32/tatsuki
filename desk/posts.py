@@ -124,7 +124,7 @@ def save_settings(rec):
             t["account"] = change["account"]
         if isinstance(change.get("slots"), list):
             t["slots"] = [x for x in (clean_slot(v) for v in change["slots"][:14]) if x]
-        for key, kind, top in (("style", str, 600), ("name", str, 60), ("fixedTags", str, 200)):
+        for key, kind, top in (("style", str, 600), ("name", str, 60), ("fixedTags", str, 200), ("footer", str, 300)):
             if isinstance(change.get(key), kind):
                 t[key] = change[key].strip()[:top]
         for key, lo, hi in (("tags", 0, 30), ("limit", 20, 20000)):
@@ -155,6 +155,9 @@ def x_length(text):
 def full_text(t, d):
     """What is posted: the text, then the hashtags (the article and the news keep their own layout)."""
     text = (d.get("text") or "").strip()
+    footer = (t.get("footer") or "").strip()  # a line the person always adds, like a link to their own profile
+    if footer and t.get("kind") != "story" and footer not in text:
+        text += "\n\n" + footer
     tags = [x for x in (d.get("hashtags") or []) if x]
     fixed = [x for x in re.split(r"[\s,]+", t.get("fixedTags") or "") if x.startswith("#")]
     tags = tags + [x for x in fixed if x not in tags]

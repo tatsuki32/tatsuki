@@ -5717,6 +5717,7 @@ function psSettings(){
     <input class="wd-field psedit pshint" data-psslots="${esc(t.id)}" value="${esc(psSlotsText(t.slots))}" placeholder="Routine, like: daily 21:00 Asia/Tokyo; mon,fri 18:00 Asia/Tokyo" aria-label="${esc(t.name)} routine"></div>`:""}
     <select class="wd-field pslinksel" data-pslinkmode="${esc(t.id)}" aria-label="${esc(t.name)} link">${Object.entries(PSLINK).map(([k,l])=>`<option value="${k}" ${t.link===k?"selected":""}>${l}</option>`).join("")}</select>
     <textarea class="wd-field psedit" data-psstyle="${esc(t.id)}" aria-label="${esc(t.name)} style">${esc(t.style||"")}</textarea>
+    <input class="wd-field psedit" data-psfooter="${esc(t.id)}" value="${esc(t.footer||"")}" placeholder="A line always added at the end, like a link to your profile" aria-label="${esc(t.name)} line always added">
     <input class="wd-field psedit" data-psfixed="${esc(t.id)}" value="${esc(t.fixedTags||"")}" placeholder="Tags always added, like #ZEN大学" aria-label="${esc(t.name)} tags always added"></div>`).join("");
   const voice=PSLANG.map(([l,name])=>`<label class="psset1"><span class="sub">${name} voice</span><textarea class="wd-field psedit" data-psvoice="${l}">${esc(d.voice?.[l]||"")}</textarea></label>`).join("");
   const yt=(d.accounts||[]).find(a=>a.provider==="youtube");
@@ -5818,6 +5819,7 @@ function wirePs(){
   const saveSet=body=>psSend("PUT","/api/posts/settings",body).then(v=>{p.data=v;toast("Saved")}).catch(e=>toast(e.message));
   all("[data-pson]").forEach(c=>c.onchange=()=>saveSet({targets:[{id:c.dataset.pson,on:c.checked}]}).then(()=>{p.pick=null;psLoad()}));
   all("[data-psstyle]").forEach(el=>el.onblur=()=>{if(el.value!==(tOf(el.dataset.psstyle)?.style||""))saveSet({targets:[{id:el.dataset.psstyle,style:el.value}]})});
+  all("[data-psfooter]").forEach(el=>el.onblur=()=>{if(el.value!==(tOf(el.dataset.psfooter)?.footer||""))saveSet({targets:[{id:el.dataset.psfooter,footer:el.value}]})});
   all("[data-psfixed]").forEach(el=>el.onblur=()=>{if(el.value!==(tOf(el.dataset.psfixed)?.fixedTags||""))saveSet({targets:[{id:el.dataset.psfixed,fixedTags:el.value}]})});
   all("[data-psvoice]").forEach(el=>el.onblur=()=>{if(el.value!==(p.data.voice?.[el.dataset.psvoice]||""))saveSet({voice:{[el.dataset.psvoice]:el.value}})});
 }
