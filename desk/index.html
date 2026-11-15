@@ -351,6 +351,8 @@ details.draft .sent-as summary{cursor:pointer;display:block;padding:var(--s2) 0;
 .col{border-radius:var(--r);display:grid;gap:var(--s3);align-content:start;min-height:140px;padding:var(--s1);margin:calc(-1 * var(--s1));transition:background .15s}
 .col.over{background:var(--accent-soft)}
 .col>h2{display:flex;align-items:baseline;gap:var(--s2);padding:0 var(--s1) var(--s1)}
+.coladd{margin-left:auto;align-self:center;width:28px;height:28px;border-radius:var(--r);border:1px solid var(--line);background:transparent;color:var(--muted);font-size:var(--t3);line-height:1;cursor:pointer}
+.coladd:hover,.coladd:focus-visible{color:var(--ink);border-color:var(--line-2);background:var(--surface)}
 .col .hint{margin:0 var(--s1);font-size:var(--t1);color:var(--muted)}
 .task{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px;display:grid;gap:var(--s2);cursor:grab}
 .task:hover{border-color:var(--line-2)}
@@ -2320,13 +2322,15 @@ async function saveGenre(id){
   const rec={...g,name:name||g.name,emoji:emoji||g.emoji||"🏷️",color:TL_COLORS.includes(color)?color:genreColor(g),by:"me",updatedAt:Date.now(),...(into?{mergedInto:into}:{})};delete rec.id;
   try{await api("PUT","/api/genres/"+encodeURIComponent(id),rec);S.genres=(S.genres||[]).map(x=>x.id===id?{id,...rec}:x);toast(into?"Merged":"Saved");render()}catch(e){toast("Couldn't save. Please try again")}
 }
+/* a + on each column head: a new task that starts in that column (and in the project shown) */
+const colAdd=(k,pid)=>`<button class="coladd" data-tadd="${k}" data-tadd-proj="${esc(pid||"")}" aria-label="New task in ${tLabel(k)}" title="New task in ${tLabel(k)}">+</button>`;
 /* the three columns for one project (the Due groups stay on the main board) */
-function boardHtml(list,hint){
+function boardHtml(list,hint,pid){
   const ps=tPeriods(), col=k=>list.filter(t=>t.status===k).sort(taskCmp(S.taskSort,k==="done"));
   hint=hint||{notyet:"New tasks and mail that needs action",doing:"Drag here to start",done:"Finished things go here"};
   return `<div class="chips colTabs" role="group" aria-label="Column to show">${TCOLS.map(k=>`<button class="chip" data-tcol="${k}" aria-pressed="${S.taskCol===k}">${tLabel(k)} ${col(k).length}</button>`).join("")}</div>
   <div class="board">${TCOLS.map(k=>{const items=col(k);return `<section class="col ${S.taskCol===k?"show":""}" data-col="${k}" aria-label="${tLabel(k)}">
-    <h2>${tLabel(k)}<span class="count">${items.length}</span></h2>${items.map(t=>taskCard(t,ps)).join("")||`<p class="hint">${hint[k]}</p>`}</section>`}).join("")}</div>`;
+    <h2>${tLabel(k)}<span class="count">${items.length}</span>${colAdd(k,pid)}</h2>${items.map(t=>taskCard(t,ps)).join("")||`<p class="hint">${hint[k]}</p>`}</section>`}).join("")}</div>`;
 }
 function tasks(){
   const f=projActive().some(p=>p.id===S.projFilter)?S.projFilter:"all", list=tFiltApply(f==="all"?S.board:S.board.filter(t=>t.projectId===f));
@@ -2342,7 +2346,7 @@ function tasks(){
   ${S.taskShelf?`<section class="shelf" aria-label="${tLabel(S.taskShelf)}">${shelf(S.taskShelf).map(t=>taskCard(t,ps)).join("")||`<p class="sub">No ${tLabel(S.taskShelf).toLowerCase()} tasks</p>`}</section>`:""}
   <div class="chips colTabs" role="group" aria-label="Column to show">${TCOLS.map(k=>`<button class="chip" data-tcol="${k}" aria-pressed="${S.taskCol===k}">${tLabel(k)} ${col(k).length}</button>`).join("")}</div>
   <div class="board">${TCOLS.map(k=>{const items=col(k);return `<section class="col ${S.taskCol===k?"show":""}" data-col="${k}" aria-label="${tLabel(k)}">
-    <h2>${tLabel(k)}<span class="count">${items.length}</span></h2>${taskGroups(k,items,ps)||`<p class="hint">${hint[k]}</p>`}</section>`}).join("")}</div>
+    <h2>${tLabel(k)}<span class="count">${items.length}</span>${colAdd(k,f==="all"?"":f)}</h2>${taskGroups(k,items,ps)||`<p class="hint">${hint[k]}</p>`}</section>`}).join("")}</div>
   ${S.local&&!LOCALAPI?'<p class="sub">Opened as a file, so tasks are saved only in this browser. Run “Start Desk” to save them on the Mac.</p>':""}`;
 }
 /* Home: one to-do list = everything in progress, then everything Not yet (mail included), each by nearest due date. */
@@ -3203,7 +3207,7 @@ function openTask(id,preset){
       :isLinked?`<p class="hint">${TSRC[t.source][0]} ${TSRC[t.source][1]}${t.due!=null?" · Due "+esc(fmtDue(t.due)):""} · Change the due date and title at the source${okUrl(t.url)?` · <a href="${esc(t.url)}" target="_blank" rel="noopener">Open ↗</a>`:""}${t.source==="gtasks"?"<br>Marking it Done also completes it in Google Tasks at the next sync.":""}</p>`
       :`<div class="tduein"><div><label class="sub" for="tDue">Due date (optional)</label><input type="date" id="tDue" value="${dueParts(t?.due)[0]}"></div><div><label class="sub" for="tDueT">Time (optional)</label><input type="time" id="tDueT" value="${dueParts(t?.due)[1]}"></div></div><p class="hint" id="tDueHint"></p>`}
     <div class="tduein"><div><label class="sub" for="tPlan">When</label><select id="tPlan">${planSel(t||{},tPeriods())}</select></div><div><label class="sub" for="tEst">Time needed (min)</label><input type="number" id="tEst" min="1" step="5" inputmode="numeric" value="${t?.estMin??""}" placeholder="${t?.estAi?"Estimate "+t.estAi:""}"></div></div>
-    <label class="sub" for="tStatus">Status</label><select id="tStatus">${TSTATUS.map(([k,l])=>`<option value="${k}" ${k===(t?.status||"notyet")?"selected":""}>${l}</option>`).join("")}</select>
+    <label class="sub" for="tStatus">Status</label><select id="tStatus">${TSTATUS.map(([k,l])=>`<option value="${k}" ${k===(t?.status||pre.status||"notyet")?"selected":""}>${l}</option>`).join("")}</select>
     ${skipFields(t)}
     ${isLinked?"":projFields(t||pre)}
     <label class="sub" for="tNote">Notes</label><textarea id="tNote" class="tnote" placeholder="Details if needed. [word] links to a note">${esc(t?.note||"")}</textarea>${t&&linksIn(t.note).length?`<p class="hint">🔗 ${linksIn(t.note).map(x=>wlink(x)).join(" ")}</p>`:""}
@@ -3307,7 +3311,7 @@ function projectView(){
   const secs=secList(p.id), all=projTasks(p.id), open=all.filter(t=>TOPEN.has(t.status)).length, done=all.filter(t=>t.status==="done").length, v=S.pview;
   const tiles=secs.map(s=>{const xs=all.filter(t=>t.sectionId===s.id),o=xs.filter(t=>TOPEN.has(t.status)).length;
     return `<button class="ptile" data-jump="sec-${esc(s.id)}"><i style="background:${okColor(s.color)}"></i><b>${esc(s.name)}</b><span>${o?`${o} left`:xs.length?"All done":"Empty"}${s.when?" · "+esc(s.when):""}</span></button>`}).join("");
-  const body=v==="list"?projListView(p,all):v==="board"?boardHtml(all,{notyet:"Not done yet",doing:"Drag here to start",done:"Finished things go here"}):v==="calendar"?projCalView(p,all):v==="gantt"?projGanttView(p,all):projSecView(p,all,secs);
+  const body=v==="list"?projListView(p,all):v==="board"?boardHtml(all,{notyet:"Not done yet",doing:"Drag here to start",done:"Finished things go here"},p.id):v==="calendar"?projCalView(p,all):v==="gantt"?projGanttView(p,all):projSecView(p,all,secs);
   return `<header class="head"><div><p class="eyebrow">Projects${p.archived?" · Archived":""}</p><h1>${esc(p.emoji||"📁")} ${esc(p.name)}</h1><p class="sub" style="margin:var(--s1) 0 0">Remaining ${open} · Done ${done} · Boxes ${secs.length}</p></div>
     <div class="row"><button class="btn primary" data-padd="${esc(p.id)}">+ Task</button><button class="btn" data-secnew="${esc(p.id)}">+ Box</button><button class="btn" data-pcsv="${esc(p.id)}">Export CSV</button><button class="ibtn" data-pedit="${esc(p.id)}" aria-label="Edit project" title="Edit project">✏️</button></div></header>
   ${tiles&&v==="sections"?`<div class="ptiles">${tiles}</div>`:""}
@@ -3497,6 +3501,7 @@ document.addEventListener("click",e=>{
   if(b=h("[data-secup]"))return moveSection(b.dataset.secup,-1);
   if(b=h("[data-secdown]"))return moveSection(b.dataset.secdown,1);
   if(b=h("[data-pcsv]"))return exportProjCsv(b.dataset.pcsv);
+  if(b=h("[data-tadd]"))return openTask(null,{status:b.dataset.tadd,...(b.dataset.taddProj?{projectId:b.dataset.taddProj}:{})});
   if(b=h("[data-padd]"))return openTask(null,{projectId:b.dataset.padd,sectionId:b.dataset.paddSec||""});
   if(b=h("[data-pdone]")){const t=findTask(b.dataset.pdone);if(t)setTaskStatus(t.id,t.status==="done"?"notyet":"done");return}
   if(b=h("[data-pview]")){S.pview=b.dataset.pview;const p=projById(S.projectId);render();if(p&&p.lastView!==S.pview)store.putProject({...p,lastView:S.pview}).catch(()=>{});return}
