@@ -811,12 +811,12 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(data)
             return
+        if len(step) == 3 and step[1] == "src" and step[2].removesuffix(".jpg").isdigit():  # the whole photo, for the crop box
+            return self.image_file(posts.source(post["id"], int(step[2].removesuffix(".jpg"))))
         if len(step) == 4 and step[1] == "img" and step[3].removesuffix(".jpg").isdigit():
             return self.image_file(posts.image(post["id"], step[2], int(step[3].removesuffix(".jpg"))))
         return self.send(404, {"error": "not found"})
 
-        if len(step) == 3 and step[1] == "src" and step[2].removesuffix(".jpg").isdigit():  # the whole photo, for the crop box
-            return self.image_file(posts.source(post["id"], int(step[2].removesuffix(".jpg"))))
     def image_file(self, p):
         if not p:
             return self.send(404, {"error": "not found"})

@@ -5945,7 +5945,6 @@ async function utShorten(){
   if(u.shortBusy)return;
   u.shortBusy=true;u.short="";u.shortErr="";utRefresh();
   try{u.short=(await utPost("/api/utilities/shorten",{url:u.url})).short}catch(e){u.shortErr=e.message}
-  if(ps().cur?.id!==id)ps().crop=null;
   u.shortBusy=false;utRefresh();
 }
 function wireUt(){
@@ -6014,6 +6013,7 @@ async function psLoad(){
   p.loading=false;psRedraw();
 }
 async function psOpen(id){
+  if(ps().cur?.id!==id)ps().crop=null;
   const p=ps();clearTimeout(p.timer);
   try{p.cur=await psSend("GET","/api/posts/"+encodeURIComponent(id))}catch(e){p.err=e.message}
   p.tab="new";psRedraw();
@@ -6145,6 +6145,74 @@ async function cpUpload(files,el){
       el.value=el.value.slice(0,at)+ins+el.value.slice(el.selectionEnd??at);c.doc.body=el.value;el.selectionStart=el.selectionEnd=at+ins.length;cpGrow(el);cpChanged()}
     catch(e){toast("Could not add the photo"+(e.message?": "+e.message:""))}
   }
+}
+function wireCp(){
+  const c=cp(),d=c.doc;
+  document.querySelectorAll("[data-cpopen]").forEach(b=>b.onclick=()=>cpOpen(b.dataset.cpopen));
+  $("#cpNew")&&($("#cpNew").onclick=cpNew);$("#cpNew2")&&($("#cpNew2").onclick=cpNew);
+  $("#cpLists")&&($("#cpLists").onclick=()=>{c.lists=true;cpDraw()});
+  $("#cpSet")&&($("#cpSet").onclick=()=>{c.settings=!c.settings;c.lists=false;cpDraw()});
+  document.querySelectorAll("[data-cpmode]").forEach(b=>b.onclick=async()=>{await cpFlush();c.mode=b.dataset.cpmode;cpDraw()});
+  document.querySelectorAll("[data-cppv]").forEach(b=>b.onclick=()=>{c.pv=b.dataset.cppv;cpDraw()});
+  $("#cpFocus")&&($("#cpFocus").onclick=()=>{document.body.classList.toggle("cpfocus");cpDraw();$("#cpBody")?.focus()});
+  if(d&&d.status!=="sent"){
+    const bind=(id,k)=>{const el=$(id);if(el)el.oninput=()=>{d[k]=el.value;if(k==="body")cpGrow(el);if(k==="teaser")$("#cpTn").textContent=[...el.value].length;cpChanged()}};
+    bind("#cpSeries","series");bind("#cpTitle","title");bind("#cpBody","body");bind("#cpTeaser","teaser");
+    const b=$("#cpBody");
+    if(b){b.onpaste=e=>{if(e.clipboardData?.files?.length){e.preventDefault();cpUpload(e.clipboardData.files,b)}};
+      b.ondragover=e=>{e.preventDefault();b.classList.add("on")};b.ondragleave=()=>b.classList.remove("on");
+      b.ondrop=e=>{e.preventDefault();b.classList.remove("on");cpUpload(e.dataTransfer.files,b)}}
+    $("#cpTitle")&&($("#cpTitle").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();$("#cpBody").focus()}});
+  }else if(d){
+    const t=$("#cpTeaser");if(t)t.oninput=()=>{d.teaser=t.value;$("#cpTn").textContent=[...t.value].length};
+    $("#cpTeaserSave")&&($("#cpTeaserSave").onclick=async()=>{c.busy="teaser";try{await cpPut("/api/campus/issues/"+d.id,{teaser:d.teaser});toast("Teaser updated on tany.im")}catch(e){toast(e.message)}c.busy="";cpDraw()});
+  }
+  $("#cpTidy")&&($("#cpTidy").onclick=async()=>{await cpFlush();c.busy="tidy";c.tidy=null;cpDraw();
+    try{c.tidy=await cpPost(`/api/campus/issues/${d.id}/tidy`)}catch(e){c.msg=e.message}c.busy="";cpDraw()});
+  $("#cpTidyUse")&&($("#cpTidyUse").onclick=()=>{d.body=c.tidy.body;d.teaser=c.tidy.teaser;c.tidy=null;c.dirty=true;cpFlush().then(cpDraw)});
+  $("#cpTidyTeaser")&&($("#cpTidyTeaser").onclick=()=>{d.teaser=c.tidy.teaser;c.tidy=null;c.dirty=true;cpFlush().then(cpDraw)});
+  $("#cpTidyNo")&&($("#cpTidyNo").onclick=()=>{c.tidy=null;cpDraw()});
+  $("#cpTest")&&($("#cpTest").onclick=async()=>{await cpFlush();c.busy="test";cpDraw();
+    try{const v=await cpPost(`/api/campus/issues/${d.id}/test`);c.msg=`Test sent to ${v.to}. Photos show only in the real send.`}catch(e){c.msg=e.message}c.busy="";cpDraw()});
+  $("#cpSend")&&($("#cpSend").onclick=async()=>{await cpFlush();c.busy="count";
+    try{const st=await api("GET","/api/campus/stats");if(st.error)throw new Error(st.error);c.data.stats=st;c.confirm={active:st.active}}catch(e){c.msg=e.message||"Could not count the readers"}c.busy="";cpDraw()});
+  $("#cpSendNo")&&($("#cpSendNo").onclick=()=>{c.confirm=null;cpDraw()});
+  $("#cpSendGo")&&($("#cpSendGo").onclick=async()=>{c.busy="send";cpDraw();
+    try{const v=await cpPost(`/api/campus/issues/${d.id}/send`,{expect:c.confirm.active});c.doc=v.issue;c.confirm=null;
+      c.msg=`Sent #${v.issue.no} to ${v.result.sent} readers.${v.result.pending?` ${v.result.pending} more go out tomorrow (daily limit).`:""}`;await cpLoad(d.id)}
+    catch(e){c.confirm=null;c.msg=e.message}c.busy="";cpDraw()});
+  $("#cpDel")&&($("#cpDel").onclick=async()=>{if(!confirm("Delete this draft?"))return;try{await cpPost(`/api/campus/issues/${d.id}/remove`);c.doc=null;c.cur=null;await cpLoad()}catch(e){toast(e.message)}});
+  $("#cpsClose")&&($("#cpsClose").onclick=()=>{c.settings=false;cpDraw()});
+  $("#cpsSave")&&($("#cpsSave").onclick=async()=>{try{c.data.settings=await cpPut("/api/campus/settings",{fromName:$("#cpsName").value,address:$("#cpsAddr").value,contact:$("#cpsContact").value,testTo:$("#cpsTest").value});c.settings=false;c.msg="Settings saved";await cpLoad()}catch(e){c.msg=e.message;cpDraw()}});
+  $("#cpsLanding")&&($("#cpsLanding").onclick=async()=>{if(!confirm("Publish tany.im/campus/ now? The site is deployed."))return;c.busy="landing";cpDraw();try{const v=await cpPost("/api/campus/publish-landing");c.msg="Signup page is up: "+v.url}catch(e){c.msg=e.message}c.busy="";cpDraw()});
+}
+document.addEventListener("keydown",e=>{
+  if(viewId()!=="campus"||!(e.metaKey||e.ctrlKey))return;
+  if(e.key==="."){e.preventDefault();document.body.classList.toggle("cpfocus");cpDraw();$("#cpBody")?.focus()}
+  else if(e.shiftKey&&(e.key==="p"||e.key==="P")){e.preventDefault();cpFlush().then(()=>{const c=cp();c.mode=c.mode==="preview"?"write":"preview";cpDraw()})}
+  else if(e.key==="s"){e.preventDefault();cpFlush()}
+});
+window.addEventListener("beforeunload",()=>{if(cp().dirty)cpFlush()});
+const psFull=(t,d)=>{if(!d)return "";if(t.kind==="story")return d.overlay||"";let s=(d.text||"").trim();const tags=[...(d.hashtags||[])];(t.fixedTags||"").split(/[\s,]+/).filter(x=>x.startsWith("#")&&!tags.includes(x)).forEach(x=>tags.push(x));if(tags.length)s+="\n\n"+tags.join(" ");return s};
+const psLen=(t,s)=>{if(t.count!=="x")return [...s].length;let n=0;s=s.replace(/https?:\/\/\S+/g,()=>{n+=23;return ""});for(const ch of s){const c=ch.codePointAt(0);n+=(c<=4351||(c>=8192&&c<=8205)||(c>=8208&&c<=8223)||(c>=8242&&c<=8247))?1:2}return n};
+const psOpenUrl=(t,d)=>t.open?t.open.replace("{text}",encodeURIComponent(t.kind==="story"?"":psFull(t,d))).replace("{title}",encodeURIComponent(d?.title||"")):"";
+function psNew(){
+  const p=ps(),d=p.data,on=(d?.targets||[]).filter(t=>t.on);
+  const thumbs=p.photos.map((x,i)=>`<span class="psthumb"><img src="/api/posts/photo/${esc(x.id)}.jpg" alt="Photo ${i+1}"><button class="btn" data-psdrop="${i}" aria-label="Remove photo ${i+1}">Remove</button></span>`).join("")
+    +(p.video?`<span class="psthumb psvid"><img src="/api/posts/photo/${esc(p.video.frames?.[0]||"")}.jpg" alt="Video"><span class="psbadge">Video · ${psDur(p.video.sec)}</span><button class="btn" data-psdropvid aria-label="Remove the video">Remove</button></span>`:"");
+  const docs=(p.docs||[]).map((d,i)=>`<span class="psdoc"><span>PDF · ${esc(d.name)} · ${d.total} page${d.total===1?"":"s"}${d.total>d.pages.length?` (first ${d.pages.length} as pictures)`:""}${d.chars?"":" · no text inside"}</span><button class="btn" data-psdropdoc="${i}" aria-label="Remove ${esc(d.name)}">Remove</button></span>`).join("");
+  const groups=PSLANG.map(([l,name])=>{const xs=on.filter(t=>t.lang===l);if(!xs.length)return "";
+    return `<fieldset class="psgroup"><legend class="sub">${name}</legend>${xs.map(t=>`<label class="pschip"><input type="checkbox" data-pspick="${esc(t.id)}" ${p.pick?.includes(t.id)?"checked":""}><span>${esc(t.name)}</span></label>`).join("")}</fieldset>`}).join("");
+  return `<section class="card mfocus psnew">
+    <div class="utdrop" id="psDrop"><div class="psthumbs">${thumbs}</div>${docs}<label class="btn">${p.photos.length||p.video||p.docs?.length?"Add more":"Choose photos, a PDF or a video"}<input type="file" id="psFile" hidden multiple accept="image/*,.heic,.heif,application/pdf,.pdf,video/mp4,video/quicktime,.mov,.mp4,.m4v"></label><span class="due">${p.upBusy?esc(p.upBusy):"Up to 10 pictures (a PDF's pages count), one video. You can also drag them here."}</span></div>
+    <textarea class="wd-field psedit" id="psMemo" placeholder="What did you do? A few words or bullet points are enough." aria-label="What you did">${esc(p.memo)}</textarea>
+    <input class="wd-field psedit" id="psLink" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="Link to share (optional), like an article you wrote" aria-label="Link to share" value="${esc(p.link)}">
+    <div class="psgroups">${groups}</div>
+    ${d&&!d.key?`<p class="due" role="alert">No Anthropic API key on this Mac yet. The drafts need it (the same key the body photos use).</p>`:""}
+    ${p.err?`<p class="due" role="alert">${esc(p.err)}</p>`:""}
+    <button class="btn primary" id="psMake" ${p.busy||p.upBusy?"disabled":""}>${p.busy?"Starting":"Make drafts"}</button>
+    <p class="due">Your memo, the pictures, a PDF's text and a few frames of the video go to Claude to write the drafts. Nothing is posted until you press Post now or Schedule.</p></section>`;
+}
 // Pictures on a card: the shapes this place takes, Crop, whether this picture is used here, and a hint when the shapes differ
 const psShapeWord=r=>r>1.4?"wide":r>1.05?"a little wide":r>.95?"square":r>.7?"a little tall":"tall";
 function psPics(post,t,n){
@@ -6231,75 +6299,6 @@ function wirePsStrip(){
         (v.kind==="pdf"?v.pages:v.kind==="photo"?[v]:[]).forEach(x=>{if(l.length<10&&!l.includes(x.id))l.push(x.id)})}catch(e){toast(e.message)}}
     p.stripBusy=false;save(l)};
 }
-}
-function wireCp(){
-  const c=cp(),d=c.doc;
-  document.querySelectorAll("[data-cpopen]").forEach(b=>b.onclick=()=>cpOpen(b.dataset.cpopen));
-  $("#cpNew")&&($("#cpNew").onclick=cpNew);$("#cpNew2")&&($("#cpNew2").onclick=cpNew);
-  $("#cpLists")&&($("#cpLists").onclick=()=>{c.lists=true;cpDraw()});
-  $("#cpSet")&&($("#cpSet").onclick=()=>{c.settings=!c.settings;c.lists=false;cpDraw()});
-  document.querySelectorAll("[data-cpmode]").forEach(b=>b.onclick=async()=>{await cpFlush();c.mode=b.dataset.cpmode;cpDraw()});
-  document.querySelectorAll("[data-cppv]").forEach(b=>b.onclick=()=>{c.pv=b.dataset.cppv;cpDraw()});
-  $("#cpFocus")&&($("#cpFocus").onclick=()=>{document.body.classList.toggle("cpfocus");cpDraw();$("#cpBody")?.focus()});
-  if(d&&d.status!=="sent"){
-    const bind=(id,k)=>{const el=$(id);if(el)el.oninput=()=>{d[k]=el.value;if(k==="body")cpGrow(el);if(k==="teaser")$("#cpTn").textContent=[...el.value].length;cpChanged()}};
-    bind("#cpSeries","series");bind("#cpTitle","title");bind("#cpBody","body");bind("#cpTeaser","teaser");
-    const b=$("#cpBody");
-    if(b){b.onpaste=e=>{if(e.clipboardData?.files?.length){e.preventDefault();cpUpload(e.clipboardData.files,b)}};
-      b.ondragover=e=>{e.preventDefault();b.classList.add("on")};b.ondragleave=()=>b.classList.remove("on");
-      b.ondrop=e=>{e.preventDefault();b.classList.remove("on");cpUpload(e.dataTransfer.files,b)}}
-    $("#cpTitle")&&($("#cpTitle").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();$("#cpBody").focus()}});
-  }else if(d){
-    const t=$("#cpTeaser");if(t)t.oninput=()=>{d.teaser=t.value;$("#cpTn").textContent=[...t.value].length};
-    $("#cpTeaserSave")&&($("#cpTeaserSave").onclick=async()=>{c.busy="teaser";try{await cpPut("/api/campus/issues/"+d.id,{teaser:d.teaser});toast("Teaser updated on tany.im")}catch(e){toast(e.message)}c.busy="";cpDraw()});
-  }
-  $("#cpTidy")&&($("#cpTidy").onclick=async()=>{await cpFlush();c.busy="tidy";c.tidy=null;cpDraw();
-    try{c.tidy=await cpPost(`/api/campus/issues/${d.id}/tidy`)}catch(e){c.msg=e.message}c.busy="";cpDraw()});
-  $("#cpTidyUse")&&($("#cpTidyUse").onclick=()=>{d.body=c.tidy.body;d.teaser=c.tidy.teaser;c.tidy=null;c.dirty=true;cpFlush().then(cpDraw)});
-  $("#cpTidyTeaser")&&($("#cpTidyTeaser").onclick=()=>{d.teaser=c.tidy.teaser;c.tidy=null;c.dirty=true;cpFlush().then(cpDraw)});
-  $("#cpTidyNo")&&($("#cpTidyNo").onclick=()=>{c.tidy=null;cpDraw()});
-  $("#cpTest")&&($("#cpTest").onclick=async()=>{await cpFlush();c.busy="test";cpDraw();
-    try{const v=await cpPost(`/api/campus/issues/${d.id}/test`);c.msg=`Test sent to ${v.to}. Photos show only in the real send.`}catch(e){c.msg=e.message}c.busy="";cpDraw()});
-  $("#cpSend")&&($("#cpSend").onclick=async()=>{await cpFlush();c.busy="count";
-    try{const st=await api("GET","/api/campus/stats");if(st.error)throw new Error(st.error);c.data.stats=st;c.confirm={active:st.active}}catch(e){c.msg=e.message||"Could not count the readers"}c.busy="";cpDraw()});
-  $("#cpSendNo")&&($("#cpSendNo").onclick=()=>{c.confirm=null;cpDraw()});
-  $("#cpSendGo")&&($("#cpSendGo").onclick=async()=>{c.busy="send";cpDraw();
-    ${psStrip(post)}
-    try{const v=await cpPost(`/api/campus/issues/${d.id}/send`,{expect:c.confirm.active});c.doc=v.issue;c.confirm=null;
-      c.msg=`Sent #${v.issue.no} to ${v.result.sent} readers.${v.result.pending?` ${v.result.pending} more go out tomorrow (daily limit).`:""}`;await cpLoad(d.id)}
-    catch(e){c.confirm=null;c.msg=e.message}c.busy="";cpDraw()});
-  $("#cpDel")&&($("#cpDel").onclick=async()=>{if(!confirm("Delete this draft?"))return;try{await cpPost(`/api/campus/issues/${d.id}/remove`);c.doc=null;c.cur=null;await cpLoad()}catch(e){toast(e.message)}});
-  $("#cpsClose")&&($("#cpsClose").onclick=()=>{c.settings=false;cpDraw()});
-  $("#cpsSave")&&($("#cpsSave").onclick=async()=>{try{c.data.settings=await cpPut("/api/campus/settings",{fromName:$("#cpsName").value,address:$("#cpsAddr").value,contact:$("#cpsContact").value,testTo:$("#cpsTest").value});c.settings=false;c.msg="Settings saved";await cpLoad()}catch(e){c.msg=e.message;cpDraw()}});
-  $("#cpsLanding")&&($("#cpsLanding").onclick=async()=>{if(!confirm("Publish tany.im/campus/ now? The site is deployed."))return;c.busy="landing";cpDraw();try{const v=await cpPost("/api/campus/publish-landing");c.msg="Signup page is up: "+v.url}catch(e){c.msg=e.message}c.busy="";cpDraw()});
-}
-document.addEventListener("keydown",e=>{
-  if(viewId()!=="campus"||!(e.metaKey||e.ctrlKey))return;
-  if(e.key==="."){e.preventDefault();document.body.classList.toggle("cpfocus");cpDraw();$("#cpBody")?.focus()}
-  else if(e.shiftKey&&(e.key==="p"||e.key==="P")){e.preventDefault();cpFlush().then(()=>{const c=cp();c.mode=c.mode==="preview"?"write":"preview";cpDraw()})}
-  else if(e.key==="s"){e.preventDefault();cpFlush()}
-});
-window.addEventListener("beforeunload",()=>{if(cp().dirty)cpFlush()});
-const psFull=(t,d)=>{if(!d)return "";if(t.kind==="story")return d.overlay||"";let s=(d.text||"").trim();const tags=[...(d.hashtags||[])];(t.fixedTags||"").split(/[\s,]+/).filter(x=>x.startsWith("#")&&!tags.includes(x)).forEach(x=>tags.push(x));if(tags.length)s+="\n\n"+tags.join(" ");return s};
-const psLen=(t,s)=>{if(t.count!=="x")return [...s].length;let n=0;s=s.replace(/https?:\/\/\S+/g,()=>{n+=23;return ""});for(const ch of s){const c=ch.codePointAt(0);n+=(c<=4351||(c>=8192&&c<=8205)||(c>=8208&&c<=8223)||(c>=8242&&c<=8247))?1:2}return n};
-const psOpenUrl=(t,d)=>t.open?t.open.replace("{text}",encodeURIComponent(t.kind==="story"?"":psFull(t,d))).replace("{title}",encodeURIComponent(d?.title||"")):"";
-function psNew(){
-  const p=ps(),d=p.data,on=(d?.targets||[]).filter(t=>t.on);
-  const thumbs=p.photos.map((x,i)=>`<span class="psthumb"><img src="/api/posts/photo/${esc(x.id)}.jpg" alt="Photo ${i+1}"><button class="btn" data-psdrop="${i}" aria-label="Remove photo ${i+1}">Remove</button></span>`).join("")
-    +(p.video?`<span class="psthumb psvid"><img src="/api/posts/photo/${esc(p.video.frames?.[0]||"")}.jpg" alt="Video"><span class="psbadge">Video · ${psDur(p.video.sec)}</span><button class="btn" data-psdropvid aria-label="Remove the video">Remove</button></span>`:"");
-  const docs=(p.docs||[]).map((d,i)=>`<span class="psdoc"><span>PDF · ${esc(d.name)} · ${d.total} page${d.total===1?"":"s"}${d.total>d.pages.length?` (first ${d.pages.length} as pictures)`:""}${d.chars?"":" · no text inside"}</span><button class="btn" data-psdropdoc="${i}" aria-label="Remove ${esc(d.name)}">Remove</button></span>`).join("");
-  const groups=PSLANG.map(([l,name])=>{const xs=on.filter(t=>t.lang===l);if(!xs.length)return "";
-    return `<fieldset class="psgroup"><legend class="sub">${name}</legend>${xs.map(t=>`<label class="pschip"><input type="checkbox" data-pspick="${esc(t.id)}" ${p.pick?.includes(t.id)?"checked":""}><span>${esc(t.name)}</span></label>`).join("")}</fieldset>`}).join("");
-  return `<section class="card mfocus psnew">
-    <div class="utdrop" id="psDrop"><div class="psthumbs">${thumbs}</div>${docs}<label class="btn">${p.photos.length||p.video||p.docs?.length?"Add more":"Choose photos, a PDF or a video"}<input type="file" id="psFile" hidden multiple accept="image/*,.heic,.heif,application/pdf,.pdf,video/mp4,video/quicktime,.mov,.mp4,.m4v"></label><span class="due">${p.upBusy?esc(p.upBusy):"Up to 10 pictures (a PDF's pages count), one video. You can also drag them here."}</span></div>
-    <textarea class="wd-field psedit" id="psMemo" placeholder="What did you do? A few words or bullet points are enough." aria-label="What you did">${esc(p.memo)}</textarea>
-    <input class="wd-field psedit" id="psLink" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="Link to share (optional), like an article you wrote" aria-label="Link to share" value="${esc(p.link)}">
-    <div class="psgroups">${groups}</div>
-    ${d&&!d.key?`<p class="due" role="alert">No Anthropic API key on this Mac yet. The drafts need it (the same key the body photos use).</p>`:""}
-    ${p.err?`<p class="due" role="alert">${esc(p.err)}</p>`:""}
-    <button class="btn primary" id="psMake" ${p.busy||p.upBusy?"disabled":""}>${p.busy?"Starting":"Make drafts"}</button>
-    <p class="due">Your memo, the pictures, a PDF's text and a few frames of the video go to Claude to write the drafts. Nothing is posted until you press Post now or Schedule.</p></section>`;
-}
 function psCard(post,t){
   const p=ps(),d=post.drafts?.[t.id],tid=esc(t.id),n=Math.min(p.n[t.id]||0,Math.max(post.photos.length-1,0)),busy=post.running&&(!post.regen||post.regen===t.id);
   const full=psFull(t,d),len=d?psLen(t,full):0,over=len-t.limit,posted=!!post.posted?.[t.id];
@@ -6333,6 +6332,7 @@ function psPost(){
   const groups=PSLANG.map(([l,name])=>{const xs=ts.filter(t=>t.lang===l);return xs.length?`<section class="psset"><h2>${name}</h2><div class="psgrid">${xs.map(t=>psCard(post,t)).join("")}</div></section>`:""}).join("");
   return `<section class="pspost" id="psPost"><div class="mpanelh"><h2>Drafts</h2><span class="sub">${esc(when)} · ${done} / ${post.targets.length} posted</span></div>
     <p class="mtalk" data-noauto>${esc(post.memo)}</p>
+    ${psStrip(post)}
     ${post.links?.length?`<p class="due">Link: ${post.links.map(esc).join(" · ")}. It goes in the text only where it can be tapped${post.short?", as a go.tany.im link for each place so clicks are counted":""}.</p>`:""}
     ${post.shortError?`<p class="due" role="alert">Short links could not be made (${esc(post.shortError)}). The drafts use the original link.</p>`:""}
     ${post.status==="making"?`<p class="due" role="status">Writing the drafts. This takes about a minute.</p>`:""}
@@ -6390,10 +6390,6 @@ function psSettings(){
     <input class="wd-field psedit" data-psfixed="${esc(t.id)}" value="${esc(t.fixedTags||"")}" placeholder="Tags always added, like #ZEN大学" aria-label="${esc(t.name)} tags always added"></div>`).join("");
   const voice=PSLANG.map(([l,name])=>`<label class="psset1"><span class="sub">${name} voice</span><textarea class="wd-field psedit" data-psvoice="${l}">${esc(d.voice?.[l]||"")}</textarea></label>`).join("");
   const yt=(d.accounts||[]).find(a=>a.provider==="youtube");
-  all("[data-psratio]").forEach(b=>b.onclick=async()=>{const [tid,r]=b.dataset.psratio.split("|");await psPut({ratio:{[tid]:r}});if(p.crop)p.crop.box=null;psDraw()});
-  all("[data-pscrop]").forEach(b=>b.onclick=()=>{const [tid,n]=b.dataset.pscrop.split("|");p.crop={tid,n:+n,box:null};psDraw()});
-  all("[data-psuse]").forEach(c=>c.onchange=()=>{const [tid,pid]=c.dataset.psuse.split("/"),cur=(p.cur.skip?.[tid]||[]).filter(x=>x!==pid);if(!c.checked)cur.push(pid);psPut({skip:{[tid]:cur}}).then(psDraw)});
-  wirePsCrop();wirePsStrip();
   const conn=`<section class="card mfocus"><p class="mtalk">Connections</p><p class="due">Instagram, Threads and Facebook Pages are connected on go.tany.im. YouTube uploads go straight from this Mac.</p><div class="nsgo"><span class="due">${yt?`YouTube: ${esc(yt.handle)}`:"YouTube: not connected"}</span><button class="btn" id="psYtConnect">${yt?"Connect again":"Connect YouTube"}</button></div>
     ${[["linkedin","LinkedIn"],["x","X"],["threads","Threads"],["meta","Instagram and Facebook"]].map(([k,l])=>{const a=(d.accounts||[]).filter(x=>k==="meta"?["instagram","facebook"].includes(x.provider):x.provider===k);return `<div class="nsgo"><span class="due">${l}: ${a.length?a.map(x=>esc(x.handle)+(x.problem?` (${esc(x.problem)})`:"")).join(", "):"not connected"}</span><button class="btn" data-psconnect="${k}">${a.length?"Connect again":"Connect"}</button></div>`}).join("")}
     ${(n=>`<div class="nsgo"><span class="due">note: ${n?esc(n.handle)+" (drafts only; you publish on note)":"not connected. In Terminal, run the command, sign in to note in Chrome and paste its session cookie"}</span><button class="btn" data-pscopycmd="python3 ~/TatsukiDesk/desk/note_post.py connect">${n?"Copy the command to connect again":"Copy the command"}</button></div>`)((d.accounts||[]).find(a=>a.provider==="note"))}
@@ -6462,6 +6458,10 @@ function wirePs(){
   all("[data-pstext]").forEach(el=>el.onblur=()=>{const id=el.dataset.pstext;if(el.value===psFull(tOf(id),dOf(id)))return;psPut({drafts:{[id]:{text:el.value,hashtags:[]}}}).then(psDraw)});
   all("[data-pstitle]").forEach(el=>el.onblur=()=>{const id=el.dataset.pstitle;if(el.value===(dOf(id)?.title||""))return;psPut({drafts:{[id]:{title:el.value}}}).then(psDraw)});
   all("[data-psover]").forEach(el=>el.onblur=()=>{const id=el.dataset.psover;if(el.value===(dOf(id)?.overlay||""))return;psPut({drafts:{[id]:{overlay:el.value}}}).then(psDraw)});
+  all("[data-psratio]").forEach(b=>b.onclick=async()=>{const [tid,r]=b.dataset.psratio.split("|");await psPut({ratio:{[tid]:r}});if(p.crop)p.crop.box=null;psDraw()});
+  all("[data-pscrop]").forEach(b=>b.onclick=()=>{const [tid,n]=b.dataset.pscrop.split("|");p.crop={tid,n:+n,box:null};psDraw()});
+  all("[data-psuse]").forEach(c=>c.onchange=()=>{const [tid,pid]=c.dataset.psuse.split("/"),cur=(p.cur.skip?.[tid]||[]).filter(x=>x!==pid);if(!c.checked)cur.push(pid);psPut({skip:{[tid]:cur}}).then(psDraw)});
+  wirePsCrop();wirePsStrip();
   all("[data-psfit]").forEach(c=>c.onchange=()=>psPut({fit:{[c.dataset.psfit]:c.checked}}).then(psDraw));
   all("[data-pstexton]").forEach(c=>c.onchange=()=>psPut({textOn:{[c.dataset.pstexton]:c.checked}}).then(psDraw));
   all("[data-psposted]").forEach(c=>c.onchange=()=>psPut({posted:{[c.dataset.psposted]:c.checked}}).then(()=>{psCheckDone();psDraw();psLoad()}));
