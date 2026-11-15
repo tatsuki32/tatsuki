@@ -816,6 +816,8 @@ button.hname:hover{color:var(--ink)}
 .pslinku{font-size:var(--t1);color:var(--ink-2);overflow-wrap:anywhere;min-width:0;flex:1 1 160px}
 .pslinkrow .btn{min-height:28px;padding:0 var(--s2);font-size:var(--t1)}
 @media (max-width:560px){.psgrid{grid-template-columns:minmax(0,1fr)}.psrow{grid-template-columns:40px minmax(0,1fr) auto}.psrow .nsn{display:none}}
+.psvid{position:relative}.psbadge{position:absolute;left:4px;top:4px;background:rgba(0,0,0,.7);color:#fff;font-size:12px;padding:0 4px;border-radius:4px}
+.psdoc{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:14px;width:100%}
 .utdrop{display:grid;gap:var(--s2);justify-items:start;width:100%}
 .utdrop.on{outline:2px dashed var(--accent);outline-offset:8px}
 .utdrop label{cursor:pointer}
@@ -5535,12 +5537,13 @@ function wireUt(){
 /* Post Studio: photos and a short memo become drafts for each account (desk/posts.py). Nothing is posted from here:
    the person copies the text, saves the pictures and posts on each site. */
 const PSLANG=[["ja","Japanese"],["en","English"],["ru","Russian"]];
-const PSKIND={post:"Post",story:"Story",article:"Article",news:"News"};
+const PSKIND={post:"Post",story:"Story",article:"Article",news:"News",video:"Video"};
 const PSLINK={inline:"Link in the text",bio:"Link in bio",sticker:"Link sticker",none:"No link"};
-const PSCAN={instagram:["post","story"],threads:["post"]};
+const PSCAN={instagram:["post","story"],threads:["post"],facebook:["post","story"],youtube:["video"]};
+const psAccProv=t=>t.id.startsWith("ig-")?"instagram":t.id.startsWith("threads-")?"threads":t.id.startsWith("fb-page")?"facebook":t.id.startsWith("yt-")?"youtube":""; // which connected accounts a target can use
 const psProv=t=>(t.account||"").split(":")[0];
 const psCan=t=>!!PSCAN[psProv(t)]?.includes(t.kind);
-const psHandle=t=>{const a=(ps().data?.accounts||[]).find(x=>x.id===t.account);return a?"@"+a.handle:"the account"};
+const psHandle=t=>{const a=(ps().data?.accounts||[]).find(x=>x.id===t.account);return a?(["facebook","youtube"].includes(a.provider)?"":"@")+a.handle:"the account"};
 const psWhen=ms=>new Date(ms).toLocaleString("en-US",{weekday:"short",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
 const psSlotsText=sl=>(sl||[]).map(x=>`${x.days} ${x.time} ${x.tz}`).join("; ");
 const psSlotsParse=v=>v.split(";").map(x=>x.trim()).filter(Boolean).map(x=>{const [days,time,tz]=x.split(/\s+/);return {days,time,tz:tz||"Asia/Tokyo"}});
@@ -5548,9 +5551,21 @@ function psSend2(post,t){
   const q=post.queue?.[t.id],h=esc(psHandle(t));
   if(q?.status==="waiting")return `<p class="due psq">Scheduled for ${esc(psWhen(q.at))} to ${h}${q.error?` · last try failed: ${esc(q.error)}`:""} <button class="btn" data-psunq="${esc(t.id)}">Cancel</button></p>`;
   if(q?.status==="sending")return `<p class="due psq" role="status">Posting to ${h}…</p>`;
+  if(q?.status==="preparing")return `<p class="due psq" role="status">Cutting and sending the video for ${h}… This can take a few minutes.</p>`;
+  if(q?.status==="processing")return `<p class="due psq" role="status">Meta is preparing the video for ${h}. It goes up within about 5 to 15 minutes.</p>`;
+  if(q?.status==="posted"&&q.public>Date.now())return `<p class="due psq">Uploaded to ${h}. YouTube makes it public ${esc(psWhen(q.public))}${q.link?` <a href="${esc(q.link)}" target="_blank" rel="noopener">View ↗</a>`:""}</p>`;
   if(q?.status==="posted")return `<p class="due psq">Posted to ${h}${q.link?` <a href="${esc(q.link)}" target="_blank" rel="noopener">View ↗</a>`:""}</p>`;
   const fail=q?.status==="failed"?`<p class="due" role="alert">Could not post: ${esc(q.error||"unknown")}. You can try again.</p>`:"";
   return `${fail}<div class="nsgo psgo"><button class="btn" data-psnow="${esc(t.id)}">Post now</button>${t.slots?.length?`<button class="btn" data-psslot="${esc(t.id)}">Next slot</button>`:""}<input class="wd-field psedit psat" type="datetime-local" data-psat="${esc(t.id)}" aria-label="When to post"><button class="btn" data-psatgo="${esc(t.id)}">Schedule</button></div>`;
+}
+const PSTAGS=["お知らせ","メディア","事業","イベント"];
+function psSite(post){ // the company site: preview, then Publish to tany.im/news/ (or at a time), Unpublish
+  const st=post.site||{},pv=`<a class="btn" href="/api/posts/${esc(post.id)}/news.html" target="_blank" rel="noopener">Preview ↗</a>`;
+  if(st.status==="publishing")return `<p class="due psq" role="status">Publishing to tany.im… (about a minute)</p>`;
+  if(st.status==="scheduled")return `<p class="due psq">Will be published on tany.im ${esc(psWhen(st.at))} (this Mac needs to be awake) <button class="btn" data-psunpub>Cancel</button></p>`;
+  if(st.status==="live")return `<p class="due psq">Live on tany.im <a href="${esc(st.url)}" target="_blank" rel="noopener">View ↗</a> <button class="btn" data-psunpub>Unpublish</button></p>`;
+  const fail=st.status==="failed"?`<p class="due" role="alert">${esc(st.error||"Could not publish")}</p>`:"";
+  return `${fail}<div class="nsgo psgo"><select class="wd-field pslinksel" data-pstag aria-label="Label on the site">${PSTAGS.map(x=>`<option ${x===(st.tag||PSTAGS[0])?"selected":""}>${x}</option>`).join("")}</select>${pv}<button class="btn" data-pspub>Publish</button><input class="wd-field psedit psat" type="datetime-local" data-pspubat aria-label="When to publish"><button class="btn" data-pspubatgo>Schedule</button></div>`;
 }
 const ps=()=>S.ps||(S.ps={tab:"new",memo:"",link:"",photos:[],pick:null,cur:null,data:null,busy:false,err:"",n:{},open:{}});
 async function psSend(method,path,body){
@@ -5568,9 +5583,9 @@ async function psOpen(id){
   const p=ps();clearTimeout(p.timer);
   try{p.cur=await psSend("GET","/api/posts/"+encodeURIComponent(id))}catch(e){p.err=e.message}
   p.tab="new";psRedraw();
-  const busyQ=Object.values(p.cur?.queue||{}).some(q=>q.status==="sending"||(q.status==="waiting"&&q.at<Date.now()+90e3));
+  const busyQ=Object.values(p.cur?.queue||{}).some(q=>["sending","preparing","processing"].includes(q.status)||(q.status==="waiting"&&q.at<Date.now()+90e3));
   if(p.cur&&(p.cur.status==="making"||p.cur.running))p.timer=setTimeout(()=>psOpen(id),2000);
-  else if(busyQ)p.timer=setTimeout(()=>psOpen(id),5000);
+  else if(busyQ||p.cur?.site?.status==="publishing")p.timer=setTimeout(()=>psOpen(id),5000);
 }
 function psRedraw(){if(viewId()!=="post")return;const keep=document.activeElement?.closest?.(".psedit");if(keep&&$("#psView"))return;psDraw()}
 function psDraw(){$("#view").innerHTML=searchResults()+psView();wire();wirePs()}
@@ -5579,29 +5594,34 @@ const psLen=(t,s)=>{if(t.count!=="x")return [...s].length;let n=0;s=s.replace(/h
 const psOpenUrl=(t,d)=>t.open?t.open.replace("{text}",encodeURIComponent(t.kind==="story"?"":psFull(t,d))).replace("{title}",encodeURIComponent(d?.title||"")):"";
 function psNew(){
   const p=ps(),d=p.data,on=(d?.targets||[]).filter(t=>t.on);
-  const thumbs=p.photos.map((x,i)=>`<span class="psthumb"><img src="/api/posts/photo/${esc(x.id)}.jpg" alt="Photo ${i+1}"><button class="btn" data-psdrop="${i}" aria-label="Remove photo ${i+1}">Remove</button></span>`).join("");
+  const thumbs=p.photos.map((x,i)=>`<span class="psthumb"><img src="/api/posts/photo/${esc(x.id)}.jpg" alt="Photo ${i+1}"><button class="btn" data-psdrop="${i}" aria-label="Remove photo ${i+1}">Remove</button></span>`).join("")
+    +(p.video?`<span class="psthumb psvid"><img src="/api/posts/photo/${esc(p.video.frames?.[0]||"")}.jpg" alt="Video"><span class="psbadge">Video · ${psDur(p.video.sec)}</span><button class="btn" data-psdropvid aria-label="Remove the video">Remove</button></span>`:"");
+  const docs=(p.docs||[]).map((d,i)=>`<span class="psdoc"><span>PDF · ${esc(d.name)} · ${d.total} page${d.total===1?"":"s"}${d.total>d.pages.length?` (first ${d.pages.length} as pictures)`:""}${d.chars?"":" · no text inside"}</span><button class="btn" data-psdropdoc="${i}" aria-label="Remove ${esc(d.name)}">Remove</button></span>`).join("");
   const groups=PSLANG.map(([l,name])=>{const xs=on.filter(t=>t.lang===l);if(!xs.length)return "";
     return `<fieldset class="psgroup"><legend class="sub">${name}</legend>${xs.map(t=>`<label class="pschip"><input type="checkbox" data-pspick="${esc(t.id)}" ${p.pick?.includes(t.id)?"checked":""}><span>${esc(t.name)}</span></label>`).join("")}</fieldset>`}).join("");
   return `<section class="card mfocus psnew">
-    <div class="utdrop" id="psDrop"><div class="psthumbs">${thumbs}</div><label class="btn">${p.photos.length?"Add more photos":"Choose photos"}<input type="file" id="psFile" hidden multiple accept="image/*,.heic,.heif"></label><span class="due">${p.upBusy?"Adding photos…":"Up to 10. You can also drag them here."}</span></div>
+    <div class="utdrop" id="psDrop"><div class="psthumbs">${thumbs}</div>${docs}<label class="btn">${p.photos.length||p.video||p.docs?.length?"Add more":"Choose photos, a PDF or a video"}<input type="file" id="psFile" hidden multiple accept="image/*,.heic,.heif,application/pdf,.pdf,video/mp4,video/quicktime,.mov,.mp4,.m4v"></label><span class="due">${p.upBusy?esc(p.upBusy):"Up to 10 pictures (a PDF's pages count), one video. You can also drag them here."}</span></div>
     <textarea class="wd-field psedit" id="psMemo" placeholder="What did you do? A few words or bullet points are enough." aria-label="What you did">${esc(p.memo)}</textarea>
     <input class="wd-field psedit" id="psLink" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="Link to share (optional), like an article you wrote" aria-label="Link to share" value="${esc(p.link)}">
     <div class="psgroups">${groups}</div>
     ${d&&!d.key?`<p class="due" role="alert">No Anthropic API key on this Mac yet. The drafts need it (the same key the body photos use).</p>`:""}
     ${p.err?`<p class="due" role="alert">${esc(p.err)}</p>`:""}
     <button class="btn primary" id="psMake" ${p.busy||p.upBusy?"disabled":""}>${p.busy?"Starting":"Make drafts"}</button>
-    <p class="due">Your memo and photos go to Claude to write the drafts. Nothing is posted from Desk.</p></section>`;
+    <p class="due">Your memo, the pictures, a PDF's text and a few frames of the video go to Claude to write the drafts. Nothing is posted until you press Post now or Schedule.</p></section>`;
 }
 function psCard(post,t){
   const p=ps(),d=post.drafts?.[t.id],tid=esc(t.id),n=Math.min(p.n[t.id]||0,Math.max(post.photos.length-1,0)),busy=post.running&&(!post.regen||post.regen===t.id);
   const full=psFull(t,d),len=d?psLen(t,full):0,over=len-t.limit,posted=!!post.posted?.[t.id];
-  const img=post.photos.length?`<div class="psimg" data-psimg="${tid}"><img src="/api/posts/${esc(post.id)}/img/${tid}/${n}.jpg?k=${post.updatedAt}" alt="${esc(t.name)} picture ${n+1}" draggable="false">
+  const vid=post.video&&["post","story","video"].includes(t.kind);
+  const img=vid?`<div class="psimg psvid"><img src="/api/posts/${esc(post.id)}/vimg/${tid}.jpg?k=${post.updatedAt}" alt="${esc(t.name)} video, first frame"><span class="psbadge">Video · ${psDur(t.kind==="story"?Math.min(post.video.sec,60):post.video.sec)}</span>
+    <span class="due">${t.kind==="story"||t.id.startsWith("ig-")||t.id==="yt-short"?"1080×1920":"Its own shape"}${t.kind==="story"&&post.video.sec>60?" · the first 60 seconds":""}</span></div>`
+    :post.photos.length?`<div class="psimg" data-psimg="${tid}"><img src="/api/posts/${esc(post.id)}/img/${tid}/${n}.jpg?k=${post.updatedAt}" alt="${esc(t.name)} picture ${n+1}" draggable="false">
     ${post.photos.length>1?`<div class="psnav"><button class="btn" data-psprev="${tid}" aria-label="Previous photo">‹</button><span class="due">${n+1} / ${post.photos.length}</span><button class="btn" data-psnext="${tid}" aria-label="Next photo">›</button></div>`:""}
     <span class="due">${t.size[0]}×${t.size[1]} · drag the picture to move the frame</span></div>`:"";
   let body="";
   if(!d)body=`<p class="due">${busy?"Writing…":"No draft yet."}</p>`;
   else if(t.kind==="story")body=`<input class="wd-field psedit" data-psover="${tid}" value="${esc(d.overlay)}" aria-label="Words on the picture"><label class="pschip"><input type="checkbox" data-pstexton="${tid}" ${post.textOn?.[t.id]===false?"":"checked"}><span>Write it on the picture</span></label>`;
-  else body=`${t.kind==="article"||t.kind==="news"?`<input class="wd-field psedit" data-pstitle="${tid}" value="${esc(d.title)}" aria-label="Title">`:""}<textarea class="wd-field psedit pstext" data-pstext="${tid}" aria-label="${esc(t.name)} text">${esc(full)}</textarea>`;
+  else body=`${["article","news","video"].includes(t.kind)?`<input class="wd-field psedit" data-pstitle="${tid}" value="${esc(d.title)}" aria-label="Title">`:""}<textarea class="wd-field psedit pstext" data-pstext="${tid}" aria-label="${esc(t.name)} text">${esc(full)}</textarea>`;
   const where=t.link==="bio"?"Captions here can't hold a tappable link. Put it in your bio:":t.link==="sticker"?"Add it to the story as a link sticker:":"";
   const linkNote=d&&where&&post.links?.length?`<div class="pslink"><span class="due">${where}</span>${post.links.map(u=>post.short?.[t.id]?.[u]||u).map(u=>`<span class="pslinkrow"><span class="pslinku">${esc(u)}</span><button class="btn" data-pslinkcopy="${esc(u)}">Copy link</button></span>`).join("")}</div>`:"";
   const url=d?psOpenUrl(t,d):"";
@@ -5610,8 +5630,8 @@ function psCard(post,t){
   return `<article class="card pscard${posted?" done":""}" aria-label="${esc(t.name)}">
     <header class="pshead"><h3>${esc(t.name)}</h3><span class="due">${PSKIND[t.kind]}${d?` · ${len.toLocaleString("en-US")} / ${t.limit.toLocaleString("en-US")}${t.count==="x"?" (weighted)":""}${over>0?` · ${over} over`:""}`:""}</span></header>
     ${img}${body}${linkNote}
-    ${d&&psCan(t)?psSend2(post,t):""}
-    <div class="nsgo">${acts}${post.photos.length?`<button class="btn" data-pssave="${tid}">${post.photos.length>1?`Save ${post.photos.length} pictures`:"Save picture"}</button>`:""}</div>
+    ${d&&psCan(t)?psSend2(post,t):""}${d&&t.kind==="news"?psSite(post):""}
+    <div class="nsgo">${acts}${vid?`<button class="btn" data-pssavevid="${tid}">Save video</button>`:post.photos.length?`<button class="btn" data-pssave="${tid}">${post.photos.length>1?`Save ${post.photos.length} pictures`:"Save picture"}</button>`:""}${PSWHOLEPDF.includes(t.kind)||t.id.startsWith("fb-")&&!psCan(t)?(post.docs||[]).map(x=>`<button class="btn" data-pssavedoc="${esc(x.id)}">Save PDF</button>`).join(""):""}</div>
     <div class="nsgo">${p.open[t.id]?`<input class="wd-field psedit pshint" data-pshint="${tid}" placeholder="What to change (optional)" aria-label="What to change"><button class="btn" data-psregen="${tid}" ${post.running?"disabled":""}>Rewrite</button>`:`<button class="btn" data-psask="${tid}" ${post.running?"disabled":""}>${busy&&post.regen===t.id?"Rewriting…":"Rewrite"}</button>`}
     <label class="pschip"><input type="checkbox" data-psposted="${tid}" ${posted?"checked":""}><span>Posted</span></label></div></article>`;
 }
@@ -5671,26 +5691,37 @@ function wirePsLinks(){const p=ps(),l=p.lk;if(!l)return;
 function psSettings(){
   const d=ps().data;if(!d)return "";
   const rows=d.targets.map(t=>`<div class="psset1"><label class="pschip"><input type="checkbox" data-pson="${esc(t.id)}" ${t.on?"checked":""}><span><b>${esc(t.name)}</b> <span class="due">${PSKIND[t.kind]} · ${t.lang} · ${t.limit} chars · ${t.tags} tags</span></span></label>
-    ${["ig","threads"].includes(t.id.split("-")[0])?`<div class="nsgo"><select class="wd-field pslinksel" data-psacc="${esc(t.id)}" aria-label="${esc(t.name)} account"><option value="">Not connected (copy and open)</option>${(d.accounts||[]).filter(a=>a.provider===(t.id.startsWith("ig")?"instagram":"threads")).map(a=>`<option value="${esc(a.id)}" ${t.account===a.id?"selected":""}>@${esc(a.handle)}</option>`).join("")}</select>
+    ${psAccProv(t)?`<div class="nsgo"><select class="wd-field pslinksel" data-psacc="${esc(t.id)}" aria-label="${esc(t.name)} account"><option value="">Not connected (copy and open)</option>${(d.accounts||[]).filter(a=>a.provider===psAccProv(t)).map(a=>`<option value="${esc(a.id)}" ${t.account===a.id?"selected":""}>${["facebook","youtube"].includes(a.provider)?"":"@"}${esc(a.handle)}</option>`).join("")}</select>
     <input class="wd-field psedit pshint" data-psslots="${esc(t.id)}" value="${esc(psSlotsText(t.slots))}" placeholder="Routine, like: daily 21:00 Asia/Tokyo; mon,fri 18:00 Asia/Tokyo" aria-label="${esc(t.name)} routine"></div>`:""}
     <select class="wd-field pslinksel" data-pslinkmode="${esc(t.id)}" aria-label="${esc(t.name)} link">${Object.entries(PSLINK).map(([k,l])=>`<option value="${k}" ${t.link===k?"selected":""}>${l}</option>`).join("")}</select>
     <textarea class="wd-field psedit" data-psstyle="${esc(t.id)}" aria-label="${esc(t.name)} style">${esc(t.style||"")}</textarea>
     <input class="wd-field psedit" data-psfixed="${esc(t.id)}" value="${esc(t.fixedTags||"")}" placeholder="Tags always added, like #ZEN大学" aria-label="${esc(t.name)} tags always added"></div>`).join("");
   const voice=PSLANG.map(([l,name])=>`<label class="psset1"><span class="sub">${name} voice</span><textarea class="wd-field psedit" data-psvoice="${l}">${esc(d.voice?.[l]||"")}</textarea></label>`).join("");
-  return `<section class="card mfocus"><p class="mtalk">How each account sounds, and where to post. Saved when you leave a box.</p>${voice}</section><section class="card mfocus">${rows}</section>`;
+  const yt=(d.accounts||[]).find(a=>a.provider==="youtube");
+  const conn=`<section class="card mfocus"><p class="mtalk">Connections</p><p class="due">Instagram, Threads and Facebook Pages are connected on go.tany.im. YouTube uploads go straight from this Mac.</p><div class="nsgo"><span class="due">${yt?`YouTube: ${esc(yt.handle)}`:"YouTube: not connected"}</span><button class="btn" id="psYtConnect">${yt?"Connect again":"Connect YouTube"}</button></div></section>`;
+  return `<section class="card mfocus"><p class="mtalk">How each account sounds, and where to post. Saved when you leave a box.</p>${voice}</section>${conn}<section class="card mfocus">${rows}</section>`;
 }
 function psView(){
   const p=ps(),tabs=[["new","New"],["earlier","Earlier"],["links","Links"],["settings","Settings"]];
   const pane=p.tab==="earlier"?psEarlier():p.tab==="links"?psLinks():p.tab==="settings"?psSettings():psNew()+psPost();
   return `<div class="money psp" id="psView" data-noauto><h1>Post Studio</h1><div class="mtabs" role="tablist" aria-label="Post Studio">${tabs.map(([k,l])=>`<button role="tab" class="mtab" data-pstab="${k}" aria-selected="${k===p.tab}">${l}</button>`).join("")}</div>${p.data||p.err?pane:`<p class="due">Loading…</p>`}</div>`;
 }
+const PSWHOLEPDF=["article","news"]; // places that take a PDF as it is (note, the company site, a Facebook profile post by hand)
+const psDur=sec=>{sec=Math.round(sec||0);return `${Math.floor(sec/60)}:${String(sec%60).padStart(2,"0")}`};
 async function psAddFiles(files){
-  const p=ps(),list=[...files].filter(f=>f.type.startsWith("image/")||/\.(heic|heif)$/i.test(f.name)).slice(0,10-p.photos.length);
-  if(!list.length)return;p.upBusy=true;p.err="";psDraw();
+  const p=ps(),isVid=f=>f.type.startsWith("video/")||/\.(mov|mp4|m4v)$/i.test(f.name),isPdf=f=>f.type==="application/pdf"||/\.pdf$/i.test(f.name);
+  const list=[...files].filter(f=>f.type.startsWith("image/")||/\.(heic|heif)$/i.test(f.name)||isVid(f)||isPdf(f));
+  if(!list.length){p.err="Photos, PDFs and videos (MP4, MOV) can be added";psDraw();return}
+  p.err="";p.docs=p.docs||[];
   for(const f of list){
-    try{const r=await fetch("/api/posts/photo",{method:"POST",headers:{"Content-Type":"application/octet-stream","X-Desk-Upload":"1"},body:f});
-      let v={};try{v=await r.json()}catch(e){}if(!r.ok)throw new Error(v.error||"Could not add the photo");
-      if(!p.photos.some(x=>x.id===v.id))p.photos.push(v)}catch(e){p.err=e.message}
+    if(!isVid(f)&&p.photos.length>=10){p.err="10 pictures is the most one post can hold";break}
+    p.upBusy=isVid(f)?`Adding the video (${Math.round(f.size/1048576)} MB)…`:isPdf(f)?"Reading the PDF…":"Adding photos…";psDraw();
+    try{const r=await fetch("/api/posts/photo",{method:"POST",headers:{"Content-Type":"application/octet-stream","X-Desk-Upload":"1","X-File-Name":encodeURIComponent(f.name||"")},body:f});
+      let v={};try{v=await r.json()}catch(e){}if(!r.ok)throw new Error(v.error||"Could not add "+(f.name||"the file"));
+      if(v.kind==="video")p.video=v;
+      else if(v.kind==="pdf"){const room=10-p.photos.length,pages=v.pages.filter(x=>!p.photos.some(y=>y.id===x.id)).slice(0,room);
+        if(!p.docs.some(d=>d.id===v.id))p.docs.push({...v,pages});pages.forEach(x=>p.photos.push(x));if(pages.length<v.pages.length)p.err=`Only ${pages.length} page${pages.length===1?"":"s"} of the PDF fit (10 pictures at most)`}
+      else if(!p.photos.some(x=>x.id===v.id))p.photos.push(v)}catch(e){p.err=e.message}
   }
   p.upBusy=false;psDraw();
 }
@@ -5708,6 +5739,8 @@ function wirePs(){
   const drop=$("#psDrop"),zone=drop?.closest(".psnew");
   if(zone){zone.ondragover=e=>{e.preventDefault();drop.classList.add("on")};zone.ondragleave=e=>{if(!zone.contains(e.relatedTarget))drop.classList.remove("on")};zone.ondrop=e=>{e.preventDefault();drop.classList.remove("on");psAddFiles(e.dataTransfer.files)}}
   all("[data-psdrop]").forEach(b=>b.onclick=()=>{p.photos.splice(+b.dataset.psdrop,1);psDraw()});
+  all("[data-psdropvid]").forEach(b=>b.onclick=()=>{p.video=null;psDraw()});
+  all("[data-psdropdoc]").forEach(b=>b.onclick=()=>{const d=p.docs.splice(+b.dataset.psdropdoc,1)[0];p.photos=p.photos.filter(x=>!d.pages.some(y=>y.id===x.id));psDraw()});
   const memo=$("#psMemo");if(memo)memo.oninput=e=>{p.memo=e.target.value};
   const link=$("#psLink");if(link)link.oninput=e=>{p.link=e.target.value};
   all("[data-pslinkcopy]").forEach(b=>b.onclick=async()=>toast(await copyText(b.dataset.pslinkcopy)?"Link copied":"Could not copy"));
@@ -5723,7 +5756,7 @@ function wirePs(){
   all("[data-pspick]").forEach(c=>c.onchange=()=>{const id=c.dataset.pspick;p.pick=c.checked?[...new Set([...(p.pick||[]),id])]:(p.pick||[]).filter(x=>x!==id)});
   const make=$("#psMake");if(make)make.onclick=async()=>{
     p.busy=true;p.err="";psDraw();
-    try{const post=await psSend("POST","/api/posts",{memo:p.memo,links:[p.link],photos:p.photos.map(x=>x.id),targets:p.pick||[]});p.memo="";p.link="";p.photos=[];p.n={};p.open={};p.busy=false;psOpen(post.id);psLoad();return}
+    try{const post=await psSend("POST","/api/posts",{memo:p.memo,links:[p.link],photos:p.photos.map(x=>x.id),docs:(p.docs||[]).map(d=>({id:d.id,name:d.name})),video:p.video?{id:p.video.id,name:p.video.name}:null,targets:p.pick||[]});p.memo="";p.link="";p.photos=[];p.docs=[];p.video=null;p.n={};p.open={};p.busy=false;psOpen(post.id);psLoad();return}
     catch(e){p.err=e.message}p.busy=false;psDraw()};
   all("[data-psload]").forEach(b=>b.onclick=()=>psOpen(b.dataset.psload));
   all("[data-psprev],[data-psnext]").forEach(b=>b.onclick=()=>{const id=b.dataset.psprev||b.dataset.psnext,k=p.cur.photos.length;p.n[id]=((p.n[id]||0)+(b.dataset.psprev?-1:1)+k)%k;psDraw()});
@@ -5741,6 +5774,15 @@ function wirePs(){
     for(let n=0;n<p.cur.photos.length;n++){try{const v=await psSend("POST",`/api/posts/${encodeURIComponent(p.cur.id)}/save`,{target:id,n});
       const a=document.createElement("a");a.href="/api/utilities/file/"+v.file;a.download="";document.body.append(a);a.click();a.remove()}catch(e){toast(e.message);break}}
     toast("Saving to Downloads")});
+  const pub=async(body,ask)=>{if(ask&&!confirm(ask))return;try{p.cur=await psSend("POST",`/api/posts/${encodeURIComponent(p.cur.id)}/publish`,{tag:$("[data-pstag]")?.value,...body});toast(body.when==="at"?"Scheduled":"Publishing")}catch(e){toast(e.message)}psDraw();psOpen(p.cur.id)};
+  all("[data-pspub]").forEach(b=>b.onclick=()=>pub({when:"now"},"Publish this article on tany.im/news/ now? It will be public."));
+  all("[data-pspubatgo]").forEach(b=>b.onclick=()=>{const v=$("[data-pspubat]")?.value;if(!v){toast("Choose a date and time first");return}pub({when:"at",at:new Date(v).getTime()})});
+  all("[data-psunpub]").forEach(b=>b.onclick=async()=>{if(!confirm(p.cur.site?.status==="live"?"Take this article off tany.im?":"Cancel the scheduled article?"))return;try{p.cur=await psSend("POST",`/api/posts/${encodeURIComponent(p.cur.id)}/unpublish`,{})}catch(e){toast(e.message)}psDraw()});
+  all("[data-pssavevid]").forEach(b=>b.onclick=async()=>{b.disabled=true;b.textContent="Making the video…";try{const v=await psSend("POST",`/api/posts/${encodeURIComponent(p.cur.id)}/savevideo`,{target:b.dataset.pssavevid});
+    const a=document.createElement("a");a.href="/api/utilities/file/"+v.file;a.download="";document.body.append(a);a.click();a.remove();toast("Saving to Downloads")}catch(e){toast(e.message)}b.disabled=false;b.textContent="Save video"});
+  const ytc=$("#psYtConnect");if(ytc)ytc.onclick=async()=>{try{await psSend("POST","/api/posts/youtube-connect",{});toast("Google's page opened in your browser. Allow it, then come back");setTimeout(psLoad,30000)}catch(e){toast(e.message)}};
+  all("[data-pssavedoc]").forEach(b=>b.onclick=async()=>{try{const v=await psSend("POST",`/api/posts/${encodeURIComponent(p.cur.id)}/savedoc`,{doc:b.dataset.pssavedoc});
+    const a=document.createElement("a");a.href="/api/utilities/file/"+v.file;a.download="";document.body.append(a);a.click();a.remove();toast("Saving to Downloads")}catch(e){toast(e.message)}});
   all("[data-psask]").forEach(b=>b.onclick=()=>{p.open[b.dataset.psask]=true;psDraw();$(`[data-pshint="${b.dataset.psask}"]`)?.focus()});
   const regen=async id=>{const hint=$(`[data-pshint="${id}"]`)?.value||"";p.open[id]=false;try{p.cur=await psSend("POST",`/api/posts/${encodeURIComponent(p.cur.id)}/regen`,{target:id,hint})}catch(e){toast(e.message)}psDraw();psOpen(p.cur.id)};
   all("[data-psregen]").forEach(b=>b.onclick=()=>regen(b.dataset.psregen));

@@ -47,6 +47,7 @@ import lifelog
 import utilities
 import posts
 import golinks
+import youtube
 import showcase
 import screentime_sync
 import usage
@@ -748,6 +749,20 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(404, {"error": "not found"})
         if len(step) == 1:
             return self.send(200, posts.public(posts.sync(post["id"]) or post))  # brings back what go.tany.im sent
+        if len(step) == 3 and step[1] == "vimg":
+            return self.image_file(posts.video_frame(post["id"], step[2].removesuffix(".jpg")))
+        if step[1:] == ["news.html"]:  # the company-site article as it will look
+            src = posts.news_preview(post["id"])
+            if not src:
+                return self.send(404, {"error": "not found"})
+            data = src.encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(data)))
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+            self.wfile.write(data)
+            return
         if len(step) == 4 and step[1] == "img" and step[3].removesuffix(".jpg").isdigit():
             return self.image_file(posts.image(post["id"], step[2], int(step[3].removesuffix(".jpg"))))
         return self.send(404, {"error": "not found"})
@@ -771,10 +786,11 @@ class Handler(BaseHTTPRequestHandler):
             if self.headers.get("X-Desk-Upload") != "1":
                 return self.send(415, {"error": "upload header required"})
             n = int(self.headers.get("Content-Length") or 0)
-            if n > posts.PHOTO_MAX:
+            if n > posts.VIDEO_MAX:
                 self.close_connection = True
-                return self.send(413, {"error": "A photo can be up to 40 MB"})
-            return self.send(*posts.add_photo(self.rfile, n))
+                return self.send(413, {"error": "A file can be up to 1 GB"})
+            name = unquote(self.headers.get("X-File-Name") or "")[:200]
+            return self.send(*posts.add_file(self.rfile, n, name))
         if not (self.headers.get("Content-Type") or "").startswith("application/json"):
             return self.send(415, {"error": "json only"})
         try:
@@ -783,6 +799,9 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(400, {"error": "bad json"})
         if method == "POST" and not step:
             return self.send(*posts.create(rec))
+        if method == "POST" and step == ["youtube-connect"]:  # opens Google's page in the default browser
+            threading.Thread(target=youtube.auth, daemon=True).start()
+            return self.send(200, {"ok": True})
         if method == "POST" and step == ["links"]:  # a short link made by hand on the Links tab
             try:
                 return self.send(200, {"short": golinks.shorten(str(rec.get("dest") or ""), str(rec.get("source") or "other"),
@@ -809,6 +828,14 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(*posts.cancel_queued(pid, str(rec.get("target") or "")))
         if method == "POST" and step[1:] == ["save"]:
             return self.send(*posts.save_image(pid, str(rec.get("target") or ""), int(rec.get("n") or 0)))
+        if method == "POST" and step[1:] == ["savevideo"]:
+            return self.send(*posts.save_video(pid, str(rec.get("target") or "")))
+        if method == "POST" and step[1:] == ["savedoc"]:
+            return self.send(*posts.save_doc(pid, str(rec.get("doc") or "")))
+        if method == "POST" and step[1:] == ["publish"]:  # the company site: the person pressed Publish or Schedule
+            return self.send(*posts.news_publish(pid, rec))
+        if method == "POST" and step[1:] == ["unpublish"]:
+            return self.send(*posts.news_unpublish(pid))
         return self.send(404, {"error": "not found"})
 
     def lifelog_photo(self, name):
@@ -1300,6 +1327,7 @@ if __name__ == "__main__":
     if PORT == 4747:  # a test server on another port shows nothing
         threading.Thread(target=notify.watch, daemon=True).start()
         threading.Thread(target=tg_notify.watch, daemon=True).start()  # tasks and events to Telegram
+        threading.Thread(target=posts.watch, daemon=True).start()  # Post Studio: company-site news scheduled for later
         threading.Thread(target=routine_alarm.watch, daemon=True).start()  # routine start alarm (quiet 22:00-07:00)
         threading.Thread(target=routine_sync.watch, daemon=True).start()  # routines <-> the Routine app on the phone
         threading.Thread(target=news_sync.watch, daemon=True).start()  # Sift Daily's "Make it a task" -> Desk tasks, every 5 minutes

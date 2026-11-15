@@ -26,6 +26,8 @@ from datetime import datetime
 
 import golinks  # go.tany.im short links, one per place a post goes
 import lifelog  # the Anthropic key in the keychain and the API settings
+import site_news  # the company site's news pages on tany.im
+import youtube  # YouTube uploads straight from this Mac
 import utilities  # downloads go through its one-hour file tokens (the Desk window hands those to the browser)
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -37,7 +39,7 @@ MODEL = "claude-opus-5-5"
 PHOTO_MAX = 40 * 1024 * 1024
 PHOTOS_PER_POST = 10
 API_SIDE = 1568
-KINDS = ("post", "story", "article", "news")
+KINDS = ("post", "story", "article", "news", "video")
 NAME = re.compile(r"^[0-9a-f]{16}$")
 POST_ID = re.compile(r"^p-\d{8}-[0-9a-f]{6}$")
 TARGET_ID = re.compile(r"^[a-z0-9][a-z0-9-]{0,30}$")
@@ -118,7 +120,7 @@ def save_settings(rec):
             t["on"] = change["on"]
         if change.get("link") in LINK_MODES:
             t["link"] = change["link"]
-        if isinstance(change.get("account"), str) and (change["account"] == "" or re.match(r"^(instagram|threads):\d{3,30}$", change["account"])):
+        if isinstance(change.get("account"), str) and (change["account"] == "" or re.match(r"^((instagram|threads|facebook):\d{3,30}|youtube:UC[\w-]{20,30})$", change["account"])):
             t["account"] = change["account"]
         if isinstance(change.get("slots"), list):
             t["slots"] = [x for x in (clean_slot(v) for v in change["slots"][:14]) if x]
@@ -188,24 +190,74 @@ def photo_path(name, kind="orig"):
     return p if os.path.exists(p) else None
 
 
+PDF_MAX = 50 * 1024 * 1024
+VIDEO_MAX = 1024 * 1024 * 1024
+DOC_TEXT_MAX = 20000  # characters of a PDF's text that go to Claude
+VIDEO_EXT = {"mp4": "mp4", "mov": "mov", "m4v": "m4v"}
+
+
+def _kind_of(head, filename):
+    """What an upload is, by its first bytes (the name only breaks a tie)."""
+    if head.startswith(b"%PDF"):
+        return "pdf"
+    if head[4:8] == b"ftyp" and head[8:12] not in (b"heic", b"heix", b"mif1", b"msf1", b"avif", b"hevc"):
+        return "video"
+    if head[4:8] in (b"moov", b"mdat", b"wide", b"free") or filename.lower().rsplit(".", 1)[-1] in VIDEO_EXT:
+        return "video"
+    return "photo"
+
+
+def add_file(stream, size, filename=""):
+    """One upload from the page: a photo, a PDF (its pages become photos, its text goes to the drafts) or a video.
+    It is written to disk as it comes, so a long video never sits in memory."""
+    if size <= 0 or size > VIDEO_MAX:
+        return 413, {"error": "A file can be up to 1 GB"}
+    os.makedirs(dp("in"), exist_ok=True)
+    h = hashlib.sha256()
+    with tempfile.NamedTemporaryFile(dir=dp("in"), delete=False) as f:
+        tmp = f.name
+        left = size
+        while left > 0:
+            chunk = stream.read(min(left, 1024 * 1024))
+            if not chunk:
+                break
+            h.update(chunk)
+            f.write(chunk)
+            left -= len(chunk)
+    try:
+        if left > 0:
+            return 400, {"error": "The upload stopped part way. Try again"}
+        with open(tmp, "rb") as f:
+            head = f.read(16)
+        kind = _kind_of(head, filename)
+        name = h.hexdigest()[:16]
+        if kind == "pdf":
+            return add_pdf(tmp, name, filename)
+        if kind == "video":
+            return add_video(tmp, name, filename)
+        if size > PHOTO_MAX:
+            return 413, {"error": "A photo can be up to 40 MB"}
+        return _add_photo_file(tmp, name)
+    finally:
+        if os.path.exists(tmp):
+            os.remove(tmp)
+
+
 def add_photo(stream, size):
-    """Takes one uploaded photo. HEIC and others become a JPEG; the same photo twice is kept once."""
-    if size <= 0 or size > PHOTO_MAX:
-        return 413, {"error": "A photo can be up to 40 MB"}
-    data = stream.read(size)
-    name = hashlib.sha256(data).hexdigest()[:16]
+    return add_file(stream, size)
+
+
+def _add_photo_file(path, name):
+    """A photo already on disk: kept as a JPEG under its hash (HEIC and others converted), with a smaller copy for Claude."""
     final = dp("photos", f"{name}.jpg")
     os.makedirs(dp("photos"), exist_ok=True)
     if not os.path.exists(final):
         with tempfile.TemporaryDirectory() as tmp:
-            raw = os.path.join(tmp, "in")
-            with open(raw, "wb") as f:
-                f.write(data)
             out = os.path.join(tmp, "out.jpg")
             # sips applies the camera rotation and reads HEIC; the copy for Claude is smaller
-            r = subprocess.run(["sips", "-s", "format", "jpeg", "-s", "formatOptions", "92", raw, "--out", out], capture_output=True, timeout=120)
+            r = subprocess.run(["sips", "-s", "format", "jpeg", "-s", "formatOptions", "92", path, "--out", out], capture_output=True, timeout=120)
             if r.returncode or not os.path.exists(out):
-                return 415, {"error": "This file is not a photo this Mac can read"}
+                return 415, {"error": "This file is not a photo, PDF or video this Mac can read"}
             shutil.move(out, final)
         subprocess.run(["sips", "-Z", str(API_SIDE), "-s", "formatOptions", "85", final, "--out", dp("photos", f"{name}.api.jpg")], capture_output=True, timeout=120)
     meta = _read(dp("photos", f"{name}.json"), None)
@@ -219,7 +271,192 @@ def add_photo(stream, size):
             except ValueError:
                 pass
         _write(dp("photos", f"{name}.json"), meta)
-    return 200, {"id": name, **meta}
+    return 200, {"kind": "photo", "id": name, **meta}
+
+
+def _clean_name(filename, fallback):
+    n = os.path.basename(str(filename or "")).strip()
+    n = re.sub(r"[\x00-\x1f/\\]", "", n)[:120]
+    return n or fallback
+
+
+def add_pdf(path, name, filename=""):
+    """A PDF: kept as it is (note and the company site can take it whole), each page (10 at most) becomes a photo,
+    and its text is kept for the drafts."""
+    if os.path.getsize(path) > PDF_MAX:
+        return 413, {"error": "A PDF can be up to 50 MB"}
+    helper = tool()
+    if not helper:
+        return 500, {"error": "The picture helper could not be built on this Mac"}
+    os.makedirs(dp("docs"), exist_ok=True)
+    keep = dp("docs", f"{name}.pdf")
+    if not os.path.exists(keep):
+        shutil.copyfile(path, keep)
+    info = _read(dp("docs", f"{name}.json"), None)
+    if not info:
+        with tempfile.TemporaryDirectory() as out:
+            r = subprocess.run([helper, "pdf", keep, out, str(PHOTOS_PER_POST)], capture_output=True, text=True, timeout=300)
+            if r.returncode == 5:
+                return 415, {"error": "This PDF is locked with a password. Save an unlocked copy and add that"}
+            if r.returncode:
+                return 415, {"error": "This PDF could not be read"}
+            try:
+                got = json.loads(r.stdout)
+            except ValueError:
+                return 415, {"error": "This PDF could not be read"}
+            pages = []
+            for i in range(got.get("pages", 0)):
+                pg = os.path.join(out, f"page-{i}.jpg")
+                with open(pg, "rb") as f:
+                    pname = hashlib.sha256(f.read()).hexdigest()[:16]
+                code, meta = _add_photo_file(pg, pname)
+                if code == 200:
+                    pages.append(meta)
+            text = ""
+            try:
+                with open(os.path.join(out, "text.txt"), encoding="utf-8") as f:
+                    text = f.read()
+            except OSError:
+                pass
+        text = re.sub(r"[ \t]+\n", "\n", re.sub(r"\n{3,}", "\n\n", text)).strip()
+        with open(dp("docs", f"{name}.txt"), "w", encoding="utf-8") as f:
+            f.write(text)
+        info = {"pages": pages, "total": got.get("total", len(pages)), "chars": len(text)}
+        _write(dp("docs", f"{name}.json"), info)
+    return 200, {"kind": "pdf", "id": name, "name": _clean_name(filename, "document.pdf"), **info}
+
+
+def doc_path(name, ext="pdf"):
+    if not NAME.match(name or ""):
+        return None
+    p = dp("docs", f"{name}.{ext}")
+    return p if os.path.exists(p) else None
+
+
+def doc_text(name):
+    p = doc_path(name, "txt")
+    if not p:
+        return ""
+    with open(p, encoding="utf-8") as f:
+        return f.read()
+
+
+def add_video(path, name, filename=""):
+    """A video: kept as it is; four frames go to Claude for the drafts, and the first one's focus places the frame."""
+    helper = tool()
+    if not helper:
+        return 500, {"error": "The picture helper could not be built on this Mac"}
+    ext = VIDEO_EXT.get(str(filename).lower().rsplit(".", 1)[-1], "mp4")
+    os.makedirs(dp("videos"), exist_ok=True)
+    info = _read(dp("videos", f"{name}.json"), None)
+    if not info:
+        keep = dp("videos", f"{name}.{ext}")
+        if not os.path.exists(keep):
+            shutil.copyfile(path, keep)
+        r = subprocess.run([helper, "video-info", keep], capture_output=True, text=True, timeout=120)
+        try:
+            vi = json.loads(r.stdout)
+        except ValueError:
+            os.remove(keep)
+            return 415, {"error": "This video could not be read. MP4 and MOV work"}
+        frames = []
+        with tempfile.TemporaryDirectory() as out:
+            r = subprocess.run([helper, "video-frames", keep, out, "4"], capture_output=True, timeout=300)
+            for i in range(4):
+                fp = os.path.join(out, f"frame-{i}.jpg")
+                if os.path.exists(fp):
+                    code, meta = _add_photo_file(fp, f"{name[:12]}f{i:03d}")
+                    if code == 200:
+                        frames.append(meta["id"])
+        first = _read(dp("photos", f"{frames[0]}.json"), {}) if frames else {}
+        info = {"file": f"{name}.{ext}", "w": vi["w"], "h": vi["h"], "sec": vi["sec"], "frames": frames,
+                "x": first.get("x", 0.5), "y": first.get("y", 0.45), "mb": round(os.path.getsize(keep) / 1048576, 1)}
+        _write(dp("videos", f"{name}.json"), info)
+    return 200, {"kind": "video", "id": name, "name": _clean_name(filename, "video"), **info}
+
+
+def video_path(name):
+    if not NAME.match(name or ""):
+        return None
+    info = _read(dp("videos", f"{name}.json"), None)
+    p = info and dp("videos", info["file"])
+    return p if p and os.path.exists(p) else None
+
+
+# ---------- video ----------
+
+def uses_video(post, t):
+    """A post with a video sends the video to every place that can show one; note and the site keep the pictures."""
+    return bool(post.get("video")) and bool(t) and t["kind"] in ("post", "story", "video")
+
+
+def video_size(post, t):
+    """Stories and Instagram (Reels) are 9:16. Elsewhere the video keeps its own shape, at most 1920 on the long side."""
+    v = post["video"]
+    if t["kind"] == "story" or t["id"].startswith("ig-") or t["id"] == "yt-short":
+        return 1080, 1920
+    w, h = v.get("w") or 1080, v.get("h") or 1920
+    k = min(1.0, 1920 / max(w, h))
+    return int(w * k) // 2 * 2, int(h * k) // 2 * 2
+
+
+def video_frame(post_id, tid):
+    """The first frame cut the way the video will be cut, for the card."""
+    post = get(post_id)
+    t = target(tid)
+    if not post or not uses_video(post, t):
+        return None
+    v = post["video"]
+    src = photo_path((v.get("frames") or [""])[0])
+    helper = tool()
+    if not src or not helper:
+        return None
+    w, h = video_size(post, t)
+    out = dp("out", post_id, f"{tid}-vf-{w}x{h}-{v.get('x')}-{v.get('y')}.jpg")
+    if not os.path.exists(out):
+        os.makedirs(os.path.dirname(out), exist_ok=True)
+        subprocess.run([helper, "crop", src, out, str(w), str(h), str(v.get("x", 0.5)), str(v.get("y", 0.45))], capture_output=True, timeout=120)
+    return out if os.path.exists(out) else None
+
+
+_video_locks = {}
+
+
+def video_file(post_id, tid):
+    """The video for one place: cut to its shape, H.264 with sound. Made once and kept (the same cut is shared)."""
+    post = get(post_id)
+    t = target(tid)
+    if not post or not uses_video(post, t):
+        return None
+    v = post["video"]
+    src = video_path(v["id"])
+    helper = tool()
+    if not src or not helper:
+        return None
+    w, h = video_size(post, t)
+    most = 60 if t["kind"] == "story" else 0
+    out = dp("out", post_id, f"video-{w}x{h}-{v.get('x')}-{v.get('y')}-{most}.mp4")
+    lock = _video_locks.setdefault(out, threading.Lock())
+    with lock:
+        if not os.path.exists(out):
+            os.makedirs(os.path.dirname(out), exist_ok=True)
+            tmp = out + ".part.mp4"
+            r = subprocess.run([helper, "video-crop", src, tmp, str(w), str(h), str(v.get("x", 0.5)), str(v.get("y", 0.45))] + ([str(most)] if most else []),
+                               capture_output=True, timeout=3600)
+            if r.returncode or not os.path.exists(tmp):
+                return None
+            os.replace(tmp, out)
+    return out
+
+
+def save_video(post_id, tid):
+    p = video_file(post_id, tid)
+    t = target(tid)
+    if not p:
+        return 500, {"error": "The video could not be made"}
+    w, h = video_size(get(post_id), t)
+    name = f"{datetime.now():%Y-%m-%d} {t['name']} ({w}x{h}).mp4"
+    return 200, {"file": utilities._token({"path": p, "name": name, "ctype": "video/mp4"})}
 
 
 def image(post_id, tid, n):
@@ -262,6 +499,134 @@ def save_image(post_id, tid, n):
     return 200, {"file": utilities._token({"data": data, "name": name, "ctype": "image/jpeg"})}
 
 
+# ---------- the company site (tany.im/news/) ----------
+
+def _news(post):
+    t = next((target(x) for x in post["targets"] if (target(x) or {}).get("kind") == "news"), None)
+    d = t and (post.get("drafts") or {}).get(t["id"])
+    return t, d
+
+
+def news_preview(post_id):
+    """The article page as it will look, for the page's preview (the site's style comes from tany.im)."""
+    post = get(post_id)
+    t, d = _news(post or {"targets": []})
+    if not d:
+        return None
+    site = post.get("site") or {}
+    pics = [f"/api/posts/{post_id}/img/{t['id']}/{n}.jpg" for n in range(len(post["photos"]))]
+    doc = (post.get("docs") or [None])[0]
+    date = datetime.fromtimestamp((site.get("at") or time.time() * 1000) / 1000).strftime("%Y-%m-%d")
+    return site_news.page(d.get("title") or "お知らせ", date, site.get("tag") or site_news.TAGS[0], d.get("text") or "", pics,
+                          ("#", "PDF を読む") if doc else None, preview=True)
+
+
+def _publish_now(post_id):
+    post = get(post_id)
+    t, d = _news(post)
+    site = post.get("site") or {}
+    try:
+        pics = []
+        for n in range(len(post["photos"])):
+            p = image(post_id, t["id"], n)
+            if p:
+                pics.append(p)
+        doc = (post.get("docs") or [None])[0]
+        pdf = (doc_path(doc["id"]), doc["name"]) if doc and doc_path(doc["id"]) else None
+        date = datetime.now().strftime("%Y-%m-%d")
+        url, err = site_news.publish(site["slug"], d.get("title") or "お知らせ", date, site.get("tag"), d.get("text") or "", pics, pdf)
+    except Exception as e:  # the page shows the reason; nothing half-made stays hidden
+        url, err = "", str(e) if isinstance(e, RuntimeError) else "Something went wrong while publishing"
+    with _lock:
+        post = get(post_id)
+        post["site"] = {**post.get("site", {}), "status": "failed" if err else "live", "url": url, "error": err, "done": int(time.time() * 1000)}
+        if not err:
+            post.setdefault("posted", {})[t["id"]] = True
+        _save(post)
+
+
+def news_publish(post_id, rec):
+    """The person pressed Publish (now or at a time) on the company-site card."""
+    post = get(post_id)
+    if not post:
+        return 404, {"error": "not found"}
+    t, d = _news(post)
+    if not d:
+        return 400, {"error": "There is no news draft yet"}
+    if not site_news.ready():
+        return 500, {"error": "The site's files are not on this Mac (desk/data/tany/site)"}
+    if not (d.get("title") or "").strip():
+        return 400, {"error": "Give the news a title first"}
+    site = post.get("site") or {}
+    if site.get("status") in ("publishing",):
+        return 409, {"error": "Publishing now. Wait a moment"}
+    tag = rec.get("tag") if rec.get("tag") in site_news.TAGS else site.get("tag") or site_news.TAGS[0]
+    slug = site.get("slug") or site_news.new_slug(datetime.now().strftime("%Y-%m-%d"))
+    now = int(time.time() * 1000)
+    if rec.get("when") == "at":
+        at = int(rec.get("at") or 0)
+        if at < now - 60000:
+            return 400, {"error": "Choose a time in the future"}
+        status = "scheduled"
+    else:
+        at, status = now, "publishing"
+    with _lock:
+        post = get(post_id)
+        post["site"] = {**site, "slug": slug, "tag": tag, "status": status, "at": at, "error": ""}
+        _save(post)
+    if status == "publishing":
+        threading.Thread(target=_publish_now, args=(post_id,), daemon=True).start()
+    return 200, public(get(post_id))
+
+
+def news_unpublish(post_id):
+    post = get(post_id)
+    site = (post or {}).get("site") or {}
+    if not site.get("slug"):
+        return 404, {"error": "not found"}
+    if site.get("status") == "scheduled":
+        err = ""
+    else:
+        err = site_news.unpublish(site["slug"])
+    with _lock:
+        post = get(post_id)
+        post["site"] = {**site, "status": "failed" if err else "off", "error": err, "url": ""}
+        t, _ = _news(post)
+        if t and not err:
+            post.setdefault("posted", {}).pop(t["id"], None)
+        _save(post)
+    return 200, public(get(post_id))
+
+
+def watch():
+    """Every minute (Desk's own server only): scheduled company-site news whose time has come. The Mac must be awake."""
+    while True:
+        time.sleep(60)
+        try:
+            now = time.time() * 1000
+            for p in list(_all().values()):
+                site = p.get("site") or {}
+                if not p.get("deleted") and site.get("status") == "scheduled" and site.get("at", 0) <= now:
+                    with _lock:
+                        q = get(p["id"])
+                        q["site"]["status"] = "publishing"
+                        _save(q)
+                    _publish_now(p["id"])
+        except Exception:
+            pass
+
+
+def save_doc(post_id, doc_id):
+    """The PDF as it was given, for the places that take a PDF whole (note, the company site)."""
+    post = get(post_id)
+    d = next((x for x in (post or {}).get("docs") or [] if x["id"] == doc_id), None)
+    p = d and doc_path(doc_id)
+    if not p:
+        return 404, {"error": "not found"}
+    name = d["name"] if d["name"].lower().endswith(".pdf") else d["name"] + ".pdf"
+    return 200, {"file": utilities._token({"path": p, "name": name, "ctype": "application/pdf"})}
+
+
 # ---------- drafts ----------
 
 SCHEMA = {
@@ -289,6 +654,7 @@ def system_prompt(s):
         "- Hashtags go only in the hashtags list, each starting with #, never inside text. Keep within each target's tag count.",
         "- For a story, put one short line in overlay (it is written on the picture) and leave text empty.",
         "- For an article or news item, give a title and write text in Markdown. Do not repeat the title as a heading at the top of text.",
+        "- For a YouTube video (kind video), give a title of at most 70 characters and the description in text. No Markdown.",
         "- Keep every draft within its limit. For X the limit is weighted: Japanese characters count 2.",
         "The person's voice by language:",
         *[f"- {lang}: {v}" for lang, v in voice.items() if v],
@@ -391,8 +757,9 @@ def call(content, max_tokens=16000):
 
 def photo_blocks(post):
     blocks = []
-    for ph in post["photos"]:
-        p = photo_path(ph["id"], "api") or photo_path(ph["id"])
+    ids = [ph["id"] for ph in post["photos"]] + list((post.get("video") or {}).get("frames") or [])
+    for pid in ids:
+        p = photo_path(pid, "api") or photo_path(pid)
         if p:
             with open(p, "rb") as f:
                 blocks.append({"type": "image", "source": {"type": "base64", "media_type": "image/jpeg", "data": base64.b64encode(f.read()).decode()}})
@@ -405,7 +772,7 @@ def clean_draft(t, d, links=()):
         x = "#" + re.sub(r"[\s#]+", "", str(x))
         if len(x) > 1 and x not in tags:
             tags.append(x[:60])
-    out = {"title": str(d.get("title") or "").strip()[:200], "text": str(d.get("text") or "").strip(),
+    out = {"title": str(d.get("title") or "").strip()[:100 if t["kind"] == "video" else 200], "text": str(d.get("text") or "").strip(),
            "overlay": str(d.get("overlay") or "").strip()[:200], "hashtags": tags[: t.get("tags", 0)]}
     if t["kind"] == "story":
         out["text"] = ""
@@ -423,6 +790,15 @@ def write_drafts(post_id, only=None, hint=""):
         when = datetime.fromtimestamp(post["createdAt"] / 1000).strftime("%Y-%m-%d")
         n = len(post["photos"])
         seen = "There is 1 photo above." if n == 1 else f"There are {n} photos above." if n else "There is no photo."
+        vid = post.get("video")
+        if vid:
+            seen += (f" After them come {len(vid.get('frames') or [])} frames from the person's video ({round(vid.get('sec') or 0)} seconds), "
+                     "which is posted as the video itself: write about what the video shows.")
+        for doc in post.get("docs") or []:
+            text = doc_text(doc["id"])[:DOC_TEXT_MAX]
+            if text:
+                seen += (f"\n\nThe person's PDF \"{doc['name']}\" ({doc.get('total', 0)} pages; its pages may also be among the pictures). "
+                         f"Its text, as material only (use what it says, add nothing):\n<pdf>\n{text}\n</pdf>")
         links = post.get("links") or []
         per = short_links(post_id, ts)
         ask = (f"Date: {when}.\nThe person's memo:\n{post['memo']}\n\n{seen}\n"
@@ -478,7 +854,7 @@ def _start(post_id, only=None, hint=""):
 # ---------- automatic posting ----------
 
 DAYS = ("mon", "tue", "wed", "thu", "fri", "sat", "sun")
-POSTABLE = {"instagram": ("post", "story"), "threads": ("post",)}
+POSTABLE = {"instagram": ("post", "story"), "threads": ("post",), "facebook": ("post", "story"), "youtube": ("video",)}
 
 
 def clean_slot(v):
@@ -543,7 +919,7 @@ def approve(post_id, rec):
     if not d:
         return 400, {"error": "There is no draft to post yet"}
     old = (post.get("queue") or {}).get(tid)
-    if old and old.get("status") in ("waiting", "sending", "posted"):
+    if old and old.get("status") in ("waiting", "sending", "posted", "preparing"):
         return 409, {"error": "This one is already scheduled or posted"}
     when = rec.get("when")
     now = int(time.time() * 1000)
@@ -561,6 +937,17 @@ def approve(post_id, rec):
             return 400, {"error": "This place has no routine yet. Add one in Settings"}
     else:
         at = now
+    text = "" if t["kind"] == "story" else full_text(t, d)
+    if provider_of(t) == "youtube" and not post.get("video"):
+        return 400, {"error": "YouTube needs a video. Add one to the post"}
+    if uses_video(post, t):
+        # cutting and sending a video takes a while: it happens in the background and the card shows "Preparing"
+        with _lock:
+            post = get(post_id)
+            post.setdefault("queue", {})[tid] = {"id": "", "at": at, "status": "preparing", "link": "", "error": ""}
+            _save(post)
+        threading.Thread(target=_send_video, args=(post_id, tid, t, text, at, when not in ("at", "slot")), daemon=True).start()
+        return 200, public(get(post_id))
     try:
         keys = []
         for n in range(len(post["photos"])):
@@ -568,7 +955,6 @@ def approve(post_id, rec):
             if not p:
                 return 500, {"error": "The picture could not be made"}
             keys.append(golinks.upload(p))
-        text = "" if t["kind"] == "story" else full_text(t, d)
         r = golinks.queue_add({"account": t["account"], "kind": t["kind"], "text": text, "media": keys, "at": at, "post": post_id, "target": tid})
     except RuntimeError as e:
         return 502, {"error": str(e)}
@@ -579,6 +965,48 @@ def approve(post_id, rec):
     if when not in ("at", "slot"):
         threading.Thread(target=_send_now, args=(post_id, tid, r["id"]), daemon=True).start()
     return 200, public(get(post_id))
+
+
+def _send_video(post_id, tid, t, text, at, now):
+    if provider_of(t) == "youtube":
+        return _send_youtube(post_id, tid, t, at)
+    try:
+        p = video_file(post_id, tid)
+        if not p:
+            raise RuntimeError("The video could not be made")
+        key = golinks.upload_video(p)
+        r = golinks.queue_add({"account": t["account"], "kind": t["kind"], "text": text, "media": [key], "at": at, "post": post_id, "target": tid})
+        q = {"id": r["id"], "at": at, "status": "waiting", "link": "", "error": ""}
+    except RuntimeError as e:
+        q = {"id": "", "at": at, "status": "failed", "link": "", "error": str(e)}
+    with _lock:
+        post = get(post_id)
+        post.setdefault("queue", {})[tid] = q
+        _save(post)
+    if now and q["id"]:
+        _send_now(post_id, tid, q["id"])
+
+
+def _send_youtube(post_id, tid, t, at):
+    """YouTube takes the video from this Mac. A later time is kept by YouTube itself (private until then)."""
+    d = (get(post_id).get("drafts") or {}).get(tid) or {}
+    try:
+        p = video_file(post_id, tid)
+        if not p:
+            raise RuntimeError("The video could not be made")
+        tags = [x for x in (d.get("hashtags") or []) if x]
+        desc = (d.get("text") or "").strip() + ("\n\n" + " ".join(tags) if tags else "")
+        vid = youtube.upload(p, d.get("title") or "", desc, tags, at)
+        q = {"id": "yt-" + vid, "at": at, "status": "posted", "link": ("https://youtube.com/shorts/" if tid == "yt-short" else "https://youtu.be/") + vid,
+             "error": "", "public": at if at > time.time() * 1000 + 120000 else 0}
+    except RuntimeError as e:
+        q = {"id": "", "at": at, "status": "failed", "link": "", "error": str(e)}
+    with _lock:
+        post = get(post_id)
+        post.setdefault("queue", {})[tid] = q
+        if q["status"] == "posted":
+            post.setdefault("posted", {})[tid] = int(time.time() * 1000)
+        _save(post)
 
 
 def _send_now(post_id, tid, qid):
@@ -608,7 +1036,7 @@ def cancel_queued(post_id, tid):
 def sync(post_id):
     """Brings back what go.tany.im did: posted (with the link), failed (with why), or still waiting."""
     post = get(post_id)
-    if not post or not any(q.get("status") in ("waiting", "sending") for q in (post.get("queue") or {}).values()):
+    if not post or not any(q.get("status") in ("waiting", "sending", "processing") for q in (post.get("queue") or {}).values()):
         return post
     try:
         items = {q["id"]: q for q in golinks.queue_list()}
@@ -650,10 +1078,23 @@ def create(rec):
     photos = [p for p in rec.get("photos") or [] if isinstance(p, str) and photo_path(p)][:PHOTOS_PER_POST]
     on = {t["id"] for t in targets()}
     chosen = [t for t in rec.get("targets") or [] if t in on]
-    if not memo and not photos:
-        return 400, {"error": "Add a photo or a few words about what you did"}
+    docs = []
+    for d in rec.get("docs") or []:
+        if isinstance(d, dict) and doc_path(str(d.get("id"))):
+            info = _read(dp("docs", f"{d['id']}.json"), {})
+            docs.append({"id": d["id"], "name": _clean_name(d.get("name"), "document.pdf"), "total": info.get("total", 0), "chars": info.get("chars", 0)})
+    docs = docs[:3]
+    video = None
+    v = rec.get("video")
+    if isinstance(v, dict) and video_path(str(v.get("id"))):
+        info = _read(dp("videos", f"{v['id']}.json"), {})
+        video = {"id": v["id"], "name": _clean_name(v.get("name"), "video"), **{k: info.get(k) for k in ("w", "h", "sec", "frames", "x", "y", "mb")}}
+    if not video:
+        chosen = [x for x in chosen if (target(x) or {}).get("kind") != "video"]
+    if not memo and not photos and not docs and not video:
+        return 400, {"error": "Add a photo, a PDF, a video or a few words about what you did"}
     if not chosen:
-        return 400, {"error": "Choose at least one place to post"}
+        return 400, {"error": "Choose at least one place to post" + (" (YouTube needs a video)" if rec.get("targets") else "")}
     if len(memo) > 4000:
         return 413, {"error": "The memo can be up to 4,000 characters"}
     given = rec.get("links") if isinstance(rec.get("links"), list) else [rec.get("links") or ""]
@@ -666,7 +1107,7 @@ def create(rec):
     pid = f"p-{datetime.now():%Y%m%d}-{secrets.token_hex(3)}"
     metas = [{"id": p, **{k: v for k, v in _read(dp("photos", f"{p}.json"), {}).items() if k in ("w", "h", "x", "y")}} for p in photos]
     post = {"id": pid, "createdAt": int(time.time() * 1000), "memo": memo, "photos": metas, "targets": chosen,
-            "links": links, "status": "making", "error": "", "drafts": {}, "posted": {}, "namesLeftOut": []}
+            "docs": docs, "video": video, "links": links, "status": "making", "error": "", "drafts": {}, "posted": {}, "namesLeftOut": []}
     _save(post)
     _start(pid)
     return 200, public(post)
@@ -737,6 +1178,9 @@ def view():
         acc = [{k: a[k] for k in ("id", "provider", "handle", "problem")} for a in golinks.accounts()]
     except RuntimeError:
         acc = []
+    ch = youtube.channel()
+    if ch:
+        acc.append({"id": "youtube:" + ch["id"], "provider": "youtube", "handle": ch["title"], "problem": ""})
     return {"targets": targets(), "accounts": acc, "voice": settings().get("voice", {}), "signature": settings().get("signature", {}),
             "key": bool(lifelog.api_key()), "tool": os.path.exists(TOOL),
             "posts": [{"id": p["id"], "createdAt": p["createdAt"], "memo": p["memo"][:120], "photo": (p["photos"][0]["id"] if p["photos"] else ""),

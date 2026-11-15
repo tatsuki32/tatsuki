@@ -88,6 +88,14 @@ async function api(request, env, url) {
     return json(r, r.error ? 400 : 200);
   }
   if (request.method === "GET" && path === "accounts") return json(await accounts.list(env));
+  if (request.method === "POST" && path === "media/video") { const r = await publish.videoStart(env); return json(r, r.error ? 400 : 200); }
+  const vp = path.match(/^media\/video\/([0-9a-f]{48}\.mp4)\/([^/]{1,1000})\/(\d{1,3}|done)$/);
+  if (vp) {
+    const r = vp[3] === "done" && request.method === "POST"
+      ? await publish.videoDone(env, vp[1], decodeURIComponent(vp[2]), (await request.json().catch(() => ({}))).parts)
+      : request.method === "PUT" ? await publish.videoPart(env, vp[1], decodeURIComponent(vp[2]), Number(vp[3]), request) : { error: "not found" };
+    return json(r, r.error ? 400 : 200);
+  }
   if (request.method === "POST" && path === "media") { const r = await publish.putMedia(env, request); return json(r, r.error ? 400 : 200); }
   if (request.method === "POST" && path === "queue") { const r = await publish.add(env, await request.json().catch(() => ({}))); return json(r, r.error ? 400 : 200); }
   if (request.method === "GET" && path === "queue") return json(await publish.list(env, url));
@@ -113,6 +121,8 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     if (url.pathname.startsWith("/api/")) return api(request, env, url);
+    const mv = url.pathname.match(/^\/m\/([0-9a-f]{48}\.mp4)$/);
+    if (mv) return (await publish.getVideo(env, mv[1], request)) || page("Not found", "This video is gone.", 404);
     const m = url.pathname.match(/^\/m\/([0-9a-f]{48}\.(?:jpg|png))$/);
     if (m) return (await publish.getMedia(env, m[1])) || page("Not found", "This picture is gone.", 404);
     const gone = url.pathname.match(/^\/oauth\/(threads)-(uninstall|delete)$/);
@@ -141,6 +151,7 @@ export default {
     ctx.waitUntil(publish.due(env)); // approved posts whose time has come
     if (event.cron !== "17 3 * * *") return;
     ctx.waitUntil(accounts.refreshAll(env));
+    ctx.waitUntil(publish.cleanVideos(env)); // videos older than two days
     ctx.waitUntil(env.DB.prepare("DELETE FROM oauth_states WHERE created < ?").bind(Date.now() - 3600000).run());
   },
 };

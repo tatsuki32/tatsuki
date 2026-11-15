@@ -5,9 +5,17 @@
 //                                                cuts the largest W:H frame around (x, y), scales it to W×H, and, when text is given,
 //                                                writes it in the lower safe zone on a soft dark band (for stories)
 //   postcrop clip-html <file.html> <file.txt>    puts formatted text on the clipboard, with the plain text beside it (for note)
-// Exit: 2 usage, 4 unreadable, 6 write failed.
+//   postcrop pdf <in.pdf> <outdir> <max>         each page (up to max) as outdir/page-N.jpg on white, the text as outdir/text.txt;
+//                                                prints {"pages":n,"total":N}
+//   postcrop video-info <in>                     prints {"w":..,"h":..,"sec":..} (upright size)
+//   postcrop video-frames <in> <outdir> <n>      n frames spread over the video, outdir/frame-N.jpg (for the drafts and the focus)
+//   postcrop video-crop <in> <out.mp4> <W> <H> <x> <y> [maxSec]
+//                                                the largest W:H frame around (x, y), scaled to W×H, H.264 with its sound
+// Exit: 2 usage, 4 unreadable, 5 locked PDF, 6 write failed.
 import AppKit
+import AVFoundation
 import Foundation
+import PDFKit
 import ImageIO
 import UniformTypeIdentifiers
 import Vision
@@ -79,7 +87,98 @@ func crop(_ img: CGImage, w: Int, h: Int, x: Double, y: Double, text: String?) -
     return ctx.makeImage()
 }
 
+func writeJPEG(_ img: CGImage, _ path: String, _ q: Double = 0.9) -> Bool {
+    guard let dest = CGImageDestinationCreateWithURL(URL(fileURLWithPath: path) as CFURL, UTType.jpeg.identifier as CFString, 1, nil) else { return false }
+    CGImageDestinationAddImage(dest, img, [kCGImageDestinationLossyCompressionQuality: q] as CFDictionary)
+    return CGImageDestinationFinalize(dest)
+}
+
+func pdfPages(_ path: String, _ outdir: String, _ maxPages: Int) {
+    guard let doc = PDFDocument(url: URL(fileURLWithPath: path)) else { exit(4) }
+    if doc.isLocked { exit(5) }
+    try? (doc.string ?? "").write(toFile: outdir + "/text.txt", atomically: true, encoding: .utf8)
+    let n = min(doc.pageCount, maxPages)
+    for i in 0..<n {
+        guard let page = doc.page(at: i) else { continue }
+        let box = page.bounds(for: .mediaBox)
+        let rot = page.rotation % 180 != 0
+        let pw = rot ? box.height : box.width, ph = rot ? box.width : box.height
+        let scale = 2160.0 / max(pw, ph)
+        let w = Int(pw * scale), h = Int(ph * scale)
+        guard let ctx = CGContext(data: nil, width: w, height: h, bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                                  bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue) else { exit(6) }
+        ctx.setFillColor(CGColor(red: 1, green: 1, blue: 1, alpha: 1))
+        ctx.fill(CGRect(x: 0, y: 0, width: w, height: h))
+        ctx.scaleBy(x: scale, y: scale)
+        page.draw(with: .mediaBox, to: ctx)
+        guard let img = ctx.makeImage(), writeJPEG(img, outdir + "/page-\(i).jpg") else { exit(6) }
+    }
+    print("{\"pages\":\(n),\"total\":\(doc.pageCount)}")
+}
+
+func upright(_ track: AVAssetTrack) -> (CGAffineTransform, CGSize) {
+    let r = CGRect(origin: .zero, size: track.naturalSize).applying(track.preferredTransform)
+    return (track.preferredTransform.concatenating(CGAffineTransform(translationX: -r.minX, y: -r.minY)), CGSize(width: abs(r.width), height: abs(r.height)))
+}
+
+func videoTrack(_ path: String) -> (AVURLAsset, AVAssetTrack) {
+    let asset = AVURLAsset(url: URL(fileURLWithPath: path))
+    guard let track = asset.tracks(withMediaType: .video).first else { exit(4) }
+    return (asset, track)
+}
+
 switch args[1] {
+case "pdf":
+    guard args.count == 5, let m = Int(args[4]) else { exit(2) }
+    pdfPages(args[2], args[3], m)
+case "video-info":
+    guard args.count == 3 else { exit(2) }
+    let (asset, track) = videoTrack(args[2])
+    let (_, size) = upright(track)
+    print(String(format: "{\"w\":%d,\"h\":%d,\"sec\":%.2f}", Int(size.width), Int(size.height), CMTimeGetSeconds(asset.duration)))
+case "video-frames":
+    guard args.count == 5, let n = Int(args[4]), n > 0 else { exit(2) }
+    let (asset, _) = videoTrack(args[2])
+    let gen = AVAssetImageGenerator(asset: asset)
+    gen.appliesPreferredTrackTransform = true
+    gen.maximumSize = CGSize(width: 1600, height: 1600)
+    gen.requestedTimeToleranceBefore = CMTime(seconds: 0.5, preferredTimescale: 600)
+    gen.requestedTimeToleranceAfter = CMTime(seconds: 0.5, preferredTimescale: 600)
+    let sec = CMTimeGetSeconds(asset.duration)
+    for i in 0..<n {
+        let t = CMTime(seconds: sec * (Double(i) + 0.5) / Double(n), preferredTimescale: 600)
+        guard let img = try? gen.copyCGImage(at: t, actualTime: nil), writeJPEG(img, args[3] + "/frame-\(i).jpg", 0.85) else { exit(6) }
+    }
+case "video-crop":
+    guard args.count >= 8, let w = Double(args[4]), let h = Double(args[5]), let x = Double(args[6]), let y = Double(args[7]), w > 0, h > 0 else { exit(2) }
+    let (asset, track) = videoTrack(args[2])
+    let (t0, size) = upright(track)
+    let s = max(w / size.width, h / size.height)
+    let ox = min(max(x * size.width * s - w / 2, 0), size.width * s - w)
+    let oy = min(max(y * size.height * s - h / 2, 0), size.height * s - h)
+    var range = CMTimeRange(start: .zero, duration: asset.duration)
+    if args.count > 8, let m = Double(args[8]), m > 0, CMTimeGetSeconds(asset.duration) > m { range = CMTimeRange(start: .zero, duration: CMTime(seconds: m, preferredTimescale: 600)) }
+    let layer = AVMutableVideoCompositionLayerInstruction(assetTrack: track)
+    layer.setTransform(t0.concatenating(CGAffineTransform(scaleX: s, y: s)).concatenating(CGAffineTransform(translationX: -ox, y: -oy)), at: .zero)
+    let ins = AVMutableVideoCompositionInstruction()
+    ins.timeRange = range
+    ins.layerInstructions = [layer]
+    let comp = AVMutableVideoComposition()
+    comp.renderSize = CGSize(width: w, height: h)
+    let fps = track.nominalFrameRate > 0 ? min(track.nominalFrameRate, 60) : 30
+    comp.frameDuration = CMTime(value: 1, timescale: CMTimeScale(fps.rounded()))
+    comp.instructions = [ins]
+    try? FileManager.default.removeItem(atPath: args[3])
+    guard let ex = AVAssetExportSession(asset: asset, presetName: AVAssetExportPresetHighestQuality) else { exit(6) }
+    ex.outputURL = URL(fileURLWithPath: args[3])
+    ex.outputFileType = .mp4
+    ex.videoComposition = comp
+    ex.timeRange = range
+    ex.shouldOptimizeForNetworkUse = true
+    let done = DispatchSemaphore(value: 0)
+    ex.exportAsynchronously { done.signal() }
+    done.wait()
+    if ex.status != .completed { FileHandle.standardError.write((ex.error?.localizedDescription ?? "export failed").data(using: .utf8)!); exit(6) }
 case "focus":
     guard args.count == 3 else { exit(2) }
     guard let img = load(args[2]) else { exit(4) }

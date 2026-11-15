@@ -30,6 +30,8 @@ CREATE TABLE IF NOT EXISTS accounts (
 CREATE TABLE IF NOT EXISTS queue (
   id TEXT PRIMARY KEY, account TEXT NOT NULL, kind TEXT NOT NULL, text TEXT NOT NULL DEFAULT '', media TEXT NOT NULL DEFAULT '[]',
   at INTEGER NOT NULL, status TEXT NOT NULL, tries INTEGER NOT NULL DEFAULT 0, link TEXT NOT NULL DEFAULT '', error TEXT NOT NULL DEFAULT '',
-  created INTEGER NOT NULL, done INTEGER, post TEXT NOT NULL DEFAULT '', target TEXT NOT NULL DEFAULT ''
+  created INTEGER NOT NULL, done INTEGER, post TEXT NOT NULL DEFAULT '', target TEXT NOT NULL DEFAULT '',
+  creation TEXT NOT NULL DEFAULT '' -- a video Meta is still preparing (status 'processing')
 );
+-- added 2026-11-15 to an existing table: ALTER TABLE queue ADD COLUMN creation TEXT NOT NULL DEFAULT '';
 CREATE INDEX IF NOT EXISTS queue_due ON queue (status, at);

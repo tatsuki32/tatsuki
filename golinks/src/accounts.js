@@ -12,7 +12,7 @@ export const PROVIDERS = {
   // Meta's unified login (Facebook Login for Business with the "Post Studio publishing" configuration):
   // one sign-in gives a token that does not expire, for the Instagram accounts the person picks
   meta: {
-    name: "Instagram",
+    name: "Instagram and Facebook",
     id: (env) => env.META_APP_ID, secret: (env) => env.META_APP_SECRET,
     authorize: "https://www.facebook.com/v23.0/dialog/oauth",
     extra: (env) => ({ config_id: env.META_CONFIG_ID, override_default_response_type: "true" }),
@@ -40,7 +40,16 @@ export const PROVIDERS = {
           notes.push(`${u.split("?")[0].split("/").slice(-1)[0]}: ${e.message.slice(0, 80)}`);
         }
       }
-      return { many: [...found].map(([id, username]) => ({ provider: "instagram", account: id, handle: username })),
+      // Facebook Pages the person picked: each Page has its own token (it does not expire when the person's does not)
+      const pages = [];
+      try {
+        const v = await get(`${GRAPH}/me/accounts?fields=id,name,access_token,tasks&limit=100&access_token=${enc(token)}`);
+        for (const pg of v.data || []) if (pg.id && pg.access_token) pages.push({ provider: "facebook", account: pg.id, handle: pg.name || pg.id, token: pg.access_token });
+        notes.push(`pages: ${pages.length}`);
+      } catch (e) {
+        notes.push(`pages: ${e.message.slice(0, 80)}`);
+      }
+      return { many: [...[...found].map(([id, username]) => ({ provider: "instagram", account: id, handle: username })), ...pages],
                account: me.id, handle: me.name || "", token, expires: 0, notes };
     },
   },
@@ -155,13 +164,14 @@ export async function callback(env, provider, url) {
       // one sign-in, several accounts: each Instagram account gets its own row with the same token
       const sealed = await seal(env, t.token);
       for (const a of t.many) {
+        const tok = a.token ? await seal(env, a.token) : sealed;
         await env.DB.prepare(
           "INSERT INTO accounts (id, provider, account, handle, token, expires, updated, problem) VALUES (?, ?, ?, ?, ?, 0, ?, '') " +
           "ON CONFLICT(id) DO UPDATE SET handle = excluded.handle, token = excluded.token, expires = 0, updated = excluded.updated, problem = ''"
-        ).bind(`${a.provider}:${a.account}`, a.provider, a.account, a.handle, sealed, Date.now()).run();
+        ).bind(`${a.provider}:${a.account}`, a.provider, a.account, a.handle, tok, Date.now()).run();
       }
-      if (!t.many.length) return { ok: false, text: `Signed in, but no Instagram account came with it (${t.notes.join("; ")}). Pick the accounts on Meta's page and try again.` };
-      return { ok: true, text: `Connected: ${t.many.map((a) => "@" + a.handle).join(", ")}. You can close this page and go back to Desk.` };
+      if (!t.many.length) return { ok: false, text: `Signed in, but no Instagram account or Facebook Page came with it (${t.notes.join("; ")}). Pick them on Meta's page and try again.` };
+      return { ok: true, text: `Connected: ${t.many.map((a) => (a.provider === "facebook" ? "Page " : "@") + a.handle).join(", ")}. You can close this page and go back to Desk.` };
     }
     await env.DB.prepare(
       "INSERT INTO accounts (id, provider, account, handle, token, expires, updated, problem) VALUES (?, ?, ?, ?, ?, ?, ?, '') " +

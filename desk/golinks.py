@@ -128,6 +128,38 @@ def upload(path):
         raise RuntimeError("Could not send the picture to go.tany.im") from None
 
 
+VIDEO_PART = 48 * 1024 * 1024  # a Worker takes up to 100 MB a request; a video goes up in parts
+
+
+def upload_video(path):
+    """One video to the two-day store (R2 on go.tany.im) in parts. Returns its key."""
+    k = key()
+    if not k:
+        raise RuntimeError("The go.tany.im key is not on this Mac")
+    start = _call("POST", "/api/media/video", {"type": "video/mp4"})
+    if start.get("error"):
+        raise RuntimeError(start["error"])
+    parts = []
+    with open(path, "rb") as f:
+        n = 1
+        while True:
+            chunk = f.read(VIDEO_PART)
+            if not chunk:
+                break
+            req = urllib.request.Request(f"{BASE}/api/media/video/{start['key']}/{start['upload']}/{n}", method="PUT", data=chunk,
+                                         headers={"authorization": "Bearer " + k, "content-type": "application/octet-stream", "user-agent": "tatsuki-desk"})
+            try:
+                with urllib.request.urlopen(req, timeout=600) as r:
+                    parts.append(json.load(r))
+            except (OSError, ValueError):
+                raise RuntimeError("Could not send the video to go.tany.im") from None
+            n += 1
+    done = _call("POST", f"/api/media/video/{start['key']}/{start['upload']}/done", {"parts": parts}, timeout=120)
+    if done.get("error"):
+        raise RuntimeError(done["error"])
+    return start["key"]
+
+
 def queue_add(rec):
     return _call("POST", "/api/queue", rec)
 

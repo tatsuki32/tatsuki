@@ -28,7 +28,7 @@
     {
       "name": "desk-posts-test",
       "runtimeExecutable": "/bin/sh",
-      "runtimeArgs": ["-c", "cd desk && DESK_POSTS_DIR=/tmp/claude/desk-posts-test DESK_PORT=${PORT:-4796} exec python3 server.py"],
+      "runtimeArgs": ["-c", "cd desk && DESK_POSTS_DIR=/tmp/claude/desk-posts-test DESK_TANY_SITE=/tmp/claude/desk-posts-test/site DESK_TANY_DEPLOY=echo DESK_PORT=${PORT:-4796} exec python3 server.py"],
       "port": 4796
     },
     {
