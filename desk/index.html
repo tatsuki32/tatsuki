@@ -1532,6 +1532,65 @@ a.shelfbtn{text-decoration:none;display:inline-flex;align-items:center}
   .wcard.wnc .wb{min-height:140px}
   .wk-add input{min-width:0;flex-basis:100%}
 }
+/* Footprint (#footprint): a rough CO2e estimate. Part colours come from TL_COLORS; no gold except the main button, no red. */
+.fpp{max-width:720px}
+.fpp .sub a,.fpsrc a{color:var(--accent)}
+.fphero{display:grid;grid-template-columns:minmax(0,1fr) 200px;gap:var(--s3);align-items:center;width:100%;justify-self:stretch}
+.fphero .mtalk{font-size:var(--t4);line-height:1.5}
+.fpnum{font-size:var(--t5);font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
+.fpnum small{font-size:var(--t3);font-weight:400;color:var(--muted)}
+.fprange{font-size:var(--t1);color:var(--muted)}
+.fp3d{height:200px;perspective:900px;display:flex;justify-content:center;align-items:flex-end;padding-bottom:28px;overflow:hidden}
+.fpstage{position:relative;width:0;height:0;transform-style:preserve-3d;transform:rotateX(-24deg) rotateY(-40deg);animation:fpsway 14s ease-in-out infinite alternate}
+@keyframes fpsway{from{transform:rotateX(-24deg) rotateY(-52deg)}to{transform:rotateX(-24deg) rotateY(-24deg)}}
+.fpc{position:absolute;left:0;top:0;width:var(--c);height:var(--c);transform-style:preserve-3d}
+.fpi{position:absolute;inset:0;transform-style:preserve-3d;animation:fpdrop .55s cubic-bezier(.3,1.35,.55,1) both}
+@keyframes fpdrop{from{transform:translateY(-320px);opacity:0}30%{opacity:1}to{transform:none;opacity:1}}
+.fpi b{position:absolute;inset:0;background:var(--k);border:1px solid rgba(0,0,0,.35);backface-visibility:hidden}
+.fpi b:nth-child(1){transform:translateZ(calc(var(--c)/2))}
+.fpi b:nth-child(2){transform:rotateY(180deg) translateZ(calc(var(--c)/2));filter:brightness(.6)}
+.fpi b:nth-child(3){transform:rotateY(90deg) translateZ(calc(var(--c)/2));filter:brightness(.72)}
+.fpi b:nth-child(4){transform:rotateY(-90deg) translateZ(calc(var(--c)/2));filter:brightness(.72)}
+.fpi b:nth-child(5){transform:rotateX(90deg) translateZ(calc(var(--c)/2));filter:brightness(1.18)}
+.fpi b:nth-child(6){transform:rotateX(-90deg) translateZ(calc(var(--c)/2));filter:brightness(.5)}
+.fpfloor{position:absolute;transform-style:preserve-3d;background:repeating-linear-gradient(0deg,transparent 0 calc(var(--c) - 1px),var(--line) 0 var(--c)),repeating-linear-gradient(90deg,transparent 0 calc(var(--c) - 1px),var(--line) 0 var(--c));opacity:.6}
+.fpcow{position:absolute;border:1px dashed var(--ink-2);background:rgba(242,242,244,.05)}
+.fp3dnote{text-align:center;font-size:var(--t1);color:var(--muted)}
+.fpkey{display:flex;flex-wrap:wrap;gap:var(--s1) var(--s3);font-size:var(--t1);color:var(--ink-2)}
+.fpkey span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--k);margin-right:6px;vertical-align:-1px}
+.fpherd{display:grid;gap:var(--s3)}
+.fpherdrow{display:grid;gap:var(--s1)}
+.fpicons{display:flex;flex-wrap:wrap;gap:var(--s1)}
+.fpico{position:relative;width:56px;height:36px}
+.fpico svg{position:absolute;left:0;top:0;width:56px;height:36px}
+.fpico .fpbase{color:var(--surface-2)}
+.fpico .fpfill{position:absolute;inset:0 auto 0 0;overflow:hidden;color:var(--ink)}
+.fpbars{display:grid;gap:var(--s1)}
+.fpbar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--s1) var(--s2);align-items:center;background:none;border:0;border-top:1px solid var(--line);padding:var(--s2) 0;color:var(--ink);text-align:left;cursor:pointer;font:inherit;width:100%}
+.fpbar .amt{font-variant-numeric:tabular-nums;font-size:var(--t2)}
+.fptrack{grid-column:1/-1;position:relative;height:10px;background:var(--surface-2);border-radius:5px}
+.fptrack i{position:absolute;top:0;bottom:0;left:0;border-radius:5px;background:var(--k)}
+.fptrack u{position:absolute;top:4px;height:2px;background:var(--ink-2);opacity:.7;text-decoration:none}
+.fpmore{padding:var(--s2) 0 var(--s3);display:grid;gap:var(--s2);font-size:var(--t2);color:var(--ink-2)}
+.fpsrc{display:grid;gap:var(--s1);font-size:var(--t1);color:var(--muted)}
+.fpvs{display:grid;gap:var(--s2)}
+.fpvs .row{display:grid;grid-template-columns:150px minmax(0,1fr) 70px;gap:var(--s2);align-items:center;font-size:var(--t2)}
+.fpvs .row i{display:block;height:14px;border-radius:3px;background:var(--muted)}
+.fpvs .row.me i{background:var(--ink)}
+.fpvs .row span:last-child{text-align:right;font-variant-numeric:tabular-nums}
+.fptrend{display:flex;align-items:flex-end;gap:2px;height:140px;position:relative;border-bottom:1px solid var(--line)}
+.fptrend .fpcol{flex:1;gap:0;display:flex;flex-direction:column-reverse;min-width:0;height:100%;justify-content:flex-start}
+.fptrend .fpcol i{display:block;flex:none;background:var(--k)}
+.fptrend .cowline{position:absolute;left:0;right:0;border-top:1px dashed var(--ink-2);font-size:var(--t1);color:var(--muted)}
+.fptrend .cowline span{position:absolute;right:0;top:-18px}
+.fpdays{display:flex;justify-content:space-between;font-size:var(--t1);color:var(--muted)}
+.fptrip{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:var(--s2);align-items:end}
+.fptrip label{display:grid;gap:var(--s1);font-size:var(--t1);color:var(--muted)}
+.fptrip input,.fptrip select{min-width:0}
+.fptrip .chk{display:flex;gap:var(--s1);align-items:center;min-height:40px}
+.fptlist .strow button{background:none;border:0;color:var(--muted);cursor:pointer;font:inherit;text-decoration:underline}
+@media (max-width:640px){.fphero{grid-template-columns:1fr}.fpvs .row{grid-template-columns:110px minmax(0,1fr) 60px}}
+@media (prefers-reduced-motion:reduce){.fpstage{animation:none}.fpi{animation:none}}
 </style>
 
 <div class="app">
@@ -1608,6 +1667,7 @@ if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="money")+1,0,{id:"screentime
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="screentime")+1,0,{id:"webhistory",e:"🌐",label:"Web History",g:"write"});
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="screentime")+1,0,{id:"netspeed",e:"📶",label:"Internet Speed",g:"write"});
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="screentime")+1,0,{id:"pc",e:"🖥️",label:"PC",g:"write"});
+if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="bodyhabits")+1,0,{id:"footprint",e:"🌍",label:"Footprint",g:"body"}); // rough daily CO2e from screens, AI, meals, spending and trips (desk/footprint.py)
 if(LOCALAPI) VIEWS.push({id:"usage",e:"📊",label:"Usage",g:"write"}); // which parts of Desk get used, and the weekly re-arrangement (desk/usage.py)
 if(LOCALAPI) VIEWS.push({id:"utilities",e:"🧰",label:"Small Utilities",g:"write"}); // QR, character count, is.gd and PDF compression (desk/utilities.py)
 if(LOCALAPI) VIEWS.push({id:"post",e:"📣",label:"Post Studio",g:"write"}); // photos and a memo become drafts for each social account; nothing is posted from Desk (desk/posts.py)
@@ -4822,7 +4882,7 @@ function home(){
   const d=new Date();const h=d.getHours();const greet=h<11?"Good morning":h<18?"Good afternoon":"Good evening";
   const tools=S.tools.filter(t=>!t.deleted), daily=tools.filter(t=>t.group==="Daily").sort((a,b)=>(a.order??99)-(b.order??99));
   const top=topThreeIds();
-  const cards={triage:triHome(),focus:focusHomeCard(),pc:LOCALAPI?`<a class="sub pcline" id="pcLine" href="#pc">${pcLineText()}</a>`:"",site:LOCALAPI?siteHomeLine():"",body:homeBodyStrip(),
+  const cards={triage:triHome(),focus:focusHomeCard(),pc:LOCALAPI?`<a class="sub pcline" id="pcLine" href="#pc">${pcLineText()}</a>`:"",site:LOCALAPI?siteHomeLine():"",footprint:LOCALAPI?fpHomeLine():"",body:homeBodyStrip(),
     today:`<div class="duo">${todayEvents()}${habitStrip()||`<section class="card"><div class="dhead"><h2><span class="e">🌱</span>Today's habits</h2><a class="more" href="#habits">Add →</a></div><div class="empty">Add things you want to keep up in Habits.</div></section>`}</div>`,
     heritage:heritageCard(),ideas:ideasCard(),claude:ccCard(),panel:todayPanel(top),inflow:inflow(),notes:notesHere("home"),
     tools:daily.length?`<section><div class="section-title"><span class="e">☀️</span>Daily tools<a href="#tools">All tools →</a></div><div class="tiles mini">${daily.map(tile).join("")}</div></section>`:`<p class="sub" style="margin:0"><a href="#tools" class="more">Open tools →</a></p>`};
@@ -5380,6 +5440,7 @@ function render(){
   S.wkShown=null;
   if(viewId()==="mailclean"){mcLoad();$("#view").innerHTML=searchResults()+mcView();wire();wireMc();return}
   if(viewId()==="site"){siteLoad();$("#view").innerHTML=searchResults()+siteView();wire();return}
+  if(viewId()==="footprint"){fpLoad();$("#view").innerHTML=searchResults()+fpView();wire();wireFp();return}
   if(viewId()==="netspeed"){nsLoad();$("#view").innerHTML=searchResults()+nsView();wire();wireNs();return}
   if(viewId()==="transcribe"){trLoad();$("#view").innerHTML=searchResults()+trView();wire();wireTr();return}
   if(viewId()==="post"){if(!ps().data&&!ps().loading)psLoad();if(!document.activeElement?.closest?.(".psedit")||!$("#psView"))psDraw();return} // a redraw from elsewhere never takes the text being typed
@@ -5837,8 +5898,118 @@ document.addEventListener("click",async e=>{
   if(t.hasAttribute("data-siteclarity")){try{await api("PUT","/api/site/settings",{clarity:$("#siteClarity").value.trim()});toast("Saved");siteLoad()}catch(err){toast("That does not look like a Clarity id")}}
 });
 setInterval(()=>{if(viewId()==="site"&&!document.hidden)siteLoad()},120000);
+if(LOCALAPI){fpHomeLoad();setInterval(()=>{if(viewId()==="home"&&!document.hidden)fpHomeLoad()},30*60000)}
 if(LOCALAPI){siteHomeLoad();setInterval(()=>{if(viewId()==="home"&&!document.hidden)siteHomeLoad()},15*60000)}
 function wireNs(){const b=$("#nsRun");if(b)b.onclick=nsStart}
+/* Footprint (#footprint): a rough CO2e estimate from records Desk already keeps. desk/footprint.py does every number;
+   this view only draws them. The one-liner is a fixed sentence from the server, aimed at what convenience costs, never at the reader. */
+const FPCOL={digital:TL_COLORS[0],ai:TL_COLORS[3],food:TL_COLORS[2],spend:TL_COLORS[4],travel:TL_COLORS[6]};
+const FPPER=[["1","Today"],["7","7 days"],["30","30 days"]];
+const FPMODE={flight:"Flight",car:"Car",taxi:"Taxi / Grab car",motorbike:"Motorbike",bus:"Bus",train:"Train",walk:"Walk / bicycle"};
+const fpKg=v=>v==null?"–":v<1?`${Math.round(v*1000)} g`:v<100?`${v.toFixed(1)} kg`:`${Math.round(v).toLocaleString("en-US")} kg`;
+const fpN=v=>v>=100?Math.round(v).toLocaleString("en-US"):v>=10?v.toFixed(0):v>=1?v.toFixed(1):v.toFixed(2);
+const fpHours=h=>h==null?"":h<1?`${Math.max(1,Math.round(h*60))} min`:h<48?`${h<10?h.toFixed(1):Math.round(h)} hr`:`${Math.round(h/24)} days`;
+async function fpLoad(force){
+  if(!LOCALAPI||S.fpBusy)return;
+  const p=S.fpP||"7";
+  if(!force&&S.fp&&S.fp.period===p&&Date.now()-(S.fpAt||0)<60000)return;
+  S.fpBusy=true;S.fpAt=Date.now();
+  try{const v=await api("GET","/api/footprint?period="+p),same=JSON.stringify(v)===JSON.stringify(S.fp);S.fp=v;S.fpErr=false;S.fpBusy=false;if(!same&&viewId()==="footprint")render()}
+  catch(e){const was=S.fpErr;S.fpErr=true;S.fpBusy=false;if(!was&&viewId()==="footprint")render()}
+}
+/* The pile: one cube per step of CO2e, biggest part at the bottom, 4 x 4 per layer. A dashed frame marks one cow-day when it fits. */
+function fpPile(d){
+  const total=d.total[1];if(!total)return "";
+  const steps=[0.1,0.25,0.5,1,2,5,10,25,50,100,250];
+  const unit=steps.find(s=>total/s<=80)||steps[steps.length-1];
+  const cubes=[];d.order.forEach(p=>{const n=Math.round(d.parts[p].kg[1]/unit);for(let i=0;i<n;i++)cubes.push(p)});
+  if(!cubes.length)cubes.push(d.order[0]);
+  const C=22,W=4,per=W*W,off=-W*C/2;
+  const cube=(p,i)=>{const layer=Math.floor(i/per),r=i%per,x=off+(r%W)*C,z=off+Math.floor(r/W)*C+C/2,y=-(layer+1)*C;
+    return `<div class="fpc" style="--k:${FPCOL[p]};transform:translate3d(${x}px,${y}px,${z}px)"><div class="fpi" style="animation-delay:${Math.min(i*30,2400)}ms"><b></b><b></b><b></b><b></b><b></b><b></b></div></div>`};
+  const floor=`<div class="fpfloor" style="width:${W*C}px;height:${W*C}px;transform:translate3d(${off}px,${-W*C/2}px,0) rotateX(90deg)"></div>`;
+  const cowKg=d.cowKgPerDay;
+  const cowLayers=cowKg?cowKg/unit/per:null,layers=Math.ceil(cubes.length/per);
+  const frame=cowLayers&&cowLayers<=Math.max(layers*2.5,3)?`<div class="fpcow" style="width:${W*C}px;height:${cowLayers*C}px;transform:translate3d(${off}px,${-cowLayers*C}px,${-off}px)"></div>`:"";
+  const note=cowKg?(frame?`Dashed box: what one cow emits in a day (${fpKg(cowKg)}).`:`One cow-day would be ${fpN(cowLayers/layers)}× this pile.`):"";
+  return `<div class="fppile"><div class="fp3d" aria-hidden="true"><div class="fpstage" style="--c:${C}px">${floor}${frame}${cubes.map(cube).join("")}</div></div><div class="fp3dnote">1 cube = ${fpKg(unit)}. ${note}</div></div>`;
+}
+const FPCOW=`<svg viewBox="0 0 56 36" fill="currentColor"><path d="M9 10h30a6 6 0 0 1 6 6v4H9a5 5 0 0 1-5-5 5 5 0 0 1 5-5z"/><rect x="9" y="18" width="36" height="6" rx="2"/><rect x="11" y="23" width="4" height="11" rx="1"/><rect x="18" y="23" width="4" height="11" rx="1"/><rect x="33" y="23" width="4" height="11" rx="1"/><rect x="40" y="23" width="4" height="11" rx="1"/><path d="M42 8l8-2 4 4-1 8-6 2-5-4z"/><path d="M45 5l-2-4M51 5l2-4" stroke="currentColor" stroke-width="2"/><path d="M5 12l-4 9" stroke="currentColor" stroke-width="2"/></svg>`;
+const FPSHEEP=`<svg viewBox="0 0 56 36" fill="currentColor"><circle cx="16" cy="15" r="7"/><circle cx="25" cy="12" r="8"/><circle cx="34" cy="15" r="7"/><circle cx="21" cy="20" r="7"/><circle cx="30" cy="20" r="7"/><ellipse cx="44" cy="14" rx="5" ry="6"/><rect x="16" y="24" width="3" height="10" rx="1"/><rect x="23" y="25" width="3" height="9" rx="1"/><rect x="29" y="25" width="3" height="9" rx="1"/><rect x="35" y="24" width="3" height="10" rx="1"/></svg>`;
+function fpHerd(d){
+  const one=(key,svg,label)=>{const r=d.compare.rows.find(x=>x.key===key);if(!r)return "";
+    const per=n=>n<=20?1:[2,5,10,20,50,100,200,500,1000].find(k=>n/k<=20)||1000,k=per(r.value),n=r.value/k,show=Math.ceil(n),icons=Array.from({length:show},(_,i)=>{const fill=Math.max(0,Math.min(1,n-i));
+      return `<span class="fpico">${svg.replace("<svg",'<svg class="fpbase"')}<span class="fpfill" style="width:${fill*100}%">${svg}</span></span>`}).join("");
+    return `<div class="fpherdrow"><span class="wt">${fpN(r.value)} ${label}${k>1?` <span class="sub">(one icon = ${k})</span>`:""}</span><div class="fpicons" aria-hidden="true">${icons}</div><span class="sub">${esc(r.label)} · <a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.source)}</a></span></div>`};
+  const body=one("cow_kg_per_day",FPCOW,"cow-days")+one("sheep_kg_per_day",FPSHEEP,"sheep-days");
+  return body?mpanel("In livestock","How long it takes animals to emit the same",`<div class="fpherd">${body}</div>`):"";
+}
+function fpParts(d){
+  const max=Math.max(...PARTS_FP.map(p=>d.parts[p]?.kg?.[2]||0),0.001);
+  const row=p=>{const x=d.parts[p];if(!x)return "";
+    if(x.missing)return `<div class="fpbar" style="cursor:default"><span>${esc(x.name)}</span><span class="amt sub">No sources yet</span></div>`;
+    const [lo,mid,hi]=x.kg,open=S.fpOpen===p;
+    const head=`<button class="fpbar" data-fpopen="${p}" aria-expanded="${open}" style="--k:${FPCOL[p]}"><span>${esc(x.name)} <span class="sub">${x.days?`${fpN(x.amount)} ${esc(x.unit)}`:"no records"}</span></span><span class="amt">${x.days?fpKg(mid):"–"}</span><span class="fptrack">${x.days?`<i style="width:${mid/max*100}%"></i><u style="left:${lo/max*100}%;width:${Math.max(0,(hi-lo)/max*100)}%"></u>`:""}</span></button>`;
+    if(!open)return head;
+    const extra=[x.days?`Range ${fpKg(lo)} to ${fpKg(hi)}.`:"",p==="food"&&x.top?.length?`Biggest: ${x.top.map(t=>`${esc(t.food)} ${fpKg(t.kg)}`).join(", ")}.`:"",p==="food"&&x.missed?`${x.missed} item${x.missed>1?"s":""} not counted (no weight or unknown food).`:"",p==="spend"&&x.flightsSkipped?`${x.flightsSkipped} airline payment${x.flightsSkipped>1?"s":""} left out. Add the flight under Trips.`:"",p==="ai"&&d.parts.ai.days?"Most of the tokens are cached re-reads of the same conversation; they are weighted lightly.":""].filter(Boolean).map(t=>`<p style="margin:0">${t}</p>`).join("");
+    const src=x.factors.map(f=>`<span>${esc(f.key.replace(/_/g," "))}${f.value!=null?`: ${f.value} ${esc(f.unit)}${f.low!=null&&f.high!=null?` (${f.low}–${f.high})`:""}`:""} · <a href="${esc(f.url)}" target="_blank" rel="noopener">${esc(f.source)}</a>${f.note?` · ${esc(f.note)}`:""}</span>`).join("");
+    return head+`<div class="fpmore"><p style="margin:0">${esc(x.note)}</p>${extra}<div class="fpsrc">${src}</div></div>`};
+  return mpanel("Where it came from","Tap a row for how it was counted",`<div class="fpbars">${[...d.order,...PARTS_FP.filter(p=>!d.order.includes(p))].map(row).join("")}</div>`);
+}
+const PARTS_FP=["digital","ai","food","spend","travel"];
+function fpVs(d){
+  const per=d.total[1]/d.days,rows=d.compare.rows.filter(r=>/per_capita/.test(r.key));
+  if(!rows.length)return "";
+  const top=Math.max(per,...rows.map(r=>r.value)),bar=(cls,label,v,src)=>`<div class="row ${cls}"><span>${label}</span><i style="width:${Math.max(1,v/top*100)}%"></i><span>${fpKg(v)}</span></div>${src||""}`;
+  const more=d.compare.rows.filter(r=>["tree_kg_per_year","car_kg_per_km"].includes(r.key)).map(r=>`<div class="strow"><span>${esc(r.label)}</span><span class="wt">${fpN(r.value)} ${esc(r.unit)}</span></div>`).join("");
+  return mpanel("Per day, next to other people",`Counted parts only. Others include everything they emit. <a href="${esc(rows[0].url)}" target="_blank" rel="noopener">${esc(rows[0].source)}</a>`,
+    `<div class="fpvs">${bar("me","You (counted so far)",per)}${rows.map(r=>bar("",esc(r.label.replace(/^An average person in /,"Average: ").replace(/, per day$/,"")),r.value)).join("")}</div>${more}`);
+}
+function fpTrend(d){
+  if(d.days<7)return "";
+  const top=Math.max(...d.dayRows.map(r=>r.total),0.001),cowKg=d.cowKgPerDay,lineAt=cowKg&&cowKg<=top*1.6?cowKg:null,scale=Math.max(top,lineAt||0);
+  const cols=d.dayRows.map(r=>`<div class="fpcol" title="${r.date}: ${fpKg(r.total)}">${PARTS_FP.filter(p=>r[p]).map(p=>`<i style="--k:${FPCOL[p]};height:${r[p]/scale*100}%"></i>`).join("")}</div>`).join("");
+  const line=lineAt?`<div class="cowline" style="bottom:${lineAt/scale*100}%"><span>1 cow-day</span></div>`:"";
+  return mpanel("Day by day",fpKey(),`<div class="fptrend" aria-label="CO2e per day">${cols}${line}</div><div class="fpdays"><span>${d.from.slice(5)}</span><span>${d.to.slice(5)}</span></div>`);
+}
+const fpKey=()=>`<span class="fpkey">${PARTS_FP.map(p=>`<span style="--k:${FPCOL[p]}">${esc((S.fp?.parts?.[p]?.name)||p)}</span>`).join("")}</span>`;
+function fpTrips(d){
+  const today=new Date(Date.now()+7*3600e3).toISOString().slice(0,10),f=S.fpForm||{date:today,mode:"flight"};
+  const form=`<form class="fptrip" id="fpTrip" autocomplete="off">
+    <label>Date<input type="date" name="date" value="${esc(f.date||today)}" required></label>
+    <label>How<select name="mode">${Object.entries(FPMODE).map(([k,l])=>`<option value="${k}"${f.mode===k?" selected":""}>${l}</option>`).join("")}</select></label>
+    <label>From<input name="from" placeholder="SGN" maxlength="4" value="${esc(f.from||"")}"></label>
+    <label>To<input name="to" placeholder="HAN" maxlength="4" value="${esc(f.to||"")}"></label>
+    <label>Or km<input name="km" type="number" min="0" step="0.1" inputmode="decimal" value="${esc(f.km||"")}"></label>
+    <label class="chk"><input type="checkbox" name="roundTrip"${f.roundTrip?" checked":""}> Round trip</label>
+    <button class="btn primary" type="submit">Add trip</button></form>`;
+  const list=(d.trips||[]).map(t=>`<div class="strow"><span>${esc(t.date)} · ${esc(FPMODE[t.mode]||t.mode)}${t.from&&t.to?` ${esc(t.from)}→${esc(t.to)}`:""}${t.roundTrip?" and back":""}</span><span>${fpN(t.km)} km <button data-fpdel="${esc(t.id)}" aria-label="Remove trip">Remove</button></span></div>`).join("");
+  return mpanel("Trips","Flights: two airport codes are enough. Other rides: the distance.",form+(list?`<div class="fptlist">${list}</div>`:""));
+}
+function fpView(){
+  const head=`<h1>Footprint</h1>`,tabs=`<div class="mtabs" role="tablist" aria-label="Period">${FPPER.map(([k,l])=>`<button role="tab" class="mtab" data-fpp="${k}" aria-selected="${(S.fpP||"7")===k}">${l}</button>`).join("")}</div>`;
+  if(S.fpErr)return `<div class="money fpp">${head}<p class="due">Could not load. Restarting the server may help.</p></div>`;
+  const d=S.fp;if(!d||d.period!==(S.fpP||"7"))return `<div class="money fpp">${head}${tabs}<p class="due">Counting…</p></div>`;
+  const [lo,mid,hi]=d.total,cow=d.cowHours;
+  const hero=`<section class="card mfocus" aria-label="Total"><div class="fphero"><div><div class="fpnum">${fpKg(mid)} <small>CO2e</small></div><div class="fprange">${d.days===1?"Today so far":`${d.from} to ${d.to}`} · likely ${fpKg(lo)} to ${fpKg(hi)}${cow?` · ${fpHours(cow)} of a cow`:""}</div><p class="mtalk" style="margin-top:var(--s2)">${esc(d.quip)}</p></div>${fpPile(d)}</div>${fpKey()}</section>`;
+  const foot=`<p class="sub">${esc(d.notCounted)} Every number is an estimate with a wide range; tap a part to see the sources${d.factorsAsOf?` (checked ${esc(d.factorsAsOf)})`:""}.</p>`;
+  return `<div class="money fpp" data-noauto>${head}${tabs}${hero}${fpHerd(d)}${fpParts(d)}${fpVs(d)}${fpTrend(d)}${fpTrips(d)}${foot}</div>`;
+}
+function wireFp(){
+  document.querySelectorAll("[data-fpp]").forEach(b=>b.onclick=()=>{S.fpP=b.dataset.fpp;fpLoad(true);render()});
+  document.querySelectorAll("[data-fpopen]").forEach(b=>b.onclick=()=>{S.fpOpen=S.fpOpen===b.dataset.fpopen?null:b.dataset.fpopen;render()});
+  document.querySelectorAll("[data-fpdel]").forEach(b=>b.onclick=async()=>{try{await api("PUT","/api/footprint/trips/"+b.dataset.fpdel,{deleted:true});toast("Trip removed");fpLoad(true)}catch(e){toast("Could not remove")}});
+  const f=$("#fpTrip");if(!f)return;
+  f.oninput=()=>{const x=new FormData(f);S.fpForm={date:x.get("date"),mode:x.get("mode"),from:x.get("from"),to:x.get("to"),km:x.get("km"),roundTrip:!!x.get("roundTrip")}};
+  f.onsubmit=async e=>{e.preventDefault();const x=new FormData(f),id="t-"+Math.random().toString(36).slice(2,12);
+    const body={date:x.get("date"),mode:x.get("mode"),from:x.get("from"),to:x.get("to"),km:x.get("km")||null,roundTrip:!!x.get("roundTrip")};
+    try{const r=await fetch("/api/footprint/trips/"+id,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}),j=await r.json();
+      if(!r.ok){toast(j.error||"Could not add");return}
+      S.fpForm={date:body.date,mode:body.mode};toast("Trip added");fpLoad(true)}catch(err){toast("Could not add")}};
+}
+async function fpHomeLoad(){if(!LOCALAPI)return;try{S.fpHome=await api("GET","/api/footprint/home");const el=$("#fpLine");if(el){const t=document.createElement("div");t.innerHTML=fpHomeLine();el.textContent=t.firstChild.textContent}}catch(e){}}
+const fpHomeLine=()=>{const h=S.fpHome;if(!LOCALAPI)return "";if(!h||!h.kg)return `<a class="sub pcline" id="fpLine" href="#footprint">Footprint: yesterday's CO2e</a>`;
+  return `<a class="sub pcline" id="fpLine" href="#footprint">Footprint yesterday: ${fpKg(h.kg)} CO2e${h.cowHours?` · ${fpHours(h.cowHours)} of a cow`:""}</a>`};
 /* Transcribe: long recordings turned into text on this Mac. The recorder is its own server (desk/transcribe/, 8791) and opens in the default browser,
    which can use the microphone. This view only reads the sessions (desk/transcribe_desk.py) and starts the server when it is not running. */
 const TRWORD={recording:"Recording",interrupted:"Stopped early",uploading:"Importing",queued:"Waiting",converting:"Converting",transcribing:"Transcribing",done:"Done",partial:"Partly done",error:"Didn't finish"};
@@ -7765,7 +7936,7 @@ const FDESC={ // what each screen is for, in plain words (English and Japanese k
   utilities:"QR code, character count, URL shortener, PDF compression 小さな道具 QR 文字数 短縮 PDF圧縮",
   post:"drafts for social posts from photos and a memo 投稿 SNS",campus:"write and send the free newsletter 地球キャンパス通信 メルマガ newsletter readers signup page",transcribe:"record and transcribe long audio 録音 文字起こし",
   bank:"bank accounts to share and copy 口座",accounts:"list of sites where you have accounts, how you sign in アカウント ログイン",
-  showcase:"portfolio site and PR photos ポートフォリオ",claudeusage:"Claude token usage and scheduled jobs 使用量",
+  showcase:"portfolio site and PR photos ポートフォリオ",claudeusage:"Claude token usage and scheduled jobs 使用量",footprint:"CO2 footprint from screen time, AI, meals, spending and trips, compared with cows and sheep 環境負荷 二酸化炭素 CO2",
 };
 function finderCatalog(){
   const out=[],seen=new Set(),add=(id,kind,name,desc,e,run)=>{if(seen.has(id))return;seen.add(id);out.push({id,kind,name:plain(name).slice(0,120),desc:plain(desc).slice(0,200),e:e||"",run})};
@@ -7920,7 +8091,7 @@ document.addEventListener("keydown",e=>{const t=e.target.tagName;if(t==="INPUT"|
    Seconds are added only while the window is showing and something was touched in the last two minutes.
    The arrangement is two lists of screen ids and an order of card ids; every screen and card is drawn whatever they say. ---------- */
 S.layout=window.LAYOUT||null;
-const HOMECARDS=[["triage","Triage and questions"],["focus","Focus"],["pc","PC status line"],["site","Site line"],["body","Body summary"],["today","Today's events and habits"],["heritage","Daily World Heritage"],["ideas","This week's ideas"],["claude","Ask Claude"],["panel","Today's tasks"],["wins","Today's wins"],["inflow","Incoming"],["notes","Home notes"],["tools","Daily tools"]];
+const HOMECARDS=[["triage","Triage and questions"],["focus","Focus"],["pc","PC status line"],["site","Site line"],["footprint","Footprint line"],["body","Body summary"],["today","Today's events and habits"],["heritage","Daily World Heritage"],["ideas","This week's ideas"],["claude","Ask Claude"],["panel","Today's tasks"],["wins","Today's wins"],["inflow","Incoming"],["notes","Home notes"],["tools","Daily tools"]];
 function homeOrder(){
   const all=HOMECARDS.map(c=>c[0]), out=(S.layout?.home||[]).filter((id,i,xs)=>all.includes(id)&&xs.indexOf(id)===i);
   all.forEach((id,k)=>{if(out.includes(id))return;const prev=all.slice(0,k).filter(x=>out.includes(x)).pop();out.splice(prev?out.indexOf(prev)+1:0,0,id)});

@@ -32,6 +32,12 @@
       "port": 4796
     },
     {
+      "name": "desk-footprint-test",
+      "runtimeExecutable": "/bin/sh",
+      "runtimeArgs": ["-c", "cd desk && FOOTPRINT_DIR=/tmp/claude/footprint-test DESK_PORT=${PORT:-4794} exec python3 server.py"],
+      "port": 4794
+    },
+    {
       "name": "desk-notify-test",
       "runtimeExecutable": "/bin/sh",
       "runtimeArgs": ["-c", "cd desk && NOTIFY_DIR=/tmp/claude/desk-notify-test DESK_PORT=${PORT:-4793} exec python3 server.py"],

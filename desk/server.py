@@ -33,6 +33,7 @@ from urllib.parse import parse_qs, unquote, urlsplit
 import bank
 import accounts
 import netspeed
+import footprint
 import finder
 import transcribe_desk
 import notify
@@ -985,6 +986,10 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(500, {"error": "read"})
         if path == "/api/netspeed":
             return self.send(200, netspeed.view())
+        if path == "/api/footprint":  # rough daily CO2e from records already here (desk/footprint.py); nothing is sent anywhere
+            return self.send(200, footprint.view(parse_qs(urlsplit(self.path).query).get("period", ["7"])[0]))
+        if path == "/api/footprint/home":
+            return self.send(200, footprint.home())
         if path == "/api/transcribe":
             return self.send(200, transcribe_desk.view())
         if path.startswith("/api/utilities/file/"):
@@ -1327,6 +1332,10 @@ class Handler(BaseHTTPRequestHandler):
             if not (self.headers.get("Content-Type") or "").startswith("application/json"):
                 return self.send(415, {"error": "json only"})
             return self.send(*memolink_run())
+        if method == "PUT" and urlsplit(self.path).path.startswith("/api/footprint/trips/"):
+            if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+                return self.send(415, {"error": "json only"})
+            return self.send(*footprint.put_trip(urlsplit(self.path).path.rsplit("/", 1)[1], rec))
         if method == "PUT" and urlsplit(self.path).path.startswith("/api/wise/"):
             if not (self.headers.get("Content-Type") or "").startswith("application/json"):
                 return self.send(415, {"error": "json only"})
