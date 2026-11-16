@@ -63,7 +63,7 @@ import wise_sync
 ROOT = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(ROOT, "data")
 PORT = int(os.environ.get("DESK_PORT", "4747"))
-COLLECTIONS = ("memos", "dues", "tasks", "prompts", "notes", "habits", "lifemap", "wins", "worldlog", "presents", "heritagelog", "routines", "routinelog", "rewards", "ideaslog", "gear", "projects", "sections", "jobapps", "replywin", "genres", "tasktypes", "mergeprops", "timelog", "genrelog", "typeprops", "wboards", "wcards")
+COLLECTIONS = ("memos", "dues", "tasks", "prompts", "notes", "habits", "lifemap", "wins", "worldlog", "presents", "heritagelog", "routines", "routinelog", "rewards", "ideaslog", "gear", "projects", "sections", "jobapps", "replywin", "genres", "tasktypes", "mergeprops", "timelog", "genrelog", "typeprops", "wboards", "wcards", "okrs")
 # file in data/, global the page reads, value when the file is missing
 DATA_JS = [
     ("tools.js", "TOOLS", "[]"),
@@ -252,6 +252,18 @@ def keep_labels(old, new):
                 new[k] = old[k]
 
 
+def keep_kr(col, old, new):
+    """Project OKRs: a page opened before a key-result link was made must not erase it (krAt / okrAt say which is newer)."""
+    if col in ("tasks", "sections") and (old.get("krAt") or 0) > (new.get("krAt") or 0):
+        for k in ("krId", "krAt", "bet"):
+            if k in old:
+                new[k] = old[k]
+    if col == "projects" and (old.get("okrAt") or 0) > (new.get("okrAt") or 0):
+        for k in ("okr", "okrAt"):
+            if k in old:
+                new[k] = old[k]
+
+
 def upsert(col, doc_id, rec, merge):
     with LOCK:
         items = load(col)
@@ -261,6 +273,7 @@ def upsert(col, doc_id, rec, merge):
                 if col == "tasks":
                     keep_clear(x, items[i])
                     keep_labels(x, items[i])
+                keep_kr(col, x, items[i])
                 break
         else:
             if merge:

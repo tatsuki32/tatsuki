@@ -386,6 +386,37 @@ details.draft .sent-as summary{cursor:pointer;display:block;padding:var(--s2) 0;
 .tduein{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s2)}
 .tduein>div{display:grid;gap:var(--s1);min-width:0}
 .tduein input{width:100%;min-width:0}
+/* project OKRs: the thin bar, the OKR tab, the line on a task card */
+.okstrip{white-space:normal;min-width:0;max-width:100%;box-sizing:border-box;display:flex;flex-wrap:wrap;gap:var(--s2) var(--s4);align-items:center;width:100%;text-align:left;background:var(--accent-soft);border:1px solid var(--accent-2);border-radius:var(--r);padding:var(--s2) 12px;color:var(--ink);font:inherit;font-size:var(--t1);cursor:pointer;margin:0 0 var(--s3)}
+.okstrip:hover{border-color:var(--accent)}
+.okstrip.empty{background:transparent;border-style:dashed;border-color:var(--line-2);color:var(--muted)}
+.okstrip .oko{display:flex;flex-wrap:wrap;gap:var(--s1) var(--s4);align-items:center;min-width:0;max-width:100%}
+.okstrip .oko>b{color:var(--accent)}
+.okk{display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px;min-width:0}
+.okk em{font-style:normal;color:var(--ink-2);font-variant-numeric:tabular-nums}
+.okbar{display:inline-block;width:72px;height:6px;border-radius:3px;background:var(--surface-2);overflow:hidden;flex:none;vertical-align:middle}
+.okbar i{display:block;height:100%;background:var(--accent);border-radius:3px}
+.okbar.tsk i{background:var(--green)}
+.okhint{margin:0 0 var(--s3)}
+.card.okr{display:grid;gap:var(--s3);margin-bottom:var(--s3)}
+.okO{flex:none;font-weight:700;color:var(--accent-ink);background:var(--accent);border-radius:6px;padding:0 8px;font-size:var(--t1);align-self:center}
+.kr{border-top:1px solid var(--line);padding-top:var(--s3);display:grid;gap:var(--s2);min-width:0}
+.krtop{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s2);justify-content:space-between}
+.krname{background:none;border:0;padding:0;min-height:32px;font:inherit;font-size:var(--t3);font-weight:700;color:var(--ink);cursor:pointer;text-align:left;min-width:0;overflow-wrap:anywhere}
+.krname::before{content:"▸ ";color:var(--muted);font-weight:400}
+.krname[aria-expanded="true"]::before{content:"▾ "}
+.krnum{display:flex;align-items:center;gap:var(--s1);font-variant-numeric:tabular-nums;white-space:nowrap}
+.krbars{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:var(--s1) var(--s2);align-items:center;font-variant-numeric:tabular-nums}
+.krbars .okbar{width:100%;height:8px}
+.krmeta{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s2);margin:0}
+.krspark{color:var(--accent);flex:none}
+.okbet{display:inline-flex;align-items:center;gap:4px}
+.okbet i{width:8px;height:8px;border-radius:50%;flex:none}
+.krtasks{display:grid;gap:var(--s1);padding-left:12px;border-left:2px solid var(--line)}
+.krtasks .krline{display:none}
+.krline{display:block;font-size:var(--t1);color:var(--accent);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.okconf{flex-wrap:wrap;gap:var(--s1)}
+.okconf .chip{min-width:36px;justify-content:center}
 /* ADHD-friendly board: Today stands out in gold; In progress and Done feel brighter than Not started */
 .col>h2 .dot{width:10px;height:10px;border-radius:50%;background:var(--muted);flex:none;align-self:center}
 .col[data-col="doing"]>h2 .dot{background:var(--blue);box-shadow:0 0 0 4px var(--blue-soft)}
@@ -1636,7 +1667,7 @@ const S={tools:[],editions:[],days:[],memos:[],ed:null,day:null,region:"All",q:"
 let db=null;
 S.gear=[]; // Belongings: everything owned, grams, packing check
 S.wboards=[];S.wcards=[];S.wkBoard=null; // Workout Board: boards and the cards pinned on them
-S.projects=[];S.sections=[];S.projFilter="all";S.pDone=false; // projects: lists split into boxes; every project task is still an ordinary task
+S.projects=[];S.sections=[];S.okrs=[];S.krOpen={};S.projFilter="all";S.pDone=false; // projects: lists split into boxes; every project task is still an ordinary task
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const okUrl=u=>/^(https:\/\/|file:\/\/|#)/.test(u||"");
@@ -1683,7 +1714,7 @@ async function loadApiMemos(){try{
   S.hlog=Object.fromEntries(hlog.filter(x=>x&&x.id&&!x.deleted).map(x=>[x.id,x]));
   S.wa=await api("GET","/api/whatsapp").catch(()=>({}));
   try{const [wb,wc]=await Promise.all([api("GET","/api/wboards"),api("GET","/api/wcards")]);S.wboards=wb.filter(x=>!x.deleted);if(!S.wkDrag)S.wcards=wc.filter(x=>!x.deleted)}catch(e){}
-  S.gear=gear.filter(g=>!g.deleted);S.projects=projects.filter(p=>!p.deleted);S.sections=sections.filter(x=>!x.deleted);
+  S.gear=gear.filter(g=>!g.deleted);S.projects=projects.filter(p=>!p.deleted);S.sections=sections.filter(x=>!x.deleted);S.okrs=((await api("GET","/api/okrs").catch(()=>null))||S.okrs||[]).filter(x=>!x.deleted);
   S.fu=await api("GET","/api/followups").catch(()=>S.fu);
   S.line=await api("GET","/api/line").catch(()=>({}));lineAlert();
   S.ig=await api("GET","/api/instagram").catch(()=>({}));
@@ -1736,14 +1767,20 @@ const store={
     if(db){await db.collection("gear").doc(g.id).set(rec)}
     else if(LOCALAPI){await api("PUT","/api/gear/"+encodeURIComponent(g.id),rec);await loadApiMemos()}
     else {S.gear=[...S.gear.filter(x=>x.id!==g.id),{id:g.id,...rec}].filter(x=>!x.deleted);try{localStorage.setItem("desk-gear",JSON.stringify(S.gear))}catch(e){}render()} },
-  async putProject(p){ const rec={name:p.name||"",emoji:p.emoji||"📁",color:p.color||"#2f6fd0",order:+p.order||0,archived:!!p.archived,lastView:p.lastView||"sections",createdAt:p.createdAt||Date.now(),updatedAt:Date.now(),deleted:!!p.deleted};
+  async putProject(p){ const rec={name:p.name||"",emoji:p.emoji||"📁",color:p.color||"#2f6fd0",order:+p.order||0,archived:!!p.archived,lastView:p.lastView||"sections",okr:!!p.okr,okrAt:+p.okrAt||0,createdAt:p.createdAt||Date.now(),updatedAt:Date.now(),deleted:!!p.deleted};
     if(db){await db.collection("projects").doc(p.id).set(rec)}
     else if(LOCALAPI){await api("PUT","/api/projects/"+encodeURIComponent(p.id),rec);await loadApiMemos()}
     else {S.projects=[...S.projects.filter(x=>x.id!==p.id),{id:p.id,...rec}].filter(x=>!x.deleted);try{localStorage.setItem("desk-projects",JSON.stringify(S.projects))}catch(e){}render()} },
-  async putSection(x){ const rec={projectId:x.projectId||"",name:x.name||"",color:x.color||"#8a8a93",order:+x.order||0,when:x.when||"",note:x.note||"",groups:(x.groups||[]).map(g=>String(g).trim()).filter(Boolean),createdAt:x.createdAt||Date.now(),updatedAt:Date.now(),deleted:!!x.deleted};
+  async putSection(x){ const rec={projectId:x.projectId||"",name:x.name||"",color:x.color||"#8a8a93",order:+x.order||0,when:x.when||"",note:x.note||"",groups:(x.groups||[]).map(g=>String(g).trim()).filter(Boolean),krId:x.krId||"",bet:x.bet||"",krAt:+x.krAt||0,createdAt:x.createdAt||Date.now(),updatedAt:Date.now(),deleted:!!x.deleted};
     if(db){await db.collection("sections").doc(x.id).set(rec)}
     else if(LOCALAPI){await api("PUT","/api/sections/"+encodeURIComponent(x.id),rec);await loadApiMemos()}
     else {S.sections=[...S.sections.filter(y=>y.id!==x.id),{id:x.id,...rec}].filter(y=>!y.deleted);try{localStorage.setItem("desk-sections",JSON.stringify(S.sections))}catch(e){}render()} },
+  async putOkr(o){ const rec={projectId:o.projectId||"",title:o.title||"",start:o.start||"",end:o.end||"",order:+o.order||0,
+      krs:(o.krs||[]).map(k=>({id:k.id,title:k.title||"",from:+k.from||0,target:+k.target||0,value:+k.value||0,unit:k.unit||"",conf:k.conf==null||k.conf===""?null:+k.conf,reviewedAt:+k.reviewedAt||0,log:(k.log||[]).slice(-60),deleted:!!k.deleted})),
+      createdAt:o.createdAt||Date.now(),updatedAt:Date.now(),deleted:!!o.deleted};
+    if(db){await db.collection("okrs").doc(o.id).set(rec)}
+    else if(LOCALAPI){await api("PUT","/api/okrs/"+encodeURIComponent(o.id),rec);S.okrs=[...S.okrs.filter(x=>x.id!==o.id),{id:o.id,...rec}].filter(x=>!x.deleted);render()}
+    else {S.okrs=[...S.okrs.filter(x=>x.id!==o.id),{id:o.id,...rec}].filter(x=>!x.deleted);try{localStorage.setItem("desk-okrs",JSON.stringify(S.okrs))}catch(e){}render()} },
   async setMailStatus(key,status,day){ if(!db)return; const ref=db.collection("days").doc(day||S.day);const s=await ref.get();if(!s.exists)return;const items=(s.data().items||[]).map(x=>x.key===key?{...x,status}:x);await ref.update({items}) }
 };
 function saveLocal(){try{localStorage.setItem("desk-memos",JSON.stringify(S.memos))}catch(e){}}
@@ -1905,7 +1942,7 @@ const newTaskId=()=>"t"+Date.now().toString(36)+Math.random().toString(36).slice
 /* project fields are written only when set, so a task outside any project is stored exactly as before */
 const taskRecord=t=>{const r={id:t.id,title:t.title,status:t.status||"notyet",source:t.source||"manual",sourceRef:t.sourceRef||"",due:LINKED.has(t.source)?null:(t.due??null),note:t.note||"",planDate:t.planDate||null,planAi:t.planAi||null,estMin:t.estMin??null,estAi:t.estAi??null,...(t.clear?{clear:t.clear}:{}),createdAt:t.createdAt||Date.now(),deleted:!!t.deleted};
   ["projectId","sectionId","group","desc","estimate","start","dateLabel","by"].forEach(k=>{if(t[k])r[k]=String(t[k])});
-  ["cat","genre","tagBy","mergedInto"].forEach(k=>{if(t[k])r[k]=String(t[k])}); if(t.skip&&typeof t.skip==="object")r.skip=t.skip; if(t.tagAt)r.tagAt=+t.tagAt;
+  ["cat","genre","tagBy","mergedInto"].forEach(k=>{if(t[k])r[k]=String(t[k])}); if(t.skip&&typeof t.skip==="object")r.skip=t.skip; if(t.tagAt)r.tagAt=+t.tagAt; if(t.krId)r.krId=String(t.krId); if(t.krAt)r.krAt=+t.krAt;
   if(r.status==="dropped")r.droppedAt=t.droppedAt||Date.now();
   if(t.urgent)r.urgent=true; if(t.asTask)r.asTask=true; if(t.order!=null&&t.order!==""&&!isNaN(+t.order))r.order=+t.order; return r};
 const byDeadline=(a,b)=>(a.deadline??Infinity)-(b.deadline??Infinity)||(b.createdAt||0)-(a.createdAt||0);
@@ -2115,7 +2152,7 @@ function taskCard(t,ps){
   const [ic,src]=TSRC[t.source]||TSRC.manual, open=TOPEN.has(t.status), est=estOf(t), ai=open&&aiPlanOf(t);
   return `<article class="task ${open?"":"closed"}" data-noauto draggable="true" data-task="${esc(t.id)}">
     <button class="tt" data-topen="${esc(t.id)}" data-noauto>${esc(taskName(t))}</button>
-    ${open&&clearOn(t)&&t.clear.first?`<p class="tfirstline">First: ${esc(t.clear.first)}</p>`:""}
+    ${krLine(t)}${open&&clearOn(t)&&t.clear.first?`<p class="tfirstline">First: ${esc(t.clear.first)}</p>`:""}
     <div class="tm">${t.url&&okUrl(t.url)?`<a href="${esc(t.url)}" target="_blank" rel="noopener" title="Open (${src})" aria-label="Open (${src})">${ic}</a>`:`<span title="${src}" aria-label="${src}">${ic}</span>`}${t.projectId?projTag(t):""}${genreOf(t)?`<span class="gchip" style="--c:${genreColor(genreOf(t))}">${esc(genreLabel(genreOf(t)))}</span>`:""}${t.mail?`<span class="from">${esc(t.mail.sub)}</span>`:t.due!=null?`<span>Due ${esc(fmtDue(t.due))}</span>`:""}${open&&t.calAt>Date.now()-HOUR?`<span>${esc(calOnText(t))}</span>`:""}${open&&t.deadline!=null?dlChip(t):""}${open&&est!=null?`<span>${t.estMin!=null?"":"est. "}${fmtMin(est)}</span>`:""}${ai?`<button class="chip aiplan" data-taiplan="${esc(t.id)}" title="Claude's suggestion. Press to accept">Suggested: ${tPeriodOf(ai,ps)[1]}</button>`:""}
       ${open?timerBtn(t,"shelfbtn"):""}<span class="tsel">${open?`<select data-tplan="${esc(t.id)}" aria-label="When">${planSel(t,ps)}</select>`:""}<select data-tstatus="${esc(t.id)}" aria-label="Status">${TSTATUS.map(([k,l])=>`<option value="${k}" ${k===t.status?"selected":""}>${l}</option>`).join("")}</select></span></div>
   </article>`;
@@ -2205,7 +2242,7 @@ function triHome(){const n=unsorted().length;return n?`<div class="trhome"><butt
 /* the decisions that wait on you, as one row of large buttons: Home (under Today's Three) and the top of Tasks. Each opens its cards straight away. */
 function decideBar(){
   const q=waitingQs().reduce((a,t)=>a+openQs(t).length,0);
-  const items=[["data-tdecide","Decide what not to do",dropCands().length],["data-tqs","Answer open questions",q],["data-tmerge","Merge similar tasks",mpOpen().length],["data-ttypes","Review task types",typeProps().length]].filter(x=>x[2]);
+  const items=[["data-tdecide","Decide what not to do",dropCands().length],["data-tqs","Answer open questions",q],["data-tmerge","Merge similar tasks",mpOpen().length],["data-ttypes","Review task types",typeProps().length],["data-okrrev","Review OKRs",okrDue().length]].filter(x=>x[2]);
   return items.length?`<section class="decbar" aria-label="Decisions waiting">${items.map(([a,l,n])=>`<button class="decbtn" ${a}><span>${l}</span><b>${n}</b></button>`).join("")}</section>`:""}
 /* ---------- A. Not doing: decide on purpose what you will not do, and count it like a finished task ---------- */
 /* F. Every task gets a type ("what you do", a fixed list of about 45 in 8 groups) and a genre ("what it is about", up to 100).
@@ -3478,6 +3515,7 @@ function openTask(id,preset){
     <label class="sub" for="tStatus">Status</label><select id="tStatus">${TSTATUS.map(([k,l])=>`<option value="${k}" ${k===(t?.status||pre.status||"notyet")?"selected":""}>${l}</option>`).join("")}</select>
     ${skipFields(t||pre)}
     ${isLinked?"":projFields(t||pre)}
+    ${krField(t||pre)}
     <label class="sub" for="tNote">Notes</label><textarea id="tNote" class="tnote" placeholder="Details if needed. [word] links to a note">${esc(t?.note||"")}</textarea>${t&&linksIn(t.note).length?`<p class="hint">🔗 ${linksIn(t.note).map(x=>wlink(x)).join(" ")}</p>`:""}
     ${t?`<p class="hint" id="tCalOn">${esc(calOnText(t))}</p><div id="tCal" class="tcal" hidden></div>`:""}
     <div class="row"><button class="btn primary" id="tSave">Save <kbd>⌘/Ctrl + Enter</kbd></button><button class="btn" id="tCancel">Cancel</button>${t?`${timerBtn(t,"btn")}<button class="btn" id="tCopy">Copy as text</button><button class="btn" id="tCalBtn" aria-expanded="false" aria-controls="tCal">Add to calendar</button>`:""}${t&&!isLinked?`<button class="btn" id="tDel" style="margin-left:auto;color:var(--red)">Delete</button>`:""}</div>
@@ -3485,7 +3523,7 @@ function openTask(id,preset){
   const ti=$("#tTitle");ti.focus();ti.setSelectionRange(ti.value.length,ti.value.length);
   wireWa(t);wireLine(t);wireIg(t);
   const close=()=>{$("#modal").innerHTML=""}, plan0=$("#tPlan").value;
-  wireJobs(t);wireMail(t,close);wireClear(t,close);wireProjFields(t||pre);
+  wireJobs(t);wireMail(t,close);wireClear(t,close);wireProjFields(t||pre);wireKrField();
   const dueIn=$("#tDue"), dueT=$("#tDueT");
   t&&wireCal(t);
   document.querySelectorAll("#modal [data-tlstart]").forEach(b=>b.onclick=()=>{close();startTimer(b.dataset.tlstart)});
@@ -3496,7 +3534,7 @@ function openTask(id,preset){
     const st=$("#tStatus").value, plan=$("#tPlan").value, est=parseInt($("#tEst").value,10);
     const planDate=plan===plan0?base.planDate||null:tPeriods().find(p=>p[0]===plan)?.[2]||null; // untouched: keeps the date it had
     const named=t?nameEdit(base,title):{title};
-    try{const lab=await readSkipFields(t);await store.putTask({...base,...readProjFields(t||pre),...named,...lab,due:isNaN(due)?null:due,status:st,note:$("#tNote").value.trim(),planDate,estMin:est>0?est:null});await taskWin({...base,...named,...lab},st);close();toast(st==="done"&&base.status!=="done"?"✨ Done. Added to Wins":t?"🗂️ Saved":"🗂️ Task added");if(onTasks)tFiltReveal(base.id)}
+    try{const lab=await readSkipFields(t);await store.putTask({...base,...readProjFields(t||pre),...readKrField(t),...named,...lab,due:isNaN(due)?null:due,status:st,note:$("#tNote").value.trim(),planDate,estMin:est>0?est:null});await taskWin({...base,...named,...lab},st);close();toast(st==="done"&&base.status!=="done"?"✨ Done. Added to Wins":t?"🗂️ Saved":"🗂️ Task added");if(onTasks)tFiltReveal(base.id)}
     catch(e){toast("Couldn't save. Your input is still here")}};
   $("#tSave").onclick=save;$("#tCancel").onclick=close;$("#xTask").onclick=close;
   $("#tCopy")&&($("#tCopy").onclick=async()=>{toast(await copyText(taskFormText($("#scrim .pop")))?"📋 Copied as text":"Couldn't copy")});
@@ -3575,15 +3613,17 @@ function projChips(f){const ps=projActive();if(!ps.length)return "";
 function projectView(){
   const p=projById(S.projectId);
   if(!p) return `<header class="head"><div><p class="eyebrow">Projects</p><h1>Not found</h1></div></header><div class="card empty"><b>This project doesn't exist</b>Pick one from the menu on the left, or create one with “+ New project”.</div>`;
-  if(S.pviewFor!==p.id){S.pviewFor=p.id;S.pview=PVIEWS.some(v=>v[0]===p.lastView)?p.lastView:"sections";S.pcalMonth=null}
+  if(S.pviewFor!==p.id){S.pviewFor=p.id;S.pview=pviews(p).some(v=>v[0]===p.lastView)?p.lastView:"sections";S.pcalMonth=null}
+  if(S.pview==="okr"&&!p.okr)S.pview="sections";
   const secs=secList(p.id), all=projTasks(p.id), open=all.filter(t=>TOPEN.has(t.status)).length, done=all.filter(t=>t.status==="done").length, v=S.pview;
   const tiles=secs.map(s=>{const xs=all.filter(t=>t.sectionId===s.id),o=xs.filter(t=>TOPEN.has(t.status)).length;
     return `<button class="ptile" data-jump="sec-${esc(s.id)}"><i style="background:${okColor(s.color)}"></i><b>${esc(s.name)}</b><span>${o?`${o} left`:xs.length?"All done":"Empty"}${s.when?" · "+esc(s.when):""}</span></button>`}).join("");
-  const body=v==="list"?projListView(p,all):v==="board"?boardHtml(all,{notyet:"Not done yet",doing:"Drag here to start",done:"Finished things go here"},p.id):v==="calendar"?projCalView(p,all):v==="gantt"?projGanttView(p,all):projSecView(p,all,secs);
+  const body=v==="okr"?okrView(p):v==="list"?projListView(p,all):v==="board"?boardHtml(all,{notyet:"Not done yet",doing:"Drag here to start",done:"Finished things go here"},p.id):v==="calendar"?projCalView(p,all):v==="gantt"?projGanttView(p,all):projSecView(p,all,secs);
   return `<header class="head"><div><p class="eyebrow">Projects${p.archived?" · Archived":""}</p><h1>${esc(p.emoji||"📁")} ${esc(p.name)}</h1><p class="sub" style="margin:var(--s1) 0 0">Remaining ${open} · Done ${done} · Boxes ${secs.length}</p></div>
     <div class="row"><button class="btn primary" data-padd="${esc(p.id)}">+ Task</button><button class="btn" data-secnew="${esc(p.id)}">+ Box</button><button class="btn" data-pcsv="${esc(p.id)}">Export CSV</button><button class="ibtn" data-pedit="${esc(p.id)}" aria-label="Edit project" title="Edit project">✏️</button></div></header>
   ${tiles&&v==="sections"?`<div class="ptiles">${tiles}</div>`:""}
-  <div class="pbar"><div class="chips" role="group" aria-label="View">${PVIEWS.map(([k,l])=>`<button class="chip" data-pview="${k}" aria-pressed="${v===k}">${l}</button>`).join("")}</div>${v==="board"?"":`<button class="chip" data-pdonetoggle aria-pressed="${!!S.pDone}">Show done</button>`}</div>
+  <div class="pbar"><div class="chips" role="group" aria-label="View">${pviews(p).map(([k,l])=>`<button class="chip" data-pview="${k}" aria-pressed="${v===k}">${l}</button>`).join("")}</div>${v==="board"||v==="okr"?"":`<button class="chip" data-pdonetoggle aria-pressed="${!!S.pDone}">Show done</button>`}</div>
+  ${p.okr&&v!=="okr"?okrStrip(p):""}
   ${notesHere("project")}
   ${body}`;
 }
@@ -3606,7 +3646,7 @@ function secCard(s,tasks,p){
 }
 function secRow(t){const open=TOPEN.has(t.status);
   return `<div class="srow ${t.status==="done"?"on":""}" draggable="true" data-prow="${esc(t.id)}">${pchk(t)}
-    <div style="min-width:0">${dateChip(t)}<button class="tt" data-topen="${esc(t.id)}">${esc(t.title)}</button>${t.status==="doing"?`<span class="pill live">In progress</span>`:""}${open&&t.deadline!=null&&t.deadline-Date.now()<2*DAY?` ${dlChip(t)}`:""}${t.desc?`<div class="d">${esc(t.desc)}</div>`:""}</div>
+    <div style="min-width:0">${dateChip(t)}<button class="tt" data-topen="${esc(t.id)}">${esc(t.title)}</button>${t.status==="doing"?`<span class="pill live">In progress</span>`:""}${open&&t.deadline!=null&&t.deadline-Date.now()<2*DAY?` ${dlChip(t)}`:""}${krLine(t)}${t.desc?`<div class="d">${esc(t.desc)}</div>`:""}</div>
     <span class="est">${esc(t.estimate||"")}</span></div>`;
 }
 /* List: every task of the project by its deadline, undated last */
@@ -3655,6 +3695,148 @@ function projGanttView(p,all){
   return `<section class="card"><div class="dhead"><h2>Gantt</h2><span class="sub">${esc(mdLabel(a0))}–${esc(mdLabel(b0))} · Bars run from start date to due date. Without a start date, the box's period is used</span></div>
     <div class="gtwrap"><div class="gt" style="width:${LW+n*W}px"><div class="gtr gth"><div class="gtl"></div>${track(marks.join(""))}</div>${groups.map(grp).join("")}<div class="gtnow" style="left:${LW+x(today)+Math.round(W/2)}px" title="Today"></div></div></div></section>${noneHtml}`;
 }
+/* ---------- Project OKRs (requirements: https://claude.ai/artifact/UYFk4gKbT1nqMckvK2FcM4).
+   A project with okr:true gets an OKR tab: up to 3 objectives (O), up to 5 key results (KR) each, boxes as bets on a KR.
+   Stored in "okrs" (Mac: data/okrs.json), one doc per objective with its KRs inside. A task counts toward a KR by its own
+   krId, else by its box's krId. Progress is computed here and never stored. Projects with OKRs off look exactly as before. ---------- */
+const OKR_MAX=3, KR_MAX=5, KRSTAT=new Set(["notyet","doing","done"]);
+const okrList=pid=>S.okrs.filter(o=>!o.deleted&&o.projectId===pid).sort(byOrder);
+const okrById=id=>S.okrs.find(o=>o.id===id&&!o.deleted)||null;
+const krsOf=o=>(o?.krs||[]).filter(k=>!k.deleted);
+let KRX={o:null,p:null,m:{}};
+const krMap=()=>{if(KRX.o!==S.okrs||KRX.p!==S.projects){const m={};S.okrs.forEach(o=>{if(o.deleted)return;const p=projById(o.projectId);if(!p||!p.okr)return;krsOf(o).forEach(k=>m[k.id]={k,o,p})});KRX={o:S.okrs,p:S.projects,m}}return KRX.m};
+const krOf=id=>id?krMap()[id]||null:null;
+const taskKrId=t=>{if(t.krId&&krOf(t.krId))return t.krId;const s=secById(t.sectionId);return s?.krId&&krOf(s.krId)?s.krId:""};
+const krTasks=id=>S.board.filter(t=>KRSTAT.has(t.status)&&taskKrId(t)===id);
+const krPct=k=>{const span=(+k.target||0)-(+k.from||0);if(!span)return 0;return Math.max(0,Math.min(1,((+k.value||0)-(+k.from||0))/span))};
+const fmtNum=n=>{n=+n||0;return Number.isInteger(n)?String(n):String(Math.round(n*10)/10)};
+const krVal=k=>`${fmtNum(k.value)} / ${fmtNum(k.target)}${k.unit?" "+esc(k.unit):""}`;
+const okBar=(pct,cls)=>`<span class="okbar ${cls||""}" aria-hidden="true"><i style="width:${Math.round(pct*100)}%"></i></span>`;
+const krLine=t=>{const x=krOf(taskKrId(t));return x?`<span class="krline" title="Key result: ${esc(x.k.title)}">→ ${esc(x.k.title)}</span>`:""};
+const pviews=p=>p&&p.okr?[["okr","OKR"],...PVIEWS]:PVIEWS;
+const okDay=s=>isDay(s)?new Date(s+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"}):"";
+const okRange=o=>[okDay(o.start),okDay(o.end)].filter(Boolean).join(" – ");
+const krSpark=k=>{const v=(k.log||[]).map(x=>+x.value||0);if(v.length<2)return "";const lo=Math.min(...v,+k.from||0),hi=Math.max(...v,+k.target||0),w=64,h=16,sp=(hi-lo)||1;
+  return `<svg class="krspark" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="History of the number"><polyline points="${v.map((y,i)=>`${(i/(v.length-1)*w).toFixed(1)},${(h-1-(y-lo)/sp*(h-2)).toFixed(1)}`).join(" ")}" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>`};
+/* the thin bar above Box / List / Board / Calendar / Gantt */
+function okrStrip(p){const os=okrList(p.id);
+  if(!os.length)return `<button class="okstrip empty" data-pview="okr">Set the goal for this project →</button>`;
+  return `<button class="okstrip" data-pview="okr" aria-label="Open OKRs">${os.map(o=>`<span class="oko"><b>${esc(o.title)}</b>${krsOf(o).map(k=>`<span class="okk">${esc(k.title)} <em>${krVal(k)}</em>${okBar(krPct(k))}</span>`).join("")}</span>`).join("")}</button>`}
+/* the OKR tab */
+function okrView(p){
+  const os=okrList(p.id);
+  const krRow=(o,k)=>{const ts=krTasks(k.id).sort(byOrder),d=ts.filter(t=>t.status==="done").length,open=!!S.krOpen[k.id],bets=secList(p.id).filter(s=>s.krId===k.id),pct=krPct(k);
+    return `<div class="kr">
+      <div class="krtop"><button class="krname" data-kropen="${esc(k.id)}" aria-expanded="${open}">${esc(k.title)}</button>
+        <span class="krnum"><button class="ibtn" data-krstep="-1" data-oid="${esc(o.id)}" data-kid="${esc(k.id)}" aria-label="Minus one">−</button><b>${krVal(k)}</b><button class="ibtn" data-krstep="1" data-oid="${esc(o.id)}" data-kid="${esc(k.id)}" aria-label="Plus one">+</button><button class="ibtn" data-kredit="${esc(k.id)}" data-oid="${esc(o.id)}" aria-label="Edit key result" title="Edit key result">✏️</button></span></div>
+      <div class="krbars"><span class="sub">Result</span>${okBar(pct,"res")}<span class="sub">${Math.round(pct*100)}%</span><span class="sub">Tasks</span>${okBar(ts.length?d/ts.length:0,"tsk")}<span class="sub">${d} / ${ts.length} done</span></div>
+      <p class="sub krmeta">${k.conf!=null?`Confidence ${k.conf}/10`:"No confidence yet"}${k.reviewedAt?` · Reviewed ${esc(okDay(dayOf(k.reviewedAt)))}`:""}${krSpark(k)}</p>
+      ${bets.length?`<p class="sub">Bets: ${bets.map(s=>`<span class="okbet"><i style="background:${okColor(s.color)}"></i>${esc(s.name)}${s.bet?` (${esc(s.bet)})`:""}</span>`).join(" · ")}</p>`:""}
+      ${open?`<div class="krtasks">${ts.map(secRow).join("")||`<p class="sub">No tasks yet. Link a box to this key result (✏️ on the box), or pick it in a task.</p>`}<button class="dmore" data-padd="${esc(p.id)}" data-padd-kr="${esc(k.id)}">+ Task for this key result</button></div>`:""}
+    </div>`};
+  const card=o=>{const ks=krsOf(o);
+    return `<section class="card okr"><div class="dhead"><span class="okO" aria-label="Objective">O</span><h2>${esc(o.title)}</h2>${okRange(o)?`<span class="when">${esc(okRange(o))}</span>`:""}<span class="acts"><button class="ibtn" data-oedit="${esc(o.id)}" aria-label="Edit objective" title="Edit objective">✏️</button></span></div>
+      ${ks.map(k=>krRow(o,k)).join("")||`<p class="sub">Add 2–3 key results: numbers that show the objective happened.</p>`}
+      ${ks.length<KR_MAX?`<button class="dmore" data-krnew="${esc(o.id)}">+ Add key result</button>`:""}</section>`};
+  return `<p class="sub okhint">Objective = where you want to go. Key results = the numbers that show you got there. Landing at 60–70% is a good result.</p>
+    ${os.map(card).join("")||`<div class="card empty"><b>No objective yet</b>Write where this project should get to, in words. Then add 2–3 numbers that show it happened.</div>`}
+    ${os.length<OKR_MAX?`<button class="btn" data-onew="${esc(p.id)}">+ Add objective</button>`:`<p class="sub">Up to 3 objectives per project.</p>`}`;
+}
+function okrDialog(title,fields,del){
+  return new Promise(res=>{
+    if($("#modal").firstChild) return res(null);
+    $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop" role="dialog" aria-modal="true" aria-label="${esc(title)}">
+      <div class="top"><h2>${esc(title)}</h2><button class="ibtn" id="xOkr" aria-label="Close">✕</button></div>
+      ${fields.map(f=>`<label class="sub" for="of_${f.k}">${esc(f.label)}</label><input id="of_${f.k}" type="${f.type||"text"}" ${f.type==="number"?'step="any" inputmode="decimal"':`maxlength="${f.max||120}"`} value="${esc(f.v??"")}" placeholder="${esc(f.ph||"")}" autocomplete="off">`).join("")}
+      <div class="row"><button class="btn primary" id="okrOk">Save</button><button class="btn" id="okrCancel">Cancel</button>${del?`<span style="flex:1"></span><button class="ibtn" id="okrDel" aria-label="Delete" title="Delete">🗑️</button>`:""}</div></div></div>`;
+    const done=v=>{$("#modal").innerHTML="";res(v)}, first=$("#of_"+fields[0].k), read=()=>Object.fromEntries(fields.map(f=>[f.k,$("#of_"+f.k).value.trim()]));
+    first.focus();
+    $("#okrOk").onclick=()=>{const r=read();if(!r[fields[0].k]){first.focus();return}done(r)};
+    $("#okrCancel").onclick=()=>done(null);$("#xOkr").onclick=()=>done(null);
+    $("#scrim").onclick=e=>{if(e.target.id==="scrim")done(null)};
+    $("#scrim").onkeydown=e=>{if(e.key==="Escape")done(null);if(e.key==="Enter"&&!e.isComposing&&e.target.tagName==="INPUT"){e.preventDefault();$("#okrOk").click()}};
+    if(del)$("#okrDel").onclick=e=>{const b=e.currentTarget;if(!b.dataset.sure){b.dataset.sure="1";b.textContent="Really delete?";return}done({deleted:true})};
+  });
+}
+async function editObjective(o,pid){
+  if(!o&&okrList(pid).length>=OKR_MAX){toast("Up to 3 objectives per project");return}
+  const today=dayOf(Date.now());
+  const r=await okrDialog(o?"Edit objective":"New objective",[{k:"title",label:"Objective: where you want to go, in words",v:o?.title,ph:"e.g., Launch the school with the first students"},{k:"start",label:"Starts",type:"date",v:o?o.start:today},{k:"end",label:"Ends",type:"date",v:o?o.end:addDays(today,90)}],!!o);
+  if(!r) return;
+  const rec=o?{...o,...r}:{id:"o"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),projectId:pid,order:Math.max(-1,...okrList(pid).map(x=>+x.order||0))+1,krs:[],createdAt:Date.now(),...r};
+  try{await store.putOkr(rec);toast(rec.deleted?"Objective deleted (its tasks are kept)":o?"Saved":"Objective added")}catch(e){toast("Couldn't save")}
+}
+async function editKr(o,k){
+  if(!k&&krsOf(o).length>=KR_MAX){toast("Up to 5 key results");return}
+  const r=await okrDialog(k?"Edit key result":"New key result",[{k:"title",label:"Key result: a result you can count, not a task",v:k?.title,ph:"e.g., Students enrolled"},{k:"from",label:"Start value",type:"number",v:k?fmtNum(k.from):0},{k:"target",label:"Target",type:"number",v:k?fmtNum(k.target):"",ph:"e.g., 10"},{k:"value",label:"Now",type:"number",v:k?fmtNum(k.value):0},{k:"unit",label:"Unit (optional)",v:k?.unit,ph:"e.g., people",max:20}],!!k);
+  if(!r) return;
+  const cur=okrById(o.id)||o; let krs=cur.krs||[];
+  if(r.deleted) krs=krs.map(x=>x.id===k.id?{...x,deleted:true}:x);
+  else{const nk={...(k||{id:"k"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),conf:null,reviewedAt:0,log:[]}),title:r.title,from:+r.from||0,target:+r.target||0,value:+r.value||0,unit:r.unit};
+    if(!k||nk.value!==+k.value) nk.log=[...(nk.log||[]),{at:Date.now(),value:nk.value,conf:nk.conf??null}];
+    krs=k?krs.map(x=>x.id===k.id?nk:x):[...krs,nk]}
+  try{await store.putOkr({...cur,krs});toast(r.deleted?"Key result deleted (its tasks are kept)":k?"Saved":"Key result added")}catch(e){toast("Couldn't save")}
+}
+/* one save at a time; a quick run of + presses in 10 minutes keeps one history point */
+let okrSaving=Promise.resolve();
+function saveKr(oid,kid,patch,note){
+  okrSaving=okrSaving.then(async()=>{const o=okrById(oid);if(!o)return;
+    const krs=(o.krs||[]).map(k=>{if(k.id!==kid)return k;const nk={...k,...patch},last=(k.log||[]).at(-1),e={at:Date.now(),value:+nk.value||0,conf:nk.conf??null,...(note?{note}:{})};
+      nk.log=last&&Date.now()-last.at<10*60e3&&!last.note&&!note?[...k.log.slice(0,-1),e]:[...(k.log||[]),e];return nk});
+    await store.putOkr({...o,krs})}).catch(()=>toast("Couldn't save. Please try again"));
+  return okrSaving;
+}
+/* key-result pickers: every KR of the projects with OKRs on, this project's first */
+function krOptions(pid,cur,onlyPid){
+  const m=Object.values(krMap()).filter(x=>!onlyPid||x.p.id===onlyPid), ids=[...new Set(m.map(x=>x.p.id))].sort((a,b)=>(b===pid)-(a===pid));
+  return ids.map(id=>{const xs=m.filter(x=>x.p.id===id),p=xs[0].p;return `<optgroup label="${esc((p.emoji||"📁")+" "+p.name)}">${xs.map(x=>`<option value="${esc(x.k.id)}" ${x.k.id===cur?"selected":""}>${esc(x.k.title)}</option>`).join("")}</optgroup>`}).join("");
+}
+function krField(x){
+  if(!Object.keys(krMap()).length) return "";
+  const box=secById(x.sectionId), bk=box?.krId&&krOf(box.krId), cur=x.krId&&krOf(x.krId)?x.krId:"";
+  return `<label class="sub" for="tKr">Key result</label><select id="tKr"><option value="">${bk?"From the box: "+esc(bk.k.title):"None"}</option>${krOptions(x.projectId,cur)}</select><p class="hint" id="tKrHint">${cur&&bk&&cur!==box.krId?"Overrides the box":""}</p>`;
+}
+function wireKrField(){const el=$("#tKr");if(!el)return;
+  el.onchange=()=>{const box=secById($("#tSec")?.value||""),hint=$("#tKrHint");if(hint)hint.textContent=el.value&&box?.krId&&krOf(box.krId)&&el.value!==box.krId?"Overrides the box":""}}
+function readKrField(t){const el=$("#tKr");if(!el)return {};const v=el.value, cur=t?.krId&&krOf(t.krId)?t.krId:"";return v===cur?{}:{krId:v,krAt:Date.now()}}
+/* the Monday review: one card per key result not reviewed since this Monday */
+const okrWeekStart=()=>{const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-(d.getDay()+6)%7);return d.getTime()};
+const okrDue=()=>{const ws=okrWeekStart(),today=dayOf(Date.now());
+  return Object.values(krMap()).filter(({k,o,p})=>!p.archived&&(k.reviewedAt||0)<ws&&((k.log||[])[0]?.at||0)<ws&&(!o.end||o.end>=addDays(today,-7)))};
+function openOkrReview(){
+  if($("#modal").firstChild) return;
+  const queue=okrDue().map(x=>x.k.id);
+  if(!queue.length){toast("No key results to review this week");return}
+  let n=0;
+  const close=()=>{document.removeEventListener("keydown",onKey,true);$("#modal").innerHTML=""};
+  const next=()=>{const id=queue.shift(), x=id&&krOf(id);
+    if(!id){$("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop qa" role="dialog" aria-modal="true" aria-label="Review OKRs"><h2>${n?"Reviewed for this week":"That is all for now"}</h2><p class="sub">${n?`${n} key result${n>1?"s":""} updated. See you next Monday.`:""}</p><div class="row"><button class="btn primary" id="rvClose">Close</button></div></div></div>`;$("#rvClose").onclick=close;$("#rvClose").focus();return}
+    if(!x) return next();
+    const {k,o,p}=x; let conf=k.conf;
+    $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop qa okrev" role="dialog" aria-modal="true" aria-label="Review OKRs">
+      <div class="top"><span class="sub">${queue.length+1} left</span><button class="ibtn" id="rvX" aria-label="Close">✕</button></div>
+      <p class="sub">${esc(p.emoji||"📁")} ${esc(p.name)} · ${esc(o.title)}</p><h2>${esc(k.title)}</h2>
+      <label class="sub" for="rvV">Now (target ${fmtNum(k.target)}${k.unit?" "+esc(k.unit):""})</label><input id="rvV" type="number" step="any" inputmode="decimal" value="${fmtNum(k.value)}">
+      <span class="sub">How sure are you to reach it? 0–10</span><div class="chips okconf" role="group" aria-label="Confidence">${[...Array(11)].map((_,i)=>`<button type="button" class="chip" data-conf="${i}" aria-pressed="${conf===i}">${i}</button>`).join("")}</div>
+      <label class="sub" for="rvN">One line (optional)</label><input id="rvN" type="text" maxlength="200" autocomplete="off" placeholder="What helped, what didn't">
+      <div class="row"><button class="btn primary" id="rvSave">Save <kbd>Enter</kbd></button><button class="btn" id="rvSame">Same as last week</button><button class="btn" id="rvLater">Later <kbd>←</kbd></button></div></div></div>`;
+    const v=$("#rvV");v.focus();v.select();
+    document.querySelectorAll("#modal [data-conf]").forEach(b=>b.onclick=()=>{conf=+b.dataset.conf;document.querySelectorAll("#modal [data-conf]").forEach(x=>x.setAttribute("aria-pressed",x===b))});
+    const save=same=>{const val=same?+k.value:parseFloat(v.value), note=same?"":$("#rvN").value.trim();
+      saveKr(o.id,k.id,{value:isNaN(val)?+k.value:val,conf:conf??null,reviewedAt:Date.now()},note);n++;next()};
+    $("#rvSave").onclick=()=>save(false);$("#rvSame").onclick=()=>save(true);$("#rvLater").onclick=()=>next();$("#rvX").onclick=close;
+    $("#scrim").onclick=e=>{if(e.target.id==="scrim")close()}};
+  function onKey(e){if(!$(".qa")){document.removeEventListener("keydown",onKey,true);return}
+    if(e.isComposing) return;
+    if(e.key==="Escape"){e.preventDefault();e.stopPropagation();close();return}
+    if(e.key==="Enter"&&$("#rvSave")){e.preventDefault();e.stopPropagation();$("#rvSave").click();return}
+    const typing=/^(INPUT|TEXTAREA)$/.test(e.target.tagName);
+    if(e.key==="ArrowLeft"&&!typing&&$("#rvLater")){e.preventDefault();e.stopPropagation();$("#rvLater").click();return}
+    if(!typing&&/^[0-9]$/.test(e.key)){const b=document.querySelector(`#modal [data-conf="${e.key}"]`);if(b){e.preventDefault();b.click()}}
+    if(!typing&&e.key.length===1&&!e.metaKey&&!e.ctrlKey)e.stopPropagation()}
+  document.addEventListener("keydown",onKey,true);
+  next();
+}
 /* ----- the task dialog's project fields: shown once any project exists; the rest appears when a project is chosen ----- */
 function projFields(x){const pid=x.projectId||"";if(!projList().length&&!pid)return "";
   return `<label class="sub" for="tProj">Project</label><select id="tProj"><option value="">None</option>${projList().filter(p=>!p.archived||p.id===pid).map(p=>`<option value="${esc(p.id)}" ${p.id===pid?"selected":""}>${esc(p.emoji||"📁")} ${esc(p.name)}</option>`).join("")}</select><div id="tProjMore">${projMore(x,pid)}</div>`}
@@ -3689,9 +3871,10 @@ function projForm(p){
       <label class="sub" for="pfName">Name</label><input type="text" id="pfName" maxlength="60" value="${esc(p?.name||"")}" placeholder="e.g., Before the trip" autocomplete="off">
       <label class="sub" for="pfEmoji">Emoji</label><input type="text" id="pfEmoji" maxlength="4" value="${esc(p?.emoji||"📁")}" style="width:5em" autocomplete="off">
       <span class="sub">Color</span>${colorChips(p?.color||PCOLORS[0][0])}
+      <label class="chk"><input type="checkbox" id="pfOkr" ${p?.okr?"checked":""}> Use OKRs: an objective, 2–3 numbers, and a short Monday review</label>
       <div class="row"><button class="btn primary" id="pfOk">${p?"Save":"Create"}</button><button class="btn" id="pfCancel">Cancel</button>${p?`<span style="flex:1"></span><button class="btn" id="pfArch">${p.archived?"Unarchive":"Archive"}</button><button class="ibtn" id="pfDel" aria-label="Delete" title="Delete">🗑️</button>`:""}</div>
     </div></div>`;
-    const done=v=>{$("#modal").innerHTML="";res(v)}, read=()=>({name:$("#pfName").value.trim().slice(0,60),emoji:$("#pfEmoji").value.trim().slice(0,4)||"📁",color:pickedColor($("#modal"))});
+    const done=v=>{$("#modal").innerHTML="";res(v)}, read=()=>({name:$("#pfName").value.trim().slice(0,60),emoji:$("#pfEmoji").value.trim().slice(0,4)||"📁",color:pickedColor($("#modal")),okr:!!$("#pfOkr").checked,okrAt:Date.now()});
     wireColors($("#modal"));$("#pfName").focus();
     $("#pfOk").onclick=()=>{const r=read();if(!r.name){$("#pfName").focus();return}done(r)};
     $("#pfCancel").onclick=()=>done(null);$("#xPf").onclick=()=>done(null);
@@ -3704,6 +3887,7 @@ function projForm(p){
 async function editProject(p){
   const r=await projForm(p); if(!r) return;
   const rec=p?{...p,...r}:{id:newProjId(),createdAt:Date.now(),order:Math.max(-1,...projList().map(x=>+x.order||0))+1,lastView:"sections",...r};
+  if(rec.okr&&!p?.okr){rec.lastView="okr";S.pview="okr";S.pviewFor=rec.id}
   try{await store.putProject(rec);
     if(rec.deleted){toast("🗑️ Deleted (its tasks are kept)");if(S.projectId===rec.id)location.hash="tasks"}
     else if(!p){toast("📁 Project created");location.hash="project/"+rec.id}
@@ -3720,9 +3904,10 @@ function secForm(s,pid){
       <label class="sub" for="sfWhen">Period (e.g., 11/9–11/30; also used for Gantt bars)</label><input type="text" id="sfWhen" maxlength="40" value="${esc(s?.when||"")}" autocomplete="off">
       <label class="sub" for="sfNote">Description</label><input type="text" id="sfNote" maxlength="200" value="${esc(s?.note||"")}" autocomplete="off">
       <label class="sub" for="sfGroups">Subheadings (separate with commas)</label><input type="text" id="sfGroups" maxlength="200" value="${esc((s?.groups||[]).join(", "))}" placeholder="e.g., Scholarship, Money & pension" autocomplete="off">
+      ${projById(pid)?.okr&&krOptions(pid,"",pid)?`<div class="g2"><div><label class="sub" for="sfKr">Key result this box is a bet on</label><select id="sfKr"><option value="">None</option>${krOptions(pid,s?.krId||"",pid)}</select></div><div><label class="sub" for="sfBet">Expected effect</label><input type="text" id="sfBet" maxlength="80" value="${esc(s?.bet||"")}" placeholder="e.g., $200 for 2 weeks → 5 people" autocomplete="off"></div></div>`:""}
       <div class="row"><button class="btn primary" id="sfOk">${s?"Save":"Create"}</button><button class="btn" id="sfCancel">Cancel</button>${s?`<span style="flex:1"></span><button class="ibtn" id="sfDel" aria-label="Delete" title="Delete">🗑️</button>`:""}</div>
     </div></div>`;
-    const done=v=>{$("#modal").innerHTML="";res(v)}, read=()=>({name:$("#sfName").value.trim().slice(0,60),color:pickedColor($("#modal")),when:$("#sfWhen").value.trim(),note:$("#sfNote").value.trim(),groups:$("#sfGroups").value.split(/[、,，]/).map(g=>g.trim()).filter(Boolean)});
+    const done=v=>{$("#modal").innerHTML="";res(v)}, read=()=>({name:$("#sfName").value.trim().slice(0,60),color:pickedColor($("#modal")),when:$("#sfWhen").value.trim(),note:$("#sfNote").value.trim(),groups:$("#sfGroups").value.split(/[、,，]/).map(g=>g.trim()).filter(Boolean),...($("#sfKr")?{krId:$("#sfKr").value,bet:$("#sfBet").value.trim(),krAt:Date.now()}:{})});
     wireColors($("#modal"));$("#sfName").focus();
     $("#sfOk").onclick=()=>{const r=read();if(!r.name){$("#sfName").focus();return}done(r)};
     $("#sfCancel").onclick=()=>done(null);$("#xSf").onclick=()=>done(null);
@@ -3770,7 +3955,13 @@ document.addEventListener("click",e=>{
   if(b=h("[data-secdown]"))return moveSection(b.dataset.secdown,1);
   if(b=h("[data-pcsv]"))return exportProjCsv(b.dataset.pcsv);
   if(b=h("[data-tadd]"))return openTask(null,{status:b.dataset.tadd,...(b.dataset.taddProj?{projectId:b.dataset.taddProj}:{})});
-  if(b=h("[data-padd]"))return openTask(null,{projectId:b.dataset.padd,sectionId:b.dataset.paddSec||""});
+  if(b=h("[data-padd]"))return openTask(null,{projectId:b.dataset.padd,sectionId:b.dataset.paddSec||"",...(b.dataset.paddKr?{krId:b.dataset.paddKr}:{})});
+  if(b=h("[data-onew]"))return editObjective(null,b.dataset.onew);
+  if(b=h("[data-oedit]")){const o=okrById(b.dataset.oedit);return o&&editObjective(o,o.projectId)}
+  if(b=h("[data-krnew]")){const o=okrById(b.dataset.krnew);return o&&editKr(o,null)}
+  if(b=h("[data-kredit]")){const o=okrById(b.dataset.oid),k=krsOf(o).find(x=>x.id===b.dataset.kredit);return k&&editKr(o,k)}
+  if(b=h("[data-krstep]")){const o=okrById(b.dataset.oid),k=krsOf(o).find(x=>x.id===b.dataset.kid);if(k)saveKr(o.id,k.id,{value:(+k.value||0)+(+b.dataset.krstep)});return}
+  if(b=h("[data-kropen]")){const id=b.dataset.kropen;S.krOpen={...S.krOpen,[id]:!S.krOpen[id]};return render()}
   if(b=h("[data-pdone]")){const t=findTask(b.dataset.pdone);if(t)setTaskStatus(t.id,t.status==="done"?"notyet":"done");return}
   if(b=h("[data-pview]")){S.pview=b.dataset.pview;const p=projById(S.projectId);render();if(p&&p.lastView!==S.pview)store.putProject({...p,lastView:S.pview}).catch(()=>{});return}
   if(h("[data-pdonetoggle]")){S.pDone=!S.pDone;return render()}
@@ -7740,6 +7931,7 @@ function wire(){
   document.querySelectorAll("[data-tdecide]").forEach(b=>b.onclick=()=>openDecide());
   document.querySelectorAll("[data-tmerge]").forEach(b=>b.onclick=()=>openMerge());
   document.querySelectorAll("[data-ttypes]").forEach(b=>b.onclick=()=>openTypes());
+  document.querySelectorAll("[data-okrrev]").forEach(b=>b.onclick=()=>openOkrReview());
   document.querySelectorAll("[data-gundo]").forEach(b=>b.onclick=()=>{b.disabled=true;undoGenreChange(b.dataset.gundo)});
   document.querySelectorAll("#view [data-tlstart],#modal [data-tlstart]").forEach(b=>b.onclick=e=>{e.stopPropagation();const m=$("#modal").firstChild;if(m)$("#modal").innerHTML="";startTimer(b.dataset.tlstart)});
   document.querySelectorAll("[data-tlper]").forEach(b=>b.onclick=()=>{S.tlPeriod=b.dataset.tlper;render()});
@@ -8041,6 +8233,7 @@ function palItems(){
     {e:"🍃",name:"Decide what not to do",kw:"やらない not doing drop decide",run:()=>openDecide()},
     {e:"🧷",name:"Merge similar tasks",kw:"まとめる merge similar",run:()=>openMerge()},
     {e:"🏷️",name:"Review task types",kw:"たいぷ type review",run:()=>openTypes()},
+    {e:"🎯",name:"Review OKRs",kw:"おーけーあーる okr key results review 見直し",run:()=>openOkrReview()},
     {e:"❓",name:"Answer open questions",kw:"しつもん こたえる question",run:()=>openQuestions()},
     {e:"🌱",name:"Add a habit",kw:"しゅうかん habit",run:()=>newHabit()},
     {e:"📒",name:"New note",kw:"のーと note",run:()=>newNotePrompt()},
@@ -8373,6 +8566,7 @@ autoLinkStart();
     try{S.gear=JSON.parse(localStorage.getItem("desk-gear")||"[]")||[]}catch(e){S.gear=[]}
     try{S.projects=JSON.parse(localStorage.getItem("desk-projects")||"[]")||[]}catch(e){S.projects=[]}
     try{S.sections=JSON.parse(localStorage.getItem("desk-sections")||"[]")||[]}catch(e){S.sections=[]}
+    try{S.okrs=JSON.parse(localStorage.getItem("desk-okrs")||"[]")||[]}catch(e){S.okrs=[]}
     return render();
   }
   db=window.claude?await claude.use("db"):null;
@@ -8388,6 +8582,7 @@ autoLinkStart();
   sub("gear",d=>S.gear=d.map(x=>({id:x.id,...x.data()})).filter(g=>!g.deleted));
   sub("projects",d=>S.projects=d.map(x=>({id:x.id,...x.data()})).filter(p=>!p.deleted));
   sub("sections",d=>S.sections=d.map(x=>({id:x.id,...x.data()})).filter(x=>!x.deleted));
+  sub("okrs",d=>S.okrs=d.map(x=>({id:x.id,...x.data()})).filter(x=>!x.deleted));
   claude.use("sample").then(x=>{S.sampleOk=!!x;render()});
   claude.use("assets").then(a=>{S.assets=a||null}); // Belongings photos; non-null only for people who can edit
   sub("prompts",d=>S.prompts=promptsById(d.map(x=>({id:x.id,...x.data()}))));
