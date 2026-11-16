@@ -386,6 +386,26 @@ details.draft .sent-as summary{cursor:pointer;display:block;padding:var(--s2) 0;
 .tduein{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s2)}
 .tduein>div{display:grid;gap:var(--s1);min-width:0}
 .tduein input{width:100%;min-width:0}
+/* ADHD-friendly board: Today stands out in gold; In progress and Done feel brighter than Not started */
+.col>h2 .dot{width:10px;height:10px;border-radius:50%;background:var(--muted);flex:none;align-self:center}
+.col[data-col="doing"]>h2 .dot{background:var(--blue);box-shadow:0 0 0 4px var(--blue-soft)}
+.col[data-col="done"]>h2 .dot{background:var(--green);box-shadow:0 0 0 4px var(--green-soft)}
+.col[data-col="notyet"]>h2{color:var(--ink-2)}
+.col[data-col="doing"]{background:linear-gradient(var(--blue-soft),transparent 320px)}
+.col[data-col="done"]{background:linear-gradient(var(--green-soft),transparent 320px)}
+.col[data-col="doing"]>h2,.col[data-col="done"]>h2{padding-top:var(--s2)}
+.col[data-col="notyet"] .tgroup:not(.g-today) .task{background:transparent}
+.col[data-col="doing"] .task{border-color:rgba(147,182,255,.35);box-shadow:inset 3px 0 0 var(--blue)}
+.col[data-col="done"] .task{background:var(--green-soft);border-color:transparent}
+.col[data-col="done"] .task .tt{color:var(--ink)}
+.col[data-col="done"] .task .tt::before{content:"✓ ";color:var(--green);font-weight:700}
+.tgroup.g-today{padding:var(--s2);margin:0 calc(-1 * var(--s2));border-radius:var(--r);background:var(--accent-soft)}
+.tgroup.g-today>.tghead .tg{font-size:var(--t3);color:var(--accent)}
+.tgroup.g-today>.tghead .tg .count{color:var(--accent);font-weight:700}
+.col:not([data-col="done"]) .tgroup.g-today .task{border-color:var(--accent-2);box-shadow:inset 3px 0 0 var(--accent)}
+.col:not([data-col="done"]) .tgroup.g-today .task .tt{font-size:var(--t3)}
+.col[data-col="done"] .tgroup.g-today{background:var(--green-soft)}
+.col[data-col="done"] .tgroup.g-today>.tghead .tg,.col[data-col="done"] .tgroup.g-today>.tghead .tg .count{color:var(--green)}
 @media (max-width:760px){.board{grid-template-columns:minmax(0,1fr)}.colTabs{display:flex}.col:not(.show){display:none}.task{cursor:default}}
 .jobs{display:grid;gap:var(--s2);padding:12px;border:1px solid var(--line-2);border-radius:var(--r);background:var(--bg)}
 .jobs h2{font-size:var(--t2)}
@@ -2045,7 +2065,7 @@ function taskGroups(k,items,ps){
   const keyOf=k==="done"?t=>doneGroup(t):t=>{const w=tWhen(t);return w?tPeriodOf(w,ps)[0]:"none"};
   const by={};items.forEach(t=>(by[keyOf(t)]||=[]).push(t));
   return groups.filter(([g])=>by[g]).map(([g,label])=>{const id=k+":"+g, open=S.taskOpen[id]??TOPENDEF.has(id), n=g==="none"?by[g].filter(aiPlanOf).length:0;
-    return `<div class="tgroup"><div class="tghead" data-noauto><button class="tg" data-tgroup="${id}" aria-expanded="${open}">${label}<span class="count">${by[g].length}</span></button>${g==="none"?`<button class="shelfbtn" data-ttriage>Triage</button>`:""}${n?`<button class="shelfbtn" data-tadopt="${k}">Accept all suggestions (${n})</button>`:""}</div>${open?by[g].map(t=>taskCard(t,ps)).join(""):""}</div>`}).join("");
+    return `<div class="tgroup g-${g}"><div class="tghead" data-noauto><button class="tg" data-tgroup="${id}" aria-expanded="${open}">${label}<span class="count">${by[g].length}</span></button>${g==="none"?`<button class="shelfbtn" data-ttriage>Triage</button>`:""}${n?`<button class="shelfbtn" data-tadopt="${k}">Accept all suggestions (${n})</button>`:""}</div>${open?by[g].map(t=>taskCard(t,ps)).join(""):""}</div>`}).join("");
 }
 /* ---------- Triage: unsorted tasks, one card at a time. A choice saves behind the scenes and the next card comes at once. ---------- */
 const unsorted=()=>S.board.filter(t=>TOPEN.has(t.status)&&!tWhen(t)).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
@@ -2480,7 +2500,7 @@ function boardHtml(list,hint,pid){
   hint=hint||{notyet:"New tasks and mail that needs action",doing:"Drag here to start",done:"Finished things go here"};
   return `<div class="chips colTabs" role="group" aria-label="Column to show">${TCOLS.map(k=>`<button class="chip" data-tcol="${k}" aria-pressed="${S.taskCol===k}">${tLabel(k)} ${col(k).length}</button>`).join("")}</div>
   <div class="board">${TCOLS.map(k=>{const items=col(k);return `<section class="col ${S.taskCol===k?"show":""}" data-col="${k}" aria-label="${tLabel(k)}">
-    <h2>${tLabel(k)}<span class="count">${items.length}</span>${colAdd(k,pid)}</h2>${items.map(t=>taskCard(t,ps)).join("")||`<p class="hint">${hint[k]}</p>`}</section>`}).join("")}</div>`;
+    <h2><span class="dot" aria-hidden="true"></span>${tLabel(k)}<span class="count">${items.length}</span>${colAdd(k,pid)}</h2>${items.map(t=>taskCard(t,ps)).join("")||`<p class="hint">${hint[k]}</p>`}</section>`}).join("")}</div>`;
 }
 /* search box on Tasks and Replies: every word must appear (title, clear title, memo, genre, type; replies add sender, subject and summary). Kept only while Desk is open. */
 const findNorm=x=>String(x||"").toLowerCase().normalize("NFKC");
@@ -2502,7 +2522,7 @@ function tasks(){
   ${S.taskShelf?`<section class="shelf" aria-label="${tLabel(S.taskShelf)}">${shelf(S.taskShelf).map(t=>taskCard(t,ps)).join("")||`<p class="sub">No ${tLabel(S.taskShelf).toLowerCase()} tasks</p>`}</section>`:""}
   <div class="chips colTabs" role="group" aria-label="Column to show">${TCOLS.map(k=>`<button class="chip" data-tcol="${k}" aria-pressed="${S.taskCol===k}">${tLabel(k)} ${col(k).length}</button>`).join("")}</div>
   <div class="board">${TCOLS.map(k=>{const items=col(k);return `<section class="col ${S.taskCol===k?"show":""}" data-col="${k}" aria-label="${tLabel(k)}">
-    <h2>${tLabel(k)}<span class="count">${items.length}</span>${colAdd(k,f==="all"?"":f)}</h2>${taskGroups(k,items,ps)||`<p class="hint">${hint[k]}</p>`}</section>`}).join("")}</div>
+    <h2><span class="dot" aria-hidden="true"></span>${tLabel(k)}<span class="count">${items.length}</span>${colAdd(k,f==="all"?"":f)}</h2>${taskGroups(k,items,ps)||`<p class="hint">${hint[k]}</p>`}</section>`}).join("")}</div>
   ${S.local&&!LOCALAPI?'<p class="sub">Opened as a file, so tasks are saved only in this browser. Run “Start Desk” to save them on the Mac.</p>':""}`;
 }
 /* Home: one to-do list = everything in progress, then everything Not yet (mail included), each by nearest due date. */
