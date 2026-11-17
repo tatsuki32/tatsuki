@@ -420,8 +420,8 @@ def expand(evs, lo, hi):
 
 
 def fetch_ics(now):
-    urls = (keychain(ICS_SERVICE) or "").split()
-    if not urls:
+    urls = [u for u in (keychain(ICS_SERVICE) or "").split() if u.startswith("https://")]
+    if not urls:  # nothing usable saved: the Desk calendar import is used instead
         return None
     if now - _ics["at"] < ICS_EVERY:
         return _ics["events"]
