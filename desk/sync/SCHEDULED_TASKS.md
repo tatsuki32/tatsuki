@@ -25,7 +25,7 @@ python3 desk/write_feed.py gtasks <raw.json>                 # Google タスク�
 | ID | 時刻（ホーチミン） | 内容 | 書く先 |
 |---|---|---|---|
 | `desk-daily-note` | 毎日 16:00 | 3min Daily Note のメールを本人へ送り、当日のタスクを作る（`lifeos/19-daily-note/`） | `tasks` |
-| `desk-lifelog-drive` | 停止（2026-11-17。Drive から1枚も入っていなかった。写真は Telegram で送る） | Drive の `Daily_Photos_Inbox` の新しい写真を待ち行列に入れ、読む（`desk/lifelog.py`。Drive のファイルは動かさない。1回10枚まで） | `lifelog/`・`body/`・`wise/receipts.json` |
+| `desk-lifelog-drive` | 毎朝 6:20（2026-11-17 に3時間ごとから変更） | Drive の `Daily_Photos_Inbox` の新しい写真を待ち行列に入れ、読む（`desk/lifelog.py`。Drive のファイルは動かさない。1回10枚まで） | `lifelog/`・`body/`・`wise/receipts.json` |
 | `desk-sleep-coach` | 毎日 7:00 | 睡眠の記事を決めた出典から1本読み、本人の記録に当てはめた助言を作る（`desk/lifelog.py`。医療の助言はしない） | `body/sleep_coach.json` |
 | `desk-task-calendar` | 停止中（2026-11-14〜） | 前は未着手で時刻つき期日のタスクを Google カレンダーへ（`desk/task_calendar.py`）。今は Desk の「Add to calendar」で1件ずつ | `calendar-sync.json` |
 | `desk-task-clarify` | 毎晩 2:30 | 未整理のタスクを30件まで、具体的なタイトル・まず5分・手順・出典・頼む文面に整える（`desk/task_clarify.py`。送信しない） | `tasks` の `clear` |
