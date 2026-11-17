@@ -38,6 +38,7 @@ import finder
 import transcribe_desk
 import notify
 import tg_notify
+import event_alarm
 import pc_monitor
 import routine_alarm
 import routine_sync
@@ -1517,6 +1518,7 @@ if __name__ == "__main__":
     if PORT == 4747:  # a test server on another port shows nothing
         threading.Thread(target=notify.watch, daemon=True).start()
         threading.Thread(target=tg_notify.watch, daemon=True).start()  # tasks and events to Telegram
+        threading.Thread(target=event_alarm.watch, daemon=True).start()  # alarm 3 minutes before each calendar event
         threading.Thread(target=instagram_dm.watch, daemon=True).start()  # Instagram DMs to Replies, every 5 minutes
         threading.Thread(target=posts.watch, daemon=True).start()  # Post Studio: company-site news scheduled for later
         threading.Thread(target=routine_alarm.watch, daemon=True).start()  # routine start alarm (quiet 22:00-07:00)
