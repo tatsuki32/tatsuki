@@ -54,6 +54,20 @@ def changed_files():
     return files
 
 
+# "secret: EXPORT_KEY" names a secret kept elsewhere (wrangler secret, keychain); it holds no value
+SECRET_NAME = re.compile(r"[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+")  # needs an underscore: a bare run of capitals can be a real token
+
+
+def looks_secret(text):
+    """True when the text holds something that looks like a key or password. A name in capitals is not one."""
+    for m in SECRETS.finditer(text):
+        value = re.split(r"[:=]", m.group(0), maxsplit=1)
+        if len(value) == 2 and SECRET_NAME.fullmatch(value[1].strip(" \t\\\"")):
+            continue
+        return True
+    return False
+
+
 def leaks(files):
     """The files holding something that looks like a secret. Contents are never printed."""
     hits = []
@@ -62,7 +76,7 @@ def leaks(files):
             continue
         try:
             with open(os.path.join(DATA, path), encoding="utf-8", errors="ignore") as f:
-                if SECRETS.search(f.read()):
+                if looks_secret(f.read()):
                     hits.append(path)
         except OSError:
             continue
