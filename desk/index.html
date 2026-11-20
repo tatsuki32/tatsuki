@@ -7600,6 +7600,160 @@ function cpPreview(){
   const t=(d.teaser||"").trim()||String(d.body||"").replace(/!\[[^\]]*\]\([^)]*\)/g,"").replace(/[#>*_`]/g,"").replace(/\s+/g," ").slice(0,200);
   return tabs+`<div class="cpweb"><p class="meta">地球キャンパス通信 #${d.no||c.data?.nextNo||1}${d.series?`　${esc(d.series)}`:""}</p><h1>${esc(d.title||"Untitled")}</h1><p>${esc(t)}</p><div class="cta"><b>この号の続きは、メールで読めます</b><br>メールアドレス ［無料で登録する］</div></div>`;
 }
+/* ---------- Bookings (#book): the rules and the list behind tany.im/book. The page runs in the tany.im Worker; desk/book.py carries the rules there and the bookings back ---------- */
+const bkg=()=>S.bkg||(S.bkg={data:null,loading:false,tab:"upcoming",err:"",msg:"",busy:"",rules:null,cals:null,paint:null,newLink:{note:"",expires:"",windows:[]},made:null,poll:null});
+const bkgPost=(path,body)=>fetch(path,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body||{})}).then(async r=>{let v={};try{v=await r.json()}catch(e){}if(!r.ok)throw new Error(v.error||("Error "+r.status));return v});
+const bkgPut=(path,body)=>fetch(path,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(body||{})}).then(async r=>{let v={};try{v=await r.json()}catch(e){}if(!r.ok)throw new Error(v.error||("Error "+r.status));return v});
+const bkgDay=ms=>new Date(ms).toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"});
+const bkgTz=()=>Intl.DateTimeFormat().resolvedOptions().timeZone||"UTC";
+async function bkgLoad(){
+  const b=bkg();b.loading=true;
+  try{b.data=await api("GET","/api/book");b.err="";if(!b.rules||b.rulesAt!==b.data.settings.updatedAt){b.rules=JSON.parse(JSON.stringify(b.data.settings));b.rulesAt=b.data.settings.updatedAt}}catch(e){b.err="Could not load. Restarting the server may help"}
+  b.loading=false;if(viewId()==="book")bkgDraw();
+}
+function bkgStatus(){
+  const b=bkg(),d=b.data,g=d.google||{};let h="";
+  if(!d.connected)h+=`<p class="bkgstat warn">Not connected to tany.im yet. In Terminal: <code>bash desk/book_setup.sh</code>, then deploy the site. Rules you save here wait on this Mac.</p>`;
+  else if(d.error)h+=`<p class="bkgstat warn">${esc(d.error)}</p>`;
+  if(d.connected&&!d.error){
+    if(d.auth?.running)h+=`<p class="bkgstat">Google opened in your browser. Allow the calendar permission there; this page updates by itself.</p>`;
+    else if(!g.connected)h+=`<div class="row"><span class="bkgstat warn">Google Calendar is not connected, so tany.im/book is paused.</span><button class="btn sm primary" id="bkgGoogle">Connect Google Calendar</button></div>`;
+    else if(g.ok===false)h+=`<div class="row"><span class="bkgstat warn">Google Calendar stopped answering (${esc(g.error||"")}). Guests see "Please contact directly."</span><button class="btn sm" id="bkgGoogle">Connect again</button></div>`;
+    else h+=`<p class="bkgstat">Google Calendar connected${d.mail===false?" · <b>confirmation emails are off</b> (RESEND_KEY or BOOK_FROM is missing on tany.im)":""}${d.lastPull?` · checked ${ago(d.lastPull)}`:""}</p>`;
+    if(d.auth?.error&&!d.auth.running)h+=`<p class="bkgstat warn">${esc(d.auth.error)}</p>`;
+  }
+  return h;
+}
+function bkgBooking(x,past){
+  const s=bkg().data.settings,st=x.status==="booked"?(past?"Done":""):x.status==="cancelled"?"Cancelled":x.status==="moved"?"Moved":x.status;
+  return `<div class="bkgrow"><div class="bkgwhen"><b>${esc(bkgDay(x.start))}</b><span>${esc(fmtTime(x.start))}–${esc(fmtTime(x.end))} · ${x.dur} min</span>${st?`<span>${st}</span>`:""}</div>
+    <div class="bkgbody"><b>${esc(x.name)}</b> <span class="sub">${esc(x.purposeName||x.purpose)} · ${esc(x.email)} · ${esc(x.lang)} · ${esc(x.tz)}${x.link_id?" · private link":""}</span>${x.topic?`<p>${esc(x.topic)}</p>`:""}${x.note?`<p class="sub">${esc(x.note)}</p>`:""}</div>
+    <div class="bkgacts">${x.meet&&x.status==="booked"&&!past?`<a class="btn sm" href="${esc(x.meet)}" target="_blank" rel="noopener">Meet ↗</a>`:""}${x.status==="booked"&&!past?`<button class="btn sm" data-bkgcancel="${esc(x.id)}">Cancel</button>`:""}</div></div>`;
+}
+function bkgGrid(){
+  const r=bkg().rules,on=new Set();
+  for(let d=0;d<7;d++)for(const [a,z] of (r.hours[String(d)]||r.hours[d]||[])){const f=bkgMin(a),t=bkgMin(z);for(let m=f;m<(t<=f?t+1440:t);m+=30)on.add(`${m>=1440?(d+1)%7:d}|${m%1440}`)}
+  const days=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"],order=[1,2,3,4,5,6,0];
+  let h=`<div class="bkgrid" id="bkgGrid" aria-label="Weekly hours: drag to paint"><div class="h"></div>${days.map(x=>`<div class="h">${x}</div>`).join("")}`;
+  for(let m=0;m<1440;m+=30){h+=`<div class="t">${m%120===0?bkgHm(m):""}</div>`;for(const d of order)h+=`<div class="c ${on.has(`${d}|${m}`)?"on":""}" data-bkgcell="${d}|${m}" title="${days[order.indexOf(d)]} ${bkgHm(m)}"></div>`}
+  return h+"</div>";
+}
+const bkgMin=s=>{const [h,m]=String(s).split(":").map(Number);return h*60+m};
+const bkgHm=m=>`${String(Math.floor(m/60)).padStart(2,"0")}:${String(m%60).padStart(2,"0")}`;
+function bkgCellsToHours(){
+  const cells=[...document.querySelectorAll("[data-bkgcell].on")].map(el=>el.dataset.bkgcell.split("|").map(Number)),hours={};
+  for(let d=0;d<7;d++){const ms=cells.filter(c=>c[0]===d).map(c=>c[1]).sort((a,b)=>a-b),out=[];let s=null,prev=null;
+    for(const m of ms){if(s===null){s=m}else if(m!==prev+30){out.push([bkgHm(s),bkgHm(prev+30)]);s=m}prev=m}
+    if(s!==null)out.push([bkgHm(s),prev+30>=1440?"00:00":bkgHm(prev+30)]);hours[String(d)]=out.slice(0,4)}
+  bkg().rules.hours=hours;
+}
+function bkgRules(){
+  const b=bkg(),r=b.rules,d=b.data,zones=(()=>{let z=[];try{z=Intl.supportedValuesOf("timeZone")}catch(e){z=["Asia/Tokyo","Asia/Ho_Chi_Minh","UTC"]}for(const x of [r.tz,bkgTz()])if(!z.includes(x))z.unshift(x);return z})(); // Chrome lists older names (Asia/Saigon), so the saved one is added when missing
+  const num=(k,label,min,max,step)=>`<label>${label}<input class="wd-field bkgedit" type="number" min="${min}" max="${max}" step="${step||1}" value="${r[k]}" data-bkgn="${k}"></label>`;
+  const cals=b.cals;
+  return `<div class="bkgform bkgedit">
+    <div class="row"><label style="flex:1">Your time zone (the hours below are in it)<select class="wd-field" data-bkgs="tz">${zones.map(z=>`<option value="${esc(z)}" ${z===r.tz?"selected":""}>${esc(z.replace(/_/g," "))}</option>`).join("")}</select></label>${r.tz!==bkgTz()?`<button class="btn sm" id="bkgMacTz" style="align-self:end">Use this Mac's (${esc(bkgTz().split("/").pop().replace(/_/g," "))})</button>`:""}</div>
+    <p class="sub" style="margin:0">Weekly hours guests can book. Drag over the grid to open or close half hours.</p>${bkgGrid()}
+    <div class="row">${num("buffer","Gap before and after (min)",0,120,5)}${num("daysAhead","Days ahead",1,90)}${num("noticeHours","Hours of notice",0,240)}${num("maxPerDay","Bookings per day, at most",1,20)}<label>Slot step<select class="wd-field" data-bkgs="step">${[15,30,60].map(x=>`<option ${r.step===x?"selected":""}>${x}</option>`).join("")}</select></label></div>
+    <h3>Purposes <span class="sub">name in each language, and the length</span></h3>
+    <div class="bkgpurp bkghead"><span>English</span><span>日本語</span><span>Tiếng Việt</span><span>Русский</span><span class="sub">id</span><span>min</span><span></span></div>
+    ${r.purposes.map((p,i)=>`<div class="bkgpurp" data-bkgp="${i}">${["en","ja","vi","ru"].map(l=>`<input class="wd-field" value="${esc(p.name[l]||"")}" data-bkgpn="${l}" aria-label="${l} name">`).join("")}<input class="wd-field" value="${esc(p.id)}" data-bkgpid aria-label="id" ${d.settings.purposes.some(x=>x.id===p.id)?"readonly":""}><input class="wd-field" type="number" min="5" max="240" step="5" value="${p.min}" data-bkgpm aria-label="minutes"><button class="btn sm" data-bkgpdel="${i}" ${r.purposes.length<2?"disabled":""}>Remove</button></div>`).join("")}
+    <div class="row"><button class="btn sm" id="bkgPurpAdd" ${r.purposes.length>=8?"disabled":""}>Add a purpose</button></div>
+    <h3>Special days <span class="sub">closed, or only these hours</span></h3>
+    ${Object.entries(r.special).sort().map(([k,v])=>`<div class="bkgspecial" data-bkgsd="${esc(k)}"><input class="wd-field" type="date" value="${esc(k)}" data-bkgsdate><select class="wd-field" data-bkgskind><option value="closed" ${v.length?"":"selected"}>Closed</option><option value="only" ${v.length?"selected":""}>Only these hours</option></select><input class="wd-field" type="time" step="900" value="${esc(v[0]?.[0]||"10:00")}" data-bkgsfrom ${v.length?"":"disabled"}><input class="wd-field" type="time" step="900" value="${esc(v[0]?.[1]||"12:00")}" data-bkgsto ${v.length?"":"disabled"}><button class="btn sm" data-bkgsdel="${esc(k)}">Remove</button></div>`).join("")}
+    <div class="row"><button class="btn sm" id="bkgSpecialAdd">Add a day</button></div>
+    <h3>Calendars</h3>
+    ${cals?`<p class="sub" style="margin:0">Busy times are read from the checked calendars. The booking is written to the chosen one.</p><div class="bkgcals">${cals.map(c=>`<label class="row"><input type="checkbox" data-bkgcheck="${esc(c.id)}" ${r.checkCals.includes(c.id)?"checked":""}> ${esc(c.name)}${c.primary?" <span class=sub>(main)</span>":""}</label>`).join("")}</div><label>Write bookings to<select class="wd-field" data-bkgs="writeCal">${cals.filter(c=>c.writable!==false).map(c=>`<option value="${esc(c.id)}" ${c.id===r.writeCal?"selected":""}>${esc(c.name)}</option>`).join("")}</select></label>`
+      :`<div class="row"><span class="sub">Checking: ${esc(r.checkCals.join(", "))} · writing to: ${esc(r.writeCal)}</span><button class="btn sm" id="bkgCals" ${b.busy==="cals"?"disabled":""}>${b.busy==="cals"?"Loading…":"Choose calendars"}</button></div>`}
+    <h3>Event and email</h3>
+    <div class="row"><label style="flex:1">Your name on the page<input class="wd-field" value="${esc(r.ownerName)}" data-bkgs="ownerName" maxlength="60"></label><label style="flex:1">Event title <span class="sub">{purpose} {name} {owner}</span><input class="wd-field" value="${esc(r.title)}" data-bkgs="title" maxlength="120"></label></div>
+    <div class="row"><label style="flex:1">Reply-to address for confirmation emails<input class="wd-field" type="email" value="${esc(r.replyTo)}" data-bkgs="replyTo" maxlength="200"></label><label style="flex:1">Shown when booking is paused ("Please contact directly")<input class="wd-field" value="${esc(r.contact)}" data-bkgs="contact" maxlength="200" placeholder="an email address or a link"></label></div>
+    <label class="row" style="color:var(--ink)"><input type="checkbox" data-bkgb="meet" ${r.meet?"checked":""}> Add a Google Meet link to every booking</label>
+    <div class="row"><button class="btn primary" id="bkgSave" ${b.busy==="save"?"disabled":""}>${b.busy==="save"?"Saving…":"Save rules"}</button><span class="sub">Saved rules reach tany.im/book within a minute.</span></div>
+  </div>`;
+}
+function bkgLinks(){
+  const b=bkg(),d=b.data,n=b.newLink,live=d.links.filter(l=>!l.off),off=d.links.filter(l=>l.off);
+  const win=w=>`${bkgDay(w.s)} ${fmtTime(w.s)}–${fmtTime(w.e)}`;
+  const row=l=>`<div class="bkgrow"><div class="bkgwhen"><b>${esc(l.note||"Private link")}</b><span>made ${ago(l.created||0)}${l.expires?` · until ${bkgDay(l.expires)}`:""}${l.used?` · used ${l.used}×`:""}</span></div>
+    <div class="bkgbody">${(l.windows||[]).length?`<p>${l.windows.map(win).map(esc).join("<br>")}</p>`:`<p class="sub">Same hours as the public page</p>`}${l.url?`<p class="sub">${esc(l.url)}</p>`:l.off?"":`<p class="sub">The link itself was shown once, when it was made.</p>`}</div>
+    <div class="bkgacts">${l.url&&!l.off?`<button class="btn sm" data-bkgcopy="${esc(l.url)}">Copy link</button>`:""}${l.off?"":`<button class="btn sm" data-bkglinkoff="${esc(l.id)}">Turn off</button>`}</div></div>`;
+  return `<div class="bkgform bkgedit">
+    ${b.made?`<div class="cpbox"><h3>Link made</h3><p>${esc(b.made.url)}</p><div class="row"><button class="btn primary" data-bkgcopy="${esc(b.made.url)}">Copy link</button><button class="btn" id="bkgMadeOk">Done</button></div></div>`:""}
+    <h3>New private link</h3>
+    <div class="row"><label style="flex:1">For whom / note (shown to them)<input class="wd-field" value="${esc(n.note)}" data-bkgnl="note" maxlength="120"></label><label>Works until<input class="wd-field" type="date" value="${esc(n.expires)}" data-bkgnl="expires"></label></div>
+    <p class="sub" style="margin:0">Extra times only this person can book (this Mac's time). Leave empty for the public hours only.</p>
+    ${n.windows.map((w,i)=>`<div class="bkgspecial" data-bkgnw="${i}"><input class="wd-field" type="date" value="${esc(w.date)}" data-bkgnwd><input class="wd-field" type="time" step="900" value="${esc(w.from)}" data-bkgnwf><input class="wd-field" type="time" step="900" value="${esc(w.to)}" data-bkgnwt><span></span><button class="btn sm" data-bkgnwdel="${i}">Remove</button></div>`).join("")}
+    <div class="row"><button class="btn sm" id="bkgWinAdd">Add a time</button><button class="btn primary" id="bkgLinkMake" ${b.busy==="link"?"disabled":""}>${b.busy==="link"?"Making…":"Make the link"}</button></div>
+    <h3>Links</h3>${live.map(row).join("")||`<p class="sub">No private links yet.</p>`}
+    ${off.length?`<h3>Turned off</h3>${off.map(row).join("")}`:""}
+  </div>`;
+}
+function bkgView(){
+  const b=bkg();
+  if(!b.data)return `<div class="bk" id="bkgView"><h1>Bookings</h1><p class="sub">${b.err?esc(b.err):"Loading…"}</p></div>`;
+  const d=b.data,now=Date.now(),up=d.bookings.filter(x=>x.status==="booked"&&x.end>now).sort((a,c)=>a.start-c.start),past=d.bookings.filter(x=>!(x.status==="booked"&&x.end>now)).sort((a,c)=>c.start-a.start);
+  const tabs=[["upcoming",`Upcoming (${up.length})`],["rules","Rules"],["links",`Private links (${d.links.filter(l=>!l.off).length})`],["past",`Past (${past.length})`]];
+  return `<div class="bk" id="bkgView" data-noauto>
+    <header class="head"><div><h1>Bookings</h1><p class="sub">tany.im/book · guests pick a time; it lands in Google Calendar with a Meet link and they get a confirmation email.</p></div></header>
+    <div class="bkgbar"><button class="btn primary" data-bkgcopy="${esc(d.shareUrl)}">Share link</button><button class="btn" id="bkgTimes" ${b.busy==="times"?"disabled":""}>${b.busy==="times"?"Reading…":"Copy open times"}</button><a class="btn" href="${esc(d.shareUrl)}" target="_blank" rel="noopener">Open the page ↗</a><button class="btn" id="bkgRefresh" ${b.busy==="refresh"?"disabled":""}>Refresh</button></div>
+    ${bkgStatus()}${b.msg?`<p class="bkgstat">${esc(b.msg)}</p>`:""}
+    <div class="mtabs" role="tablist">${tabs.map(([k,l])=>`<button role="tab" class="mtab" data-bkgtab="${k}" aria-selected="${b.tab===k}">${l}</button>`).join("")}</div>
+    ${b.tab==="upcoming"?(up.length?`<section class="card">${up.map(x=>bkgBooking(x,false)).join("")}</section>`:`<section class="card"><div class="empty">No bookings ahead. Share the link.</div></section>`)
+     :b.tab==="past"?(past.length?`<section class="card">${past.map(x=>bkgBooking(x,true)).join("")}</section>`:`<section class="card"><div class="empty">Nothing yet.</div></section>`)
+     :b.tab==="rules"?bkgRules():bkgLinks()}
+  </div>`;
+}
+function bkgDraw(){$("#view").innerHTML=searchResults()+bkgView();wire();wireBkg()}
+function bkgReadRules(){
+  const r=bkg().rules,root=$("#bkgView");if(!root||bkg().tab!=="rules")return r;
+  root.querySelectorAll("[data-bkgs]").forEach(el=>r[el.dataset.bkgs]=el.tagName==="SELECT"&&el.dataset.bkgs==="step"?+el.value:el.value);
+  root.querySelectorAll("[data-bkgn]").forEach(el=>r[el.dataset.bkgn]=+el.value);
+  root.querySelectorAll("[data-bkgb]").forEach(el=>r[el.dataset.bkgb]=el.checked);
+  r.purposes=[...root.querySelectorAll("[data-bkgp]")].map(row=>({id:row.querySelector("[data-bkgpid]").value.trim().replace(/[^\w-]/g,"").slice(0,24)||("p"+Date.now().toString(36)),min:+row.querySelector("[data-bkgpm]").value||30,name:Object.fromEntries([...row.querySelectorAll("[data-bkgpn]")].map(i=>[i.dataset.bkgpn,i.value.trim()]))}));
+  const sp={};root.querySelectorAll("[data-bkgsd]").forEach(row=>{const k=row.querySelector("[data-bkgsdate]").value;if(!k)return;sp[k]=row.querySelector("[data-bkgskind]").value==="only"?[[row.querySelector("[data-bkgsfrom]").value||"10:00",row.querySelector("[data-bkgsto]").value||"12:00"]]:[]});r.special=sp;
+  const checks=[...root.querySelectorAll("[data-bkgcheck]")];if(checks.length)r.checkCals=checks.filter(c=>c.checked).map(c=>c.dataset.bkgcheck);
+  bkgCellsToHours();
+  return r;
+}
+function bkgReadLink(){const n=bkg().newLink,root=$("#bkgView");if(!root)return;root.querySelectorAll("[data-bkgnl]").forEach(el=>n[el.dataset.bkgnl]=el.value);n.windows=[...root.querySelectorAll("[data-bkgnw]")].map(row=>({date:row.querySelector("[data-bkgnwd]").value,from:row.querySelector("[data-bkgnwf]").value,to:row.querySelector("[data-bkgnwt]").value}))}
+async function bkgCopy(text){try{await navigator.clipboard.writeText(text);toast("Copied")}catch(e){toast("Could not copy")}}
+function wireBkg(){
+  const b=bkg(),d=b.data;if(!d)return;
+  document.querySelectorAll("[data-bkgtab]").forEach(x=>x.onclick=()=>{bkgReadRules();bkgReadLink();b.tab=x.dataset.bkgtab;b.msg="";bkgDraw()});
+  document.querySelectorAll("[data-bkgcopy]").forEach(x=>x.onclick=()=>bkgCopy(x.dataset.bkgcopy));
+  $("#bkgRefresh")&&($("#bkgRefresh").onclick=async()=>{b.busy="refresh";bkgDraw();try{b.data=await bkgPost("/api/book/refresh");b.rules=JSON.parse(JSON.stringify(b.data.settings));b.rulesAt=b.data.settings.updatedAt;b.msg=""}catch(e){b.msg=e.message}b.busy="";bkgDraw()});
+  $("#bkgTimes")&&($("#bkgTimes").onclick=async()=>{b.busy="times";bkgDraw();try{const v=await api("GET","/api/book/times?days=7");if(v.error)throw new Error(v.error);await bkgCopy(v.text);b.msg=`Open times for the next ${v.days} days copied (${v.tz}).`}catch(e){b.msg=e.message}b.busy="";bkgDraw()});
+  $("#bkgGoogle")&&($("#bkgGoogle").onclick=async()=>{try{await bkgPost("/api/book/google");b.msg="";clearInterval(b.poll);b.poll=setInterval(async()=>{await bkgLoad();if(!bkg().data?.auth?.running){clearInterval(bkg().poll);bkg().poll=null}},3000);await bkgLoad()}catch(e){b.msg=e.message;bkgDraw()}});
+  document.querySelectorAll("[data-bkgcancel]").forEach(x=>x.onclick=async()=>{const bo=d.bookings.find(y=>y.id===x.dataset.bkgcancel);if(!await askYes(`Cancel ${bo?bo.name+"'s":"this"} booking on ${bo?bkgDay(bo.start)+" "+fmtTime(bo.start):""}? They get a cancellation email and the time opens again.`))return;try{b.data=await bkgPost(`/api/book/${encodeURIComponent(x.dataset.bkgcancel)}/cancel`);b.msg="Cancelled."}catch(e){b.msg=e.message}bkgDraw()});
+  // rules
+  $("#bkgMacTz")&&($("#bkgMacTz").onclick=()=>{bkgReadRules();b.rules.tz=bkgTz();bkgDraw()});
+  $("#bkgPurpAdd")&&($("#bkgPurpAdd").onclick=()=>{bkgReadRules();b.rules.purposes.push({id:"p"+Date.now().toString(36).slice(-5),min:30,name:{en:"",ja:"",vi:"",ru:""}});bkgDraw()});
+  document.querySelectorAll("[data-bkgpdel]").forEach(x=>x.onclick=()=>{bkgReadRules();b.rules.purposes.splice(+x.dataset.bkgpdel,1);bkgDraw()});
+  $("#bkgSpecialAdd")&&($("#bkgSpecialAdd").onclick=()=>{bkgReadRules();const k=new Date(Date.now()+864e5).toISOString().slice(0,10);if(!b.rules.special[k])b.rules.special[k]=[];bkgDraw()});
+  document.querySelectorAll("[data-bkgsdel]").forEach(x=>x.onclick=()=>{bkgReadRules();delete b.rules.special[x.dataset.bkgsdel];bkgDraw()});
+  document.querySelectorAll("[data-bkgskind]").forEach(x=>x.onchange=()=>{const row=x.closest("[data-bkgsd]"),only=x.value==="only";row.querySelector("[data-bkgsfrom]").disabled=!only;row.querySelector("[data-bkgsto]").disabled=!only});
+  $("#bkgCals")&&($("#bkgCals").onclick=async()=>{bkgReadRules();b.busy="cals";bkgDraw();try{const v=await api("GET","/api/book/calendars");if(v.error)throw new Error(v.error);b.cals=v.calendars||[]}catch(e){b.msg=e.message}b.busy="";bkgDraw()});
+  $("#bkgSave")&&($("#bkgSave").onclick=async()=>{const r=bkgReadRules();b.busy="save";bkgDraw();try{const v=await bkgPut("/api/book/settings",r);b.data=v;b.rules=JSON.parse(JSON.stringify(v.settings));b.rulesAt=v.settings.updatedAt;b.msg=v.warning||"Rules saved."}catch(e){b.msg=e.message}b.busy="";bkgDraw()});
+  const grid=$("#bkgGrid");
+  if(grid){const set=(el,on)=>{if(el&&el.dataset.bkgcell)el.classList.toggle("on",on)};
+    grid.onpointerdown=e=>{const el=e.target.closest("[data-bkgcell]");if(!el)return;e.preventDefault();b.paint=!el.classList.contains("on");set(el,b.paint);grid.setPointerCapture?.(e.pointerId)};
+    grid.onpointermove=e=>{if(b.paint===null||b.paint===undefined)return;const el=document.elementFromPoint(e.clientX,e.clientY)?.closest?.("[data-bkgcell]");set(el,b.paint)};
+    grid.onpointerup=grid.onpointercancel=()=>{if(b.paint!==null&&b.paint!==undefined){b.paint=null;bkgCellsToHours()}};}
+  // private links
+  $("#bkgWinAdd")&&($("#bkgWinAdd").onclick=()=>{bkgReadLink();b.newLink.windows.push({date:new Date(Date.now()+864e5).toISOString().slice(0,10),from:"19:00",to:"21:00"});bkgDraw()});
+  document.querySelectorAll("[data-bkgnwdel]").forEach(x=>x.onclick=()=>{bkgReadLink();b.newLink.windows.splice(+x.dataset.bkgnwdel,1);bkgDraw()});
+  $("#bkgMadeOk")&&($("#bkgMadeOk").onclick=()=>{b.made=null;bkgDraw()});
+  $("#bkgLinkMake")&&($("#bkgLinkMake").onclick=async()=>{bkgReadLink();const n=b.newLink,windows=n.windows.map(w=>{const s=new Date(`${w.date}T${w.from||"00:00"}`),e=new Date(`${w.date}T${w.to||"23:59"}`);return {s:s.getTime(),e:e.getTime()}}).filter(w=>w.e>w.s);
+    if(n.windows.length&&!windows.length){b.msg="Each extra time needs a date, a start and an end.";bkgDraw();return}
+    const expires=n.expires?new Date(`${n.expires}T23:59:59`).getTime():null;b.busy="link";bkgDraw();
+    try{b.made=await bkgPost("/api/book/links",{note:n.note,expires,windows});b.newLink={note:"",expires:"",windows:[]};b.msg="";await bkgLoad()}catch(e){b.msg=e.message}b.busy="";bkgDraw()});
+  document.querySelectorAll("[data-bkglinkoff]").forEach(x=>x.onclick=async()=>{if(!await askYes("Turn this private link off? The page it opens stops working."))return;try{b.data=await bkgPost(`/api/book/links/${encodeURIComponent(x.dataset.bkglinkoff)}/off`)}catch(e){b.msg=e.message}bkgDraw()});
+}
+const bkgHomeLine=()=>{const h=S.bkgHome;if(!LOCALAPI||!h)return "";if(h.problem)return `<a class="sub pcline" id="bkgLine" href="#book">${esc(h.problem)}</a>`;
+  return h.next?`<a class="sub pcline" id="bkgLine" href="#book">Next booking: ${esc(bkgDay(h.next.start))} ${esc(fmtTime(h.next.start))} · ${esc(h.next.name||"")} · ${esc(h.next.purpose||"")}${h.count>1?` · ${h.count-1} more`:""}</a>`:""};
+async function bkgHomeLoad(){if(!LOCALAPI)return;try{S.bkgHome=await api("GET","/api/book/home");const el=$("#bkgLine");if(el){const t=document.createElement("div");t.innerHTML=bkgHomeLine();el.textContent=t.firstChild?t.firstChild.textContent:""}else if(viewId()==="home"&&(S.bkgHome.problem||S.bkgHome.next))render()}catch(e){}}
+if(LOCALAPI){bkgHomeLoad();setInterval(()=>{if(viewId()==="home"&&!document.hidden)bkgHomeLoad()},5*60000)}
 function cpBoxes(){
   const c=cp(),d=c.doc,rd=c.data?.ready||{need:[]},st=c.data?.stats;let h="";
   if(c.msg)h+=`<div class="cpbox"><p>${esc(c.msg)}</p></div>`;
