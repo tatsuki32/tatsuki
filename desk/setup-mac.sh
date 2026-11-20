@@ -11,6 +11,7 @@
 #   com.tatsuki.desk.line        every 5 minutes, once a day from 3:00: unread LINE chats become reply tasks (line_sync.py, never sends)
 #   com.tatsuki.desk.linenight   21:00 to 3:30, on mains power only: keeps the Mac awake so the 3:00 check finds it unlocked
 #   com.tatsuki.desk.webhistory  every hour, Chrome history comes to desk/data/webhistory (chrome_web_sync.py, read only)
+#   com.tatsuki.desk.wifilogin   when the network changes: opens the Wi-Fi sign-in page in Safari if one is needed (wifilogin-setup.sh, which also puts Wi-Fi Login.app on the Desktop)
 #   com.tatsuki.desk.telegram    the Telegram bot: photos and messages reach this Mac (lifeos/bot/run.py). Without a token it waits and tries again
 # Run it again any time; it replaces the old jobs. Remove with: bash desk/setup-mac.sh --uninstall
 set -euo pipefail
@@ -30,6 +31,7 @@ unload() { launchctl bootout "gui/$UID_/$1" 2>/dev/null || true; rm -f "$AGENTS/
 if [[ "${1:-}" == "--uninstall" ]]; then
   unload com.tatsuki.desk.server; unload com.tatsuki.desk.pull; unload com.tatsuki.desk.backup; unload com.tatsuki.desk.wise; unload com.tatsuki.desk.screentime; unload com.tatsuki.desk.tabwatch; unload com.tatsuki.desk.webhistory; unload com.tatsuki.desk.line; unload com.tatsuki.desk.linenight; unload com.tatsuki.desk.telegram
   rm -f "$HOME/Desktop/Tatsuki's Desk.html" "$HOME/Desktop/Tatsuki's Desk.app"
+  bash "$DESK/wifilogin-setup.sh" --uninstall >/dev/null 2>&1 || true
   echo "Desk の常駐ジョブを削除しました。$DESK/data のデータはそのまま残っています。"; exit 0
 fi
 
@@ -215,6 +217,9 @@ if APP="$(bash "$DESK/app/build.sh" "$HOME/Applications")"; then
 else
   echo "アプリを作れませんでした。ブラウザで http://localhost:$PORT を開くと使えます。"
 fi
+
+# Wi-Fi Login: its own Desktop icon and watcher. Desk works without it
+bash "$DESK/wifilogin-setup.sh" || echo "Wi-Fi Login を設置できませんでした（Desk はそのまま使えます）。"
 
 if curl -fsS "http://localhost:$PORT/health" >/dev/null 2>&1; then
   echo "✅ Desk が起動しました: http://localhost:$PORT"

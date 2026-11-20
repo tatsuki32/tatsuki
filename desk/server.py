@@ -33,6 +33,7 @@ from urllib.parse import parse_qs, unquote, urlsplit
 import bank
 import accounts
 import netspeed
+import wifi_login
 import footprint
 import finder
 import transcribe_desk
@@ -1002,6 +1003,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, news_sync.today())
         if path == "/api/netspeed":
             return self.send(200, netspeed.view())
+        if path == "/api/wifi-login":  # what Wi-Fi this Mac is on and whether it needs a sign-in (desk/wifi_login.py); opens nothing
+            return self.send(200, wifi_login.view())
         if path == "/api/footprint":  # rough daily CO2e from records already here (desk/footprint.py); nothing is sent anywhere
             return self.send(200, footprint.view(parse_qs(urlsplit(self.path).query).get("period", ["7"])[0]))
         if path == "/api/footprint/home":
@@ -1284,6 +1287,11 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(200, finder.handle(rec))
             except ValueError as e:
                 return self.send(400, {"error": str(e)})
+        if method == "POST" and urlsplit(self.path).path == "/api/wifi-login/open":
+            # the person pressed Wi-Fi Login: find the Wi-Fi's sign-in page and open it in Safari. Only ever a page; nothing is pressed for them
+            if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+                return self.send(415, {"error": "json only"})
+            return self.send(200, wifi_login.run())
         if method == "POST" and urlsplit(self.path).path == "/api/netspeed/run":
             if not (self.headers.get("Content-Type") or "").startswith("application/json"):
                 return self.send(415, {"error": "json only"})
