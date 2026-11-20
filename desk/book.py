@@ -44,7 +44,7 @@ AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 PULL_EVERY = 300
 LANGS = ("en", "ja", "ru", "vi")
 _lock = threading.Lock()
-_auth = {"running": False, "error": "", "doneAt": 0}
+_auth = {"running": False, "error": "", "doneAt": 0, "url": ""}  # url: the consent page while a connection is in progress
 
 
 # ---------- files ----------
@@ -450,6 +450,7 @@ def auth(path=None, log=print):
         "client_id": client["id"], "redirect_uri": redirect, "response_type": "code", "scope": SCOPES,
         "access_type": "offline", "prompt": "consent", "state": state, "code_challenge": challenge, "code_challenge_method": "S256"})
     log("Opening the Google sign-in page. If it does not open, visit this URL.\n" + url)
+    _auth["url"] = url
     webbrowser.open(url)
     deadline = time.time() + 600
     srv.timeout = 600
@@ -487,7 +488,7 @@ def auth_in_background():
             _auth["error"] = "" if rc == 0 else (msgs[-1] if msgs else "Could not connect")
         except Exception as e:  # the thread must end with a message, whatever happened
             _auth["error"] = str(e)
-        _auth.update(running=False, doneAt=int(time.time() * 1000))
+        _auth.update(running=False, doneAt=int(time.time() * 1000), url="")
 
     threading.Thread(target=run, daemon=True).start()
     return 200, {"ok": True, "running": True}
