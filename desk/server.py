@@ -48,6 +48,7 @@ import routine_alarm
 import routine_sync
 import news_sync
 import rhizomebox_backup
+import anki
 import cards
 import cards_sync
 import reader
@@ -280,6 +281,12 @@ def keep_kr(col, old, new):
                 new[k] = old[k]
 
 
+def keep_anki(col, old, new):
+    """Flashcards: a page holding an older copy of a card must not erase what the Anki sender wrote (anki.at says which is newer)."""
+    if col == "cards" and old.get("anki") and ((new.get("anki") or {}).get("at") or 0) < (old["anki"].get("at") or 0):
+        new["anki"] = old["anki"]
+
+
 def upsert(col, doc_id, rec, merge):
     with LOCK:
         items = load(col)
@@ -290,6 +297,7 @@ def upsert(col, doc_id, rec, merge):
                     keep_clear(x, items[i])
                     keep_labels(x, items[i])
                 keep_kr(col, x, items[i])
+                keep_anki(col, x, items[i])
                 break
         else:
             if merge:
@@ -1036,6 +1044,10 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(*reader.get(path.rsplit("/", 1)[1]))
         if path == "/api/reader/voices":
             return self.send(200, reader.voices_for(parse_qs(urlsplit(self.path).query).get("lang", ["en"])[0]))
+        if path == "/api/anki":  # Desk words -> Anki (desk/anki.py): is Anki open, what waits, Anki's due count
+            with LOCK:
+                all_cards = load("cards")
+            return self.send(200, anki.status(all_cards))
         if path == "/api/cards/due":  # flashcards waiting today (desk/cards.py)
             with LOCK:
                 return self.send(200, cards.due(load("cards"), load("cardlog")))
@@ -1303,6 +1315,8 @@ class Handler(BaseHTTPRequestHandler):
                 self.close_connection = True
                 return self.send(413, {"error": "A file can be up to 50 MB"})
             return self.send(*reader.add_file(self.rfile.read(n), unquote(self.headers.get("X-File-Name") or "")))
+        if method == "POST" and urlsplit(self.path).path in ("/api/anki/open", "/api/anki/sync"):
+            return self.anki_post(urlsplit(self.path).path)
         if urlsplit(self.path).path.startswith("/api/reader/") or urlsplit(self.path).path in ("/api/cards/add", "/api/cards/lookup", "/api/cards/enrich", "/api/cards/suggest"):
             return self.reader_write(method, urlsplit(self.path).path.split("/")[2:])  # PUT /api/cards/<id> stays an ordinary collection write
         if method == "POST" and urlsplit(self.path).path.startswith("/api/utilities/"):
@@ -1498,8 +1512,10 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(*translate.handle_translate(rec))
         if method == "POST" and path == "/api/translate/enrich":  # lemma, examples, the other languages, the concept (Claude)
             return self.send(*translate.handle_enrich(rec))
-        if method == "POST" and path == "/api/translate/cards":  # Add to cards / Not now
-            return self.send(*translate.handle_cards(rec))
+        if method == "POST" and path == "/api/translate/cards":  # Add to Anki / Not now
+            code, out = translate.handle_cards(rec)
+            anki.kick()
+            return self.send(code, out)
         if method == "PUT" and path == "/api/translate/settings":
             return self.send(*translate.put_settings(rec))
         if method == "POST" and path in ("/api/concepts/merge", "/api/concepts/split"):
@@ -1522,6 +1538,18 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Disposition", f'attachment; filename="{name}"')
         self.end_headers()
         self.wfile.write(data)
+
+    def anki_post(self, path):
+        """Anki (desk/anki.py): bring Anki to the front, or send what waits now. JSON only, like every write here."""
+        if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+            return self.send(415, {"error": "json only"})
+        if path == "/api/anki/open":
+            return self.send(*anki.open_anki())
+        try:
+            out = anki.round_(cards.Store(load_locked, upsert))
+        except anki.Closed:
+            return self.send(503, {"error": "Anki is not open"})
+        return self.send(200, out)
 
     def reader_write(self, method, step):
         """Desk Reader and flashcards (desk/reader.py, desk/cards.py). JSON only, so another origin would need a preflight.
@@ -1547,7 +1575,9 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(404, {"error": "not found"})
         store = cards.Store(load_locked, upsert)
         if method == "POST" and step[1:] == ["add"]:
-            return self.send(*cards.add(store, rec))
+            code, out = cards.add(store, rec)
+            anki.kick()  # on to Anki within seconds when it is open
+            return self.send(code, out)
         if method == "POST" and step[1:] == ["lookup"]:
             try:
                 return self.send(200, cards.lookup(str(rec.get("term") or "")[:cards.TERM_MAX], str(rec.get("lang") or "en")[:8], str(rec.get("context") or "")[:cards.CONTEXT_MAX]))
@@ -1680,6 +1710,8 @@ if __name__ == "__main__":
     threading.Thread(target=lifemap_ticks, daemon=True).start()
     threading.Thread(target=pc_monitor.watch, daemon=True).start()
     translate.bind(load, save, LOCK)  # lookups, concepts and cards are ordinary collections written under the same lock
+    if PORT != 4747 and os.environ.get("ANKI_URL"):  # a test server sends to a fake AnkiConnect only (desk/tests/fake_ankiconnect.py)
+        threading.Thread(target=anki.watch, args=(cards.Store(load_locked, upsert),), daemon=True).start()
     if PORT == 4747:  # a test server on another port shows nothing
         threading.Thread(target=notify.watch, daemon=True).start()
         threading.Thread(target=checkin.watch, args=(load, save, LOCK), daemon=True).start()  # in-progress timers: ask every 10 minutes
@@ -1691,6 +1723,7 @@ if __name__ == "__main__":
         threading.Thread(target=routine_sync.watch, daemon=True).start()  # routines <-> the Routine app on the phone
         threading.Thread(target=cards_sync.watch, daemon=True).start()  # flashcards <-> the Cards app on the phone
         threading.Thread(target=cards.watch, args=(cards.Store(load_locked, upsert),), daemon=True).start()  # fills missing meanings every 30 minutes
+        threading.Thread(target=anki.watch, args=(cards.Store(load_locked, upsert),), daemon=True).start()  # words -> Anki, every minute
         try:
             lifelog.ensure_log_habits()  # "Log sleep" / "Log meals": tick themselves when a record arrives
         except Exception as e:

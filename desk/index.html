@@ -1855,6 +1855,9 @@ a.shelfbtn{text-decoration:none;display:inline-flex;align-items:center}
 .cdrow:hover{background:var(--surface-2)}
 .cdrow .cdt,.cdrow .cdm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cdrow .cdd{white-space:nowrap;text-align:right}
+.cdrow .cdd.cdwait{color:var(--ink)}
+.ankibox{margin:0 0 var(--s3);gap:var(--s2);flex-wrap:wrap}.ankibox p{margin:var(--s1) 0 0}
+.tdrow button.tt{background:none;border:0;padding:0;font:inherit;color:inherit;cursor:pointer;text-align:left}
 .cdsg{cursor:default}.cdsg:hover{background:none}
 @media (max-width:640px){.cdrow{grid-template-columns:minmax(0,1fr) auto}.cdrow .cdm{grid-column:1/-1;white-space:normal}}
 .cdimport{padding:var(--s2) 0}
@@ -3036,7 +3039,7 @@ function todayBlock(){
   const total=due.open.length+due.done.length+plan.open.length+plan.done.length+rts.length+hs.length;
   const done=due.done.length+plan.done.length+rts.filter(r=>r.done).length+hs.filter(x=>x.on).length;
   const body=[tdSection("Schedule",evRows,[]),tdSection("Due today",due.open.map(t=>tdTaskRow(t,false)),due.done.map(t=>tdTaskRow(t,true))),
-    tdSection("Routines & habits",rh,rhDone),tdSection("Planned today",plan.open.map(t=>tdTaskRow(t,false)),plan.done.map(t=>tdTaskRow(t,true))),tdSection("Cards",tdCards(),[]),
+    tdSection("Routines & habits",rh,rhDone),tdSection("Planned today",plan.open.map(t=>tdTaskRow(t,false)),plan.done.map(t=>tdTaskRow(t,true))),tdSection("Anki",tdAnki(),[]),
     tdSection("News",newsRows,[],news?.day?` <span class="sub">Sift Daily · ${esc(news.day.slice(5).replace("-","/"))}</span>`:"")].join("");
   return `<section class="card td" aria-label="Today"><div class="tdtop"><h2>Today</h2>${total?`<span class="sub">${done}/${total} done</span>`:""}</div>
     ${body||`<div class="empty"><b>Nothing for today yet</b>Press T to add a task, or plan one for today on Tasks.</div>`}</section>`;
@@ -6197,7 +6200,7 @@ function xlWordBox(lk,cp,card,inline){
   const details=info?`<div class="xlinfo"><div><b lang="${esc(xlTag(lk.from))}">${esc(info.lemma||lk.text)}</b>${info.reading?` <span class="sub">${esc(info.reading)}</span>`:""}${info.pos?` <span class="sub">· ${esc(info.pos)}</span>`:""} ${xlSpk(info.lemma||lk.text,lk.from,true)}</div>${info.gloss?`<div class="xlgloss">${esc(info.gloss)}</div>`:""}
     ${info.senses?.length?`<div class="sub">Also: ${info.senses.map(esc).join(" · ")}</div>`:""}
     ${(info.examples||[]).length&&!inline?`<ul class="xlex">${info.examples.map(e=>`<li><span lang="${esc(xlTag(lk.from))}">${esc(e.text)}</span> ${xlSpk(e.text,lk.from,true)}<br><span class="sub">${esc(e.translation)}</span></li>`).join("")}</ul>`:""}</div>`:"";
-  return `<div class="xlword">${strip}${details}<div class="row">${card?`<span class="sub">In cards ✓</span>`:`<button class="btn sm" data-xlcard="${esc(lk.id)}">Add to cards</button>`}</div></div>`;
+  return `<div class="xlword">${strip}${details}<div class="row">${card?`<span class="sub">${esc(ankiMark(card))} ✓</span>`:`<button class="btn sm" data-xlcard="${esc(lk.id)}">Add to Anki</button>`}</div></div>`;
 }
 function xlPanel(){
   const t=trQ(S.q), cur=S.xl.cur?.lookup;
@@ -6210,7 +6213,7 @@ function xlView(){
   const box=`<section class="card xlbox"><textarea id="xlIn" class="xlfield" rows="3" placeholder="Type or paste. Enter translates; Shift+Enter makes a new line." aria-label="Text to translate">${esc(x.text||"")}</textarea>
     <div class="row xlctl"><span class="sub">To</span><div class="chips">${[["","Auto"],...langs.map(l=>[l,xlName(l)])].map(([k,l])=>`<button class="chip" data-xlto="${esc(k)}" aria-pressed="${(x.to||"")===k}">${esc(l)}</button>`).join("")}</div><button class="btn primary" id="xlGo">Translate</button></div>
     ${st&&st.why&&!x.cur&&!x.busy?`<p class="sub xlwhy">${esc(st.why)}</p>`:""}${xlResult(false)}</section>`;
-  const tabs=`<div class="mtabs xltabs" role="tablist" aria-label="Translate lists">${[["history","History",S.lookups.length],["words","Words",S.concepts.length],["cards","To cards",sugg]].map(([k,l,n])=>`<button role="tab" class="mtab" data-xltab="${k}" aria-selected="${x.tab===k}">${l}${n?` <span class="sub">${n}</span>`:""}</button>`).join("")}</div>`;
+  const tabs=`<div class="mtabs xltabs" role="tablist" aria-label="Translate lists">${[["history","History",S.lookups.length],["words","Words",S.concepts.length],["cards","To Anki",sugg]].map(([k,l,n])=>`<button role="tab" class="mtab" data-xltab="${k}" aria-selected="${x.tab===k}">${l}${n?` <span class="sub">${n}</span>`:""}</button>`).join("")}</div>`;
   const body=x.tab==="words"?xlWords():x.tab==="cards"?xlToCards():xlHistory();
   return head+box+tabs+body+xlSettings();
 }
@@ -6232,8 +6235,8 @@ function xlWords(){
 }
 function xlToCards(){
   const s=S.xl.st?.suggestions||[];
-  if(!s.length)return `<div class="card empty"><b>No candidates right now</b>A word looked up twice shows up here. Nothing goes into Cards on its own.</div>`;
-  return `<section class="card xlsugg">${s.map(g=>`<div class="xlrow" data-noauto><span class="xlhit"><b lang="${esc(xlTag(g.from))}">${esc(g.text)}</b><span class="xlarrow">→</span>${esc(g.result||"")}<span class="sub"> · ×${g.count}</span></span><span class="row"><button class="btn sm primary" data-xlcard="${esc(g.lookupId)}">Add</button><button class="btn sm" data-xlnot="${esc(g.key)}">Not now</button></span></div>`).join("")}</section>`;
+  if(!s.length)return `<div class="card empty"><b>No candidates right now</b>A word looked up twice shows up here. Nothing goes to Anki on its own.</div>`;
+  return `<section class="card xlsugg">${s.map(g=>`<div class="xlrow" data-noauto><span class="xlhit"><b lang="${esc(xlTag(g.from))}">${esc(g.text)}</b><span class="xlarrow">→</span>${esc(g.result||"")}<span class="sub"> · ×${g.count}</span></span><span class="row"><button class="btn sm primary" data-xlcard="${esc(g.lookupId)}">Add to Anki</button><button class="btn sm" data-xlnot="${esc(g.key)}">Not now</button></span></div>`).join("")}</section>`;
 }
 function xlSettings(){const st=S.xl.st;if(!st)return "";
   return `<details class="card xlset"><summary>Settings</summary><div class="xlsetb"><label>Languages (codes, in order; the first is the default target, Japanese text goes to the second)<input class="xlfield" id="xlLangs" value="${esc(st.langs.join(", "))}"></label><label>Google characters a month before Claude takes over<input class="xlfield" id="xlLimit" type="number" min="0" step="1000" value="${st.limit}"></label><p class="sub">${st.hasGoogle?"The Google key is read from the keychain tatsuki-desk-gtranslate and never reaches this page.":"No Google key yet: add one to the keychain as tatsuki-desk-gtranslate (account api). Until then Claude translates."} Check the free tier on Google's Cloud Translation pricing page and keep the limit under it.</p><button class="btn sm" id="xlSave">Save</button></div></details>`}
@@ -6272,7 +6275,7 @@ async function xlFill(r){ // a lookup that came in from outside has no translati
 }
 async function xlDel(id){const r=S.lookups.find(x=>x.id===id);if(!r)return;
   try{await api("PUT","/api/lookups/"+encodeURIComponent(id),{...r,deleted:true,updatedAt:Date.now()});S.lookups=S.lookups.filter(x=>x.id!==id);if(S.xl.cur?.lookup?.id===id)S.xl.cur=null;S.xl.stAt=0;toast("Removed");render()}catch(e){toast("Could not remove")}}
-async function xlAddCard(id){try{const v=await xlPost("/api/translate/cards",{id});if(v.card&&!S.cards.some(k=>k.id===v.card.id))S.cards.push(v.card);if(S.xl.st&&v.suggestions)S.xl.st.suggestions=v.suggestions;toast(v.already?"Already in cards":"Added to cards");render()}catch(e){toast(e.message)}}
+async function xlAddCard(id){try{const v=await xlPost("/api/translate/cards",{id});if(v.card&&!S.cards.some(k=>k.id===v.card.id))S.cards.push(v.card);if(S.xl.st&&v.suggestions)S.xl.st.suggestions=v.suggestions;toast(v.already?"Already added":"Added · on to Anki");ankiSoon();render()}catch(e){toast(e.message)}}
 async function xlNotNow(key){try{const v=await xlPost("/api/translate/cards",{action:"notnow",key});if(S.xl.st)S.xl.st.suggestions=v.suggestions||[];render()}catch(e){toast(e.message)}}
 async function xlPutConcept(patch,msg){const id=xlConceptHash(), c=id&&(S.conceptsAll||S.concepts).find(x=>x.id===id);if(!c)return;const next={...c,...patch,updatedAt:Date.now()};
   try{await api("PUT","/api/concepts/"+encodeURIComponent(c.id),next);Object.assign(c,next);if(msg)toast(msg);render()}catch(e){toast("Could not save")}}
@@ -9117,7 +9120,7 @@ function wireLifemap(){
 if(LOCALAPI)loadLifemap();
 function wire(){
   wireFocus();
-  document.querySelectorAll("[data-tdcards]").forEach(b=>b.onclick=()=>openReview());wireXl();
+  document.querySelectorAll("[data-tdcards]").forEach(b=>b.onclick=()=>openReview());document.querySelectorAll("[data-tdanki]").forEach(b=>b.onclick=ankiOpen);wireXl();
   document.querySelectorAll("[data-pal]").forEach(b=>b.onclick=()=>palRun(+b.dataset.pal));
   document.querySelectorAll("#view [data-cc]").forEach(b=>b.onclick=()=>openCC(b.dataset.cc));
   document.querySelectorAll("[data-hit]").forEach(b=>b.onclick=()=>{const [,i]=b.dataset.hit.split(":");const h=runSearch(S.q).hits[+i];if(h)goHit(h)});
@@ -9401,7 +9404,7 @@ const FDESC={ // what each screen is for, in plain words (English and Japanese k
   money:"Wise payments: overview, charts, budget, trips, savings, advice, receipts, subscriptions お金 家計 予算",
   site:"tany.im company site visitors, inquiries, search, SEO, heat map アクセス解析 サイト 計測",
   screentime:"time spent in apps and sites スクリーンタイム",pc:"running apps, memory and CPU, close apps PC メモリ",
-  reader:"read a book or pasted text with read-aloud, tap a word for its meaning and make it a card 読む 本 リーダー 読み上げ 洋書 epub",cards:"flashcards with spaced repetition, review due words, decks by language and book 暗記 単語 カード 復習 Anki",
+  reader:"read a book or pasted text with read-aloud, tap a word for its meaning and add it to Anki 読む 本 リーダー 読み上げ 洋書 epub",cards:"words on their way to Anki, Anki status, send to Anki, flashcards 暗記カード 単語 Anki アンキ 単語帳 復習",
   netspeed:"measure internet speed 回線 速度 Wi-Fi",wifi:"QR code to join this Wi-Fi, share the Wi-Fi password with a guest 共有 接続 パスワード QR",webhistory:"Chrome history, search terms, time on sites Web履歴",
   log:"Claude's daily work report Claude Log 日報",timelog:"time tracking 時間",tools:"all tools as cards ツール",
   lifeos:"Life OS small tools ライフOS",gear:"belongings list, export 持ち物",usage:"which parts of Desk you use 使い方",
@@ -9714,25 +9717,26 @@ function cardsView(){
   list.sort((a,b)=>S.cd.tab==="active"?(a.fsrs?.due||0)-(b.fsrs?.due||0):(b.createdAt||0)-(a.createdAt||0));
   const now=Date.now(), pending=S.cards.filter(c=>!c.deleted&&c.status!=="suggested"&&cdPending(c)).length;
   const row=c=>{const st=fsState(c.fsrs), due=c.fsrs?.due||0;
-    return `<button class="cdrow" data-cdopen="${esc(c.id)}" data-noauto><span class="cdt"><b>${esc(c.term)}</b>${c.lemma&&rdNorm(c.lemma)!==rdNorm(c.term)?` <span class="sub">→ ${esc(c.lemma)}</span>`:""}${c.ipa?` <span class="sub">/${esc(c.ipa)}/</span>`:""}</span><span class="cdm">${esc(cdMeaning(c).join(" · "))||`<span class="sub">${cdPending(c)?"Meaning coming":"No meaning yet"}</span>`}</span><span class="sub cdd">${c.status==="suggested"?`Looked up ${c.lookups||1}×`:st==="new"?"New":due<=now?"Due":fsWhen(due,now)}</span></button>`};
+    return `<button class="cdrow" data-cdopen="${esc(c.id)}" data-noauto><span class="cdt"><b>${esc(c.term)}</b>${c.lemma&&rdNorm(c.lemma)!==rdNorm(c.term)?` <span class="sub">→ ${esc(c.lemma)}</span>`:""}${c.ipa?` <span class="sub">/${esc(c.ipa)}/</span>`:""}</span><span class="cdm">${esc(cdMeaning(c).join(" · "))||`<span class="sub">${cdPending(c)?"Meaning coming":"No meaning yet"}</span>`}</span><span class="sub cdd ${ankiCls(c)}">${c.status==="suggested"?`Looked up ${c.lookups||1}×`:esc(ankiMark(c))}</span></button>`};
   const sugg=c=>`<div class="cdrow cdsg" data-noauto><span class="cdt"><b>${esc(c.term)}</b>${c.lang?` <span class="sub">${esc(RD_LANGS[c.lang]||c.lang)}</span>`:""}</span><span class="cdm">${esc(cdMeaning(c).join(" · ")||c.context||"")}</span><span class="row"><button class="btn sm primary" data-cdaccept="${esc(c.id)}">Add</button><button class="btn sm" data-cddrop="${esc(c.id)}">Not now</button></span></div>`;
-  return `<div class="money cdv" id="cdView"><header class="head"><div><h1>Cards</h1><p class="sub">${d.total} card${d.total===1?"":"s"} · ${d.reviewed} reviewed today${pending?` · ${pending} waiting for a meaning`:""}</p></div>
-      <div class="row"><button class="btn primary" id="cdReview" ${n?"":"disabled"}>Review${n?` ${n}`:""}</button>${d.due.length>=CD_PILE?`<button class="btn" id="cdReview20">Do 20 today</button>`:""}<button class="btn" id="cdAdd">Add a word</button><button class="btn" id="cdPhone">Use on iPhone</button></div></header>
+  return `<div class="money cdv" id="cdView"><header class="head"><div><h1>Cards</h1><p class="sub">Words from the Reader and Translate, on their way to Anki · ${d.total} in all${pending?` · ${pending} waiting for a meaning`:""}</p></div>
+      <div class="row"><button class="btn" id="cdAdd">Add a word</button></div></header>${ankiBox()}
     <div class="row cdfilters"><input class="wd-field cdq" id="cdQ" type="search" placeholder="Search cards" value="${esc(S.cd.q)}" aria-label="Search cards"><select class="wd-field cdsel" id="cdDeck" aria-label="Deck">${decks.map(x=>`<option value="${esc(x.id)}" ${x.id===S.cd.deck?"selected":""}>${esc(x.label)}</option>`).join("")}</select>
       <div class="segs" role="tablist">${[["active","Active"],["suggested",`Suggested${d.suggested?` ${d.suggested}`:""}`],["pending",`Needs meaning${pending?` ${pending}`:""}`]].map(([k,l])=>`<button class="chip ${S.cd.tab===k?"on":""}" data-cdtab="${k}" role="tab" aria-selected="${S.cd.tab===k}">${l}</button>`).join("")}</div></div>
-    <section class="card cdlist">${list.length?list.slice(0,300).map(c=>S.cd.tab==="suggested"?sugg(c):row(c)).join(""):`<div class="empty"><b>${S.cd.tab==="suggested"?"No suggestions":S.cd.tab==="pending"?"Every card has its meaning":"No cards yet"}</b>${S.cd.tab==="active"?"Tap a word in the Reader, or press Add a word.":S.cd.tab==="suggested"?"Words looked up twice in Translate appear here.":""}</div>`}${list.length>300?`<p class="sub" style="padding:var(--s2) var(--s3)">Showing 300 of ${list.length}. Search to narrow.</p>`:""}</section>
+    <section class="card cdlist">${list.length?list.slice(0,300).map(c=>S.cd.tab==="suggested"?sugg(c):row(c)).join(""):`<div class="empty"><b>${S.cd.tab==="suggested"?"No suggestions":S.cd.tab==="pending"?"Every card has its meaning":"No words yet"}</b>${S.cd.tab==="active"?"Tap a word in the Reader, or press Add a word. It goes on to Anki.":S.cd.tab==="suggested"?"Words looked up twice in Translate appear here.":""}</div>`}${list.length>300?`<p class="sub" style="padding:var(--s2) var(--s3)">Showing 300 of ${list.length}. Search to narrow.</p>`:""}</section>
     <details class="cdimport"><summary class="sub">Bring in the old sheet or Anki</summary><p class="sub">Export the vocabulary sheet as CSV, or Anki as a text file, then in Terminal:</p><pre class="cdcode">python3 desk/cards.py import-sheet &lt;file.csv&gt; --lang en
-python3 desk/cards.py import-anki &lt;file.txt&gt; --lang en</pre><p class="sub">The same word becomes one card. Counts are printed when it finishes.</p></details></div>`;
+python3 desk/cards.py import-anki &lt;file.txt&gt; --lang en</pre><p class="sub">The same word becomes one card. Counts are printed when it finishes.</p></details>
+    <details class="cdimport"><summary class="sub">Review on the Desk instead (older way)</summary><p class="sub">Anki is where words are reviewed now. The Desk's own review and the iPhone app still work.</p><div class="row"><button class="btn" id="cdReview" ${n?"":"disabled"}>Review${n?` ${n}`:""}</button>${d.due.length>=CD_PILE?`<button class="btn" id="cdReview20">Do 20 today</button>`:""}<button class="btn" id="cdPhone">Use on iPhone</button></div></details></div>`;
 }
 function wireCd(){
   const on=(id,fn)=>{const el=$(id);if(el)el.onclick=fn};
   on("#cdReview",()=>openReview({deck:S.cd.deck}));on("#cdReview20",()=>openReview({deck:S.cd.deck,limit:20}));
-  on("#cdAdd",()=>cdAddPrompt());on("#cdPhone",cdPhoneLink);
+  on("#cdAdd",()=>cdAddPrompt());on("#cdPhone",cdPhoneLink);on("#ankiOpen",ankiOpen);on("#ankiSend",ankiSend);
   const q=$("#cdQ");if(q){q.oninput=()=>{S.cd.q=q.value;const keep=q.selectionStart;render();const q2=$("#cdQ");if(q2){q2.focus();q2.setSelectionRange(keep,keep)}}}
   $("#cdDeck")&&($("#cdDeck").onchange=e=>{S.cd.deck=e.target.value;render()});
   document.querySelectorAll("[data-cdtab]").forEach(b=>b.onclick=()=>{S.cd.tab=b.dataset.cdtab;render()});
   document.querySelectorAll("[data-cdopen]").forEach(b=>b.onclick=()=>cdEdit(b.dataset.cdopen));
-  document.querySelectorAll("[data-cdaccept]").forEach(b=>b.onclick=async()=>{const c=findCard(b.dataset.cdaccept);if(!c)return;await cdPut({...c,status:"active"});toast("Added to cards");if(cdPending(c))cdEnrich(c.id);render()});
+  document.querySelectorAll("[data-cdaccept]").forEach(b=>b.onclick=async()=>{const c=findCard(b.dataset.cdaccept);if(!c)return;await cdPut({...c,status:"active"});toast("Added · on to Anki");ankiSoon();if(cdPending(c))cdEnrich(c.id);render()});
   document.querySelectorAll("[data-cddrop]").forEach(b=>b.onclick=async()=>{const c=findCard(b.dataset.cddrop);if(!c)return;await cdPut({...c,deleted:true});render()});
 }
 async function cdEnrich(id){if(!LOCALAPI)return;try{const r=await api("POST","/api/cards/enrich",{id});if(r.card){S.cards=[...S.cards.filter(x=>x.id!==r.card.id),r.card];if(viewId()==="cards"||viewId()==="reader")render()}}catch(e){toast("Claude could not fill it now. It is tried again later.")}}
@@ -9766,7 +9770,7 @@ function cdAddPrompt(){
 }
 async function cdAdd(rec){
   if(!LOCALAPI){toast("Open the Desk app to add cards");return null}
-  try{const r=await api("POST","/api/cards/add",rec);if(r.card){S.cards=[...S.cards.filter(x=>x.id!==r.card.id),r.card];toast(r.merged?"Already in cards · counted once more":cdPending(r.card)?"Added · meaning comes later":"Added to cards")}return r.card}
+  try{const r=await api("POST","/api/cards/add",rec);if(r.card){S.cards=[...S.cards.filter(x=>x.id!==r.card.id),r.card];toast(r.merged?"Already added · counted once more":cdPending(r.card)?"Added · goes to Anki once the meaning is in":"Added · on to Anki");ankiSoon()}return r.card}
   catch(e){toast("Could not add the card");return null}
 }
 async function cdPhoneLink(){
@@ -9780,7 +9784,32 @@ async function cdPhoneLink(){
   $("#cdCopy")&&($("#cdCopy").onclick=()=>{navigator.clipboard?.writeText(v.url).then(()=>toast("Copied"),()=>{$("#cdLink").select()})});
   if(v.sync&&$("#cdQr"))utPost("/api/utilities/qr",{text:v.url}).then(q=>{const el=$("#cdQr");if(el)el.innerHTML=utQrSvg(q.rows)}).catch(()=>{const el=$("#cdQr");if(el)el.remove()}); // the same QR maker as Utilities; nothing is kept
 }
-/* Today: one line, "Cards due: N", pressing it starts the review */
+/* ---------- Anki (desk/anki.py): the Desk's words go on to Anki; reviewing happens there ---------- */
+S.anki=null;
+const ANKI_ADDON="2055492159";
+async function ankiLoad(){if(!LOCALAPI)return;try{const v=await api("GET","/api/anki");const was=JSON.stringify(S.anki);S.anki=v;if(was!==JSON.stringify(v)&&["home","cards","reader","translate"].includes(viewId())&&!$("#modal").firstChild&&!document.activeElement?.closest?.("input,textarea"))render()}catch(e){}}
+function ankiSoon(){setTimeout(async()=>{await cdLoad();ankiLoad()},6000);setTimeout(async()=>{await cdLoad();ankiLoad()},20000)} // the server sends within seconds when Anki is open
+function ankiMark(c){const a=c.anki||{};if((c.source||{}).kind==="anki")return "From Anki";
+  if(a.state==="sent")return "In Anki";if(a.state==="exists")return `Already in Anki${a.deck?` (${a.deck})`:""}`;
+  if(a.state==="error")return "Anki said no";if(!cdHasMeaning(c))return "Needs meaning";return "Waiting for Anki"}
+function ankiCls(c){const m=ankiMark(c);return m==="In Anki"||m.startsWith("Already")||m==="From Anki"?"cdin":"cdwait"}
+const cdHasMeaning=c=>!!(c.meaning?.ja||c.meaning?.en);
+function ankiBox(){const a=S.anki;if(!LOCALAPI)return "";
+  if(!a)return `<p class="sub ankibox">Checking Anki…</p>`;
+  if(a.connected)return `<div class="row ankibox"><span class="sub">Anki is open${a.due!=null?` · ${a.due} due there today`:""}${a.waiting?` · ${a.waiting} waiting${a.noMeaning?` (${a.noMeaning} need a meaning first)`:""}`:" · everything is in Anki"}</span>${a.waiting>a.noMeaning?`<button class="btn sm" id="ankiSend">Send now</button>`:""}<button class="btn sm" id="ankiOpen">Open Anki</button></div>`;
+  return `<div class="ankibox"><div class="row"><span class="sub">Anki is closed${a.waiting?` · ${a.waiting} word${a.waiting===1?"":"s"} waiting. They go in within a minute of opening Anki.`:"."}</span><button class="btn sm primary" id="ankiOpen">Open Anki</button></div>
+    <p class="sub">Not set up yet? In Anki: Tools → Add-ons → Get Add-ons…, enter <b>${ANKI_ADDON}</b> (AnkiConnect), then quit and reopen Anki.</p></div>`}
+async function ankiOpen(){try{await api("POST","/api/anki/open",{});setTimeout(ankiLoad,4000)}catch(e){toast("Could not open Anki")}}
+async function ankiSend(){const b=$("#ankiSend");if(b){b.disabled=true;b.textContent="Sending…"}
+  try{const r=await api("POST","/api/anki/sync",{});toast(`${r.sent} sent${r.exists?` · ${r.exists} already there`:""}${r.failed?` · ${r.failed} refused`:""}`)}catch(e){toast("Anki is not open")}
+  await cdLoad();S.anki&&(S.anki.checkedAt=0);await ankiLoad();render()}
+if(LOCALAPI){ankiLoad();setInterval(()=>{if(!document.hidden)ankiLoad()},60000)}
+/* Today: "Anki due: N" while Anki is open; pressing it brings Anki forward */
+function tdAnki(){
+  const a=S.anki;if(!LOCALAPI||!a||!a.connected||!a.due)return [];
+  return [`<div class="tdrow"><span class="tdchk" aria-hidden="true" style="border:0">🃏</span><button class="tt linklike" data-tdanki data-noauto>Anki due: ${a.due}</button><span class="sub">${a.waiting?`${a.waiting} waiting to go in`:""}</span></div>`];
+}
+/* the older Desk review line, kept for the Desk's own review (no longer on Today) */
 function tdCards(){
   if(!LOCALAPI)return [];const d=cdDue(), n=d.due.length+d.fresh.length;if(!n)return [];
   return [`<div class="tdrow"><span class="tdchk" aria-hidden="true" style="border:0">🃏</span><a class="tt" href="#cards/review" data-fromtoday data-noauto>Cards due: ${n}${d.fresh.length&&d.due.length?` <span class="sub">(${d.fresh.length} new)</span>`:""}</a><span class="sub"><button class="btn sm" data-tdcards>Review</button></span></div>`];
@@ -9938,7 +9967,7 @@ async function rdShowWord(term,context,p){
   const draw=()=>{if(S.rd.word!==w||!box.isConnected)return;const i=w.info, inCards=have||w.added;
     box.innerHTML=`<div class="rdpophead"><b class="rdterm" data-noauto>${esc(i?.lemma&&rdNorm(i.lemma)!==rdNorm(term)?`${term} → ${i.lemma}`:term)}</b>${i?.ipa?`<span class="sub">/${esc(i.ipa)}/</span>`:""}<button class="ibtn" data-rdsay aria-label="Read aloud">🔊</button><button class="ibtn" data-rdx aria-label="Close">✕</button></div>
       <div class="rdpopbody" data-noauto>${i?`${i.meaning_ja?`<p class="cdmean">${esc(i.meaning_ja)}</p>`:""}${i.meaning_en?`<p class="cdmean">${esc(i.meaning_en)}</p>`:""}${i.pos?`<span class="sub">${esc(i.pos)}</span>`:""}`:w.err?`<p class="sub">${esc(w.err)}</p>`:`<p class="sub">Looking it up…</p>`}</div>
-      <div class="row">${inCards?`<span class="sub">✓ In your cards${have&&have.lookups>1?` · looked up ${have.lookups}×`:""}</span>`:`<button class="btn primary sm" data-rdadd>Add to cards</button>`}<span class="sub rdpopctx">${esc(context.length>120?context.slice(0,118)+"…":context)}</span></div>`;
+      <div class="row">${inCards?`<span class="sub">✓ ${esc(have?ankiMark(have):"On its way to Anki")}${have&&have.lookups>1?` · looked up ${have.lookups}×`:""}</span>`:`<button class="btn primary sm" data-rdadd>Add to Anki</button>`}<span class="sub rdpopctx">${esc(context.length>120?context.slice(0,118)+"…":context)}</span></div>`;
     box.querySelector("[data-rdx]").onclick=rdCloseWord;box.querySelector("[data-rdsay]").onclick=()=>rdSay(i?.lemma||term,b.lang);
     const add=box.querySelector("[data-rdadd]");if(add)add.onclick=async()=>{add.disabled=true;add.textContent="Adding…";const c=await cdAdd({term,lang:b.lang,context,info:i||undefined,source:{kind:"book",ref:b.id},book:{id:b.id,title:b.title,chapter:(b.chapters_full||[])[S.rd.ch]?.title||`Chapter ${S.rd.ch+1}`}});if(c){w.added=true;rdRemark()}draw()}};
   draw();
