@@ -41,6 +41,7 @@ import notify
 import tg_notify
 import event_alarm
 import pc_monitor
+import wifi_qr  # a QR code that joins the Wi-Fi this Mac is on; the password is never kept
 import routine_alarm
 import routine_sync
 import news_sync
@@ -1035,6 +1036,8 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/pc":
             brief = "summary" in parse_qs(urlsplit(self.path).query)
             return self.send(200, pc_monitor.summary() if brief else pc_monitor.snapshot())
+        if path == "/api/wifi":  # the name of the current Wi-Fi only; the password is not touched here
+            return self.send(200, wifi_qr.current())
         if path.startswith("/api/web/"):
             return self.web_get(path.rsplit("/", 1)[1], parse_qs(urlsplit(self.path).query))
         if path == "/api/usage":
@@ -1246,6 +1249,16 @@ class Handler(BaseHTTPRequestHandler):
             return self.upload_post()
         if method == "POST" and urlsplit(self.path).path.startswith("/api/utilities/"):
             return self.utilities_post(urlsplit(self.path).path)
+        if method == "POST" and urlsplit(self.path).path == "/api/wifi/qr":
+            # same protection as claude(): Host/Origin checked, and JSON from another origin needs a preflight.
+            # macOS asks the person before the keychain answers; only the rows of the code go back, never the password
+            if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+                return self.send(415, {"error": "json only"})
+            try:
+                rec = self.body()
+            except (ValueError, json.JSONDecodeError):
+                return self.send(400, {"error": "bad json"})
+            return self.send(*wifi_qr.make(rec.get("password"), rec.get("ssid")))
         if urlsplit(self.path).path == "/api/posts" or urlsplit(self.path).path.startswith("/api/posts/"):
             return self.posts_write(method, urlsplit(self.path).path.split("/")[3:])
         if method == "POST" and urlsplit(self.path).path == "/api/instagram/send":  # the person pressed Send on an Instagram reply
