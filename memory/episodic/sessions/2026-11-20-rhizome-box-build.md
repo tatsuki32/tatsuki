@@ -1,9 +1,9 @@
 # 2026-11-20 Rhizome Box 本番の実装（途中）
 
 ## ひとこと
-- いま：試しの住所で動き始めた
-- 次：本人が試して公開を決める
-- 待ち：一度ログインして書いてみる
+- いま：本番の住所で公開した
+- 次：書きためて、検索に登録
+- 待ち：Search Console への登録
 
 ## やったこと
 - 要件定義（承認済み）に沿って `rhizomebox/` を作り始めた。
@@ -35,3 +35,8 @@
 ## 次の一手
 - 本人が試しの住所でメールのコードでログインし、数行書く（iPhone でも）。
 - OK が出たら：wrangler.toml の STAGE を外し BASE_URL と rhizomebox.tany.im の custom domain を足して deploy、`desk/data/rhizomebox/config.json` を消す、Search Console に登録、ツールボックスに登録。
+
+## 追記：公開した
+- 本人がログインできたので、rhizomebox.tany.im につないで公開した（STAGE を外し、workers.dev は止めた）。robots は `/_/` だけ止める、サイトマップに公開ページ。
+- Mac の写しを本番の住所に向けた（config.json を消した）。外から全住所と画面（写真・フォント・エラーなし）を確かめた。
+- 残り：Search Console に rhizomebox.tany.im を足す（今の許可は読むだけなので本人の操作か、許可の追加が要る）。

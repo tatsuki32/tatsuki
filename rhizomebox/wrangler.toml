@@ -10,14 +10,12 @@ name = "rhizomebox"
 main = "src/index.js"
 compatibility_date = "2026-11-01"
 
-# Test stage: only the workers.dev address, hidden from search engines (STAGE=1). With no BASE_URL the
-# server uses the address the request came in on.
-# At launch: remove STAGE, set workers_dev = false, BASE_URL = "https://rhizomebox.tany.im" and add
-#   routes = [{ pattern = "rhizomebox.tany.im", custom_domain = true }]
-workers_dev = true
+# Live since 2026-11-20. For a hidden test copy: workers_dev = true, STAGE = "1" (noindex, robots Disallow) and no BASE_URL.
+workers_dev = false
+routes = [{ pattern = "rhizomebox.tany.im", custom_domain = true }]
 
 [vars]
-STAGE = "1"
+BASE_URL = "https://rhizomebox.tany.im"
 
 [assets]
 directory = "public"
