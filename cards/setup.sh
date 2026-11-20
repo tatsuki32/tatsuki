@@ -15,7 +15,7 @@ if grep -q REPLACE_WITH_KV_ID wrangler.toml; then
 fi
 
 if ! /usr/bin/security find-generic-password -s tatsuki-desk-cards -w >/dev/null 2>&1; then
-  KEY="$(LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 32)"
+  KEY="$(python3 -c 'import secrets; print(secrets.token_hex(16))')"  # (tr | head would trip set -o pipefail)
   /usr/bin/security add-generic-password -s tatsuki-desk-cards -a desk -w "$KEY" -U
   echo "A new passphrase is in the keychain (tatsuki-desk-cards)."
 fi
