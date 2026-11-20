@@ -49,11 +49,10 @@ class Events(unittest.TestCase):
         show, _, _ = run(at(13, 30), data(events=[{"id": "e2", "title": "祝日", "start": "2026-11-06", "allDay": True}]))
         self.assertEqual(show, [])
 
-    def test_six_hours_before_has_no_sound(self):
+    def test_six_hours_before_is_not_told(self):
         ev = {**EVENT, "start": iso(16)}
         show, _, _ = run(at(10), data(events=[ev]))
-        self.assertEqual([(x["kind"], x["tier"]) for x in show], [("event6h", "heads")])
-        self.assertNotIn("heads", n.SOUNDS)
+        self.assertEqual(show, [])
 
     def test_quiet_hours_show_nothing_and_keep_a_record(self):
         ev = {**EVENT, "start": iso(19)}

@@ -1,23 +1,19 @@
 # 今の状態（STATE）
 
-最終更新：2026-11-16（CO2 の見える化「Footprint」を入れた）
+最終更新：2026-11-20（ホームの先頭を Today にし、決めることと通知を減らした）
 ## 進行中の作業
 - Desk は Mac 専用（データは非公開リポジトリに15分ごとに保管）。本線は main に一本化（2026-11-09）：`desk/page-cards`・プロジェクト・持ち物・Mac だけにあった変更を全部 main に入れ、Mac は main で `desk/pull.sh` が5分ごとに取り込む。
 - 作りたい機能リスト（全11件）：全部 main にマージ済み（tatsuki32/tatsuki#9）。使ってみて直す段階。③ は `/recap`。⑦ ペルソナは仮の設定。
 - Desk の画面とボットをアメリカ英語にした（2026-11-09、main。今あるタスクとメモは日本語のまま。記録 `memory/episodic/sessions/2026-11-09-english-ui.md`）。
-- 朝のメールをタスクに一本化＋「できたこと」画面（`wins`）：実装・オンライン版に公開。main に未マージ（Mac に届くのはマージ後）。
-- コマンドを忘れる対策（Claude に頼むカード・`/` 一覧）と Desk 全体の文字リンク：main にマージ済み。Mac の Terminal 起動と iPhone の長押しは未確認。
+- 朝のメールをタスクに一本化＋「できたこと」画面（`wins`）：実装・オンライン版に公開。main に未マージ（Mac に届くのはマージ後）。 コマンドを忘れる対策（Claude に頼むカード・`/` 一覧）と Desk 全体の文字リンク：main にマージ済み。Mac の Terminal 起動と iPhone の長押しは未確認。
 - 「🎯 集中」（`focusblock/`）：本物のブロックは本人の確認待ち。Life OS（18個のツール）：土台と 01・02・11・12・13 を main に入れた。残りはブランチのまま。統括役は置かない。約束は `lifeos/README.md`。
 - Wise の取り込みと「💰 お金」画面：第1版（5タブ、種類分け、比較、助言）を実装。記録と残高の差は、直接払いの送金を分けてほぼ解消（本人の確認待ち）。第2版（今後の支出・豆知識）を実装。定期タスクの実走は未確認。第3版（国の比較）を実装。最低賃金は Wikipedia の一覧から収録。第4版（期間で変わる分析、予算、旅の計画、貯金、シミュレーション、毎日の学び）を実装。
-- タスクの一旦中止・アーカイブ：実装済み。カレンダーへは1件ずつの「Add to calendar」に変えた（2026-11-14。毎時の `desk-task-calendar` は停止）。予定の取り込み・メモ連携の毎時実行は止まっている。
-- タスクの時期トグル・並び替え・仕分けカード：実装済み。`desk-task-estimate` は手動で成功、朝の自動実行は確認待ち。
+- タスクの一旦中止・アーカイブ：実装済み。カレンダーへは1件ずつの「Add to calendar」に変えた（2026-11-14。毎時の `desk-task-calendar` は停止）。予定の取り込み・メモ連携の毎時実行は止まっている。 タスクの時期トグル・並び替え・仕分けカード：実装済み。`desk-task-estimate` は手動で成功、朝の自動実行は確認待ち。
 - main に入った：言葉のページの文カード（ニュース・マイナー国・タスクは自動リンクしない）、World Desk の読む画面（`desk-world-brief` の指示を入れ替え）、ノートの Scrapbox 機能（押した行を編集）。
 - 連絡返信（Gmail・WhatsApp を 4:30・15:30 に取り込み、`desk/whatsapp_sync.py`）：返信と催促は Replies だけに出し、5:00・16:00 に開く（2026-11-15、`desk/replywin.py`）。
 - タスクをやりやすくする（`clear`）：実装済み。3件を本番で試した。`desk-task-clarify` の夜の実走は確認待ち。ボタンにはサーバーの再起動が要る。
-- プレゼント・ノート吸収・返信待ちの WhatsApp 対応：main に入った。`desk-morning-mail` の実走は確認待ち。
-- スクリーンタイム（`desk/screentime_sync.py`）：本物を19日分取り込めた。Chrome は確認済み。Brave は確認待ち。毎日世界遺産（`desk/heritage.py`）：main に入った。朝の自動実行は確認待ち。
-- PC 画面（`desk/pc_monitor.py`）：実装済み・未コミット。ツールの終了は試し済み。アプリの終了は本番サーバーで確認待ち。
-- Web履歴（`desk/chrome_web_sync.py`、`desk/chrome-extension/`）：実装済み・未コミット。履歴は本物で取り込み済み。拡張は Tatsuki の読み込み待ちで、実物の Chrome では未確認。
+- プレゼント・ノート吸収・返信待ちの WhatsApp 対応：main に入った。`desk-morning-mail` の実走は確認待ち。 スクリーンタイム（`desk/screentime_sync.py`）：本物を19日分取り込めた。Chrome は確認済み。Brave は確認待ち。毎日世界遺産（`desk/heritage.py`）：main に入った。朝の自動実行は確認待ち。
+- PC 画面（`desk/pc_monitor.py`）：実装済み・未コミット。ツールの終了は試し済み。アプリの終了は本番サーバーで確認待ち。 Web履歴（`desk/chrome_web_sync.py`、`desk/chrome-extension/`）：実装済み・未コミット。履歴は本物で取り込み済み。拡張は Tatsuki の読み込み待ちで、実物の Chrome では未確認。
 - Life Dashboard を Desk へ（`desk/lifelog.py`、体の画面、朝夜ルーティン、ご褒美カード、領収書）：最初の版を実装（未コミット）。睡眠と食事は本番で確認済み。レシートと Drive は確認待ち。
 - 秘書ボット（`lifeos/21-assistant/`。Cloudflare Workers、写真のボットとは別）：実装・未コミット。テストは偽物の通信で成功。本物の API と本番は導入待ち。
 - メール整理（`desk/gmail_clean.py`）：main に入った。本物で12件停止済み。OAuth はテスト中で、接続が7日で切れる可能性あり。 見せる素材（`desk/showcase.py`）：main に入った。 小さな道具（`desk/utilities.py`）：`claude/desk-utilities-a3a168` にコミット。アプリの窓で使うには再ビルドが要る。
@@ -28,6 +24,7 @@
 - Telegram 通知（`desk/tg_notify.py`）：main に入った。本人がボットを作り、キーと予定の iCal URL をキーチェーンに入れて Connect するまで動かない。本物での送信は未確認。
 - Post Studio（`#post`、`desk/posts.py`）：写真・PDF・動画から投稿先ごとの案。自動投稿は Instagram（英・露）・Threads 露・Facebook ページ（英語）・X（リンクなし、1件約 $0.015）・LinkedIn（個人、60日で再サインイン）で動作。YouTube 接続済み・R2（動画）有効だがどちらも未投稿。会社のお知らせは tany.im へ直接公開。残り：英語の Threads、Instagram の DM、TikTok（審査）。記録 `memory/episodic/sessions/2026-11-15-post-studio.md`。
 - Footprint（`desk/footprint.py`、`#footprint`）：画面時間・AI・食事・支出・移動から CO2e を幅で推定、牛・羊・平均の人と比べる。main に入れた。使ってみて一言と係数を直す段階。
+- ホームの Today（2026-11-20、要件定義 KpHCwmoBcjzAJYF2ouErnj）：今日の3つを消し、予定・期日・ルーティンと習慣・今日のタスク・Sift の見出しを1枚に。決めるカードは1枚、G は Claude が始める。Telegram は朝1通。World Desk は停止（Mac の Claude アプリでも無効にする）。シートの取り込みは Mac で CSV を渡す待ち。Sift の Worker の公開が要る。
 ## 決定済みの事項
 - 作ったものは必ず main に入れる（どの Claude も。`.claude/rules/main-branch.md`）。Mac は main だけを取り込む。
 - デザインの本を読む作業はしない（2026-11-15、全作業）。UI は `.claude/rules/design-ui.md` と `design-nondesigner.md` のルールで作る。
@@ -38,6 +35,6 @@
 - URL が変わるツールは `tools` に `urlEditable:true`。✏️ はオンライン版だけ。
 - 習慣（`habits`）は連続記録を持たない。できた日の配列 `done` だけ。赤・リセット・責める表示は出さない。
 - 日付だけのタスクの期日は正午（ホーチミン）に置く（移動しても同じ日に出る）。ガントの棒は開始日〜期日、無ければ箱の `when`、無ければ期日の点。
-- 「今日の3つ」と /morning-kickoff は同じ順番（今日締切 → 期限切れ → 進行中 → 時間帯に合うもの）。12時（ホーチミン）で集中／事務を切り替え。
+- 「今日の3つ」は 2026-11-20 に廃止（ホームは Today）。/morning-kickoff と「Stuck? Start with Claude」の選ぶ順は同じ（今日締切 → 期限切れ → 進行中 → 時間帯に合うもの）。
 ## よくあるハマりどころ
 - このリポジトリは公開（Tatsuki が非公開に切り替え予定）。切り替え後も memory/ には個人データ・ツールのURL・健康のことは書かない。 非公開にすると Mac の5分ごとの `git pull` に GitHub の認証が要る（`gh auth login` など）。

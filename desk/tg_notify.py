@@ -3,14 +3,18 @@
 
 What is sent (each can be turned off on the Notifications screen):
   event10    an event starts in 10 minutes                   any hour
-  added      a task was added                                4:00-17:00
-  done       a task was finished                             4:00-17:00
-  deleted    a task was deleted                              4:00-17:00
+  digest     one morning message: past due, due today, due tomorrow, in progress but untouched 3 days   from 4:00
+  added      a task was added                    off by default 4:00-17:00
+  done       a task was finished                 off by default 4:00-17:00
+  deleted    a task was deleted                  off by default 4:00-17:00
   due1       due tomorrow           once a day               4:00-17:00
   due0       due today              once a day               4:00-17:00
   overdue    past its due date      once a day, with days    4:00-17:00
   stuck      in progress, untouched for 3 days, once a day   4:00-17:00
-  doing      each task in progress, once a day               4:00-17:00
+  doing      each task in progress, once a day   off by default 4:00-17:00
+While `digest` is on, due1 / due0 / overdue / stuck are not sent one by one: they are lines of the digest.
+(2026-11-20: changes the owner makes himself — added, done, deleted, in progress — are off by default, and the
+day's due tasks come as one message instead of one each.)
   reply      a reply is waiting (Replies), once per task, only while Replies is open (5:00 / 16:00)
 Hours are this Mac's clock, so they follow the Mac to another country. What happens outside 4:00-17:00 waits and
 is sent from 4:00, one message each. Task messages stop at 30 a day; then one message says how many more there were.
@@ -64,6 +68,7 @@ KEEP_SENT = 14 * DAY
 KEEP_LOG = 7 * DAY
 KINDS = (
     ("event10", "10 minutes before an event (any hour)"),
+    ("digest", "Morning summary: due, past due, stuck (one message)"),
     ("added", "Task added"),
     ("done", "Task done"),
     ("deleted", "Task deleted"),
@@ -74,7 +79,11 @@ KINDS = (
     ("doing", "Each task in progress (once a day)"),
     ("reply", "Reply waiting (when Replies opens)"),
 )
-DEFAULTS = {"on": {k: True for k, _ in KINDS}, "from": 4 * 60, "to": 17 * 60, "chat": ""}
+QUIET = ("added", "done", "deleted", "doing")  # what the owner does himself: off unless he turns it on
+DIGESTED = ("overdue", "due0", "due1", "stuck")  # lines of the digest while it is on
+DIGEST_LINES = 8  # per section; the rest is "+N more"
+VERSION = 2
+DEFAULTS = {"on": {k: k not in QUIET for k, _ in KINDS}, "from": 4 * 60, "to": 17 * 60, "chat": "", "v": VERSION}
 LOCK = threading.Lock()
 _ics = {"at": 0, "events": [], "error": ""}
 
@@ -113,7 +122,11 @@ def clean_settings(raw, base=None):
 
 
 def settings():
-    return clean_settings(read_json(os.path.join(DIR, "settings.json"), {}))
+    raw = read_json(os.path.join(DIR, "settings.json"), {})
+    if isinstance(raw, dict) and raw.get("v") != VERSION and isinstance(raw.get("on"), dict):
+        # saved before the digest: the old "everything on" choices for these kinds are not kept
+        raw = {**raw, "on": {k: v for k, v in raw["on"].items() if k not in QUIET + ("digest",)}}
+    return clean_settings(raw)
 
 
 def blank_state():
@@ -248,6 +261,24 @@ def task_msg(kind, t, today):
     if kind == "deleted":
         return f"{head}: {title}"  # the link would open nothing
     return f"{head}: {title}{due}\n{link}"
+
+
+def digest_msg(today, over, due0, due1, stuck):
+    """One message for the morning. Sections with nothing are left out; None when there is nothing at all."""
+    def section(head, items, line):
+        if not items:
+            return []
+        rows = [f"• {line(x)}" for x in items[:DIGEST_LINES]]
+        if len(items) > DIGEST_LINES:
+            rows.append(f"  +{len(items) - DIGEST_LINES} more")
+        return ["", head] + rows
+    body = (section("Past due", over, lambda x: f"{title_of(x[1])} ({plural((today - x[0]).days, 'day')})")
+            + section("Due today", due0, title_of)
+            + section("Due tomorrow", due1, title_of)
+            + section("In progress, untouched 3+ days", stuck, title_of))
+    if not body:
+        return None
+    return f"☀️ Today, {today.strftime('%b')} {today.day}" + "\n".join([""] + body) + "\n\nhttp://localhost:4747/#home"
 
 
 # ---------- events ----------
@@ -528,14 +559,20 @@ def plan(now, tasks, events, s, st, reply_is_open=True):
             if t.get("status") == "doing":
                 idle = now - (t.get("updatedAt") or 0) / 1000
                 (stuck if idle >= STUCK else doing).append(t)
-        for d, t in sorted(over, key=lambda x: x[0]):
-            add(f"overdue:{t['id']}:{day}", "overdue", task_msg("overdue", t, today))
-        for t in due0:
-            add(f"due0:{t['id']}:{day}", "due0", task_msg("due0", t, today))
-        for t in due1:
-            add(f"due1:{t['id']}:{day}", "due1", task_msg("due1", t, today))
-        for t in stuck:
-            add(f"stuck:{t['id']}:{day}", "stuck", task_msg("stuck", t, today))
+        over.sort(key=lambda x: x[0])
+        if on.get("digest", True):
+            text = digest_msg(today, over, due0, due1, stuck)
+            if text:
+                add(f"digest:{day}", "digest", text)
+        else:
+            for d, t in over:
+                add(f"overdue:{t['id']}:{day}", "overdue", task_msg("overdue", t, today))
+            for t in due0:
+                add(f"due0:{t['id']}:{day}", "due0", task_msg("due0", t, today))
+            for t in due1:
+                add(f"due1:{t['id']}:{day}", "due1", task_msg("due1", t, today))
+            for t in stuck:
+                add(f"stuck:{t['id']}:{day}", "stuck", task_msg("stuck", t, today))
         for t in doing:
             add(f"doing:{t['id']}:{day}", "doing", task_msg("doing", t, today))
         if reply_is_open:
@@ -666,8 +703,9 @@ def put_settings(rec):
 
 def test():
     try:
-        send_telegram("🔔 Test from Desk. Task and event notifications will look like this:\n🚨 Overdue 2 days: Example task\nDue: "
-                      + (date.today() - timedelta(days=2)).isoformat() + "\n" + LINK + "example")
+        today = date.today()
+        send_telegram("🔔 Test from Desk. The morning summary will look like this:\n\n"
+                      + digest_msg(today, [(today - timedelta(days=2), {"id": "x", "title": "Example task"})], [], [], []))
         return 200, {"ok": True}
     except Exception as e:
         return 503, {"error": str(e)[:160]}

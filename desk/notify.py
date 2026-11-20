@@ -53,7 +53,7 @@ KINDS = (
     ("reply", "Messages that need a reply now", "now"),
     ("event30", "30 minutes before an event", "now"),
     ("task30", "30 minutes before a task is due", "now"),
-    ("event6h", "6 hours before an event", "heads"),
+    ("event6h", "Today's events in the morning summary", "heads"),
     ("morning", "Morning digest", "digest"),
     ("noon", "Midday digest", "digest"),
     ("evening", "Afternoon digest", "digest"),
@@ -243,9 +243,7 @@ def instant(now, data, s, tz=None):
         if 0 < left <= 30 * MIN:
             out.append({"id": f"event30:{e['id']}:{int(st)}", "kind": "event30", "tier": "now",
                         "title": f"Event in {max(1, round(left / 60))} min", "body": line, "link": "#calendar"})
-        elif 5 * HOUR < left <= 6 * HOUR:
-            out.append({"id": f"event6h:{e['id']}:{int(st)}", "kind": "event6h", "tier": "heads",
-                        "title": "Today's event", "body": line + " (in about 6 hours)", "link": "#calendar"})
+        # the 6-hours-before heads-up was dropped (2026-11-20): 30 minutes before and the 3-minute alarm are enough
     for t in data["tasks"]:
         due = timed_due(t) if t.get("status") in OPEN else None
         if due is not None and 0 < due - now <= 30 * MIN:

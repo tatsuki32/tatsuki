@@ -998,6 +998,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(200, accounts.view())
             except accounts.AccountsError:
                 return self.send(500, {"error": "read"})
+        if path == "/api/news/today":  # Sift Daily's headlines, kept by news_sync every 5 minutes
+            return self.send(200, news_sync.today())
         if path == "/api/netspeed":
             return self.send(200, netspeed.view())
         if path == "/api/footprint":  # rough daily CO2e from records already here (desk/footprint.py); nothing is sent anywhere
@@ -1523,6 +1525,10 @@ if __name__ == "__main__":
         threading.Thread(target=posts.watch, daemon=True).start()  # Post Studio: company-site news scheduled for later
         threading.Thread(target=routine_alarm.watch, daemon=True).start()  # routine start alarm (quiet 22:00-07:00)
         threading.Thread(target=routine_sync.watch, daemon=True).start()  # routines <-> the Routine app on the phone
+        try:
+            lifelog.ensure_log_habits()  # "Log sleep" / "Log meals": tick themselves when a record arrives
+        except Exception as e:
+            print("log habits:", e, file=sys.stderr)
         threading.Thread(target=news_sync.watch, daemon=True).start()  # Sift Daily's "Make it a task" -> Desk tasks, every 5 minutes
         threading.Thread(target=transcribe_desk.watch, daemon=True).start()  # the transcriber on 8791, kept running
         threading.Thread(target=site_sync.watch, daemon=True).start()  # tany.im analytics pulled every 15 minutes

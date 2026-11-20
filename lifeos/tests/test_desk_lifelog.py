@@ -533,3 +533,32 @@ class Bot(Base):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class LogHabits(Base):
+    def habits(self):
+        with open(os.path.join(self.tmp, "habits.json"), encoding="utf-8") as f:
+            return {h["id"]: h for h in json.load(f)}
+
+    def test_sleep_record_ticks_log_sleep(self):
+        day = ll.today()
+        ll._save_records({"id": "a" * 20, "file": "x.png", "source": "telegram"}, [{**ll.check(sleep_record(day=day), day), "kind": "sleep"}])
+        h = self.habits()
+        self.assertEqual(h["log-sleep"]["done"], [day])
+        self.assertEqual(h["log-meals"]["done"], [])
+
+    def test_never_unticks_and_skips_deleted(self):
+        ll.ensure_log_habits()
+        hs = list(self.habits().values())
+        for h in hs:
+            if h["id"] == "log-meals":
+                h["deleted"] = True
+            else:
+                h["done"] = ["2026-01-01"]
+        with open(os.path.join(self.tmp, "habits.json"), "w", encoding="utf-8") as f:
+            json.dump(hs, f)
+        ll.mark_log_habits([{"kind": "sleep", "date": "2026-01-02"}, {"kind": "meal_photo", "date": "2026-01-02"}])
+        h = self.habits()
+        self.assertEqual(h["log-sleep"]["done"], ["2026-01-01", "2026-01-02"])
+        self.assertEqual(h["log-meals"]["done"], [])
+        self.assertEqual(ll.ensure_log_habits(), 0)
