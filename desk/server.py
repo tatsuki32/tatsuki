@@ -38,6 +38,7 @@ import footprint
 import finder
 import transcribe_desk
 import notify
+import checkin
 import tg_notify
 import event_alarm
 import pc_monitor
@@ -57,6 +58,7 @@ import showcase
 import campus  # 地球キャンパス通信: issues on this Mac, readers only in the tany.im Worker
 import screentime_sync
 import usage
+import claude_usage
 import site_sync
 import wise_analysis
 import wise_goals
@@ -98,6 +100,8 @@ LOCK = threading.Lock()
 # Task Desk Chrome extension (Applications/programming/Tatsuki Desk/task-desk-extension). Its id is fixed by the "key" in its manifest.
 TASKDESK_ORIGIN = "chrome-extension://nofajepofefkhjckmgciabfjbeeenhlm"
 MEMOLINK_LOCK = threading.Lock()
+# Task Desk Chrome extension (Applications/programming/Tatsuki Desk/task-desk-extension). Its id is fixed by the "key" in its manifest.
+TASKDESK_ORIGIN = "chrome-extension://nofajepofefkhjckmgciabfjbeeenhlm"
 REPO = os.path.dirname(ROOT)
 # commands that work in the person's Chrome (Claude in Chrome), started with --chrome
 CLAUDE_CHROME = ("/joins-apply",)
@@ -1050,6 +1054,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, site_sync.view(q.get("period", ["7"])[0], q.get("from", [None])[0], q.get("to", [None])[0]))
         if path == "/api/site/home":
             return self.send(200, site_sync.home_line() or {})
+        if path == "/api/claude-usage":
+            return self.send(200, claude_usage.view())
         if path == "/api/screentime":
             q = parse_qs(urlsplit(self.path).query)
             return self.send(200, screentime_sync.view(q.get("period", ["week"])[0], q.get("device", ["mac"])[0]))
@@ -1287,6 +1293,9 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, usage.change(rec, usage.enabled(PORT)))
         if urlsplit(self.path).path.startswith("/api/site/") and method in ("POST", "PUT"):
             return self.site_action(method, urlsplit(self.path).path.rsplit("/", 1)[1], rec)
+        if method == "POST" and urlsplit(self.path).path == "/api/claude-usage/refresh":
+            claude_usage.refresh()  # counts the local records again; nothing is sent anywhere
+            return self.send(200, claude_usage.view())
         if method == "POST" and urlsplit(self.path).path == "/api/claude":
             return self.claude(rec)
         if method == "POST" and urlsplit(self.path).path in ("/api/focus/start", "/api/focus/stop",
@@ -1540,6 +1549,7 @@ if __name__ == "__main__":
     threading.Thread(target=pc_monitor.watch, daemon=True).start()
     if PORT == 4747:  # a test server on another port shows nothing
         threading.Thread(target=notify.watch, daemon=True).start()
+        threading.Thread(target=checkin.watch, args=(load, save, LOCK), daemon=True).start()  # in-progress timers: ask every 10 minutes
         threading.Thread(target=tg_notify.watch, daemon=True).start()  # tasks and events to Telegram
         threading.Thread(target=event_alarm.watch, daemon=True).start()  # alarm 3 minutes before each calendar event
         threading.Thread(target=instagram_dm.watch, daemon=True).start()  # Instagram DMs to Replies, every 5 minutes
@@ -1552,6 +1562,7 @@ if __name__ == "__main__":
             print("log habits:", e, file=sys.stderr)
         threading.Thread(target=news_sync.watch, daemon=True).start()  # Sift Daily's "Make it a task" -> Desk tasks, every 5 minutes
         threading.Thread(target=transcribe_desk.watch, daemon=True).start()  # the transcriber on 8791, kept running
+        threading.Thread(target=claude_usage.watch, daemon=True).start()  # Claude usage counted again every 5 minutes
         threading.Thread(target=site_sync.watch, daemon=True).start()  # tany.im analytics pulled every 15 minutes
     try:
         srv.serve_forever()

@@ -999,6 +999,26 @@ body.cpfocus .cp{grid-template-columns:minmax(0,1fr)}
 .webrow .btn{justify-self:end}
 .webext{margin:var(--s2) 0 0;padding-left:var(--s4);font-size:var(--t2);color:var(--ink-2)}
 .pcalert{display:block;max-width:960px;margin:0 auto var(--s3);padding:var(--s2) var(--s3);border-left:3px solid var(--red);background:var(--red-soft);color:var(--ink);font-size:var(--t2);text-decoration:none}
+.cunote{margin:0}
+.cugrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--s3)}
+.custat{display:grid;gap:var(--s1);align-content:start;min-width:0}
+.custat b{font-size:var(--t4)}
+.cubars{display:flex;align-items:flex-end;gap:2px;height:96px}
+.cubar{flex:1;display:flex;flex-direction:column-reverse;height:100%;min-width:0;background:var(--surface-2);border-radius:2px;overflow:hidden}
+.cur{background:var(--v1)}.cuc{background:var(--v3)}
+.cudot{display:inline-block;width:8px;height:8px;border-radius:2px;margin:0 var(--s1) 0 var(--s2)}
+.cuaxis{display:flex;justify-content:space-between;color:var(--muted);font-size:var(--t1)}
+.curow{display:grid;grid-template-columns:minmax(0,1fr) 5.5em 4.5em 4em;gap:var(--s1) var(--s2);align-items:start;padding:var(--s2) 0;border-top:1px solid var(--line)}
+.curow.cujob{grid-template-columns:minmax(0,1fr) 5.5em 5.5em}
+.curow.cujob2{grid-template-columns:minmax(0,1fr) minmax(0,9em)}
+.curow.uhead{border-top:0;padding:0 0 var(--s1);color:var(--muted);font-size:var(--t1)}
+.curow .n{text-align:right;white-space:nowrap}
+.curow.cujob2 .n{white-space:normal}
+.curow .uname{min-width:0;overflow-wrap:anywhere}
+.curow.zero .uname,.curow.zero .n{color:var(--muted)}
+.cumeta{display:block;margin-top:2px}
+.cuscroll{overflow-x:auto}
+@media (max-width:760px){.cugrid{grid-template-columns:1fr}.curow{grid-template-columns:minmax(0,1fr) 5em}.curow .cuw{display:none}.curow.cujob{grid-template-columns:minmax(0,1fr) 4.5em 4.5em}}
 .stgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--s3)}
 .stduo{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s3)}
 .strows{display:grid}
@@ -1285,6 +1305,18 @@ h1 .inedit{font-size:var(--t4);font-weight:700}
 .nav .label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .nav .pnew{display:flex;align-items:center;gap:10px;width:100%;padding:6px var(--s2);font-size:var(--t2);border:0;background:none;color:var(--muted);cursor:pointer;text-align:left;border-radius:var(--r-s)}
 .nav .pnew:hover{background:var(--surface);color:var(--ink)}
+/* tools in the menu: one folding row per group, one row per tool; a tool opens its card in a popup */
+.nav .tgh,.nav .tnav{display:flex;align-items:center;gap:10px;width:100%;padding:6px var(--s2);font-size:var(--t2);border:0;background:none;color:var(--ink-2);cursor:pointer;text-align:left;border-radius:var(--r-s)}
+.nav .tgh:hover,.nav .tnav:hover{background:var(--surface);color:var(--ink)}
+.nav .tgh .caret{width:12px;color:var(--muted);font-size:var(--t1)}
+.nav .tgh .count{margin-left:auto}
+.nav .tnav{padding-left:calc(var(--s2) + 22px)}
+.nav .tnav .e{font-size:15px}
+.toolpop .tile{border:0;padding:0;background:none;cursor:default}
+.toolpop .tile:hover{background:none}
+.toolpop .tile .d{-webkit-line-clamp:unset;display:block}
+.toolpop .tlinks{display:grid;gap:var(--s2)}
+.toolpop .tlinks .btn{justify-content:flex-start}
 .ptag{display:inline-flex;align-items:center;gap:4px;font-size:var(--t1);color:var(--muted);white-space:nowrap;max-width:14em;overflow:hidden;text-overflow:ellipsis;vertical-align:bottom}
 .ptiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:var(--s2)}
 .ptile{display:grid;gap:2px;padding:10px 12px;border-radius:var(--r);background:var(--surface);border:1px solid var(--line);text-align:left;color:var(--ink);min-width:0;cursor:pointer}
@@ -1437,6 +1469,9 @@ a.shelfbtn{text-decoration:none;display:inline-flex;align-items:center}
 .tnotyet{align-self:center}
 .tclear{display:grid;gap:var(--s2);min-width:0}
 .tclear .btn{justify-self:start}
+.tcal{display:grid;gap:var(--s2);min-width:0}
+.tcal[hidden],#tCalOn:empty{display:none}
+.tcaltext{white-space:pre-wrap;overflow-wrap:anywhere;color:var(--ink-2);font-size:var(--t1)}
 .pop textarea#tPrompt{min-height:120px;font-size:var(--t1)}
 .torig{margin:0;font-size:var(--t1);color:var(--muted);overflow-wrap:anywhere}
 .linkbtn{background:none;border:0;padding:0;font:inherit;color:var(--ink-2);text-decoration:underline;cursor:pointer}
@@ -1469,9 +1504,6 @@ a.shelfbtn{text-decoration:none;display:inline-flex;align-items:center}
 .tline time{color:var(--ink-2)}
 .tline span:last-child{overflow-wrap:anywhere;color:var(--ink-2)}
 .sheet .nav{gap:0}
-.tcal{display:grid;gap:var(--s2);min-width:0}
-.tcal[hidden],#tCalOn:empty{display:none}
-.tcaltext{white-space:pre-wrap;overflow-wrap:anywhere;color:var(--ink-2);font-size:var(--t1)}
 .sheet .nav a{min-height:44px}
 .sheet .railbtn{min-height:44px}
 .toast{position:fixed;z-index:50;left:50%;bottom:calc(24px + var(--tabbar) + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);font-weight:700;padding:10px var(--s3);border-radius:999px;font-size:var(--t2);max-width:calc(100vw - 32px)}
@@ -1735,8 +1767,9 @@ if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="screentime")+1,0,{id:"netsp
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="screentime")+1,0,{id:"pc",e:"🖥️",label:"PC",g:"write"});
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="bodyhabits")+1,0,{id:"footprint",e:"🌍",label:"Footprint",g:"body"}); // rough daily CO2e from screens, AI, meals, spending and trips (desk/footprint.py)
 if(LOCALAPI) VIEWS.push({id:"usage",e:"📊",label:"Usage",g:"write"}); // which parts of Desk get used, and the weekly re-arrangement (desk/usage.py)
+if(LOCALAPI) VIEWS.push({id:"claudeusage",e:"🧮",label:"Claude Usage",g:"write"}); // Claude cost and tokens by day, by model and by Desk routine (desk/claude_usage.py reads ~/ClaudeUsage/ledger.json)
 if(LOCALAPI) VIEWS.push({id:"utilities",e:"🧰",label:"Small Utilities",g:"write"}); // QR, character count, is.gd and PDF compression (desk/utilities.py)
-if(LOCALAPI) VIEWS.push({id:"post",e:"📣",label:"Post Studio",g:"write"}); // photos and a memo become drafts for each social account; nothing is posted from Desk (desk/posts.py)
+if(LOCALAPI) VIEWS.push({id:"post",e:"📣",label:"Post Studio",g:"write"});
 if(LOCALAPI) VIEWS.push({id:"campus",e:"✉️",label:"Campus Letter",g:"write"}); // the free newsletter 地球キャンパス通信: written here, readers only on tany.im (desk/campus.py) // photos and a memo become drafts for each social account; nothing is posted from Desk (desk/posts.py)
 if(LOCALAPI) VIEWS.push({id:"transcribe",e:"🎙️",label:"Transcribe",g:"write"}); // long recordings to text on this Mac (desk/transcribe/, its own server on 8791)
 if(LOCALAPI) VIEWS.push({id:"wifi",e:"📲",label:"Wi-Fi QR",g:"write"}); // a code that joins the Wi-Fi this Mac is on; the password comes from the keychain and is never kept (desk/wifi_qr.py)
@@ -3403,7 +3436,6 @@ async function saveText(filename,data,mime){
   if(dl){try{await dl.save({filename,data});toast("Saved");return}catch(e){if(e?.code!=="not_granted"&&e?.code!=="cancelled")toast("Couldn't save");else return}}
   try{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([data],{type:mime}));a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}catch(e){toast("Couldn't save")}
 }
-async function exportGear(kind){const day=hcmcDate();
 /* The page for the PDF on the Mac (the Desk window cannot print, so the server turns this into a PDF). No photos: nothing is fetched. */
 function gearPdfHtml(){const day=hcmcDate(),have=gearList().filter(g=>!g.gone),gone=gearList().filter(g=>g.gone),tot=have.reduce((s,g)=>s+(gW(g)||0),0);
   const money=have.reduce((s,g)=>s+(gP(g)||0),0);
@@ -3417,6 +3449,7 @@ body{font:11px/1.5 -apple-system,"Hiragino Sans",sans-serif;color:#111;margin:0}
 p{margin:0 0 8px}.sub{color:#555;font-size:9.5px}.nums{display:flex;gap:40px;margin:12px 0}.nums b{display:block;font-size:18px}
 table{width:100%;border-collapse:collapse}td,th{padding:4px 8px 4px 0;border-bottom:1px solid #ddd;text-align:left;vertical-align:top;overflow-wrap:anywhere}
 tr{break-inside:avoid}.n{text-align:right;white-space:nowrap;padding:4px 0 4px 16px}</style></head><body>${parts.join("")}</body></html>`}
+async function exportGear(kind){const day=hcmcDate();
   if(kind==="csv") return saveFile(`belongings-${day}`,gearCsv(),"csv");
   if(kind==="txt"){const t=gearText();try{await navigator.clipboard.writeText(t);toast("Text copied (saving a file too)")}catch(e){}return saveFile(`belongings-${day}`,t,"txt")}
   if(kind==="pdf"){
@@ -3493,7 +3526,7 @@ function replyRow(t){
     <button class="tt" data-topen="${esc(t.id)}" data-noauto>${esc(t.title)}</button>
     ${r.about?`<div class="rabout" data-noauto>About: ${esc(clip(r.about,180))}</div>`:""}
     <div class="due">${[src[2],r.who,r.when,t.deadline!=null&&t.due!=null?"Due "+fmtDue(t.due):""].filter(Boolean).map(esc).join(" · ")}</div></div>
-    <div class="dacts"><button class="btn" data-rtask="${esc(t.id)}" title="Move this to the task board">→ Make it a task</button></div></div>`;
+    <div class="dacts"><button class="btn" data-rdone="${esc(t.id)}" title="Mark this as answered">Done</button><button class="btn" data-rarch="${esc(t.id)}" title="Archive without answering">Archive</button><button class="btn" data-rtask="${esc(t.id)}" title="Move this to the task board">→ Make it a task</button></div></div>`;
 }
 function repliesView(){
   const all=replyList(), xs=all.filter(t=>{const r=replyInfo(t);return findHit(S.rq,[t.title,r.about,r.who,r.subj,t.memo])}), moved=(S.all||[]).filter(t=>replyKind(t)&&t.asTask&&TOPEN.has(t.status));
@@ -3501,7 +3534,7 @@ function repliesView(){
   <div class="card empty rwclosed"><b>${xs.length} waiting · opens at ${esc(rwTime(rwNext()))}</b>Replies open at 5:00 and 16:00. Until then, nothing here needs you.</div>`;
   const groups=RSRC.map(([k,e,l])=>[e,l,xs.filter(t=>replyKind(t)===k)]).filter(g=>g[2].length);
   return `<header class="head"><div><p class="eyebrow">Today</p><h1>Replies</h1></div><button class="btn primary" id="rwDone">Replies done</button></header>
-  <p class="sub">Email, WhatsApp, LINE and follow-ups that need an answer. They stay here, off your task board. Press “Make it a task” for one that is real work. “Replies done” hides them until ${esc(rwTime(rwNext()))}.</p>
+  <p class="sub">Email, WhatsApp, LINE and follow-ups that need an answer. They stay here, off your task board. Press “Done” when answered, “Archive” for one that needs no answer, or “Make it a task” for one that is real work. “Replies done” hides them until ${esc(rwTime(rwNext()))}.</p>
   ${all.length?findBox("rFind",S.rq,"Search replies (email, name, subject)",xs.length):""}
   ${groups.length?groups.map(([e,l,ts])=>`<section class="card dpanel" aria-label="${l}"><div class="dhead"><h2><span class="e">${e}</span>${l}</h2><span class="sub">${ts.length}</span></div><div>${ts.map(replyRow).join("")}</div></section>`).join(""):`${S.rq&&all.length?`<div class="card empty"><b>Nothing matches “${esc(S.rq)}”</b>Try another word, or press Clear.</div>`:`<div class="card empty"><b>No replies waiting</b>New email, WhatsApp and LINE messages show up here after each import.</div>`}`}
   ${moved.length?`<p class="sub">Moved to Tasks: ${moved.map(t=>`<button class="tt" data-topen="${esc(t.id)}" data-noauto>${esc(clip(t.title,60))}</button> <button class="ibtn" data-rtask="${esc(t.id)}" data-back="1" title="Back to Replies" aria-label="Back to Replies">↩︎</button>`).join(" · ")}</p>`:""}`;
@@ -3646,6 +3679,33 @@ function wireMail(t,close){
   };
   wire();
 }
+/* "Add to calendar" inside the task dialog: pick a date, a start and a length, then Google Calendar opens filled in.
+   calAt / calMin / calTz record that it was opened (the Desk cannot see whether Save was pressed there). */
+function wireCal(t){
+  const btn=$("#tCalBtn"), box=$("#tCal");if(!btn||!box)return;
+  const save=$("#tSave"), show=on=>{box.hidden=!on;btn.setAttribute("aria-expanded",String(on));btn.textContent=on?"Hide calendar":"Add to calendar";save.classList.toggle("primary",!on)}; // one gold button at a time
+  const close=()=>show(false);
+  btn.onclick=()=>{
+    if(!box.hidden)return close();
+    let min=calLen(t);const [d,tm]=toLocalInput(calStart(t,min)).split("T");
+    box.innerHTML=`<div class="tduein"><div><label class="sub" for="tCalD">Date</label><input type="date" id="tCalD" value="${d}"></div><div><label class="sub" for="tCalT">Start</label><input type="time" id="tCalT" step="300" value="${tm}"></div></div>
+      <div class="chips" role="group" aria-label="Length">${calLens(min).map(([m,l])=>`<button class="chip" data-tcalmin="${m}" aria-pressed="${m===min}">${l}</button>`).join("")}</div>
+      <p class="hint">Times in ${esc(tzName())}. Google Calendar opens with everything filled in. Press Save there.</p>
+      <details class="tmore"><summary>What goes in the description</summary><p class="tcaltext" id="tCalTxt"></p></details>
+      <div class="row"><a class="btn primary" id="tCalGo" href="#" target="_blank" rel="noopener">Open Google Calendar</a></div>`;
+    show(true);
+    const di=$("#tCalD"), ti=$("#tCalT"), go=$("#tCalGo");
+    const cur=()=>({...t,note:($("#tNote")?.value??t.note??"").trim()}); // the notes as typed now, saved or not
+    const at=()=>di.value&&ti.value?new Date(`${di.value}T${ti.value}`).getTime():NaN;
+    const upd=()=>{const ms=at(), x=cur(), txt=calDetails(x);$("#tCalTxt").textContent=txt;go.href=isNaN(ms)?"#":calUrl(taskName(x),ms,min,txt)};
+    di.oninput=ti.oninput=upd;
+    box.querySelectorAll("[data-tcalmin]").forEach(c=>c.onclick=()=>{min=+c.dataset.tcalmin;box.querySelectorAll("[data-tcalmin]").forEach(o=>o.setAttribute("aria-pressed",String(o===c)));upd()});
+    go.onclick=e=>{const ms=at();if(isNaN(ms)){e.preventDefault();(di.value?ti:di).focus();toast("Pick a date and a start time");return}
+      upd();const mark={calAt:ms,calMin:min,calTz:localTz()};Object.assign(t,mark); // the dialog's own Save keeps it too
+      store.putTask({...(findTask(t.id)||t),...mark}).catch(()=>{});
+      $("#tCalOn").textContent=calOnText(t);close();toast("📅 Opened Google Calendar. Press Save there")};
+    upd();di.focus()};
+}
 function openTask(id,preset){
   if($("#modal").firstChild) return;
   if(id&&hideReply(findTask(id))){toast(`💬 Replies open at ${rwTime(rwNext())}`);return}
@@ -3684,33 +3744,6 @@ function openTask(id,preset){
     catch(e){toast("Couldn't save. Your input is still here")}};
   $("#tSave").onclick=save;$("#tCancel").onclick=close;$("#xTask").onclick=close;
   $("#tCopy")&&($("#tCopy").onclick=async()=>{toast(await copyText(taskFormText($("#scrim .pop")))?"📋 Copied as text":"Couldn't copy")});
-/* "Add to calendar" inside the task dialog: pick a date, a start and a length, then Google Calendar opens filled in.
-   calAt / calMin / calTz record that it was opened (the Desk cannot see whether Save was pressed there). */
-function wireCal(t){
-  const btn=$("#tCalBtn"), box=$("#tCal");if(!btn||!box)return;
-  const save=$("#tSave"), show=on=>{box.hidden=!on;btn.setAttribute("aria-expanded",String(on));btn.textContent=on?"Hide calendar":"Add to calendar";save.classList.toggle("primary",!on)}; // one gold button at a time
-  const close=()=>show(false);
-  btn.onclick=()=>{
-    if(!box.hidden)return close();
-    let min=calLen(t);const [d,tm]=toLocalInput(calStart(t,min)).split("T");
-    box.innerHTML=`<div class="tduein"><div><label class="sub" for="tCalD">Date</label><input type="date" id="tCalD" value="${d}"></div><div><label class="sub" for="tCalT">Start</label><input type="time" id="tCalT" step="300" value="${tm}"></div></div>
-      <div class="chips" role="group" aria-label="Length">${calLens(min).map(([m,l])=>`<button class="chip" data-tcalmin="${m}" aria-pressed="${m===min}">${l}</button>`).join("")}</div>
-      <p class="hint">Times in ${esc(tzName())}. Google Calendar opens with everything filled in. Press Save there.</p>
-      <details class="tmore"><summary>What goes in the description</summary><p class="tcaltext" id="tCalTxt"></p></details>
-      <div class="row"><a class="btn primary" id="tCalGo" href="#" target="_blank" rel="noopener">Open Google Calendar</a></div>`;
-    show(true);
-    const di=$("#tCalD"), ti=$("#tCalT"), go=$("#tCalGo");
-    const cur=()=>({...t,note:($("#tNote")?.value??t.note??"").trim()}); // the notes as typed now, saved or not
-    const at=()=>di.value&&ti.value?new Date(`${di.value}T${ti.value}`).getTime():NaN;
-    const upd=()=>{const ms=at(), x=cur(), txt=calDetails(x);$("#tCalTxt").textContent=txt;go.href=isNaN(ms)?"#":calUrl(taskName(x),ms,min,txt)};
-    di.oninput=ti.oninput=upd;
-    box.querySelectorAll("[data-tcalmin]").forEach(c=>c.onclick=()=>{min=+c.dataset.tcalmin;box.querySelectorAll("[data-tcalmin]").forEach(o=>o.setAttribute("aria-pressed",String(o===c)));upd()});
-    go.onclick=e=>{const ms=at();if(isNaN(ms)){e.preventDefault();(di.value?ti:di).focus();toast("Pick a date and a start time");return}
-      upd();const mark={calAt:ms,calMin:min,calTz:localTz()};Object.assign(t,mark); // the dialog's own Save keeps it too
-      store.putTask({...(findTask(t.id)||t),...mark}).catch(()=>{});
-      $("#tCalOn").textContent=calOnText(t);close();toast("📅 Opened Google Calendar. Press Save there")};
-    upd();di.focus()};
-}
   $("#tDel")&&($("#tDel").onclick=async e=>{const b=e.currentTarget;if(!b.dataset.sure){b.dataset.sure="1";b.textContent="Really delete?";return}
     try{await store.putTask({...t,deleted:true});close();toast("🗑️ Deleted")}catch(err){toast("Couldn't delete")}});
   $("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};
@@ -5187,8 +5220,53 @@ function navHtml(){
   return (fav.length||tryL.length?link(VIEWS[0]):"")+(fav.length?list("Frequently used",fav):"")+(tryL.length?list(`Not tried yet (${tryL.length})`,tryL.slice(0,6))+(tryL.length>6?`<details class="navhid"><summary class="gh">+${tryL.length-6} more not tried</summary>${tryL.slice(6).map(id=>link(VIEWS.find(v=>v.id===id))).join("")}</details>`:""):"")
     +NAVGROUPS.map(([g,l])=>list(l,VIEWS.filter(v=>v.g===g&&!out.has(v.id)&&!((fav.length||tryL.length)&&v.id==="home")).map(v=>v.id))+(g==="today"?projNavHtml():"")).join("")
     +list("Rarely used",rare)
-    +(hid.size?`<details class="navhid"><summary class="gh">Hidden (${hid.size})</summary>${[...hid].map(id=>{const v=VIEWS.find(x=>x.id===id);return `<div class="navhidrow">${link(v)}<button class="btn sm" data-ulay="unhide::${esc(id)}">Show</button></div>`}).join("")}</details>`:"");
+    +(hid.size?`<details class="navhid"><summary class="gh">Hidden (${hid.size})</summary>${[...hid].map(id=>{const v=VIEWS.find(x=>x.id===id);return `<div class="navhidrow">${link(v)}<button class="btn sm" data-ulay="unhide::${esc(id)}">Show</button></div>`}).join("")}</details>`:"")+toolsNavHtml();
 }
+/* Tools in the menu: every tool from the Tools page, by group, folded. Which groups are open stays on this Mac. */
+const TOOLNAV_KEY="desk-toolnav-open";
+function toolNavOpen(){try{const v=JSON.parse(localStorage.getItem(TOOLNAV_KEY));if(Array.isArray(v))return v}catch(e){}return ["Work"]}
+function toolsNavHtml(){
+  const tools=(S.tools||[]).filter(t=>!t.deleted); if(!tools.length) return "";
+  const open=toolNavOpen();
+  return `<div class="gh">Tools</div>`+GROUPS.filter(([g])=>tools.some(t=>t.group===g)).map(([g,e,l])=>{
+    const list=tools.filter(t=>t.group===g).sort((a,b)=>(a.order??99)-(b.order??99)), on=open.includes(g);
+    return `<button type="button" class="tgh" data-tgroup="${esc(g)}" aria-expanded="${on}"><span class="caret">${on?"▾":"▸"}</span><span class="e">${e}</span><span class="label">${esc(l)}</span><span class="count">${list.length}</span></button>`
+      +(on?list.map(t=>`<button type="button" class="tnav" data-toolpop="${esc(t.id)}"><span class="e">${esc(t.emoji||"🧩")}</span><span class="label">${esc(t.name)}</span></button>`).join(""):"");
+  }).join("");
+}
+function toggleToolGroup(g){
+  const open=toolNavOpen(), next=open.includes(g)?open.filter(x=>x!==g):[...open,g];
+  try{localStorage.setItem(TOOLNAV_KEY,JSON.stringify(next))}catch(e){}
+  renderNav();
+  const sheetNav=document.querySelector("#modal .sheet .nav"); if(sheetNav) sheetNav.innerHTML=navHtml();
+}
+/* a tool's card in a popup: what it is, and every place it can open */
+function openToolPop(id){
+  const t=(S.tools||[]).find(x=>x.id===id); if(!t) return;
+  $("#modal").innerHTML="";
+  const href=S.local&&t.local?t.local:(t.url||t.local||"");
+  const btn=(u,label,primary)=>`<a class="btn${primary?" primary":""}" href="${esc(u)}"${/^https?:/.test(u)?' target="_blank" rel="noopener"':""} data-tpclose>${label}</a>`;
+  const links=(t.links||[]).filter(l=>okUrl(l.url)&&l.url!==href);
+  const meta=`${t.schedule?`<span class="pill live">⏱ ${esc(t.schedule)}</span>`:""}${(t.tags||[]).map(x=>`<span class="pill">${esc(x)}</span>`).join("")}`;
+  $("#modal").innerHTML=`<div class="scrim${matchMedia("(max-width:760px)").matches?" bottom":""}" id="scrim"><div class="pop toolpop" role="dialog" aria-modal="true" aria-label="${esc(t.name)}">
+    <div class="top"><h2><span class="e">${esc(t.emoji||"🧩")}</span> ${esc(t.name)}</h2><button class="ibtn" id="xTool" aria-label="Close">✕</button></div>
+    ${t.desc?`<p class="hint" style="font-size:var(--t2);color:var(--ink-2)">${esc(t.desc)}</p>`:""}
+    ${t.path?`<p class="hint" style="font-family:var(--mono);overflow-wrap:anywhere">${esc(t.path)}</p>`:""}
+    ${meta?`<div class="row">${meta}</div>`:""}
+    <div class="tlinks">${okUrl(href)?btn(href,/^https?:/.test(href)?"Open ↗":"Open",true):""}${links.map(l=>btn(l.url,esc(l.label)+" ↗")).join("")}</div>
+    ${!okUrl(href)&&!links.length?`<p class="hint">No link for this tool yet.</p>`:""}
+  </div></div>`;
+  const close=()=>{$("#modal").innerHTML="";document.removeEventListener("keydown",esc_,true)};
+  const esc_=e=>{if(e.key==="Escape"){e.preventDefault();e.stopPropagation();close()}};
+  document.addEventListener("keydown",esc_,true);
+  $("#xTool").onclick=close;$("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};
+  $("#modal").querySelectorAll("[data-tpclose]").forEach(a=>a.addEventListener("click",()=>setTimeout(close,0)));
+  ($("#modal").querySelector(".tlinks .btn")||$("#xTool")).focus();
+}
+document.addEventListener("click",e=>{
+  const g=e.target.closest("[data-tgroup]"); if(g){e.preventDefault();toggleToolGroup(g.dataset.tgroup);return}
+  const t=e.target.closest("[data-toolpop]"); if(t){e.preventDefault();openToolPop(t.dataset.toolpop)}
+});
 function renderNav(){
   $("#nav").innerHTML=navHtml();
   const cur=viewId(), more=!TABS.includes(cur);
@@ -5778,7 +5856,6 @@ function render(){
     S.wkShown=S.wkBoard;$("#view").innerHTML=searchResults()+workoutBoard();wire();wkSync();wkWire();return}
   S.wkShown=null;
   if(viewId()==="mailclean"){mcLoad();$("#view").innerHTML=searchResults()+mcView();wire();wireMc();return}
-  if(viewId()==="site"){siteLoad();$("#view").innerHTML=searchResults()+siteView();wire();return}
   if(viewId()==="footprint"){fpLoad();$("#view").innerHTML=searchResults()+fpView();wire();wireFp();return}
   if(viewId()==="netspeed"){nsLoad();$("#view").innerHTML=searchResults()+nsView();wire();wireNs();return}
   if(viewId()==="wifi"){wfLoad();if(!$("#wfView")||!document.activeElement?.closest?.(".wffield"))wfDraw();return} // a redraw from elsewhere never takes the password being typed
@@ -5794,11 +5871,14 @@ function render(){
   if(viewId()==="aidone"){aiLoad();$("#view").innerHTML=searchResults()+aiView();wire();wireAi();return}
   if(viewId()==="ideas"){ideasLoad();$("#view").innerHTML=searchResults()+ideasView();wire();wireIdeas();return}
   if(viewId()==="usage"){uLoad();$("#view").innerHTML=searchResults()+usageView();wire();return}
+  if(viewId()==="site"){siteLoad();$("#view").innerHTML=searchResults()+siteView();wire();return}
+  if(viewId()==="claudeusage"){cuLoad();$("#view").innerHTML=searchResults()+cuView();wire();return}
   const v=viewId();
   if(v==="project")S.projectId=decodeURIComponent(location.hash.slice(9));
   $("#view").innerHTML=searchResults()+(v==="focus"?focusView():v==="notes"?notesView():v==="watch"?watch():v==="heritage"?heritageView():v==="tasks"?tasks():v==="replies"?repliesView():v==="notdoing"?notDoingView():v==="genres"?genresView():v==="timelog"?timelogView():v==="calendar"?calendar():v==="news"?news():v==="wins"?winsView():v==="presents"?presentsView():v==="habits"?habitsView():v==="gear"?gearView():v==="project"?projectView():v==="log"?log():v==="tools"?toolsView():home());
   if(v==="news"||v==="watch") linkSources($("#view"));
   wire();
+  {const m=/^#task\/(.+)$/.exec(location.hash||""), tk=m&&findTask(decodeURIComponent(m[1]));if(tk){history.replaceState(null,"","#tasks");openTask(tk.id)}} // the link at the end of a calendar event's description
   if(v==="news"&&S.focus!=null){const el=document.getElementById("story-"+S.focus);S.focus=null;if(el){el.classList.add("flash");setTimeout(()=>el.scrollIntoView({block:"start"}),0)}}
   if(S.flash&&S.flash.kind!=="task") flashSentence();
 }
@@ -6111,154 +6191,6 @@ function nsView(){
   const past=d.count>1?mpanel("History","Down / up (Mbps)",d.history.map(h=>nsRow(nsWhen(h.at),`${nsMbps(h.down)} / ${nsMbps(h.up)}`,esc(h.place))).join("")):"";
   return `<div class="money nsp" data-noauto>${head}${main}${can}${reply}${link}${places}${past}</div>`;
 }
-/* Site: tany.im analytics. The tag on the site and its Worker store events on Cloudflare; desk/site_sync.py pulls them every 15 minutes
-   and does all the counting. This page only shows the numbers. Search Console is read with Tatsuki's own Google sign-in (read only). */
-S.site=null;S.siteP="7";S.siteTab="overview";S.siteBusy="";S.siteHome=null;
-const SITETABS=[["overview","Overview"],["content","Content"],["conversion","Conversion"],["ux","UX"],["seo","SEO"]];
-async function siteLoad(){
-  if(!LOCALAPI)return;
-  try{const q=S.siteP==="custom"&&S.siteFrom&&S.siteTo?`custom&from=${S.siteFrom}&to=${S.siteTo}`:S.siteP;
-    const v=await api("GET","/api/site?period="+q),same=JSON.stringify(v)===JSON.stringify(S.site);S.site=v;S.siteErr=false;if(!same&&viewId()==="site")render()}
-  catch(e){const was=S.siteErr;S.siteErr=true;if(!was&&viewId()==="site")render()}
-}
-async function siteHomeLoad(){if(!LOCALAPI)return;try{S.siteHome=await api("GET","/api/site/home");const el=$("#siteLine");if(el){const t=document.createElement("div");t.innerHTML=siteHomeLine();el.textContent=t.firstChild.textContent}}catch(e){}}
-const siteHomeLine=()=>{const h=S.siteHome;if(!LOCALAPI||!h||h.people==null)return `<a class="sub pcline" id="siteLine" href="#site">Site: tany.im visitors</a>`;
-  return `<a class="sub pcline" id="siteLine" href="#site">Site yesterday: ${h.people} ${h.people===1?"person":"people"} · ${h.contacts} ${h.contacts===1?"inquiry":"inquiries"}${h.top?` · top: ${esc(h.top)}`:""}</a>`};
-async function siteAct(what,body,msg){
-  if(S.siteBusy)return;S.siteBusy=what;render();
-  try{const r=await api("POST","/api/site/"+what,body||{});if(msg)toast(msg);await siteLoad();return r}catch(e){toast("Could not finish. Please check the Desk server")}
-  finally{S.siteBusy="";if(viewId()==="site")render()}
-}
-const siteNum=n=>n==null?"—":Math.round(n).toLocaleString("en-US");
-const sitePct=n=>n==null?"—":(n*100).toFixed(n<0.1?1:0)+"%";
-const siteDur=ms=>{if(ms==null)return "—";const s=Math.round(ms/1000);return s<60?`${s} sec`:`${Math.floor(s/60)} min ${s%60} sec`};
-function siteDelta(a,b,fmt){if(a==null||b==null||(!a&&!b))return "";if(!b)return `<span class="sub">new this period</span>`;
-  const d=(a-b)/b;return `<span class="sub">${d>=0?"↑":"↓"} ${Math.abs(Math.round(d*100))}% vs before (${fmt?fmt(b):siteNum(b)})</span>`}
-function siteRows(list,label,opt){opt=opt||{};if(!list||!list.length)return `<p class="sub">${opt.empty||"Nothing yet."}</p>`;
-  const top=Math.max(1,...list.map(x=>x[opt.key||"n"]||0));
-  return `<div class="strows">${list.map(x=>{const n=x[opt.key||"n"]||0;return `<div class="strow"><span class="uname">${esc(x[label]??"")}${opt.meta?`<small class="sub cumeta">${opt.meta(x)}</small>`:""}<i class="stbar" style="width:${Math.max(2,n/top*100)}%"></i></span><span class="n">${opt.fmt?opt.fmt(n,x):siteNum(n)}</span></div>`}).join("")}</div>`}
-function siteBars(daily,key){const top=Math.max(1,...daily.map(d=>d[key]||0));
-  const bars=daily.map(d=>`<div class="cubar" title="${d.date} · ${d[key]}"><span class="cur" style="height:${(d[key]||0)/top*100}%"></span></div>`).join("");
-  const md=s=>new Date(s+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"});
-  return `<div class="cubars">${bars}</div><div class="cuaxis"><span>${daily.length?md(daily[0].date):""}</span><span>Tallest ${siteNum(top)}</span><span>${daily.length?md(daily[daily.length-1].date):""}</span></div>`}
-function siteHeat(pts,label){
-  if(!pts||!pts.length)return `<div class="sheatbox"><p class="sub">${label}: no clicks yet</p></div>`;
-  const by={};pts.forEach(p=>{if(p[3])(by[p[3]]=by[p[3]]||[]).push(p[1])});
-  const marks=Object.entries(by).map(([k,ys])=>{ys.sort((a,b)=>a-b);return [k,ys[Math.floor(ys.length/2)]]}).sort((a,b)=>a[1]-b[1]);
-  const shown=[];marks.forEach(m=>{if(!shown.length||m[1]-shown[shown.length-1][1]>0.04)shown.push(m)});
-  return `<div class="sheatbox"><p class="sub">${label} · ${pts.length} clicks</p><div class="sheat">${pts.map(p=>`<i class="${p[2]?"":"dead"}" style="left:${(p[0]*100).toFixed(1)}%;top:${(p[1]*100).toFixed(1)}%"></i>`).join("")}${shown.map(m=>`<span class="sheatl" style="top:${(m[1]*100).toFixed(1)}%">${esc(m[0].replace(/^case:/,""))}</span>`).join("")}</div></div>`}
-function siteView(){
-  const E=esc,d=S.site,head=sub=>`<div><p class="eyebrow">Site · tany.im</p>${sub}</div>`;
-  if(S.siteErr&&!d)return `<div class="money">${head(`<h1>Could not load</h1><p class="sub">Restarting the Desk server may fix it.</p>`)}</div>`;
-  if(!d)return `<div class="money">${head(`<h1>Counting…</h1>`)}</div>`;
-  const n=d.now,p=d.prev,st=d.state||{},tab=S.siteTab;
-  const periods=[["today","Today"],["7","7 days"],["30","30 days"],["90","90 days"],["custom","Custom"]];
-  const pulled=st.pulled?new Date(st.pulled).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}):"never";
-  let h=`<div class="money" data-noauto>`+head(`<h1>${siteNum(n.reach)} ${n.reach===1?"person":"people"} · ${siteNum(n.contacts)} ${n.contacts===1?"inquiry":"inquiries"}</h1><p class="sub" style="margin:var(--s1) 0 0">${E(d.period.from)}${d.period.to!==d.period.from?" – "+E(d.period.to):""} · pulled at ${E(pulled)}, every 15 minutes${st.error?` · <b>${E(st.error)}</b>`:""}</p>`);
-  h+=`<div class="nsgo"><div class="chips" role="group" aria-label="Period">${periods.map(([k,l])=>`<button class="chip" data-sitep="${k}" aria-pressed="${S.siteP===k}">${l}</button>`).join("")}</div><button class="btn sm" data-siterefresh ${S.siteBusy?"disabled":""}>${S.siteBusy==="refresh"?"Pulling…":"Pull now"}</button></div>`;
-  if(S.siteP==="custom")h+=`<div class="nsgo"><input type="date" id="siteFrom" value="${E(S.siteFrom||d.period.from)}" aria-label="From"><input type="date" id="siteTo" value="${E(S.siteTo||d.period.to)}" aria-label="To"><button class="btn sm" data-sitecustom>Show</button></div>`;
-  if(st.gap)h+=`<p class="cunote sub">${E(st.gap)}</p>`;
-  h+=`<div class="chips stabs" role="tablist" aria-label="Site sections">${SITETABS.map(([k,l])=>`<button class="chip" role="tab" data-sitetab="${k}" aria-pressed="${tab===k}" aria-selected="${tab===k}">${l}</button>`).join("")}</div>`;
-  if(tab==="overview")h+=siteOverview(d);
-  if(tab==="content")h+=siteContent(d);
-  if(tab==="conversion")h+=siteConversion(d);
-  if(tab==="ux")h+=siteUx(d);
-  if(tab==="seo")h+=siteSeo(d);
-  return h+`</div>`;
-}
-function siteOverview(d){
-  const n=d.now,p=d.prev,stat=(label,val,sub)=>`<div class="custat"><span class="sub">${label}</span><b>${val}</b>${sub||""}</div>`;
-  let h=mpanel("At a glance",`Compared with ${esc(d.period.prevFrom)} – ${esc(d.period.prevTo)}`,`<div class="stgrid">
-    ${stat("People",siteNum(n.reach),siteDelta(n.reach,p.reach))}${stat("Inquiries",siteNum(n.contacts),siteDelta(n.contacts,p.contacts))}
-    ${stat("Inquiry rate",sitePct(n.contactRate),`<span class="sub">of ${siteNum(n.visits)} visits with cookies</span>`)}${stat("Page views",siteNum(n.pageviews),siteDelta(n.pageviews,p.pageviews))}
-    ${stat("Engaged visits",sitePct(n.engagedRate),`<span class="sub">10 sec or more, 2 pages, or an inquiry</span>`)}${stat("Time per visit",siteDur(n.avgEngMs),"")}
-    ${stat("New / returning",`${siteNum(n.newVisitors)} / ${siteNum(n.returning)}`,"")}${stat("Without cookies",siteNum(n.anonPageviews),`<span class="sub">page views before or without consent</span>`)}</div>`);
-  h+=mpanel("People by day","",siteBars(d.daily,"people"));
-  h+=`<div class="stduo">`+mpanel("Channels","First page of each visit",siteRows(d.channels,"name",{meta:x=>x.contacts?`${x.contacts} inquir${x.contacts>1?"ies":"y"}`:""}))
-    +mpanel("Sources","",siteRows(d.sources,"name"))+`</div>`;
-  h+=`<div class="stduo">`+mpanel("Countries","",siteRows(d.countries,"name"))+mpanel("Cities","",siteRows(d.cities,"name"))+`</div>`;
-  const orgs=(d.orgs||[]).filter(o=>!o.isp);
-  h+=mpanel("Organisations","Network owners that look like companies or schools, not home or mobile providers",siteRows(orgs,"name",{empty:"None yet. Home and phone networks are left out."}));
-  h+=`<div class="stduo">`+mpanel("Devices","",siteRows(d.devices,"name"))+mpanel("Browsers","",siteRows(d.browsers,"name"))+`</div>`;
-  h+=`<div class="stduo">`+mpanel("Systems","",siteRows(d.os,"name"))+mpanel("Screen widths","",siteRows(d.widths,"name"))+`</div>`;
-  h+=`<div class="stduo">`+mpanel("Languages","",siteRows(d.langs,"name"))+mpanel("Hours","Mac time",`<div class="cubars">${d.hours.map((x,i)=>`<div class="cubar" title="${i}:00 · ${x}"><span class="cur" style="height:${x/Math.max(1,...d.hours)*100}%"></span></div>`).join("")}</div><div class="cuaxis"><span>0</span><span>6</span><span>12</span><span>18</span><span>23</span></div>`)+`</div>`;
-  const c=d.consent;h+=mpanel("Cookie banner",`${siteNum(c.shown)} shown`,`<div class="strows">${[["Allow all",c.allowAll],["Analytics only",c.analyticsOnly],["Reject",c.rejected]].map(([k,v])=>`<div class="strow"><span class="uname">${k}<i class="stbar" style="width:${c.shown?Math.max(2,v/c.shown*100):2}%"></i></span><span class="n">${siteNum(v)}${c.shown?` · ${sitePct(v/c.shown)}`:""}</span></div>`).join("")}</div><p class="sub">Visits with recording on: ${siteNum(c.recorded)}${d.clarity?` · <a href="https://clarity.microsoft.com/projects/view/${esc(d.clarity)}/dashboard" target="_blank" rel="noopener">Open Clarity recordings</a>`:""}</p>`);
-  h+=mpanel("Recent visits","With cookies allowed, newest first",d.recent.length?d.recent.map(v=>`<div class="strow"><span class="uname">${new Date(v.at).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})} · ${esc(v.source)}${v.contact?" · <b>inquiry</b>":""}<small class="sub cumeta">${[v.city,v.cc,v.org,v.dev,v.visit>1?`visit ${v.visit}`:"first visit",v.cases.length?"read: "+v.cases.join(", "):""].filter(Boolean).map(esc).join(" · ")}</small></span><span class="n">${v.pages} pg · ${siteDur(v.ms)}</span></div>`).join(""):`<p class="sub">No visits with cookies yet.</p>`);
-  h+=siteSettings(d);
-  return h;
-}
-function siteContent(d){
-  let h=mpanel("Case studies","Time on screen, most first",siteRows(d.cases.map(x=>({...x,name:x.name.slice(5)})),"name",{key:"ms",fmt:(v,x)=>`${siteDur(v)}`,meta:x=>`${x.visits} visit${x.visits===1?"":"s"} · ${siteDur(x.avgMs)} each`,empty:"No reading time yet."}));
-  h+=mpanel("Sections","Home page, time on screen",siteRows(d.sections,"name",{key:"ms",fmt:v=>siteDur(v),meta:x=>`${x.visits} visit${x.visits===1?"":"s"}`}));
-  h+=mpanel("How far people read","Home page, share of page views with cookies",`<div class="strows">${d.scroll.map(s=>`<div class="strow"><span class="uname">${s.pct}%<i class="stbar" style="width:${Math.max(2,(s.share||0)*100)}%"></i></span><span class="n">${sitePct(s.share)}</span></div>`).join("")}</div>`);
-  h+=mpanel("Where people click","Home page. Dim dots: clicks on things that are not buttons or links",`<div class="sheats">${siteHeat(d.heat.desktop,"Wide screens")}${siteHeat(d.heat.mobile,"Phones")}</div>`);
-  h+=mpanel("Most clicked","",siteRows(d.clickTop.map(x=>({...x,name:x.el+(x.sec?" · "+x.sec:"")})),"name"));
-  h+=`<div class="stduo">`+mpanel("Pages","",siteRows(d.pages,"path"))+mpanel("Copied text",`Selections: ${siteNum(d.selects)} · Prints: ${siteNum(d.prints)}`,siteRows(d.copies,"text",{empty:"Nothing copied yet."}))+`</div>`;
-  return h;
-}
-function siteConversion(d){
-  const f=d.funnel,top=Math.max(1,f[0].n);
-  let h=mpanel("Path to an inquiry","Visits with cookies",`<div class="strows">${f.map((s,i)=>`<div class="strow"><span class="uname">${s.step}<i class="stbar" style="width:${Math.max(2,s.n/top*100)}%"></i>${i?`<small class="sub cumeta">${f[i-1].n?sitePct(s.n/f[i-1].n):"—"} of the step before</small>`:""}</span><span class="n">${siteNum(s.n)}</span></div>`).join("")}</div>`);
-  h+=`<div class="stduo">`+mpanel("How people got in touch","",siteRows(d.contactKinds,"name",{empty:"No inquiries yet."}))+mpanel("Links out","",siteRows(d.outbound,"to",{empty:"No clicks to other sites yet."}))+`</div>`;
-  h+=mpanel("Campaigns (UTM)","Visits and inquiries from tagged links",d.campaigns.length?`<div class="strows">${d.campaigns.map(c=>`<div class="strow"><span class="uname">${esc(c.name)}</span><span class="n">${siteNum(c.visits)} · ${siteNum(c.contacts)} inq.</span></div>`).join("")}</div>`:`<p class="sub">No tagged visits yet. Make a link below.</p>`);
-  h+=mpanel("Make a tagged link","Use it in a message or a post to see what it brings",`<div class="nsgo sutm"><input id="utmSource" placeholder="Where (e.g. linkedin)" aria-label="Source"><input id="utmMedium" placeholder="Kind (e.g. social, email)" aria-label="Medium"><input id="utmCampaign" placeholder="Campaign (optional)" aria-label="Campaign"><button class="btn primary sm" data-siteutm>Make link</button></div>${S.siteUtm?`<div class="nsgo"><code class="sutmurl">${esc(S.siteUtm)}</code><button class="btn sm" data-siteutmcopy>Copy</button></div>`:""}`);
-  if(d.forms.started||d.formQuits.length)h+=mpanel("Forms",`${d.forms.started} started · ${d.forms.sent} sent`,siteRows(d.formQuits.map(x=>({...x,name:`${x.form}: ${x.field}`})),"name",{empty:"Nobody left a form half done."}));
-  if(d.downloads.length)h+=mpanel("Downloads","",siteRows(d.downloads,"file"));
-  return h;
-}
-function siteUx(d){
-  const u=d.ux,V=u.visits||0;
-  const stat=(label,val,sub)=>`<div class="custat"><span class="sub">${label}</span><b>${val}</b><span class="sub">${sub}</span></div>`;
-  let h=mpanel("Signs of trouble",`Out of ${siteNum(V)} visits with cookies`,`<div class="stgrid">${stat("Rage clicks",siteNum(u.rageN),"3 fast clicks in one spot")}${stat("Dead clicks",siteNum(u.deadN),"clicks where nothing happened")}${stat("Back and forth",siteNum(u.xscroll),"scrolling up and down fast")}${stat("Quick backs",siteNum(u.qback),"left and came back within seconds")}</div>`);
-  h+=`<div class="stduo">`+mpanel("Rage clicks on","",siteRows(u.rage.map(x=>({...x,name:x.el+(x.sec?" · "+x.sec:"")})),"name",{empty:"None."}))+mpanel("Dead clicks on","",siteRows(u.dead.map(x=>({...x,name:x.el+(x.sec?" · "+x.sec:"")})),"name",{empty:"None."}))+`</div>`;
-  const word={good:"Good","needs improvement":"Needs work",poor:"Poor"};
-  h+=mpanel("Speed (Core Web Vitals)","The 75th percentile, as Google judges it",`<div class="strows">${d.vitals.map(v=>`<div class="strow"><span class="uname">${v.name} <span class="sub">${v.n} page views · good up to ${v.goodAt}${v.unit}</span><small class="sub cumeta">${v.n?`Good ${v.good} · needs work ${v.ni} · poor ${v.poor}`:"No data yet"}</small></span><span class="n">${v.p75==null?"—":v.unit?Math.round(v.p75)+" "+v.unit:v.p75}${v.rating?`<small class="sub cumeta svit-${v.rating==="good"?"good":"warn"}">${word[v.rating]}</small>`:""}</span></div>`).join("")}</div>`);
-  h+=`<div class="stduo">`+mpanel("Errors on the page","",siteRows(d.errors,"what",{empty:"No errors."}))+mpanel("Missing pages (404)","",siteRows(d.notFound,"path",{empty:"None."}))+`</div>`;
-  h+=mpanel("Recordings",d.clarity?"Microsoft Clarity":"Not set up",d.clarity?`<p class="sub">${siteNum(d.consent.recorded)} visits allowed recording. <a href="https://clarity.microsoft.com/projects/view/${esc(d.clarity)}/impressions" target="_blank" rel="noopener">Open recordings</a> · <a href="https://clarity.microsoft.com/projects/view/${esc(d.clarity)}/heatmaps" target="_blank" rel="noopener">Clarity heat maps</a></p>`:`<p class="sub">Add the Clarity project id under Settings on the Overview tab.</p>`);
-  return h;
-}
-function siteSeo(d){
-  const g=d.gsc||{};let h="";
-  if(!g.connected)h+=mpanel("Search Console","Not connected",`<p class="sub">Connect once with your Google account (read only). Google's page opens in your browser.</p><div class="nsgo"><button class="btn primary sm" data-sitegscconnect ${S.siteBusy?"disabled":""}>Connect Search Console</button></div>`);
-  else if(g.error&&!g.clicks&&g.clicks!==0)h+=mpanel("Search Console",esc(g.error),`<div class="nsgo"><button class="btn sm" data-sitegsc ${S.siteBusy?"disabled":""}>${S.siteBusy==="gsc"?"Reading…":"Read again"}</button><button class="btn sm" data-sitegscconnect>Connect again</button></div>`);
-  else if(!g.daily)h+=mpanel("Search Console",`Connected · ${esc(g.property)}`,`<p class="sub">No numbers yet. Google shows them 2–3 days after a site is added, then Desk reads them every morning.</p><div class="nsgo"><button class="btn sm" data-sitegsc ${S.siteBusy?"disabled":""}>${S.siteBusy==="gsc"?"Reading…":"Read again"}</button></div>`);
-  else{
-    const stat=(label,val)=>`<div class="custat"><span class="sub">${label}</span><b>${val}</b></div>`;
-    h+=mpanel("Google search",`${esc(g.property)} · data up to ${esc(g.lastDate||"")} (Google runs 2–3 days behind)`,`<div class="stgrid">${stat("Clicks",siteNum(g.clicks))}${stat("Shown",siteNum(g.impr))}${stat("Click rate",sitePct(g.ctr))}${stat("Average rank",g.pos??"—")}</div>${g.daily&&g.daily.length?siteBars(g.daily.map(x=>({date:x.date,v:x.impr})),"v"):""}<div class="nsgo"><button class="btn sm" data-sitegsc ${S.siteBusy?"disabled":""}>${S.siteBusy==="gsc"?"Reading…":"Read again"}</button></div>`);
-    const qrow=x=>`<div class="strow sq"><span class="uname">${esc(x.name)}</span><span class="n">${siteNum(x.clicks)}</span><span class="n">${siteNum(x.impr)}</span><span class="n">${x.pos??"—"}</span></div>`;
-    const qhead=`<div class="strow sq uhead"><span></span><span class="n">Clicks</span><span class="n">Shown</span><span class="n">Rank</span></div>`;
-    h+=mpanel("Search words","Most shown first",g.queries&&g.queries.length?qhead+g.queries.map(qrow).join(""):`<p class="sub">No search words yet. New sites take a few weeks.</p>`);
-    h+=`<div class="stduo">`+mpanel("Pages in search","",g.pages&&g.pages.length?qhead+g.pages.map(x=>qrow({...x,name:x.name.replace(/^https:\/\/tany\.im/,"")||"/"})).join(""):`<p class="sub">Nothing yet.</p>`)+mpanel("Countries in search","",g.countries&&g.countries.length?qhead+g.countries.map(qrow).join(""):`<p class="sub">Nothing yet.</p>`)+`</div>`;
-  }
-  h+=mpanel("Crawlers and AI",`${siteNum(d.aiVisits)} visits from AI crawlers`,siteRows(d.bots,"name",{meta:x=>x.ai?"AI":"",empty:"No crawler visits yet."})+(d.botPages.length?`<p class="sub">Pages they read most: ${d.botPages.slice(0,5).map(x=>esc(x.path)+" ("+x.n+")").join(", ")}</p>`:""));
-  const a=d.audit||{},lvl={fix:"Fix",check:"Check",ok:"OK"};
-  const items=(a.pages||[]).flatMap(pg=>(pg.items||[]).map(i=>({...i,where:pg.path}))).concat((a.site||[]).map(i=>({...i,where:"site"})));
-  h+=mpanel("Page check",a.checked?`Checked ${new Date(a.checked).toLocaleDateString("en-US",{month:"short",day:"numeric"})} · once a week`:"Not checked yet",
-    (items.length?`<div class="strows">${items.sort((x,y)=>"fco".indexOf(x.level[0])-"fco".indexOf(y.level[0])).map(i=>`<div class="strow"><span class="uname">${esc(i.msg)}<small class="sub cumeta">${esc(i.where)}</small></span><span class="n ${i.level==="ok"?"sub":""}">${lvl[i.level]||i.level}</span></div>`).join("")}</div>`:"")
-    +`<div class="nsgo"><button class="btn sm" data-siteaudit ${S.siteBusy?"disabled":""}>${S.siteBusy==="audit"?"Checking…":"Check now"}</button></div>`);
-  return h;
-}
-function siteSettings(d){
-  return mpanel("Settings","",`<div class="nsgo"><label class="sub" for="siteClarity">Clarity project id</label><input id="siteClarity" value="${esc(d.clarity||"")}" placeholder="e.g. abcd1234ef" size="14"><button class="btn sm" data-siteclarity>Save</button></div>
-    <p class="sub">The id also has to be in the site's tag (t.js). <a href="https://tany.im/?notrack" target="_blank" rel="noopener">Stop counting this browser</a> — open it once in each browser you use.</p>`);
-}
-document.addEventListener("click",async e=>{
-  const t=e.target.closest?.("[data-sitep],[data-sitetab],[data-siterefresh],[data-sitecustom],[data-siteutm],[data-siteutmcopy],[data-sitegsc],[data-sitegscconnect],[data-siteaudit],[data-siteclarity]");if(!t)return;
-  if(t.dataset.sitep){S.siteP=t.dataset.sitep;S.site=null;if(S.siteP!=="custom")siteLoad();render();if(S.siteP==="custom")siteLoad();return}
-  if(t.dataset.sitetab){S.siteTab=t.dataset.sitetab;render();return}
-  if(t.hasAttribute("data-siterefresh"))return siteAct("refresh",{},"Pulled");
-  if(t.hasAttribute("data-sitecustom")){S.siteFrom=$("#siteFrom").value;S.siteTo=$("#siteTo").value;S.site=null;render();return siteLoad()}
-  if(t.hasAttribute("data-siteutm")){const src=$("#utmSource").value.trim();if(!src){toast("Write where the link goes first");return}
-    try{const r=await api("POST","/api/site/utm",{source:src,medium:$("#utmMedium").value,campaign:$("#utmCampaign").value});S.siteUtm=r.url;render()}catch(err){toast("Could not make the link")}return}
-  if(t.hasAttribute("data-siteutmcopy")){toast(await copyText(S.siteUtm)?"📋 Copied":"Could not copy");return}
-  if(t.hasAttribute("data-sitegsc"))return siteAct("gsc",{},"Read from Search Console");
-  if(t.hasAttribute("data-sitegscconnect")){try{await api("POST","/api/site/gsc-connect",{});toast("Google's page opened in your browser")}catch(err){toast("Could not start")}return}
-  if(t.hasAttribute("data-siteaudit"))return siteAct("audit",{},"Checked");
-  if(t.hasAttribute("data-siteclarity")){try{await api("PUT","/api/site/settings",{clarity:$("#siteClarity").value.trim()});toast("Saved");siteLoad()}catch(err){toast("That does not look like a Clarity id")}}
-});
-setInterval(()=>{if(viewId()==="site"&&!document.hidden)siteLoad()},120000);
-if(LOCALAPI){fpHomeLoad();setInterval(()=>{if(viewId()==="home"&&!document.hidden)fpHomeLoad()},30*60000)}
-if(LOCALAPI){siteHomeLoad();setInterval(()=>{if(viewId()==="home"&&!document.hidden)siteHomeLoad()},15*60000)}
 function wireNs(){const b=$("#nsRun");if(b)b.onclick=nsStart}
 /* Wi-Fi QR (#wifi): a code that joins the Wi-Fi this Mac is on. desk/wifi_qr.py reads the name and asks the keychain for the
    password; the page gets only the rows to draw, never the password, and drops them on Hide or when the screen changes. */
@@ -6441,7 +6373,6 @@ async function trOpen(e){
   render();
 }
 function trView(){
-  {const m=/^#task\/(.+)$/.exec(location.hash||""), tk=m&&findTask(decodeURIComponent(m[1]));if(tk){history.replaceState(null,"","#tasks");openTask(tk.id)}} // the link at the end of a calendar event's description
   const d=S.tr,head=`<h1>Transcribe</h1>`;
   if(S.trErr)return `<div class="money trp">${head}<p class="due">Could not load. Restarting the server may help.</p></div>`;
   if(!d)return `<div class="money trp">${head}<p class="due">Loading…</p></div>`;
@@ -8142,6 +8073,8 @@ function wire(){
   $("#newTask")&&($("#newTask").onclick=()=>openTask(null));
   document.querySelectorAll("[data-topen]").forEach(b=>b.onclick=()=>openTask(b.dataset.topen));
   document.querySelectorAll("[data-rtask]").forEach(b=>b.onclick=()=>replyToTask(b.dataset.rtask,b.dataset.back==="1"));
+  document.querySelectorAll("[data-rdone]").forEach(b=>b.onclick=()=>setTaskStatus(b.dataset.rdone,"done"));
+  document.querySelectorAll("[data-rarch]").forEach(b=>b.onclick=()=>setTaskStatus(b.dataset.rarch,"archived"));
   const rwB=$("#rwDone");if(rwB)rwB.onclick=()=>{rwB.disabled=true;repliesDone()};
   document.querySelectorAll("[data-story]").forEach(b=>b.onclick=()=>{S.ed=b.dataset.ed;S.region="All";S.focus=+b.dataset.story;if(location.hash==="#news")render();else location.hash="news"});
   $("#digest")&&($("#digest").ontoggle=e=>{S.digestOpen=e.target.open});
@@ -8594,6 +8527,233 @@ async function uLoad(force){
   S.uBusy=true;S.uAt=Date.now();
   try{const v=await api("GET","/api/usage?period="+(S.uq||"14")),same=JSON.stringify(v)===JSON.stringify(S.usage);S.usage=v;S.uErr=false;S.uBusy=false;if(!same&&viewId()==="usage")render()}
   catch(e){const was=S.uErr;S.uErr=true;S.uBusy=false;if(!was&&viewId()==="usage")render()}
+}
+/* Claude Usage: desk/claude_usage.py counts the local conversation records every 5 minutes (no AI) and adds ~/ClaudeUsage/ledger.json for history. Read only. */
+async function cuLoad(force){
+  if(!LOCALAPI||S.cuBusy||(!force&&S.cu&&Date.now()-(S.cuAt||0)<60000))return;
+  S.cuBusy=true;S.cuAt=Date.now();
+  try{const v=await api("GET","/api/claude-usage"),same=JSON.stringify(v)===JSON.stringify(S.cu);S.cu=v;S.cuErr=false;S.cuBusy=false;if(!same&&viewId()==="claudeusage")render()}
+  catch(e){const was=S.cuErr;S.cuErr=true;S.cuBusy=false;if(!was&&viewId()==="claudeusage")render()}
+}
+/* Site: tany.im analytics. The tag on the site and its Worker store events on Cloudflare; desk/site_sync.py pulls them every 15 minutes
+   and does all the counting. This page only shows the numbers. Search Console is read with Tatsuki's own Google sign-in (read only). */
+S.site=null;S.siteP="7";S.siteTab="overview";S.siteBusy="";S.siteHome=null;
+const SITETABS=[["overview","Overview"],["content","Content"],["conversion","Conversion"],["ux","UX"],["seo","SEO"]];
+async function siteLoad(){
+  if(!LOCALAPI)return;
+  try{const q=S.siteP==="custom"&&S.siteFrom&&S.siteTo?`custom&from=${S.siteFrom}&to=${S.siteTo}`:S.siteP;
+    const v=await api("GET","/api/site?period="+q),same=JSON.stringify(v)===JSON.stringify(S.site);S.site=v;S.siteErr=false;if(!same&&viewId()==="site")render()}
+  catch(e){const was=S.siteErr;S.siteErr=true;if(!was&&viewId()==="site")render()}
+}
+async function siteHomeLoad(){if(!LOCALAPI)return;try{S.siteHome=await api("GET","/api/site/home");const el=$("#siteLine");if(el){const t=document.createElement("div");t.innerHTML=siteHomeLine();el.textContent=t.firstChild.textContent}}catch(e){}}
+const siteHomeLine=()=>{const h=S.siteHome;if(!LOCALAPI||!h||h.people==null)return `<a class="sub pcline" id="siteLine" href="#site">Site: tany.im visitors</a>`;
+  return `<a class="sub pcline" id="siteLine" href="#site">Site yesterday: ${h.people} ${h.people===1?"person":"people"} · ${h.contacts} ${h.contacts===1?"inquiry":"inquiries"}${h.top?` · top: ${esc(h.top)}`:""}</a>`};
+async function siteAct(what,body,msg){
+  if(S.siteBusy)return;S.siteBusy=what;render();
+  try{const r=await api("POST","/api/site/"+what,body||{});if(msg)toast(msg);await siteLoad();return r}catch(e){toast("Could not finish. Please check the Desk server")}
+  finally{S.siteBusy="";if(viewId()==="site")render()}
+}
+const siteNum=n=>n==null?"—":Math.round(n).toLocaleString("en-US");
+const sitePct=n=>n==null?"—":(n*100).toFixed(n<0.1?1:0)+"%";
+const siteDur=ms=>{if(ms==null)return "—";const s=Math.round(ms/1000);return s<60?`${s} sec`:`${Math.floor(s/60)} min ${s%60} sec`};
+function siteDelta(a,b,fmt){if(a==null||b==null||(!a&&!b))return "";if(!b)return `<span class="sub">new this period</span>`;
+  const d=(a-b)/b;return `<span class="sub">${d>=0?"↑":"↓"} ${Math.abs(Math.round(d*100))}% vs before (${fmt?fmt(b):siteNum(b)})</span>`}
+function siteRows(list,label,opt){opt=opt||{};if(!list||!list.length)return `<p class="sub">${opt.empty||"Nothing yet."}</p>`;
+  const top=Math.max(1,...list.map(x=>x[opt.key||"n"]||0));
+  return `<div class="strows">${list.map(x=>{const n=x[opt.key||"n"]||0;return `<div class="strow"><span class="uname">${esc(x[label]??"")}${opt.meta?`<small class="sub cumeta">${opt.meta(x)}</small>`:""}<i class="stbar" style="width:${Math.max(2,n/top*100)}%"></i></span><span class="n">${opt.fmt?opt.fmt(n,x):siteNum(n)}</span></div>`}).join("")}</div>`}
+function siteBars(daily,key){const top=Math.max(1,...daily.map(d=>d[key]||0));
+  const bars=daily.map(d=>`<div class="cubar" title="${d.date} · ${d[key]}"><span class="cur" style="height:${(d[key]||0)/top*100}%"></span></div>`).join("");
+  const md=s=>new Date(s+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"});
+  return `<div class="cubars">${bars}</div><div class="cuaxis"><span>${daily.length?md(daily[0].date):""}</span><span>Tallest ${siteNum(top)}</span><span>${daily.length?md(daily[daily.length-1].date):""}</span></div>`}
+function siteHeat(pts,label){
+  if(!pts||!pts.length)return `<div class="sheatbox"><p class="sub">${label}: no clicks yet</p></div>`;
+  const by={};pts.forEach(p=>{if(p[3])(by[p[3]]=by[p[3]]||[]).push(p[1])});
+  const marks=Object.entries(by).map(([k,ys])=>{ys.sort((a,b)=>a-b);return [k,ys[Math.floor(ys.length/2)]]}).sort((a,b)=>a[1]-b[1]);
+  const shown=[];marks.forEach(m=>{if(!shown.length||m[1]-shown[shown.length-1][1]>0.04)shown.push(m)});
+  return `<div class="sheatbox"><p class="sub">${label} · ${pts.length} clicks</p><div class="sheat">${pts.map(p=>`<i class="${p[2]?"":"dead"}" style="left:${(p[0]*100).toFixed(1)}%;top:${(p[1]*100).toFixed(1)}%"></i>`).join("")}${shown.map(m=>`<span class="sheatl" style="top:${(m[1]*100).toFixed(1)}%">${esc(m[0].replace(/^case:/,""))}</span>`).join("")}</div></div>`}
+function siteView(){
+  const E=esc,d=S.site,head=sub=>`<div><p class="eyebrow">Site · tany.im</p>${sub}</div>`;
+  if(S.siteErr&&!d)return `<div class="money">${head(`<h1>Could not load</h1><p class="sub">Restarting the Desk server may fix it.</p>`)}</div>`;
+  if(!d)return `<div class="money">${head(`<h1>Counting…</h1>`)}</div>`;
+  const n=d.now,p=d.prev,st=d.state||{},tab=S.siteTab;
+  const periods=[["today","Today"],["7","7 days"],["30","30 days"],["90","90 days"],["custom","Custom"]];
+  const pulled=st.pulled?new Date(st.pulled).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"}):"never";
+  let h=`<div class="money" data-noauto>`+head(`<h1>${siteNum(n.reach)} ${n.reach===1?"person":"people"} · ${siteNum(n.contacts)} ${n.contacts===1?"inquiry":"inquiries"}</h1><p class="sub" style="margin:var(--s1) 0 0">${E(d.period.from)}${d.period.to!==d.period.from?" – "+E(d.period.to):""} · pulled at ${E(pulled)}, every 15 minutes${st.error?` · <b>${E(st.error)}</b>`:""}</p>`);
+  h+=`<div class="nsgo"><div class="chips" role="group" aria-label="Period">${periods.map(([k,l])=>`<button class="chip" data-sitep="${k}" aria-pressed="${S.siteP===k}">${l}</button>`).join("")}</div><button class="btn sm" data-siterefresh ${S.siteBusy?"disabled":""}>${S.siteBusy==="refresh"?"Pulling…":"Pull now"}</button></div>`;
+  if(S.siteP==="custom")h+=`<div class="nsgo"><input type="date" id="siteFrom" value="${E(S.siteFrom||d.period.from)}" aria-label="From"><input type="date" id="siteTo" value="${E(S.siteTo||d.period.to)}" aria-label="To"><button class="btn sm" data-sitecustom>Show</button></div>`;
+  if(st.gap)h+=`<p class="cunote sub">${E(st.gap)}</p>`;
+  h+=`<div class="chips stabs" role="tablist" aria-label="Site sections">${SITETABS.map(([k,l])=>`<button class="chip" role="tab" data-sitetab="${k}" aria-pressed="${tab===k}" aria-selected="${tab===k}">${l}</button>`).join("")}</div>`;
+  if(tab==="overview")h+=siteOverview(d);
+  if(tab==="content")h+=siteContent(d);
+  if(tab==="conversion")h+=siteConversion(d);
+  if(tab==="ux")h+=siteUx(d);
+  if(tab==="seo")h+=siteSeo(d);
+  return h+`</div>`;
+}
+function siteOverview(d){
+  const n=d.now,p=d.prev,stat=(label,val,sub)=>`<div class="custat"><span class="sub">${label}</span><b>${val}</b>${sub||""}</div>`;
+  let h=mpanel("At a glance",`Compared with ${esc(d.period.prevFrom)} – ${esc(d.period.prevTo)}`,`<div class="stgrid">
+    ${stat("People",siteNum(n.reach),siteDelta(n.reach,p.reach))}${stat("Inquiries",siteNum(n.contacts),siteDelta(n.contacts,p.contacts))}
+    ${stat("Inquiry rate",sitePct(n.contactRate),`<span class="sub">of ${siteNum(n.visits)} visits with cookies</span>`)}${stat("Page views",siteNum(n.pageviews),siteDelta(n.pageviews,p.pageviews))}
+    ${stat("Engaged visits",sitePct(n.engagedRate),`<span class="sub">10 sec or more, 2 pages, or an inquiry</span>`)}${stat("Time per visit",siteDur(n.avgEngMs),"")}
+    ${stat("New / returning",`${siteNum(n.newVisitors)} / ${siteNum(n.returning)}`,"")}${stat("Without cookies",siteNum(n.anonPageviews),`<span class="sub">page views before or without consent</span>`)}</div>`);
+  h+=mpanel("People by day","",siteBars(d.daily,"people"));
+  h+=`<div class="stduo">`+mpanel("Channels","First page of each visit",siteRows(d.channels,"name",{meta:x=>x.contacts?`${x.contacts} inquir${x.contacts>1?"ies":"y"}`:""}))
+    +mpanel("Sources","",siteRows(d.sources,"name"))+`</div>`;
+  h+=`<div class="stduo">`+mpanel("Countries","",siteRows(d.countries,"name"))+mpanel("Cities","",siteRows(d.cities,"name"))+`</div>`;
+  const orgs=(d.orgs||[]).filter(o=>!o.isp);
+  h+=mpanel("Organisations","Network owners that look like companies or schools, not home or mobile providers",siteRows(orgs,"name",{empty:"None yet. Home and phone networks are left out."}));
+  h+=`<div class="stduo">`+mpanel("Devices","",siteRows(d.devices,"name"))+mpanel("Browsers","",siteRows(d.browsers,"name"))+`</div>`;
+  h+=`<div class="stduo">`+mpanel("Systems","",siteRows(d.os,"name"))+mpanel("Screen widths","",siteRows(d.widths,"name"))+`</div>`;
+  h+=`<div class="stduo">`+mpanel("Languages","",siteRows(d.langs,"name"))+mpanel("Hours","Mac time",`<div class="cubars">${d.hours.map((x,i)=>`<div class="cubar" title="${i}:00 · ${x}"><span class="cur" style="height:${x/Math.max(1,...d.hours)*100}%"></span></div>`).join("")}</div><div class="cuaxis"><span>0</span><span>6</span><span>12</span><span>18</span><span>23</span></div>`)+`</div>`;
+  const c=d.consent;h+=mpanel("Cookie banner",`${siteNum(c.shown)} shown`,`<div class="strows">${[["Allow all",c.allowAll],["Analytics only",c.analyticsOnly],["Reject",c.rejected]].map(([k,v])=>`<div class="strow"><span class="uname">${k}<i class="stbar" style="width:${c.shown?Math.max(2,v/c.shown*100):2}%"></i></span><span class="n">${siteNum(v)}${c.shown?` · ${sitePct(v/c.shown)}`:""}</span></div>`).join("")}</div><p class="sub">Visits with recording on: ${siteNum(c.recorded)}${d.clarity?` · <a href="https://clarity.microsoft.com/projects/view/${esc(d.clarity)}/dashboard" target="_blank" rel="noopener">Open Clarity recordings</a>`:""}</p>`);
+  h+=mpanel("Recent visits","With cookies allowed, newest first",d.recent.length?d.recent.map(v=>`<div class="strow"><span class="uname">${new Date(v.at).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})} · ${esc(v.source)}${v.contact?" · <b>inquiry</b>":""}<small class="sub cumeta">${[v.city,v.cc,v.org,v.dev,v.visit>1?`visit ${v.visit}`:"first visit",v.cases.length?"read: "+v.cases.join(", "):""].filter(Boolean).map(esc).join(" · ")}</small></span><span class="n">${v.pages} pg · ${siteDur(v.ms)}</span></div>`).join(""):`<p class="sub">No visits with cookies yet.</p>`);
+  h+=siteSettings(d);
+  return h;
+}
+function siteContent(d){
+  let h=mpanel("Case studies","Time on screen, most first",siteRows(d.cases.map(x=>({...x,name:x.name.slice(5)})),"name",{key:"ms",fmt:(v,x)=>`${siteDur(v)}`,meta:x=>`${x.visits} visit${x.visits===1?"":"s"} · ${siteDur(x.avgMs)} each`,empty:"No reading time yet."}));
+  h+=mpanel("Sections","Home page, time on screen",siteRows(d.sections,"name",{key:"ms",fmt:v=>siteDur(v),meta:x=>`${x.visits} visit${x.visits===1?"":"s"}`}));
+  h+=mpanel("How far people read","Home page, share of page views with cookies",`<div class="strows">${d.scroll.map(s=>`<div class="strow"><span class="uname">${s.pct}%<i class="stbar" style="width:${Math.max(2,(s.share||0)*100)}%"></i></span><span class="n">${sitePct(s.share)}</span></div>`).join("")}</div>`);
+  h+=mpanel("Where people click","Home page. Dim dots: clicks on things that are not buttons or links",`<div class="sheats">${siteHeat(d.heat.desktop,"Wide screens")}${siteHeat(d.heat.mobile,"Phones")}</div>`);
+  h+=mpanel("Most clicked","",siteRows(d.clickTop.map(x=>({...x,name:x.el+(x.sec?" · "+x.sec:"")})),"name"));
+  h+=`<div class="stduo">`+mpanel("Pages","",siteRows(d.pages,"path"))+mpanel("Copied text",`Selections: ${siteNum(d.selects)} · Prints: ${siteNum(d.prints)}`,siteRows(d.copies,"text",{empty:"Nothing copied yet."}))+`</div>`;
+  return h;
+}
+function siteConversion(d){
+  const f=d.funnel,top=Math.max(1,f[0].n);
+  let h=mpanel("Path to an inquiry","Visits with cookies",`<div class="strows">${f.map((s,i)=>`<div class="strow"><span class="uname">${s.step}<i class="stbar" style="width:${Math.max(2,s.n/top*100)}%"></i>${i?`<small class="sub cumeta">${f[i-1].n?sitePct(s.n/f[i-1].n):"—"} of the step before</small>`:""}</span><span class="n">${siteNum(s.n)}</span></div>`).join("")}</div>`);
+  h+=`<div class="stduo">`+mpanel("How people got in touch","",siteRows(d.contactKinds,"name",{empty:"No inquiries yet."}))+mpanel("Links out","",siteRows(d.outbound,"to",{empty:"No clicks to other sites yet."}))+`</div>`;
+  h+=mpanel("Campaigns (UTM)","Visits and inquiries from tagged links",d.campaigns.length?`<div class="strows">${d.campaigns.map(c=>`<div class="strow"><span class="uname">${esc(c.name)}</span><span class="n">${siteNum(c.visits)} · ${siteNum(c.contacts)} inq.</span></div>`).join("")}</div>`:`<p class="sub">No tagged visits yet. Make a link below.</p>`);
+  h+=mpanel("Make a tagged link","Use it in a message or a post to see what it brings",`<div class="nsgo sutm"><input id="utmSource" placeholder="Where (e.g. linkedin)" aria-label="Source"><input id="utmMedium" placeholder="Kind (e.g. social, email)" aria-label="Medium"><input id="utmCampaign" placeholder="Campaign (optional)" aria-label="Campaign"><button class="btn primary sm" data-siteutm>Make link</button></div>${S.siteUtm?`<div class="nsgo"><code class="sutmurl">${esc(S.siteUtm)}</code><button class="btn sm" data-siteutmcopy>Copy</button></div>`:""}`);
+  if(d.forms.started||d.formQuits.length)h+=mpanel("Forms",`${d.forms.started} started · ${d.forms.sent} sent`,siteRows(d.formQuits.map(x=>({...x,name:`${x.form}: ${x.field}`})),"name",{empty:"Nobody left a form half done."}));
+  if(d.downloads.length)h+=mpanel("Downloads","",siteRows(d.downloads,"file"));
+  return h;
+}
+function siteUx(d){
+  const u=d.ux,V=u.visits||0;
+  const stat=(label,val,sub)=>`<div class="custat"><span class="sub">${label}</span><b>${val}</b><span class="sub">${sub}</span></div>`;
+  let h=mpanel("Signs of trouble",`Out of ${siteNum(V)} visits with cookies`,`<div class="stgrid">${stat("Rage clicks",siteNum(u.rageN),"3 fast clicks in one spot")}${stat("Dead clicks",siteNum(u.deadN),"clicks where nothing happened")}${stat("Back and forth",siteNum(u.xscroll),"scrolling up and down fast")}${stat("Quick backs",siteNum(u.qback),"left and came back within seconds")}</div>`);
+  h+=`<div class="stduo">`+mpanel("Rage clicks on","",siteRows(u.rage.map(x=>({...x,name:x.el+(x.sec?" · "+x.sec:"")})),"name",{empty:"None."}))+mpanel("Dead clicks on","",siteRows(u.dead.map(x=>({...x,name:x.el+(x.sec?" · "+x.sec:"")})),"name",{empty:"None."}))+`</div>`;
+  const word={good:"Good","needs improvement":"Needs work",poor:"Poor"};
+  h+=mpanel("Speed (Core Web Vitals)","The 75th percentile, as Google judges it",`<div class="strows">${d.vitals.map(v=>`<div class="strow"><span class="uname">${v.name} <span class="sub">${v.n} page views · good up to ${v.goodAt}${v.unit}</span><small class="sub cumeta">${v.n?`Good ${v.good} · needs work ${v.ni} · poor ${v.poor}`:"No data yet"}</small></span><span class="n">${v.p75==null?"—":v.unit?Math.round(v.p75)+" "+v.unit:v.p75}${v.rating?`<small class="sub cumeta svit-${v.rating==="good"?"good":"warn"}">${word[v.rating]}</small>`:""}</span></div>`).join("")}</div>`);
+  h+=`<div class="stduo">`+mpanel("Errors on the page","",siteRows(d.errors,"what",{empty:"No errors."}))+mpanel("Missing pages (404)","",siteRows(d.notFound,"path",{empty:"None."}))+`</div>`;
+  h+=mpanel("Recordings",d.clarity?"Microsoft Clarity":"Not set up",d.clarity?`<p class="sub">${siteNum(d.consent.recorded)} visits allowed recording. <a href="https://clarity.microsoft.com/projects/view/${esc(d.clarity)}/impressions" target="_blank" rel="noopener">Open recordings</a> · <a href="https://clarity.microsoft.com/projects/view/${esc(d.clarity)}/heatmaps" target="_blank" rel="noopener">Clarity heat maps</a></p>`:`<p class="sub">Add the Clarity project id under Settings on the Overview tab.</p>`);
+  return h;
+}
+function siteSeo(d){
+  const g=d.gsc||{};let h="";
+  if(!g.connected)h+=mpanel("Search Console","Not connected",`<p class="sub">Connect once with your Google account (read only). Google's page opens in your browser.</p><div class="nsgo"><button class="btn primary sm" data-sitegscconnect ${S.siteBusy?"disabled":""}>Connect Search Console</button></div>`);
+  else if(g.error&&!g.clicks&&g.clicks!==0)h+=mpanel("Search Console",esc(g.error),`<div class="nsgo"><button class="btn sm" data-sitegsc ${S.siteBusy?"disabled":""}>${S.siteBusy==="gsc"?"Reading…":"Read again"}</button><button class="btn sm" data-sitegscconnect>Connect again</button></div>`);
+  else if(!g.daily)h+=mpanel("Search Console",`Connected · ${esc(g.property)}`,`<p class="sub">No numbers yet. Google shows them 2–3 days after a site is added, then Desk reads them every morning.</p><div class="nsgo"><button class="btn sm" data-sitegsc ${S.siteBusy?"disabled":""}>${S.siteBusy==="gsc"?"Reading…":"Read again"}</button></div>`);
+  else{
+    const stat=(label,val)=>`<div class="custat"><span class="sub">${label}</span><b>${val}</b></div>`;
+    h+=mpanel("Google search",`${esc(g.property)} · data up to ${esc(g.lastDate||"")} (Google runs 2–3 days behind)`,`<div class="stgrid">${stat("Clicks",siteNum(g.clicks))}${stat("Shown",siteNum(g.impr))}${stat("Click rate",sitePct(g.ctr))}${stat("Average rank",g.pos??"—")}</div>${g.daily&&g.daily.length?siteBars(g.daily.map(x=>({date:x.date,v:x.impr})),"v"):""}<div class="nsgo"><button class="btn sm" data-sitegsc ${S.siteBusy?"disabled":""}>${S.siteBusy==="gsc"?"Reading…":"Read again"}</button></div>`);
+    const qrow=x=>`<div class="strow sq"><span class="uname">${esc(x.name)}</span><span class="n">${siteNum(x.clicks)}</span><span class="n">${siteNum(x.impr)}</span><span class="n">${x.pos??"—"}</span></div>`;
+    const qhead=`<div class="strow sq uhead"><span></span><span class="n">Clicks</span><span class="n">Shown</span><span class="n">Rank</span></div>`;
+    h+=mpanel("Search words","Most shown first",g.queries&&g.queries.length?qhead+g.queries.map(qrow).join(""):`<p class="sub">No search words yet. New sites take a few weeks.</p>`);
+    h+=`<div class="stduo">`+mpanel("Pages in search","",g.pages&&g.pages.length?qhead+g.pages.map(x=>qrow({...x,name:x.name.replace(/^https:\/\/tany\.im/,"")||"/"})).join(""):`<p class="sub">Nothing yet.</p>`)+mpanel("Countries in search","",g.countries&&g.countries.length?qhead+g.countries.map(qrow).join(""):`<p class="sub">Nothing yet.</p>`)+`</div>`;
+  }
+  h+=mpanel("Crawlers and AI",`${siteNum(d.aiVisits)} visits from AI crawlers`,siteRows(d.bots,"name",{meta:x=>x.ai?"AI":"",empty:"No crawler visits yet."})+(d.botPages.length?`<p class="sub">Pages they read most: ${d.botPages.slice(0,5).map(x=>esc(x.path)+" ("+x.n+")").join(", ")}</p>`:""));
+  const a=d.audit||{},lvl={fix:"Fix",check:"Check",ok:"OK"};
+  const items=(a.pages||[]).flatMap(pg=>(pg.items||[]).map(i=>({...i,where:pg.path}))).concat((a.site||[]).map(i=>({...i,where:"site"})));
+  h+=mpanel("Page check",a.checked?`Checked ${new Date(a.checked).toLocaleDateString("en-US",{month:"short",day:"numeric"})} · once a week`:"Not checked yet",
+    (items.length?`<div class="strows">${items.sort((x,y)=>"fco".indexOf(x.level[0])-"fco".indexOf(y.level[0])).map(i=>`<div class="strow"><span class="uname">${esc(i.msg)}<small class="sub cumeta">${esc(i.where)}</small></span><span class="n ${i.level==="ok"?"sub":""}">${lvl[i.level]||i.level}</span></div>`).join("")}</div>`:"")
+    +`<div class="nsgo"><button class="btn sm" data-siteaudit ${S.siteBusy?"disabled":""}>${S.siteBusy==="audit"?"Checking…":"Check now"}</button></div>`);
+  return h;
+}
+function siteSettings(d){
+  return mpanel("Settings","",`<div class="nsgo"><label class="sub" for="siteClarity">Clarity project id</label><input id="siteClarity" value="${esc(d.clarity||"")}" placeholder="e.g. abcd1234ef" size="14"><button class="btn sm" data-siteclarity>Save</button></div>
+    <p class="sub">The id also has to be in the site's tag (t.js). <a href="https://tany.im/?notrack" target="_blank" rel="noopener">Stop counting this browser</a> — open it once in each browser you use.</p>`);
+}
+document.addEventListener("click",async e=>{
+  const t=e.target.closest?.("[data-sitep],[data-sitetab],[data-siterefresh],[data-sitecustom],[data-siteutm],[data-siteutmcopy],[data-sitegsc],[data-sitegscconnect],[data-siteaudit],[data-siteclarity]");if(!t)return;
+  if(t.dataset.sitep){S.siteP=t.dataset.sitep;S.site=null;if(S.siteP!=="custom")siteLoad();render();if(S.siteP==="custom")siteLoad();return}
+  if(t.dataset.sitetab){S.siteTab=t.dataset.sitetab;render();return}
+  if(t.hasAttribute("data-siterefresh"))return siteAct("refresh",{},"Pulled");
+  if(t.hasAttribute("data-sitecustom")){S.siteFrom=$("#siteFrom").value;S.siteTo=$("#siteTo").value;S.site=null;render();return siteLoad()}
+  if(t.hasAttribute("data-siteutm")){const src=$("#utmSource").value.trim();if(!src){toast("Write where the link goes first");return}
+    try{const r=await api("POST","/api/site/utm",{source:src,medium:$("#utmMedium").value,campaign:$("#utmCampaign").value});S.siteUtm=r.url;render()}catch(err){toast("Could not make the link")}return}
+  if(t.hasAttribute("data-siteutmcopy")){toast(await copyText(S.siteUtm)?"📋 Copied":"Could not copy");return}
+  if(t.hasAttribute("data-sitegsc"))return siteAct("gsc",{},"Read from Search Console");
+  if(t.hasAttribute("data-sitegscconnect")){try{await api("POST","/api/site/gsc-connect",{});toast("Google's page opened in your browser")}catch(err){toast("Could not start")}return}
+  if(t.hasAttribute("data-siteaudit"))return siteAct("audit",{},"Checked");
+  if(t.hasAttribute("data-siteclarity")){try{await api("PUT","/api/site/settings",{clarity:$("#siteClarity").value.trim()});toast("Saved");siteLoad()}catch(err){toast("That does not look like a Clarity id")}}
+});
+setInterval(()=>{if(viewId()==="site"&&!document.hidden)siteLoad()},120000);
+if(LOCALAPI){fpHomeLoad();setInterval(()=>{if(viewId()==="home"&&!document.hidden)fpHomeLoad()},30*60000)}
+if(LOCALAPI){siteHomeLoad();setInterval(()=>{if(viewId()==="home"&&!document.hidden)siteHomeLoad()},15*60000)}
+async function cuRefresh(){
+  if(!LOCALAPI||S.cuBusy)return;
+  S.cuBusy=true;render();
+  try{S.cu=await api("POST","/api/claude-usage/refresh",{});S.cuErr=false;S.cuAt=Date.now()}catch(e){toast("Could not count again. Please check the server")}
+  S.cuBusy=false;if(viewId()==="claudeusage")render()
+}
+document.addEventListener("click",e=>{
+  const a=e.target.closest?.("[data-cuday]");if(a){S.cuDay=a.dataset.cuday;render();return}
+  if(e.target.closest?.("[data-curefresh]"))cuRefresh();
+});
+setInterval(()=>{if(viewId()==="claudeusage"&&!document.hidden)cuLoad()},60000);
+function cuView(){
+  const E=esc, d=S.cu||{}, L=d.live||{}, G=d.ledger||{}, day=S.cuDay||"today";
+  const usd=n=>"$"+(+n||0).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+  const tk=n=>{n=+n||0;return n>=1e6?(n/1e6).toFixed(1)+"M":n>=1e3?Math.round(n/1e3)+"K":String(n)};
+  const num=n=>Math.round(+n||0).toLocaleString("en-US");
+  const hm=s=>s?s.slice(11,16):"";
+  const md=s=>{if(!s)return "";const d=new Date(s.slice(0,10)+"T12:00:00");return d.toLocaleDateString("en-US",{month:"short",day:"numeric"})+" "+hm(s)};
+  const head=sub=>`<div><p class="eyebrow">Claude Usage</p>${sub}</div>`;
+  if(S.cuErr&&!S.cu)return `<div class="money">${head(`<h1>Could not load</h1><p class="sub">Restarting the Desk server may fix it.</p>`)}</div>`;
+  if(!S.cu)return `<div class="money">${head(`<h1>Counting…</h1><p class="sub">The first count reads the conversation records and can take a few seconds.</p>`)}</div>`;
+  if(L.error||!L.cards)return `<div class="money">${head(`<h1>Could not read the conversation records</h1><p class="sub">${E(L.error||"")}</p>`)}</div>`;
+  const C=L.cards, t=C.today;
+  const refresh=`<button class="btn sm" data-curefresh ${S.cuBusy?"disabled":""}>${S.cuBusy?"Counting…":"Count again now"}</button>`;
+  let h=`<div class="money" data-noauto>`+head(`<h1>Today ${usd(t.usd)}</h1><p class="sub" style="margin:var(--s1) 0 0">${tk(t.tok)} tokens · ${num(t.msgs)} replies · counted at ${E(hm(L.generated))}, every 5 minutes</p>`)+`<div class="nsgo">${refresh}</div>`;
+  const lim=(L.notices||[]).filter(n=>n.kind==="limit");
+  if(lim.length){const n=lim[0];h+=`<p class="cunote"><b>Plan limit:</b> ${E(n.text.replace(/\s*https?:\S+/,""))} <span class="sub">Last seen ${E(md(n.last))}${n.n>1?`, ${n.n} times since ${E(md(n.first))}`:""}</span></p>`}
+  const stat=(k,label,when)=>{const c=C[k];return `<div class="custat"><span class="sub">${label}</span><b>${usd(c.usd)}</b><span>${tk(c.tok)} tokens · ${num(c.msgs)} replies</span><span class="sub">Recurring ${usd(c.routine)} · Chats ${usd(c.chat)}</span>${when?`<span class="sub">${when}</span>`:""}</div>`};
+  h+=mpanel("Totals","Tokens include cache reads",`<div class="cugrid">${stat("today","Today",E(L.today))}${stat("yesterday","Yesterday",E(L.yesterday))}${stat("last5h","Last 5 hours","A rough guide to the 5-hour window")}</div>`);
+  const chips=`<div class="chips" role="group" aria-label="Day">${[["today","Today"],["yesterday","Yesterday"]].map(([k,l])=>`<button class="chip" data-cuday="${k}" aria-pressed="${k===day}">${l}</button>`).join("")}</div>`;
+  h+=chips;
+  const hrs=(L.hours||{})[day]||[], top=Math.max(0.01,...hrs.map(x=>x.routine+x.chat)), now=new Date().getHours();
+  const bars=hrs.map((x,i)=>{const r=x.routine/top*100,c=x.chat/top*100;return `<div class="cubar" title="${i}:00 · ${usd(x.routine+x.chat)} · ${tk(x.tok)} tokens"><span class="cuc" style="height:${c}%"></span><span class="cur" style="height:${r}%"></span></div>`}).join("");
+  h+=mpanel("By hour",`Tallest hour ${usd(top)} · <i class="cudot cur"></i>Recurring <i class="cudot cuc"></i>Chats`,`<div class="cubars">${bars}</div><div class="cuaxis"><span>0</span><span>6</span><span>12</span><span>18</span><span>23</span></div>`);
+  const ss=(L.sessions||{})[day]||[], sum=ss.reduce((a,s)=>a+s.usd,0);
+  const job=Object.fromEntries((L.jobs?.claude||[]).map(j=>[j.id,j.name]));
+  const srow=s=>{const name=s.title||(s.label?job[s.label]||s.label:"Untitled conversation");
+    const bits=[s.kind==="routine"?"Recurring":"Chat",s.folder,`${hm(s.start)}–${hm(s.end)}`,(s.models||[]).filter(m=>m[0]!=="<").map(m=>m.replace(/^claude-/,"")).join(", "),s.agents?`${s.agents} subagent${s.agents>1?"s":""}`:"",s.errors?`${s.errors} error${s.errors>1?"s":""}`:""].filter(Boolean).map(E).join(" · ");
+    return `<div class="curow"><span class="uname">${E(name)}<small class="sub cumeta">${bits}</small></span><span class="n">${usd(s.usd)}</span><span class="n cuw">${tk(s.tok)}</span><span class="n cuw">${num(s.msgs)}</span></div>`};
+  h+=mpanel("Conversations",ss.length?`${ss.length} on ${E(day==="today"?L.today:L.yesterday)}, heaviest first · total ${usd(sum)}`:"",
+    ss.length?`<div class="curow uhead"><span></span><span class="n">Cost</span><span class="n cuw">Tokens</span><span class="n cuw">Replies</span></div>${ss.map(srow).join("")}`:`<p class="due">No conversations on this day.</p>`);
+  const J=L.jobs||{}, cj=J.claude||[], on=cj.filter(j=>j.enabled!==false);
+  const jrow=j=>{const a=j.today||{},b=j.yesterday||{};
+    return `<div class="curow cujob${j.enabled===false?" zero":""}"><span class="uname">${E(j.name)}<small class="sub cumeta">${[j.enabled===false?"Off":"",j.when,j.lastRun?"Last run "+md(j.lastRun):"Not run yet"].filter(Boolean).map(E).join(" · ")}</small>${j.desc?`<small class="sub cumeta">${E(j.desc)}</small>`:""}</span><span class="n">${a.runs?usd(a.usd):"—"}<small class="sub cumeta">${a.runs?a.runs+" run"+(a.runs>1?"s":"")+(a.stopped?`, ${a.stopped} stopped`:""):""}</small></span><span class="n">${b.runs?usd(b.usd):"—"}<small class="sub cumeta">${b.runs?b.runs+" run"+(b.runs>1?"s":"")+(b.stopped?`, ${b.stopped} stopped`:""):""}</small></span></div>`};
+  const ljrow=j=>`<div class="curow cujob2"><span class="uname">${E(j.name)}<small class="sub cumeta">${[j.when,j.script,j.lastLog?"Last log "+md(j.lastLog):""].filter(Boolean).map(E).join(" · ")}</small>${j.desc?`<small class="sub cumeta">${E(j.desc)}</small>`:""}</span><span class="n sub">${E(j.claude||"No Claude")}</span></div>`;
+  const svrow=j=>`<div class="curow cujob2"><span class="uname">${E(j.name)}<small class="sub cumeta">${[j.when,j.note].filter(Boolean).map(E).join(" · ")}</small><small class="sub cumeta">${E(j.desc)}</small></span><span class="n sub">No Claude</span></div>`;
+  const ct=cj.reduce((a,j)=>a+(j.today?.usd||0),0), cy=cj.reduce((a,j)=>a+(j.yesterday?.usd||0),0);
+  h+=mpanel("Recurring jobs",`${cj.length+(J.launchd||[]).length+(J.server||[]).length} in all`,
+    `<details class="bdfold" open><summary>Claude scheduled tasks (${on.length} on, ${cj.length-on.length} off) · today ${usd(ct)} · yesterday ${usd(cy)}</summary><div class="curow cujob uhead"><span></span><span class="n">Today</span><span class="n">Yesterday</span></div>${cj.map(jrow).join("")}</details>`
+    +`<details class="bdfold"><summary>Mac background jobs (${(J.launchd||[]).length})</summary>${(J.launchd||[]).map(ljrow).join("")}</details>`
+    +`<details class="bdfold"><summary>Inside the Desk server (${(J.server||[]).length})</summary>${(J.server||[]).map(svrow).join("")}</details>`);
+  const api=d.lifelogApi||{}, apiTxt=Object.entries(api).map(([mo,v])=>`${E(mo)}: ${num(v.photos)} photos, ${usd(v.usd)}`).join(" / ");
+  h+=`<p class="sub">The Telegram bot and LINE call the Claude API directly, so they are not in the numbers above.${apiTxt?" Photos this month: "+apiTxt+".":""}</p>`;
+  if(!G.missing){
+    const days=G.by_day||[], rows=G.rows||[], isR=l=>l!=="対話作業";
+    const th=(t,n)=>`<th${n?' class="n"':""}>${t}</th>`, td=(t,n)=>`<td${n?' class="n"':""}>${t}</td>`;
+    let x=`<div class="cuscroll"><table><tr>${th("Day")}${th("Cost",1)}${th("Recurring",1)}${th("Chats",1)}${th("Runs",1)}${th("Cache read",1)}${th("Output",1)}</tr>`;
+    days.slice().reverse().forEach(r=>{const rr=rows.filter(q=>q.day===r.day&&isR(q.label)),ww=rows.filter(q=>q.day===r.day&&!isR(q.label));
+      x+=`<tr>${td(E(r.day))}${td(usd(r.usd),1)}${td(usd(rr.reduce((a,q)=>a+q.usd,0)),1)}${td(usd(ww.reduce((a,q)=>a+q.usd,0)),1)}${td(num(rr.reduce((a,q)=>a+q.runs,0)),1)}${td(tk(r.cr),1)}${td(tk(r.out),1)}</tr>`});
+    x+=`</table></div>`;
+    let y=`<div class="cuscroll"><table><tr>${th("Task")}${th("Runs",1)}${th("Cache read per run",1)}${th("Cost per run",1)}${th("Total",1)}</tr>`;
+    (G.by_label||[]).forEach(r=>{y+=`<tr>${td(E(r.label==="対話作業"?"Chats":r.label))}${td(num(r.runs),1)}${td(tk(r.cr_per_run),1)}${td(usd(r.usd_per_run),1)}${td(usd(r.usd),1)}</tr>`});
+    y+=`</table></div>`;
+    let z=`<div class="cuscroll"><table><tr>${th("Model")}${th("Replies",1)}${th("Input",1)}${th("Output",1)}${th("Cache write",1)}${th("Cache read",1)}${th("Cost",1)}</tr>`;
+    (G.by_model||[]).forEach(m=>{z+=`<tr>${td(E(m.model))}${td(num(m.msgs),1)}${td(tk(m.inp),1)}${td(tk(m.out),1)}${td(tk((m.cw5||0)+(m.cw1||0)),1)}${td(tk(m.cr),1)}${td(usd(m.usd),1)}</tr>`});
+    z+=`</table></div>`;
+    h+=mpanel("History",`Daily ledger, rebuilt at 7:00 · ${E(md(G.generated))}`,
+      `<details class="bdfold"><summary>By day (${days.length})</summary>${x}</details><details class="bdfold"><summary>Each scheduled task per run</summary>${y}</details><details class="bdfold"><summary>By model</summary>${z}</details>`);
+  }
+  h+=`<p class="sub">Costs are estimates from API prices, not your bill or your Max plan usage. The share of your plan limit is not stored on this Mac. Days are cut in Ho Chi Minh City time. Only tokens, times, titles and folders are read; message text is not kept.${(L.unpriced||[]).length?" No price for: "+E(L.unpriced.join(", "))+".":""}</p>`;
+  return h+`</div>`;
 }
 function usageView(){
   const d=S.usage, L=S.layout||{}, q=S.uq||"14";

@@ -6,3 +6,5 @@ node_modules/
 routine/dist/
 routine/.wrangler/
 .wrangler/
+# 行った場所マップ：非公開の Web アプリ URL を含むので main に入れない（Mac にだけ置く）
+places-map/
