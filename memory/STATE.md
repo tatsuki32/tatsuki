@@ -26,6 +26,7 @@
 - Footprint（`desk/footprint.py`、`#footprint`）：画面時間・AI・食事・支出・移動から CO2e を幅で推定、牛・羊・平均の人と比べる。main に入れた。使ってみて一言と係数を直す段階。
 - ホームの Today（2026-11-20、要件定義 KpHCwmoBcjzAJYF2ouErnj）：今日の3つを消し、予定・期日・ルーティンと習慣・今日のタスク・Sift の見出しを1枚に。決めるカードは1枚、G は Claude が始める。Telegram は朝1通。World Desk は停止（Mac の Claude アプリでも無効にする）。シートの取り込みは Mac で CSV を渡す待ち。Sift の Worker の公開が要る。 Startup Clean（`desk/startup_clean.py`）：起動後の最初のログインで Claude・Desk・Terminal 以外を閉じ、Home の1行で戻す。Mac で `setup-mac.sh` を1回走らせるまで動かない。本物の再起動では未確認。 Translate（`desk/translate.py`、`#translate`、2026-11-20）：訳す・履歴・概念・To cards・Web履歴の取り込みを実装、Claude 経由で動作確認。Google の鍵（キーチェーン `tatsuki-desk-gtranslate`）は本人が作るまで Claude が訳す。①の `cards` は別セッションが作成中。記録 `memory/episodic/sessions/2026-11-20-translate.md`。
 ## 決定済みの事項
+- 予約ページ（`tany.im/book`、`desk/book.py`、`#book`。2026-11-20）：Today Slots の置き換えを実装し、ローカル（偽の Google とメール）で予約・競合・限定リンク・取り消しを確認。残りは `bash desk/book_setup.sh` → deploy → Google 接続 → 本人が予約を試す → `tatsuki-slots.pages.dev` を転送 → Apps Script を止める。記録 `memory/episodic/sessions/2026-11-20-booking.md`。
 - 作ったものは必ず main に入れる（どの Claude も。`.claude/rules/main-branch.md`）。Mac は main だけを取り込む。
 - デザインの本を読む作業はしない（2026-11-15、全作業）。UI は `.claude/rules/design-ui.md` と `design-nondesigner.md` のルールで作る。
 - Desk の見た目：文字 12/14/16/20/28px・太さ 400/700・余白 4/8/16/24/40px。金は今いる場所・焦点・主ボタン・外部リンクだけ。ボタンに絵文字を付けない。

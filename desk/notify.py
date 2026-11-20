@@ -53,6 +53,7 @@ KINDS = (
     ("reply", "Messages that need a reply now", "now"),
     ("event30", "30 minutes before an event", "now"),
     ("task30", "30 minutes before a task is due", "now"),
+    ("booking", "New booking on tany.im/book", "now"),
     ("event6h", "Today's events in the morning summary", "heads"),
     ("morning", "Morning digest", "digest"),
     ("noon", "Midday digest", "digest"),
@@ -169,6 +170,7 @@ def load_data(now):
         "screen": j("screentime", "days.json", d={}) or {},
         "appNames": j("screentime", "names.json", d={}) or {},
         "top3": [{"id": t.get("id"), "title": t.get("title", ""), "status": t.get("status")} for t in top],
+        "bookings": [b for b in j("book", "bookings.json", d=[]) or [] if isinstance(b, dict) and b.get("id")],
     }
 
 
@@ -250,6 +252,13 @@ def instant(now, data, s, tz=None):
             out.append({"id": f"task30:{t['id']}:{int(due)}", "kind": "task30", "tier": "now",
                         "title": f"Task due in {max(1, round((due - now) / 60))} min",
                         "body": f"{hhmm(due, tz)} {short(task_title(t))}", "link": "#tasks", "task": t["id"]})
+    for b in data.get("bookings") or []:  # a booking made on tany.im/book in the last day (desk/book.py pulls them every 5 minutes)
+        created = b.get("created")
+        if b.get("status") != "booked" or not isinstance(created, (int, float)) or now - created / 1000 > DAY or not isinstance(b.get("start"), (int, float)):
+            continue
+        when = local(b["start"] / 1000, tz).strftime("%b %-d, %-I:%M %p")
+        out.append({"id": f"booking:{b['id']}", "kind": "booking", "tier": "now", "title": "New booking",
+                    "body": f"{when} · {short(b.get('name'), 24)} · {short(b.get('purposeName') or b.get('purpose'), 24)}", "link": "#book"})
     return out + urgent(data)
 
 
@@ -294,8 +303,11 @@ def done_today(data, now, tz):
 def morning_lines(now, data, s, st, tz):
     lines, on = [], s["on"]
     day = local(now, tz).date()
-    for item in st["carry"] if data.get("replyOpen", True) else []:  # urgent replies that came in the quiet hours
-        lines.append(("reply", f"Reply: {item['body']}"))
+    for item in st["carry"]:  # what came in the quiet hours: urgent replies (only while the reply window is open) and bookings
+        if item.get("kind") == "booking":
+            lines.append(("booking", f"New booking: {item['body']}"))
+        elif data.get("replyOpen", True):
+            lines.append(("reply", f"Reply: {item['body']}"))
     evs = sorted(((start_ts(e.get("start")), e) for e in data["events"] if not e.get("allDay") and start_ts(e.get("start"))), key=lambda x: x[0])
     evs = [(t, e) for t, e in evs if t > now and local(t, tz).date() == day]
     if evs:
@@ -434,6 +446,8 @@ def plan(now, data, s, st, tz=None, focus=False):
         log.append(entry(n, not why, why))
         if not why:
             show.append(n)
+        elif n["kind"] == "booking":  # a booking made at night is told in the morning digest
+            st["carry"].append({"id": n["id"], "body": n["body"], "kind": "booking"})
     if replies:
         used = st["urgent"].get(day, 0)
         for n in replies:

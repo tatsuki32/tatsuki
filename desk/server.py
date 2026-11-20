@@ -61,6 +61,7 @@ import campus  # 地球キャンパス通信: issues on this Mac, readers only i
 import forms  # Forms on tany.im: made here, answered on tany.im, answers pulled back every 5 minutes (desk/forms.py)
 import screentime_sync
 import usage
+import book  # Bookings: the rules behind tany.im/book; the page itself runs in the Worker (desk/data/tany/site/book.js)
 import claude_usage
 import site_sync
 import wise_analysis
@@ -1054,6 +1055,9 @@ class Handler(BaseHTTPRequestHandler):
         if path.startswith("/api/web/"):
             return self.web_get(path.rsplit("/", 1)[1], parse_qs(urlsplit(self.path).query))
         if path == "/api/usage":
+        if path == "/api/book" or path.startswith("/api/book/"):
+            q = {k: v[0] for k, v in parse_qs(urlsplit(self.path).query).items()}
+            return self.send(*book.handle("GET", [x for x in path.split("/")[3:] if x], q))
             return self.send(200, {**usage.view(parse_qs(urlsplit(self.path).query).get("period", ["14"])[0]), "on": usage.enabled(PORT)})
         if path == "/api/layout":
             return self.send(200, usage.public(usage.read_layout(), usage.enabled(PORT)))
@@ -1368,6 +1372,10 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(*lifelog_put(urlsplit(self.path).path.split("/")[2:], rec))
         if urlsplit(self.path).path.startswith("/api/notify/"):
             # same protection as claude(): Host/Origin checked, and JSON from another origin needs a preflight
+        if urlsplit(self.path).path.startswith("/api/book/") and method in ("POST", "PUT"):
+            if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+                return self.send(415, {"error": "json only"})
+            return self.send(*book.handle(method, [x for x in urlsplit(self.path).path.split("/")[3:] if x], rec if isinstance(rec, dict) else {}))
             if not (self.headers.get("Content-Type") or "").startswith("application/json"):
                 return self.send(415, {"error": "json only"})
             step = (method, urlsplit(self.path).path.rsplit("/", 1)[1])
@@ -1613,3 +1621,4 @@ if __name__ == "__main__":
         srv.serve_forever()
     except KeyboardInterrupt:
         pass
+        threading.Thread(target=book.watch, daemon=True).start()  # bookings from tany.im/book every 5 minutes (notify.py tells about new ones)

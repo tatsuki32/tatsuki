@@ -86,6 +86,18 @@
       "port": 8795
     },
     {
+      "name": "desk-book-test",
+      "runtimeExecutable": "/bin/sh",
+      "runtimeArgs": ["-c", "cd desk && DESK_BOOK_DIR=/tmp/claude/book-test/data DESK_BOOK_WORKER=http://127.0.0.1:8790 DESK_BOOK_KEY=testkey DESK_PORT=${PORT:-4790} exec python3 server.py"],
+      "port": 4790
+    },
+    {
+      "name": "tany-book-worker",
+      "runtimeExecutable": "/bin/sh",
+      "runtimeArgs": ["-c", "cd /tmp/claude/book-test/site && WRANGLER_SEND_METRICS=false WRANGLER_LOG_PATH=/tmp/claude/wl exec npx wrangler dev --local --test-scheduled --port ${PORT:-8790} --ip 127.0.0.1 --var BOOK_FAKE:1 --var BOOK_KEY:testkey --var TOKEN_KEY:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA= --var RESEND_KEY:fake"],
+      "port": 8790
+    },
+    {
       "name": "tany-campus-worker",
       "runtimeExecutable": "/bin/sh",
       "runtimeArgs": ["-c", "cd /tmp/claude/campus-test/site && WRANGLER_SEND_METRICS=false WRANGLER_LOG_PATH=/tmp/claude/wl exec npx wrangler dev --local --test-scheduled --port ${PORT:-8797} --ip 127.0.0.1 --var CAMPUS_FAKE_SEND:1 --var CAMPUS_KEY:testkey --var RESEND_KEY:fake"],
