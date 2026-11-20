@@ -5,19 +5,15 @@
 - Desk は Mac 専用（データは非公開リポジトリに15分ごとに保管）。本線は main に一本化（2026-11-09）：`desk/page-cards`・プロジェクト・持ち物・Mac だけにあった変更を全部 main に入れ、Mac は main で `desk/pull.sh` が5分ごとに取り込む。
 - 作りたい機能リスト（全11件）：全部 main にマージ済み（tatsuki32/tatsuki#9）。使ってみて直す段階。③ は `/recap`。⑦ ペルソナは仮の設定。
 - Desk の画面とボットをアメリカ英語にした（2026-11-09、main。今あるタスクとメモは日本語のまま。記録 `memory/episodic/sessions/2026-11-09-english-ui.md`）。
-- 朝のメールをタスクに一本化＋「できたこと」画面（`wins`）：実装・オンライン版に公開。main に未マージ（Mac に届くのはマージ後）。
-- コマンドを忘れる対策（Claude に頼むカード・`/` 一覧）と Desk 全体の文字リンク：main にマージ済み。Mac の Terminal 起動と iPhone の長押しは未確認。
+- 朝のメールをタスクに一本化＋「できたこと」画面（`wins`）：実装・オンライン版に公開。main に未マージ（Mac に届くのはマージ後）。 コマンドを忘れる対策（Claude に頼むカード・`/` 一覧）と Desk 全体の文字リンク：main にマージ済み。Mac の Terminal 起動と iPhone の長押しは未確認。
 - 「🎯 集中」（`focusblock/`）：本物のブロックは本人の確認待ち。Life OS（18個のツール）：土台と 01・02・11・12・13 を main に入れた。残りはブランチのまま。統括役は置かない。約束は `lifeos/README.md`。
 - Wise の取り込みと「💰 お金」画面：第1版（5タブ、種類分け、比較、助言）を実装。記録と残高の差は、直接払いの送金を分けてほぼ解消（本人の確認待ち）。第2版（今後の支出・豆知識）を実装。定期タスクの実走は未確認。第3版（国の比較）を実装。最低賃金は Wikipedia の一覧から収録。第4版（期間で変わる分析、予算、旅の計画、貯金、シミュレーション、毎日の学び）を実装。
-- タスクの一旦中止・アーカイブ：実装済み。カレンダーへは1件ずつの「Add to calendar」に変えた（2026-11-14。毎時の `desk-task-calendar` は停止）。予定の取り込み・メモ連携の毎時実行は止まっている。
-- タスクの時期トグル・並び替え・仕分けカード：実装済み。`desk-task-estimate` は手動で成功、朝の自動実行は確認待ち。
+- タスクの一旦中止・アーカイブ：実装済み。カレンダーへは1件ずつの「Add to calendar」に変えた（2026-11-14。毎時の `desk-task-calendar` は停止）。予定の取り込み・メモ連携の毎時実行は止まっている。 タスクの時期トグル・並び替え・仕分けカード：実装済み。`desk-task-estimate` は手動で成功、朝の自動実行は確認待ち。
 - main に入った：言葉のページの文カード（ニュース・マイナー国・タスクは自動リンクしない）、World Desk の読む画面（`desk-world-brief` の指示を入れ替え）、ノートの Scrapbox 機能（押した行を編集）。
 - 連絡返信（Gmail・WhatsApp を 4:30・15:30 に取り込み、`desk/whatsapp_sync.py`）：返信と催促は Replies だけに出し、5:00・16:00 に開く（2026-11-15、`desk/replywin.py`）。
 - タスクをやりやすくする（`clear`）：実装済み。3件を本番で試した。`desk-task-clarify` の夜の実走は確認待ち。ボタンにはサーバーの再起動が要る。
-- プレゼント・ノート吸収・返信待ちの WhatsApp 対応：main に入った。`desk-morning-mail` の実走は確認待ち。
-- スクリーンタイム（`desk/screentime_sync.py`）：本物を19日分取り込めた。Chrome は確認済み。Brave は確認待ち。毎日世界遺産（`desk/heritage.py`）：main に入った。朝の自動実行は確認待ち。
-- PC 画面（`desk/pc_monitor.py`）：実装済み・未コミット。ツールの終了は試し済み。アプリの終了は本番サーバーで確認待ち。
-- Web履歴（`desk/chrome_web_sync.py`、`desk/chrome-extension/`）：実装済み・未コミット。履歴は本物で取り込み済み。拡張は Tatsuki の読み込み待ちで、実物の Chrome では未確認。
+- プレゼント・ノート吸収・返信待ちの WhatsApp 対応：main に入った。`desk-morning-mail` の実走は確認待ち。 スクリーンタイム（`desk/screentime_sync.py`）：本物を19日分取り込めた。Chrome は確認済み。Brave は確認待ち。毎日世界遺産（`desk/heritage.py`）：main に入った。朝の自動実行は確認待ち。
+- PC 画面（`desk/pc_monitor.py`）：実装済み・未コミット。ツールの終了は試し済み。アプリの終了は本番サーバーで確認待ち。 Web履歴（`desk/chrome_web_sync.py`、`desk/chrome-extension/`）：実装済み・未コミット。履歴は本物で取り込み済み。拡張は Tatsuki の読み込み待ちで、実物の Chrome では未確認。
 - Life Dashboard を Desk へ（`desk/lifelog.py`、体の画面、朝夜ルーティン、ご褒美カード、領収書）：最初の版を実装（未コミット）。睡眠と食事は本番で確認済み。レシートと Drive は確認待ち。
 - 秘書ボット（`lifeos/21-assistant/`。Cloudflare Workers、写真のボットとは別）：実装・未コミット。テストは偽物の通信で成功。本物の API と本番は導入待ち。
 - メール整理（`desk/gmail_clean.py`）：main に入った。本物で12件停止済み。OAuth はテスト中で、接続が7日で切れる可能性あり。 見せる素材（`desk/showcase.py`）：main に入った。 小さな道具（`desk/utilities.py`）：`claude/desk-utilities-a3a168` にコミット。アプリの窓で使うには再ビルドが要る。
