@@ -50,6 +50,7 @@ import news_sync
 import cards
 import cards_sync
 import reader
+import langmap  # Language Map: countries, languages, regions and peoples from public data (desk/langmap.py, langmap_build.py)
 import translate  # Translate: lookups, concepts across languages, card candidates (desk/translate.py)
 import chrome_web_sync
 import gmail_clean
@@ -1016,6 +1017,14 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(200, accounts.view())
             except accounts.AccountsError:
                 return self.send(500, {"error": "read"})
+        if path == "/api/langmap":  # Language Map: everything the map draws with (public data only)
+            return self.send(200, langmap.summary())
+        if path == "/api/langmap/world":
+            return self.send(200, langmap.world())
+        if path.startswith("/api/langmap/country/"):
+            return self.send(*langmap.country(unquote(path.rsplit("/", 1)[1])))
+        if path.startswith("/api/langmap/language/"):
+            return self.send(*langmap.language(unquote(path.rsplit("/", 1)[1])))
         if path == "/api/translate/state":  # which engine translates now, the month's characters, the card candidates
             return self.send(200, translate.state())
         if path == "/api/news/today":  # Sift Daily's headlines, kept by news_sync every 5 minutes
@@ -1324,6 +1333,14 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(400, {"error": "bad json"})
         if method == "PUT" and urlsplit(self.path).path.startswith("/api/web/"):
             return self.web_put(urlsplit(self.path).path.split("/")[3:], rec)
+        if urlsplit(self.path).path in ("/api/langmap/build", "/api/langmap/hide"):
+            if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+                return self.send(415, {"error": "json only"})
+            if method == "POST" and urlsplit(self.path).path == "/api/langmap/build":
+                return self.send(*langmap.start_build())
+            if method == "PUT" and urlsplit(self.path).path == "/api/langmap/hide":
+                return self.send(*langmap.set_hidden(rec))
+            return self.send(405, {"error": "method not allowed"})
         if urlsplit(self.path).path == "/api/translate" or urlsplit(self.path).path.startswith(("/api/translate/", "/api/concepts/merge", "/api/concepts/split")):
             return self.translate_write(method, urlsplit(self.path).path, rec)
         if urlsplit(self.path).path.startswith("/api/bank/"):
@@ -1684,6 +1701,7 @@ if __name__ == "__main__":
         threading.Thread(target=book.watch, daemon=True).start()  # bookings from tany.im/book every 5 minutes (notify.py tells about new ones)
         forms.STORE.update(load=load, upsert=upsert)  # a form for yourself can write a line into the day's note
         threading.Thread(target=forms.watch, daemon=True).start()  # answers to tany.im forms pulled every 5 minutes
+        threading.Thread(target=langmap.watch, daemon=True).start()  # Language Map: fetch the public data again once a month
         threading.Thread(target=translate.watch, daemon=True).start()  # Google Translate pages and 「〜とは」 searches from the web history, hourly; concepts at night
     try:
         srv.serve_forever()

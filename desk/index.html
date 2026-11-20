@@ -1880,6 +1880,82 @@ a.shelfbtn{text-decoration:none;display:inline-flex;align-items:center}
 .cdf .wd-field{max-width:none;min-height:36px}
 .cdform .cdf:nth-child(n+7){grid-column:1/-1}
 @media (max-width:560px){.cdform{grid-template-columns:1fr}.cdans{grid-template-columns:1fr 1fr}}
+/* ---------- Language Map (#langmap): the map, its controls, the card beside it, the lists and the two pages. Classes start with lm ---------- */
+/* names in every script: the system font spaces Cyrillic, Arabic and Latin well and still falls back to the Japanese gothic */
+.lgm{font-family:system-ui,-apple-system,"Helvetica Neue",var(--font)}
+.lgmhead{margin:0;text-align:right}
+.lgmbar{padding:var(--s3);display:flex;flex-direction:column;gap:var(--s2);margin-bottom:var(--s3)}
+.lgmfield{width:100%;box-sizing:border-box;background:var(--surface-2);color:var(--ink);border:1px solid var(--line-2);border-radius:var(--r-s);padding:8px 12px;font:inherit;font-size:var(--t2)}
+.lgmfield:focus{outline:2px solid var(--accent);outline-offset:1px}
+.lgmfind{position:relative}
+.lgmhits{position:absolute;z-index:5;left:0;right:0;top:calc(100% + 4px);background:var(--surface-2);border:1px solid var(--line-2);border-radius:var(--r-s);max-height:320px;overflow:auto;box-shadow:0 10px 30px rgba(0,0,0,.45)}
+.lgmhit{display:flex;justify-content:space-between;gap:var(--s2);width:100%;text-align:left;border:0;background:none;color:var(--ink);font:inherit;font-size:var(--t2);padding:8px 12px;cursor:pointer}
+.lgmhit:hover,.lgmhit:focus{background:var(--surface)}
+.lgmctl{justify-content:space-between}
+.lgmconcept{display:flex;gap:var(--s2);align-items:center;flex:1 1 220px;max-width:360px}
+.lgmcl{margin:0}
+.lgmwrap{display:flex;gap:var(--s3);align-items:stretch;margin-bottom:var(--s2)}
+.lgmmap{position:relative;flex:1;min-width:0;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:var(--bg)}
+.lgmsvg{display:block;width:100%;height:auto;aspect-ratio:1000/620;max-height:62vh;touch-action:none;cursor:grab;user-select:none}
+.lgmsvg:active{cursor:grabbing}
+.lgmsea{fill:#17181b}
+#lgmShapes path{stroke:var(--bg);stroke-width:.5;vector-effect:non-scaling-stroke;cursor:pointer}
+#lgmShapes path:hover{filter:brightness(1.25)}
+#lgmShapes path.sel{stroke:var(--accent);stroke-width:2}
+.lgmdot{stroke:#000;stroke-width:.6;vector-effect:non-scaling-stroke;cursor:pointer}
+.lgmdot.sel{stroke:var(--accent);stroke-width:2}
+.lgmlab{cursor:pointer}
+.lgmlab text{fill:var(--ink);paint-order:stroke;stroke:#000;stroke-width:3px;stroke-opacity:.75;vector-effect:non-scaling-stroke;font-weight:700}
+.lgmlab.dim text{fill:var(--muted);font-weight:400}
+.lgmlab.w text,.lgmlab.mine text{fill:#fff}
+.lgmlab.w text{fill:var(--accent)}
+.lgmreg{cursor:pointer}
+.lgmreg circle{fill:var(--accent);stroke:#000;stroke-width:.6;vector-effect:non-scaling-stroke}
+.lgmreg text{fill:var(--ink-2);paint-order:stroke;stroke:#000;stroke-width:3px;stroke-opacity:.7;vector-effect:non-scaling-stroke}
+.lgmzoom{position:absolute;right:8px;bottom:8px;display:flex;gap:4px}
+.lgmzoom .btn{background:var(--surface-2)}
+.lgmside{flex:0 0 280px}
+.lgmcard{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:var(--s3);display:flex;flex-direction:column;gap:var(--s2)}
+.lgmct{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
+.lgmct b{font-size:var(--t3)}
+.lgmflag{font-size:var(--t4)}
+.lgmx{margin-left:auto;border:0;background:none;color:var(--muted);font-size:var(--t4);cursor:pointer;min-height:32px;padding:0 4px}
+.lgmrow{display:grid;grid-template-columns:96px minmax(0,1fr);gap:var(--s2);font-size:var(--t2);line-height:1.5}
+.lgmleg{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:var(--t1);color:var(--muted);margin:0 0 var(--s3)}
+.lgmleg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.lgmtabs{margin:0 0 var(--s2)}
+.lgmsort{margin-bottom:var(--s2)}
+.lgmlist{padding:var(--s1) 0;margin-bottom:var(--s3)}
+.lgmli{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) 64px;gap:var(--s2);align-items:center;padding:7px var(--s3);color:var(--ink);text-decoration:none;font-size:var(--t2);border-top:1px solid var(--line)}
+.lgmli:first-child{border-top:0}
+.lgmli:hover{background:var(--surface-2)}
+.lgmli .count{text-align:right;margin:0}
+.lgmmine{grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) 96px}
+
+.lgmli .lgmmeter{display:flex;align-items:center;gap:6px;min-width:0}
+.lgmli .lgmmeter i{display:block;height:6px;border-radius:3px;background:var(--v1);min-width:4px}
+.lgmfam{padding:var(--s2) var(--s3) 0;margin:var(--s2) 0 0}
+.lgmnote,.lgmsrc{margin:0 0 var(--s3)}
+.lgmsrc .btn{margin-left:6px}
+.lgmkpi{display:flex;gap:var(--s4);flex-wrap:wrap}
+.lgmkpi div{display:flex;flex-direction:column}
+.lgmkpi b{font-size:var(--t4)}
+.lgmsec{padding:var(--s3);margin-bottom:var(--s3);display:flex;flex-direction:column;gap:var(--s2)}
+.lgmtw{overflow-x:auto;margin:0 calc(-1*var(--s3));padding:0 var(--s3)}
+.lgmtab{width:100%;border-collapse:collapse;font-size:var(--t2)}
+.lgmtab th{text-align:left;font-weight:400;color:var(--muted);font-size:var(--t1);padding:4px 8px 6px 0;border-bottom:1px solid var(--line)}
+.lgmtab td{padding:6px 8px 6px 0;border-bottom:1px solid var(--line);vertical-align:top}
+.lgmtab .num{text-align:right;white-space:nowrap}
+.lgmtab a{color:var(--ink)}
+.lgmhide{border:0;background:none;color:var(--muted);font-size:var(--t1);cursor:pointer;white-space:nowrap;padding:0}
+.lgmhide:hover{color:var(--ink)}
+.lgmlin{line-height:1.6;color:var(--ink-2)}
+.lgmmini{width:100%;max-width:640px;height:auto;display:block;border-radius:var(--r-s);background:#17181b}
+.lgmmini path{stroke:var(--bg);stroke-width:.4}
+.lgmwords{line-height:1.9}
+.lgmwords div{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.lgm a.xlm{color:var(--ink);text-decoration:none}
+@media (max-width:760px){.lgmwrap{flex-direction:column}.lgmside{flex:none}.lgmsvg{max-height:none}.lgmli{grid-template-columns:minmax(0,1fr) 64px}.lgmli>span:nth-child(2){display:none}.lgmmine{grid-template-columns:minmax(0,1fr) 80px}.lgmrow{grid-template-columns:84px minmax(0,1fr)}.lgmhead{text-align:left}}
 </style>
 
 <div class="app">
@@ -1929,7 +2005,7 @@ S.projects=[];S.sections=[];S.okrs=[];S.krOpen={};S.projFilter="all";S.pDone=fal
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const okUrl=u=>/^(https:\/\/|file:\/\/|#)/.test(u||"");
-const viewId=()=>{const h=(location.hash||"").slice(1);if(h==="mail")return "tasks";if(h==="inbox")return "presents";if(/^project\//.test(h))return "project";if(/^forms\//.test(h))return "forms";if(/^task\//.test(h))return "tasks";if(/^concept\//.test(h))return "translate";if(/^reader\//.test(h))return "reader";if(h==="cards/review")return "cards";return VIEWS.some(v=>v.id===h&&v.g!=="hidden")?h:"home"}; // the morning mail screen moved into the tasks
+const viewId=()=>{const h=(location.hash||"").slice(1);if(h==="mail")return "tasks";if(h==="inbox")return "presents";if(/^project\//.test(h))return "project";if(/^forms\//.test(h))return "forms";if(/^task\//.test(h))return "tasks";if(/^concept\//.test(h))return "translate";if(/^langmap[\/?]/.test(h)||/^language\//.test(h))return "langmap";if(/^reader\//.test(h))return "reader";if(h==="cards/review")return "cards";return VIEWS.some(v=>v.id===h&&v.g!=="hidden")?h:"home"}; // the morning mail screen moved into the tasks
 const viewLabel=id=>(VIEWS.find(v=>v.id===id)||{}).label||id;
 /* Old mail data has Japanese topics: keep those titles in Japanese, new ones in English */
 const JA_RE=/[ぁ-んァ-ン一-龥]/;
@@ -1945,6 +2021,7 @@ const LOCALAPI=/^https?:$/.test(location.protocol)&&/^(localhost|127\.0\.0\.1)$/
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="habits")+1,0,{id:"body",e:"🫀",label:"Summary",g:"body"},{id:"bodysleep",e:"😴",label:"Sleep",g:"body"},{id:"bodymeal",e:"🍽️",label:"Meals & Calories",g:"body"},{id:"bodyweight",e:"⚖️",label:"Weight",g:"body"},{id:"bodysteps",e:"👟",label:"Steps",g:"body"},{id:"bodyworkout",e:"💪",label:"Workouts",g:"body"},{id:"workoutboard",e:"🧘",label:"Workout Board",g:"body"},{id:"bodyhabits",e:"📚",label:"Study & Screen Time",g:"body"}); // photos and health records stay on this Mac
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="followups")+1,0,{id:"mailclean",e:"🧹",label:"Inbox Cleanup",g:"in"});
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="heritage")+1,0,{id:"translate",e:"🔤",label:"Translate",g:"read"}); // translate inside Desk; every lookup kept, one meaning across languages (desk/translate.py)
+if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="translate")+1,0,{id:"langmap",e:"🗺️",label:"Language Map",g:"read"}); // every country and its languages, regions and peoples, with my learned words (desk/langmap.py)
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="presents")+1,0,{id:"ideas",e:"💡",label:"Ideas",g:"in"});
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="presents")+1,0,{id:"site",e:"📈",label:"Site",g:"in"}); // tany.im analytics (desk/site_sync.py)
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="ideas")+1,0,{id:"aidone",e:"🤝",label:"Done by Claude",g:"in"}); // work Claude does on its own (tasks with by:"claude", JOINS application drafts); never on your task list // once a week, from what was already written (desk/ideas.py)
@@ -5344,6 +5421,9 @@ function searchIndex(){
   S.memos.forEach(m=>add("memo",m.text.split("\n")[0],m.text,{memo:m.id},{at:m.createdAt}));
   S.board.forEach(t=>add("task",taskName(t),[t.title,t.clear?.first,t.note,t.desc,t.group,t.dateLabel,projById(t.projectId)?.name,secById(t.sectionId)?.name,t.mail?.sub,t.mail?.sum].join(" "),{task:t.id},{at:t.createdAt}));
   winList().forEach(w=>add("win",w.title,w.sub||"",{wins:1},{date:w.date}));
+  if(S.lgm?.data){const d=S.lgm.data;Object.values(d.countries).forEach(c=>add("lgmap",c.name,[c.ja,c.native,"country",c.cont].join(" "),{view:"langmap/"+c.id}));
+    Object.values(d.languages).filter(L=>L.key).forEach(L=>add("lgmap",L.name,[L.ja,L.native,"language",L.family].join(" "),{view:"language/"+encodeURIComponent(L.id)}));
+    (d.regions||[]).forEach(g=>add("lgmap",g.name,[g.ja,g.native,g.type,(d.countries[g.country]||{}).name].join(" "),{view:"langmap/"+g.country}))}
   gearList().forEach(g=>add("gear",g.name,[g.note,(GCAT[g.cat]||GCAT.other)[2],g.gone?"let go 手放した":""].join(" "),{gear:1},{at:g.updatedAt}));
   S.editions.forEach(e=>(e.data.stories||[]).forEach((s,i)=>add("news",s.title,[s.summary,s.lens,REGJA[s.region],(s.sources||[]).map(x=>x.name).join(" ")].join(" "),{ed:e.id,story:i},{date:e.id})));
   S.watch.forEach(w=>add("watch",w.title||w.id,w.body,{watch:w.id},{date:w.date}));
@@ -5351,7 +5431,7 @@ function searchIndex(){
   calEvents().forEach(e=>add("event",e.title,[e.location,e.description].join(" "),{cal:1},{at:e.startMs}));
   return out;
 }
-const SKIND={tool:["🧩","Tools"],note:["📒","Notes"],memo:["📝","Memos"],task:["🗂️","Tasks"],news:["🌍","News"],watch:["🗺️","Minor Countries"],heritage:["🏛️","Daily World Heritage"],mail:["✉️","Email"],event:["📅","Events"],win:["✨","Wins"],habit:["🌱","Habits"],log:["🤖","Claude Log"],lifeos:["🧰","Life OS"],followup:["⏳","Awaiting Reply"],money:["💰","Money"],memory:["🧭","What's next?"],gear:["🎒","Belongings"]};
+const SKIND={tool:["🧩","Tools"],note:["📒","Notes"],memo:["📝","Memos"],task:["🗂️","Tasks"],news:["🌍","News"],watch:["🗺️","Minor Countries"],heritage:["🏛️","Daily World Heritage"],mail:["✉️","Email"],event:["📅","Events"],win:["✨","Wins"],habit:["🌱","Habits"],log:["🤖","Claude Log"],lifeos:["🧰","Life OS"],followup:["⏳","Awaiting Reply"],money:["💰","Money"],memory:["🧭","What's next?"],gear:["🎒","Belongings"],lgmap:["🗺️","Language Map"]};
 function runSearch(q){
   const terms=q.trim().split(/\s+/).filter(Boolean); if(!terms.length) return {hits:[],via:[]};
   const ai=(S.aiExp||{})[norm(q)]||[];
@@ -6173,7 +6253,8 @@ function xlConceptView(id){
   const note=`<section class="card xlnote"><div class="section-title">My note</div><textarea class="xlfield" id="xlNote" rows="3" placeholder="How you remember it, where you met it">${esc(c.note||"")}</textarea><div class="row"><button class="btn sm" id="xlNoteSave">Save</button></div></section>`;
   const others=S.concepts.filter(x=>x.id!==c.id), opt=x=>(x.gloss||"(no gloss)")+" — "+(x.members||[]).map(m=>m.term).join(" · ");
   const merge=others.length?`<section class="card xlmerge"><div class="section-title">Merge into another concept</div><div class="row"><input class="xlfield xlmq" id="xlMergeQ" list="xlMergeList" placeholder="Type a word or a gloss" value="${esc(S.xl.merge||"")}"><datalist id="xlMergeList">${others.slice(0,300).map(x=>`<option value="${esc(opt(x))}">`).join("")}</datalist><button class="btn sm" id="xlMergeGo">Merge</button></div><p class="sub">Every word here moves into the one you pick. Split brings a word back out, one at a time.</p></section>`:"";
-  return back+gl+members+exs+note+merge;
+  const onMap=LOCALAPI?`<div class="row xlmap"><a class="btn sm" href="#langmap?concept=${encodeURIComponent(c.id)}">See where these words are understood</a></div>`:"";
+  return back+onMap+gl+members+exs+note+merge;
 }
 function xlOpenLookup(id){
   const r=S.lookups.find(x=>x.id===id);if(!r)return;
@@ -6222,6 +6303,258 @@ function wireXl(){
   $("#xlMergeQ")&&($("#xlMergeQ").oninput=()=>{S.xl.merge=$("#xlMergeQ").value});
   $("#xlMergeGo")&&($("#xlMergeGo").onclick=xlMerge);
 }
+/* ---------- 🗺️ Language Map (#langmap, #langmap/<ISO2>, #language/<id>, #langmap?concept=<id>): every country, the languages
+   spoken there, speakers, population, regions and peoples, from public data (desk/langmap_build.py, desk/langmap.py).
+   The map is an SVG drawn here from Natural Earth shapes (no tiles, nothing fetched from outside). Learned words come from
+   Translate's concepts: a concept turns the language labels into its words and lights up where they are understood.
+   Numbers are shown only with their source and year; a number the sources do not have stays empty. Classes start with lgm. ---------- */
+S.lgm={data:null,world:null,busy:false,err:"",mode:"family",sel:null,concept:null,tab:"langs",sort:"learned",csort:"pop",q:"",vb:null,detail:{},sig:"",cq:""};
+const LGM_PSEUDO=new Set(["Bookkeeping","Unclassifiable","Sign Language","Unattested","Artificial Language","Speech Register","Pidgin","Mixed Language"]); // Glottolog groups that are not families
+const LGM_W=1000, LGM_LATMAX=84, LGM_LATMIN=-58;
+const lgmY=lat=>{const r=Math.max(-85,Math.min(85,lat))*Math.PI/180;return LGM_W/2-LGM_W*Math.log(Math.tan(Math.PI/4+r/2))/(2*Math.PI)};
+const lgmX=lon=>(lon+180)/360*LGM_W;
+const LGM_TOP=lgmY(LGM_LATMAX), LGM_BOT=lgmY(LGM_LATMIN), LGM_H=LGM_BOT-LGM_TOP;
+const LGM_FULL=()=>({x:0,y:LGM_TOP,w:LGM_W,h:LGM_H});
+// Translate stores ISO 639-1 codes; macrolanguages map to the language people usually mean
+const LGM_ISO1={zh:"cmn",ar:"arb",fa:"pes",ms:"zsm",sw:"swh",et:"ekk",lv:"lvs",no:"nob",uz:"uzn",mn:"khk",ne:"npi",om:"gaz",ps:"pbu",qu:"quz",sq:"als",az:"azj",kok:"knn",yi:"ydd",ku:"kmr",gn:"gug",ff:"fuf",kr:"knc",mg:"plt",or:"ory",kv:"kpv",iu:"ike",cr:"crk",oj:"ojg",bh:"bho",ik:"esk",hy:"hye",el:"ell",sr:"srp",hr:"hrv",bs:"bos"};
+const lgmLang=k=>S.lgm.data?.languages?.[k];
+const lgmCountry=k=>S.lgm.data?.countries?.[k];
+function lgmByIso1(code){const d=S.lgm.data;if(!d||!code)return null;code=String(code).split("-")[0].toLowerCase();
+  if(!d._iso1){d._iso1={};for(const L of Object.values(d.languages))if(L.iso1&&(!d._iso1[L.iso1]||L.key))d._iso1[L.iso1]=L.id}
+  const k=d._iso1[code]||LGM_ISO1[code]||(code.length===3?code:null);return k&&d.languages[k]?k:null}
+function lgmFmt(n){if(n==null)return "";if(n>=1e9)return (n/1e9).toFixed(n>=1e10?0:1)+"B";if(n>=1e6)return (n/1e6).toFixed(n>=1e7?0:1)+"M";if(n>=1e3)return Math.round(n/1e3)+"K";return String(n)}
+const lgmFlag=iso2=>/^[A-Z]{2}$/.test(iso2||"")?String.fromCodePoint(...[...iso2].map(c=>127397+c.charCodeAt(0))):"🏳️";
+const lgmName=x=>x?(x.name||x.id):"";
+// my words: concept members I looked up, by Translate language code -> Language Map language
+function lgmMyWords(){
+  const out={};for(const c of S.concepts||[]){for(const m of c.members||[]){if(m.by!=="me")continue;const k=lgmByIso1(m.lang);if(!k)continue;(out[k]=out[k]||[]).push({term:m.term,concept:c.id,gloss:c.gloss})}}
+  return out}
+function lgmMyLangs(){const s=new Set(Object.keys(lgmMyWords()));for(const l of (S.xl?.st?.langs||[]))if(lgmByIso1(l))s.add(lgmByIso1(l));return s}
+async function lgmLoad(force){
+  if(!LOCALAPI||S.lgm.busy)return;
+  if(!force&&S.lgm.data&&Date.now()-(S.lgm.at||0)<300000)return;
+  S.lgm.busy=true;S.lgm.at=Date.now();
+  try{const [d,w]=await Promise.all([api("GET","/api/langmap"),S.lgm.world&&!force?Promise.resolve(S.lgm.world):api("GET","/api/langmap/world")]);
+    S.lgm.data=d;S.lgm.world=w;S.lgm.paths=null;S.lgm.err="";S.lgm.busy=false;if(!S.concepts?.length&&typeof xlLoad==="function")xlLoad();
+    if(d.build?.running)setTimeout(()=>lgmLoad(true),20000);
+    if(viewId()==="langmap"){S.lgm.sig="";render()}}
+  catch(e){S.lgm.busy=false;S.lgm.err="Could not read the map data";if(viewId()==="langmap")render()}
+}
+function lgmRoute(){const h=location.hash||"";let m;
+  if((m=/^#langmap\/([A-Za-z0-9]{2,3})$/.exec(h)))return {kind:"country",id:m[1].toUpperCase()};
+  if((m=/^#language\/(.+)$/.exec(h)))return {kind:"language",id:decodeURIComponent(m[1])};
+  if((m=/^#langmap\?concept=(.+)$/.exec(h))){S.lgm.concept=decodeURIComponent(m[1]);S.lgm.mode="learned"}
+  return {kind:"map"}}
+/* ----- the map ----- */
+function lgmPath(geom){const ring=r=>"M"+r.map(([lo,la])=>lgmX(lo).toFixed(1)+","+lgmY(la).toFixed(1)).join("L")+"Z";
+  const polys=geom.type==="Polygon"?[geom.coordinates]:geom.type==="MultiPolygon"?geom.coordinates:[];
+  return polys.map(p=>p.map(ring).join("")).join("")}
+function lgmPaths(){if(S.lgm.paths)return S.lgm.paths;S.lgm.paths=(S.lgm.world?.features||[]).map(f=>({id:f.id,d:lgmPath(f.geometry),name:f.properties.n}));return S.lgm.paths}
+const lgmSign=L=>!L||L.family==="Sign Language"||/Sign Language/.test(L.name||"");
+function lgmMainLang(c){ // the official spoken language with the most speakers (a sign language never colors a country)
+  if(c._main!==undefined)return c._main;const pick=ks=>(ks||[]).map(lgmLang).filter(L=>L&&!lgmSign(L)).sort((a,b)=>(b.speakers||0)-(a.speakers||0))[0];
+  const L=pick(c.official)||pick(c.used)||pick(c.spoken);return c._main=L?L.id:null}
+function lgmFamilies(){const d=S.lgm.data;if(d._fam)return d._fam;const n={};
+  for(const c of Object.values(d.countries)){const L=lgmLang(lgmMainLang(c));if(L&&!LGM_PSEUDO.has(L.family))n[L.family]=(n[L.family]||0)+1}
+  d._fam=Object.entries(n).sort((a,b)=>b[1]-a[1]).slice(0,8).map(x=>x[0]);return d._fam}
+function lgmConceptLangs(){const c=S.lgm.concept&&(S.conceptsAll||S.concepts||[]).find(x=>x.id===S.lgm.concept);if(!c)return null;
+  const m={};for(const mb of c.members||[]){const k=lgmByIso1(mb.lang);if(k&&!m[k])m[k]={term:mb.term,by:mb.by}}return {c,m}}
+function lgmFill(c){
+  const mode=S.lgm.mode, cl=lgmConceptLangs();
+  if(cl){const has=k=>cl.m[k];if((c.official||[]).some(has))return ["var(--v3)",1];if((c.used||[]).some(has))return ["var(--v3)",.55];if((c.spoken||[]).some(has))return ["var(--v3)",.25];return ["var(--surface-2)",1]}
+  if(mode==="learned"){const my=lgmMyLangs();if((c.official||[]).some(k=>my.has(k)))return ["var(--v1)",1];if((c.used||[]).some(k=>my.has(k)))return ["var(--v1)",.55];if((c.spoken||[]).some(k=>my.has(k)))return ["var(--v1)",.25];return ["var(--surface-2)",1]}
+  if(mode==="pop"){const p=c.pop?.value;if(!p)return ["var(--surface-2)",1];return ["var(--v6)",Math.max(.15,Math.min(1,(Math.log10(p)-4)/5))]}
+  const L=lgmLang(lgmMainLang(c)), i=L?lgmFamilies().indexOf(L.family):-1;return i>=0?[`var(--v${i+1})`,.8]:["var(--v7)",.45]}
+function lgmLabels(vb){
+  const d=S.lgm.data, k=LGM_W/vb.w, cl=lgmConceptLangs(), my=S.lgm.mode==="learned"?lgmMyLangs():null;
+  let ls=Object.values(d.languages).filter(L=>L.lat!=null&&L.lon!=null&&((L.key&&!lgmSign(L))||(cl&&cl.m[L.id])));
+  ls.sort((a,b)=>(cl?(!!cl.m[b.id]-!!cl.m[a.id]):0)||(my?(my.has(b.id)-my.has(a.id)):0)||((b.speakers||0)-(a.speakers||0)));
+  const max=Math.round(30*k*k)+10, taken=[], out=[], cw=vb.w/40, ch=vb.h/26;
+  for(const L of ls){if(out.length>=max)break;const x=lgmX(L.lon), y=lgmY(L.lat);if(x<vb.x||x>vb.x+vb.w||y<vb.y||y>vb.y+vb.h)continue;
+    const word=cl?cl.m[L.id]?.term:null, txt=word||L.name, w=Math.min(10,txt.length)*cw*.45+cw, h=ch;
+    if(taken.some(t=>Math.abs(t.x-x)<(t.w+w)/2&&Math.abs(t.y-y)<(t.h+h)/2))continue;taken.push({x,y,w,h});
+    out.push({L,x,y,txt,word:!!word,dim:cl&&!word,mine:my&&my.has(L.id)})}
+  const fs=(11/k).toFixed(2);
+  return out.map(o=>`<g class="lgmlab${o.word?" w":""}${o.dim?" dim":""}${o.mine?" mine":""}" data-lgmlang="${esc(o.L.id)}" transform="translate(${o.x.toFixed(1)},${o.y.toFixed(1)})"><text font-size="${fs}" text-anchor="middle" dy="0.35em" lang="${esc(o.L.iso1||"")}">${esc(o.txt)}</text></g>`).join("")}
+function lgmRegionDots(vb){const k=LGM_W/vb.w;if(k<3)return "";const r=(3.2/k).toFixed(2), fs=(10/k).toFixed(2);
+  return (S.lgm.data.regions||[]).filter(g=>g.lat!=null&&g.lon!=null).map(g=>{const x=lgmX(g.lon), y=lgmY(g.lat);if(x<vb.x||x>vb.x+vb.w||y<vb.y||y>vb.y+vb.h)return "";
+    return `<g class="lgmreg" data-lgmreg="${esc(g.id)}" transform="translate(${x.toFixed(1)},${y.toFixed(1)})"><circle r="${r}"/>${k>=5?`<text font-size="${fs}" dx="${(5/k).toFixed(2)}" dy="0.35em">${esc(g.name)}</text>`:""}</g>`}).join("")}
+function lgmSmall(sel){ // countries too small for the 1:110m shapes: a dot each, so every country can be pressed
+  return Object.values(S.lgm.data.countries).filter(c=>!c.onMap&&c.lat!=null&&c.lon!=null).map(c=>{const [f,o]=lgmFill(c);
+    return `<circle class="lgmdot${c.id===sel?" sel":""}" data-lgmc="${esc(c.id)}" cx="${lgmX(c.lon).toFixed(1)}" cy="${lgmY(c.lat).toFixed(1)}" r="2.2" fill="${f==="var(--surface-2)"?"var(--v7)":f}" fill-opacity="${Math.max(o,.6)}"><title>${esc(lgmName(c))}</title></circle>`}).join("")}
+function lgmSvg(){
+  const vb=S.lgm.vb||LGM_FULL(), d=S.lgm.data, sel=S.lgm.sel;
+  const shapes=lgmPaths().map(p=>{const c=lgmCountry(p.id);const [f,o]=c?lgmFill(c):["var(--surface-2)",1];
+    return `<path d="${p.d}" data-lgmc="${esc(p.id)}" fill="${f}" fill-opacity="${o}" class="${p.id===sel?"sel":""}"><title>${esc(c?lgmName(c):p.name)}</title></path>`}).join("");
+  return `<svg id="lgmSvg" class="lgmsvg" viewBox="${vb.x} ${vb.y} ${vb.w} ${vb.h}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="World map of languages"><rect x="-2000" y="-2000" width="5000" height="5000" class="lgmsea"/><g id="lgmShapes">${shapes}</g><g id="lgmSmall">${lgmSmall(sel)}</g><g id="lgmRegs">${lgmRegionDots(vb)}</g><g id="lgmLabs">${lgmLabels(vb)}</g></svg>`}
+function lgmRedrawLayers(){const svg=$("#lgmSvg");if(!svg)return;const vb=S.lgm.vb||LGM_FULL();svg.setAttribute("viewBox",`${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
+  clearTimeout(S.lgm.layT);S.lgm.layT=setTimeout(()=>{const a=$("#lgmLabs"),b=$("#lgmRegs");if(a)a.innerHTML=lgmLabels(vb);if(b)b.innerHTML=lgmRegionDots(vb);const st=$("#lgmShapes");if(st)st.style.strokeWidth=(0.5*vb.w/LGM_W).toFixed(3)},60)}
+function lgmZoom(f,cx,cy){const vb={...(S.lgm.vb||LGM_FULL())};const nw=Math.max(LGM_W/40,Math.min(LGM_W,vb.w/f)), nh=nw*LGM_H/LGM_W;
+  cx=cx??vb.x+vb.w/2;cy=cy??vb.y+vb.h/2;const rx=(cx-vb.x)/vb.w, ry=(cy-vb.y)/vb.h;
+  S.lgm.vb=lgmClamp({x:cx-rx*nw,y:cy-ry*nh,w:nw,h:nh});lgmRedrawLayers()}
+function lgmClamp(v){v.x=Math.max(-LGM_W*0.1,Math.min(LGM_W*1.1-v.w,v.x));v.y=Math.max(LGM_TOP-LGM_H*.1,Math.min(LGM_BOT+LGM_H*.1-v.h,v.y));return v}
+function lgmFocusCountry(iso2){const p=(S.lgm.world?.features||[]).find(f=>f.id===iso2);if(!p)return;let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+  const walk=c=>{if(typeof c[0]==="number"){const x=lgmX(c[0]),y=lgmY(c[1]);x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y)}else c.forEach(walk)};walk(p.geometry.coordinates);
+  if(x1-x0>LGM_W*.6)return; // countries across the date line: keep the world view
+  let w=Math.max((x1-x0)*1.4,LGM_W/30), h=w*LGM_H/LGM_W;if(h<(y1-y0)*1.4){h=(y1-y0)*1.4;w=h*LGM_W/LGM_H}
+  S.lgm.vb=lgmClamp({x:(x0+x1)/2-w/2,y:(y0+y1)/2-h/2,w,h});lgmRedrawLayers()}
+/* ----- cards and lists ----- */
+function lgmCountryCard(iso2){const c=lgmCountry(iso2);if(!c)return "";const my=lgmMyWords();
+  const row=(ks,label)=>ks.length?`<div class="lgmrow"><span class="sub">${label}</span><span>${ks.slice(0,6).map(k=>`<a href="#language/${esc(k)}">${esc(lgmName(lgmLang(k)))}</a>`).join(", ")}${ks.length>6?` <span class="sub">+${ks.length-6}</span>`:""}</span></div>`:"";
+  const mineHere=[...new Set([...(c.official||[]),...(c.used||[]),...(c.spoken||[])])].filter(k=>my[k]), n=mineHere.reduce((a,k)=>a+my[k].length,0);
+  return `<div class="lgmcard" data-noauto><div class="lgmct"><span class="lgmflag">${lgmFlag(c.id)}</span><b>${esc(lgmName(c))}</b>${c.native&&c.native!==c.name?` <span class="sub">${esc(c.native)}</span>`:""}<button class="lgmx" data-lgmclose aria-label="Close">×</button></div>
+    ${c.pop?.value?`<div class="lgmrow"><span class="sub">Population</span><span>${c.pop.value.toLocaleString("en-US")}${c.pop.year?` <span class="sub">(${esc(c.pop.year)})</span>`:""}</span></div>`:""}
+    ${row(c.official||[],"Official")}${row(c.used||[],"Also used")}
+    ${(c.regions||[]).length?`<div class="lgmrow"><span class="sub">Regions</span><span>${c.regions.length} with a language of their own</span></div>`:""}
+    <div class="lgmrow"><span class="sub">My words here</span><span>${n?`${n} in ${mineHere.map(k=>esc(lgmName(lgmLang(k)))).join(", ")}`:"none yet"}</span></div>
+    <a class="btn sm" href="#langmap/${esc(c.id)}">Open ${esc(lgmName(c))}</a></div>`}
+function lgmRegionCard(id){const g=(S.lgm.data.regions||[]).find(r=>r.id===id);if(!g)return "";const c=lgmCountry(g.country);
+  return `<div class="lgmcard" data-noauto><div class="lgmct"><b>${esc(g.name)}</b>${g.native&&g.native!==g.name?` <span class="sub">${esc(g.native)}</span>`:""}<button class="lgmx" data-lgmclose aria-label="Close">×</button></div>
+    <div class="lgmrow"><span class="sub">${esc(g.type||"Region")}</span><span><a href="#langmap/${esc(g.country)}">${lgmFlag(g.country)} ${esc(lgmName(c))}</a></span></div>
+    ${g.pop?`<div class="lgmrow"><span class="sub">Population</span><span>${g.pop.toLocaleString("en-US")} <span class="sub">(Wikidata)</span></span></div>`:""}
+    <div class="lgmrow"><span class="sub">Official</span><span>${(g.langs||[]).map(k=>`<a href="#language/${esc(k)}">${esc(lgmName(lgmLang(k)))}</a>`).join(", ")}</span></div></div>`}
+function lgmLangCard(k){const L=lgmLang(k);if(!L)return "";const my=lgmMyWords()[k]||[];
+  return `<div class="lgmcard" data-noauto><div class="lgmct"><b>${esc(L.name)}</b>${L.native&&L.native!==L.name?` <span class="sub" lang="${esc(L.iso1||"")}">${esc(L.native)}</span>`:""}<button class="lgmx" data-lgmclose aria-label="Close">×</button></div>
+    <div class="lgmrow"><span class="sub">Family</span><span>${esc(L.family||"")}</span></div>
+    ${L.speakers?`<div class="lgmrow"><span class="sub">Speakers</span><span>about ${lgmFmt(L.speakers)} <span class="sub">(Wikidata)</span></span></div>`:""}
+    <div class="lgmrow"><span class="sub">Countries</span><span>${(L.countries||[]).length}</span></div>
+    <div class="lgmrow"><span class="sub">My words</span><span>${my.length?my.slice(0,6).map(w=>`<a href="#concept/${esc(w.concept)}" lang="${esc(L.iso1||"")}">${esc(w.term)}</a>`).join(", ")+(my.length>6?` +${my.length-6}`:""):"none yet"}</span></div>
+    <a class="btn sm" href="#language/${esc(k)}">Open ${esc(L.name)}</a></div>`}
+function lgmSearchHits(q){const d=S.lgm.data;q=q.trim().toLowerCase();if(!q||!d)return [];const has=x=>[x.name,x.ja,x.native,x.id].some(v=>v&&String(v).toLowerCase().includes(q));const out=[];
+  for(const c of Object.values(d.countries))if(has(c))out.push({k:"c",id:c.id,t:lgmFlag(c.id)+" "+lgmName(c),s:"country",w:c.pop?.value||0});
+  for(const L of Object.values(d.languages))if((L.key||L.speakers)&&has(L))out.push({k:"l",id:L.id,t:L.name,s:"language · "+(L.family||""),w:(L.speakers||0)+1e9*(+!!L.key)});
+  for(const g of d.regions||[])if(has(g))out.push({k:"r",id:g.id,t:g.name,s:(g.type||"region")+" · "+lgmName(lgmCountry(g.country)),w:g.pop||0});
+  for(const e of d.ethnic||[])if(has(e))out.push({k:"e",id:e.id,t:e.name,s:"people"+(e.pop?" · "+lgmFmt(e.pop):""),w:e.pop||0});
+  const exact=x=>String(x.t).toLowerCase().replace(/^\S+ /,"")===q?1:0;
+  return out.sort((a,b)=>exact(b)-exact(a)||b.w-a.w).slice(0,12)}
+function lgmTabs(){const d=S.lgm.data, my=lgmMyWords(), myl=lgmMyLangs(), t=S.lgm.tab;
+  const tabs=`<div class="mtabs lgmtabs" role="tablist" aria-label="Language Map lists">${[["langs","Languages"],["countries","Countries"],["mine","My languages"]].map(([k,l])=>`<button role="tab" class="mtab" data-lgmtab="${k}" aria-selected="${t===k}">${l}</button>`).join("")}</div>`;
+  if(t==="countries"){const cs=Object.values(d.countries).filter(c=>c.onMap||c.pop);cs.sort(S.lgm.csort==="name"?(a,b)=>lgmName(a).localeCompare(lgmName(b)):(a,b)=>(b.pop?.value||0)-(a.pop?.value||0));
+    return tabs+`<div class="chips lgmsort">${[["pop","Population"],["name","Name"]].map(([k,l])=>`<button class="chip" data-lgmcsort="${k}" aria-pressed="${S.lgm.csort===k}">${l}</button>`).join("")}</div>
+    <section class="card lgmlist">${cs.slice(0,S.lgm.more?999:60).map(c=>`<a class="lgmli" href="#langmap/${esc(c.id)}" data-noauto><span>${lgmFlag(c.id)} ${esc(lgmName(c))}</span><span class="sub">${esc((c.official||[]).slice(0,3).map(k=>lgmName(lgmLang(k))).join(", "))}</span><span class="count">${c.pop?.value?lgmFmt(c.pop.value):""}</span></a>`).join("")}
+    ${cs.length>60&&!S.lgm.more?`<button class="dmore" data-lgmmore>Show all (${cs.length})</button>`:""}</section>`}
+  if(t==="mine"){const ks=[...myl];if(!ks.length)return tabs+`<div class="card empty"><b>No languages yet</b>Words you look up in Translate show up here with the places they are understood.</div>`;
+    const rows=ks.map(k=>{const L=lgmLang(k), off=Object.values(d.countries).filter(c=>(c.official||[]).includes(k)), use=Object.values(d.countries).filter(c=>(c.used||[]).includes(k));
+      const pop=off.reduce((a,c)=>a+(c.pop?.value||0),0);return {k,L,off,use,pop,n:(my[k]||[]).length}}).sort((a,b)=>b.pop-a.pop);
+    return tabs+`<section class="card lgmlist">${rows.map(r=>`<a class="lgmli lgmmine" href="#language/${esc(r.k)}" data-noauto><span><b>${esc(lgmName(r.L))}</b> <span class="sub">${r.n} ${r.n===1?"word":"words"}</span></span><span class="sub">Official in ${r.off.length} ${r.off.length===1?"country":"countries"}${r.use.length?`, used in ${r.use.length} more`:""}</span><span class="count">${r.pop?lgmFmt(r.pop)+" people":""}</span></a>`).join("")}</section>
+    <p class="sub lgmnote">People = the population of the countries where the language is official (World Bank). Not everyone there speaks it.</p>`}
+  const fam=S.lgm.sort==="family", ls=Object.values(d.languages).filter(L=>L.key||my[L.id]);
+  const sorter={learned:(a,b)=>((my[b.id]||[]).length-(my[a.id]||[]).length)||((b.speakers||0)-(a.speakers||0)),speakers:(a,b)=>(b.speakers||0)-(a.speakers||0),family:(a,b)=>(a.family||"").localeCompare(b.family||"")||(b.speakers||0)-(a.speakers||0)}[S.lgm.sort]||((a,b)=>0);
+  ls.sort(sorter);const max=Math.max(1,...ls.map(L=>(my[L.id]||[]).length));let lastFam="";
+  return tabs+`<div class="chips lgmsort">${[["learned","Learning"],["speakers","Speakers"],["family","Family"]].map(([k,l])=>`<button class="chip" data-lgmsort="${k}" aria-pressed="${S.lgm.sort===k}">${l}</button>`).join("")}</div>
+  <section class="card lgmlist">${ls.slice(0,S.lgm.more?9999:80).map(L=>{const n=(my[L.id]||[]).length, head=fam&&L.family!==lastFam?(lastFam=L.family,`<div class="section-title lgmfam">${esc(L.family||"Other")}</div>`):"";
+    return head+`<a class="lgmli" href="#language/${esc(L.id)}" data-noauto><span>${esc(L.name)}${L.native&&L.native!==L.name?` <span class="sub" lang="${esc(L.iso1||"")}">${esc(L.native)}</span>`:""}</span><span class="lgmmeter">${n?`<i style="width:${Math.round(n/max*100)}%"></i><span class="sub">${n}</span>`:""}</span><span class="count">${L.speakers?lgmFmt(L.speakers):""}</span></a>`}).join("")}
+  ${ls.length>80&&!S.lgm.more?`<button class="dmore" data-lgmmore>Show all (${ls.length})</button>`:""}</section>`}
+function lgmLegend(){const cl=lgmConceptLangs();
+  if(cl)return `<div class="lgmleg"><span><i style="background:var(--v3)"></i>official</span><span><i style="background:var(--v3);opacity:.55"></i>also used</span><span><i style="background:var(--v3);opacity:.25"></i>spoken by some</span></div>`;
+  if(S.lgm.mode==="learned")return `<div class="lgmleg"><span><i style="background:var(--v1)"></i>my language is official</span><span><i style="background:var(--v1);opacity:.55"></i>also used</span><span><i style="background:var(--v1);opacity:.25"></i>spoken by some</span></div>`;
+  if(S.lgm.mode==="pop")return `<div class="lgmleg"><span><i style="background:var(--v6);opacity:.2"></i>fewer people</span><span><i style="background:var(--v6)"></i>more people</span></div>`;
+  return `<div class="lgmleg">${lgmFamilies().map((f,i)=>`<span><i style="background:var(--v${i+1})"></i>${esc(f)}</span>`).join("")}<span><i style="background:var(--v7);opacity:.45"></i>other</span></div>`}
+function lgmSourceLine(){const m=S.lgm.data?.meta||{}, b=S.lgm.data?.build||{}, bad=Object.entries(m.steps||{}).filter(([,s])=>!s.ok);
+  return `<p class="sub lgmsrc">Data: Wikidata (CC0), Glottolog (CC BY 4.0), World Bank (CC BY 4.0), Natural Earth. Updated ${esc(m.at||"never")}.
+    ${b.running?"Updating now (Wikidata allows one query a minute, so this takes a while).":`<button class="btn sm" id="lgmBuild">Update data</button>`}
+    ${bad.length&&!b.running?`<br>Not updated last time: ${bad.map(([n])=>esc(n)).join(", ")}. The earlier data is kept.`:""}${b.error?`<br>${esc(b.error)}`:""}</p>`}
+function lgmMapView(){const d=S.lgm.data, cl=lgmConceptLangs(), hits=S.lgm.q?lgmSearchHits(S.lgm.q):[];
+  const sel=S.lgm.pick, card=sel?sel.k==="c"?lgmCountryCard(sel.id):sel.k==="r"?lgmRegionCard(sel.id):sel.k==="l"?lgmLangCard(sel.id):"":"";
+  const concepts=(S.concepts||[]).slice(0,400);
+  return `<header class="head"><div><p class="eyebrow">Read</p><h1>Language Map</h1></div><p class="sub lgmhead">${(d.meta.counts?.countries||0)} countries · ${Object.values(d.languages).filter(L=>L.key).length.toLocaleString("en-US")} languages in use · ${(d.regions||[]).length} regions · ${(d.ethnic||[]).length} peoples</p></header>
+  <section class="card lgmbar">
+    <div class="lgmfind"><input class="lgmfield" id="lgmQ" placeholder="Find a country, language, region or people" value="${esc(S.lgm.q)}" autocomplete="off" aria-label="Find on the map">
+      ${hits.length?`<div class="lgmhits" role="listbox">${hits.map((h,i)=>`<button class="lgmhit" data-lgmhit="${i}"><span>${esc(h.t)}</span><span class="sub">${esc(h.s)}</span></button>`).join("")}</div>`:""}</div>
+    <div class="row lgmctl"><div class="chips" role="group" aria-label="Color by">${[["family","Family"],["learned","My languages"],["pop","Population"]].map(([k,l])=>`<button class="chip" data-lgmmode="${k}" aria-pressed="${S.lgm.mode===k&&!cl}">${l}</button>`).join("")}</div>
+      <div class="lgmconcept"><input class="lgmfield" id="lgmC" list="lgmCList" placeholder="Show a word I learned" value="${esc(cl?(cl.c.gloss||""):S.lgm.cq)}" aria-label="A word I learned"><datalist id="lgmCList">${concepts.map(c=>`<option value="${esc(c.gloss||"")}">${esc((c.members||[]).map(m=>m.term).slice(0,5).join(" · "))}</option>`).join("")}</datalist>${cl?`<button class="btn sm" id="lgmCX">Clear</button>`:""}</div></div>
+    ${cl?`<p class="sub lgmcl">“${esc(cl.c.gloss||"")}”: ${Object.keys(cl.m).length} of your languages have a word for it. Labels show the word; other languages are dimmed.</p>`:""}
+  </section>
+  <div class="lgmwrap"><div class="lgmmap">${lgmSvg()}<div class="lgmzoom"><button class="btn sm" data-lgmz="in" aria-label="Zoom in">+</button><button class="btn sm" data-lgmz="out" aria-label="Zoom out">−</button><button class="btn sm" data-lgmz="world">World</button></div></div>${card?`<aside class="lgmside">${card}</aside>`:""}</div>
+  ${lgmLegend()}${lgmTabs()}${lgmSourceLine()}`}
+/* ----- the country and language pages ----- */
+async function lgmDetail(kind,id){const key=kind+":"+id;if(S.lgm.detail[key]||S.lgm.detail[key+"!"])return;S.lgm.detail[key+"!"]=1;
+  try{S.lgm.detail[key]=await api("GET",`/api/langmap/${kind}/${encodeURIComponent(id)}`)}catch(e){S.lgm.detail[key]={error:"Not found in the map data"}}
+  delete S.lgm.detail[key+"!"];S.lgm.sig="";if(viewId()==="langmap")render()}
+function lgmMini(set,strong){return `<svg class="lgmmini" viewBox="0 ${LGM_TOP} ${LGM_W} ${LGM_H}" aria-hidden="true">${lgmPaths().map(p=>`<path d="${p.d}" fill="${set.has(p.id)?"var(--v3)":"var(--surface-2)"}" fill-opacity="${strong.has(p.id)?1:set.has(p.id)?.45:1}"/>`).join("")}</svg>`}
+function lgmHideBtn(kind,cid,id){return `<button class="lgmhide" data-lgmhide="${esc(kind)}|${esc(cid)}|${esc(id)}" title="Hide this row for this country (it stays hidden after updates)">Not right</button>`}
+function lgmCountryPage(id){const r=S.lgm.detail["country:"+id];if(!r){lgmDetail("country",id);return `<p class="sub">Loading…</p>`}if(r.error)return `<div class="card empty"><b>${esc(id)}</b>${esc(r.error)}</div>`;
+  const c=r.country, L=r.languages, my=lgmMyWords(), src=c.src||{};
+  const lrow=(k,kind)=>{const x=L[k];if(!x)return "";const n=(my[k]||[]).length;return `<tr><td><a href="#language/${esc(k)}">${esc(x.name)}</a>${x.native&&x.native!==x.name?` <span class="sub" lang="${esc(x.iso1||"")}">${esc(x.native)}</span>`:""}</td><td>${kind}</td><td class="num">${x.speakers?"≈"+lgmFmt(x.speakers)+" total":""}</td><td class="num">${n||""}</td><td>${lgmHideBtn("lang",c.id,k)}</td></tr>`};
+  const bySp=ks=>[...(ks||[])].sort((a,b)=>(L[b]?.speakers||0)-(L[a]?.speakers||0)), used=bySp(c.used), rest=bySp((c.spoken||[]).filter(k=>!(c.official||[]).includes(k)&&!(c.used||[]).includes(k))), all=S.lgm.allRest;
+  const words=Object.entries(my).filter(([k])=>[...(c.official||[]),...(c.used||[]),...(c.spoken||[]),...r.regions.flatMap(g=>g.langs||[])].includes(k));
+  return `<header class="head"><div><p class="eyebrow"><a href="#langmap">Language Map</a> · ${esc(c.cont||"")}${c.sub&&c.sub!==c.cont?" · "+esc(c.sub):""}</p><h1>${lgmFlag(c.id)} ${esc(lgmName(c))}</h1>${c.native&&c.native!==c.name?`<p class="sub">${esc(c.native)}${c.ja?" · "+esc(c.ja):""}</p>`:c.ja?`<p class="sub">${esc(c.ja)}</p>`:""}</div>
+    <div class="lgmkpi">${c.pop?.value?`<div><b>${c.pop.value.toLocaleString("en-US")}</b><span class="sub">people${c.pop.year?" ("+esc(c.pop.year)+", "+(c.pop.src==="worldbank"?"World Bank":"Wikidata")+")":""}</span></div>`:""}${c.capital?`<div><b>${esc(c.capital)}</b><span class="sub">capital</span></div>`:""}</div></header>
+  <section class="card lgmsec"><div class="section-title">Languages</div><div class="lgmtw"><table class="lgmtab"><thead><tr><th>Language</th><th>Status</th><th class="num">Speakers (worldwide)</th><th class="num">My words</th><th></th></tr></thead><tbody>
+    ${bySp(c.official).map(k=>lrow(k,"Official")).join("")}${used.slice(0,all?9999:15).map(k=>lrow(k,"Used")).join("")}${all?rest.map(k=>lrow(k,"Spoken (Glottolog)")).join(""):""}</tbody></table></div>
+    ${!all&&used.length+rest.length>15?`<button class="dmore" data-lgmallrest>Show all ${(c.official||[]).length+used.length+rest.length} languages</button>`:""}
+    <p class="sub">Speaker numbers are for the language worldwide; the sources rarely give a number per country.</p></section>
+  ${r.regions.length?`<section class="card lgmsec"><div class="section-title">Regions with a language of their own <span class="count">${r.regions.length}</span></div><div class="lgmtw"><table class="lgmtab"><thead><tr><th>Region</th><th>Type</th><th class="num">Population</th><th>Official languages</th><th></th></tr></thead><tbody>
+    ${r.regions.map(g=>`<tr><td>${esc(g.name)}${g.native&&g.native!==g.name?` <span class="sub">${esc(g.native)}</span>`:""}</td><td class="sub">${esc(g.type||"")}</td><td class="num">${g.pop?g.pop.toLocaleString("en-US"):""}</td><td>${(g.langs||[]).map(k=>L[k]?`<a href="#language/${esc(k)}">${esc(L[k].name)}</a>`:"").join(", ")}</td><td>${lgmHideBtn("region",c.id,g.id)}</td></tr>`).join("")}</tbody></table></div></section>`:""}
+  ${r.ethnic.length?`<section class="card lgmsec"><div class="section-title">Peoples <span class="count">${r.ethnic.length}</span></div><div class="lgmtw"><table class="lgmtab"><thead><tr><th>People</th><th class="num">Number (worldwide)</th><th>Language</th><th></th></tr></thead><tbody>
+    ${r.ethnic.slice(0,40).map(e=>`<tr><td>${esc(e.name)}${e.ja?` <span class="sub">${esc(e.ja)}</span>`:""}</td><td class="num">${e.pop?e.pop.toLocaleString("en-US"):""}</td><td>${(e.langs||[]).map(k=>L[k]?`<a href="#language/${esc(k)}">${esc(L[k].name)}</a>`:esc(lgmName(lgmLang(k)))).join(", ")}</td><td>${lgmHideBtn("ethnic",c.id,e.id)}</td></tr>`).join("")}</tbody></table></div></section>`:""}
+  <section class="card lgmsec"><div class="section-title">My words that work here</div>${words.length?words.map(([k,ws])=>`<div class="lgmwords"><b>${esc(lgmName(lgmLang(k)))}</b> <span class="sub">${ws.length}</span><div>${ws.map(w=>`<a class="xlm" href="#concept/${esc(w.concept)}" lang="${esc(lgmLang(k)?.iso1||"")}" title="${esc(w.gloss||"")}">${esc(w.term)}</a>`).join('<span class="xldot">·</span>')}</div></div>`).join(""):`<p class="sub">None yet. ${(c.official||[]).length?`Look something up in ${esc(lgmName(lgmLang(c.official[0])))}:`:""}</p>`}
+    ${(c.official||[]).filter(k=>L[k]?.iso1).slice(0,3).map(k=>`<button class="btn sm" data-lgmxl="${esc(L[k].iso1)}">Translate into ${esc(L[k].name)}</button>`).join(" ")}</section>
+  <p class="sub lgmsrc">Sources: ${Object.keys(src).map(s=>esc((S.lgm.data?.meta?.sources?.[s]||[s])[0])+" "+esc(src[s])).join(" · ")}</p>`}
+function lgmLanguagePage(id){const r=S.lgm.detail["language:"+id];if(!r){lgmDetail("language",id);return `<p class="sub">Loading…</p>`}if(r.error)return `<div class="card empty"><b>${esc(id)}</b>${esc(r.error)}</div>`;
+  const L=r.language, cs=Object.entries(r.countries), my=lgmMyWords()[L.id]||[], src=L.src||{};
+  const off=new Set(cs.filter(([,c])=>c.official).map(([k])=>k)), all=new Set(cs.map(([k])=>k));
+  cs.sort((a,b)=>(b[1].official-a[1].official)||(b[1].used-a[1].used)||((b[1].pop?.value||0)-(a[1].pop?.value||0)));
+  return `<header class="head"><div><p class="eyebrow"><a href="#langmap">Language Map</a> · Language</p><h1>${esc(L.name)}</h1><p class="sub">${L.native&&L.native!==L.name?`<span lang="${esc(L.iso1||"")}">${esc(L.native)}</span> · `:""}${L.ja?esc(L.ja)+" · ":""}${[L.iso1,L.iso3,L.glot].filter(Boolean).map(esc).join(" / ")}</p></div>
+    <div class="lgmkpi">${L.speakers?`<div><b>≈${lgmFmt(L.speakers)}</b><span class="sub">speakers (Wikidata)</span></div>`:""}<div><b>${cs.length}</b><span class="sub">countries</span></div>${my.length?`<div><b>${my.length}</b><span class="sub">my words</span></div>`:""}</div></header>
+  <section class="card lgmsec"><div class="lgmlin">${(L.lineage||[]).length?(L.lineage.map(esc).join(" › ")+" › <b>"+esc(L.name)+"</b>"):`<b>${esc(L.family||"Isolate")}</b>`}</div>${(L.scripts||[]).length?`<p class="sub">Script: ${L.scripts.map(esc).join(", ")}</p>`:""}
+    ${lgmMini(all,off)}<div class="row">${L.iso1?`<button class="btn sm" data-lgmxl="${esc(L.iso1)}">Translate into ${esc(L.name)}</button>`:""}<a class="btn sm" href="#langmap" data-lgmshow="${esc(L.id)}">Show on the map</a></div></section>
+  ${my.length?`<section class="card lgmsec"><div class="section-title">My words <span class="count">${my.length}</span></div><div class="lgmwords">${my.map(w=>`<a class="xlm" href="#concept/${esc(w.concept)}" lang="${esc(L.iso1||"")}" title="${esc(w.gloss||"")}">${esc(w.term)}</a>`).join('<span class="xldot">·</span>')}</div></section>`:""}
+  <section class="card lgmsec"><div class="section-title">Where it is spoken <span class="count">${cs.length}</span></div><div class="lgmtw"><table class="lgmtab"><thead><tr><th>Country</th><th>Status</th><th class="num">Population</th></tr></thead><tbody>
+    ${cs.map(([k,c])=>`<tr><td><a href="#langmap/${esc(k)}">${lgmFlag(k)} ${esc(c.name)}</a></td><td>${c.official?"Official":c.used?"Used":"Spoken by some"}</td><td class="num">${c.pop?.value?c.pop.value.toLocaleString("en-US"):""}</td></tr>`).join("")}</tbody></table></div></section>
+  ${r.regions.length?`<section class="card lgmsec"><div class="section-title">Regions where it is official <span class="count">${r.regions.length}</span></div><div class="lgmtw"><table class="lgmtab"><tbody>${r.regions.map(g=>`<tr><td>${esc(g.name)}</td><td class="sub">${esc(g.type||"")}</td><td><a href="#langmap/${esc(g.country)}">${lgmFlag(g.country)} ${esc(lgmName(lgmCountry(g.country))||g.country)}</a></td><td class="num">${g.pop?g.pop.toLocaleString("en-US"):""}</td></tr>`).join("")}</tbody></table></div></section>`:""}
+  ${r.ethnic.length?`<section class="card lgmsec"><div class="section-title">Peoples who speak it <span class="count">${r.ethnic.length}</span></div><div class="lgmtw"><table class="lgmtab"><tbody>${r.ethnic.slice(0,40).map(e=>`<tr><td>${esc(e.name)}${e.ja?` <span class="sub">${esc(e.ja)}</span>`:""}</td><td class="num">${e.pop?e.pop.toLocaleString("en-US"):""}</td><td class="sub">${(e.countries||[]).map(k=>lgmFlag(k)).join(" ")}</td></tr>`).join("")}</tbody></table></div></section>`:""}
+  <p class="sub lgmsrc">Sources: ${Object.keys(src).map(s=>esc((S.lgm.data?.meta?.sources?.[s]||[s])[0])+" "+esc(src[s])).join(" · ")}. Family from Glottolog.</p>`}
+function lgmView(){
+  if(S.lgm.err&&!S.lgm.data)return `<header class="head"><div><p class="eyebrow">Read</p><h1>Language Map</h1></div></header><div class="card empty"><b>${esc(S.lgm.err)}</b>Is the Desk server running?</div>`;
+  if(!S.lgm.data||!S.lgm.world)return `<header class="head"><div><p class="eyebrow">Read</p><h1>Language Map</h1></div></header><p class="sub">Loading the map…</p>`;
+  if(!Object.keys(S.lgm.data.languages||{}).length&&!S.lgm.data.build?.running)return lgmMapView().replace('<section class="card lgmbar">',`<div class="card empty"><b>The language data is not here yet</b>Press Update data at the bottom, or run <code>python3 desk/langmap_build.py</code>. Wikidata allows one query a minute right now, so the first run takes about 20 minutes.</div><section class="card lgmbar">`);
+  const r=lgmRoute();if(r.kind==="country")return lgmCountryPage(r.id);if(r.kind==="language")return lgmLanguagePage(r.id);return lgmMapView()}
+function wireLm(){
+  const svg=$("#lgmSvg");
+  if(svg){const pt=e=>{const r=svg.getBoundingClientRect(), vb=S.lgm.vb||LGM_FULL(), s=Math.max(vb.w/r.width,vb.h/r.height), ox=(r.width*s-vb.w)/2, oy=(r.height*s-vb.h)/2;return {x:vb.x+(e.clientX-r.left)*s-ox,y:vb.y+(e.clientY-r.top)*s-oy,s}};
+    svg.onwheel=e=>{e.preventDefault();const p=pt(e);lgmZoom(e.deltaY<0?1.25:0.8,p.x,p.y)};
+    let drag=null;const pts=new Map();
+    svg.onpointerdown=e=>{pts.set(e.pointerId,{x:e.clientX,y:e.clientY});if(pts.size===1)drag={x:e.clientX,y:e.clientY,vb:{...(S.lgm.vb||LGM_FULL())},moved:false,s:pt(e).s};else drag=null;try{svg.setPointerCapture(e.pointerId)}catch(_){}};
+    svg.onpointermove=e=>{const prev=pts.get(e.pointerId);if(!prev)return;
+      if(pts.size===2){const [a,b]=[...pts.values()], d0=Math.hypot(a.x-b.x,a.y-b.y);pts.set(e.pointerId,{x:e.clientX,y:e.clientY});const [c,d]=[...pts.values()], d1=Math.hypot(c.x-d.x,c.y-d.y);if(d0>0){const p=pt({clientX:(c.x+d.x)/2,clientY:(c.y+d.y)/2});lgmZoom(d1/d0,p.x,p.y)}S.lgm.dragged=true;return}
+      pts.set(e.pointerId,{x:e.clientX,y:e.clientY});if(!drag)return;const dx=e.clientX-drag.x, dy=e.clientY-drag.y;if(Math.abs(dx)+Math.abs(dy)>4)drag.moved=true;if(!drag.moved)return;
+      S.lgm.vb=lgmClamp({...drag.vb,x:drag.vb.x-dx*drag.s,y:drag.vb.y-dy*drag.s});lgmRedrawLayers()};
+    const up=e=>{pts.delete(e.pointerId);S.lgm.dragged=!!(drag&&drag.moved)||S.lgm.dragged&&pts.size>0;if(!pts.size)setTimeout(()=>{S.lgm.dragged=false},0);drag=null};
+    svg.onpointerup=up;svg.onpointercancel=up;
+    svg.onclick=e=>{if(S.lgm.dragged)return;const lab=e.target.closest("[data-lgmlang]"), reg=e.target.closest("[data-lgmreg]"), c=e.target.closest("[data-lgmc]");
+      if(lab)S.lgm.pick={k:"l",id:lab.dataset.lgmlang};else if(reg)S.lgm.pick={k:"r",id:reg.dataset.lgmreg};else if(c){S.lgm.pick={k:"c",id:c.dataset.lgmc};S.lgm.sel=c.dataset.lgmc}else{S.lgm.pick=null;S.lgm.sel=null}S.lgm.sig="";render()};
+    svg.ondblclick=e=>{const c=e.target.closest("[data-lgmc]");if(c&&lgmCountry(c.dataset.lgmc))location.hash="langmap/"+c.dataset.lgmc}}
+  document.querySelectorAll("[data-lgmz]").forEach(b=>b.onclick=()=>{const z=b.dataset.lgmz;if(z==="world"){S.lgm.vb=null;lgmRedrawLayers();return}lgmZoom(z==="in"?1.6:1/1.6)});
+  document.querySelectorAll("[data-lgmmode]").forEach(b=>b.onclick=()=>{S.lgm.mode=b.dataset.lgmmode;S.lgm.concept=null;if(/^#langmap\?/.test(location.hash))history.replaceState(null,"","#langmap");S.lgm.sig="";render()});
+  document.querySelectorAll("[data-lgmtab]").forEach(b=>b.onclick=()=>{S.lgm.tab=b.dataset.lgmtab;S.lgm.more=false;S.lgm.sig="";render()});
+  document.querySelectorAll("[data-lgmsort]").forEach(b=>b.onclick=()=>{S.lgm.sort=b.dataset.lgmsort;S.lgm.sig="";render()});
+  document.querySelectorAll("[data-lgmcsort]").forEach(b=>b.onclick=()=>{S.lgm.csort=b.dataset.lgmcsort;S.lgm.sig="";render()});
+  document.querySelectorAll("[data-lgmmore]").forEach(b=>b.onclick=()=>{S.lgm.more=true;S.lgm.sig="";render()});
+  document.querySelectorAll("[data-lgmallrest]").forEach(b=>b.onclick=()=>{S.lgm.allRest=true;S.lgm.sig="";render()});
+  document.querySelectorAll("[data-lgmclose]").forEach(b=>b.onclick=()=>{S.lgm.pick=null;S.lgm.sel=null;S.lgm.sig="";render()});
+  document.querySelectorAll("[data-lgmxl]").forEach(b=>b.onclick=()=>{S.xl.to=b.dataset.lgmxl;S.xl.cur=null;S.xl.text="";location.hash="translate"});
+  document.querySelectorAll("[data-lgmshow]").forEach(b=>b.onclick=e=>{e.preventDefault();const L=lgmLang(b.dataset.lgmshow);S.lgm.pick={k:"l",id:b.dataset.lgmshow};S.lgm.sig="";location.hash="langmap";if(L&&L.lon!=null){setTimeout(()=>{const w=LGM_W/5,h=w*LGM_H/LGM_W;S.lgm.vb=lgmClamp({x:lgmX(L.lon)-w/2,y:lgmY(L.lat)-h/2,w,h});lgmRedrawLayers()},50)}});
+  document.querySelectorAll("[data-lgmhide]").forEach(b=>b.onclick=async()=>{const [kind,country,id]=b.dataset.lgmhide.split("|");
+    try{await api("PUT","/api/langmap/hide",{kind,country,id,on:true});S.lgm.detail={};await lgmLoad(true);toast("Hidden. It stays hidden after updates")}catch(e){toast("Could not save")}});
+  const q=$("#lgmQ");if(q){q.oninput=()=>{S.lgm.q=q.value;S.lgm.sig="";const s=q.selectionStart;render();const n=$("#lgmQ");if(n){n.focus();try{n.setSelectionRange(s,s)}catch(_){}}};
+    q.onkeydown=e=>{if(e.key==="Enter"){const h=lgmSearchHits(S.lgm.q)[0];if(h)lgmGo(h)}if(e.key==="Escape"){S.lgm.q="";S.lgm.sig="";render()}}}
+  const hits=lgmSearchHits(S.lgm.q);document.querySelectorAll("[data-lgmhit]").forEach(b=>b.onclick=()=>lgmGo(hits[+b.dataset.lgmhit]));
+  const ci=$("#lgmC");if(ci){ci.onchange=()=>{const v=ci.value.trim().toLowerCase();S.lgm.cq=ci.value;const c=(S.concepts||[]).find(x=>(x.gloss||"").toLowerCase()===v||(x.members||[]).some(m=>String(m.term).toLowerCase()===v));if(c){S.lgm.concept=c.id;S.lgm.cq=""}S.lgm.sig="";render()}}
+  $("#lgmCX")&&($("#lgmCX").onclick=()=>{S.lgm.concept=null;S.lgm.cq="";if(/^#langmap\?/.test(location.hash))history.replaceState(null,"","#langmap");S.lgm.sig="";render()});
+  $("#lgmBuild")&&($("#lgmBuild").onclick=async()=>{try{const v=await api("POST","/api/langmap/build",{});S.lgm.data.build=v.build;S.lgm.sig="";render();setTimeout(()=>lgmLoad(true),20000)}catch(e){toast("Could not start the update")}});
+}
+function lgmGo(h){if(!h)return;S.lgm.q="";S.lgm.sig="";
+  if(h.k==="c"){S.lgm.pick={k:"c",id:h.id};S.lgm.sel=h.id;render();lgmFocusCountry(h.id);return}
+  if(h.k==="l"){const L=lgmLang(h.id);S.lgm.pick={k:"l",id:h.id};render();if(L&&L.lon!=null){const w=LGM_W/5,hh=w*LGM_H/LGM_W;S.lgm.vb=lgmClamp({x:lgmX(L.lon)-w/2,y:lgmY(L.lat)-hh/2,w,h:hh});lgmRedrawLayers()}return}
+  if(h.k==="r"){const g=(S.lgm.data.regions||[]).find(r=>r.id===h.id);S.lgm.pick={k:"r",id:h.id};render();if(g&&g.lon!=null){const w=LGM_W/14,hh=w*LGM_H/LGM_W;S.lgm.vb=lgmClamp({x:lgmX(g.lon)-w/2,y:lgmY(g.lat)-hh/2,w,h:hh});lgmRedrawLayers()}return}
+  if(h.k==="e"){const e=(S.lgm.data.ethnic||[]).find(x=>x.id===h.id);if(e?.langs?.[0])location.hash="language/"+encodeURIComponent(e.langs[0])}}
+function lgmDraw(){ // keeps the map (and its zoom) when nothing it shows has changed, like a background refresh
+  if(S.lgm.lastHash!==location.hash){S.lgm.allRest=false;S.lgm.more=false;S.lgm.lastHash=location.hash;if(location.hash!=="#langmap"&&!/^#langmap\?/.test(location.hash))window.scrollTo(0,0)}
+  const r=lgmRoute(), sig=JSON.stringify([location.hash,!!S.lgm.data,!!S.lgm.world,S.lgm.data?.meta?.at,S.lgm.data?.build?.running,(S.concepts||[]).length,S.q]);
+  if($("#lgmView")&&S.lgm.sig===sig&&r.kind==="map")return;
+  S.lgm.sig=sig;$("#view").innerHTML=searchResults()+`<div id="lgmView" class="lgm">${lgmView()}</div>`;wire();wireLm();
+  if(r.kind==="map"&&S.lgm.vb)lgmRedrawLayers()}
 function render(){
   if(S.wf&&viewId()!=="wifi")S.wf=null; // Wi-Fi QR: leaving the screen drops the code
   if(S.ed){if(viewId()==="notes"&&S.noteId===S.ed.id)return;edClose();return}
@@ -6234,6 +6567,7 @@ function render(){
   if(!replyOpen()) S.dl=S.dl.filter(x=>x.kind!=="mail"); // outside the reply window: no count, badge or chime for mail
   updateBadges();checkNew();
   renderNav();timerBar();backBar();
+  if(viewId()==="langmap"){lgmLoad();lgmDraw();return}
   if(viewId()==="translate"){xlLoad();const f=document.activeElement, keep=f?.classList?.contains("xlfield")&&f.id?{id:f.id,v:f.value,s:f.selectionStart,e:f.selectionEnd}:null;
     $("#view").innerHTML=searchResults()+xlView();wire();if(keep){const el=document.getElementById(keep.id);if(el){el.value=keep.v;try{el.setSelectionRange(keep.s,keep.e)}catch(e){}el.focus()}}return}
   if(viewId()==="lifeos"){$("#view").innerHTML=searchResults()+lifeosView();wire();wireLifeos();return}
@@ -8906,6 +9240,7 @@ const FDESC={ // what each screen is for, in plain words (English and Japanese k
   presents:"awards, offers, income and kind words プレゼント",
   ideas:"weekly ideas of things to build from your notes 提案",
   aidone:"work Claude did on its own, JOINS application drafts, Send for me 応募",
+  langmap:"world map of languages: every country, official and spoken languages, speakers, population, regions like autonomous republics, peoples, where my learned words are understood 言語地図 世界地図 民族 自治共和国 人口 話者",
   translate:"translate words and sentences, lookup history, the same meaning across languages (concepts), candidates for cards 翻訳 ほんやく 辞書 言葉 訳す",
   news:"World Desk news edition, predictions ニュース",watch:"Minor Countries watch マイナー国",heritage:"Daily World Heritage, 3 countries a day 世界遺産",
   notes:"Scrapbox-style notes, daily notes ノート メモ",memolink:"import memos from other apps メモ連携",
@@ -9021,6 +9356,7 @@ function palItems(){
     {e:"⚡",name:"Command list (this one)",key:"/ /",kw:"こまんど command palette",run:()=>{const q=$("#q");q.value="/";S.q="/";S.palSel=0;render();q.focus()}},
     {e:"🔎",name:"Search",key:"/",kw:"けんさく search",run:()=>setTimeout(()=>$("#q")?.focus(),0)},
     {e:"❓",name:"Ask Desk where something is",key:"?",kw:"どこ さがす ask where find AI",run:()=>setTimeout(()=>{const q=$("#q");q.value="?";S.q="?";S.ask.focus=true;render()},0)},
+    {e:"🗺️",name:"Language Map",kw:"げんご ちず 言語地図 language map world 民族",run:()=>{location.hash="langmap"}},
     {e:"🔤",name:"Translate a word or sentence",key:">",kw:"ほんやく 翻訳 translate 訳す 辞書",run:()=>setTimeout(()=>{const q=$("#q");q.value="> ";S.q="> ";render();q.focus()},0)},
     {e:"🗂️",name:"Triage unsorted tasks",kw:"しわけ みぶんるい triage",run:()=>openTriage()},
     {e:"🍃",name:"Decide what not to do",kw:"やらない not doing drop decide",run:()=>openDecide()},

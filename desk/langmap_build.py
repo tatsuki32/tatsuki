@@ -20,6 +20,7 @@ raw answer, so the page never loses a file. Nothing personal is sent: the querie
 """
 import csv
 import datetime as dt
+import http.client
 import io
 import json
 import math
@@ -45,13 +46,16 @@ SOURCES = {
     "wikidata": ("Wikidata", "https://www.wikidata.org/", "CC0"),
     "worldbank": ("World Bank", "https://data.worldbank.org/indicator/SP.POP.TOTL", "CC BY 4.0"),
 }
-ETHNIC_BATCH = 60
+ETHNIC_BATCH = 300
+# Wikidata asks for at most one query a minute while its query service is under load (a 429 says so); we always keep that pace
+WIKIDATA_GAP = 90
+_last_sparql = [0.0]
 ETHNIC_MAX_LANGS = 2400
 # a first-level region we keep: its type says so, and it is not a city
 REGION_TYPES = re.compile(r"republic|autonomous|federal subject|state|province|region|oblast|krai|okrug|canton|community|"
                           r"territory|country of|constituent|emirate|prefecture|county|department|island|entity|district|"
                           r"governorate|division|voivodeship|land of|federal", re.I)
-REGION_NOT = re.compile(r"\bcity\b|\btown\b|municipal|capital|megacity|settlement|village|borough|urban", re.I)
+REGION_NOT = re.compile(r"former|historical|\bcity\b|\btown\b|municipal|capital|megacity|settlement|village|borough|urban", re.I)
 STOP = object()
 
 
@@ -90,22 +94,45 @@ def log(msg):
 
 # ---------- fetching ----------
 
-def fetch(url, timeout=120, accept=None, opener=urllib.request.urlopen):
-    req = urllib.request.Request(url, headers={"User-Agent": UA, **({"Accept": accept} if accept else {})})
-    with opener(req, timeout=timeout) as r:
-        return r.read()
+def fetch(url, timeout=120, accept=None, opener=urllib.request.urlopen, tries=3):
+    """The whole body. A download cut short (IncompleteRead) or a dropped connection is tried again."""
+    last = None
+    for i in range(tries):
+        req = urllib.request.Request(url, headers={"User-Agent": UA, **({"Accept": accept} if accept else {})})
+        try:
+            with opener(req, timeout=timeout) as r:
+                return r.read()
+        except urllib.error.HTTPError:
+            raise
+        except (http.client.HTTPException, OSError) as e:
+            last = e
+            time.sleep(3 * (i + 1))
+    raise RuntimeError(f"download failed: {last}")
 
 
-def sparql(query, opener=urllib.request.urlopen, tries=3):
+def sparql(query, opener=urllib.request.urlopen, tries=5, gap=None):
+    """One query, at most one a minute (WIKIDATA_GAP). A 429 waits a full minute and tries again."""
+    gap = WIKIDATA_GAP if gap is None else gap
     url = WIKIDATA + "?" + urllib.parse.urlencode({"query": query})
     last = None
     for i in range(tries):
+        wait = _last_sparql[0] + gap - time.time()
+        if wait > 0:
+            time.sleep(wait)
+        _last_sparql[0] = time.time()
         try:
             data = fetch(url, timeout=120, accept="application/sparql-results+json", opener=opener)
             return [{k: v.get("value") for k, v in b.items()} for b in json.loads(data)["results"]["bindings"]]
-        except (urllib.error.URLError, OSError, ValueError, KeyError) as e:
+        except urllib.error.HTTPError as e:
             last = e
-            time.sleep(5 * (i + 1))
+            if e.code not in (429, 500, 502, 503, 504):
+                break
+            try:  # Wikidata says how long to wait; never less than our own gap
+                _last_sparql[0] = time.time() + max(0, min(600, int(e.headers.get("Retry-After") or 0)) - gap)
+            except (TypeError, ValueError):
+                pass
+        except (RuntimeError, ValueError, KeyError) as e:
+            last = e
     raise RuntimeError(f"Wikidata: {last}")
 
 
@@ -193,13 +220,12 @@ def fetch_glottolog(opener=urllib.request.urlopen):
     langs = [r for r in rows if r.get("Level") == "language"]
     names = {r["ID"]: r["Name"] for r in rows if r.get("Level") in ("family", "language")}
     paths = {}
-    with opener(urllib.request.Request(GLOTTOLOG_VALUES, headers={"User-Agent": UA}), timeout=300) as r:
-        reader = csv.reader(io.TextIOWrapper(r, encoding="utf-8"))
-        head = next(reader)
-        ix = {k: i for i, k in enumerate(head)}
-        for row in reader:
-            if row[ix["Parameter_ID"]] == "classification" and row[ix["Value"]]:
-                paths[row[ix["Language_ID"]]] = row[ix["Value"]]
+    reader = csv.reader(io.StringIO(fetch(GLOTTOLOG_VALUES, timeout=300, opener=opener).decode("utf-8")))
+    head = next(reader)
+    ix = {k: i for i, k in enumerate(head)}
+    for row in reader:
+        if row[ix["Parameter_ID"]] == "classification" and row[ix["Value"]]:
+            paths[row[ix["Language_ID"]]] = row[ix["Value"]]
     return {"languages": [{"glot": r["ID"], "name": r["Name"], "iso3": r.get("ISO639P3code") or "", "area": r.get("Macroarea") or "",
                            "lat": r.get("Latitude") or "", "lon": r.get("Longitude") or "", "countries": r.get("Countries") or "",
                            "family": r.get("Family_ID") or ""} for r in langs],
@@ -218,6 +244,8 @@ def fetch_worldbank(opener=urllib.request.urlopen):
 def fetch_ethnic(lang_qids, opener=urllib.request.urlopen):
     out = []
     qids = list(dict.fromkeys(lang_qids))[:ETHNIC_MAX_LANGS]
+    if not qids:
+        raise RuntimeError("no languages from Wikidata yet (official/used failed), so the peoples are left as they were")
     for i in range(0, len(qids), ETHNIC_BATCH):
         out += sparql(Q_ETHNIC % " ".join("wd:" + q for q in qids[i:i + ETHNIC_BATCH]), opener=opener)
     return out
