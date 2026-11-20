@@ -9283,11 +9283,12 @@ async function cdPhoneLink(){
   if($("#modal").firstChild)return;
   let v={};try{v=await api("GET","/api/cards-link")}catch(e){}
   $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop cdpop" role="dialog" aria-modal="true" aria-label="Cards on iPhone"><div class="top"><h2>Cards on iPhone</h2><button class="ibtn" id="cdX" aria-label="Close">✕</button></div>
-    ${v.sync?`<p class="mtalk">Open this link once on the phone, then add it to the Home Screen. It carries the sync passphrase, so do not send it to anyone.</p><div class="row"><input class="wd-field" id="cdLink" value="${esc(v.url)}" readonly aria-label="Setup link"><button class="btn primary" id="cdCopy">Copy</button></div>`
+    ${v.sync?`<p class="mtalk">Point the iPhone camera at this code, or open the link once on the phone, then add it to the Home Screen. It carries the sync passphrase, so do not send it to anyone.</p><div class="wfcode" id="cdQr"><span class="sub">Making the code…</span></div><div class="row"><input class="wd-field" id="cdLink" value="${esc(v.url)}" readonly aria-label="Setup link"><button class="btn primary" id="cdCopy">Copy</button></div>`
       :`<p class="mtalk">Sync is not set up yet. Put a passphrase in the keychain and the same one into the app's SYNC_KEY secret (see cards/README.md), then come back here.</p><pre class="cdcode">security add-generic-password -s tatsuki-desk-cards -a desk -w</pre>`}
     <p class="sub">Only cards travel: the word, its meaning and the one sentence. Books stay on this Mac.</p></div></div>`;
   const close=()=>{$("#modal").innerHTML=""};$("#cdX").onclick=close;$("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};$("#scrim").onkeydown=e=>{if(e.key==="Escape"){e.stopPropagation();close()}};
   $("#cdCopy")&&($("#cdCopy").onclick=()=>{navigator.clipboard?.writeText(v.url).then(()=>toast("Copied"),()=>{$("#cdLink").select()})});
+  if(v.sync&&$("#cdQr"))utPost("/api/utilities/qr",{text:v.url}).then(q=>{const el=$("#cdQr");if(el)el.innerHTML=utQrSvg(q.rows)}).catch(()=>{const el=$("#cdQr");if(el)el.remove()}); // the same QR maker as Utilities; nothing is kept
 }
 /* Today: one line, "Cards due: N", pressing it starts the review */
 function tdCards(){
