@@ -68,6 +68,12 @@
       "port": 4797
     },
     {
+      "name": "desk-translate-test",
+      "runtimeExecutable": "/bin/sh",
+      "runtimeArgs": ["-c", "cd desk && TRANSLATE_DIR=/tmp/claude/desk-translate-test DESK_PORT=${PORT:-4789} exec python3 server.py"],
+      "port": 4789
+    },
+    {
       "name": "tany-campus-worker",
       "runtimeExecutable": "/bin/sh",
       "runtimeArgs": ["-c", "cd /tmp/claude/campus-test/site && WRANGLER_SEND_METRICS=false WRANGLER_LOG_PATH=/tmp/claude/wl exec npx wrangler dev --local --test-scheduled --port ${PORT:-8797} --ip 127.0.0.1 --var CAMPUS_FAKE_SEND:1 --var CAMPUS_KEY:testkey --var RESEND_KEY:fake"],

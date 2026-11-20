@@ -1690,6 +1690,51 @@ a.shelfbtn{text-decoration:none;display:inline-flex;align-items:center}
 .fptlist .strow button{background:none;border:0;color:var(--muted);cursor:pointer;font:inherit;text-decoration:underline}
 @media (max-width:640px){.fphero{grid-template-columns:1fr}.fpvs .row{grid-template-columns:110px minmax(0,1fr) 60px}}
 @media (prefers-reduced-motion:reduce){.fpstage{animation:none}.fpi{animation:none}}
+/* ---------- Translate (#translate, #concept/<id>): one big box, the result under it, the concept strip, three lists. Classes start with xl ---------- */
+.xlbox{padding:var(--s3);display:flex;flex-direction:column;gap:var(--s2);margin-bottom:var(--s3)}
+.xlfield{width:100%;box-sizing:border-box;background:var(--surface-2);color:var(--ink);border:1px solid var(--line-2);border-radius:var(--r-s);padding:10px 12px;font:inherit;font-size:var(--t3);line-height:1.5}
+.xlfield:focus{outline:2px solid var(--accent);outline-offset:1px}
+.xlhead{margin:0;text-align:right}
+.xlctl{justify-content:space-between}
+.xlctl .chips{flex:1}
+.xlout{border-top:1px solid var(--line);padding-top:var(--s2);display:flex;flex-direction:column;gap:var(--s2)}
+.xlres{font-size:var(--t4);line-height:1.5;white-space:pre-wrap;word-break:break-word}
+.xlpanel .xlres{font-size:var(--t3)}
+.xlpanel .xlout{padding:0 var(--s3) var(--s2);border-top:0}
+.xlerr,.xlwhy{margin:0}
+.xlword{display:flex;flex-direction:column;gap:var(--s2)}
+.xlstrip{display:flex;flex-wrap:wrap;gap:6px;align-items:center;text-decoration:none;color:var(--ink);font-size:var(--t3)}
+.xlm.ai{color:var(--muted)}
+/* Hiragino's Cyrillic and Latin glyphs are wide and spaced out; other scripts take the system font, Japanese, Chinese and Korean keep the Desk font */
+.xlres[lang]:not(:lang(ja)):not(:lang(zh)):not(:lang(ko)),.xlm[lang]:not(:lang(ja)):not(:lang(zh)):not(:lang(ko)),.xlhit [lang]:not(:lang(ja)):not(:lang(zh)):not(:lang(ko)),.xlex [lang]:not(:lang(ja)):not(:lang(zh)):not(:lang(ko)),.xlinfo [lang]:not(:lang(ja)):not(:lang(zh)):not(:lang(ko)){font-family:system-ui,-apple-system,"Helvetica Neue",Arial,var(--font)}
+.xlm.big{font-size:var(--t4)}
+.xldot{color:var(--line-2)}
+.xlgo{margin-left:auto}
+.xlinfo{display:flex;flex-direction:column;gap:4px}
+.xlgloss{color:var(--ink-2)}
+.xlex{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;line-height:1.5}
+.xlspk-s{border:0;background:transparent;cursor:pointer;font-size:var(--t1);padding:0 4px;min-height:24px}
+.xltabs{margin:0 0 var(--s2);flex-wrap:nowrap}
+.xlday,.xlwords,.xlsugg{margin-bottom:var(--s3);padding:var(--s2) 0}
+.xlday .section-title{padding:0 var(--s3)}
+.xlrow{display:flex;align-items:center;gap:var(--s2);padding:6px var(--s3);flex-wrap:wrap}
+.xlhit{flex:1;min-width:0;text-align:left;border:0;background:none;color:var(--ink);font:inherit;font-size:var(--t2);cursor:pointer;padding:0;word-break:break-word;line-height:1.5}
+.xlarrow{color:var(--muted);margin:0 6px}
+.xltags{white-space:nowrap}
+.xlx{border:0;background:none;color:var(--muted);cursor:pointer;font-size:var(--t3);padding:0 6px;min-height:28px}
+.xlcrow{display:flex;align-items:center;gap:var(--s2);padding:8px var(--s3);text-decoration:none;color:var(--ink);flex-wrap:wrap;border-top:1px solid var(--line)}
+.xlcrow:first-child{border-top:0}
+.xlgl{font-weight:700;flex:1 1 160px}
+.xlms{flex:3 1 220px;display:flex;flex-wrap:wrap;gap:6px}
+.xlfilt{margin-bottom:var(--s2)}
+.xlcg,.xlmem,.xlexs,.xlnote,.xlmerge,.xlset{padding:var(--s3);margin-bottom:var(--s3);display:flex;flex-direction:column;gap:var(--s2)}
+.xlcg label{display:flex;flex-direction:column;gap:4px}
+.xlmrow{display:flex;align-items:center;gap:var(--s2);flex-wrap:wrap;padding:4px 0}
+.xllang+.xllang{margin-top:var(--s2)}
+.xlmq{flex:1;min-width:160px}
+.xlset summary{cursor:pointer;font-weight:700}
+.xlsetb{display:flex;flex-direction:column;gap:var(--s2);margin-top:var(--s2)}
+.xlsetb label{display:flex;flex-direction:column;gap:4px;font-size:var(--t1);color:var(--muted)}
 </style>
 
 <div class="app">
@@ -1739,7 +1784,7 @@ S.projects=[];S.sections=[];S.okrs=[];S.krOpen={};S.projFilter="all";S.pDone=fal
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const okUrl=u=>/^(https:\/\/|file:\/\/|#)/.test(u||"");
-const viewId=()=>{const h=(location.hash||"").slice(1);if(h==="mail")return "tasks";if(h==="inbox")return "presents";if(/^project\//.test(h))return "project";if(/^task\//.test(h))return "tasks";return VIEWS.some(v=>v.id===h&&v.g!=="hidden")?h:"home"}; // the morning mail screen moved into the tasks
+const viewId=()=>{const h=(location.hash||"").slice(1);if(h==="mail")return "tasks";if(h==="inbox")return "presents";if(/^project\//.test(h))return "project";if(/^task\//.test(h))return "tasks";if(/^concept\//.test(h))return "translate";return VIEWS.some(v=>v.id===h&&v.g!=="hidden")?h:"home"}; // the morning mail screen moved into the tasks
 const viewLabel=id=>(VIEWS.find(v=>v.id===id)||{}).label||id;
 /* Old mail data has Japanese topics: keep those titles in Japanese, new ones in English */
 const JA_RE=/[ぁ-んァ-ン一-龥]/;
@@ -1754,6 +1799,7 @@ function toast(t){if(t.startsWith("✨")&&$("#cheerHost .cheer"))return;const el
 const LOCALAPI=/^https?:$/.test(location.protocol)&&/^(localhost|127\.0\.0\.1)$/.test(location.hostname);
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="habits")+1,0,{id:"body",e:"🫀",label:"Summary",g:"body"},{id:"bodysleep",e:"😴",label:"Sleep",g:"body"},{id:"bodymeal",e:"🍽️",label:"Meals & Calories",g:"body"},{id:"bodyweight",e:"⚖️",label:"Weight",g:"body"},{id:"bodysteps",e:"👟",label:"Steps",g:"body"},{id:"bodyworkout",e:"💪",label:"Workouts",g:"body"},{id:"workoutboard",e:"🧘",label:"Workout Board",g:"body"},{id:"bodyhabits",e:"📚",label:"Study & Screen Time",g:"body"}); // photos and health records stay on this Mac
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="followups")+1,0,{id:"mailclean",e:"🧹",label:"Inbox Cleanup",g:"in"});
+if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="heritage")+1,0,{id:"translate",e:"🔤",label:"Translate",g:"read"}); // translate inside Desk; every lookup kept, one meaning across languages (desk/translate.py)
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="presents")+1,0,{id:"ideas",e:"💡",label:"Ideas",g:"in"});
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="presents")+1,0,{id:"site",e:"📈",label:"Site",g:"in"}); // tany.im analytics (desk/site_sync.py)
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="ideas")+1,0,{id:"aidone",e:"🤝",label:"Done by Claude",g:"in"}); // work Claude does on its own (tasks with by:"claude", JOINS application drafts); never on your task list // once a week, from what was already written (desk/ideas.py)
@@ -1783,6 +1829,7 @@ async function loadApiMemos(){try{
   S.wlog=Object.fromEntries(wlog.filter(x=>x&&x.id&&!x.deleted).map(x=>[x.id,x]));
   S.hlog=Object.fromEntries(hlog.filter(x=>x&&x.id&&!x.deleted).map(x=>[x.id,x]));
   S.wa=await api("GET","/api/whatsapp").catch(()=>({}));
+  xlLoad(); // Translate: lookups, concepts, cards and the engine state (own 60-second cache)
   try{const [wb,wc]=await Promise.all([api("GET","/api/wboards"),api("GET","/api/wcards")]);S.wboards=wb.filter(x=>!x.deleted);if(!S.wkDrag)S.wcards=wc.filter(x=>!x.deleted)}catch(e){}
   S.gear=gear.filter(g=>!g.deleted);S.projects=projects.filter(p=>!p.deleted);S.sections=sections.filter(x=>!x.deleted);S.okrs=((await api("GET","/api/okrs").catch(()=>null))||S.okrs||[]).filter(x=>!x.deleted);
   S.fu=await api("GET","/api/followups").catch(()=>S.fu);
@@ -4758,7 +4805,8 @@ function showSelMenu(){
   const [kind,id]=(own?.dataset.edit||"").split(/:(.*)/s);
   const srcUrl=src?.dataset.src||"", canLink=src&&/^https:\/\//.test(srcUrl)&&!String(noteByTitle(word)?.body||"").includes("["+srcUrl);
   const linkBtn=has&&!own&&!canLink?`<button data-sel="open">Open note</button>`:`<button data-sel="${own?"link":src?"srclink":"anylink"}">Make a link</button>`;
-  selMenu.innerHTML=own?`<button data-sel="edit">Edit</button>${kind!=="notetitle"?linkBtn:""}`:linkBtn;
+  const trBtn=LOCALAPI?`<button data-sel="translate">Translate</button>`:"";
+  selMenu.innerHTML=(own?`<button data-sel="edit">Edit</button>${kind!=="notetitle"?linkBtn:""}`:linkBtn)+trBtn;
   document.body.appendChild(selMenu);
   const tabs=$("#tabs"), floor=innerHeight-(tabs&&tabs.offsetParent?tabs.offsetHeight:0)-8; // phones: under the selection (the system menu sits above it), clear of the bottom tabs
   const w=selMenu.offsetWidth, x=Math.max(8,Math.min(innerWidth-w-8,r.left+r.width/2-w/2)), below=r.bottom+8+selMenu.offsetHeight<floor;
@@ -4766,6 +4814,7 @@ function showSelMenu(){
   selMenu.onmousedown=e=>e.preventDefault();
   selMenu.onclick=async e=>{const a=e.target.closest("[data-sel]")?.dataset.sel;if(!a)return;hideSelMenu();
     if(a==="edit") return startEdit(own,txt);
+    if(a==="translate"){window.getSelection()?.removeAllRanges();return xlOpen(txt)}
     if(a==="open") return openWiki(word);
     if(a==="anylink"){ // text that isn't Desk's own (tasks, mail, calendar, buttons…): only the note is made; the word then links itself everywhere
       if(!word) return; const n0=noteByTitle(word);
@@ -5179,7 +5228,7 @@ function snippet(it){
   return (a?"…":"")+esc(src.slice(a,i))+"<b>"+esc(src.slice(i,i+w.length))+"</b>"+esc(src.slice(i+w.length,b))+(b<src.length?"…":"");
 }
 function searchResults(){
-  const q=S.q.trim(); if(!q) return ""; if(isPal(q)) return palette(); if(isAsk(q)) return askView();
+  const q=S.q.trim(); if(!q) return ""; if(isPal(q)) return palette(); if(isAsk(q)) return askView(); if(isTr(q)) return xlPanel();
   const {hits,via}=runSearch(q);
   const kinds=Object.keys(SKIND).filter(k=>hits.some(h=>h.kind===k));
   const aiState=S.aiBusy?`<span class="sub">Thinking of related words…</span>`:S.sampleOk?`<button class="btn sm" id="aiSearch">Expand with AI</button>`:"";
@@ -5849,6 +5898,181 @@ async function heritageMark(code){
   if(!was){const h=S.heritage.find(x=>(x.countries||[]).some(y=>y.code===code)), next=h&&h.countries.find(y=>!hIsRead(y.code));S.hId=h?.id||S.hId;S.hCode=next?next.code:code;if(next)window.scrollTo(0,0)}
   render();
 }
+/* ---------- 🔤 Translate (#translate, #concept/<id>): translate inside Desk, keep every lookup, tie one meaning across languages (desk/translate.py).
+   Lookups are the collection "lookups"; meanings are "concepts" (one English gloss + the word in each language; looked up = dark, added by
+   Claude = muted). A word looked up twice becomes a candidate for "cards" (Reader と暗記カード) and goes in only when Add is pressed.
+   The search box: "> word" translates in place. T with text selected translates the selection. Only the text goes out (Google, then Claude). ---------- */
+S.lookups=[];S.concepts=[];S.cards=[];S.xl={to:"",tab:"history",cur:null,busy:false,err:"",lang:"all",st:null,stAt:0,merge:"",text:""};
+const XL_TAG={ja:"ja-JP",en:"en-US",ru:"ru-RU",zh:"zh-CN",vi:"vi-VN",ko:"ko-KR",fr:"fr-FR",de:"de-DE",es:"es-ES",it:"it-IT",pt:"pt-PT",th:"th-TH",id:"id-ID",ar:"ar-SA",hi:"hi-IN",tr:"tr-TR",uk:"uk-UA",pl:"pl-PL",nl:"nl-NL",sv:"sv-SE",sr:"sr-RS"};
+const XL_NAMES={ja:"Japanese",en:"English",ru:"Russian",zh:"Chinese",vi:"Vietnamese",ko:"Korean",fr:"French",de:"German",es:"Spanish",it:"Italian",pt:"Portuguese",th:"Thai",id:"Indonesian",ar:"Arabic",hi:"Hindi",tr:"Turkish",uk:"Ukrainian",pl:"Polish",nl:"Dutch",sv:"Swedish",sr:"Serbian"};
+const xlName=c=>{c=String(c||"").split("-")[0];return (S.xl.st?.names||{})[c]||XL_NAMES[c]||(c?c.toUpperCase():"?")};
+const xlLangs=()=>S.xl.st?.langs||["ja","en","ru","zh","vi"];
+const xlTag=l=>XL_TAG[String(l||"").split("-")[0]]||"";
+const isTr=q=>/^[>＞]/.test(q.trim());
+const trQ=q=>q.trim().replace(/^[>＞]+/,"").trim();
+const xlKey=(text,lang)=>String(lang||"").split("-")[0].toLowerCase()+":"+String(text||"").trim().split(/\s+/).join(" ").toLowerCase();
+const xlConceptHash=()=>{const m=/^#concept\/(.+)$/.exec(location.hash||"");return m?decodeURIComponent(m[1]):null};
+async function xlPost(path,body,method){const r=await fetch(path,{method:method||"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||("Error "+r.status));return j}
+async function xlLoad(force){
+  if(!LOCALAPI||S.xl.stBusy)return;
+  if(!force&&S.xl.st&&Date.now()-S.xl.stAt<60000)return;
+  S.xl.stBusy=true;S.xl.stAt=Date.now();
+  try{const [st,lk,cs,cd]=await Promise.all([api("GET","/api/translate/state"),api("GET","/api/lookups"),api("GET","/api/concepts"),api("GET","/api/cards")]);
+    const sig=JSON.stringify([st,lk,cs,cd]), same=sig===S.xl.sig;S.xl.sig=sig;
+    S.xl.st=st;S.conceptsAll=cs.filter(x=>!x.deleted);S.lookups=lk.filter(x=>!x.deleted);S.concepts=S.conceptsAll.filter(x=>!x.mergedInto);S.cards=cd.filter(x=>!x.deleted);
+    S.xl.stBusy=false;if(!same&&(viewId()==="translate"||isTr(S.q)))render()}
+  catch(e){S.xl.stBusy=false}
+}
+function xlOpen(text){S.xl.text=(text||"").trim();S.xl.err="";if(viewId()!=="translate"||xlConceptHash())location.hash="translate";if(S.xl.text)xlRun(S.xl.text)}
+async function xlRun(text,to,via){
+  text=(text||"").trim();if(!text)return;
+  S.xl.text=text;S.xl.busy=true;S.xl.err="";S.xl.cur=null;render();
+  try{const v=await xlPost("/api/translate",{text,to:to!=null?to||undefined:(S.xl.to||undefined),via:via||"desk"});
+    S.xl.cur={...v,at:Date.now()};S.xl.busy=false;
+    if(v.lookup&&!S.lookups.some(x=>x.id===v.lookup.id))S.lookups.unshift(v.lookup);
+    if(v.lookup?.word&&!v.concept){S.xl.enriching=v.lookup.id;xlEnrich(v.lookup.id)}
+    render()}
+  catch(e){S.xl.busy=false;S.xl.err=e.message||"Could not translate";render()}
+}
+async function xlEnrich(id){
+  try{const v=await xlPost("/api/translate/enrich",{id});
+    const i=S.lookups.findIndex(x=>x.id===id);if(i>=0)S.lookups[i]=v.lookup;else S.lookups.unshift(v.lookup);
+    const j=S.concepts.findIndex(c=>c.id===v.concept.id);if(j>=0)S.concepts[j]=v.concept;else S.concepts.unshift(v.concept);
+    if(S.xl.cur?.lookup?.id===id)S.xl.cur={...S.xl.cur,lookup:v.lookup,concept:v.concept,count:v.count}}
+  catch(e){if(S.xl.cur?.lookup?.id===id)S.xl.cur={...S.xl.cur,enrichErr:e.message}}
+  if(S.xl.enriching===id)S.xl.enriching=null;S.xl.stAt=0;render();
+}
+function xlSpeak(text,lang){
+  if(!window.speechSynthesis||!text)return toast("Reading aloud is not available here");
+  try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.lang=xlTag(lang)||"en-US";u.rate=0.95;speechSynthesis.speak(u)}catch(e){toast("Could not read aloud")}
+}
+const xlSpk=(t,l,small)=>`<button class="${small?"xlspk-s":"btn sm"}" data-xlspk="${esc(t)}" data-xllang="${esc(l||"")}" title="Read aloud" aria-label="Read aloud">🔊</button>`;
+const xlMembers=c=>(c.members||[]).map(m=>`<span class="xlm${m.by==="claude"?" ai":""}" lang="${esc(xlTag(m.lang))}" title="${esc(xlName(m.lang))}${m.by==="claude"?" · added by Claude":""}">${esc(m.term)}</span>`).join('<span class="xldot">·</span>');
+function xlResult(inline){
+  const x=S.xl;
+  if(x.busy)return `<div class="xlout"><p class="sub">Translating…</p></div>`;
+  if(x.err)return `<div class="xlout"><p class="xlerr">${esc(x.err)}</p></div>`;
+  const c=x.cur;if(!c||!c.lookup)return "";
+  const lk=c.lookup, card=S.cards.find(k=>k.key===lk.key);
+  return `<div class="xlout" data-noauto>
+    <div class="xlres" lang="${esc(xlTag(lk.to))}">${esc(lk.result||"")}</div>
+    <div class="row xlmeta"><span class="sub">${esc(xlName(lk.from))} → ${esc(xlName(lk.to))}${c.engine?` · ${c.engine==="google"?"Google":"Claude"}`:""}${c.count>1?` · looked up ×${c.count}`:""}</span>${xlSpk(lk.result,lk.to)}<button class="btn sm" data-xlcopy="${esc(lk.result||"")}">Copy</button>${inline?`<a class="btn sm" href="#translate">Open Translate</a>`:""}</div>
+    ${c.why?`<p class="sub xlwhy">${esc(c.why)}</p>`:""}
+    ${lk.word?xlWordBox(lk,c.concept,card,inline):""}
+  </div>`;
+}
+function xlWordBox(lk,cp,card,inline){
+  const info=lk.info, wait=S.xl.enriching===lk.id;
+  const strip=cp?`<a class="xlstrip" href="#concept/${esc(cp.id)}" data-noauto>${xlMembers(cp)}<span class="sub xlgo">Concept →</span></a>`
+    :wait?`<p class="sub">Finding the same meaning in your other languages…</p>`:S.xl.cur?.enrichErr?`<p class="sub">${esc(S.xl.cur.enrichErr)}</p>`:"";
+  const details=info?`<div class="xlinfo"><div><b lang="${esc(xlTag(lk.from))}">${esc(info.lemma||lk.text)}</b>${info.reading?` <span class="sub">${esc(info.reading)}</span>`:""}${info.pos?` <span class="sub">· ${esc(info.pos)}</span>`:""} ${xlSpk(info.lemma||lk.text,lk.from,true)}</div>${info.gloss?`<div class="xlgloss">${esc(info.gloss)}</div>`:""}
+    ${info.senses?.length?`<div class="sub">Also: ${info.senses.map(esc).join(" · ")}</div>`:""}
+    ${(info.examples||[]).length&&!inline?`<ul class="xlex">${info.examples.map(e=>`<li><span lang="${esc(xlTag(lk.from))}">${esc(e.text)}</span> ${xlSpk(e.text,lk.from,true)}<br><span class="sub">${esc(e.translation)}</span></li>`).join("")}</ul>`:""}</div>`:"";
+  return `<div class="xlword">${strip}${details}<div class="row">${card?`<span class="sub">In cards ✓</span>`:`<button class="btn sm" data-xlcard="${esc(lk.id)}">Add to cards</button>`}</div></div>`;
+}
+function xlPanel(){
+  const t=trQ(S.q), cur=S.xl.cur?.lookup;
+  return `<section class="card results xlpanel" aria-label="Translate"><div class="rhead"><b>Translate</b><span class="sub">${t?(cur&&cur.text===t?"":"Enter translates “"+esc(t)+"”"):"Type a word or a sentence after &gt;"}</span><span class="count"><a href="#translate">Translate screen →</a></span></div>${S.xl.cur||S.xl.busy||S.xl.err?xlResult(true):""}</section>`;
+}
+function xlView(){
+  const cid=xlConceptHash();if(cid)return xlConceptView(cid);
+  const st=S.xl.st, langs=xlLangs(), x=S.xl, sugg=(st?.suggestions||[]).length;
+  const head=`<header class="head"><div><p class="eyebrow">Read</p><h1>Translate</h1></div><p class="sub xlhead">${st?(st.engine==="google"?"Google Translate":"Claude translates for now")+(st.limit&&st.hasGoogle?` · ${(st.used||0).toLocaleString("en-US")} / ${st.limit.toLocaleString("en-US")} characters this month`:""):""}</p></header>`;
+  const box=`<section class="card xlbox"><textarea id="xlIn" class="xlfield" rows="3" placeholder="Type or paste. Enter translates; Shift+Enter makes a new line." aria-label="Text to translate">${esc(x.text||"")}</textarea>
+    <div class="row xlctl"><span class="sub">To</span><div class="chips">${[["","Auto"],...langs.map(l=>[l,xlName(l)])].map(([k,l])=>`<button class="chip" data-xlto="${esc(k)}" aria-pressed="${(x.to||"")===k}">${esc(l)}</button>`).join("")}</div><button class="btn primary" id="xlGo">Translate</button></div>
+    ${st&&st.why&&!x.cur&&!x.busy?`<p class="sub xlwhy">${esc(st.why)}</p>`:""}${xlResult(false)}</section>`;
+  const tabs=`<div class="mtabs xltabs" role="tablist" aria-label="Translate lists">${[["history","History",S.lookups.length],["words","Words",S.concepts.length],["cards","To cards",sugg]].map(([k,l,n])=>`<button role="tab" class="mtab" data-xltab="${k}" aria-selected="${x.tab===k}">${l}${n?` <span class="sub">${n}</span>`:""}</button>`).join("")}</div>`;
+  const body=x.tab==="words"?xlWords():x.tab==="cards"?xlToCards():xlHistory();
+  return head+box+tabs+body+xlSettings();
+}
+function xlHistory(){
+  const byKey={};for(const l of [...S.lookups].sort((a,b)=>(b.at||0)-(a.at||0))){const k=l.key||l.id;if(!byKey[k])byKey[k]={...l,n:0};byKey[k].n++}
+  const rows=Object.values(byKey);
+  if(!rows.length)return `<div class="card empty"><b>Nothing looked up yet</b>Translate something above, or type &gt; and a word in the search box. Google Translate pages and 「〜とは」 searches from Chrome arrive here within an hour.</div>`;
+  const days={};for(const r of rows){const d=new Date(r.at||0).toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"});(days[d]=days[d]||[]).push(r)}
+  const via={gtranslate:"via Google",search:"via Google search",reader:"Reader"};
+  return Object.entries(days).map(([d,xs])=>`<section class="card xlday"><div class="section-title">${esc(d)}<span class="count">${xs.length}</span></div>${xs.map(r=>`<div class="xlrow" data-noauto><button class="xlhit" data-xlopen="${esc(r.id)}"><b lang="${esc(xlTag(r.from))}">${esc(r.text)}</b>${r.pending?`<span class="sub"> · not translated yet</span>`:`<span class="xlarrow">→</span><span lang="${esc(xlTag(r.to))}">${esc(r.result)}</span>`}</button><span class="sub xltags">${fmtTime(r.at||0)}${r.n>1?` · ×${r.n}`:""}${via[r.via]?` · ${via[r.via]}`:""}${r.conceptId?` · <a href="#concept/${esc(r.conceptId)}">concept</a>`:""}</span><button class="xlx" data-xldel="${esc(r.id)}" aria-label="Remove from history" title="Remove (it will not come back)">×</button></div>`).join("")}</section>`).join("");
+}
+function xlWords(){
+  const langs=xlLangs(), f=S.xl.lang||"all", cnt=c=>(c.members||[]).reduce((a,m)=>a+(m.count||0),0);
+  let cs=[...S.concepts].sort((a,b)=>cnt(b)-cnt(a)||(b.updatedAt||0)-(a.updatedAt||0));
+  if(f!=="all")cs=cs.filter(c=>(c.members||[]).some(m=>m.lang===f&&m.by==="me"));
+  const chips=`<div class="chips xlfilt">${[["all","All"],...langs.map(l=>[l,xlName(l)])].map(([k,l])=>`<button class="chip" data-xllf="${esc(k)}" aria-pressed="${f===k}">${esc(l)}</button>`).join("")}</div>`;
+  if(!cs.length)return chips+`<div class="card empty"><b>No words yet</b>Each word you look up gets a concept: the same meaning in every language you use.</div>`;
+  return chips+`<section class="card xlwords">${cs.map(c=>`<a class="xlcrow" href="#concept/${esc(c.id)}" data-noauto><span class="xlgl">${esc(c.gloss||"(no gloss yet)")}</span><span class="xlms">${xlMembers(c)}</span><span class="count">×${cnt(c)}</span></a>`).join("")}</section>`;
+}
+function xlToCards(){
+  const s=S.xl.st?.suggestions||[];
+  if(!s.length)return `<div class="card empty"><b>No candidates right now</b>A word looked up twice shows up here. Nothing goes into Cards on its own.</div>`;
+  return `<section class="card xlsugg">${s.map(g=>`<div class="xlrow" data-noauto><span class="xlhit"><b lang="${esc(xlTag(g.from))}">${esc(g.text)}</b><span class="xlarrow">→</span>${esc(g.result||"")}<span class="sub"> · ×${g.count}</span></span><span class="row"><button class="btn sm primary" data-xlcard="${esc(g.lookupId)}">Add</button><button class="btn sm" data-xlnot="${esc(g.key)}">Not now</button></span></div>`).join("")}</section>`;
+}
+function xlSettings(){const st=S.xl.st;if(!st)return "";
+  return `<details class="card xlset"><summary>Settings</summary><div class="xlsetb"><label>Languages (codes, in order; the first is the default target, Japanese text goes to the second)<input class="xlfield" id="xlLangs" value="${esc(st.langs.join(", "))}"></label><label>Google characters a month before Claude takes over<input class="xlfield" id="xlLimit" type="number" min="0" step="1000" value="${st.limit}"></label><p class="sub">${st.hasGoogle?"The Google key is read from the keychain tatsuki-desk-gtranslate and never reaches this page.":"No Google key yet: add one to the keychain as tatsuki-desk-gtranslate (account api). Until then Claude translates."} Check the free tier on Google's Cloud Translation pricing page and keep the limit under it.</p><button class="btn sm" id="xlSave">Save</button></div></details>`}
+function xlConceptView(id){
+  const c=(S.conceptsAll||S.concepts).find(x=>x.id===id);
+  const back=`<header class="head"><div><p class="eyebrow"><a href="#translate">Translate</a> · Concept</p><h1>${c?esc(c.gloss||"(no gloss yet)"):"Not found"}</h1></div></header>`;
+  if(!c)return back+`<div class="card empty"><b>This concept is not here</b>It may have been merged into another one, or the list is still loading.</div>`;
+  if(c.mergedInto)return back+`<div class="card empty"><b>Merged</b>This meaning now lives in <a href="#concept/${esc(c.mergedInto)}">another concept</a>.</div>`;
+  const langs=xlLangs(), order=[...langs,...[...new Set((c.members||[]).map(m=>m.lang))].filter(l=>!langs.includes(l))];
+  const lks=S.lookups.filter(l=>l.conceptId===c.id), many=(c.members||[]).length>1;
+  const groups=order.map(l=>[l,(c.members||[]).filter(m=>m.lang===l)]).filter(([,ms])=>ms.length);
+  const gl=`<section class="card xlcg"><label class="sub">Gloss: the one sense, in a few English words<input class="xlfield" id="xlGloss" value="${esc(c.gloss||"")}" maxlength="120"></label></section>`;
+  const members=`<section class="card xlmem" data-noauto>${groups.map(([l,ms])=>`<div class="xllang"><div class="section-title">${esc(xlName(l))}</div>${ms.map(m=>{const mine=lks.filter(k=>k.key===xlKey(m.term,l));
+    return `<div class="xlmrow"><span class="xlm big${m.by==="claude"?" ai":""}" lang="${esc(xlTag(l))}">${esc(m.term)}</span>${xlSpk(m.term,l,true)}<span class="sub">${m.by==="claude"?"added by Claude":`looked up ×${Math.max(mine.length,m.count||1)}`}${mine.length?": "+mine.slice(0,5).map(k=>new Date(k.at||0).toLocaleDateString("en-US",{month:"short",day:"numeric"})).join(", "):""}</span>${many?`<button class="btn sm" data-xlsplit="${esc(l)}|${esc(m.term)}">Split</button>`:""}</div>`}).join("")}</div>`).join("")}</section>`;
+  const ex=[...new Map(lks.flatMap(k=>(k.info?.examples||[]).map(e=>[e.text,{...e,lang:k.from}])).reverse()).values()].slice(0,6);
+  const exs=ex.length?`<section class="card xlexs" data-noauto><div class="section-title">Examples</div><ul class="xlex">${ex.map(e=>`<li><span lang="${esc(xlTag(e.lang))}">${esc(e.text)}</span> ${xlSpk(e.text,e.lang,true)}<br><span class="sub">${esc(e.translation)}</span></li>`).join("")}</ul></section>`:"";
+  const note=`<section class="card xlnote"><div class="section-title">My note</div><textarea class="xlfield" id="xlNote" rows="3" placeholder="How you remember it, where you met it">${esc(c.note||"")}</textarea><div class="row"><button class="btn sm" id="xlNoteSave">Save</button></div></section>`;
+  const others=S.concepts.filter(x=>x.id!==c.id), opt=x=>(x.gloss||"(no gloss)")+" — "+(x.members||[]).map(m=>m.term).join(" · ");
+  const merge=others.length?`<section class="card xlmerge"><div class="section-title">Merge into another concept</div><div class="row"><input class="xlfield xlmq" id="xlMergeQ" list="xlMergeList" placeholder="Type a word or a gloss" value="${esc(S.xl.merge||"")}"><datalist id="xlMergeList">${others.slice(0,300).map(x=>`<option value="${esc(opt(x))}">`).join("")}</datalist><button class="btn sm" id="xlMergeGo">Merge</button></div><p class="sub">Every word here moves into the one you pick. Split brings a word back out, one at a time.</p></section>`:"";
+  return back+gl+members+exs+note+merge;
+}
+function xlOpenLookup(id){
+  const r=S.lookups.find(x=>x.id===id);if(!r)return;
+  S.xl.text=r.text;S.xl.err="";if(r.pending)return xlFill(r);
+  S.xl.cur={lookup:r,concept:(S.conceptsAll||S.concepts).find(c=>c.id===r.conceptId)||null,count:S.lookups.filter(x=>x.key===r.key).length,engine:r.engine||""};window.scrollTo(0,0);render();
+}
+async function xlFill(r){ // a lookup that came in from outside has no translation yet: translate it and fill that same record
+  S.xl.busy=true;render();
+  try{const v=await xlPost("/api/translate",{text:r.text,to:r.to||undefined,save:false});const from=r.from||v.lookup.from||"";
+    const upd={...r,from,to:v.lookup.to,result:v.lookup.result,engine:v.engine,pending:false,key:xlKey(r.text,from),updatedAt:Date.now()};
+    await api("PUT","/api/lookups/"+encodeURIComponent(r.id),upd);const i=S.lookups.findIndex(x=>x.id===r.id);if(i>=0)S.lookups[i]=upd;
+    S.xl.busy=false;S.xl.cur={lookup:upd,concept:null,count:S.lookups.filter(x=>x.key===upd.key).length,engine:v.engine,why:v.why};
+    if(upd.word){S.xl.enriching=upd.id;xlEnrich(upd.id)}render()}
+  catch(e){S.xl.busy=false;S.xl.err=e.message||"Could not translate";render()}
+}
+async function xlDel(id){const r=S.lookups.find(x=>x.id===id);if(!r)return;
+  try{await api("PUT","/api/lookups/"+encodeURIComponent(id),{...r,deleted:true,updatedAt:Date.now()});S.lookups=S.lookups.filter(x=>x.id!==id);if(S.xl.cur?.lookup?.id===id)S.xl.cur=null;S.xl.stAt=0;toast("Removed");render()}catch(e){toast("Could not remove")}}
+async function xlAddCard(id){try{const v=await xlPost("/api/translate/cards",{id});if(v.card&&!S.cards.some(k=>k.id===v.card.id))S.cards.push(v.card);if(S.xl.st&&v.suggestions)S.xl.st.suggestions=v.suggestions;toast(v.already?"Already in cards":"Added to cards");render()}catch(e){toast(e.message)}}
+async function xlNotNow(key){try{const v=await xlPost("/api/translate/cards",{action:"notnow",key});if(S.xl.st)S.xl.st.suggestions=v.suggestions||[];render()}catch(e){toast(e.message)}}
+async function xlPutConcept(patch,msg){const id=xlConceptHash(), c=id&&(S.conceptsAll||S.concepts).find(x=>x.id===id);if(!c)return;const next={...c,...patch,updatedAt:Date.now()};
+  try{await api("PUT","/api/concepts/"+encodeURIComponent(c.id),next);Object.assign(c,next);if(msg)toast(msg);render()}catch(e){toast("Could not save")}}
+async function xlSplit(v){const i=v.indexOf("|"), lang=v.slice(0,i), term=v.slice(i+1), id=xlConceptHash();if(!id)return;
+  try{const out=await xlPost("/api/concepts/split",{id,lang,term});await xlLoad(true);toast("Now its own concept");location.hash="concept/"+out.new.id}catch(e){toast(e.message)}}
+async function xlMerge(){const id=xlConceptHash();if(!id)return;const q=($("#xlMergeQ")?.value||"").trim().toLowerCase(), opt=x=>((x.gloss||"(no gloss)")+" — "+(x.members||[]).map(m=>m.term).join(" · ")).toLowerCase();
+  const into=q&&S.concepts.find(x=>x.id!==id&&(opt(x)===q||(x.members||[]).some(m=>String(m.term).toLowerCase()===q)||(x.gloss||"").toLowerCase()===q));
+  if(!into)return toast("Pick a concept from the list");
+  try{await xlPost("/api/concepts/merge",{from:id,into:into.id});S.xl.merge="";await xlLoad(true);toast("Merged");location.hash="concept/"+into.id}catch(e){toast(e.message)}}
+async function xlSaveSettings(){const langs=($("#xlLangs")?.value||"").split(/[,\s]+/).filter(Boolean), limit=parseInt($("#xlLimit")?.value,10);
+  try{S.xl.st=await xlPost("/api/translate/settings",{langs,...(isNaN(limit)?{}:{limit})},"PUT");toast("Saved");render()}catch(e){toast(e.message||"Could not save")}}
+function wireXl(){
+  const ta=$("#xlIn");if(ta){ta.oninput=()=>{S.xl.text=ta.value};ta.onkeydown=e=>{if(e.key==="Enter"&&!e.shiftKey&&!e.isComposing&&e.keyCode!==229){e.preventDefault();xlRun(ta.value)}}}
+  $("#xlGo")&&($("#xlGo").onclick=()=>xlRun($("#xlIn").value));
+  document.querySelectorAll("[data-xlto]").forEach(b=>b.onclick=()=>{S.xl.to=b.dataset.xlto;if(S.xl.text)xlRun(S.xl.text);else render()});
+  document.querySelectorAll("[data-xltab]").forEach(b=>b.onclick=()=>{S.xl.tab=b.dataset.xltab;render()});
+  document.querySelectorAll("[data-xllf]").forEach(b=>b.onclick=()=>{S.xl.lang=b.dataset.xllf;render()});
+  document.querySelectorAll("[data-xlspk]").forEach(b=>b.onclick=e=>{e.preventDefault();e.stopPropagation();xlSpeak(b.dataset.xlspk,b.dataset.xllang)});
+  document.querySelectorAll("[data-xlcopy]").forEach(b=>b.onclick=()=>{navigator.clipboard?.writeText(b.dataset.xlcopy).then(()=>toast("Copied"),()=>toast("Could not copy"))});
+  document.querySelectorAll("[data-xlcard]").forEach(b=>b.onclick=()=>xlAddCard(b.dataset.xlcard));
+  document.querySelectorAll("[data-xlnot]").forEach(b=>b.onclick=()=>xlNotNow(b.dataset.xlnot));
+  document.querySelectorAll("[data-xlopen]").forEach(b=>b.onclick=()=>xlOpenLookup(b.dataset.xlopen));
+  document.querySelectorAll("[data-xldel]").forEach(b=>b.onclick=()=>xlDel(b.dataset.xldel));
+  document.querySelectorAll("[data-xlsplit]").forEach(b=>b.onclick=()=>xlSplit(b.dataset.xlsplit));
+  $("#xlSave")&&($("#xlSave").onclick=xlSaveSettings);
+  $("#xlGloss")&&($("#xlGloss").onchange=()=>xlPutConcept({gloss:$("#xlGloss").value.trim().slice(0,120)},"Saved"));
+  $("#xlNoteSave")&&($("#xlNoteSave").onclick=()=>xlPutConcept({note:$("#xlNote").value.slice(0,5000)},"Saved"));
+  $("#xlMergeQ")&&($("#xlMergeQ").oninput=()=>{S.xl.merge=$("#xlMergeQ").value});
+  $("#xlMergeGo")&&($("#xlMergeGo").onclick=xlMerge);
+}
 function render(){
   if(S.wf&&viewId()!=="wifi")S.wf=null; // Wi-Fi QR: leaving the screen drops the code
   if(S.ed){if(viewId()==="notes"&&S.noteId===S.ed.id)return;edClose();return}
@@ -5861,6 +6085,8 @@ function render(){
   if(!replyOpen()) S.dl=S.dl.filter(x=>x.kind!=="mail"); // outside the reply window: no count, badge or chime for mail
   updateBadges();checkNew();
   renderNav();timerBar();backBar();
+  if(viewId()==="translate"){xlLoad();const f=document.activeElement, keep=f?.classList?.contains("xlfield")&&f.id?{id:f.id,v:f.value,s:f.selectionStart,e:f.selectionEnd}:null;
+    $("#view").innerHTML=searchResults()+xlView();wire();if(keep){const el=document.getElementById(keep.id);if(el){el.value=keep.v;try{el.setSelectionRange(keep.s,keep.e)}catch(e){}el.focus()}}return}
   if(viewId()==="lifeos"){$("#view").innerHTML=searchResults()+lifeosView();wire();wireLifeos();return}
   if(viewId()==="memolink"){mlLoad();$("#view").innerHTML=searchResults()+mlView();wire();wireMl();return}
   if(viewId()==="followups"){fuLoad();$("#view").innerHTML=searchResults()+fuView();wire();wireFu();return}
@@ -8014,7 +8240,7 @@ function wireLifemap(){
 }
 if(LOCALAPI)loadLifemap();
 function wire(){
-  wireFocus();
+  wireFocus();wireXl();
   document.querySelectorAll("[data-pal]").forEach(b=>b.onclick=()=>palRun(+b.dataset.pal));
   document.querySelectorAll("#view [data-cc]").forEach(b=>b.onclick=()=>openCC(b.dataset.cc));
   document.querySelectorAll("[data-hit]").forEach(b=>b.onclick=()=>{const [,i]=b.dataset.hit.split(":");const h=runSearch(S.q).hits[+i];if(h)goHit(h)});
@@ -8170,6 +8396,7 @@ $("#noteBtn").onclick=openNote;
       if(e.key==="ArrowDown"){e.preventDefault();return palMove(1)} if(e.key==="ArrowUp"){e.preventDefault();return palMove(-1)}
       if(e.key==="Enter"){e.preventDefault();return palRun(S.palSel||0)}}
     if(e.keyCode===229) return; // IME is still confirming a word
+    if(isTr(q.value)&&e.key==="Enter"){e.preventDefault();S.q=q.value;const t=trQ(q.value);if(t)xlRun(t,"","desk");return} // "> word": translate in place
     if(isAsk(q.value)){ // "?" Ask Desk: Enter asks, or opens the chosen place when nothing new is typed
       if(e.key==="ArrowDown"){e.preventDefault();return askMove(1)} if(e.key==="ArrowUp"){e.preventDefault();return askMove(-1)}
       if(e.key==="Enter"){e.preventDefault();S.q=q.value;return askEnter()}}
@@ -8290,6 +8517,7 @@ const FDESC={ // what each screen is for, in plain words (English and Japanese k
   presents:"awards, offers, income and kind words プレゼント",
   ideas:"weekly ideas of things to build from your notes 提案",
   aidone:"work Claude did on its own, JOINS application drafts, Send for me 応募",
+  translate:"translate words and sentences, lookup history, the same meaning across languages (concepts), candidates for cards 翻訳 ほんやく 辞書 言葉 訳す",
   news:"World Desk news edition, predictions ニュース",watch:"Minor Countries watch マイナー国",heritage:"Daily World Heritage, 3 countries a day 世界遺産",
   notes:"Scrapbox-style notes, daily notes ノート メモ",memolink:"import memos from other apps メモ連携",
   money:"Wise payments: overview, charts, budget, trips, savings, advice, receipts, subscriptions お金 家計 予算",
@@ -8403,6 +8631,7 @@ function palItems(){
     {e:"⚡",name:"Command list (this one)",key:"/ /",kw:"こまんど command palette",run:()=>{const q=$("#q");q.value="/";S.q="/";S.palSel=0;render();q.focus()}},
     {e:"🔎",name:"Search",key:"/",kw:"けんさく search",run:()=>setTimeout(()=>$("#q")?.focus(),0)},
     {e:"❓",name:"Ask Desk where something is",key:"?",kw:"どこ さがす ask where find AI",run:()=>setTimeout(()=>{const q=$("#q");q.value="?";S.q="?";S.ask.focus=true;render()},0)},
+    {e:"🔤",name:"Translate a word or sentence",key:">",kw:"ほんやく 翻訳 translate 訳す 辞書",run:()=>setTimeout(()=>{const q=$("#q");q.value="> ";S.q="> ";render();q.focus()},0)},
     {e:"🗂️",name:"Triage unsorted tasks",kw:"しわけ みぶんるい triage",run:()=>openTriage()},
     {e:"🍃",name:"Decide what not to do",kw:"やらない not doing drop decide",run:()=>openDecide()},
     {e:"🧷",name:"Merge similar tasks",kw:"まとめる merge similar",run:()=>openMerge()},
@@ -8449,7 +8678,7 @@ $("#nextBtn").onclick=()=>openStuck();
 document.addEventListener("keydown",e=>{const t=e.target.tagName;if(t==="INPUT"||t==="TEXTAREA"||t==="SELECT")return;
   if(e.key==="n"||e.key==="N"){e.preventDefault();openNote()}
   if(e.key==="c"||e.key==="C"){if(e.metaKey||e.ctrlKey)return;e.preventDefault();openAsk()}
-  if(e.key==="t"||e.key==="T"){if(e.metaKey||e.ctrlKey)return;e.preventDefault();openTask(null)}
+  if(e.key==="t"||e.key==="T"){if(e.metaKey||e.ctrlKey)return;e.preventDefault();const sel=(window.getSelection?.()?.toString()||"").trim();if(LOCALAPI&&sel&&sel.length<=5000)xlOpen(sel);else openTask(null)} // T with text selected: translate it
   if(e.key==="g"||e.key==="G"){if(e.metaKey||e.ctrlKey)return;e.preventDefault();openStuck()}
   if(e.key==="/"){e.preventDefault();$("#q").focus()}
   if(e.key==="Escape"&&S.fromToday&&viewId()!=="home"&&!$("#modal").firstChild){e.preventDefault();location.hash="home"}});

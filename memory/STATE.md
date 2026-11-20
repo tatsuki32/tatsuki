@@ -24,7 +24,7 @@
 - Telegram 通知（`desk/tg_notify.py`）：main に入った。本人がボットを作り、キーと予定の iCal URL をキーチェーンに入れて Connect するまで動かない。本物での送信は未確認。
 - Post Studio（`#post`、`desk/posts.py`）：写真・PDF・動画から投稿先ごとの案。自動投稿は Instagram（英・露）・Threads 露・Facebook ページ（英語）・X（リンクなし、1件約 $0.015）・LinkedIn（個人、60日で再サインイン）で動作。YouTube 接続済み・R2（動画）有効だがどちらも未投稿。会社のお知らせは tany.im へ直接公開。残り：英語の Threads、Instagram の DM、TikTok（審査）。記録 `memory/episodic/sessions/2026-11-15-post-studio.md`。
 - Footprint（`desk/footprint.py`、`#footprint`）：画面時間・AI・食事・支出・移動から CO2e を幅で推定、牛・羊・平均の人と比べる。main に入れた。使ってみて一言と係数を直す段階。
-- ホームの Today（2026-11-20、要件定義 KpHCwmoBcjzAJYF2ouErnj）：今日の3つを消し、予定・期日・ルーティンと習慣・今日のタスク・Sift の見出しを1枚に。決めるカードは1枚、G は Claude が始める。Telegram は朝1通。World Desk は停止（Mac の Claude アプリでも無効にする）。シートの取り込みは Mac で CSV を渡す待ち。Sift の Worker の公開が要る。 Startup Clean（`desk/startup_clean.py`）：起動後の最初のログインで Claude・Desk・Terminal 以外を閉じ、Home の1行で戻す。Mac で `setup-mac.sh` を1回走らせるまで動かない。本物の再起動では未確認。
+- ホームの Today（2026-11-20、要件定義 KpHCwmoBcjzAJYF2ouErnj）：今日の3つを消し、予定・期日・ルーティンと習慣・今日のタスク・Sift の見出しを1枚に。決めるカードは1枚、G は Claude が始める。Telegram は朝1通。World Desk は停止（Mac の Claude アプリでも無効にする）。シートの取り込みは Mac で CSV を渡す待ち。Sift の Worker の公開が要る。 Startup Clean（`desk/startup_clean.py`）：起動後の最初のログインで Claude・Desk・Terminal 以外を閉じ、Home の1行で戻す。Mac で `setup-mac.sh` を1回走らせるまで動かない。本物の再起動では未確認。 Translate（`desk/translate.py`、`#translate`、2026-11-20）：訳す・履歴・概念・To cards・Web履歴の取り込みを実装、Claude 経由で動作確認。Google の鍵（キーチェーン `tatsuki-desk-gtranslate`）は本人が作るまで Claude が訳す。①の `cards` は別セッションが作成中。記録 `memory/episodic/sessions/2026-11-20-translate.md`。
 ## 決定済みの事項
 - 作ったものは必ず main に入れる（どの Claude も。`.claude/rules/main-branch.md`）。Mac は main だけを取り込む。
 - デザインの本を読む作業はしない（2026-11-15、全作業）。UI は `.claude/rules/design-ui.md` と `design-nondesigner.md` のルールで作る。

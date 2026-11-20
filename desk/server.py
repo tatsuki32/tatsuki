@@ -47,6 +47,7 @@ import wifi_qr  # a QR code that joins the Wi-Fi this Mac is on; the password is
 import routine_alarm
 import routine_sync
 import news_sync
+import translate  # Translate: lookups, concepts across languages, card candidates (desk/translate.py)
 import chrome_web_sync
 import gmail_clean
 import lifelog
@@ -69,7 +70,7 @@ import wise_sync
 ROOT = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(ROOT, "data")
 PORT = int(os.environ.get("DESK_PORT", "4747"))
-COLLECTIONS = ("memos", "dues", "tasks", "prompts", "notes", "habits", "lifemap", "wins", "worldlog", "presents", "heritagelog", "routines", "routinelog", "rewards", "ideaslog", "gear", "projects", "sections", "jobapps", "replywin", "genres", "tasktypes", "mergeprops", "timelog", "genrelog", "typeprops", "wboards", "wcards", "okrs")
+COLLECTIONS = ("memos", "dues", "tasks", "prompts", "notes", "habits", "lifemap", "wins", "worldlog", "presents", "heritagelog", "routines", "routinelog", "rewards", "ideaslog", "gear", "projects", "sections", "jobapps", "replywin", "genres", "tasktypes", "mergeprops", "timelog", "genrelog", "typeprops", "wboards", "wcards", "okrs", "lookups", "concepts", "cards")
 # file in data/, global the page reads, value when the file is missing
 DATA_JS = [
     ("tools.js", "TOOLS", "[]"),
@@ -1005,6 +1006,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(200, accounts.view())
             except accounts.AccountsError:
                 return self.send(500, {"error": "read"})
+        if path == "/api/translate/state":  # which engine translates now, the month's characters, the card candidates
+            return self.send(200, translate.state())
         if path == "/api/news/today":  # Sift Daily's headlines, kept by news_sync every 5 minutes
             return self.send(200, news_sync.today())
         if path == "/api/netspeed":
@@ -1285,6 +1288,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(400, {"error": "bad json"})
         if method == "PUT" and urlsplit(self.path).path.startswith("/api/web/"):
             return self.web_put(urlsplit(self.path).path.split("/")[3:], rec)
+        if urlsplit(self.path).path == "/api/translate" or urlsplit(self.path).path.startswith(("/api/translate/", "/api/concepts/merge", "/api/concepts/split")):
+            return self.translate_write(method, urlsplit(self.path).path, rec)
         if urlsplit(self.path).path.startswith("/api/bank/"):
             return self.bank_write(method, rec)
         if urlsplit(self.path).path.startswith("/api/accounts/"):
@@ -1423,6 +1428,22 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, out) if out else self.send(404, {"error": "no such memo"})
         self.send(405, {"error": "method not allowed"})
 
+    def translate_write(self, method, path, rec):
+        """Translate (desk/translate.py). Only the text being translated leaves this Mac; the keys stay in the keychain."""
+        if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+            return self.send(415, {"error": "json only"})
+        if method == "POST" and path == "/api/translate":
+            return self.send(*translate.handle_translate(rec))
+        if method == "POST" and path == "/api/translate/enrich":  # lemma, examples, the other languages, the concept (Claude)
+            return self.send(*translate.handle_enrich(rec))
+        if method == "POST" and path == "/api/translate/cards":  # Add to cards / Not now
+            return self.send(*translate.handle_cards(rec))
+        if method == "PUT" and path == "/api/translate/settings":
+            return self.send(*translate.put_settings(rec))
+        if method == "POST" and path in ("/api/concepts/merge", "/api/concepts/split"):
+            return self.send(*translate.handle_concepts(path.rsplit("/", 1)[1], rec))
+        return self.send(404, {"error": "not found"})
+
     def wise_export(self):
         """A file the person asked for. Made fresh and not kept here."""
         q = parse_qs(urlsplit(self.path).query)
@@ -1560,6 +1581,7 @@ if __name__ == "__main__":
     print(f"Tatsuki's Desk: http://localhost:{PORT}", flush=True)
     threading.Thread(target=lifemap_ticks, daemon=True).start()
     threading.Thread(target=pc_monitor.watch, daemon=True).start()
+    translate.bind(load, save, LOCK)  # lookups, concepts and cards are ordinary collections written under the same lock
     if PORT == 4747:  # a test server on another port shows nothing
         threading.Thread(target=notify.watch, daemon=True).start()
         threading.Thread(target=checkin.watch, args=(load, save, LOCK), daemon=True).start()  # in-progress timers: ask every 10 minutes
@@ -1577,6 +1599,7 @@ if __name__ == "__main__":
         threading.Thread(target=transcribe_desk.watch, daemon=True).start()  # the transcriber on 8791, kept running
         threading.Thread(target=claude_usage.watch, daemon=True).start()  # Claude usage counted again every 5 minutes
         threading.Thread(target=site_sync.watch, daemon=True).start()  # tany.im analytics pulled every 15 minutes
+        threading.Thread(target=translate.watch, daemon=True).start()  # Google Translate pages and 「〜とは」 searches from the web history, hourly; concepts at night
     try:
         srv.serve_forever()
     except KeyboardInterrupt:
