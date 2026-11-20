@@ -47,6 +47,7 @@ import wifi_qr  # a QR code that joins the Wi-Fi this Mac is on; the password is
 import routine_alarm
 import routine_sync
 import news_sync
+import rhizomebox_backup
 import cards
 import cards_sync
 import reader
@@ -1695,6 +1696,7 @@ if __name__ == "__main__":
         except Exception as e:
             print("log habits:", e, file=sys.stderr)
         threading.Thread(target=news_sync.watch, daemon=True).start()  # Sift Daily's "Make it a task" -> Desk tasks, every 5 minutes
+        threading.Thread(target=rhizomebox_backup.watch, daemon=True).start()  # a daily copy of Rhizome Box (all pages and pictures)
         threading.Thread(target=transcribe_desk.watch, daemon=True).start()  # the transcriber on 8791, kept running
         threading.Thread(target=claude_usage.watch, daemon=True).start()  # Claude usage counted again every 5 minutes
         threading.Thread(target=site_sync.watch, daemon=True).start()  # tany.im analytics pulled every 15 minutes
