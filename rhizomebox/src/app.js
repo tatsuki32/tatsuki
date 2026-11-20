@@ -415,7 +415,7 @@ export async function handle(req, env, ctx, deps) {
   }
   if (path.startsWith('/_/')) {
     const view = path.slice(3);
-    if (!['links', 'web', 'images', 'graph', 'login'].includes(view)) return html(notFoundHtml(common), 404);
+    if (!['links', 'web', 'images', 'graph', 'login', 'new'].includes(view)) return html(notFoundHtml(common), 404);
     return html(shellHtml({ ...common, view }));
   }
   const raw = decodePath(path);
