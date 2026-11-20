@@ -189,8 +189,9 @@ class Change(Temp):
         self.write_days(days_of({"tasks": 14, "notes": 2, "calendar": 2, "habits": 2, "bodysleep": 2, "bodymeal": 2, "wins": 2, "news": 2,
                                  "heritage": 2, "pc": 2}))
         got = self.sync(MON)
-        self.assertEqual(got["nav"], {"fav": ["tasks"], "rare": ["netspeed"]})
-        self.assertEqual([m["id"] for m in got["notice"]["moves"]], ["tasks", "netspeed"])
+        self.assertEqual(got["nav"], {"fav": ["tasks"], "rare": []})
+        self.assertEqual(got["tryList"], ["netspeed"])  # never opened: "not tried yet", not "rarely used"
+        self.assertEqual([m["id"] for m in got["notice"]["moves"]], ["tasks"])
         self.assertTrue(got["canUndo"])
         back = u.change({"op": "undo"}, True, MON)
         self.assertEqual((back["nav"], back["notice"], back["canUndo"]), ({"fav": [], "rare": []}, None, False))
@@ -205,11 +206,11 @@ class Change(Temp):
         self.assertIsNone(self.sync(MON)["week"])
         u.change({"op": "auto", "on": True}, True, MON)
         got = self.sync(MON)
-        self.assertEqual(got["nav"], {"fav": [], "rare": ["netspeed"]})
+        self.assertEqual((got["nav"], got["tryList"]), ({"fav": [], "rare": []}, ["netspeed"]))
         self.assertIsNone(u.change({"op": "seen"}, True, MON)["notice"])
         got = u.change({"op": "reset"}, True, MON)
         self.assertEqual((got["nav"], got["changed"], got["pins"]["nav"]), ({"fav": [], "rare": []}, False, ["tasks"]))
-        self.assertTrue(got["history"][0]["reset"])
+        self.assertEqual(got["history"], [])  # nothing had moved, so there was nothing to reset
 
     def test_a_test_server_changes_nothing(self):
         self.sync(START)
@@ -229,6 +230,34 @@ class Change(Temp):
         self.assertEqual(u.read_layout()["nav"], {"fav": [], "rare": []})
         self.assertEqual(u.normal({"nav": {"fav": ["home", "x y", "tasks", "tasks"], "rare": ["tasks", "pc"]}})["nav"], {"fav": ["tasks"], "rare": ["pc"]})
 
+
+
+class TryOut(unittest.TestCase):
+    def test_never_opened_screens_go_to_not_tried_yet_at_once(self):
+        days = days_of({"tasks": 5, "calendar": 2}, until=date(2026, 11, 20))
+        lay = u.tryout(layout(), days, IDS, date(2026, 11, 20))
+        self.assertEqual(lay["tryout"]["list"], [i for i in IDS if i not in ("home", "tasks", "calendar")])
+        self.assertTrue(lay["tryout"]["done"])
+        days[(date(2026, 11, 21)).isoformat()] = {"views": {"pc": {"n": 1, "sec": 5}}}
+        lay = u.tryout(lay, days, IDS, date(2026, 11, 21))
+        self.assertNotIn("pc", lay["tryout"]["list"])  # opened: leaves the list
+        lay["tryout"]["done"] = True
+        self.assertEqual(u.ask_list(lay, date(2026, 12, 3)), [])
+        self.assertIn("news", u.ask_list(lay, date(2026, 12, 4)))  # 14 days later Home asks
+
+    def test_hide_keep_unhide(self):
+        with tempfile.TemporaryDirectory() as d, mock.patch.object(u, "DIR", d):
+            u._write("days.json", days_of({"tasks": 5}, until=date(2026, 11, 20)))
+            u.change({"op": "sync", "views": VIEWS, "cards": CARDS}, True, date(2026, 11, 20))
+            out = u.change({"op": "hide", "id": "news"}, True, date(2026, 12, 4))
+            self.assertIn("news", out["hidden"])
+            self.assertNotIn("news", out["tryList"])
+            out = u.change({"op": "keep", "id": "pc"}, True, date(2026, 12, 4))
+            self.assertNotIn("pc", out["tryList"])
+            out = u.change({"op": "unhide", "id": "news"}, True, date(2026, 12, 4))
+            self.assertNotIn("news", out["hidden"])
+            out = u.change({"op": "hide", "id": "home"}, True, date(2026, 12, 4))
+            self.assertNotIn("home", out["hidden"])
 
 if __name__ == "__main__":
     unittest.main()

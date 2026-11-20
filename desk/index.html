@@ -152,6 +152,11 @@ select{background:var(--surface);color:var(--ink);border:1px solid var(--line-2)
 .sgprev .sub{display:block;margin-bottom:var(--s1)}
 .backbar{position:fixed;z-index:26;left:50%;transform:translateX(-50%);bottom:var(--s4);display:flex;align-items:center;gap:var(--s2);min-height:44px;padding:0 var(--s4);border-radius:22px;background:var(--surface-2);border:1px solid var(--accent);color:var(--ink);text-decoration:none;font-weight:700;box-shadow:0 4px 16px rgba(0,0,0,.4)}
 .backbar[hidden]{display:none}
+.uask{padding:var(--s3) var(--s4);display:grid;gap:var(--s2)}.uask p{margin:0}
+.uaskrow{display:flex;align-items:center;justify-content:space-between;gap:var(--s2);border-top:1px solid var(--line);padding-top:var(--s2)}
+.uaskrow a{color:var(--ink);text-decoration:none}
+.navhid summary{cursor:pointer;list-style:none}
+.navhidrow{display:flex;align-items:center;gap:var(--s1)}.navhidrow a{flex:1;min-width:0}
 .t3row{display:grid;grid-template-columns:28px minmax(0,1fr);gap:var(--s1) var(--s2);padding:var(--s3);border-top:1px solid var(--line)}
 .t3row:first-child{border-top:0}
 .t3n{font-size:var(--t3);font-weight:700;color:var(--muted);line-height:1.5}
@@ -5172,12 +5177,14 @@ function navCount(id){
 }
 function navHtml(){
   const cur=viewId(), has=id=>id!=="home"&&VIEWS.some(v=>v.id===id);
-  const fav=(S.layout?.nav?.fav||[]).filter(has), rare=(S.layout?.nav?.rare||[]).filter(id=>has(id)&&!fav.includes(id)), out=new Set([...fav,...rare]);
+  const hid=new Set((S.layout?.hidden||[]).filter(has)), tryL=(S.layout?.tryList||[]).filter(id=>has(id)&&!hid.has(id));
+  const fav=(S.layout?.nav?.fav||[]).filter(id=>has(id)&&!hid.has(id)&&!tryL.includes(id)), rare=(S.layout?.nav?.rare||[]).filter(id=>has(id)&&!fav.includes(id)&&!hid.has(id)&&!tryL.includes(id)), out=new Set([...fav,...rare,...tryL,...hid]);
   const link=v=>`<a href="#${v.id}" ${cur===v.id?'aria-current="page"':''}><span class="e">${v.e}</span><span class="label">${v.label}</span>${navCount(v.id)}</a>`;
   const list=(l,ids)=>ids.length?`<div class="gh">${l}</div>`+ids.map(id=>link(VIEWS.find(v=>v.id===id))).join(""):"";
-  return (fav.length?link(VIEWS[0])+list("Frequently used",fav):"")
-    +NAVGROUPS.map(([g,l])=>list(l,VIEWS.filter(v=>v.g===g&&!out.has(v.id)&&!(fav.length&&v.id==="home")).map(v=>v.id))+(g==="today"?projNavHtml():"")).join("")
-    +list("Rarely used",rare);
+  return (fav.length||tryL.length?link(VIEWS[0]):"")+(fav.length?list("Frequently used",fav):"")+(tryL.length?list(`Not tried yet (${tryL.length})`,tryL.slice(0,6))+(tryL.length>6?`<details class="navhid"><summary class="gh">+${tryL.length-6} more not tried</summary>${tryL.slice(6).map(id=>link(VIEWS.find(v=>v.id===id))).join("")}</details>`:""):"")
+    +NAVGROUPS.map(([g,l])=>list(l,VIEWS.filter(v=>v.g===g&&!out.has(v.id)&&!((fav.length||tryL.length)&&v.id==="home")).map(v=>v.id))+(g==="today"?projNavHtml():"")).join("")
+    +list("Rarely used",rare)
+    +(hid.size?`<details class="navhid"><summary class="gh">Hidden (${hid.size})</summary>${[...hid].map(id=>{const v=VIEWS.find(x=>x.id===id);return `<div class="navhidrow">${link(v)}<button class="btn sm" data-ulay="unhide::${esc(id)}">Show</button></div>`}).join("")}</details>`:"");
 }
 function renderNav(){
   $("#nav").innerHTML=navHtml();
@@ -8506,8 +8513,9 @@ function uMoves(ms){
   return esc([nav("fav")&&`${nav("fav")} to "Frequently used"`,nav("rare")&&`${nav("rare")} to "Rarely used"`,nav("group")&&`${nav("group")} back to its group`,of(m=>m.kind==="home")&&`${of(m=>m.kind==="home")} moved up on Home`].filter(Boolean).join(". "));
 }
 function uNotice(){
-  const n=S.layout?.notice;
-  return n?.moves?.length?`<p class="unote"><span>This week's rearrangement: ${uMoves(n.moves)}.</span><span class="unacts"><button class="btn sm" data-ulay="undo">Restore</button><button class="btn sm" data-ulay="seen">Close</button></span></p>`:"";
+  const n=S.layout?.notice, ask=(S.layout?.ask||[]).map(id=>VIEWS.find(v=>v.id===id)).filter(Boolean);
+  const askCard=ask.length?`<section class="card uask" aria-label="Screens you have not opened"><p><b>Not opened in 2 weeks.</b> Hide these from the menu? They stay in search and under Hidden.</p>${ask.map(v=>`<div class="uaskrow"><a href="#${v.id}">${v.e} ${esc(v.label)}</a><span class="unacts"><button class="btn sm" data-ulay="hide::${v.id}">Hide</button><button class="btn sm" data-ulay="keep::${v.id}">Keep</button></span></div>`).join("")}</section>`:"";
+  return askCard+(n?.moves?.length?`<p class="unote"><span>This week's rearrangement: ${uMoves(n.moves)}.</span><span class="unacts"><button class="btn sm" data-ulay="undo">Restore</button><button class="btn sm" data-ulay="seen">Close</button></span></p>`:"");
 }
 async function uLoad(force){
   if(!LOCALAPI||S.uBusy||(!force&&S.usage&&Date.now()-(S.uAt||0)<30000))return;
@@ -8553,8 +8561,8 @@ document.addEventListener("click",async e=>{
   if(op==="period"){S.uq=kind;S.usage=null;render();uLoad(true);return}
   if(!S.layout?.on){toast("This window is for testing, so the order cannot be changed");return}
   const on=op==="pin"?b.getAttribute("aria-pressed")!=="true":kind==="on";
-  try{S.layout=await api("PUT","/api/layout",op==="pin"?{op,kind,id,on}:op==="auto"?{op,on}:{op});render();
-    const say={undo:"Restored last week's order",reset:"Restored the original order",pin:on?"Pinned where it is":"Unpinned",auto:on?"Automatic rearranging started":"Automatic rearranging stopped"}[op];if(say)toast(say)}
+  try{S.layout=await api("PUT","/api/layout",op==="pin"?{op,kind,id,on}:op==="auto"?{op,on}:["hide","keep","unhide"].includes(op)?{op,id}:{op});render();
+    const say={hide:"Hidden from the menu. Find it in search or under Hidden",keep:"Kept in the menu",unhide:"Back in the menu",undo:"Restored last week's order",reset:"Restored the original order",pin:on?"Pinned where it is":"Unpinned",auto:on?"Automatic rearranging started":"Automatic rearranging stopped"}[op];if(say)toast(say)}
   catch(err){toast("Could not save. Please check the server")}
 });
 

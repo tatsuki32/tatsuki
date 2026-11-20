@@ -13,6 +13,11 @@ removed: the layout is only two lists of ids and an order, and the page shows ev
 say. A pinned item, one that moved in the last two weeks, and one newer than 14 days stay where they are.
 Fixed arithmetic only; no model is asked.
 
+Not tried yet (2026-11-20): screens never opened since counting began go to 「Not tried yet」 near the top of the
+menu, once, without the weekly limit of three. One opened leaves the list. One still unopened after 14 days is asked
+about on Home ("Hide" or "Keep"); only the owner hides a screen. A hidden screen leaves the menu but stays in search
+and in 「Hidden」 at the bottom, where it can be brought back.
+
 A server on another port than 4747 (a test run) neither counts nor arranges, unless DESK_USAGE_DIR points it at
 its own folder.
 
@@ -46,6 +51,8 @@ OFTEN = 0.2          # a card pressed on one Home visit in five is pressed often
 MOVES = 3            # screens moved per week, and cards moved per week
 HOLD = 14            # days a moved item stays put
 HISTORY = 26
+TRY_ASK = 14         # days in Not tried yet before Home asks whether to hide it
+KEEP_QUIET = 60      # days a kept screen is not asked about again
 
 _lock = threading.Lock()
 
@@ -118,6 +125,11 @@ def normal(lay):
         "known": pair(lay.get("known"), dates),
         "notice": lay.get("notice") if isinstance(lay.get("notice"), dict) else None,
         "history": [h for h in lay.get("history") or [] if isinstance(h, dict)][-HISTORY:] if isinstance(lay.get("history"), list) else [],
+        "tryout": {"done": bool((lay.get("tryout") or {}).get("done")) if isinstance(lay.get("tryout"), dict) else False,
+                   "list": [i for i in ids((lay.get("tryout") or {}).get("list") if isinstance(lay.get("tryout"), dict) else None) if i != "home"],
+                   "since": dates((lay.get("tryout") or {}).get("since") if isinstance(lay.get("tryout"), dict) else None),
+                   "kept": dates((lay.get("tryout") or {}).get("kept") if isinstance(lay.get("tryout"), dict) else None),
+                   "hidden": [i for i in ids((lay.get("tryout") or {}).get("hidden") if isinstance(lay.get("tryout"), dict) else None) if i != "home"]},
     }
 
 
@@ -292,6 +304,7 @@ def plan(days, layout, views, cards, today):
         return tuple(opened.get(i, (0, 0)))
 
     moves, done, left = [], set(), MOVES
+    skip = set(lay["tryout"]["list"]) | set(lay["tryout"]["hidden"])  # not tried yet, or hidden by the owner
 
     def move(i, to):
         nonlocal left
@@ -328,7 +341,7 @@ def plan(days, layout, views, cards, today):
             fav.remove(i)
             move(i, "group")
     for i in ids:  # not opened for 14 days
-        if left and i != "home" and i not in fav and i not in rare and i not in done and score(i)[0] == 0 and free("nav", i):
+        if left and i != "home" and i not in fav and i not in rare and i not in done and score(i)[0] == 0 and free("nav", i) and i not in skip:
             rare.append(i)
             move(i, "rare")
     rare.sort(key=ids.index)
@@ -368,6 +381,45 @@ def plan(days, layout, views, cards, today):
     return lay, moves
 
 
+def ever_opened(days):
+    """Screens opened on any counted day."""
+    out = set()
+    for day in days.values():
+        for vid, v in ((day or {}).get("views") or {}).items():
+            if isinstance(v, dict) and v.get("n", 0) > 0:
+                out.add(vid)
+    return out
+
+
+def tryout(lay, days, ids, today):
+    """Keeps 「Not tried yet」: filled once from the screens never opened, emptied as they get opened."""
+    t = lay["tryout"]
+    if not days:
+        return lay
+    seen = ever_opened(days)
+    if not t["done"]:
+        pinned = set(lay["pins"]["nav"])
+        t["list"] = [i for i in ids if i != "home" and i not in seen and i not in pinned and i not in t["hidden"]]
+        t["since"] = {i: today.isoformat() for i in t["list"]}
+        t["done"] = True
+        lay["nav"]["fav"] = [i for i in lay["nav"]["fav"] if i not in t["list"]]
+        lay["nav"]["rare"] = [i for i in lay["nav"]["rare"] if i not in t["list"]]
+    t["list"] = [i for i in t["list"] if i in ids and i not in seen and i not in t["hidden"]]
+    t["since"] = {i: d for i, d in t["since"].items() if i in t["list"]}
+    return lay
+
+
+def ask_list(lay, today):
+    """Not tried yet for 14 days and not kept lately: Home asks Hide or Keep."""
+    t = lay["tryout"]
+    out = []
+    for i in t["list"]:
+        since, kept = t["since"].get(i), t["kept"].get(i)
+        if since and (today - date.fromisoformat(since)).days >= TRY_ASK and not (kept and (today - date.fromisoformat(kept)).days < KEEP_QUIET):
+            out.append(i)
+    return out
+
+
 def public(lay, on=True):
     """What the page needs: the arrangement, the pins, this week's note, and the history without the saved copies."""
     hist = [{"week": h.get("week"), "moves": h.get("moves") or [], "undone": bool(h.get("undone")), "reset": bool(h.get("reset"))}
@@ -375,7 +427,8 @@ def public(lay, on=True):
     return {"on": on, "auto": lay["auto"], "week": lay["week"], "nav": lay["nav"], "home": lay["home"], "pins": lay["pins"],
             "notice": lay["notice"], "history": hist[::-1][:12],
             "canUndo": any(not h.get("undone") for h in lay["history"][-1:]),
-            "changed": bool(lay["nav"]["fav"] or lay["nav"]["rare"] or lay["home"])}
+            "changed": bool(lay["nav"]["fav"] or lay["nav"]["rare"] or lay["home"]),
+            "tryList": lay["tryout"]["list"], "hidden": lay["tryout"]["hidden"], "ask": ask_list(lay, today_hcm())}
 
 
 def _inventory(rec):
@@ -400,13 +453,27 @@ def change(rec, on=True, today=None):
                 for kind, items in (("nav", [v["id"] for v in views]), ("home", cards)):
                     for i in items:
                         lay["known"][kind].setdefault(i, today.isoformat())
-                lay, _ = plan(read_days(), lay, views, cards, today)
+                days = read_days()
+                lay = tryout(lay, days, [v["id"] for v in views], today)  # first: a never-opened screen is "not tried yet", not "rarely used"
+                lay, _ = plan(days, lay, views, cards, today)
         elif op == "pin" and rec.get("kind") in ("nav", "home") and isinstance(rec.get("id"), str) and VIEW_ID.match(rec["id"]):
             pins = lay["pins"][rec["kind"]]
             if rec.get("on") and rec["id"] not in pins:
                 pins.append(rec["id"])
             if not rec.get("on") and rec["id"] in pins:
                 pins.remove(rec["id"])
+        elif op in ("hide", "keep", "unhide") and isinstance(rec.get("id"), str) and VIEW_ID.match(rec["id"]) and rec["id"] != "home":
+            t, i = lay["tryout"], rec["id"]
+            if op == "hide":
+                t["hidden"] = t["hidden"] + [i] if i not in t["hidden"] else t["hidden"]
+                t["list"] = [x for x in t["list"] if x != i]
+                lay["nav"]["fav"] = [x for x in lay["nav"]["fav"] if x != i]
+                lay["nav"]["rare"] = [x for x in lay["nav"]["rare"] if x != i]
+            elif op == "keep":
+                t["kept"][i] = today.isoformat()
+                t["list"] = [x for x in t["list"] if x != i]
+            else:
+                t["hidden"] = [x for x in t["hidden"] if x != i]
         elif op == "auto":
             lay["auto"] = bool(rec.get("on"))
         elif op == "seen":
