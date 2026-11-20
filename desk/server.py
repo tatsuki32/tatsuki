@@ -58,6 +58,7 @@ import youtube
 import instagram_dm  # Instagram DMs in Replies (read and sent through go.tany.im)
 import showcase
 import campus  # 地球キャンパス通信: issues on this Mac, readers only in the tany.im Worker
+import forms  # Forms on tany.im: made here, answered on tany.im, answers pulled back every 5 minutes (desk/forms.py)
 import screentime_sync
 import usage
 import claude_usage
@@ -1033,6 +1034,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, page_, "text/html; charset=utf-8") if page_ else self.send(404, {"error": "not found"})
         if path == "/api/campus" or path.startswith("/api/campus/"):
             return self.send(*campus.handle("GET", [x for x in path.split("/")[3:] if x], {}))
+        if path == "/api/forms" or path.startswith("/api/forms/"):
+            return self.send(*forms.handle("GET", [x for x in path.split("/")[3:] if x], {}))
         if path == "/api/mailclean":
             return self.send(200, gmail_clean.view())
         if path == "/api/body":
@@ -1336,6 +1339,10 @@ class Handler(BaseHTTPRequestHandler):
             if not (self.headers.get("Content-Type") or "").startswith("application/json"):
                 return self.send(415, {"error": "json only"})
             return self.send(*campus.handle(method, [x for x in urlsplit(self.path).path.split("/")[3:] if x], rec if isinstance(rec, dict) else {}))
+        if urlsplit(self.path).path.startswith("/api/forms") and method in ("POST", "PUT"):
+            if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+                return self.send(415, {"error": "json only"})
+            return self.send(*forms.handle(method, [x for x in urlsplit(self.path).path.split("/")[3:] if x], rec if isinstance(rec, dict) else {}))
         if method == "POST" and urlsplit(self.path).path == "/api/showcase/open-local":
             if not (self.headers.get("Content-Type") or "").startswith("application/json"):
                 return self.send(415, {"error": "json only"})
@@ -1599,6 +1606,8 @@ if __name__ == "__main__":
         threading.Thread(target=transcribe_desk.watch, daemon=True).start()  # the transcriber on 8791, kept running
         threading.Thread(target=claude_usage.watch, daemon=True).start()  # Claude usage counted again every 5 minutes
         threading.Thread(target=site_sync.watch, daemon=True).start()  # tany.im analytics pulled every 15 minutes
+        forms.STORE.update(load=load, upsert=upsert)  # a form for yourself can write a line into the day's note
+        threading.Thread(target=forms.watch, daemon=True).start()  # answers to tany.im forms pulled every 5 minutes
         threading.Thread(target=translate.watch, daemon=True).start()  # Google Translate pages and 「〜とは」 searches from the web history, hourly; concepts at night
     try:
         srv.serve_forever()

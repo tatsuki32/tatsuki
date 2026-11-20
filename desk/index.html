@@ -931,6 +931,45 @@ button.hname:hover{color:var(--ink)}
 .utdrop{display:grid;gap:var(--s2);justify-items:start;width:100%}
 .utdrop.on{outline:2px dashed var(--accent);outline-offset:8px}
 .utdrop label{cursor:pointer}
+/* Forms (#forms): the editor on the left, the public page's look on the right. Only Publish is gold. */
+.fm .fmhead{display:flex;flex-wrap:wrap;gap:var(--s2);align-items:center}
+.fm .sp{flex:1}
+.fmtitle{font:inherit;font-size:var(--t4);font-weight:700;color:var(--ink);background:transparent;border:0;border-bottom:1px solid transparent;min-width:0;flex:1 1 200px;padding:4px 0}
+.fmtitle:focus{outline:none;border-bottom-color:var(--accent)}
+.fmlink{display:flex;flex-wrap:wrap;gap:var(--s2);align-items:center;font-size:var(--t1);color:var(--muted)}
+.fmlink code{color:var(--ink);font-size:var(--t2);word-break:break-all}
+.fmq{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:var(--s4);align-items:start}
+@media (max-width:900px){.fmq{grid-template-columns:1fr}.fmpv{position:static;max-height:none}}
+.fmed{display:grid;gap:var(--s2);min-width:0}
+.fmed textarea,.fmcard input[type=text],.fmcard textarea,.fmbox input[type=text],.fmbox input[type=number],.fmbox input[type=datetime-local],.fmbox textarea{font:inherit;font-size:var(--t2);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:var(--r-s);padding:var(--s2) 12px;min-width:0;width:100%;line-height:1.6}
+.fmcard{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:var(--s3);display:grid;gap:var(--s2)}
+.fmcard .ql{font-size:var(--t3);font-weight:700}
+.fmcard .chk{display:flex;flex-wrap:wrap;gap:var(--s3);font-size:var(--t1);color:var(--muted)}
+.fmcard .chk label{display:inline-flex;gap:6px;align-items:center}
+.fmpv{position:sticky;top:var(--s4);background:#F6F5F0;color:#1B1B18;color-scheme:light;border-radius:var(--r);padding:var(--s4) var(--s3);max-height:calc(100vh - 48px);overflow-y:auto;min-width:0}
+.fmpv h2{font-size:22px;margin:0 0 4px;color:#1B1B18}.fmpv .d{color:#55544D;margin:0 0 12px;white-space:pre-wrap;font-size:14px}.fmpv .pur{font-size:13px;color:#55544D;background:#FFFDF8;border:1px solid #D8D1C0;border-radius:12px;padding:8px 12px;margin:0 0 12px}
+.fmpv .q{background:#FFFDF8;border:1px solid #D8D1C0;border-radius:12px;padding:12px;margin:0 0 10px;font-size:15px}
+.fmpv .q.sec{background:transparent;border:0;padding:12px 0 0}.fmpv .q.sec h3{font-size:17px;margin:0;color:#1B1B18}
+.fmpv .l{font-weight:700;display:block;margin:0 0 4px}.fmpv .req{color:#A6342B;font-size:12px;margin-left:6px;font-weight:400}
+.fmpv input,.fmpv textarea,.fmpv select{width:100%;font:inherit;font-size:15px;color:#1B1B18;background:#F6F5F0;border:1px solid #D8D1C0;border-radius:8px;padding:8px 10px;min-height:40px}
+.fmpv .opt{display:flex;gap:8px;align-items:center;padding:4px 0}.fmpv .opt input{width:18px;height:18px;min-height:0;accent-color:#8A5A2B}
+.fmpv .scale{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.fmpv .scale .sc{flex:1 1 0;min-width:32px;text-align:center;border:1px solid #D8D1C0;border-radius:8px;padding:6px 0}.fmpv .scale .d{margin:0;font-size:12px}
+.fmpv .send{display:block;width:100%;font:inherit;font-weight:700;font-size:15px;padding:12px;border:0;border-radius:10px;background:#8A5A2B;color:#fff;margin-top:8px}
+.fmbox{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:var(--s3);display:grid;gap:var(--s2);min-width:0}
+.fmbox.warn{border-color:var(--accent-2)}
+.fmbox h3{font-size:var(--t3);margin:0}
+.fmbox p{margin:0}
+.fmbox label{display:grid;gap:var(--s1);font-size:var(--t1);color:var(--muted)}
+.fmbox .inline{display:flex;flex-wrap:wrap;gap:var(--s3)}.fmbox .inline label{display:inline-flex;gap:6px;align-items:center}
+.fmset{display:grid;gap:var(--s3)}
+.fmrow{display:grid;grid-template-columns:minmax(100px,1fr) 3fr;gap:var(--s2);padding:var(--s2) 0;border-top:1px solid var(--line);font-size:var(--t2)}.fmrow .k{color:var(--muted);font-size:var(--t1)}
+.fmbar{display:grid;grid-template-columns:minmax(0,1fr) 40px;gap:var(--s2);align-items:center;font-size:var(--t2)}.fmbar .t{display:grid;gap:2px;min-width:0}.fmbar .b{height:8px;background:var(--surface-2);border-radius:4px;overflow:hidden}.fmbar .b span{display:block;height:100%;background:var(--blue)}.fmbar .n{text-align:right;color:var(--muted);font-size:var(--t1)}
+.fmvals{margin:0;padding-left:20px;display:grid;gap:var(--s1);font-size:var(--t2)}.fmpts{margin:0;padding-left:20px;display:grid;gap:var(--s1);font-size:var(--t2)}
+.fmitem{display:block;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:var(--s3);cursor:pointer;color:var(--ink);min-width:0}
+.fmitem:hover{background:var(--surface-2)}
+.fmitem .t{font-size:var(--t3);font-weight:700;display:block}.fmitem .m{font-size:var(--t1);color:var(--muted);display:flex;flex-wrap:wrap;gap:var(--s2);margin-top:4px;align-items:center}
+.fmresp{display:block;width:100%;text-align:left;background:transparent;border:0;border-top:1px solid var(--line);padding:var(--s2) 0;cursor:pointer;color:var(--ink);font-size:var(--t2);line-height:1.5}
+.fmresp:first-child{border-top:0}.fmresp .m{color:var(--muted);font-size:var(--t1)}
 /* Campus Letter (#campus): a quiet place to write the newsletter. Only Send to readers is gold. */
 .cp{display:grid;grid-template-columns:232px minmax(0,1fr);gap:var(--s4);align-items:start}
 .cplist{position:sticky;top:var(--s4);display:grid;gap:var(--s2);max-height:calc(100vh - 48px);overflow-y:auto}
@@ -1784,7 +1823,7 @@ S.projects=[];S.sections=[];S.okrs=[];S.krOpen={};S.projFilter="all";S.pDone=fal
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const okUrl=u=>/^(https:\/\/|file:\/\/|#)/.test(u||"");
-const viewId=()=>{const h=(location.hash||"").slice(1);if(h==="mail")return "tasks";if(h==="inbox")return "presents";if(/^project\//.test(h))return "project";if(/^task\//.test(h))return "tasks";if(/^concept\//.test(h))return "translate";return VIEWS.some(v=>v.id===h&&v.g!=="hidden")?h:"home"}; // the morning mail screen moved into the tasks
+const viewId=()=>{const h=(location.hash||"").slice(1);if(h==="mail")return "tasks";if(h==="inbox")return "presents";if(/^project\//.test(h))return "project";if(/^forms\//.test(h))return "forms";if(/^task\//.test(h))return "tasks";if(/^concept\//.test(h))return "translate";return VIEWS.some(v=>v.id===h&&v.g!=="hidden")?h:"home"}; // the morning mail screen moved into the tasks
 const viewLabel=id=>(VIEWS.find(v=>v.id===id)||{}).label||id;
 /* Old mail data has Japanese topics: keep those titles in Japanese, new ones in English */
 const JA_RE=/[ぁ-んァ-ン一-龥]/;
@@ -1818,6 +1857,7 @@ if(LOCALAPI) VIEWS.push({id:"claudeusage",e:"🧮",label:"Claude Usage",g:"write
 if(LOCALAPI) VIEWS.push({id:"utilities",e:"🧰",label:"Small Utilities",g:"write"}); // QR, character count, is.gd and PDF compression (desk/utilities.py)
 if(LOCALAPI) VIEWS.push({id:"post",e:"📣",label:"Post Studio",g:"write"});
 if(LOCALAPI) VIEWS.push({id:"campus",e:"✉️",label:"Campus Letter",g:"write"}); // the free newsletter 地球キャンパス通信: written here, readers only on tany.im (desk/campus.py) // photos and a memo become drafts for each social account; nothing is posted from Desk (desk/posts.py)
+if(LOCALAPI) VIEWS.push({id:"forms",e:"📋",label:"Forms",g:"write"}); // forms on tany.im instead of Google Forms: made here, answered on tany.im, answers back every 5 minutes (desk/forms.py)
 if(LOCALAPI) VIEWS.push({id:"transcribe",e:"🎙️",label:"Transcribe",g:"write"}); // long recordings to text on this Mac (desk/transcribe/, its own server on 8791)
 if(LOCALAPI) VIEWS.push({id:"wifi",e:"📲",label:"Wi-Fi QR",g:"write"}); // a code that joins the Wi-Fi this Mac is on; the password comes from the keychain and is never kept (desk/wifi_qr.py)
 if(LOCALAPI) VIEWS.push({id:"bank",e:"🏦",label:"Bank Accounts",g:"tool"}); // same: from Tools and the / list. Details stay on this Mac (desk/bank.py)
@@ -6105,6 +6145,7 @@ function render(){
   if(viewId()==="wifi"){wfLoad();if(!$("#wfView")||!document.activeElement?.closest?.(".wffield"))wfDraw();return} // a redraw from elsewhere never takes the password being typed
   if(viewId()==="transcribe"){trLoad();$("#view").innerHTML=searchResults()+trView();wire();wireTr();return}
   if(viewId()==="post"){if(!ps().data&&!ps().loading)psLoad();if(!document.activeElement?.closest?.(".psedit")||!$("#psView"))psDraw();return} // a redraw from elsewhere never takes the text being typed
+  if(viewId()==="forms"){const c=fm();if(!c.data&&!c.loading)fmLoad();else if(fmId()&&c.cur!==fmId()&&!c.loading)fmOpen(fmId());if(!document.activeElement?.closest?.(".fmed,.fmbox,.fmtitle")||!$("#fmView"))fmDraw();return} // a redraw from elsewhere never takes the text being typed
   if(viewId()!=="campus")document.body.classList.remove("cpfocus");
   if(viewId()==="campus"){if(!cp().data&&!cp().loading)cpLoad();if(!document.activeElement?.closest?.(".cpedit,.cpbox")||!$("#cpView"))cpDraw();return} // a redraw from elsewhere never takes the text being typed
   if(viewId()==="utilities"){if(!document.activeElement?.closest?.(".utfield")||!$("#utView"))utDraw();return} // a redraw from elsewhere never takes the text being typed
@@ -6801,6 +6842,224 @@ async function psOpen(id){
 }
 function psRedraw(){if(viewId()!=="post")return;const keep=document.activeElement?.closest?.(".psedit");if(keep&&$("#psView"))return;psDraw()}
 function psDraw(){$("#view").innerHTML=searchResults()+psView();wire();wirePs()}
+/* ---------- Forms (#forms, #forms/<id>): forms on tany.im instead of Google Forms. desk/forms.py keeps them; answers come back every 5 minutes ---------- */
+const FM_TYPES=[["short","Short answer"],["long","Paragraph"],["choice","Multiple choice"],["multi","Checkboxes"],["dropdown","Dropdown"],["number","Number"],["date","Date"],["email","Email"],["phone","Phone"],["scale","Scale"],["section","Section heading"]];
+const FM_LANGS=[["ja","日本語"],["en","English"],["vi","Tiếng Việt"]];
+const FM_ACCESS={public:"Anyone",link:"People with the link",me:"Only me"};
+const fm=()=>S.fm||(S.fm={data:null,loading:false,cur:null,doc:null,tab:"questions",resp:null,err:"",msg:"",busy:"",dirty:false,saving:false,savedAt:0,open:null,imp:false,impUrl:"",lang:null,addType:"short"});
+const fmId=()=>{const m=/^#forms\/([0-9a-f]{12})/.exec(location.hash||"");return m?m[1]:null};
+const fmL=()=>{const c=fm(),d=c.doc,ls=d?.langs?.length?d.langs:["ja"];return ls.includes(c.lang)?c.lang:ls[0]};
+const fmT=(o,l)=>{if(!o||typeof o!=="object")return String(o||"");return o[l]||o.ja||o.en||o.vi||""};
+const fmTitle=d=>fmT(d?.title,(d?.langs||["ja"])[0])||"Untitled form";
+const fmQid=()=>"q"+Math.random().toString(36).slice(2,8);
+const fmDate=ms=>ms?new Date(ms).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}):"";
+const fmLocal=ms=>{if(!ms)return"";const d=new Date(ms);return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16)};
+const fmRefresh=()=>{if(viewId()==="forms")fmDraw()};
+async function fmLoad(){
+  const c=fm();c.loading=true;
+  try{c.data=await api("GET","/api/forms");c.err=""}catch(e){c.err="Could not load. Restarting the server may help"}
+  c.loading=false;
+  const id=fmId();
+  if(id&&(!c.doc||c.doc.id!==id))await fmOpen(id,true);
+  fmRefresh();
+}
+async function fmOpen(id,quiet){
+  const c=fm();await fmFlush();
+  try{c.doc=await api("GET","/api/forms/"+id);c.cur=id;c.msg="";c.open=null;c.resp=null;c.lang=null}catch(e){c.err="Could not open that form";c.doc=null}
+  if(c.doc&&(c.tab==="responses"||c.tab==="summary"))await fmLoadResp();
+  if(!quiet)fmRefresh();
+}
+async function fmLoadResp(){const c=fm();if(!c.doc)return;try{c.resp=await api("GET",`/api/forms/${c.doc.id}/responses`)}catch(e){c.resp={rows:[],summary:[],count:0}}}
+let fmTimer=null;
+function fmChanged(){const c=fm();c.dirty=true;clearTimeout(fmTimer);fmTimer=setTimeout(fmFlush,800);fmFoot();const pv=$("#fmPv");if(pv)pv.innerHTML=fmPreview()}
+async function fmFlush(){
+  const c=fm();clearTimeout(fmTimer);
+  if(!c.dirty||!c.doc)return;
+  c.dirty=false;c.saving=true;fmFoot();
+  const d=c.doc,body={};for(const k of ["title","desc","slug","langs","access","key","questions","opensAt","closesAt","limit","once","thanks","closedText","confirmMail","notify","dest","purpose"])body[k]=d[k];
+  try{const v=await cpPut("/api/forms/"+d.id,body);c.savedAt=Date.now();c.err="";
+    d.pushError=v.pushError;d.key=v.key;d.slug=v.slug;d.status=v.status;d.updatedAt=v.updatedAt;
+    v.questions.forEach((q,i)=>{if(d.questions[i])d.questions[i].id=q.id});
+    const it=(c.data?.forms||[]).find(x=>x.id===d.id);if(it){it.title=v.title;it.slug=v.slug;it.updatedAt=v.updatedAt}
+    if(!document.activeElement?.closest?.(".fmed,.fmbox,.fmtitle"))fmDraw();
+  }catch(e){c.dirty=true;c.err=e.message||"Not saved yet. It will try again when you type"}
+  c.saving=false;fmFoot();
+}
+function fmFoot(){const c=fm(),el=$("#fmFoot");if(!el||!c.doc)return;
+  const st=c.saving?"Saving…":c.dirty?"Unsaved":c.savedAt?`Saved ${new Date(c.savedAt).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"})}`:"";
+  el.innerHTML=`<span>${st}</span>${c.err?`<span class="cperr">${esc(c.err)}</span>`:""}${c.doc.pushError?`<span class="cperr">tany.im has the previous version: ${esc(c.doc.pushError)}</span>`:""}`}
+function fmDraw(){$("#view").innerHTML=searchResults()+fmView();wire();wireFm();fmFoot()}
+function fmView(){
+  const c=fm();
+  if(!c.data)return `<div class="money fm" id="fmView"><h1>Forms</h1><p class="sub">${c.err?esc(c.err):"Loading…"}</p></div>`;
+  return fmId()&&c.doc?fmDetail():fmList();
+}
+function fmList(){
+  const c=fm(),list=c.data.forms||[];
+  const item=x=>`<button class="fmitem" data-fmopen="${esc(x.id)}"><span class="t">${esc(fmTitle(x))}</span><span class="m">${fmPill(x.status)}<span>${x.count||0} answer${x.count===1?"":"s"}</span>${x.lastAt?`<span>Last ${esc(fmDate(x.lastAt))}</span>`:""}<span>${FM_ACCESS[x.access]||""}</span>${x.pushError?`<span class="cperr">Not updated on tany.im</span>`:""}</span></button>`;
+  return `<div class="money fm" id="fmView"><div class="fmhead"><h1>Forms</h1><span class="sp"></span><button class="btn primary" id="fmNew">New form</button><button class="btn" id="fmImp" aria-expanded="${c.imp}">Import from Google Forms</button></div>
+    <p class="sub">Made here, answered at tany.im/f/… Answers come back to this Mac every 5 minutes, even after the Mac was asleep.</p>
+    ${c.data.connected?"":`<div class="fmbox warn"><b>Not connected yet.</b> Run <code>bash desk/forms_setup.sh</code> once: it puts a passphrase in the keychain (tatsuki-desk-forms) and in the Worker (FORMS_KEY), then deploys tany.im. Forms can be written before that; Publish needs it.</div>`}
+    ${c.msg?`<div class="fmbox"><p>${esc(c.msg)}</p></div>`:""}
+    ${c.imp?`<div class="fmbox"><label>Link of a public Google Form<input type="text" id="fmImpUrl" value="${esc(c.impUrl)}" placeholder="https://docs.google.com/forms/d/e/…/viewform" inputmode="url"></label><p class="sub">The questions, options and required marks are read from the page once. Answers are not read. Questions this can't read are listed.</p><div class="row"><button class="btn primary" id="fmImpGo" ${c.busy==="imp"?"disabled":""}>${c.busy==="imp"?"Reading…":"Make a draft"}</button><button class="btn" id="fmImpX">Cancel</button></div></div>`:""}
+    ${list.length?list.map(item).join(""):`<p class="sub">No forms yet. New form starts a draft; nothing goes online until you press Publish.</p>`}</div>`;
+}
+const fmPill=st=>`<span class="pill ${st==="open"?"live":st==="closed"?"amber":""}">${st==="open"?"Open":st==="closed"?"Closed":"Draft"}</span>`;
+function fmDetail(){
+  const c=fm(),d=c.doc,l=fmL(),n=c.resp?.count??(c.data.forms.find(x=>x.id===d.id)||{}).count??0;
+  const tabs=[["questions","Questions"],["responses",`Responses${n?` (${n})`:""}`],["summary","Summary"],["settings","Settings"]];
+  const url=d.status==="draft"?`${c.data.base}/f/${d.slug}`:(c.data.forms.find(x=>x.id===d.id)||{}).url||`${c.data.base}/f/${d.slug}`;
+  return `<div class="money fm" id="fmView">
+    <div class="fmhead"><button class="btn sm" id="fmBack">← Forms</button><input class="fmtitle" id="fmTitle" value="${esc(fmT(d.title,l))}" placeholder="Form title" maxlength="200" aria-label="Form title">${fmPill(d.status)}
+      ${d.status==="open"?`<button class="btn" id="fmClose">Close</button>`:d.status==="closed"?`<button class="btn primary" id="fmPublish">Reopen</button>`:`<button class="btn primary" id="fmPublish" ${c.busy==="pub"?"disabled":""}>Publish</button>`}</div>
+    <div class="fmlink"><code>${esc(url)}</code><button class="btn sm" id="fmCopy">Copy</button>${d.status!=="draft"?`<a class="btn sm" href="${esc(url)}" target="_blank" rel="noopener">Open ↗</a>`:`<span>Goes online when you publish</span>`}${d.access==="link"?`<span>The link carries the key; without it the page is not found</span>`:d.access==="me"?`<span>Asks for your passphrase once per device</span>`:""}</div>
+    ${c.msg?`<div class="fmbox ${/^Could|^Not|needs|first|answered|error/i.test(c.msg)?"warn":""}"><p>${esc(c.msg)}</p></div>`:""}
+    <div class="mtabs" role="tablist">${tabs.map(([k,t])=>`<button role="tab" class="mtab" data-fmtab="${k}" aria-selected="${c.tab===k}">${t}</button>`).join("")}</div>
+    ${c.tab==="questions"?fmQuestions():c.tab==="responses"?fmResponses():c.tab==="summary"?fmSummary():fmSettings()}
+    <div class="cpfoot" id="fmFoot"></div></div>`;
+}
+function fmLangChips(){const c=fm(),d=c.doc,l=fmL();if((d.langs||[]).length<2)return"";
+  return `<div class="row"><span class="sub">Editing:</span>${d.langs.map(x=>`<button class="btn sm" data-fmlang="${x}" aria-pressed="${x===l}" ${x===l?'style="border-color:var(--accent);color:var(--accent)"':""}>${FM_LANGS.find(y=>y[0]===x)?.[1]||x}</button>`).join("")}<span class="sp"></span><button class="btn sm" id="fmTranslate" ${c.busy==="tr"?"disabled":""}>${c.busy==="tr"?"Translating…":"Draft the other languages with Claude"}</button></div>`}
+function fmQuestions(){
+  const c=fm(),d=c.doc,l=fmL();
+  const card=(q,i)=>{const opts=(q.options||{})[l]||[];
+    return `<div class="fmcard" data-qi="${i}">
+      <div class="row"><select data-qf="type" aria-label="Question type">${FM_TYPES.map(([k,t])=>`<option value="${k}" ${q.type===k?"selected":""}>${t}</option>`).join("")}</select><span class="sp"></span>
+        <button class="btn sm" data-fmup="${i}" ${i?"":"disabled"} aria-label="Move up">↑</button><button class="btn sm" data-fmdown="${i}" ${i<d.questions.length-1?"":"disabled"} aria-label="Move down">↓</button><button class="btn sm" data-fmdup="${i}">Duplicate</button><button class="btn sm" data-fmdel="${i}">Delete</button></div>
+      <input type="text" class="ql" data-qf="label" value="${esc((q.label||{})[l]||"")}" placeholder="${q.type==="section"?"Heading":"Question"}" maxlength="2000">
+      <input type="text" data-qf="desc" value="${esc((q.desc||{})[l]||"")}" placeholder="${q.type==="section"?"Text under the heading (optional)":"Help text (optional)"}" maxlength="2000">
+      ${["choice","multi","dropdown"].includes(q.type)?`<textarea data-qf="options" rows="${Math.max(3,opts.length+1)}" placeholder="One option per line">${esc(opts.join("\n"))}</textarea>`:""}
+      ${q.type==="scale"?`<div class="row"><label class="sub">From <select data-qf="min">${[0,1].map(v=>`<option ${q.min==v?"selected":""}>${v}</option>`).join("")}</select></label><label class="sub">to <select data-qf="max">${[3,4,5,6,7,8,9,10].map(v=>`<option ${(q.max||5)==v?"selected":""}>${v}</option>`).join("")}</select></label><input type="text" data-qf="minLabel" value="${esc((q.minLabel||{})[l]||"")}" placeholder="Low label" style="width:auto;flex:1"><input type="text" data-qf="maxLabel" value="${esc((q.maxLabel||{})[l]||"")}" placeholder="High label" style="width:auto;flex:1"></div>`:""}
+      ${q.type==="section"?"":`<div class="chk"><label><input type="checkbox" data-qf="required" ${q.required?"checked":""}>Required</label><label><input type="checkbox" data-qf="pii" ${q.pii||q.type==="email"||q.type==="phone"?"checked":""} ${q.type==="email"||q.type==="phone"?"disabled":""}>Personal detail (not sent to Claude)</label></div>`}
+    </div>`};
+  return `<div class="fmq"><div class="fmed" id="fmEd">${fmLangChips()}
+      <textarea id="fmDesc" rows="2" placeholder="A few words under the title (optional)">${esc(fmT(d.desc,l))}</textarea>
+      ${d.questions.map(card).join("")}
+      <div class="row"><select id="fmAddType" aria-label="Type of the new question">${FM_TYPES.map(([k,t])=>`<option value="${k}" ${c.addType===k?"selected":""}>${t}</option>`).join("")}</select><button class="btn" id="fmAdd">Add question</button></div>
+      ${d.questions.length?"":`<p class="sub">Add a question to begin. Publish puts the form at tany.im/f/${esc(d.slug)}.</p>`}</div>
+    <div class="fmpv" id="fmPv" aria-label="Preview">${fmPreview()}</div></div>`;
+}
+function fmPreview(){
+  const c=fm(),d=c.doc,l=fmL(),T={ja:["必須","送信する","選んでください"],en:["Required","Send","Choose"],vi:["Bắt buộc","Gửi","Chọn"]}[l]||["Required","Send","Choose"];
+  const q=(x)=>{const lab=esc(fmT(x.label,l)||"…"),de=fmT(x.desc,l),req=x.required?`<span class="req">${T[0]}</span>`:"",opts=(x.options||{})[l]||[];
+    if(x.type==="section")return `<div class="q sec"><h3>${lab}</h3>${de?`<p class="d">${esc(de)}</p>`:""}</div>`;
+    let b="";
+    if(x.type==="long")b=`<textarea rows="3" disabled></textarea>`;
+    else if(x.type==="choice")b=opts.map(o=>`<label class="opt"><input type="radio" disabled><span>${esc(o)}</span></label>`).join("")||`<p class="d">Options go here</p>`;
+    else if(x.type==="multi")b=opts.map(o=>`<label class="opt"><input type="checkbox" disabled><span>${esc(o)}</span></label>`).join("")||`<p class="d">Options go here</p>`;
+    else if(x.type==="dropdown")b=`<select disabled><option>${T[2]}</option>${opts.map(o=>`<option>${esc(o)}</option>`).join("")}</select>`;
+    else if(x.type==="scale"){const lo=+x.min||1,hi=+x.max||5,cells=[];for(let i=lo;i<=hi;i++)cells.push(`<span class="sc">${i}</span>`);b=`<div class="scale"><span class="d">${esc(fmT(x.minLabel,l))}</span>${cells.join("")}<span class="d">${esc(fmT(x.maxLabel,l))}</span></div>`}
+    else b=`<input type="${x.type==="date"?"date":"text"}" disabled placeholder="${x.type==="email"?"name@example.com":x.type==="phone"?"+84 …":x.type==="number"?"0":""}">`;
+    return `<div class="q"><span class="l">${lab}${req}</span>${de?`<p class="d">${esc(de)}</p>`:""}${b}</div>`};
+  const pii=d.questions.some(x=>x.pii||x.type==="email"||x.type==="phone"),pur=fmT(d.purpose,l);
+  return `<h2>${esc(fmT(d.title,l)||"Untitled form")}</h2>${fmT(d.desc,l)?`<p class="d">${esc(fmT(d.desc,l))}</p>`:""}${pii?`<p class="pur">${esc(pur||"(Settings: one line on how personal details are used)")} · Privacy policy</p>`:""}${d.questions.map(q).join("")}<button class="send" disabled>${T[1]}</button>`;
+}
+function fmResponses(){
+  const c=fm(),d=c.doc,r=c.resp,l=(d.langs||["ja"])[0];
+  if(!r)return `<p class="sub">Loading…</p>`;
+  const labels=Object.fromEntries(d.questions.map(q=>[q.id,fmT(q.label,l)||q.id]));
+  const first=row=>{const q=d.questions.find(x=>x.type!=="section"&&row.answers[x.id]);const v=q?row.answers[q.id]:"";return Array.isArray(v)?v.join(", "):String(v||"")};
+  const open=c.open!=null?r.rows.find(x=>x.id===c.open):null;
+  const head=`<div class="row"><span class="sub">${r.count} answer${r.count===1?"":"s"}${c.data.state?.pulledAt?` · checked ${esc(fmDate(c.data.state.pulledAt))}`:""}</span><span class="sp"></span><button class="btn sm" id="fmPull" ${c.busy==="pull"?"disabled":""}>${c.busy==="pull"?"Checking…":"Check now"}</button></div>`;
+  if(open)return head+`<div class="fmbox"><div class="row"><b>${esc(fmDate(open.at))}</b><span class="sub">${esc(open.country||"")} ${esc(open.lang||"")}</span><span class="sp"></span><button class="btn sm" id="fmCloseResp">Back to the list</button></div>
+    ${d.questions.filter(q=>q.type!=="section").map(q=>{const v=open.answers[q.id];return `<div class="fmrow"><span class="k">${esc(labels[q.id])}</span><span>${v==null||v===""||(Array.isArray(v)&&!v.length)?`<span class="sub">—</span>`:esc(Array.isArray(v)?v.join(", "):String(v)).replace(/\n/g,"<br>")}</span></div>`}).join("")}</div>`;
+  return head+(r.rows.length?`<div class="fmbox" style="gap:0">${r.rows.map(row=>`<button class="fmresp" data-fmresp="${row.id}"><span class="m">${esc(fmDate(row.at))}${row.country?` · ${esc(row.country)}`:""}</span><br>${esc(first(row).slice(0,140))||"<span class=sub>(no text)</span>"}</button>`).join("")}</div>`:`<p class="sub">No answers yet.${d.status==="draft"?" Publish the form first.":""}</p>`);
+}
+function fmSummary(){
+  const c=fm(),d=c.doc,r=c.resp;
+  if(!r)return `<p class="sub">Loading…</p>`;
+  const sum=r.summary||[],cl=r.claude;
+  const block=s=>{let b="";
+    if(s.counts){const max=Math.max(1,...s.counts.map(x=>x.n));b=s.counts.map(x=>`<div class="fmbar"><div class="t"><span>${esc(x.option)}</span><div class="b"><span style="width:${Math.round(x.n/max*100)}%"></span></div></div><span class="n">${x.n}</span></div>`).join("")+(s.avg!=null?`<p class="sub">Average ${s.avg}</p>`:"")}
+    else if(s.type==="number")b=s.n?`<p>Average <b>${s.avg}</b> · from ${s.min} to ${s.max}</p>`:`<p class="sub">No numbers yet</p>`;
+    else b=s.values?.length?`<ul class="fmvals">${s.values.slice(0,s.id===c.open?999:12).map(v=>`<li>${esc(v).replace(/\n/g,"<br>")}</li>`).join("")}</ul>${s.values.length>12&&s.id!==c.open?`<button class="btn sm" data-fmmore="${s.id}">Show all ${s.values.length}</button>`:""}`:`<p class="sub">No answers yet</p>`;
+    return `<div class="fmbox"><div class="row"><b>${esc(s.label)}</b><span class="sub">${s.n} answered${s.pii?" · personal detail":""}</span></div>${b}</div>`};
+  return `<div class="row"><button class="btn primary" id="fmSum" ${c.busy==="sum"||!r.count?"disabled":""}>${c.busy==="sum"?"Reading…":"Summarize with Claude"}</button><button class="btn" id="fmCsv" ${r.count?"":"disabled"}>Export CSV</button><span class="sub">Free-text answers go to Claude once, when pressed. Questions marked as personal details are left out.</span></div>
+    ${cl?`<div class="fmbox"><div class="row"><b>What people said</b><span class="sub">Claude · ${esc(fmDate(cl.at))} · ${cl.n} answers</span></div><ol class="fmpts">${(cl.points||[]).map(p=>`<li>${esc(p)}</li>`).join("")}</ol></div>`:""}
+    ${sum.length?sum.map(block).join(""):`<p class="sub">Add questions first.</p>`}`;
+}
+function fmSettings(){
+  const c=fm(),d=c.doc,l=fmL(),pii=d.questions.some(x=>x.pii||x.type==="email"||x.type==="phone");
+  const txt=(k,label,ph)=>`<label>${label}<textarea data-fms="${k}" rows="2" placeholder="${esc(ph||"")}">${esc(fmT(d[k],l))}</textarea></label>`;
+  return `<div class="fmset">
+    <div class="fmbox"><h3>Address and who can answer</h3>
+      <label>Address<span class="row"><span class="sub">${esc(c.data.base)}/f/</span><input type="text" data-fms="slug" value="${esc(d.slug)}" maxlength="60" style="flex:1" pattern="[a-z0-9-]+"></span></label>
+      <label>Who can answer<select data-fms="access">${Object.entries(FM_ACCESS).map(([k,v])=>`<option value="${k}" ${d.access===k?"selected":""}>${v}</option>`).join("")}</select></label>
+      ${d.access==="link"?`<p class="sub">The link has a key no one can guess. <button class="btn sm" id="fmNewKey">Make a new link</button> (the old one stops working)</p>`:""}
+      ${d.access==="me"?`<label>Passphrase (typed once on each device, for example your iPhone)<input type="text" data-fms="key" value="${esc(d.key||"")}" maxlength="80" autocomplete="off"></label>
+        <label>Where an answer goes<select data-fms="dest"><option value="keep" ${d.dest==="keep"?"selected":""}>Keep it here (Responses)</option><option value="task" ${d.dest==="task"?"selected":""}>A task in Desk</option><option value="note" ${d.dest==="note"?"selected":""}>A line in the day's note</option></select></label>`:""}
+    </div>
+    <div class="fmbox"><h3>Languages</h3><div class="inline">${FM_LANGS.map(([k,v])=>`<label><input type="checkbox" data-fmlang2="${k}" ${d.langs.includes(k)?"checked":""} ${d.langs[0]===k?"disabled":""}>${v}${d.langs[0]===k?" (first)":""}</label>`).join("")}</div>
+      <p class="sub">The first language is the one you write in. For the others, Claude drafts a translation on the Questions tab; you fix it before publishing. People see the form in their browser's language or pick one at the top.</p></div>
+    <div class="fmbox"><h3>When and how many</h3>
+      <div class="inline"><label>Opens<input type="datetime-local" data-fms="opensAt" value="${fmLocal(d.opensAt)}"></label><label>Closes<input type="datetime-local" data-fms="closesAt" value="${fmLocal(d.closesAt)}"></label><label>Limit (0 = none)<input type="number" data-fms="limit" value="${d.limit||0}" min="0" max="100000" style="width:120px"></label></div>
+      <div class="inline"><label><input type="checkbox" data-fms="once" ${d.once?"checked":""}>One answer per person (by the email they enter)</label></div>
+      ${txt("closedText","Shown after it closes","This form is closed.")}
+    </div>
+    <div class="fmbox"><h3>After sending</h3>
+      ${txt("thanks","Thank-you text","Sent. Thank you.")}
+      <div class="inline"><label><input type="checkbox" data-fms="confirmMail" ${d.confirmMail?"checked":""}>Email a copy to the person (needs an Email question)</label><label><input type="checkbox" data-fms="notify" ${d.notify!==false?"checked":""}>Mac notification when answers arrive (name and count only)</label></div>
+    </div>
+    <div class="fmbox ${pii&&!fmT(d.purpose,l)?"warn":""}"><h3>Personal details</h3>
+      ${txt("purpose","One line on what the details are used for (required when a question asks for a name, email or phone)","Used only to contact you about this event. Not shared.")}
+      <p class="sub">The form shows this line with a link to tany.im/privacy/. The privacy policy's forms paragraph is in the site folder for you to check before deploying.</p></div>
+    <div class="row"><button class="btn sm" id="fmDelete">Delete this form</button><span class="sub">The answers stay on this Mac; the page on tany.im goes away.</span></div></div>`;
+}
+function wireFm(){
+  const c=fm(),d=c.doc;
+  document.querySelectorAll("[data-fmopen]").forEach(b=>b.onclick=()=>{location.hash="forms/"+b.dataset.fmopen});
+  $("#fmNew")&&($("#fmNew").onclick=async()=>{try{const v=await cpPost("/api/forms",{});location.hash="forms/"+v.id}catch(e){toast(e.message)}});
+  $("#fmImp")&&($("#fmImp").onclick=()=>{c.imp=!c.imp;c.msg="";fmDraw();setTimeout(()=>$("#fmImpUrl")?.focus(),0)});
+  $("#fmImpX")&&($("#fmImpX").onclick=()=>{c.imp=false;fmDraw()});
+  $("#fmImpUrl")&&($("#fmImpUrl").oninput=e=>{c.impUrl=e.target.value});
+  $("#fmImpGo")&&($("#fmImpGo").onclick=async()=>{c.busy="imp";fmDraw();try{const v=await cpPost("/api/forms/import",{url:c.impUrl.trim()});c.imp=false;c.impUrl="";c.msg=v.skipped?.length?`Draft made. Not read (add them by hand): ${v.skipped.join("; ")}`:"Draft made from the Google Form. Check it, then Publish.";c.busy="";await fmLoad();location.hash="forms/"+v.form.id}catch(e){c.msg=e.message;c.busy="";fmDraw()}});
+  if(!d||!fmId())return;
+  $("#fmBack").onclick=async()=>{await fmFlush();location.hash="forms"};
+  $("#fmTitle").oninput=e=>{d.title[fmL()]=e.target.value;fmChanged()};
+  $("#fmCopy").onclick=()=>{const u=$("#fmView .fmlink code").textContent;navigator.clipboard?.writeText(u).then(()=>toast("Link copied"),()=>toast("Could not copy"))};
+  document.querySelectorAll("[data-fmtab]").forEach(b=>b.onclick=async()=>{await fmFlush();c.tab=b.dataset.fmtab;c.open=null;if((c.tab==="responses"||c.tab==="summary")&&!c.resp){fmDraw();await fmLoadResp()}fmDraw()});
+  $("#fmPublish")&&($("#fmPublish").onclick=async()=>{await fmFlush();c.busy="pub";fmDraw();try{c.doc=await cpPost(`/api/forms/${d.id}/publish`);c.msg=`Live at ${c.data.base}/f/${c.doc.slug}`;await fmLoad()}catch(e){c.msg=e.message}c.busy="";fmDraw()});
+  $("#fmClose")&&($("#fmClose").onclick=async()=>{if(!await askYes("Close this form? People see the closing text and can't send."))return;await fmFlush();try{c.doc=await cpPost(`/api/forms/${d.id}/close`);c.msg="Closed. Reopen puts it back up.";await fmLoad()}catch(e){c.msg=e.message}fmDraw()});
+  $("#fmDelete")&&($("#fmDelete").onclick=async()=>{if(!await askYes("Delete this form? Its answers stay on this Mac."))return;try{await cpPost(`/api/forms/${d.id}/remove`);c.doc=null;c.cur=null;await fmLoad();location.hash="forms"}catch(e){toast(e.message)}});
+  document.querySelectorAll("[data-fmlang]").forEach(b=>b.onclick=async()=>{await fmFlush();c.lang=b.dataset.fmlang;fmDraw()});
+  $("#fmTranslate")&&($("#fmTranslate").onclick=async()=>{await fmFlush();c.busy="tr";fmDraw();try{c.doc=await cpPost(`/api/forms/${d.id}/translate`);c.msg="Translations drafted. Switch the editing language to check them."}catch(e){c.msg=e.message}c.busy="";fmDraw()});
+  const ed=$("#fmEd");
+  if(ed){
+    $("#fmDesc").oninput=e=>{d.desc[fmL()]=e.target.value;fmChanged()};
+    const upd=(e)=>{const card=e.target.closest(".fmcard");if(!card)return;const q=d.questions[+card.dataset.qi],f=e.target.dataset.qf,l=fmL();if(!q||!f)return;
+      if(f==="type"){q.type=e.target.value;if(q.type==="email"||q.type==="phone")q.pii=true;if(["choice","multi","dropdown"].includes(q.type)&&!q.options)q.options={};if(q.type==="scale"){q.min=q.min??1;q.max=q.max??5}fmChanged();fmFlush();fmDraw();return}
+      if(f==="options"){q.options=q.options||{};q.options[l]=e.target.value.split("\n").map(x=>x.trim()).filter(Boolean)}
+      else if(f==="required"||f==="pii")q[f]=e.target.checked;
+      else if(f==="min"||f==="max")q[f]=+e.target.value;
+      else{q[f]=q[f]&&typeof q[f]==="object"?q[f]:{};q[f][l]=e.target.value}
+      fmChanged()};
+    ed.addEventListener("input",upd);ed.addEventListener("change",upd);
+    const move=(i,j)=>{const [x]=d.questions.splice(i,1);d.questions.splice(j,0,x);fmChanged();fmFlush();fmDraw()};
+    document.querySelectorAll("[data-fmup]").forEach(b=>b.onclick=()=>move(+b.dataset.fmup,+b.dataset.fmup-1));
+    document.querySelectorAll("[data-fmdown]").forEach(b=>b.onclick=()=>move(+b.dataset.fmdown,+b.dataset.fmdown+1));
+    document.querySelectorAll("[data-fmdup]").forEach(b=>b.onclick=()=>{const i=+b.dataset.fmdup,q=JSON.parse(JSON.stringify(d.questions[i]));q.id=fmQid();d.questions.splice(i+1,0,q);fmChanged();fmFlush();fmDraw()});
+    document.querySelectorAll("[data-fmdel]").forEach(b=>b.onclick=()=>{d.questions.splice(+b.dataset.fmdel,1);fmChanged();fmFlush();fmDraw()});
+    $("#fmAddType").onchange=e=>{c.addType=e.target.value};
+    $("#fmAdd").onclick=()=>{const t=c.addType,q={id:fmQid(),type:t,label:{},desc:{},required:false,pii:t==="email"||t==="phone"};if(["choice","multi","dropdown"].includes(t))q.options={};if(t==="scale"){q.min=1;q.max=5;q.minLabel={};q.maxLabel={}}d.questions.push(q);fmChanged();fmFlush();fmDraw();setTimeout(()=>{const cards=document.querySelectorAll(".fmcard");cards[cards.length-1]?.querySelector('[data-qf="label"]')?.focus()},0)};
+  }
+  $("#fmPull")&&($("#fmPull").onclick=async()=>{c.busy="pull";fmDraw();try{const v=await cpPost("/api/forms/pull",{});const n=Object.values(v.new||{}).reduce((a,b)=>a+b,0);c.msg=n?`${n} new answer${n===1?"":"s"}`:"Nothing new";await fmLoad();await fmLoadResp()}catch(e){c.msg=e.message}c.busy="";fmDraw()});
+  document.querySelectorAll("[data-fmresp]").forEach(b=>b.onclick=()=>{c.open=+b.dataset.fmresp;fmDraw()});
+  $("#fmCloseResp")&&($("#fmCloseResp").onclick=()=>{c.open=null;fmDraw()});
+  document.querySelectorAll("[data-fmmore]").forEach(b=>b.onclick=()=>{c.open=b.dataset.fmmore;fmDraw()});
+  $("#fmSum")&&($("#fmSum").onclick=async()=>{c.busy="sum";fmDraw();try{const v=await cpPost(`/api/forms/${d.id}/summarize`);if(c.resp)c.resp.claude=v}catch(e){c.msg=e.message}c.busy="";fmDraw()});
+  $("#fmCsv")&&($("#fmCsv").onclick=async()=>{try{const v=await api("GET",`/api/forms/${d.id}/csv`);saveFile(v.name,v.text,"csv")}catch(e){toast("Could not build the CSV")}});
+  document.querySelectorAll("[data-fms]").forEach(el=>{const h=async()=>{const k=el.dataset.fms,l=fmL();
+    if(k==="slug")d.slug=el.value.trim().toLowerCase();
+    else if(k==="access"||k==="dest"){d[k]=el.value;fmChanged();await fmFlush();fmDraw();return}
+    else if(k==="key")d.key=el.value;
+    else if(k==="opensAt"||k==="closesAt")d[k]=el.value?new Date(el.value).getTime():null;
+    else if(k==="limit")d.limit=+el.value||0;
+    else if(["once","confirmMail","notify"].includes(k))d[k]=el.checked;
+    else{d[k]=d[k]&&typeof d[k]==="object"?d[k]:{};d[k][l]=el.value}
+    fmChanged()};el.addEventListener(el.tagName==="SELECT"||el.type==="checkbox"||el.type==="datetime-local"?"change":"input",h)});
+  document.querySelectorAll("[data-fmlang2]").forEach(el=>el.onchange=async()=>{const k=el.dataset.fmlang2;d.langs=el.checked?[...d.langs,k]:d.langs.filter(x=>x!==k);if(!d.langs.length)d.langs=["ja"];fmChanged();await fmFlush();fmDraw()});
+  $("#fmNewKey")&&($("#fmNewKey").onclick=async()=>{if(!await askYes("Make a new link? The old link stops working."))return;try{c.doc=await cpPut("/api/forms/"+d.id,{newKey:true});await fmLoad();c.msg="New link made. Copy it again."}catch(e){c.msg=e.message}fmDraw()});
+}
 /* ---------- Campus Letter (#campus): 地球キャンパス通信. desk/campus.py keeps the issues; readers are only on tany.im ---------- */
 const cp=()=>S.cp||(S.cp={data:null,loading:false,cur:null,doc:null,mode:"write",pv:"mail",err:"",saving:false,savedAt:0,dirty:false,tidy:null,busy:"",confirm:null,settings:false,lists:false,msg:""});
 const cpPost=(path,body)=>fetch(path,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body||{})}).then(async r=>{let v={};try{v=await r.json()}catch(e){}if(!r.ok)throw new Error(v.error||("Error "+r.status));return v});
@@ -8527,7 +8786,7 @@ const FDESC={ // what each screen is for, in plain words (English and Japanese k
   log:"Claude's daily work report Claude Log 日報",timelog:"time tracking 時間",tools:"all tools as cards ツール",
   lifeos:"Life OS small tools ライフOS",gear:"belongings list, export 持ち物",usage:"which parts of Desk you use 使い方",
   utilities:"QR code, character count, URL shortener, PDF compression 小さな道具 QR 文字数 短縮 PDF圧縮",
-  post:"drafts for social posts from photos and a memo 投稿 SNS",campus:"write and send the free newsletter 地球キャンパス通信 メルマガ newsletter readers signup page",transcribe:"record and transcribe long audio 録音 文字起こし",
+  post:"drafts for social posts from photos and a memo 投稿 SNS",forms:"forms on tany.im instead of Google Forms: questions, publish, answers, summary, CSV フォーム アンケート 申し込み survey questionnaire",campus:"write and send the free newsletter 地球キャンパス通信 メルマガ newsletter readers signup page",transcribe:"record and transcribe long audio 録音 文字起こし",
   bank:"bank accounts to share and copy 口座",accounts:"list of sites where you have accounts, how you sign in アカウント ログイン",
   showcase:"portfolio site and PR photos ポートフォリオ",claudeusage:"Claude token usage and scheduled jobs 使用量",footprint:"CO2 footprint from screen time, AI, meals, spending and trips, compared with cows and sheep 環境負荷 二酸化炭素 CO2",
 };
@@ -8640,6 +8899,7 @@ function palItems(){
     {e:"❓",name:"Answer open questions",kw:"しつもん こたえる question",run:()=>openQuestions()},
     {e:"🌱",name:"Add a habit",kw:"しゅうかん habit",run:()=>newHabit()},
     {e:"📒",name:"New note",kw:"のーと note",run:()=>newNotePrompt()},
+    ...(LOCALAPI?[{e:"📋",name:"New form (tany.im)",kw:"ふぉーむ form アンケート survey google forms",run:async()=>{try{const v=await cpPost("/api/forms",{});location.hash="forms/"+v.id}catch(e){toast("Could not start a form")}}}]:[]),
   ].map(x=>({...x,g:"Desk actions"}));
   act.push({e:"📁",name:"New project",kw:"ぷろじぇくと project",g:"Desk actions",run:()=>editProject(null)});
   const nav=[...VIEWS.filter(v=>v.g!=="hidden").map(v=>({g:"Go to",e:v.e,name:"Go to "+v.label,kw:v.id,run:()=>{location.hash=v.id}})),...projActive().map(p=>({g:"Go to",e:p.emoji||"📁",name:"Go to "+p.name,kw:"project ぷろじぇくと "+p.name,run:()=>{location.hash="project/"+p.id}}))];
