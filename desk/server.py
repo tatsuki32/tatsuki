@@ -47,6 +47,9 @@ import wifi_qr  # a QR code that joins the Wi-Fi this Mac is on; the password is
 import routine_alarm
 import routine_sync
 import news_sync
+import cards
+import cards_sync
+import reader
 import translate  # Translate: lookups, concepts across languages, card candidates (desk/translate.py)
 import chrome_web_sync
 import gmail_clean
@@ -58,10 +61,10 @@ import youtube
 import instagram_dm  # Instagram DMs in Replies (read and sent through go.tany.im)
 import showcase
 import campus  # 地球キャンパス通信: issues on this Mac, readers only in the tany.im Worker
+import book  # Bookings: the rules behind tany.im/book; the page itself runs in the Worker (desk/data/tany/site/book.js)
 import forms  # Forms on tany.im: made here, answered on tany.im, answers pulled back every 5 minutes (desk/forms.py)
 import screentime_sync
 import usage
-import book  # Bookings: the rules behind tany.im/book; the page itself runs in the Worker (desk/data/tany/site/book.js)
 import claude_usage
 import site_sync
 import wise_analysis
@@ -72,7 +75,7 @@ import wise_sync
 ROOT = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(ROOT, "data")
 PORT = int(os.environ.get("DESK_PORT", "4747"))
-COLLECTIONS = ("memos", "dues", "tasks", "prompts", "notes", "habits", "lifemap", "wins", "worldlog", "presents", "heritagelog", "routines", "routinelog", "rewards", "ideaslog", "gear", "projects", "sections", "jobapps", "replywin", "genres", "tasktypes", "mergeprops", "timelog", "genrelog", "typeprops", "wboards", "wcards", "okrs", "lookups", "concepts", "cards")
+COLLECTIONS = ("memos", "dues", "tasks", "prompts", "notes", "habits", "lifemap", "wins", "worldlog", "presents", "heritagelog", "routines", "routinelog", "rewards", "ideaslog", "gear", "projects", "sections", "jobapps", "replywin", "genres", "tasktypes", "mergeprops", "timelog", "genrelog", "typeprops", "wboards", "wcards", "okrs", "lookups", "concepts", "cards", "cardlog")
 # file in data/, global the page reads, value when the file is missing
 DATA_JS = [
     ("tools.js", "TOOLS", "[]"),
@@ -292,6 +295,11 @@ def upsert(col, doc_id, rec, merge):
             items.append({**rec, "id": doc_id})
         save(col, items)
         return next(x for x in items if x["id"] == doc_id)
+
+
+def load_locked(col):
+    with LOCK:
+        return load(col)
 
 
 def lifeos_tools():
@@ -1012,6 +1020,18 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, translate.state())
         if path == "/api/news/today":  # Sift Daily's headlines, kept by news_sync every 5 minutes
             return self.send(200, news_sync.today())
+        if path == "/api/reader/books":  # Desk Reader: the books on this Mac (desk/reader.py); titles and progress only
+            return self.send(200, reader.list_books())
+        if path.startswith("/api/reader/books/") and path.count("/") == 4:
+            return self.send(*reader.get(path.rsplit("/", 1)[1]))
+        if path == "/api/reader/voices":
+            return self.send(200, reader.voices_for(parse_qs(urlsplit(self.path).query).get("lang", ["en"])[0]))
+        if path == "/api/cards/due":  # flashcards waiting today (desk/cards.py)
+            with LOCK:
+                return self.send(200, cards.due(load("cards"), load("cardlog")))
+        if path == "/api/cards-link":  # the phone's one-time setup link for the Cards app; the passphrase rides in the # part
+            k = cards_sync.key()
+            return self.send(200, {"url": cards_sync.APP + ("#key=" + urllib.parse.quote(k, safe="") if k else ""), "sync": bool(k)})
         if path == "/api/netspeed":
             return self.send(200, netspeed.view())
         if path == "/api/startclean":  # the apps closed at startup (desk/startup_clean.py); names only
@@ -1035,6 +1055,9 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, page_, "text/html; charset=utf-8") if page_ else self.send(404, {"error": "not found"})
         if path == "/api/campus" or path.startswith("/api/campus/"):
             return self.send(*campus.handle("GET", [x for x in path.split("/")[3:] if x], {}))
+        if path == "/api/book" or path.startswith("/api/book/"):
+            q = {k: v[0] for k, v in parse_qs(urlsplit(self.path).query).items()}
+            return self.send(*book.handle("GET", [x for x in path.split("/")[3:] if x], q))
         if path == "/api/forms" or path.startswith("/api/forms/"):
             return self.send(*forms.handle("GET", [x for x in path.split("/")[3:] if x], {}))
         if path == "/api/mailclean":
@@ -1055,9 +1078,6 @@ class Handler(BaseHTTPRequestHandler):
         if path.startswith("/api/web/"):
             return self.web_get(path.rsplit("/", 1)[1], parse_qs(urlsplit(self.path).query))
         if path == "/api/usage":
-        if path == "/api/book" or path.startswith("/api/book/"):
-            q = {k: v[0] for k, v in parse_qs(urlsplit(self.path).query).items()}
-            return self.send(*book.handle("GET", [x for x in path.split("/")[3:] if x], q))
             return self.send(200, {**usage.view(parse_qs(urlsplit(self.path).query).get("period", ["14"])[0]), "on": usage.enabled(PORT)})
         if path == "/api/layout":
             return self.send(200, usage.public(usage.read_layout(), usage.enabled(PORT)))
@@ -1266,6 +1286,15 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(403, {"error": "forbidden"})
         if method == "POST" and urlsplit(self.path).path == "/api/uploads":
             return self.upload_post()
+        if method == "POST" and urlsplit(self.path).path == "/api/reader/books" and self.headers.get("X-Desk-Upload") == "1":
+            # a book file (.txt, .epub, PDF with text): the custom header needs a CORS preflight this server never answers
+            n = int(self.headers.get("Content-Length") or 0)
+            if n > reader.BOOK_MAX:
+                self.close_connection = True
+                return self.send(413, {"error": "A file can be up to 50 MB"})
+            return self.send(*reader.add_file(self.rfile.read(n), unquote(self.headers.get("X-File-Name") or "")))
+        if urlsplit(self.path).path.startswith("/api/reader/") or urlsplit(self.path).path in ("/api/cards/add", "/api/cards/lookup", "/api/cards/enrich", "/api/cards/suggest"):
+            return self.reader_write(method, urlsplit(self.path).path.split("/")[2:])  # PUT /api/cards/<id> stays an ordinary collection write
         if method == "POST" and urlsplit(self.path).path.startswith("/api/utilities/"):
             return self.utilities_post(urlsplit(self.path).path)
         if method == "POST" and urlsplit(self.path).path == "/api/wifi/qr":
@@ -1343,6 +1372,10 @@ class Handler(BaseHTTPRequestHandler):
             if not (self.headers.get("Content-Type") or "").startswith("application/json"):
                 return self.send(415, {"error": "json only"})
             return self.send(*campus.handle(method, [x for x in urlsplit(self.path).path.split("/")[3:] if x], rec if isinstance(rec, dict) else {}))
+        if urlsplit(self.path).path.startswith("/api/book/") and method in ("POST", "PUT"):
+            if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+                return self.send(415, {"error": "json only"})
+            return self.send(*book.handle(method, [x for x in urlsplit(self.path).path.split("/")[3:] if x], rec if isinstance(rec, dict) else {}))
         if urlsplit(self.path).path.startswith("/api/forms") and method in ("POST", "PUT"):
             if not (self.headers.get("Content-Type") or "").startswith("application/json"):
                 return self.send(415, {"error": "json only"})
@@ -1372,10 +1405,6 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(*lifelog_put(urlsplit(self.path).path.split("/")[2:], rec))
         if urlsplit(self.path).path.startswith("/api/notify/"):
             # same protection as claude(): Host/Origin checked, and JSON from another origin needs a preflight
-        if urlsplit(self.path).path.startswith("/api/book/") and method in ("POST", "PUT"):
-            if not (self.headers.get("Content-Type") or "").startswith("application/json"):
-                return self.send(415, {"error": "json only"})
-            return self.send(*book.handle(method, [x for x in urlsplit(self.path).path.split("/")[3:] if x], rec if isinstance(rec, dict) else {}))
             if not (self.headers.get("Content-Type") or "").startswith("application/json"):
                 return self.send(415, {"error": "json only"})
             step = (method, urlsplit(self.path).path.rsplit("/", 1)[1])
@@ -1475,6 +1504,42 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Disposition", f'attachment; filename="{name}"')
         self.end_headers()
         self.wfile.write(data)
+
+    def reader_write(self, method, step):
+        """Desk Reader and flashcards (desk/reader.py, desk/cards.py). JSON only, so another origin would need a preflight.
+        A book's text goes nowhere but `say`; one word and its sentence go to Claude for the meaning."""
+        if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+            return self.send(415, {"error": "json only"})
+        try:
+            rec = self.body()
+        except (ValueError, json.JSONDecodeError):
+            return self.send(400, {"error": "bad json"})
+        if step[0] == "reader":
+            if method == "POST" and step[1:] == ["books"]:
+                return self.send(*reader.add_text(rec.get("text"), rec.get("title") or "", rec.get("author") or "", rec.get("lang") or ""))
+            if method == "PUT" and len(step) == 4 and step[1] == "books" and step[3] == "pos":
+                return self.send(*reader.set_pos(step[2], rec))
+            if method == "PUT" and len(step) == 3 and step[1] == "books":
+                return self.send(*reader.edit(step[2], rec))
+            if method == "POST" and len(step) == 4 and step[1] == "books" and step[3] == "remove":
+                return self.send(*reader.remove(step[2]))
+            if method == "POST" and step[1:] == ["speak"]:
+                code, out = reader.speak(rec)
+                return self.send(code, out, "audio/mp4") if code == 200 else self.send(code, out)
+            return self.send(404, {"error": "not found"})
+        store = cards.Store(load_locked, upsert)
+        if method == "POST" and step[1:] == ["add"]:
+            return self.send(*cards.add(store, rec))
+        if method == "POST" and step[1:] == ["lookup"]:
+            try:
+                return self.send(200, cards.lookup(str(rec.get("term") or "")[:cards.TERM_MAX], str(rec.get("lang") or "en")[:8], str(rec.get("context") or "")[:cards.CONTEXT_MAX]))
+            except cards.Unavailable as e:
+                return self.send(503, {"error": str(e)})
+        if method == "POST" and step[1:] == ["enrich"]:
+            return self.send(*cards.enrich_one(store, str(rec.get("id") or "")))
+        if method == "POST" and step[1:] == ["suggest"]:
+            return self.send(*cards.suggest(store, rec))
+        return self.send(404, {"error": "not found"})
 
     def focus(self, action, rec):
         # same protection as claude(): Host/Origin checked, and JSON from another origin needs a preflight
@@ -1606,6 +1671,8 @@ if __name__ == "__main__":
         threading.Thread(target=posts.watch, daemon=True).start()  # Post Studio: company-site news scheduled for later
         threading.Thread(target=routine_alarm.watch, daemon=True).start()  # routine start alarm (quiet 22:00-07:00)
         threading.Thread(target=routine_sync.watch, daemon=True).start()  # routines <-> the Routine app on the phone
+        threading.Thread(target=cards_sync.watch, daemon=True).start()  # flashcards <-> the Cards app on the phone
+        threading.Thread(target=cards.watch, args=(cards.Store(load_locked, upsert),), daemon=True).start()  # fills missing meanings every 30 minutes
         try:
             lifelog.ensure_log_habits()  # "Log sleep" / "Log meals": tick themselves when a record arrives
         except Exception as e:
@@ -1614,6 +1681,7 @@ if __name__ == "__main__":
         threading.Thread(target=transcribe_desk.watch, daemon=True).start()  # the transcriber on 8791, kept running
         threading.Thread(target=claude_usage.watch, daemon=True).start()  # Claude usage counted again every 5 minutes
         threading.Thread(target=site_sync.watch, daemon=True).start()  # tany.im analytics pulled every 15 minutes
+        threading.Thread(target=book.watch, daemon=True).start()  # bookings from tany.im/book every 5 minutes (notify.py tells about new ones)
         forms.STORE.update(load=load, upsert=upsert)  # a form for yourself can write a line into the day's note
         threading.Thread(target=forms.watch, daemon=True).start()  # answers to tany.im forms pulled every 5 minutes
         threading.Thread(target=translate.watch, daemon=True).start()  # Google Translate pages and 「〜とは」 searches from the web history, hourly; concepts at night
@@ -1621,4 +1689,3 @@ if __name__ == "__main__":
         srv.serve_forever()
     except KeyboardInterrupt:
         pass
-        threading.Thread(target=book.watch, daemon=True).start()  # bookings from tany.im/book every 5 minutes (notify.py tells about new ones)

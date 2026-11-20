@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Cards</title>
+<meta name="theme-color" content="#1c1d21">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Cards">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+/* Cards: the phone side of the Desk Reader's flashcards. One file, no libraries. Review only, plus a field to type a word
+   (the Mac fills its meaning after the next sync). Data lives on this phone (localStorage) and syncs through /api/sync with a
+   passphrase. Same shapes and the same FSRS code as desk/index.html. Dark charcoal and gold, like the Desk. */
+:root{--bg:#1c1d21;--surface:#26282d;--surface-2:#30323a;--line:#3b3d45;--line-2:#4d5059;--ink:#f2f2f4;--ink-2:#c6c7cd;--muted:#a0a1aa;--accent:#e2b866;--accent-ink:#1a1408;--accent-soft:rgba(226,184,102,.14);
+  --font:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP",system-ui,sans-serif;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px}
+.wrap{max-width:560px;margin:0 auto;min-height:100vh;display:grid;grid-template-rows:auto 1fr auto;padding:calc(12px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px))}
+.top{display:flex;align-items:center;gap:8px;min-height:44px}
+.top h1{margin:0;font-size:20px;flex:1}
+.sub{color:var(--muted);font-size:13px}
+.btn{border:1px solid var(--line-2);background:transparent;border-radius:12px;min-height:44px;padding:0 16px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;color:var(--ink);text-decoration:none}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700}
+.btn.sm{min-height:36px;padding:0 12px;font-size:14px}
+.btn:disabled{opacity:.5}
+.ibtn{border:0;background:transparent;min-width:44px;min-height:44px;border-radius:12px;cursor:pointer;font-size:18px}
+.field{width:100%;min-height:44px;padding:8px 12px;border-radius:12px;border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font:inherit}
+.home{display:grid;gap:16px;align-content:start}
+.big{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:24px 20px;display:grid;gap:8px}
+.big b{font-size:40px;line-height:1.1}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.stage{display:grid;align-content:center;gap:16px;padding:8px 0}
+.card{background:var(--surface-2);border:1px solid var(--line);border-radius:20px;padding:28px 20px;min-height:46vh;display:grid;align-content:center;gap:12px;touch-action:pan-y;user-select:none;-webkit-user-select:none;transition:transform .15s,opacity .15s}
+.card.drag{transition:none}
+.term{font-size:32px;line-height:1.2;overflow-wrap:anywhere;font-weight:700}
+.ctx{font-size:18px;line-height:1.7;color:var(--ink-2)}
+.blank{border-bottom:2px solid var(--accent);color:transparent;letter-spacing:.1em}
+.back{border-top:1px solid var(--line);padding-top:12px;display:grid;gap:6px}
+.mean{margin:0;font-size:18px}
+.ex{font-style:italic}
+.ans{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.ans .btn{flex-direction:column;gap:0;min-height:64px;padding:4px}
+.ans .btn small{font-size:12px;color:var(--muted);font-weight:400}
+.ans .btn.primary small{color:var(--accent-ink)}
+.hint{text-align:center}
+.foot{display:grid;gap:8px;padding-top:16px}
+.syncline{font-size:13px;color:var(--muted);display:flex;gap:8px;align-items:center;flex-wrap:wrap;min-height:20px}
+.dot{width:8px;height:8px;border-radius:50%;background:#82d09d;display:inline-block}.dotno{background:var(--line-2)}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:14px;z-index:9}
+.list{display:grid;gap:4px}
+.rowc{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;padding:10px 0;border-top:1px solid var(--line)}
+.rowc .m{grid-column:1/-1;color:var(--ink-2);font-size:14px}
+kbd{display:none}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<script>
+"use strict";
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const HOUR=36e5, DAY=864e5, HCMC=7*HOUR, NEW_PER_DAY=20;
+const S={cards:[],log:[],sync:{state:"",at:0},rev:null,view:"home"};
+const toast=t=>{const el=document.createElement("div");el.className="toast";el.textContent=t;document.body.appendChild(el);setTimeout(()=>el.remove(),2200)};
+const norm=s=>String(s||"").replace(/’/g,"'").trim().replace(/^[\s"'“”‘(\[«]+|[\s"'“”’)\].,;:!?»]+$/g,"").toLowerCase();
+const day=(ms=Date.now())=>new Date(ms+HCMC).toISOString().slice(0,10);
+const live=()=>S.cards.filter(c=>!c.deleted&&(c.status||"active")==="active");
+const dayDoc=()=>S.log.find(d=>d.id===day())||{id:day(),entries:[]};
+const meaning=c=>{const m=c.meaning||{};return [m.ja,m.en].filter(Boolean)};
+
+/* ---------- FSRS-4.5: the same as desk/index.html ---------- */
+const W="0.4872 1.4003 3.7145 13.8206 5.1618 1.2298 0.8975 0.0010 1.5674 0.1567 0.9661 2.0275 0.1255 0.2863 2.3062 0.2135 3.0531".split(" ").map(Number);
+const RET=0.9, DECAY=-0.5, FACTOR=19/81, MIN=10*60e3, STEP=30*60e3;
+const fsState=f=>(f&&f.state)||((f&&f.reps)?"review":"new");
+const ivl=S=>Math.max(1,Math.round(S/FACTOR*(Math.pow(RET,1/DECAY)-1)));
+function fsNext(f,g,now=Date.now()){
+  const w=W, clamp=(x,a,b)=>Math.min(b,Math.max(a,x)), d0=r=>clamp(w[4]-Math.exp(w[5]*(r-1))+1,1,10);
+  f=f||{}; const st=fsState(f); let Sv=+f.stability||0, D=+f.difficulty||0;
+  const out={...f,reps:(f.reps||0)+1,lapses:f.lapses||0,last:now};
+  const review=S2=>{out.state="review";out.stability=S2;out.due=now+ivl(S2)*DAY};
+  if(st==="new"){Sv=w[g-1];D=d0(g);out.difficulty=D;out.stability=Sv;if(g===1){out.state="learning";out.due=now+MIN}else if(g===2){out.state="learning";out.due=now+STEP}else review(Sv);return out}
+  if(!D)D=d0(3); if(!Sv)Sv=w[2];
+  if(st==="learning"||st==="relearning"){out.difficulty=D;out.stability=Sv;if(g===1){out.state=st;out.due=now+MIN}else if(g===2){out.state=st;out.due=now+STEP}else review(g===4?Math.max(Sv,w[3]):Sv);return out}
+  const t=f.last?Math.max(0,(now-f.last)/DAY):0, R=Math.pow(1+FACTOR*t/Sv,DECAY);
+  let D2=D-w[6]*(g-3); D2=clamp(w[7]*d0(4)+(1-w[7])*D2,1,10); out.difficulty=D2;
+  if(g===1){out.lapses=(f.lapses||0)+1;out.stability=w[11]*Math.pow(D2,-w[12])*(Math.pow(Sv+1,w[13])-1)*Math.exp(w[14]*(1-R));out.state="relearning";out.due=now+MIN;return out}
+  review(Sv*(Math.exp(w[8])*(11-D2)*Math.pow(Sv,-w[9])*(Math.exp(w[10]*(1-R))-1)*(g===2?w[15]:1)*(g===4?w[16]:1)+1));return out;
+}
+const when=(ms,now=Date.now())=>{const d=ms-now;if(d<50*60e3)return Math.max(1,Math.round(d/60e3))+"m";if(d<36*HOUR)return Math.max(1,Math.round(d/HOUR))+"h";const days=Math.round(d/DAY);if(days<30)return days+"d";if(days<365)return Math.round(days/30)+"mo";return (days/365).toFixed(1)+"y"};
+
+/* ---------- data on this phone ---------- */
+function persist(){try{localStorage.setItem("cd-state",JSON.stringify({cards:S.cards,cardlog:S.log}))}catch(e){}}
+function load(){try{const v=JSON.parse(localStorage.getItem("cd-state")||"null");if(v){S.cards=v.cards||[];S.log=v.cardlog||[]}}catch(e){}}
+function putCard(c){c={...c,updatedAt:Date.now()};S.cards=[...S.cards.filter(x=>x.id!==c.id),c];persist();syncSoon();return c}
+function logEntry(e){const d={...dayDoc()};d.entries=[...(d.entries||[]),e];d.updatedAt=Date.now();S.log=[...S.log.filter(x=>x.id!==d.id),d];persist();syncSoon()}
+function unlog(e){const d={...dayDoc()};d.entries=(d.entries||[]).filter(x=>!(x.c===e.c&&x.at===e.at));d.updatedAt=Date.now();S.log=[...S.log.filter(x=>x.id!==d.id),d];persist();syncSoon()}
+function dueNow(now=Date.now()){
+  const l=live(), due=l.filter(c=>fsState(c.fsrs)!=="new"&&(c.fsrs?.due||0)<=now).sort((a,b)=>(a.fsrs?.due||0)-(b.fsrs?.due||0));
+  const newToday=(dayDoc().entries||[]).filter(e=>e.n).length;
+  const fresh=l.filter(c=>fsState(c.fsrs)==="new").sort((a,b)=>(b.lookups||0)-(a.lookups||0)||(a.createdAt||0)-(b.createdAt||0)).slice(0,Math.max(0,NEW_PER_DAY-newToday));
+  return {due,fresh,reviewed:(dayDoc().entries||[]).length,total:l.length};
+}
+/* ---------- sync: send everything, get back the merged state (newer card wins; a day's entries are joined) ---------- */
+const syncKey=()=>{try{return localStorage.getItem("cd-key")||""}catch(e){return ""}};
+let syncT=0, syncing=false;
+const syncSoon=()=>{clearTimeout(syncT);syncT=setTimeout(sync,1500)};
+async function sync(){
+  if(syncing)return;const key=syncKey();
+  if(!key){S.sync={state:"nokey"};paintSync();return}
+  if(!navigator.onLine){S.sync={...S.sync,state:"offline"};paintSync();return}
+  syncing=true;
+  try{const r=await fetch("api/sync",{method:"POST",headers:{"Content-Type":"application/json","x-sync-key":key},body:JSON.stringify({cards:S.cards,cardlog:S.log})});
+    if(r.status===401){S.sync={state:"badkey"};return}
+    if(!r.ok)throw 0;
+    const j=await r.json();const before=JSON.stringify([S.cards,S.log]);S.cards=j.cards||[];S.log=j.cardlog||[];persist();S.sync={state:"ok",at:Date.now()};
+    if(before!==JSON.stringify([S.cards,S.log])&&!S.rev)render();
+  }catch(e){S.sync={...S.sync,state:"offline"}}
+  finally{syncing=false;paintSync()}
+}
+function syncText(){const s=S.sync;
+  if(s.state==="nokey")return `<span class="dot dotno"></span>Only on this phone · <a href="#settings">turn on sync</a>`;
+  if(s.state==="badkey")return `<span class="dot dotno"></span>The sync passphrase is wrong · <a href="#settings">fix it</a>`;
+  if(s.state==="offline")return `<span class="dot dotno"></span>Offline · saved on this phone, syncs when back online`;
+  if(s.state==="ok")return `<span class="dot"></span>Synced ${new Date(s.at).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"})}`;
+  return `<span class="dot dotno"></span>Syncing…`}
+function paintSync(){const el=$("#syncline");if(el)el.innerHTML=syncText()}
+
+/* ---------- screens ---------- */
+function cloze(c){const ctx=c.context||"";if(!ctx)return "";for(const t of [c.term,c.lemma].filter(Boolean).map(norm).filter(Boolean).sort((a,b)=>b.length-a.length)){const re=new RegExp(t.replace(/[.*+?^${}()|[\]\\]/g,"\\$&").replace(/\s+/g,"\\s+"),"i");const m=re.exec(ctx);if(m)return esc(ctx.slice(0,m.index))+'<span class="blank">____</span>'+esc(ctx.slice(m.index+m[0].length))}return esc(ctx)}
+function home(){
+  const d=dueNow(), n=d.due.length+d.fresh.length;
+  return `<div class="top"><h1>Cards</h1><a class="ibtn" href="#add" aria-label="Add a word">＋</a><a class="ibtn" href="#settings" aria-label="Settings">⚙︎</a></div>
+  <div class="home"><div class="big"><span class="sub">Waiting now</span><b>${n}</b><span class="sub">${d.due.length} due${d.fresh.length?` · ${d.fresh.length} new`:""} · ${d.reviewed} done today · ${d.total} cards</span>
+    <div class="row"><button class="btn primary" id="go" ${n?"":"disabled"} style="flex:1">${n?"Review":"Nothing due"}</button>${d.due.length>=50?`<button class="btn" id="go20">Do 20</button>`:""}</div></div>
+    ${d.total?"":`<p class="sub">Cards come from the Desk Reader on the Mac, or type one with ＋.</p>`}</div>
+  <div class="foot"><p class="syncline" id="syncline">${syncText()}</p></div>`;
+}
+function settings(){
+  return `<div class="top"><a class="ibtn" href="#" aria-label="Back">‹</a><h1>Settings</h1></div>
+  <div class="home"><label class="sub">Sync passphrase (the same as on the Mac)<input class="field" id="sK" type="password" value="${esc(syncKey())}" autocomplete="off"></label>
+    <div class="row"><button class="btn primary" id="sKOk">Save</button><button class="btn" id="sNow">Sync now</button></div>
+    <p class="sub">Cards are kept on this phone and merged with the Mac through the sync. The Mac fills the meaning of a word typed here.</p>
+    <p class="sub">Keys on a keyboard: Space flips, 1–4 answer, Z undoes.</p></div><div class="foot"><p class="syncline" id="syncline">${syncText()}</p></div>`;
+}
+function addView(){
+  return `<div class="top"><a class="ibtn" href="#" aria-label="Back">‹</a><h1>Add a word</h1></div>
+  <div class="home"><input class="field" id="aTerm" placeholder="Word or phrase" autocomplete="off"><select class="field" id="aLang">${[["en","English"],["ja","Japanese"],["ru","Russian"],["es","Spanish"],["fr","French"],["de","German"],["vi","Vietnamese"],["zh","Chinese"],["ko","Korean"]].map(([k,l])=>`<option value="${k}">${l}</option>`).join("")}</select>
+    <input class="field" id="aCtx" placeholder="A sentence it came from (optional)"><button class="btn primary" id="aGo">Add</button>
+    <p class="sub">The meaning, pronunciation and an example arrive from the Mac after the next sync.</p></div><div class="foot"></div>`;
+}
+let rev=null;
+function startReview(limit){const d=dueNow();let q=[...d.due,...d.fresh].map(c=>c.id);if(limit)q=q.slice(0,limit);if(!q.length){toast("Nothing to review");return}rev={queue:q,done:0,again:0,flipped:false,hist:[]};S.rev=rev;location.hash="review"}
+function reviewView(){
+  if(!rev)return home();
+  const c=S.cards.find(x=>x.id===rev.queue[0]&&!x.deleted);
+  if(!c)return `<div class="top"><a class="ibtn" href="#" aria-label="Back">‹</a><h1>Done</h1></div><div class="stage"><div class="card"><b class="term">Done for now</b><p class="ctx">${rev.done} card${rev.done===1?"":"s"} today${rev.again?` · ${rev.again} seen again`:""}.</p></div><a class="btn primary" href="#">Back</a></div><div class="foot"></div>`;
+  const now=Date.now(), iv=[1,2,3,4].map(g=>when(fsNext(c.fsrs,g,now).due,now)), ms=meaning(c);
+  return `<div class="top"><a class="ibtn" href="#" aria-label="Close">✕</a><span class="sub" style="flex:1">${rev.done+1} of ${rev.done+rev.queue.length}${fsState(c.fsrs)==="new"?" · new":""}</span>${rev.hist.length?`<button class="btn sm" id="undo">Undo</button>`:""}</div>
+  <div class="stage"><div class="card" id="card" tabindex="0"><b class="term">${esc(rev.flipped&&c.lemma&&norm(c.lemma)!==norm(c.term)?`${c.term} → ${c.lemma}`:c.term)}</b>${rev.flipped&&c.ipa?`<span class="sub">/${esc(c.ipa)}/</span>`:""}${c.context?`<p class="ctx">${rev.flipped?esc(c.context):cloze(c)}</p>`:""}
+    ${rev.flipped?`<div class="back">${ms.length?ms.map(m=>`<p class="mean">${esc(m)}</p>`).join(""):`<p class="sub">The meaning is not here yet</p>`}${c.example?`<p class="sub ex">${esc(c.example)}</p>`:""}${c.book?.title?`<p class="sub">${esc(c.book.title)}</p>`:""}</div>`:""}</div>
+    ${rev.flipped?`<div class="ans"><button class="btn" data-g="1">Again<small>${iv[0]}</small></button><button class="btn" data-g="2">Hard<small>${iv[1]}</small></button><button class="btn primary" data-g="3">Good<small>${iv[2]}</small></button><button class="btn" data-g="4">Easy<small>${iv[3]}</small></button></div><p class="sub hint">Swipe left = Again · right = Good</p>`
+      :`<button class="btn primary" id="flip" style="min-height:56px">Show the answer</button><p class="sub hint">Tap the card to flip</p>`}</div><div class="foot"></div>`;
+}
+function render(){
+  const h=(location.hash||"").slice(1);
+  S.view=h==="review"?"review":h==="settings"?"settings":h==="add"?"add":"home";
+  if(S.view!=="review"&&rev){rev=null;S.rev=null}
+  $("#app").innerHTML=S.view==="review"?reviewView():S.view==="settings"?settings():S.view==="add"?addView():home();
+  wire();
+}
+function wire(){
+  const on=(id,fn)=>{const el=$(id);if(el)el.onclick=fn};
+  on("#go",()=>startReview());on("#go20",()=>startReview(20));
+  on("#sKOk",async()=>{try{localStorage.setItem("cd-key",$("#sK").value.trim())}catch(e){}S.sync={state:""};paintSync();await sync();toast(S.sync.state==="ok"?"Synced":S.sync.state==="badkey"?"That passphrase didn't work":"Saved. It syncs when online")});
+  on("#sNow",()=>sync().then(()=>toast(S.sync.state==="ok"?"Synced":"Could not sync now")));
+  on("#aGo",()=>{const term=$("#aTerm").value.trim();if(!term){$("#aTerm").focus();return}const lang=$("#aLang").value, context=$("#aCtx").value.trim();
+    const have=S.cards.find(c=>!c.deleted&&(c.lang||"en")===lang&&[c.term,c.lemma].map(norm).includes(norm(term)));
+    if(have){putCard({...have,lookups:(have.lookups||0)+1,status:"active"});toast("Already in cards");location.hash="";return}
+    const now=Date.now();putCard({id:"p"+now.toString(36)+Math.random().toString(36).slice(2,6),term,lemma:"",lang,meaning:{ja:"",en:""},ipa:"",example:"",pos:"",context,source:{kind:"phone",ref:""},book:null,status:"active",fsrs:{state:"new",due:now,stability:0,difficulty:0,reps:0,lapses:0,last:0},lookups:1,enrich:{state:"pending",at:0},createdAt:now,deleted:false});
+    toast("Added · the meaning comes from the Mac");location.hash=""});
+  if($("#aTerm"))$("#aTerm").focus();
+  if(S.view!=="review"||!rev)return;
+  const card=$("#card");
+  on("#flip",flip);on("#undo",undo);
+  document.querySelectorAll("[data-g]").forEach(b=>b.onclick=()=>answer(+b.dataset.g));
+  if(card){card.onclick=()=>{if(!rev.flipped&&!swiped)flip()};
+    let x0=null,dx=0;
+    card.addEventListener("touchstart",e=>{x0=e.touches[0].clientX;dx=0;card.classList.add("drag")},{passive:true});
+    card.addEventListener("touchmove",e=>{if(x0==null)return;dx=e.touches[0].clientX-x0;card.style.transform=`translateX(${dx}px) rotate(${dx/30}deg)`;card.style.opacity=String(Math.max(.4,1-Math.abs(dx)/400))},{passive:true});
+    card.addEventListener("touchend",()=>{card.classList.remove("drag");card.style.transform="";card.style.opacity="";
+      if(Math.abs(dx)>90){swiped=true;setTimeout(()=>swiped=false,300);if(!rev.flipped){rev.flipped=true;render();return}answer(dx<0?1:3)}x0=null;dx=0});
+    card.focus()}
+}
+let swiped=false;
+function flip(){rev.flipped=true;render()}
+function answer(g){const c=S.cards.find(x=>x.id===rev.queue[0]);if(!c||!rev.flipped)return;const now=Date.now(),was={...c,fsrs:{...(c.fsrs||{})}},f=fsNext(c.fsrs,g,now),e={c:c.id,r:g,at:now,via:"phone",...(fsState(c.fsrs)==="new"?{n:true}:{})};
+  rev.hist.push({was,e});rev.queue.shift();rev.done++;rev.flipped=false;if(f.due<=now+HOUR){rev.queue.push(c.id);rev.again++}
+  putCard({...c,fsrs:f});logEntry(e);render()}
+function undo(){const h=rev.hist.pop();if(!h)return;rev.queue=rev.queue.filter(id=>id!==h.was.id);rev.queue.unshift(h.was.id);rev.done=Math.max(0,rev.done-1);rev.flipped=false;putCard(h.was);unlog(h.e);render()}
+document.addEventListener("keydown",e=>{if(!rev||S.view!=="review")return;const t=e.target.tagName;if(t==="INPUT"||t==="TEXTAREA"||t==="SELECT")return;
+  if(e.key===" "||e.key==="Enter"){e.preventDefault();if(!rev.flipped)flip()}
+  if(/^[1-4]$/.test(e.key)&&rev.flipped){e.preventDefault();answer(+e.key)}
+  if(e.key==="z"||e.key==="Z")undo();
+  if(e.key==="Escape")location.hash=""});
+window.addEventListener("hashchange",render);
+window.addEventListener("online",sync);
+(function start(){
+  load();
+  const m=/^#key=(.+)$/.exec(location.hash||"");
+  if(m){try{localStorage.setItem("cd-key",decodeURIComponent(m[1]))}catch(e){}history.replaceState(null,"",location.pathname);toast("Sync is on")}
+  render();sync();setInterval(sync,120000);
+  if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+})();
+</script>
+</body>
+</html>

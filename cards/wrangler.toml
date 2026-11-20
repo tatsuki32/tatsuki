@@ -1,0 +1,11 @@
+# Cards app on Cloudflare Pages: https://tatsuki-cards.pages.dev (the phone side of the Desk Reader's flashcards)
+# Build and deploy: python3 cards/build.py && (cd cards && npx wrangler pages deploy)
+# The sync passphrase is the SYNC_KEY secret (wrangler pages secret put SYNC_KEY --project-name tatsuki-cards), never in this repo.
+# The KV namespace id below is filled in by cards/setup.sh (wrangler kv namespace create CARDS).
+name = "tatsuki-cards"
+pages_build_output_dir = "dist"
+compatibility_date = "2026-11-01"
+
+[[kv_namespaces]]
+binding = "CARDS"
+id = "REPLACE_WITH_KV_ID"

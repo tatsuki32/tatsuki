@@ -1805,6 +1805,81 @@ a.shelfbtn{text-decoration:none;display:inline-flex;align-items:center}
 .xlset summary{cursor:pointer;font-weight:700}
 .xlsetb{display:flex;flex-direction:column;gap:var(--s2);margin-top:var(--s2)}
 .xlsetb label{display:flex;flex-direction:column;gap:4px;font-size:var(--t1);color:var(--muted)}
+/* Desk Reader and Cards. Reading is one centered column (680px). The word popup sits under its paragraph; on a phone it is a sheet at the bottom. */
+.rdv .head,.cdv .head{align-items:flex-start}
+.rdgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:var(--s2)}
+.rdbook,.rdcont{display:grid;gap:var(--s1);padding:var(--s3);text-decoration:none;color:var(--ink);align-content:start}
+.rdbook:hover,.rdcont:hover{border-color:var(--line-2)}
+.rdbook b{overflow-wrap:anywhere}
+.rdprog{display:block;height:4px;border-radius:999px;background:var(--surface-2);overflow:hidden;margin-top:var(--s1)}
+.rdprog i{display:block;height:100%;background:var(--accent)}
+.rdcont{border-left:3px solid var(--accent)}
+.rdcont b{font-size:var(--t4)}
+.rdread{display:grid;gap:var(--s3);padding-bottom:96px}
+.rdtop{display:flex;align-items:center;gap:var(--s2);flex-wrap:wrap}
+.rdtop .rdtitle{flex:1 1 12em;min-width:0;overflow-wrap:anywhere;font-size:var(--t3)}
+.rdchap{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:var(--s2);align-items:center;max-width:680px;width:100%;margin:0 auto}
+.rdchap .cdsel{width:100%;max-width:none}
+.rdbody{max-width:680px;width:100%;margin:0 auto;font-size:var(--t3);line-height:1.9;cursor:text}
+.rdread.f2 .rdbody{font-size:19px;line-height:1.95}
+.rdread.f3 .rdbody{font-size:23px;line-height:2}
+.rdbody .rdh{font-size:var(--t4);margin:0 0 var(--s3)}
+.rdread.f3 .rdbody .rdh{font-size:var(--t5)}
+.rdp{margin:0 0 1em}
+.rds{border-radius:4px;transition:background .15s}
+.rds.on{background:var(--accent-soft);box-shadow:0 0 0 3px var(--accent-soft)}
+.rdk{text-decoration:underline;text-decoration-color:var(--accent-2);text-decoration-thickness:1px;text-underline-offset:3px}
+.rdend{max-width:680px;width:100%;margin:0 auto}
+.rdbar{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;gap:var(--s2);align-items:center;flex-wrap:wrap;padding:var(--s2) max(var(--s3),env(safe-area-inset-right,0px)) calc(var(--s2) + env(safe-area-inset-bottom,0px)) max(var(--s3),env(safe-area-inset-left,0px));background:var(--rail);border-top:1px solid var(--line)}
+.rdbar .cdsel{max-width:11em}
+.rdbar .rdvoice{max-width:14em}
+.rdbar .rdpos{margin-left:auto}
+@media (min-width:861px){.rdbar{left:224px}}
+@media (max-width:860px){.rdbar{bottom:56px}.rdread{padding-bottom:150px}}
+.rdpop{margin:calc(-1 * var(--s2)) 0 var(--s3);padding:var(--s3);background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r);display:grid;gap:var(--s2);font-size:var(--t2);line-height:1.6;cursor:default}
+.rdpophead{display:flex;align-items:center;gap:var(--s2);flex-wrap:wrap}
+.rdpophead .rdterm{font-size:var(--t3);overflow-wrap:anywhere}
+.rdpophead .ibtn:last-child{margin-left:auto}
+.rdpopbody{display:grid;gap:2px}
+.rdpopctx{min-width:0;overflow-wrap:anywhere;flex:1 1 10em}
+.cdmean{margin:0}
+@media (max-width:560px){.rdpop{position:fixed;left:0;right:0;bottom:56px;z-index:31;margin:0;border-radius:var(--r) var(--r) 0 0;max-height:50vh;overflow-y:auto;box-shadow:0 -12px 40px rgba(0,0,0,.4)}}
+.cdfilters{align-items:center}
+.cdq{max-width:16em;min-height:36px}
+.cdsel{min-height:36px;width:auto;max-width:14em;padding:0 var(--s2)}
+.segs{display:flex;gap:var(--s1);flex-wrap:wrap}
+.chip.on{border-color:var(--accent);color:var(--ink);font-weight:700}
+.cdlist{display:grid}
+.cdrow{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.6fr) auto;gap:var(--s2) var(--s3);align-items:center;padding:10px var(--s3);border:0;border-top:1px solid var(--line);background:none;color:var(--ink);font:inherit;text-align:left;cursor:pointer;width:100%}
+.cdrow:first-child{border-top:0}
+.cdrow:hover{background:var(--surface-2)}
+.cdrow .cdt,.cdrow .cdm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cdrow .cdd{white-space:nowrap;text-align:right}
+.cdsg{cursor:default}.cdsg:hover{background:none}
+@media (max-width:640px){.cdrow{grid-template-columns:minmax(0,1fr) auto}.cdrow .cdm{grid-column:1/-1;white-space:normal}}
+.cdimport{padding:var(--s2) 0}
+.cdcode{margin:var(--s1) 0;padding:var(--s2) var(--s3);background:var(--surface);border:1px solid var(--line);border-radius:var(--r-s);font-size:var(--t1);overflow-x:auto;white-space:pre-wrap;overflow-wrap:anywhere}
+.cdpop{width:min(560px,100%)}
+.cdcard{display:grid;gap:var(--s2);padding:var(--s4) var(--s3);min-height:200px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface-2);align-content:center;cursor:pointer}
+.cdcard.flip{cursor:default}
+.cdfront{display:grid;gap:var(--s1);justify-items:start}
+.cdterm{font-size:var(--t5);line-height:1.2;overflow-wrap:anywhere}
+.cdctx{margin:var(--s2) 0 0;font-size:var(--t3);line-height:1.7;color:var(--ink-2)}
+.cdblank{border-bottom:2px solid var(--accent);color:transparent;letter-spacing:.1em}
+.cdback{border-top:1px solid var(--line);padding-top:var(--s2);display:grid;gap:var(--s1)}
+.cdback .cdmean{font-size:var(--t3)}
+.cdex{font-style:italic}
+.cdans{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--s2)}
+.cdans .btn{flex-direction:column;gap:0;min-height:56px;padding:var(--s1)}
+.cdans .btn small{font-size:var(--t1);color:var(--muted);font-weight:400}
+.cdans .btn.primary small{color:var(--accent-ink)}
+.cdans .btn kbd{display:none}
+@media (min-width:640px){.cdans .btn kbd{display:inline;position:absolute;opacity:0}}
+.cdform{display:grid;grid-template-columns:1fr 1fr;gap:var(--s2) var(--s3)}
+.cdf{display:grid;gap:2px}
+.cdf .wd-field{max-width:none;min-height:36px}
+.cdform .cdf:nth-child(n+7){grid-column:1/-1}
+@media (max-width:560px){.cdform{grid-template-columns:1fr}.cdans{grid-template-columns:1fr 1fr}}
 </style>
 
 <div class="app">
@@ -1854,7 +1929,7 @@ S.projects=[];S.sections=[];S.okrs=[];S.krOpen={};S.projFilter="all";S.pDone=fal
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const okUrl=u=>/^(https:\/\/|file:\/\/|#)/.test(u||"");
-const viewId=()=>{const h=(location.hash||"").slice(1);if(h==="mail")return "tasks";if(h==="inbox")return "presents";if(/^project\//.test(h))return "project";if(/^forms\//.test(h))return "forms";if(/^task\//.test(h))return "tasks";if(/^concept\//.test(h))return "translate";return VIEWS.some(v=>v.id===h&&v.g!=="hidden")?h:"home"}; // the morning mail screen moved into the tasks
+const viewId=()=>{const h=(location.hash||"").slice(1);if(h==="mail")return "tasks";if(h==="inbox")return "presents";if(/^project\//.test(h))return "project";if(/^forms\//.test(h))return "forms";if(/^task\//.test(h))return "tasks";if(/^concept\//.test(h))return "translate";if(/^reader\//.test(h))return "reader";if(h==="cards/review")return "cards";return VIEWS.some(v=>v.id===h&&v.g!=="hidden")?h:"home"}; // the morning mail screen moved into the tasks
 const viewLabel=id=>(VIEWS.find(v=>v.id===id)||{}).label||id;
 /* Old mail data has Japanese topics: keep those titles in Japanese, new ones in English */
 const JA_RE=/[ぁ-んァ-ン一-龥]/;
@@ -1877,6 +1952,7 @@ VIEWS.splice(VIEWS.findIndex(v=>v.id==="replies")+1,0,{id:"notdoing",e:"🍃",la
 VIEWS.splice(VIEWS.findIndex(v=>v.id==="replies")+1,0,{id:"timelog",e:"⏱️",label:"Time",g:"today"}); // 4th in Today (Home, Tasks, Replies, Time)
 if(LOCALAPI) VIEWS.splice(4,0,{id:"focus",e:"🎯",label:"Focus",g:"today"}); // blocks apps on this Mac, so the Mac version only
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="focus")+1,0,{id:"notices",e:"🔔",label:"Notifications",g:"today"}); // Mac notifications: desk/notify.py decides, this page lists and sets
+if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="calendar")+1,0,{id:"book",e:"🗓️",label:"Bookings",g:"today"}); // the rules and the list behind tany.im/book; the page runs in the tany.im Worker (desk/book.py)
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="memolink")+1,0,{id:"money",e:"💰",label:"Money",g:"write"}); // statements stay on this Mac
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="money")+1,0,{id:"screentime",e:"📱",label:"Screen Time",g:"write"});
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="screentime")+1,0,{id:"webhistory",e:"🌐",label:"Web History",g:"write"});
@@ -1890,6 +1966,7 @@ if(LOCALAPI) VIEWS.push({id:"post",e:"📣",label:"Post Studio",g:"write"});
 if(LOCALAPI) VIEWS.push({id:"campus",e:"✉️",label:"Campus Letter",g:"write"}); // the free newsletter 地球キャンパス通信: written here, readers only on tany.im (desk/campus.py) // photos and a memo become drafts for each social account; nothing is posted from Desk (desk/posts.py)
 if(LOCALAPI) VIEWS.push({id:"forms",e:"📋",label:"Forms",g:"write"}); // forms on tany.im instead of Google Forms: made here, answered on tany.im, answers back every 5 minutes (desk/forms.py)
 if(LOCALAPI) VIEWS.push({id:"transcribe",e:"🎙️",label:"Transcribe",g:"write"}); // long recordings to text on this Mac (desk/transcribe/, its own server on 8791)
+if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="heritage")+1,0,{id:"reader",e:"📖",label:"Reader",g:"read"},{id:"cards",e:"🃏",label:"Cards",g:"read"}); // books read aloud and flashcards (desk/reader.py, desk/cards.py)
 if(LOCALAPI) VIEWS.push({id:"wifi",e:"📲",label:"Wi-Fi QR",g:"write"}); // a code that joins the Wi-Fi this Mac is on; the password comes from the keychain and is never kept (desk/wifi_qr.py)
 if(LOCALAPI) VIEWS.push({id:"bank",e:"🏦",label:"Bank Accounts",g:"tool"}); // same: from Tools and the / list. Details stay on this Mac (desk/bank.py)
 if(LOCALAPI) VIEWS.push({id:"accounts",e:"🔑",label:"Accounts",g:"tool"}); // where you have accounts and how you sign in; no passwords yet (desk/accounts.py)
@@ -1908,6 +1985,7 @@ async function loadApiMemos(){try{
   S.ig=await api("GET","/api/instagram").catch(()=>({}));
   S.replyWin=((await api("GET","/api/replywin").catch(()=>[]))||[]).find(x=>x&&x.id==="state")||{};
   S.genres=await api("GET","/api/genres").catch(()=>S.genres||[]);S.ttypes=await api("GET","/api/tasktypes").catch(()=>S.ttypes||[]);S.mprops=await api("GET","/api/mergeprops").catch(()=>S.mprops||[]);S.timelog=await api("GET","/api/timelog").catch(()=>S.timelog||[]);S.genrelog=await api("GET","/api/genrelog").catch(()=>S.genrelog||[]);S.typeprops=await api("GET","/api/typeprops").catch(()=>S.typeprops||[]);
+  await cdLoad();
   S.habits=habits.filter(h=>!h.deleted);S.wins=wins.filter(w=>!w.deleted);S.presents=presents.filter(p=>!p.deleted);S.memos=memos.filter(m=>!m.deleted&&!m.movedTo);S.dues=duesById(dues);S.tasks=tasks.filter(t=>!t.deleted);S.prompts=promptsById(prompts);S.wnotes=notes.filter(n=>!n.deleted);render();absorbMemos()}catch(e){toast("Cannot reach the Desk server. Is it running?")}}
 const promptsById=list=>Object.fromEntries(list.filter(p=>p&&p.id&&!p.deleted).map(p=>[p.id,p]));
 const duesById=list=>Object.fromEntries(list.filter(v=>v&&v.uid).map(v=>[v.uid,v]));
@@ -1952,7 +2030,6 @@ const store={
     else if(LOCALAPI){await api("PUT","/api/presents/"+encodeURIComponent(p.id),rec);await loadApiMemos()}
     else {S.presents=[...S.presents.filter(x=>x.id!==p.id),{id:p.id,...rec}].filter(x=>!x.deleted);render()} },
   async putGear(g){ const rec={name:g.name||"",cat:g.cat||"other",qty:+g.qty||1,grams:g.grams==null||g.grams===""?null:+g.grams,gsrc:g.gsrc||"",price:g.price==null||g.price===""?null:+g.price,psrc:g.psrc||"",note:g.note||"",url:g.url||"",img:g.img||"",imgSrc:g.imgSrc||"",emoji:g.emoji||"",gone:!!g.gone,packed:!!g.packed,packedAt:g.packedAt||null,order:+g.order||0,createdAt:g.createdAt||Date.now(),updatedAt:Date.now(),deleted:!!g.deleted};
-if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="calendar")+1,0,{id:"book",e:"🗓️",label:"Bookings",g:"today"}); // the rules and the list behind tany.im/book; the page runs in the tany.im Worker (desk/book.py)
     if(db){await db.collection("gear").doc(g.id).set(rec)}
     else if(LOCALAPI){await api("PUT","/api/gear/"+encodeURIComponent(g.id),rec);await loadApiMemos()}
     else {S.gear=[...S.gear.filter(x=>x.id!==g.id),{id:g.id,...rec}].filter(x=>!x.deleted);try{localStorage.setItem("desk-gear",JSON.stringify(S.gear))}catch(e){}render()} },
@@ -2882,7 +2959,7 @@ function todayBlock(){
   const total=due.open.length+due.done.length+plan.open.length+plan.done.length+rts.length+hs.length;
   const done=due.done.length+plan.done.length+rts.filter(r=>r.done).length+hs.filter(x=>x.on).length;
   const body=[tdSection("Schedule",evRows,[]),tdSection("Due today",due.open.map(t=>tdTaskRow(t,false)),due.done.map(t=>tdTaskRow(t,true))),
-    tdSection("Routines & habits",rh,rhDone),tdSection("Planned today",plan.open.map(t=>tdTaskRow(t,false)),plan.done.map(t=>tdTaskRow(t,true))),
+    tdSection("Routines & habits",rh,rhDone),tdSection("Planned today",plan.open.map(t=>tdTaskRow(t,false)),plan.done.map(t=>tdTaskRow(t,true))),tdSection("Cards",tdCards(),[]),
     tdSection("News",newsRows,[],news?.day?` <span class="sub">Sift Daily · ${esc(news.day.slice(5).replace("-","/"))}</span>`:"")].join("");
   return `<section class="card td" aria-label="Today"><div class="tdtop"><h2>Today</h2>${total?`<span class="sub">${done}/${total} done</span>`:""}</div>
     ${body||`<div class="empty"><b>Nothing for today yet</b>Press T to add a task, or plan one for today on Tasks.</div>`}</section>`;
@@ -3850,7 +3927,7 @@ function openTask(id,preset){
     <div class="top"><h2>🗂️ ${t?"Task":"New task"}</h2><button class="ibtn" id="xTask" aria-label="Close">✕</button></div>
     <label class="sub" for="tTitle">Title</label><input type="text" id="tTitle" value="${esc(taskName(t))}" placeholder="e.g., Send the documents to FWO" autocomplete="off">
     ${clearBlock(t)}${t?.source==="lifeos-02"?fuBlock(t):""}
-    ${t?.source==="daily"&&t.sourceRef==="jobs"?jobsBlock():isMail?mailBlock(t):t?.source==="whatsapp"?waBlock(t):t?.source==="line"?lineBlock(t):t?.source==="instagram"?igBlock(t)
+    ${t?.source==="daily"&&t.sourceRef==="jobs"?jobsBlock():isMail?mailBlock(t):t?.source==="whatsapp"?waBlock(t):t?.source==="line"?lineBlock(t):t?.source==="instagram"?igBlock(t):t?.source==="form"?formBlock(t)
       :isLinked?`<p class="hint">${TSRC[t.source][0]} ${TSRC[t.source][1]}${t.due!=null?" · Due "+esc(fmtDue(t.due)):""} · Change the due date and title at the source${okUrl(t.url)?` · <a href="${esc(t.url)}" target="_blank" rel="noopener">Open ↗</a>`:""}${t.source==="gtasks"?"<br>Marking it Done also completes it in Google Tasks at the next sync.":""}</p>`
       :`<div class="tduein"><div><label class="sub" for="tDue">Due date (optional)</label><input type="date" id="tDue" value="${dueParts(t?.due)[0]}"></div><div><label class="sub" for="tDueT">Time (optional)</label><input type="time" id="tDueT" value="${dueParts(t?.due)[1]}"></div></div><p class="hint" id="tDueHint"></p>`}
     <div class="tduein"><div><label class="sub" for="tPlan">When</label><select id="tPlan">${planSel(t||{},tPeriods())}</select></div><div><label class="sub" for="tEst">Time needed (min)</label><input type="number" id="tEst" min="1" step="5" inputmode="numeric" value="${t?.estMin??""}" placeholder="${t?.estAi?"Estimate "+t.estAi:""}"></div></div>
@@ -3863,7 +3940,7 @@ function openTask(id,preset){
     <div class="row"><button class="btn primary" id="tSave">Save <kbd>⌘/Ctrl + Enter</kbd></button><button class="btn" id="tCancel">Cancel</button>${t?`${timerBtn(t,"btn")}<button class="btn" id="tCopy">Copy as text</button><button class="btn" id="tCalBtn" aria-expanded="false" aria-controls="tCal">Add to calendar</button>`:""}${t&&!isLinked?`<button class="btn" id="tDel" style="margin-left:auto;color:var(--red)">Delete</button>`:""}</div>
   </div></div>`;
   const ti=$("#tTitle");ti.focus();ti.setSelectionRange(ti.value.length,ti.value.length);
-  wireWa(t);wireLine(t);wireIg(t);
+  wireWa(t);wireLine(t);wireIg(t);wireForm(t);
   const close=()=>{$("#modal").innerHTML=""}, plan0=$("#tPlan").value;
   wireJobs(t);wireMail(t,close);wireClear(t,close);wireProjFields(t||pre);wireKrField();
   const dueIn=$("#tDue"), dueT=$("#tDueT");
@@ -6171,13 +6248,17 @@ function render(){
     if($("#wkCanvas")&&S.wkShown===S.wkBoard&&wkCurrent()&&!S.q){$("#wkBar").innerHTML=wkBar();wkSync();wkWire();return}
     S.wkShown=S.wkBoard;$("#view").innerHTML=searchResults()+workoutBoard();wire();wkSync();wkWire();return}
   S.wkShown=null;
+  if(viewId()!=="reader"&&S.rd.playing)rdStop(); // leaving the Reader stops the voice
+  if(viewId()==="reader"){rdLoad();$("#view").innerHTML=searchResults()+readerView();wire();wireRd();return}
+  if(viewId()==="cards"){$("#view").innerHTML=searchResults()+cardsView();wire();wireCd();if(location.hash==="#cards/review"&&!S.cd.rev)openReview({deck:S.cd.deck});return}
   if(viewId()==="mailclean"){mcLoad();$("#view").innerHTML=searchResults()+mcView();wire();wireMc();return}
   if(viewId()==="footprint"){fpLoad();$("#view").innerHTML=searchResults()+fpView();wire();wireFp();return}
   if(viewId()==="netspeed"){nsLoad();$("#view").innerHTML=searchResults()+nsView();wire();wireNs();return}
   if(viewId()==="wifi"){wfLoad();if(!$("#wfView")||!document.activeElement?.closest?.(".wffield"))wfDraw();return} // a redraw from elsewhere never takes the password being typed
   if(viewId()==="transcribe"){trLoad();$("#view").innerHTML=searchResults()+trView();wire();wireTr();return}
   if(viewId()==="post"){if(!ps().data&&!ps().loading)psLoad();if(!document.activeElement?.closest?.(".psedit")||!$("#psView"))psDraw();return} // a redraw from elsewhere never takes the text being typed
-  if(viewId()==="forms"){const c=fm();if(!c.data&&!c.loading)fmLoad();else if(fmId()&&c.cur!==fmId()&&!c.loading)fmOpen(fmId());if(!document.activeElement?.closest?.(".fmed,.fmbox,.fmtitle")||!$("#fmView"))fmDraw();return} // a redraw from elsewhere never takes the text being typed
+  if(viewId()==="forms"){fmSync();if(!document.activeElement?.closest?.(".fmed,.fmbox,.fmtitle")||!$("#fmView"))fmDraw();return} // a redraw from elsewhere never takes the text being typed
+  if(viewId()==="book"){if(!bkg().data&&!bkg().loading)bkgLoad();if(!document.activeElement?.closest?.(".bkgedit")||!$("#bkgView"))bkgDraw();return} // a redraw from elsewhere never takes the rules being typed
   if(viewId()!=="campus")document.body.classList.remove("cpfocus");
   if(viewId()==="campus"){if(!cp().data&&!cp().loading)cpLoad();if(!document.activeElement?.closest?.(".cpedit,.cpbox")||!$("#cpView"))cpDraw();return} // a redraw from elsewhere never takes the text being typed
   if(viewId()==="utilities"){if(!document.activeElement?.closest?.(".utfield")||!$("#utView"))utDraw();return} // a redraw from elsewhere never takes the text being typed
@@ -6258,7 +6339,6 @@ async function wkAddUrl(raw,at){
     try{const r=await fetch("https://www.youtube.com/oembed?format=json&url="+encodeURIComponent(url));if(r.ok){const j=await r.json();const cur=S.wcards.find(c=>c.id===rec.id);if(cur&&!cur.title&&j.title)await wkPut("wcards",{...cur,title:String(j.title).slice(0,200)})}}catch(e){}
   }
 }
-  if(viewId()==="book"){if(!bkg().data&&!bkg().loading)bkgLoad();if(!document.activeElement?.closest?.(".bkgedit")||!$("#bkgView"))bkgDraw();return} // a redraw from elsewhere never takes the rules being typed
 async function wkUpload(file,at){
   if(!S.wkBoard){toast("Make a board first");return}
   if(!LOCALAPI){toast("Open the Desk app to add files");return}
@@ -6881,6 +6961,7 @@ const FM_LANGS=[["ja","日本語"],["en","English"],["vi","Tiếng Việt"]];
 const FM_ACCESS={public:"Anyone",link:"People with the link",me:"Only me"};
 const fm=()=>S.fm||(S.fm={data:null,loading:false,cur:null,doc:null,tab:"questions",resp:null,err:"",msg:"",busy:"",dirty:false,saving:false,savedAt:0,open:null,imp:false,impUrl:"",lang:null,addType:"short"});
 const fmId=()=>{const m=/^#forms\/([0-9a-f]{12})/.exec(location.hash||"");return m?m[1]:null};
+const fmRid=()=>{const m=/^#forms\/[0-9a-f]{12}\/r\/(\d+)/.exec(location.hash||"");return m?+m[1]:null}; // #forms/<id>/r/<answer id>: that answer open on the Responses tab (the task's Open in Forms)
 const fmL=()=>{const c=fm(),d=c.doc,ls=d?.langs?.length?d.langs:["ja"];return ls.includes(c.lang)?c.lang:ls[0]};
 const fmT=(o,l)=>{if(!o||typeof o!=="object")return String(o||"");return o[l]||o.ja||o.en||o.vi||""};
 const fmTitle=d=>fmT(d?.title,(d?.langs||["ja"])[0])||"Untitled form";
@@ -6899,6 +6980,7 @@ async function fmLoad(){
 async function fmOpen(id,quiet){
   const c=fm();await fmFlush();
   try{c.doc=await api("GET","/api/forms/"+id);c.cur=id;c.msg="";c.open=null;c.resp=null;c.lang=null}catch(e){c.err="Could not open that form";c.doc=null}
+  if(fmRid()!=null){c.tab="responses";c.open=fmRid()}
   if(c.doc&&(c.tab==="responses"||c.tab==="summary"))await fmLoadResp();
   if(!quiet)fmRefresh();
 }
@@ -6921,6 +7003,7 @@ async function fmFlush(){
 function fmFoot(){const c=fm(),el=$("#fmFoot");if(!el||!c.doc)return;
   const st=c.saving?"Saving…":c.dirty?"Unsaved":c.savedAt?`Saved ${new Date(c.savedAt).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"})}`:"";
   el.innerHTML=`<span>${st}</span>${c.err?`<span class="cperr">${esc(c.err)}</span>`:""}${c.doc.pushError?`<span class="cperr">tany.im has the previous version: ${esc(c.doc.pushError)}</span>`:""}`}
+function fmSync(){const c=fm();if(!c.data&&!c.loading)fmLoad();else if(fmId()&&c.cur!==fmId()&&!c.loading)fmOpen(fmId());else if(fmRid()!=null&&c.doc&&c.open!==fmRid()){c.tab="responses";c.open=fmRid();if(!c.resp)fmLoadResp().then(fmRefresh)}}
 function fmDraw(){$("#view").innerHTML=searchResults()+fmView();wire();wireFm();fmFoot()}
 function fmView(){
   const c=fm();
@@ -6994,7 +7077,7 @@ function fmResponses(){
   const first=row=>{const q=d.questions.find(x=>x.type!=="section"&&row.answers[x.id]);const v=q?row.answers[q.id]:"";return Array.isArray(v)?v.join(", "):String(v||"")};
   const open=c.open!=null?r.rows.find(x=>x.id===c.open):null;
   const head=`<div class="row"><span class="sub">${r.count} answer${r.count===1?"":"s"}${c.data.state?.pulledAt?` · checked ${esc(fmDate(c.data.state.pulledAt))}`:""}</span><span class="sp"></span><button class="btn sm" id="fmPull" ${c.busy==="pull"?"disabled":""}>${c.busy==="pull"?"Checking…":"Check now"}</button></div>`;
-  if(open)return head+`<div class="fmbox"><div class="row"><b>${esc(fmDate(open.at))}</b><span class="sub">${esc(open.country||"")} ${esc(open.lang||"")}</span><span class="sp"></span><button class="btn sm" id="fmCloseResp">Back to the list</button></div>
+  if(open)return head+`<div class="fmbox"><div class="row"><b>${esc(fmDate(open.at))}</b><span class="sub">${esc(open.country||"")} ${esc(open.lang||"")}</span><span class="sp"></span><button class="btn sm" id="fmTask" ${c.busy==="task"?"disabled":""}>Make it a task</button><button class="btn sm" id="fmCloseResp">Back to the list</button></div>
     ${d.questions.filter(q=>q.type!=="section").map(q=>{const v=open.answers[q.id];return `<div class="fmrow"><span class="k">${esc(labels[q.id])}</span><span>${v==null||v===""||(Array.isArray(v)&&!v.length)?`<span class="sub">—</span>`:esc(Array.isArray(v)?v.join(", "):String(v)).replace(/\n/g,"<br>")}</span></div>`}).join("")}</div>`;
   return head+(r.rows.length?`<div class="fmbox" style="gap:0">${r.rows.map(row=>`<button class="fmresp" data-fmresp="${row.id}"><span class="m">${esc(fmDate(row.at))}${row.country?` · ${esc(row.country)}`:""}</span><br>${esc(first(row).slice(0,140))||"<span class=sub>(no text)</span>"}</button>`).join("")}</div>`:`<p class="sub">No answers yet.${d.status==="draft"?" Publish the form first.":""}</p>`);
 }
@@ -7078,6 +7161,7 @@ function wireFm(){
   $("#fmPull")&&($("#fmPull").onclick=async()=>{c.busy="pull";fmDraw();try{const v=await cpPost("/api/forms/pull",{});const n=Object.values(v.new||{}).reduce((a,b)=>a+b,0);c.msg=n?`${n} new answer${n===1?"":"s"}`:"Nothing new";await fmLoad();await fmLoadResp()}catch(e){c.msg=e.message}c.busy="";fmDraw()});
   document.querySelectorAll("[data-fmresp]").forEach(b=>b.onclick=()=>{c.open=+b.dataset.fmresp;fmDraw()});
   $("#fmCloseResp")&&($("#fmCloseResp").onclick=()=>{c.open=null;fmDraw()});
+  $("#fmTask")&&($("#fmTask").onclick=async()=>{c.busy="task";fmDraw();try{const v=await cpPost(`/api/forms/${d.id}/task`,{rid:c.open});toast(v.existing?"Already a task":"🗂️ Task made");if(!v.existing&&v.task){S.all.push(v.task);S.board.push(v.task)}}catch(e){toast(e.message)}c.busy="";fmDraw()});
   document.querySelectorAll("[data-fmmore]").forEach(b=>b.onclick=()=>{c.open=b.dataset.fmmore;fmDraw()});
   $("#fmSum")&&($("#fmSum").onclick=async()=>{c.busy="sum";fmDraw();try{const v=await cpPost(`/api/forms/${d.id}/summarize`);if(c.resp)c.resp.claude=v}catch(e){c.msg=e.message}c.busy="";fmDraw()});
   $("#fmCsv")&&($("#fmCsv").onclick=async()=>{try{const v=await api("GET",`/api/forms/${d.id}/csv`);saveFile(v.name,v.text,"csv")}catch(e){toast("Could not build the CSV")}});
@@ -7092,6 +7176,18 @@ function wireFm(){
     fmChanged()};el.addEventListener(el.tagName==="SELECT"||el.type==="checkbox"||el.type==="datetime-local"?"change":"input",h)});
   document.querySelectorAll("[data-fmlang2]").forEach(el=>el.onchange=async()=>{const k=el.dataset.fmlang2;d.langs=el.checked?[...d.langs,k]:d.langs.filter(x=>x!==k);if(!d.langs.length)d.langs=["ja"];fmChanged();await fmFlush();fmDraw()});
   $("#fmNewKey")&&($("#fmNewKey").onclick=async()=>{if(!await askYes("Make a new link? The old link stops working."))return;try{c.doc=await cpPut("/api/forms/"+d.id,{newKey:true});await fmLoad();c.msg="New link made. Copy it again."}catch(e){c.msg=e.message}fmDraw()});
+}
+/* A task made from a form answer (source "form", sourceRef "<form id>:<answer id>"): the answer in the task's detail, and a way back to Forms */
+function formBlock(t){return `<div class="mailbox" id="tFormBlock"><p class="due">📋 Form answer · loading…</p></div>`}
+async function wireForm(t){
+  if(t?.source!=="form")return;
+  const el=$("#tFormBlock"),m=/^([0-9a-f]{12}):(\d+)$/.exec(t.sourceRef||"");
+  if(!el)return;
+  if(!m){el.innerHTML=`<p class="due">📋 Form answer</p>`;return}
+  try{const v=await api("GET",`/api/forms/${m[1]}/answer/${m[2]}`);if(!$("#tFormBlock"))return;
+    el.innerHTML=`<p class="due">📋 ${esc(v.title)} · ${esc(fmDate(v.at))}${v.country?` · ${esc(v.country)}`:""}</p>${v.lines.map(x=>`<div class="fmrow"><span class="k">${esc(x.label)}</span><span>${esc(x.value).replace(/\n/g,"<br>")}</span></div>`).join("")}<div class="row"><button class="btn sm" id="tFormOpen">Open in Forms</button></div>`;
+    $("#tFormOpen").onclick=()=>{$("#modal").innerHTML="";location.hash=`forms/${m[1]}/r/${m[2]}`};
+  }catch(e){if($("#tFormBlock"))el.innerHTML=`<p class="due">📋 Form answer · not on this Mac any more</p>`}
 }
 /* ---------- Campus Letter (#campus): 地球キャンパス通信. desk/campus.py keeps the issues; readers are only on tany.im ---------- */
 const cp=()=>S.cp||(S.cp={data:null,loading:false,cur:null,doc:null,mode:"write",pv:"mail",err:"",saving:false,savedAt:0,dirty:false,tidy:null,busy:"",confirm:null,settings:false,lists:false,msg:""});
@@ -7173,160 +7269,6 @@ function cpPreview(){
 function cpBoxes(){
   const c=cp(),d=c.doc,rd=c.data?.ready||{need:[]},st=c.data?.stats;let h="";
   if(c.msg)h+=`<div class="cpbox"><p>${esc(c.msg)}</p></div>`;
-/* ---------- Bookings (#book): the rules and the list behind tany.im/book. The page runs in the tany.im Worker; desk/book.py carries the rules there and the bookings back ---------- */
-const bkg=()=>S.bkg||(S.bkg={data:null,loading:false,tab:"upcoming",err:"",msg:"",busy:"",rules:null,cals:null,paint:null,newLink:{note:"",expires:"",windows:[]},made:null,poll:null});
-const bkgPost=(path,body)=>fetch(path,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body||{})}).then(async r=>{let v={};try{v=await r.json()}catch(e){}if(!r.ok)throw new Error(v.error||("Error "+r.status));return v});
-const bkgPut=(path,body)=>fetch(path,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify(body||{})}).then(async r=>{let v={};try{v=await r.json()}catch(e){}if(!r.ok)throw new Error(v.error||("Error "+r.status));return v});
-const bkgDay=ms=>new Date(ms).toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"});
-const bkgTz=()=>Intl.DateTimeFormat().resolvedOptions().timeZone||"UTC";
-async function bkgLoad(){
-  const b=bkg();b.loading=true;
-  try{b.data=await api("GET","/api/book");b.err="";if(!b.rules||b.rulesAt!==b.data.settings.updatedAt){b.rules=JSON.parse(JSON.stringify(b.data.settings));b.rulesAt=b.data.settings.updatedAt}}catch(e){b.err="Could not load. Restarting the server may help"}
-  b.loading=false;if(viewId()==="book")bkgDraw();
-}
-function bkgStatus(){
-  const b=bkg(),d=b.data,g=d.google||{};let h="";
-  if(!d.connected)h+=`<p class="bkgstat warn">Not connected to tany.im yet. In Terminal: <code>bash desk/book_setup.sh</code>, then deploy the site. Rules you save here wait on this Mac.</p>`;
-  else if(d.error)h+=`<p class="bkgstat warn">${esc(d.error)}</p>`;
-  if(d.connected&&!d.error){
-    if(d.auth?.running)h+=`<p class="bkgstat">Google opened in your browser. Allow the calendar permission there; this page updates by itself.</p>`;
-    else if(!g.connected)h+=`<div class="row"><span class="bkgstat warn">Google Calendar is not connected, so tany.im/book is paused.</span><button class="btn sm primary" id="bkgGoogle">Connect Google Calendar</button></div>`;
-    else if(g.ok===false)h+=`<div class="row"><span class="bkgstat warn">Google Calendar stopped answering (${esc(g.error||"")}). Guests see "Please contact directly."</span><button class="btn sm" id="bkgGoogle">Connect again</button></div>`;
-    else h+=`<p class="bkgstat">Google Calendar connected${d.mail===false?" · <b>confirmation emails are off</b> (RESEND_KEY or BOOK_FROM is missing on tany.im)":""}${d.lastPull?` · checked ${ago(d.lastPull)}`:""}</p>`;
-    if(d.auth?.error&&!d.auth.running)h+=`<p class="bkgstat warn">${esc(d.auth.error)}</p>`;
-  }
-  return h;
-}
-function bkgBooking(x,past){
-  const s=bkg().data.settings,st=x.status==="booked"?(past?"Done":""):x.status==="cancelled"?"Cancelled":x.status==="moved"?"Moved":x.status;
-  return `<div class="bkgrow"><div class="bkgwhen"><b>${esc(bkgDay(x.start))}</b><span>${esc(fmtTime(x.start))}–${esc(fmtTime(x.end))} · ${x.dur} min</span>${st?`<span>${st}</span>`:""}</div>
-    <div class="bkgbody"><b>${esc(x.name)}</b> <span class="sub">${esc(x.purposeName||x.purpose)} · ${esc(x.email)} · ${esc(x.lang)} · ${esc(x.tz)}${x.link_id?" · private link":""}</span>${x.topic?`<p>${esc(x.topic)}</p>`:""}${x.note?`<p class="sub">${esc(x.note)}</p>`:""}</div>
-    <div class="bkgacts">${x.meet&&x.status==="booked"&&!past?`<a class="btn sm" href="${esc(x.meet)}" target="_blank" rel="noopener">Meet ↗</a>`:""}${x.status==="booked"&&!past?`<button class="btn sm" data-bkgcancel="${esc(x.id)}">Cancel</button>`:""}</div></div>`;
-}
-function bkgGrid(){
-  const r=bkg().rules,on=new Set();
-  for(let d=0;d<7;d++)for(const [a,z] of (r.hours[String(d)]||r.hours[d]||[])){const f=bkgMin(a),t=bkgMin(z);for(let m=f;m<(t<=f?t+1440:t);m+=30)on.add(`${m>=1440?(d+1)%7:d}|${m%1440}`)}
-  const days=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"],order=[1,2,3,4,5,6,0];
-  let h=`<div class="bkgrid" id="bkgGrid" aria-label="Weekly hours: drag to paint"><div class="h"></div>${days.map(x=>`<div class="h">${x}</div>`).join("")}`;
-  for(let m=0;m<1440;m+=30){h+=`<div class="t">${m%120===0?bkgHm(m):""}</div>`;for(const d of order)h+=`<div class="c ${on.has(`${d}|${m}`)?"on":""}" data-bkgcell="${d}|${m}" title="${days[order.indexOf(d)]} ${bkgHm(m)}"></div>`}
-  return h+"</div>";
-}
-const bkgMin=s=>{const [h,m]=String(s).split(":").map(Number);return h*60+m};
-const bkgHm=m=>`${String(Math.floor(m/60)).padStart(2,"0")}:${String(m%60).padStart(2,"0")}`;
-function bkgCellsToHours(){
-  const cells=[...document.querySelectorAll("[data-bkgcell].on")].map(el=>el.dataset.bkgcell.split("|").map(Number)),hours={};
-  for(let d=0;d<7;d++){const ms=cells.filter(c=>c[0]===d).map(c=>c[1]).sort((a,b)=>a-b),out=[];let s=null,prev=null;
-    for(const m of ms){if(s===null){s=m}else if(m!==prev+30){out.push([bkgHm(s),bkgHm(prev+30)]);s=m}prev=m}
-    if(s!==null)out.push([bkgHm(s),prev+30>=1440?"00:00":bkgHm(prev+30)]);hours[String(d)]=out.slice(0,4)}
-  bkg().rules.hours=hours;
-}
-function bkgRules(){
-  const b=bkg(),r=b.rules,d=b.data,zones=(()=>{let z=[];try{z=Intl.supportedValuesOf("timeZone")}catch(e){z=["Asia/Tokyo","Asia/Ho_Chi_Minh","UTC"]}for(const x of [r.tz,bkgTz()])if(!z.includes(x))z.unshift(x);return z})(); // Chrome lists older names (Asia/Saigon), so the saved one is added when missing
-  const num=(k,label,min,max,step)=>`<label>${label}<input class="wd-field bkgedit" type="number" min="${min}" max="${max}" step="${step||1}" value="${r[k]}" data-bkgn="${k}"></label>`;
-  const cals=b.cals;
-  return `<div class="bkgform bkgedit">
-    <div class="row"><label style="flex:1">Your time zone (the hours below are in it)<select class="wd-field" data-bkgs="tz">${zones.map(z=>`<option value="${esc(z)}" ${z===r.tz?"selected":""}>${esc(z.replace(/_/g," "))}</option>`).join("")}</select></label>${r.tz!==bkgTz()?`<button class="btn sm" id="bkgMacTz" style="align-self:end">Use this Mac's (${esc(bkgTz().split("/").pop().replace(/_/g," "))})</button>`:""}</div>
-    <p class="sub" style="margin:0">Weekly hours guests can book. Drag over the grid to open or close half hours.</p>${bkgGrid()}
-    <div class="row">${num("buffer","Gap before and after (min)",0,120,5)}${num("daysAhead","Days ahead",1,90)}${num("noticeHours","Hours of notice",0,240)}${num("maxPerDay","Bookings per day, at most",1,20)}<label>Slot step<select class="wd-field" data-bkgs="step">${[15,30,60].map(x=>`<option ${r.step===x?"selected":""}>${x}</option>`).join("")}</select></label></div>
-    <h3>Purposes <span class="sub">name in each language, and the length</span></h3>
-    <div class="bkgpurp bkghead"><span>English</span><span>日本語</span><span>Tiếng Việt</span><span>Русский</span><span class="sub">id</span><span>min</span><span></span></div>
-    ${r.purposes.map((p,i)=>`<div class="bkgpurp" data-bkgp="${i}">${["en","ja","vi","ru"].map(l=>`<input class="wd-field" value="${esc(p.name[l]||"")}" data-bkgpn="${l}" aria-label="${l} name">`).join("")}<input class="wd-field" value="${esc(p.id)}" data-bkgpid aria-label="id" ${d.settings.purposes.some(x=>x.id===p.id)?"readonly":""}><input class="wd-field" type="number" min="5" max="240" step="5" value="${p.min}" data-bkgpm aria-label="minutes"><button class="btn sm" data-bkgpdel="${i}" ${r.purposes.length<2?"disabled":""}>Remove</button></div>`).join("")}
-    <div class="row"><button class="btn sm" id="bkgPurpAdd" ${r.purposes.length>=8?"disabled":""}>Add a purpose</button></div>
-    <h3>Special days <span class="sub">closed, or only these hours</span></h3>
-    ${Object.entries(r.special).sort().map(([k,v])=>`<div class="bkgspecial" data-bkgsd="${esc(k)}"><input class="wd-field" type="date" value="${esc(k)}" data-bkgsdate><select class="wd-field" data-bkgskind><option value="closed" ${v.length?"":"selected"}>Closed</option><option value="only" ${v.length?"selected":""}>Only these hours</option></select><input class="wd-field" type="time" step="900" value="${esc(v[0]?.[0]||"10:00")}" data-bkgsfrom ${v.length?"":"disabled"}><input class="wd-field" type="time" step="900" value="${esc(v[0]?.[1]||"12:00")}" data-bkgsto ${v.length?"":"disabled"}><button class="btn sm" data-bkgsdel="${esc(k)}">Remove</button></div>`).join("")}
-    <div class="row"><button class="btn sm" id="bkgSpecialAdd">Add a day</button></div>
-    <h3>Calendars</h3>
-    ${cals?`<p class="sub" style="margin:0">Busy times are read from the checked calendars. The booking is written to the chosen one.</p><div class="bkgcals">${cals.map(c=>`<label class="row"><input type="checkbox" data-bkgcheck="${esc(c.id)}" ${r.checkCals.includes(c.id)?"checked":""}> ${esc(c.name)}${c.primary?" <span class=sub>(main)</span>":""}</label>`).join("")}</div><label>Write bookings to<select class="wd-field" data-bkgs="writeCal">${cals.filter(c=>c.writable!==false).map(c=>`<option value="${esc(c.id)}" ${c.id===r.writeCal?"selected":""}>${esc(c.name)}</option>`).join("")}</select></label>`
-      :`<div class="row"><span class="sub">Checking: ${esc(r.checkCals.join(", "))} · writing to: ${esc(r.writeCal)}</span><button class="btn sm" id="bkgCals" ${b.busy==="cals"?"disabled":""}>${b.busy==="cals"?"Loading…":"Choose calendars"}</button></div>`}
-    <h3>Event and email</h3>
-    <div class="row"><label style="flex:1">Your name on the page<input class="wd-field" value="${esc(r.ownerName)}" data-bkgs="ownerName" maxlength="60"></label><label style="flex:1">Event title <span class="sub">{purpose} {name} {owner}</span><input class="wd-field" value="${esc(r.title)}" data-bkgs="title" maxlength="120"></label></div>
-    <div class="row"><label style="flex:1">Reply-to address for confirmation emails<input class="wd-field" type="email" value="${esc(r.replyTo)}" data-bkgs="replyTo" maxlength="200"></label><label style="flex:1">Shown when booking is paused ("Please contact directly")<input class="wd-field" value="${esc(r.contact)}" data-bkgs="contact" maxlength="200" placeholder="an email address or a link"></label></div>
-    <label class="row" style="color:var(--ink)"><input type="checkbox" data-bkgb="meet" ${r.meet?"checked":""}> Add a Google Meet link to every booking</label>
-    <div class="row"><button class="btn primary" id="bkgSave" ${b.busy==="save"?"disabled":""}>${b.busy==="save"?"Saving…":"Save rules"}</button><span class="sub">Saved rules reach tany.im/book within a minute.</span></div>
-  </div>`;
-}
-function bkgLinks(){
-  const b=bkg(),d=b.data,n=b.newLink,live=d.links.filter(l=>!l.off),off=d.links.filter(l=>l.off);
-  const win=w=>`${bkgDay(w.s)} ${fmtTime(w.s)}–${fmtTime(w.e)}`;
-  const row=l=>`<div class="bkgrow"><div class="bkgwhen"><b>${esc(l.note||"Private link")}</b><span>made ${ago(l.created||0)}${l.expires?` · until ${bkgDay(l.expires)}`:""}${l.used?` · used ${l.used}×`:""}</span></div>
-    <div class="bkgbody">${(l.windows||[]).length?`<p>${l.windows.map(win).map(esc).join("<br>")}</p>`:`<p class="sub">Same hours as the public page</p>`}${l.url?`<p class="sub">${esc(l.url)}</p>`:l.off?"":`<p class="sub">The link itself was shown once, when it was made.</p>`}</div>
-    <div class="bkgacts">${l.url&&!l.off?`<button class="btn sm" data-bkgcopy="${esc(l.url)}">Copy link</button>`:""}${l.off?"":`<button class="btn sm" data-bkglinkoff="${esc(l.id)}">Turn off</button>`}</div></div>`;
-  return `<div class="bkgform bkgedit">
-    ${b.made?`<div class="cpbox"><h3>Link made</h3><p>${esc(b.made.url)}</p><div class="row"><button class="btn primary" data-bkgcopy="${esc(b.made.url)}">Copy link</button><button class="btn" id="bkgMadeOk">Done</button></div></div>`:""}
-    <h3>New private link</h3>
-    <div class="row"><label style="flex:1">For whom / note (shown to them)<input class="wd-field" value="${esc(n.note)}" data-bkgnl="note" maxlength="120"></label><label>Works until<input class="wd-field" type="date" value="${esc(n.expires)}" data-bkgnl="expires"></label></div>
-    <p class="sub" style="margin:0">Extra times only this person can book (this Mac's time). Leave empty for the public hours only.</p>
-    ${n.windows.map((w,i)=>`<div class="bkgspecial" data-bkgnw="${i}"><input class="wd-field" type="date" value="${esc(w.date)}" data-bkgnwd><input class="wd-field" type="time" step="900" value="${esc(w.from)}" data-bkgnwf><input class="wd-field" type="time" step="900" value="${esc(w.to)}" data-bkgnwt><span></span><button class="btn sm" data-bkgnwdel="${i}">Remove</button></div>`).join("")}
-    <div class="row"><button class="btn sm" id="bkgWinAdd">Add a time</button><button class="btn primary" id="bkgLinkMake" ${b.busy==="link"?"disabled":""}>${b.busy==="link"?"Making…":"Make the link"}</button></div>
-    <h3>Links</h3>${live.map(row).join("")||`<p class="sub">No private links yet.</p>`}
-    ${off.length?`<h3>Turned off</h3>${off.map(row).join("")}`:""}
-  </div>`;
-}
-function bkgView(){
-  const b=bkg();
-  if(!b.data)return `<div class="bk" id="bkgView"><h1>Bookings</h1><p class="sub">${b.err?esc(b.err):"Loading…"}</p></div>`;
-  const d=b.data,now=Date.now(),up=d.bookings.filter(x=>x.status==="booked"&&x.end>now).sort((a,c)=>a.start-c.start),past=d.bookings.filter(x=>!(x.status==="booked"&&x.end>now)).sort((a,c)=>c.start-a.start);
-  const tabs=[["upcoming",`Upcoming (${up.length})`],["rules","Rules"],["links",`Private links (${d.links.filter(l=>!l.off).length})`],["past",`Past (${past.length})`]];
-  return `<div class="bk" id="bkgView" data-noauto>
-    <header class="head"><div><h1>Bookings</h1><p class="sub">tany.im/book · guests pick a time; it lands in Google Calendar with a Meet link and they get a confirmation email.</p></div></header>
-    <div class="bkgbar"><button class="btn primary" data-bkgcopy="${esc(d.shareUrl)}">Share link</button><button class="btn" id="bkgTimes" ${b.busy==="times"?"disabled":""}>${b.busy==="times"?"Reading…":"Copy open times"}</button><a class="btn" href="${esc(d.shareUrl)}" target="_blank" rel="noopener">Open the page ↗</a><button class="btn" id="bkgRefresh" ${b.busy==="refresh"?"disabled":""}>Refresh</button></div>
-    ${bkgStatus()}${b.msg?`<p class="bkgstat">${esc(b.msg)}</p>`:""}
-    <div class="mtabs" role="tablist">${tabs.map(([k,l])=>`<button role="tab" class="mtab" data-bkgtab="${k}" aria-selected="${b.tab===k}">${l}</button>`).join("")}</div>
-    ${b.tab==="upcoming"?(up.length?`<section class="card">${up.map(x=>bkgBooking(x,false)).join("")}</section>`:`<section class="card"><div class="empty">No bookings ahead. Share the link.</div></section>`)
-     :b.tab==="past"?(past.length?`<section class="card">${past.map(x=>bkgBooking(x,true)).join("")}</section>`:`<section class="card"><div class="empty">Nothing yet.</div></section>`)
-     :b.tab==="rules"?bkgRules():bkgLinks()}
-  </div>`;
-}
-function bkgDraw(){$("#view").innerHTML=searchResults()+bkgView();wire();wireBkg()}
-function bkgReadRules(){
-  const r=bkg().rules,root=$("#bkgView");if(!root||bkg().tab!=="rules")return r;
-  root.querySelectorAll("[data-bkgs]").forEach(el=>r[el.dataset.bkgs]=el.tagName==="SELECT"&&el.dataset.bkgs==="step"?+el.value:el.value);
-  root.querySelectorAll("[data-bkgn]").forEach(el=>r[el.dataset.bkgn]=+el.value);
-  root.querySelectorAll("[data-bkgb]").forEach(el=>r[el.dataset.bkgb]=el.checked);
-  r.purposes=[...root.querySelectorAll("[data-bkgp]")].map(row=>({id:row.querySelector("[data-bkgpid]").value.trim().replace(/[^\w-]/g,"").slice(0,24)||("p"+Date.now().toString(36)),min:+row.querySelector("[data-bkgpm]").value||30,name:Object.fromEntries([...row.querySelectorAll("[data-bkgpn]")].map(i=>[i.dataset.bkgpn,i.value.trim()]))}));
-  const sp={};root.querySelectorAll("[data-bkgsd]").forEach(row=>{const k=row.querySelector("[data-bkgsdate]").value;if(!k)return;sp[k]=row.querySelector("[data-bkgskind]").value==="only"?[[row.querySelector("[data-bkgsfrom]").value||"10:00",row.querySelector("[data-bkgsto]").value||"12:00"]]:[]});r.special=sp;
-  const checks=[...root.querySelectorAll("[data-bkgcheck]")];if(checks.length)r.checkCals=checks.filter(c=>c.checked).map(c=>c.dataset.bkgcheck);
-  bkgCellsToHours();
-  return r;
-}
-function bkgReadLink(){const n=bkg().newLink,root=$("#bkgView");if(!root)return;root.querySelectorAll("[data-bkgnl]").forEach(el=>n[el.dataset.bkgnl]=el.value);n.windows=[...root.querySelectorAll("[data-bkgnw]")].map(row=>({date:row.querySelector("[data-bkgnwd]").value,from:row.querySelector("[data-bkgnwf]").value,to:row.querySelector("[data-bkgnwt]").value}))}
-async function bkgCopy(text){try{await navigator.clipboard.writeText(text);toast("Copied")}catch(e){toast("Could not copy")}}
-function wireBkg(){
-  const b=bkg(),d=b.data;if(!d)return;
-  document.querySelectorAll("[data-bkgtab]").forEach(x=>x.onclick=()=>{bkgReadRules();bkgReadLink();b.tab=x.dataset.bkgtab;b.msg="";bkgDraw()});
-  document.querySelectorAll("[data-bkgcopy]").forEach(x=>x.onclick=()=>bkgCopy(x.dataset.bkgcopy));
-  $("#bkgRefresh")&&($("#bkgRefresh").onclick=async()=>{b.busy="refresh";bkgDraw();try{b.data=await bkgPost("/api/book/refresh");b.rules=JSON.parse(JSON.stringify(b.data.settings));b.rulesAt=b.data.settings.updatedAt;b.msg=""}catch(e){b.msg=e.message}b.busy="";bkgDraw()});
-  $("#bkgTimes")&&($("#bkgTimes").onclick=async()=>{b.busy="times";bkgDraw();try{const v=await api("GET","/api/book/times?days=7");if(v.error)throw new Error(v.error);await bkgCopy(v.text);b.msg=`Open times for the next ${v.days} days copied (${v.tz}).`}catch(e){b.msg=e.message}b.busy="";bkgDraw()});
-  $("#bkgGoogle")&&($("#bkgGoogle").onclick=async()=>{try{await bkgPost("/api/book/google");b.msg="";clearInterval(b.poll);b.poll=setInterval(async()=>{await bkgLoad();if(!bkg().data?.auth?.running){clearInterval(bkg().poll);bkg().poll=null}},3000);await bkgLoad()}catch(e){b.msg=e.message;bkgDraw()}});
-  document.querySelectorAll("[data-bkgcancel]").forEach(x=>x.onclick=async()=>{const bo=d.bookings.find(y=>y.id===x.dataset.bkgcancel);if(!await askYes(`Cancel ${bo?bo.name+"'s":"this"} booking on ${bo?bkgDay(bo.start)+" "+fmtTime(bo.start):""}? They get a cancellation email and the time opens again.`))return;try{b.data=await bkgPost(`/api/book/${encodeURIComponent(x.dataset.bkgcancel)}/cancel`);b.msg="Cancelled."}catch(e){b.msg=e.message}bkgDraw()});
-  // rules
-  $("#bkgMacTz")&&($("#bkgMacTz").onclick=()=>{bkgReadRules();b.rules.tz=bkgTz();bkgDraw()});
-  $("#bkgPurpAdd")&&($("#bkgPurpAdd").onclick=()=>{bkgReadRules();b.rules.purposes.push({id:"p"+Date.now().toString(36).slice(-5),min:30,name:{en:"",ja:"",vi:"",ru:""}});bkgDraw()});
-  document.querySelectorAll("[data-bkgpdel]").forEach(x=>x.onclick=()=>{bkgReadRules();b.rules.purposes.splice(+x.dataset.bkgpdel,1);bkgDraw()});
-  $("#bkgSpecialAdd")&&($("#bkgSpecialAdd").onclick=()=>{bkgReadRules();const k=new Date(Date.now()+864e5).toISOString().slice(0,10);if(!b.rules.special[k])b.rules.special[k]=[];bkgDraw()});
-  document.querySelectorAll("[data-bkgsdel]").forEach(x=>x.onclick=()=>{bkgReadRules();delete b.rules.special[x.dataset.bkgsdel];bkgDraw()});
-  document.querySelectorAll("[data-bkgskind]").forEach(x=>x.onchange=()=>{const row=x.closest("[data-bkgsd]"),only=x.value==="only";row.querySelector("[data-bkgsfrom]").disabled=!only;row.querySelector("[data-bkgsto]").disabled=!only});
-  $("#bkgCals")&&($("#bkgCals").onclick=async()=>{bkgReadRules();b.busy="cals";bkgDraw();try{const v=await api("GET","/api/book/calendars");if(v.error)throw new Error(v.error);b.cals=v.calendars||[]}catch(e){b.msg=e.message}b.busy="";bkgDraw()});
-  $("#bkgSave")&&($("#bkgSave").onclick=async()=>{const r=bkgReadRules();b.busy="save";bkgDraw();try{const v=await bkgPut("/api/book/settings",r);b.data=v;b.rules=JSON.parse(JSON.stringify(v.settings));b.rulesAt=v.settings.updatedAt;b.msg=v.warning||"Rules saved."}catch(e){b.msg=e.message}b.busy="";bkgDraw()});
-  const grid=$("#bkgGrid");
-  if(grid){const set=(el,on)=>{if(el&&el.dataset.bkgcell)el.classList.toggle("on",on)};
-    grid.onpointerdown=e=>{const el=e.target.closest("[data-bkgcell]");if(!el)return;e.preventDefault();b.paint=!el.classList.contains("on");set(el,b.paint);grid.setPointerCapture?.(e.pointerId)};
-    grid.onpointermove=e=>{if(b.paint===null||b.paint===undefined)return;const el=document.elementFromPoint(e.clientX,e.clientY)?.closest?.("[data-bkgcell]");set(el,b.paint)};
-    grid.onpointerup=grid.onpointercancel=()=>{if(b.paint!==null&&b.paint!==undefined){b.paint=null;bkgCellsToHours()}};}
-  // private links
-  $("#bkgWinAdd")&&($("#bkgWinAdd").onclick=()=>{bkgReadLink();b.newLink.windows.push({date:new Date(Date.now()+864e5).toISOString().slice(0,10),from:"19:00",to:"21:00"});bkgDraw()});
-  document.querySelectorAll("[data-bkgnwdel]").forEach(x=>x.onclick=()=>{bkgReadLink();b.newLink.windows.splice(+x.dataset.bkgnwdel,1);bkgDraw()});
-  $("#bkgMadeOk")&&($("#bkgMadeOk").onclick=()=>{b.made=null;bkgDraw()});
-  $("#bkgLinkMake")&&($("#bkgLinkMake").onclick=async()=>{bkgReadLink();const n=b.newLink,windows=n.windows.map(w=>{const s=new Date(`${w.date}T${w.from||"00:00"}`),e=new Date(`${w.date}T${w.to||"23:59"}`);return {s:s.getTime(),e:e.getTime()}}).filter(w=>w.e>w.s);
-    if(n.windows.length&&!windows.length){b.msg="Each extra time needs a date, a start and an end.";bkgDraw();return}
-    const expires=n.expires?new Date(`${n.expires}T23:59:59`).getTime():null;b.busy="link";bkgDraw();
-    try{b.made=await bkgPost("/api/book/links",{note:n.note,expires,windows});b.newLink={note:"",expires:"",windows:[]};b.msg="";await bkgLoad()}catch(e){b.msg=e.message}b.busy="";bkgDraw()});
-  document.querySelectorAll("[data-bkglinkoff]").forEach(x=>x.onclick=async()=>{if(!await askYes("Turn this private link off? The page it opens stops working."))return;try{b.data=await bkgPost(`/api/book/links/${encodeURIComponent(x.dataset.bkglinkoff)}/off`)}catch(e){b.msg=e.message}bkgDraw()});
-}
-const bkgHomeLine=()=>{const h=S.bkgHome;if(!LOCALAPI||!h)return "";if(h.problem)return `<a class="sub pcline" id="bkgLine" href="#book">${esc(h.problem)}</a>`;
-  return h.next?`<a class="sub pcline" id="bkgLine" href="#book">Next booking: ${esc(bkgDay(h.next.start))} ${esc(fmtTime(h.next.start))} · ${esc(h.next.name||"")} · ${esc(h.next.purpose||"")}${h.count>1?` · ${h.count-1} more`:""}</a>`:""};
-async function bkgHomeLoad(){if(!LOCALAPI)return;try{S.bkgHome=await api("GET","/api/book/home");const el=$("#bkgLine");if(el){const t=document.createElement("div");t.innerHTML=bkgHomeLine();el.textContent=t.firstChild?t.firstChild.textContent:""}else if(viewId()==="home"&&(S.bkgHome.problem||S.bkgHome.next))render()}catch(e){}}
-if(LOCALAPI){bkgHomeLoad();setInterval(()=>{if(viewId()==="home"&&!document.hidden)bkgHomeLoad()},5*60000)}
   if(c.settings){const s=c.data?.settings||{};
     h+=`<div class="cpbox" id="cpSettings"><h3>Settings</h3><p>Every email shows the sender's name, postal address and a contact address (Japan's law on commercial email). These stay on this Mac.</p>
       <label>Sender name<input id="cpsName" value="${esc(s.fromName||"")}" maxlength="200"></label>
@@ -8686,7 +8628,8 @@ function wireLifemap(){
 }
 if(LOCALAPI)loadLifemap();
 function wire(){
-  wireFocus();wireXl();
+  wireFocus();
+  document.querySelectorAll("[data-tdcards]").forEach(b=>b.onclick=()=>openReview());wireXl();
   document.querySelectorAll("[data-pal]").forEach(b=>b.onclick=()=>palRun(+b.dataset.pal));
   document.querySelectorAll("#view [data-cc]").forEach(b=>b.onclick=()=>openCC(b.dataset.cc));
   document.querySelectorAll("[data-hit]").forEach(b=>b.onclick=()=>{const [,i]=b.dataset.hit.split(":");const h=runSearch(S.q).hits[+i];if(h)goHit(h)});
@@ -8969,6 +8912,7 @@ const FDESC={ // what each screen is for, in plain words (English and Japanese k
   money:"Wise payments: overview, charts, budget, trips, savings, advice, receipts, subscriptions お金 家計 予算",
   site:"tany.im company site visitors, inquiries, search, SEO, heat map アクセス解析 サイト 計測",
   screentime:"time spent in apps and sites スクリーンタイム",pc:"running apps, memory and CPU, close apps PC メモリ",
+  reader:"read a book or pasted text with read-aloud, tap a word for its meaning and make it a card 読む 本 リーダー 読み上げ 洋書 epub",cards:"flashcards with spaced repetition, review due words, decks by language and book 暗記 単語 カード 復習 Anki",
   netspeed:"measure internet speed 回線 速度 Wi-Fi",wifi:"QR code to join this Wi-Fi, share the Wi-Fi password with a guest 共有 接続 パスワード QR",webhistory:"Chrome history, search terms, time on sites Web履歴",
   log:"Claude's daily work report Claude Log 日報",timelog:"time tracking 時間",tools:"all tools as cards ツール",
   lifeos:"Life OS small tools ライフOS",gear:"belongings list, export 持ち物",usage:"which parts of Desk you use 使い方",
@@ -9085,6 +9029,8 @@ function palItems(){
     {e:"🎯",name:"Review OKRs",kw:"おーけーあーる okr key results review 見直し",run:()=>openOkrReview()},
     {e:"❓",name:"Answer open questions",kw:"しつもん こたえる question",run:()=>openQuestions()},
     {e:"🌱",name:"Add a habit",kw:"しゅうかん habit",run:()=>newHabit()},
+    {e:"🃏",name:"Review cards",kw:"ふくしゅう たんご あんき cards review flashcards 暗記 単語",run:()=>openReview()},
+    {e:"📖",name:"Add a book to the Reader",kw:"ほん よむ book reader 読む",run:()=>rdAddPrompt()},
     {e:"📒",name:"New note",kw:"のーと note",run:()=>newNotePrompt()},
     ...(LOCALAPI?[{e:"📋",name:"New form (tany.im)",kw:"ふぉーむ form アンケート survey google forms",run:async()=>{try{const v=await cpPost("/api/forms",{});location.hash="forms/"+v.id}catch(e){toast("Could not start a form")}}}]:[]),
   ].map(x=>({...x,g:"Desk actions"}));
@@ -9129,6 +9075,454 @@ document.addEventListener("keydown",e=>{const t=e.target.tagName;if(t==="INPUT"|
   if(e.key==="g"||e.key==="G"){if(e.metaKey||e.ctrlKey)return;e.preventDefault();openStuck()}
   if(e.key==="/"){e.preventDefault();$("#q").focus()}
   if(e.key==="Escape"&&S.fromToday&&viewId()!=="home"&&!$("#modal").firstChild){e.preventDefault();location.hash="home"}});
+/* ---------- 📖 Desk Reader (#reader, #reader/<id>) and 🃏 Cards (#cards, #cards/review). Requirements: https://claude.ai/artifact/Fwbbr8qiQ3wJnud21NPuJb
+   Books live on this Mac only (desk/reader.py, desk/data/reader/books/). Cards are the collection "cards", review records "cardlog"
+   (one doc a day). Scheduling is FSRS-4.5, the same code as in the phone app (cards/public/index.html). Reading aloud uses the
+   browser's voices and falls back to the Mac's `say` through the server. A tapped word and its one sentence go to Claude for the
+   meaning; the book's text never leaves the Mac. Nothing here blames: a pile of due cards only shows "Do 20 today". ---------- */
+S.cards=[];S.cardlog=[];
+S.rd={books:null,book:null,ch:0,playing:false,si:-1,rate:1,voice:null,word:null,at:0,busy:false,mac:null,font:1};
+S.cd={q:"",deck:"all",tab:"active",rev:null};
+try{S.rd.font=+localStorage.getItem("desk-rd-font")||1;S.rd.rate=+localStorage.getItem("desk-rd-rate")||1}catch(e){}
+const RD_LANGS={en:"English",ja:"Japanese",ru:"Russian",es:"Spanish",fr:"French",de:"German",vi:"Vietnamese",zh:"Chinese",ko:"Korean",it:"Italian",pt:"Portuguese"};
+const RD_RATES=[0.7,0.85,1,1.15,1.3];
+const rdNorm=s=>String(s||"").replace(/’/g,"'").trim().replace(/^[\s"'“”‘(\[«]+|[\s"'“”’)\].,;:!?»]+$/g,"").toLowerCase();
+const rdSpaced=lang=>!["ja","zh","th"].includes(lang);
+const cdLive=()=>S.cards.filter(c=>!c.deleted&&(c.status||"active")==="active");
+const cdDay=(ms=Date.now())=>new Date(ms+HCMC).toISOString().slice(0,10);
+const cdDayDoc=()=>S.cardlog.find(d=>d.id===cdDay())||{id:cdDay(),entries:[]};
+const CD_NEW_PER_DAY=20, CD_PILE=50;
+
+/* ---------- FSRS-4.5 (default weights). Again / Hard / Good / Easy = 1..4. New and relearning cards use short steps (10 and 30 minutes). ---------- */
+const FSRS_W="0.4872 1.4003 3.7145 13.8206 5.1618 1.2298 0.8975 0.0010 1.5674 0.1567 0.9661 2.0275 0.1255 0.2863 2.3062 0.2135 3.0531".split(" ").map(Number);
+const FS_RETENTION=0.9, FS_DECAY=-0.5, FS_FACTOR=19/81, FS_MIN=10*60e3, FS_STEP=30*60e3;
+const fsState=f=>(f&&f.state)||((f&&f.reps)?"review":"new");
+const fsIvl=S=>Math.max(1,Math.round(S/FS_FACTOR*(Math.pow(FS_RETENTION,1/FS_DECAY)-1)));
+function fsNext(f,g,now=Date.now()){
+  const w=FSRS_W, clamp=(x,a,b)=>Math.min(b,Math.max(a,x)), d0=r=>clamp(w[4]-Math.exp(w[5]*(r-1))+1,1,10);
+  f=f||{}; const st=fsState(f); let S=+f.stability||0, D=+f.difficulty||0;
+  const out={...f,reps:(f.reps||0)+1,lapses:f.lapses||0,last:now};
+  const review=(S2)=>{out.state="review";out.stability=S2;out.due=now+fsIvl(S2)*DAY};
+  if(st==="new"){S=w[g-1];D=d0(g);out.difficulty=D;out.stability=S;
+    if(g===1){out.state="learning";out.due=now+FS_MIN}else if(g===2){out.state="learning";out.due=now+FS_STEP}else review(S);
+    return out}
+  if(!D)D=d0(3); if(!S)S=w[2];
+  if(st==="learning"||st==="relearning"){out.difficulty=D;out.stability=S;
+    if(g===1){out.state=st;out.due=now+FS_MIN}else if(g===2){out.state=st;out.due=now+FS_STEP}else review(g===4?Math.max(S,w[3]):S);
+    return out}
+  const t=f.last?Math.max(0,(now-f.last)/DAY):0, R=Math.pow(1+FS_FACTOR*t/S,FS_DECAY);
+  let D2=D-w[6]*(g-3); D2=clamp(w[7]*d0(4)+(1-w[7])*D2,1,10); out.difficulty=D2;
+  if(g===1){out.lapses=(f.lapses||0)+1;out.stability=w[11]*Math.pow(D2,-w[12])*(Math.pow(S+1,w[13])-1)*Math.exp(w[14]*(1-R));out.state="relearning";out.due=now+FS_MIN;return out}
+  const S2=S*(Math.exp(w[8])*(11-D2)*Math.pow(S,-w[9])*(Math.exp(w[10]*(1-R))-1)*(g===2?w[15]:1)*(g===4?w[16]:1)+1);
+  review(S2);return out;
+}
+const fsWhen=(ms,now=Date.now())=>{const d=ms-now;if(d<50*60e3)return Math.max(1,Math.round(d/60e3))+"m";if(d<36*HOUR)return Math.max(1,Math.round(d/HOUR))+"h";const days=Math.round(d/DAY);if(days<30)return days+"d";if(days<365)return Math.round(days/30)+"mo";return (days/365).toFixed(1)+"y"};
+
+/* ---------- loading and saving ---------- */
+async function cdLoad(){if(!LOCALAPI)return;try{const [c,l]=await Promise.all([api("GET","/api/cards"),api("GET","/api/cardlog")]);S.cards=c.filter(x=>x&&x.id);S.cardlog=l.filter(x=>x&&x.id)}catch(e){}}
+async function cdPut(card){
+  card={...card,updatedAt:Date.now()};S.cards=[...S.cards.filter(x=>x.id!==card.id),card];
+  if(!LOCALAPI){toast("Open the Desk app to save cards");return card}
+  try{await api("PUT","/api/cards/"+encodeURIComponent(card.id),card)}catch(e){toast("Couldn't save the card. Try again in a moment.")}
+  return card;
+}
+async function cdLog(entry){
+  const d={...cdDayDoc()};d.entries=[...(d.entries||[]),entry];d.updatedAt=Date.now();
+  S.cardlog=[...S.cardlog.filter(x=>x.id!==d.id),d];
+  if(LOCALAPI)try{await api("PUT","/api/cardlog/"+encodeURIComponent(d.id),d)}catch(e){}
+}
+async function cdUnlog(entry){
+  const d={...cdDayDoc()};d.entries=(d.entries||[]).filter(e=>!(e.c===entry.c&&e.at===entry.at));d.updatedAt=Date.now();
+  S.cardlog=[...S.cardlog.filter(x=>x.id!==d.id),d];
+  if(LOCALAPI)try{await api("PUT","/api/cardlog/"+encodeURIComponent(d.id),d)}catch(e){}
+}
+/* what is waiting: due cards, then new ones up to the day's limit */
+function cdDue(deck="all",now=Date.now()){
+  const live=cdLive().filter(c=>cdInDeck(c,deck));
+  const due=live.filter(c=>fsState(c.fsrs)!=="new"&&(c.fsrs?.due||0)<=now).sort((a,b)=>(a.fsrs?.due||0)-(b.fsrs?.due||0));
+  const newToday=(cdDayDoc().entries||[]).filter(e=>e.n).length;
+  const fresh=live.filter(c=>fsState(c.fsrs)==="new").sort((a,b)=>(b.lookups||0)-(a.lookups||0)||(a.createdAt||0)-(b.createdAt||0)).slice(0,Math.max(0,CD_NEW_PER_DAY-newToday));
+  return {due,fresh,newToday,total:live.length,reviewed:(cdDayDoc().entries||[]).length,suggested:S.cards.filter(c=>!c.deleted&&c.status==="suggested").length};
+}
+const cdCount=()=>{const d=cdDue();return d.due.length+d.fresh.length};
+function cdDecks(){
+  const out=[{id:"all",label:"All"}], langs=new Set(), books=new Map();
+  cdLive().forEach(c=>{langs.add(c.lang||"en");if(c.book?.id)books.set(c.book.id,c.book.title||"Book")});
+  [...langs].sort().forEach(l=>out.push({id:"lang:"+l,label:RD_LANGS[l]||l}));
+  [...books].forEach(([id,t])=>out.push({id:"book:"+id,label:t}));
+  if(S.cards.some(c=>c.source?.kind==="translate"&&!c.deleted))out.push({id:"src:translate",label:"Translate"});
+  return out;
+}
+const cdInDeck=(c,deck)=>deck==="all"||(deck.startsWith("lang:")&&(c.lang||"en")===deck.slice(5))||(deck.startsWith("book:")&&c.book?.id===deck.slice(5))||(deck==="src:translate"&&c.source?.kind==="translate");
+const cdMeaning=c=>{const m=c.meaning||{};return [m.ja,m.en].filter(Boolean)};
+const cdPending=c=>!(c.enrich?.state==="ok"||(!c.enrich&&cdMeaning(c).length));
+/* the one sentence with the word made a blank */
+function cdCloze(c){
+  const ctx=c.context||"";if(!ctx)return "";
+  const terms=[c.term,c.lemma].filter(Boolean).map(rdNorm).filter(Boolean).sort((a,b)=>b.length-a.length);
+  let out=esc(ctx);
+  for(const t of terms){const re=new RegExp(t.replace(/[.*+?^${}()|[\]\\]/g,"\\$&").replace(/\s+/g,"\\s+"),"i");if(re.test(ctx)){out=esc(ctx).replace(new RegExp(esc(t).replace(/[.*+?^${}()|[\]\\]/g,"\\$&").replace(/\s+/g,"\\s+"),"i"),'<span class="cdblank">____</span>');break}}
+  return out;
+}
+
+/* ---------- the review screen (#cards/review and the Review button): one card, four answers, keys 1-4, Space to flip, Z to undo ---------- */
+function openReview(o={}){
+  if($("#modal").firstChild)return;
+  const deck=o.deck||S.cd.deck||"all", d=cdDue(deck);
+  let queue=[...d.due,...d.fresh].map(c=>c.id);
+  if(o.limit)queue=queue.slice(0,o.limit);
+  if(!queue.length){toast("Nothing to review right now");if(location.hash==="#cards/review")location.hash="cards";return}
+  const rev={queue,done:0,again:0,flipped:false,hist:[],start:Date.now(),deck,limit:o.limit||0};S.cd.rev=rev;
+  const close=async()=>{document.removeEventListener("keydown",onKey,true);$("#modal").innerHTML="";S.cd.rev=null;if(location.hash==="#cards/review")location.hash="cards";else render()};
+  const cur=()=>findCard(rev.queue[0]);
+  const draw=()=>{
+    const c=cur();
+    if(!c){const n=rev.done;$("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop cdpop" role="dialog" aria-modal="true" aria-label="Review done"><h2>Done for now</h2><p class="mtalk">${n} card${n===1?"":"s"} today${rev.again?` · ${rev.again} to see again`:""}.</p><p class="sub">${cdDue(deck).due.length?"More are waiting whenever you like.":"Nothing else is due today."}</p><div class="row"><button class="btn primary" id="cdClose">Close <kbd>Esc</kbd></button></div></div></div>`;$("#cdClose").onclick=close;$("#cdClose").focus();$("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};return}
+    const now=Date.now(), ivl=[1,2,3,4].map(g=>fsWhen(fsNext(c.fsrs,g,now).due,now)), ms=cdMeaning(c), isNew=fsState(c.fsrs)==="new";
+    $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop cdpop" role="dialog" aria-modal="true" aria-label="Review">
+      <div class="top"><span class="sub">${rev.done+1} of ${rev.done+rev.queue.length}${isNew?" · new":""}${c.lang?" · "+esc(RD_LANGS[c.lang]||c.lang):""}</span><button class="ibtn" id="cdX" aria-label="Close">✕</button></div>
+      <div class="cdcard ${rev.flipped?"flip":""}" id="cdCard" tabindex="0" aria-live="polite">
+        <div class="cdfront"><b class="cdterm" data-noauto>${esc(rev.flipped&&c.lemma&&rdNorm(c.lemma)!==rdNorm(c.term)?`${c.term} → ${c.lemma}`:c.term)}</b>${c.ipa&&rev.flipped?`<span class="sub">/${esc(c.ipa)}/</span>`:""}${c.context?`<p class="cdctx" data-noauto>${rev.flipped?esc(c.context):cdCloze(c)}</p>`:""}</div>
+        ${rev.flipped?`<div class="cdback" data-noauto>${ms.length?ms.map(m=>`<p class="cdmean">${esc(m)}</p>`).join(""):`<p class="sub">${cdPending(c)?"Claude has not filled this card yet":"No meaning written"}</p>`}${c.example?`<p class="sub cdex">${esc(c.example)}</p>`:""}${c.book?.title?`<p class="sub">${esc(c.book.title)}${c.book.chapter?" · "+esc(c.book.chapter):""}</p>`:c.source?.kind==="translate"?`<p class="sub">From Translate · looked up ${c.lookups||1}×</p>`:""}</div>`:""}
+      </div>
+      ${rev.flipped?`<div class="cdans"><button class="btn" data-g="1">Again <small>${ivl[0]}</small><kbd>1</kbd></button><button class="btn" data-g="2">Hard <small>${ivl[1]}</small><kbd>2</kbd></button><button class="btn primary" data-g="3">Good <small>${ivl[2]}</small><kbd>3</kbd></button><button class="btn" data-g="4">Easy <small>${ivl[3]}</small><kbd>4</kbd></button></div>`
+        :`<div class="row"><button class="btn primary" id="cdFlip">Show the answer <kbd>Space</kbd></button><button class="btn" id="cdSpeak" aria-label="Read the word aloud">🔊</button></div>`}
+      <div class="row"><span class="sub">${rev.hist.length?`<button class="btn sm" id="cdUndo">Undo <kbd>Z</kbd></button>`:""}</span><button class="btn sm" id="cdEditBtn">Edit</button></div></div></div>`;
+    $("#cdX").onclick=close;$("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};
+    $("#cdFlip")&&($("#cdFlip").onclick=flip);$("#cdSpeak")&&($("#cdSpeak").onclick=()=>rdSay(c.term,c.lang||"en"));
+    $("#cdCard").onclick=()=>{if(!rev.flipped)flip()};
+    document.querySelectorAll("#modal [data-g]").forEach(b=>b.onclick=()=>answer(+b.dataset.g));
+    $("#cdUndo")&&($("#cdUndo").onclick=undo);$("#cdEditBtn").onclick=()=>{close();cdEdit(c.id)};
+    $("#cdCard").focus();
+  };
+  const flip=()=>{rev.flipped=true;draw()};
+  const answer=async g=>{const c=cur();if(!c||!rev.flipped)return;const now=Date.now(), was={...c,fsrs:{...(c.fsrs||{})}}, f=fsNext(c.fsrs,g,now), entry={c:c.id,r:g,at:now,via:"mac",...(fsState(c.fsrs)==="new"?{n:true}:{})};
+    rev.hist.push({was,entry});rev.queue.shift();rev.done++;rev.flipped=false;
+    if(f.due<=now+HOUR){rev.queue.push(c.id);rev.again++} // see it again before the session ends
+    draw();await cdPut({...c,fsrs:f});await cdLog(entry);cdWin()};
+  const undo=async()=>{const h=rev.hist.pop();if(!h)return;rev.queue=rev.queue.filter(id=>id!==h.was.id);rev.queue.unshift(h.was.id);rev.done=Math.max(0,rev.done-1);if(h.was.fsrs&&fsNext(h.was.fsrs,h.entry.r,h.entry.at).due<=h.entry.at+HOUR)rev.again=Math.max(0,rev.again-1);rev.flipped=false;draw();await cdPut(h.was);await cdUnlog(h.entry)};
+  const onKey=e=>{if(!$("#cdCard")&&!$("#cdClose"))return;const t=e.target.tagName;if(t==="INPUT"||t==="TEXTAREA"||t==="SELECT")return;
+    if(e.key==="Escape"){e.preventDefault();e.stopPropagation();close();return}
+    if($("#cdClose")){if(e.key==="Enter"||e.key===" "){e.preventDefault();e.stopPropagation();close()}return}
+    if(e.key===" "||(e.key==="Enter"&&!rev.flipped)){e.preventDefault();e.stopPropagation();if(!rev.flipped)flip();return}
+    if(/^[1-4]$/.test(e.key)&&rev.flipped){e.preventDefault();e.stopPropagation();answer(+e.key)}
+    if(e.key==="z"||e.key==="Z"){e.preventDefault();e.stopPropagation();undo()}
+    if(e.key==="s"||e.key==="S"){e.preventDefault();e.stopPropagation();const c=cur();if(c)rdSay(c.term,c.lang||"en")}};
+  document.addEventListener("keydown",onKey,true);
+  draw();
+}
+const findCard=id=>S.cards.find(c=>c.id===id&&!c.deleted);
+async function cdWin(){const n=(cdDayDoc().entries||[]).length;if(!n)return;const id=winId("cards-"+cdDay()), had=S.wins.find(w=>w.id===id);if(had&&had.title===`Reviewed ${n} cards`)return;
+  try{await store.putWin({id,kind:"self",title:`Reviewed ${n} card${n===1?"":"s"}`,date:cdDay(),...(had?{quiet:true,createdAt:had.createdAt}:{})})}catch(e){}}
+
+/* ---------- Cards screen ---------- */
+function cardsView(){
+  const d=cdDue(S.cd.deck), n=d.due.length+d.fresh.length, decks=cdDecks(), q=rdNorm(S.cd.q);
+  let list=S.cards.filter(c=>!c.deleted&&cdInDeck(c,S.cd.deck));
+  list=S.cd.tab==="suggested"?list.filter(c=>c.status==="suggested"):S.cd.tab==="pending"?list.filter(c=>cdPending(c)&&c.status!=="suggested"):list.filter(c=>(c.status||"active")==="active");
+  if(q)list=list.filter(c=>[c.term,c.lemma,c.meaning?.ja,c.meaning?.en,c.context].some(v=>rdNorm(v).includes(q)));
+  list.sort((a,b)=>S.cd.tab==="active"?(a.fsrs?.due||0)-(b.fsrs?.due||0):(b.createdAt||0)-(a.createdAt||0));
+  const now=Date.now(), pending=S.cards.filter(c=>!c.deleted&&c.status!=="suggested"&&cdPending(c)).length;
+  const row=c=>{const st=fsState(c.fsrs), due=c.fsrs?.due||0;
+    return `<button class="cdrow" data-cdopen="${esc(c.id)}" data-noauto><span class="cdt"><b>${esc(c.term)}</b>${c.lemma&&rdNorm(c.lemma)!==rdNorm(c.term)?` <span class="sub">→ ${esc(c.lemma)}</span>`:""}${c.ipa?` <span class="sub">/${esc(c.ipa)}/</span>`:""}</span><span class="cdm">${esc(cdMeaning(c).join(" · "))||`<span class="sub">${cdPending(c)?"Meaning coming":"No meaning yet"}</span>`}</span><span class="sub cdd">${c.status==="suggested"?`Looked up ${c.lookups||1}×`:st==="new"?"New":due<=now?"Due":fsWhen(due,now)}</span></button>`};
+  const sugg=c=>`<div class="cdrow cdsg" data-noauto><span class="cdt"><b>${esc(c.term)}</b>${c.lang?` <span class="sub">${esc(RD_LANGS[c.lang]||c.lang)}</span>`:""}</span><span class="cdm">${esc(cdMeaning(c).join(" · ")||c.context||"")}</span><span class="row"><button class="btn sm primary" data-cdaccept="${esc(c.id)}">Add</button><button class="btn sm" data-cddrop="${esc(c.id)}">Not now</button></span></div>`;
+  return `<div class="money cdv" id="cdView"><header class="head"><div><h1>Cards</h1><p class="sub">${d.total} card${d.total===1?"":"s"} · ${d.reviewed} reviewed today${pending?` · ${pending} waiting for a meaning`:""}</p></div>
+      <div class="row"><button class="btn primary" id="cdReview" ${n?"":"disabled"}>Review${n?` ${n}`:""}</button>${d.due.length>=CD_PILE?`<button class="btn" id="cdReview20">Do 20 today</button>`:""}<button class="btn" id="cdAdd">Add a word</button><button class="btn" id="cdPhone">Use on iPhone</button></div></header>
+    <div class="row cdfilters"><input class="wd-field cdq" id="cdQ" type="search" placeholder="Search cards" value="${esc(S.cd.q)}" aria-label="Search cards"><select class="wd-field cdsel" id="cdDeck" aria-label="Deck">${decks.map(x=>`<option value="${esc(x.id)}" ${x.id===S.cd.deck?"selected":""}>${esc(x.label)}</option>`).join("")}</select>
+      <div class="segs" role="tablist">${[["active","Active"],["suggested",`Suggested${d.suggested?` ${d.suggested}`:""}`],["pending",`Needs meaning${pending?` ${pending}`:""}`]].map(([k,l])=>`<button class="chip ${S.cd.tab===k?"on":""}" data-cdtab="${k}" role="tab" aria-selected="${S.cd.tab===k}">${l}</button>`).join("")}</div></div>
+    <section class="card cdlist">${list.length?list.slice(0,300).map(c=>S.cd.tab==="suggested"?sugg(c):row(c)).join(""):`<div class="empty"><b>${S.cd.tab==="suggested"?"No suggestions":S.cd.tab==="pending"?"Every card has its meaning":"No cards yet"}</b>${S.cd.tab==="active"?"Tap a word in the Reader, or press Add a word.":S.cd.tab==="suggested"?"Words looked up twice in Translate appear here.":""}</div>`}${list.length>300?`<p class="sub" style="padding:var(--s2) var(--s3)">Showing 300 of ${list.length}. Search to narrow.</p>`:""}</section>
+    <details class="cdimport"><summary class="sub">Bring in the old sheet or Anki</summary><p class="sub">Export the vocabulary sheet as CSV, or Anki as a text file, then in Terminal:</p><pre class="cdcode">python3 desk/cards.py import-sheet &lt;file.csv&gt; --lang en
+python3 desk/cards.py import-anki &lt;file.txt&gt; --lang en</pre><p class="sub">The same word becomes one card. Counts are printed when it finishes.</p></details></div>`;
+}
+function wireCd(){
+  const on=(id,fn)=>{const el=$(id);if(el)el.onclick=fn};
+  on("#cdReview",()=>openReview({deck:S.cd.deck}));on("#cdReview20",()=>openReview({deck:S.cd.deck,limit:20}));
+  on("#cdAdd",()=>cdAddPrompt());on("#cdPhone",cdPhoneLink);
+  const q=$("#cdQ");if(q){q.oninput=()=>{S.cd.q=q.value;const keep=q.selectionStart;render();const q2=$("#cdQ");if(q2){q2.focus();q2.setSelectionRange(keep,keep)}}}
+  $("#cdDeck")&&($("#cdDeck").onchange=e=>{S.cd.deck=e.target.value;render()});
+  document.querySelectorAll("[data-cdtab]").forEach(b=>b.onclick=()=>{S.cd.tab=b.dataset.cdtab;render()});
+  document.querySelectorAll("[data-cdopen]").forEach(b=>b.onclick=()=>cdEdit(b.dataset.cdopen));
+  document.querySelectorAll("[data-cdaccept]").forEach(b=>b.onclick=async()=>{const c=findCard(b.dataset.cdaccept);if(!c)return;await cdPut({...c,status:"active"});toast("Added to cards");if(cdPending(c))cdEnrich(c.id);render()});
+  document.querySelectorAll("[data-cddrop]").forEach(b=>b.onclick=async()=>{const c=findCard(b.dataset.cddrop);if(!c)return;await cdPut({...c,deleted:true});render()});
+}
+async function cdEnrich(id){if(!LOCALAPI)return;try{const r=await api("POST","/api/cards/enrich",{id});if(r.card){S.cards=[...S.cards.filter(x=>x.id!==r.card.id),r.card];if(viewId()==="cards"||viewId()==="reader")render()}}catch(e){toast("Claude could not fill it now. It is tried again later.")}}
+function cdEdit(id){
+  const c=findCard(id);if(!c||$("#modal").firstChild)return;
+  const f=(k,label,v,multi)=>`<label class="cdf"><span class="sub">${label}</span>${multi?`<textarea class="wd-field" data-k="${k}" rows="2">${esc(v||"")}</textarea>`:`<input class="wd-field" data-k="${k}" value="${esc(v||"")}">`}</label>`;
+  $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop cdpop" role="dialog" aria-modal="true" aria-label="Edit card"><div class="top"><h2>Card</h2><button class="ibtn" id="cdX" aria-label="Close">✕</button></div>
+    <div class="cdform" data-noauto>${f("term","Word",c.term)}${f("lemma","Base form",c.lemma)}<label class="cdf"><span class="sub">Language</span><select class="wd-field" data-k="lang">${Object.entries(RD_LANGS).map(([k,l])=>`<option value="${k}" ${(c.lang||"en")===k?"selected":""}>${l}</option>`).join("")}</select></label>
+      ${f("ja","Meaning (Japanese)",c.meaning?.ja)}${f("en","Meaning (English)",c.meaning?.en)}${f("ipa","Pronunciation",c.ipa)}${f("example","Example",c.example,true)}${f("context","Sentence it came from",c.context,true)}</div>
+    <p class="sub">${c.book?.title?`From ${esc(c.book.title)}${c.book.chapter?" · "+esc(c.book.chapter):""}. `:""}${fsState(c.fsrs)==="new"?"Not reviewed yet.":`Reviewed ${c.fsrs.reps||0}×, next ${fsWhen(c.fsrs.due||0)}.`}${c.lookups>1?` Looked up ${c.lookups}×.`:""}</p>
+    <div class="row"><button class="btn primary" id="cdSave">Save</button>${cdPending(c)?`<button class="btn" id="cdFill">Fill with Claude</button>`:""}<button class="btn" id="cdSay">🔊 Say</button><button class="btn" id="cdDel">Delete</button></div></div></div>`;
+  const close=()=>{$("#modal").innerHTML=""};
+  $("#cdX").onclick=close;$("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};$("#scrim").onkeydown=e=>{if(e.key==="Escape"){e.stopPropagation();close()}};
+  const vals=()=>{const o={};document.querySelectorAll("#modal [data-k]").forEach(el=>o[el.dataset.k]=el.value.trim());return o};
+  $("#cdSave").onclick=async()=>{const v=vals();if(!v.term){toast("A word is needed");return}await cdPut({...c,term:v.term,lemma:v.lemma,lang:v.lang,meaning:{ja:v.ja,en:v.en},ipa:v.ipa,example:v.example,context:v.context,...(v.ja||v.en?{enrich:{state:"ok",at:Date.now(),by:"me"}}:{})});close();render()};
+  $("#cdFill")&&($("#cdFill").onclick=()=>{close();cdEnrich(c.id)});
+  $("#cdSay").onclick=()=>rdSay(vals().term||c.term,vals().lang||c.lang||"en");
+  $("#cdDel").onclick=async()=>{await cdPut({...c,deleted:true});close();toast("Card removed");render()};
+  $("#modal input").focus();
+}
+function cdAddPrompt(){
+  if($("#modal").firstChild)return;
+  $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop cdpop" role="dialog" aria-modal="true" aria-label="Add a word"><div class="top"><h2>Add a word</h2><button class="ibtn" id="cdX" aria-label="Close">✕</button></div>
+    <input class="wd-field" id="cdNewTerm" placeholder="Word or phrase" aria-label="Word"><div class="row"><select class="wd-field cdsel" id="cdNewLang" aria-label="Language">${Object.entries(RD_LANGS).map(([k,l])=>`<option value="${k}" ${k==="en"?"selected":""}>${l}</option>`).join("")}</select><input class="wd-field" id="cdNewCtx" placeholder="A sentence it came from (optional)" aria-label="Sentence" style="flex:1"></div>
+    <p class="sub">Claude fills the meaning, pronunciation and an example in a few seconds.</p><div class="row"><button class="btn primary" id="cdNewGo">Add</button></div></div></div>`;
+  const close=()=>{$("#modal").innerHTML=""};$("#cdX").onclick=close;$("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};
+  $("#scrim").onkeydown=e=>{if(e.key==="Escape"){e.stopPropagation();close()}if(e.key==="Enter"&&e.target.id!=="cdNewLang"){e.preventDefault();$("#cdNewGo").click()}};
+  $("#cdNewGo").onclick=async()=>{const term=$("#cdNewTerm").value.trim();if(!term){$("#cdNewTerm").focus();return}const lang=$("#cdNewLang").value,context=$("#cdNewCtx").value.trim();$("#cdNewGo").disabled=true;$("#cdNewGo").textContent="Adding…";
+    await cdAdd({term,lang,context,source:{kind:"desk",ref:""}});close();render()};
+  $("#cdNewTerm").focus();
+}
+async function cdAdd(rec){
+  if(!LOCALAPI){toast("Open the Desk app to add cards");return null}
+  try{const r=await api("POST","/api/cards/add",rec);if(r.card){S.cards=[...S.cards.filter(x=>x.id!==r.card.id),r.card];toast(r.merged?"Already in cards · counted once more":cdPending(r.card)?"Added · meaning comes later":"Added to cards")}return r.card}
+  catch(e){toast("Could not add the card");return null}
+}
+async function cdPhoneLink(){
+  if($("#modal").firstChild)return;
+  let v={};try{v=await api("GET","/api/cards-link")}catch(e){}
+  $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop cdpop" role="dialog" aria-modal="true" aria-label="Cards on iPhone"><div class="top"><h2>Cards on iPhone</h2><button class="ibtn" id="cdX" aria-label="Close">✕</button></div>
+    ${v.sync?`<p class="mtalk">Open this link once on the phone, then add it to the Home Screen. It carries the sync passphrase, so do not send it to anyone.</p><div class="row"><input class="wd-field" id="cdLink" value="${esc(v.url)}" readonly aria-label="Setup link"><button class="btn primary" id="cdCopy">Copy</button></div>`
+      :`<p class="mtalk">Sync is not set up yet. Put a passphrase in the keychain and the same one into the app's SYNC_KEY secret (see cards/README.md), then come back here.</p><pre class="cdcode">security add-generic-password -s tatsuki-desk-cards -a desk -w</pre>`}
+    <p class="sub">Only cards travel: the word, its meaning and the one sentence. Books stay on this Mac.</p></div></div>`;
+  const close=()=>{$("#modal").innerHTML=""};$("#cdX").onclick=close;$("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};$("#scrim").onkeydown=e=>{if(e.key==="Escape"){e.stopPropagation();close()}};
+  $("#cdCopy")&&($("#cdCopy").onclick=()=>{navigator.clipboard?.writeText(v.url).then(()=>toast("Copied"),()=>{$("#cdLink").select()})});
+}
+/* Today: one line, "Cards due: N", pressing it starts the review */
+function tdCards(){
+  if(!LOCALAPI)return [];const d=cdDue(), n=d.due.length+d.fresh.length;if(!n)return [];
+  return [`<div class="tdrow"><span class="tdchk" aria-hidden="true" style="border:0">🃏</span><a class="tt" href="#cards/review" data-fromtoday data-noauto>Cards due: ${n}${d.fresh.length&&d.due.length?` <span class="sub">(${d.fresh.length} new)</span>`:""}</a><span class="sub"><button class="btn sm" data-tdcards>Review</button></span></div>`];
+}
+
+/* ---------- Reader: the list of books ---------- */
+async function rdLoad(force){
+  if(!LOCALAPI||S.rd.busy)return;
+  if(!force&&S.rd.books&&Date.now()-S.rd.at<15000)return;
+  S.rd.busy=true;try{const v=await api("GET","/api/reader/books");S.rd.books=v;S.rd.at=Date.now();S.rd.err=false}catch(e){S.rd.err=true}S.rd.busy=false;
+  if(viewId()==="reader"&&!rdBookId())render();
+}
+const rdBookId=()=>{const m=/^#reader\/([a-z0-9]+)$/.exec(location.hash||"");return m?m[1]:null};
+const rdCardsOf=id=>cdLive().filter(c=>c.book?.id===id).length;
+function readerView(){
+  const id=rdBookId();if(id)return rdReadView(id);
+  const books=S.rd.books;
+  const wrap=x=>`<div class="money rdv" id="rdView"><header class="head"><div><h1>Reader</h1><p class="sub">Books and pasted text, read aloud. Tap a word for its meaning and make it a card.</p></div><button class="btn primary" id="rdAdd">Add a book</button></header>${x}</div>`;
+  if(!LOCALAPI)return wrap(`<p class="due">The Reader works in the Desk app on the Mac.</p>`);
+  if(S.rd.err&&!books)return wrap(`<p class="due">Could not load the books. Is the server running?</p>`);
+  if(!books)return wrap(`<p class="due">Loading…</p>`);
+  if(!books.length)return wrap(`<section class="card mfocus"><p class="mtalk">No books yet. Paste text, or add a .txt, .epub or a PDF with text.</p><p class="sub">Bought e-books with a lock (Kindle and the like) cannot be read here.</p></section>`);
+  const last=books.find(b=>b.lastReadAt)||null;
+  const pct=b=>Math.round((b.progress||0)*100);
+  const card=b=>`<a class="card rdbook" href="#reader/${esc(b.id)}" data-noauto><b>${esc(b.title)}</b>${b.author?`<span class="sub">${esc(b.author)}</span>`:""}<span class="sub rdmeta">${esc(RD_LANGS[b.lang]||b.lang)} · ${b.chapters.length} chapter${b.chapters.length===1?"":"s"} · ${pct(b)}% read${rdCardsOf(b.id)?` · ${rdCardsOf(b.id)} card${rdCardsOf(b.id)===1?"":"s"}`:""}</span><span class="rdprog"><i style="width:${pct(b)}%"></i></span></a>`;
+  return wrap(`${last?`<a class="card rdcont" href="#reader/${esc(last.id)}" data-noauto><span class="sub">Continue reading</span><b>${esc(last.title)}</b><span class="sub">${esc(last.chapters[last.pos?.ch||0]?.title||`Chapter ${(last.pos?.ch||0)+1}`)} · ${pct(last)}%</span></a>`:""}
+    <div class="rdgrid">${books.map(card).join("")}</div>`);
+}
+function rdAddPrompt(){
+  if($("#modal").firstChild)return;
+  $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop cdpop" role="dialog" aria-modal="true" aria-label="Add a book"><div class="top"><h2>Add a book</h2><button class="ibtn" id="cdX" aria-label="Close">✕</button></div>
+    <div class="row"><button class="btn primary" id="rdFileBtn">Choose a file</button><span class="sub">.txt, .epub, or a PDF with text (up to 50 MB)</span><input type="file" id="rdFile" accept=".txt,.epub,.pdf,text/plain,application/epub+zip,application/pdf" hidden></div>
+    <p class="sub" style="margin:0">Or paste the text:</p><textarea class="wd-field" id="rdText" rows="6" placeholder="Paste a chapter, an article, anything"></textarea>
+    <div class="row"><input class="wd-field" id="rdTitle" placeholder="Title (optional)" style="flex:1"><input class="wd-field" id="rdAuthor" placeholder="Author (optional)" style="flex:1"></div>
+    <div class="row"><select class="wd-field cdsel" id="rdLang" aria-label="Language"><option value="">Language: auto</option>${Object.entries(RD_LANGS).map(([k,l])=>`<option value="${k}">${l}</option>`).join("")}</select><button class="btn primary" id="rdPasteGo">Add the text</button></div>
+    <p class="sub" id="rdAddMsg">The book stays on this Mac. Nothing of it is sent anywhere.</p></div></div>`;
+  const close=()=>{$("#modal").innerHTML=""};$("#cdX").onclick=close;$("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};$("#scrim").onkeydown=e=>{if(e.key==="Escape"){e.stopPropagation();close()}};
+  const msg=t=>{const m=$("#rdAddMsg");if(m)m.textContent=t};
+  const done=b=>{close();S.rd.at=0;rdLoad(true).then(()=>{location.hash="reader/"+b.id});toast("Added: "+(b.title||"book"))};
+  $("#rdFileBtn").onclick=()=>$("#rdFile").click();
+  $("#rdFile").onchange=async()=>{const f=$("#rdFile").files[0];if(!f)return;msg("Reading "+f.name+"…");$("#rdFileBtn").disabled=true;
+    try{const r=await fetch("/api/reader/books",{method:"POST",headers:{"X-Desk-Upload":"1","X-File-Name":encodeURIComponent(f.name)},body:f});const v=await r.json();if(!r.ok)throw new Error(v.error||r.status);done(v)}
+    catch(e){msg(String(e.message||"Could not read the file"));$("#rdFileBtn").disabled=false}};
+  $("#rdPasteGo").onclick=async()=>{const text=$("#rdText").value;if(!text.trim()){$("#rdText").focus();return}$("#rdPasteGo").disabled=true;msg("Adding…");
+    try{const v=await api("POST","/api/reader/books",{text,title:$("#rdTitle").value,author:$("#rdAuthor").value,lang:$("#rdLang").value});done(v)}catch(e){msg("Could not add the text");$("#rdPasteGo").disabled=false}};
+  $("#rdText").focus();
+}
+
+/* ---------- Reader: one book ---------- */
+function rdSentences(p,lang){
+  const re=rdSpaced(lang)?/[^.!?…]+(?:[.!?…]+["”’)\]]*|$)\s*/g:/[^。！？!?]+(?:[。！？!?]+[」』”’)]*|$)\s*/g;
+  const out=(p.match(re)||[p]).map(s=>s).filter(s=>s.trim());return out.length?out:[p];
+}
+function rdKnown(lang){const s=new Set();S.cards.forEach(c=>{if(c.deleted||(c.lang||"en")!==lang)return;[c.term,c.lemma].map(rdNorm).filter(Boolean).forEach(t=>s.add(t))});return s}
+function rdMarkup(text,lang,known){
+  if(!known.size)return esc(text);
+  if(rdSpaced(lang))return text.split(/([\p{L}\p{M}\p{N}'’-]+)/u).map((tok,i)=>i%2?(known.has(rdNorm(tok))?`<u class="rdk">${esc(tok)}</u>`:esc(tok)):esc(tok)).join("");
+  let out=esc(text);[...known].filter(t=>t.length>=2).sort((a,b)=>b.length-a.length).slice(0,400).forEach(t=>{out=out.split(esc(t)).join(`<u class="rdk">${esc(t)}</u>`)});return out;
+}
+async function rdOpen(id){
+  if(S.rd.book?.id===id)return;
+  rdStop();S.rd.book={id,loading:true};
+  try{const b=await api("GET","/api/reader/books/"+encodeURIComponent(id));S.rd.book=b;S.rd.ch=b.pos?.ch||0;S.rd.si=-1;S.rd.word=null;S.rd.jump=b.pos?.para||0}
+  catch(e){S.rd.book={id,error:true}}
+  if(rdBookId()===id)render();
+}
+function rdReadView(id){
+  const b=S.rd.book;
+  if(!b||b.id!==id){rdOpen(id);return `<div class="money rdv" id="rdView"><p class="due">Opening…</p></div>`}
+  if(b.loading)return `<div class="money rdv" id="rdView"><p class="due">Opening…</p></div>`;
+  if(b.error)return `<div class="money rdv" id="rdView"><a class="btn" href="#reader">← Books</a><p class="due">Could not open this book.</p></div>`;
+  const chs=b.chapters_full||[], ch=Math.min(S.rd.ch,Math.max(0,chs.length-1)), c=chs[ch]||{paras:[]}, known=rdKnown(b.lang), n=rdCardsOf(b.id);
+  let si=0;
+  const paras=(c.paras||[]).map((p,pi)=>`<p class="rdp" data-p="${pi}">${rdSentences(p,b.lang).map(s=>`<span class="rds" data-s="${si++}">${rdMarkup(s,b.lang,known)}</span>`).join("")}</p>`).join("");
+  const voices=rdVoiceList(b.lang), vsel=rdVoicePick(b.lang);
+  return `<div class="rdread f${S.rd.font}" id="rdView" lang="${esc(b.lang)}">
+    <div class="rdtop"><a class="btn sm" href="#reader">← Books</a><b class="rdtitle" data-noauto>${esc(b.title)}</b><span class="sub">${n?`${n} card${n===1?"":"s"} from this book`:""}</span>
+      <span class="row"><button class="btn sm" id="rdFontDn" aria-label="Smaller text" ${S.rd.font<=1?"disabled":""}>A−</button><button class="btn sm" id="rdFontUp" aria-label="Larger text" ${S.rd.font>=3?"disabled":""}>A+</button><button class="btn sm" id="rdEdit" aria-label="Book details">Details</button></span></div>
+    <div class="rdchap"><button class="btn sm" id="rdPrev" ${ch<=0?"disabled":""} aria-label="Previous chapter">‹</button><select class="wd-field cdsel" id="rdChSel" aria-label="Chapter">${chs.map((x,i)=>`<option value="${i}" ${i===ch?"selected":""}>${esc(x.title||`Chapter ${i+1}`)}</option>`).join("")}</select><button class="btn sm" id="rdNext" ${ch>=chs.length-1?"disabled":""} aria-label="Next chapter">›</button></div>
+    <article class="rdbody" id="rdBody" data-noauto>${c.title?`<h2 class="rdh">${esc(c.title)}</h2>`:""}${paras||`<p class="sub">This chapter has no text.</p>`}</article>
+    ${ch<chs.length-1?`<div class="row rdend"><button class="btn" id="rdNext2">Next chapter: ${esc(chs[ch+1].title||`Chapter ${ch+2}`)} →</button></div>`:`<p class="sub rdend">The end.</p>`}
+    <div class="rdbar" id="rdBar"><button class="btn primary" id="rdPlay" aria-label="${S.rd.playing?"Pause":"Play"}">${S.rd.playing?"❚❚ Pause":"▶ Play"}</button><button class="btn" id="rdBack" aria-label="Back one sentence">⏮ Back</button>
+      <select class="wd-field cdsel" id="rdRate" aria-label="Speed">${RD_RATES.map(r=>`<option value="${r}" ${r===S.rd.rate?"selected":""}>${r}×</option>`).join("")}</select>
+      <select class="wd-field cdsel rdvoice" id="rdVoice" aria-label="Voice">${voices.map(v=>`<option value="${esc(v.id)}" ${v.id===vsel?"selected":""}>${esc(v.label)}</option>`).join("")||`<option value="">No voice for ${esc(RD_LANGS[b.lang]||b.lang)}</option>`}</select><span class="sub rdpos" id="rdPos"></span></div></div>`;
+}
+function wireRd(){
+  const on=(id,fn)=>{const el=$(id);if(el)el.onclick=fn};
+  on("#rdAdd",rdAddPrompt);
+  const b=S.rd.book;if(!b||!$("#rdBody"))return;
+  const chs=b.chapters_full||[];
+  const goCh=i=>{rdStop();S.rd.ch=Math.max(0,Math.min(i,chs.length-1));S.rd.si=-1;S.rd.word=null;S.rd.jump=0;render();window.scrollTo(0,0);rdSavePos(true)};
+  on("#rdPrev",()=>goCh(S.rd.ch-1));on("#rdNext",()=>goCh(S.rd.ch+1));on("#rdNext2",()=>goCh(S.rd.ch+1));
+  $("#rdChSel").onchange=e=>goCh(+e.target.value);
+  on("#rdFontUp",()=>{S.rd.font=Math.min(3,S.rd.font+1);try{localStorage.setItem("desk-rd-font",S.rd.font)}catch(e){}$("#rdView").className=`rdread f${S.rd.font}`;$("#rdFontUp").disabled=S.rd.font>=3;$("#rdFontDn").disabled=false});
+  on("#rdFontDn",()=>{S.rd.font=Math.max(1,S.rd.font-1);try{localStorage.setItem("desk-rd-font",S.rd.font)}catch(e){}$("#rdView").className=`rdread f${S.rd.font}`;$("#rdFontDn").disabled=S.rd.font<=1;$("#rdFontUp").disabled=false});
+  on("#rdEdit",rdEditPrompt);
+  on("#rdPlay",()=>S.rd.playing?rdPause():rdPlay());on("#rdBack",rdBack);
+  $("#rdRate").onchange=e=>{S.rd.rate=+e.target.value;try{localStorage.setItem("desk-rd-rate",S.rd.rate)}catch(e){}if(S.rd.playing){rdPause();rdPlay()}};
+  $("#rdVoice").onchange=e=>{try{localStorage.setItem("desk-rd-voice-"+b.lang,e.target.value)}catch(e){}if(S.rd.playing){rdPause();rdPlay()}};
+  $("#rdBody").onclick=rdTap;
+  $("#rdBody").onkeydown=e=>{if(e.key==="Escape"&&S.rd.word){rdCloseWord()}};
+  if(S.rd.jump!=null){const p=$(`#rdBody .rdp[data-p="${S.rd.jump}"]`);S.rd.jump=null;if(p&&+p.dataset.p>0)setTimeout(()=>p.scrollIntoView({block:"start"}),0)}
+  if(S.rd.si>=0)rdHighlight(S.rd.si,false);
+  if(!S.rd.macVoicesFor||S.rd.macVoicesFor!==b.lang)rdMacVoices(b.lang);
+  if(window.speechSynthesis&&!S.rd.voicesHooked){S.rd.voicesHooked=true;speechSynthesis.onvoiceschanged=()=>{if(viewId()==="reader"&&rdBookId()&&!S.rd.playing)render()}}
+  if(!S.rd.scrollHooked){S.rd.scrollHooked=true;let t=0;window.addEventListener("scroll",()=>{if(viewId()!=="reader"||!rdBookId())return;clearTimeout(t);t=setTimeout(()=>rdSavePos(false),1200)},{passive:true})}
+}
+/* the first paragraph on screen is where to continue; saved a little after the scrolling stops */
+async function rdSavePos(now){
+  const b=S.rd.book;if(!b||!LOCALAPI||!$("#rdBody"))return;
+  const ps=[...document.querySelectorAll("#rdBody .rdp")], top=ps.find(p=>p.getBoundingClientRect().bottom>72)||ps[0];
+  const pos={ch:S.rd.ch,para:top?+top.dataset.p:0};
+  if(!now&&S.rd.saved&&S.rd.saved.ch===pos.ch&&S.rd.saved.para===pos.para)return;
+  S.rd.saved=pos;b.pos=pos;
+  try{const m=await api("PUT",`/api/reader/books/${encodeURIComponent(b.id)}/pos`,pos);if(S.rd.books){S.rd.books=S.rd.books.map(x=>x.id===m.id?m:x)}}catch(e){}
+}
+function rdEditPrompt(){
+  const b=S.rd.book;if(!b||$("#modal").firstChild)return;
+  $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop cdpop" role="dialog" aria-modal="true" aria-label="Book details"><div class="top"><h2>Book</h2><button class="ibtn" id="cdX" aria-label="Close">✕</button></div>
+    <label class="cdf"><span class="sub">Title</span><input class="wd-field" id="rdETitle" value="${esc(b.title)}"></label><label class="cdf"><span class="sub">Author</span><input class="wd-field" id="rdEAuthor" value="${esc(b.author||"")}"></label>
+    <label class="cdf"><span class="sub">Language (voice and cards)</span><select class="wd-field" id="rdELang">${Object.entries(RD_LANGS).map(([k,l])=>`<option value="${k}" ${b.lang===k?"selected":""}>${l}</option>`).join("")}</select></label>
+    <p class="sub">${b.words?b.words.toLocaleString("en-US")+" words · ":""}${(b.chapters_full||[]).length} chapters${b.file?" · from a "+esc(b.file.slice(1))+" file":""}</p>
+    <div class="row"><button class="btn primary" id="rdESave">Save</button><button class="btn" id="rdERemove">Remove from the list</button></div></div></div>`;
+  const close=()=>{$("#modal").innerHTML=""};$("#cdX").onclick=close;$("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};$("#scrim").onkeydown=e=>{if(e.key==="Escape"){e.stopPropagation();close()}};
+  $("#rdESave").onclick=async()=>{try{const m=await api("PUT","/api/reader/books/"+encodeURIComponent(b.id),{title:$("#rdETitle").value,author:$("#rdEAuthor").value,lang:$("#rdELang").value});Object.assign(b,{title:m.title,author:m.author,lang:m.lang});S.rd.at=0;close();render()}catch(e){toast("Could not save")}};
+  $("#rdERemove").onclick=async()=>{try{await api("POST",`/api/reader/books/${encodeURIComponent(b.id)}/remove`,{});close();S.rd.book=null;S.rd.at=0;location.hash="reader";toast("Removed. Its cards stay.")}catch(e){toast("Could not remove")}};
+  $("#rdETitle").focus();
+}
+
+/* ---------- a tapped word: the small card under its paragraph ---------- */
+function rdTap(e){
+  if(e.target.closest(".rdpop"))return;
+  const b=S.rd.book;if(!b)return;
+  const p=e.target.closest(".rdp");if(!p){rdCloseWord();return}
+  const sel=window.getSelection(), text=sel&&!sel.isCollapsed?sel.toString().trim():"";
+  let term="", sentEl=null;
+  if(text&&text.length<=80&&p.contains(sel.anchorNode)&&p.contains(sel.focusNode)){term=text;sentEl=sel.anchorNode.parentElement?.closest(".rds")||p.querySelector(".rds")}
+  else{
+    const r=document.caretRangeFromPoint?document.caretRangeFromPoint(e.clientX,e.clientY):null;if(!r||r.startContainer.nodeType!==3)return;
+    const node=r.startContainer, s=node.textContent, i=r.startOffset, wordRe=rdSpaced(b.lang)?/[\p{L}\p{M}\p{N}'’-]/u:/[\p{L}\p{M}]/u;
+    let a=i,z=i;while(a>0&&wordRe.test(s[a-1]))a--;while(z<s.length&&wordRe.test(s[z]))z++;
+    if(!rdSpaced(b.lang)){a=Math.max(0,i-1);z=Math.min(s.length,i+2)} // no spaces: take the two or three characters around the tap, then let the person widen the selection
+    term=s.slice(a,z).trim();sentEl=node.parentElement?.closest(".rds");
+    if(!term)return;
+  }
+  const context=(sentEl?.textContent||p.textContent||"").trim().replace(/\s+/g," ");
+  rdShowWord(term,context,p);
+}
+function rdCloseWord(){document.querySelectorAll("#rdBody .rdpop").forEach(x=>x.remove());S.rd.word=null}
+async function rdShowWord(term,context,p){
+  const b=S.rd.book;rdCloseWord();
+  const w={term,context,lang:b.lang,info:null,at:Date.now()};S.rd.word=w;
+  const have=S.cards.find(c=>!c.deleted&&(c.lang||"en")===b.lang&&[c.term,c.lemma].map(rdNorm).includes(rdNorm(term)));
+  const box=document.createElement("div");box.className="rdpop";box.setAttribute("role","dialog");box.setAttribute("aria-label","Word");p.after(box);
+  const draw=()=>{if(S.rd.word!==w||!box.isConnected)return;const i=w.info, inCards=have||w.added;
+    box.innerHTML=`<div class="rdpophead"><b class="rdterm" data-noauto>${esc(i?.lemma&&rdNorm(i.lemma)!==rdNorm(term)?`${term} → ${i.lemma}`:term)}</b>${i?.ipa?`<span class="sub">/${esc(i.ipa)}/</span>`:""}<button class="ibtn" data-rdsay aria-label="Read aloud">🔊</button><button class="ibtn" data-rdx aria-label="Close">✕</button></div>
+      <div class="rdpopbody" data-noauto>${i?`${i.meaning_ja?`<p class="cdmean">${esc(i.meaning_ja)}</p>`:""}${i.meaning_en?`<p class="cdmean">${esc(i.meaning_en)}</p>`:""}${i.pos?`<span class="sub">${esc(i.pos)}</span>`:""}`:w.err?`<p class="sub">${esc(w.err)}</p>`:`<p class="sub">Looking it up…</p>`}</div>
+      <div class="row">${inCards?`<span class="sub">✓ In your cards${have&&have.lookups>1?` · looked up ${have.lookups}×`:""}</span>`:`<button class="btn primary sm" data-rdadd>Add to cards</button>`}<span class="sub rdpopctx">${esc(context.length>120?context.slice(0,118)+"…":context)}</span></div>`;
+    box.querySelector("[data-rdx]").onclick=rdCloseWord;box.querySelector("[data-rdsay]").onclick=()=>rdSay(i?.lemma||term,b.lang);
+    const add=box.querySelector("[data-rdadd]");if(add)add.onclick=async()=>{add.disabled=true;add.textContent="Adding…";const c=await cdAdd({term,lang:b.lang,context,info:i||undefined,source:{kind:"book",ref:b.id},book:{id:b.id,title:b.title,chapter:(b.chapters_full||[])[S.rd.ch]?.title||`Chapter ${S.rd.ch+1}`}});if(c){w.added=true;rdRemark()}draw()}};
+  draw();
+  if(!LOCALAPI){w.err="Meanings need the Desk app on the Mac";draw();return}
+  try{const info=await api("POST","/api/cards/lookup",{term,context,lang:b.lang});if(S.rd.word===w){w.info=info;draw()}}
+  catch(e){if(S.rd.word===w){w.err="Claude could not answer now. You can still add the word; the meaning comes later.";draw()}}
+}
+/* after a card is added, the word gets its thin underline everywhere on the page without redrawing (a playing voice is not cut) */
+function rdRemark(){const b=S.rd.book;if(!b||!$("#rdBody"))return;const known=rdKnown(b.lang);document.querySelectorAll("#rdBody .rds").forEach(s=>{const t=s.textContent;const h=rdMarkup(t,b.lang,known);if(h!==s.innerHTML&&!s.classList.contains("on"))s.innerHTML=h})}
+
+/* ---------- reading aloud: the browser's voices, or the Mac's `say` through the server ---------- */
+function rdVoiceList(lang){
+  const web=(window.speechSynthesis?.getVoices?.()||[]).filter(v=>(v.lang||"").toLowerCase().replace("_","-").startsWith(lang)).map(v=>({id:"web:"+v.name,label:v.name+(v.localService===false?" (online)":"")}));
+  const mac=(S.rd.mac&&S.rd.macVoicesFor===lang?S.rd.mac:[]).map(v=>({id:"mac:"+v.name,label:v.name+" (Mac)"}));
+  return [...web,...mac];
+}
+function rdVoicePick(lang){let v="";try{v=localStorage.getItem("desk-rd-voice-"+lang)||""}catch(e){}const list=rdVoiceList(lang);return list.some(x=>x.id===v)?v:(list[0]?.id||"")}
+async function rdMacVoices(lang){if(!LOCALAPI)return;S.rd.macVoicesFor=lang;try{S.rd.mac=await api("GET","/api/reader/voices?lang="+encodeURIComponent(lang))}catch(e){S.rd.mac=[]}if(viewId()==="reader"&&rdBookId()&&$("#rdVoice")&&!S.rd.playing){const b=S.rd.book,sel=rdVoicePick(b.lang);$("#rdVoice").innerHTML=rdVoiceList(b.lang).map(v=>`<option value="${esc(v.id)}" ${v.id===sel?"selected":""}>${esc(v.label)}</option>`).join("")||`<option value="">No voice for ${esc(RD_LANGS[b.lang]||b.lang)}</option>`}}
+const rdSentenceEls=()=>[...document.querySelectorAll("#rdBody .rds")];
+function rdHighlight(i,scroll=true){document.querySelectorAll("#rdBody .rds.on").forEach(x=>x.classList.remove("on"));const el=rdSentenceEls()[i];if(!el)return;el.classList.add("on");
+  if(scroll){const r=el.getBoundingClientRect();if(r.top<80||r.bottom>window.innerHeight-120)el.scrollIntoView({block:"center",behavior:"smooth"})}
+  const pos=$("#rdPos");if(pos)pos.textContent=`${i+1} / ${rdSentenceEls().length}`}
+function rdFirstVisible(){const els=rdSentenceEls();const i=els.findIndex(el=>el.getBoundingClientRect().bottom>96);return i<0?0:i}
+let rdAudio=null, rdUtter=null, rdRun=0, rdNextBlob=null;
+function rdPlay(){
+  const els=rdSentenceEls();if(!els.length)return;
+  if(S.rd.si<0||S.rd.si>=els.length)S.rd.si=rdFirstVisible();
+  S.rd.playing=true;const p=$("#rdPlay");if(p){p.textContent="❚❚ Pause";p.setAttribute("aria-label","Pause")}
+  rdSpeakAt(S.rd.si);
+}
+function rdPause(){S.rd.playing=false;rdRun++;if(rdAudio){rdAudio.pause();rdAudio=null}if(window.speechSynthesis)speechSynthesis.cancel();const p=$("#rdPlay");if(p){p.textContent="▶ Play";p.setAttribute("aria-label","Play")}}
+function rdStop(){rdPause();S.rd.si=-1;document.querySelectorAll("#rdBody .rds.on").forEach(x=>x.classList.remove("on"))}
+function rdBack(){const was=S.rd.playing;rdPause();S.rd.si=Math.max(0,(S.rd.si<0?rdFirstVisible():S.rd.si)-1);rdHighlight(S.rd.si);if(was)rdPlay()}
+async function rdSpeakAt(i){
+  const run=++rdRun, els=rdSentenceEls(), b=S.rd.book;
+  if(!S.rd.playing||!b)return;
+  if(i>=els.length){rdPause();S.rd.si=-1;const pos=$("#rdPos");if(pos)pos.textContent="End of chapter";return}
+  S.rd.si=i;rdHighlight(i);
+  const text=els[i].textContent.trim(), next=()=>{if(rdRun===run&&S.rd.playing)rdSpeakAt(i+1)};
+  if(!/[\p{L}\p{N}]/u.test(text)){next();return}
+  const pick=$("#rdVoice")?.value||rdVoicePick(b.lang);
+  if(pick.startsWith("web:")&&window.speechSynthesis){
+    const v=speechSynthesis.getVoices().find(x=>x.name===pick.slice(4));
+    const u=new SpeechSynthesisUtterance(text);u.voice=v||null;u.lang=v?.lang||b.lang;u.rate=S.rd.rate;rdUtter=u;
+    let ended=false;u.onend=()=>{if(ended)return;ended=true;next()};u.onerror=ev=>{if(ended)return;ended=true;if(ev.error==="interrupted"||ev.error==="canceled")return;rdMacSay(text,b.lang,pick,run).then(ok=>{if(ok)next();else{toast("No voice could read this");rdPause()}})};
+    speechSynthesis.cancel();speechSynthesis.speak(u);
+    // Safari/WebKit sometimes never fires onend for a very long sentence: a safety timer by length
+    setTimeout(()=>{if(!ended&&rdRun===run&&S.rd.playing&&!speechSynthesis.speaking){ended=true;next()}},Math.max(4000,text.length*120/S.rd.rate)+1500);
+    return;
+  }
+  const ok=await rdMacSay(text,b.lang,pick,run);
+  if(rdRun!==run)return;
+  if(ok)next();else{toast("The Mac's voice could not read this");rdPause()}
+}
+async function rdMacSay(text,lang,pick,run){
+  if(!LOCALAPI)return false;
+  const voice=pick.startsWith("mac:")?pick.slice(4):undefined;
+  try{
+    const blob=rdNextBlob&&rdNextBlob.text===text&&rdNextBlob.rate===S.rd.rate?rdNextBlob.blob:await rdFetchSay(text,lang,voice);
+    rdNextBlob=null;if(rdRun!==run)return true;
+    const els=rdSentenceEls(), nx=els[S.rd.si+1]?.textContent.trim();
+    if(nx&&/[\p{L}\p{N}]/u.test(nx))rdFetchSay(nx,lang,voice).then(bl=>{rdNextBlob={text:nx,rate:S.rd.rate,blob:bl}}).catch(()=>{}); // one sentence ahead, so there is no gap
+    return await new Promise(res=>{const a=new Audio(URL.createObjectURL(blob));rdAudio=a;a.onended=()=>{URL.revokeObjectURL(a.src);if(rdAudio===a)rdAudio=null;res(true)};a.onerror=()=>res(false);a.play().catch(()=>res(false))});
+  }catch(e){return false}
+}
+async function rdFetchSay(text,lang,voice){const r=await fetch("/api/reader/speak",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text,lang,rate:S.rd.rate,voice})});if(!r.ok)throw new Error(r.status);return r.blob()}
+/* one word, now (the popup, the review screen) */
+async function rdSay(text,lang){
+  if(!text)return;
+  const pick=rdVoicePick(lang);
+  if(pick.startsWith("web:")&&window.speechSynthesis){const v=speechSynthesis.getVoices().find(x=>x.name===pick.slice(4));const u=new SpeechSynthesisUtterance(text);u.voice=v||null;u.lang=v?.lang||lang;u.rate=1;speechSynthesis.cancel();speechSynthesis.speak(u);return}
+  if(!LOCALAPI)return;
+  try{const blob=await rdFetchSay(text,lang,pick.startsWith("mac:")?pick.slice(4):undefined);const a=new Audio(URL.createObjectURL(blob));a.onended=()=>URL.revokeObjectURL(a.src);a.play()}catch(e){toast("No voice for this word")}
+}
+
 /* ---------- Usage: which screens, Home cards and buttons get used, and the weekly re-arrangement (desk/usage.py). Mac only.
    Counting keeps totals only. A button's name is built from the code (a camelCase id, the name of a data- attribute, the screen a
    link goes to, class names) and never from text on screen or from an attribute's value, so no title, name or id of a task gets in.

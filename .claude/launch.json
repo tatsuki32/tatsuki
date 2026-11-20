@@ -68,12 +68,6 @@
       "port": 4797
     },
     {
-      "name": "desk-translate-test",
-      "runtimeExecutable": "/bin/sh",
-      "runtimeArgs": ["-c", "cd desk && TRANSLATE_DIR=/tmp/claude/desk-translate-test DESK_PORT=${PORT:-4789} exec python3 server.py"],
-      "port": 4789
-    },
-    {
       "name": "desk-forms-test",
       "runtimeExecutable": "/bin/sh",
       "runtimeArgs": ["-c", "cd desk && DESK_FORMS_DIR=/tmp/claude/forms-test/data DESK_FORMS_WORKER=http://127.0.0.1:8795 DESK_FORMS_KEY=testkey LIFELOG_DATA=/tmp/claude/forms-test/lifelog DESK_PORT=${PORT:-4788} exec python3 server.py"],
@@ -84,6 +78,12 @@
       "runtimeExecutable": "/bin/sh",
       "runtimeArgs": ["-c", "cd desk/data/tany/site && WRANGLER_SEND_METRICS=false WRANGLER_LOG_PATH=/tmp/claude/wl exec npx wrangler dev --local --test-scheduled --port ${PORT:-8795} --ip 127.0.0.1 --var FORMS_KEY:testkey"],
       "port": 8795
+    },
+    {
+      "name": "desk-translate-test",
+      "runtimeExecutable": "/bin/sh",
+      "runtimeArgs": ["-c", "cd desk && TRANSLATE_DIR=/tmp/claude/desk-translate-test DESK_PORT=${PORT:-4789} exec python3 server.py"],
+      "port": 4789
     },
     {
       "name": "desk-book-test",
@@ -102,6 +102,12 @@
       "runtimeExecutable": "/bin/sh",
       "runtimeArgs": ["-c", "cd /tmp/claude/campus-test/site && WRANGLER_SEND_METRICS=false WRANGLER_LOG_PATH=/tmp/claude/wl exec npx wrangler dev --local --test-scheduled --port ${PORT:-8797} --ip 127.0.0.1 --var CAMPUS_FAKE_SEND:1 --var CAMPUS_KEY:testkey --var RESEND_KEY:fake"],
       "port": 8797
+    },
+    {
+      "name": "desk-reader-test",
+      "runtimeExecutable": "/bin/sh",
+      "runtimeArgs": ["-c", "cd desk && DESK_READER_DIR=/tmp/claude/desk-reader-test DESK_PORT=${PORT:-4786} exec python3 server.py"],
+      "port": 4786
     }
   ]
 }
