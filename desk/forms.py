@@ -443,15 +443,52 @@ def _lines(d, r):
     return out
 
 
+def task_from(d, r):
+    """A Desk task from one answer: the first written answer as the title, every answer in the note.
+    The task carries source "form" and sourceRef "<form id>:<answer id>", so its detail can open the answer again."""
+    lines = _lines(d, r)
+    title = d["title"].get(d["langs"][0]) or "Form"
+    first = next((q for q in d["questions"] if q["type"] in ("short", "long") and r["answers"].get(q["id"])), None)
+    head = (r["answers"][first["id"]].split("\n")[0][:120] if first else title)
+    return tasks.add(head, note="\n".join([title] + lines), source="form", source_ref=f"{d['id']}:{r.get('id')}")
+
+
+def answer(fid, rid):
+    """One answer with its labels, for the task's detail. Returns (status, body)."""
+    d = get(fid)
+    r = next((x for x in _rows(fid) if str(x.get("id")) == str(rid)), None) if d else None
+    if not r:
+        return 404, {"error": "not found"}
+    l0 = d["langs"][0]
+    out = []
+    for q in d["questions"]:
+        v = r["answers"].get(q["id"])
+        if v in (None, "", []):
+            continue
+        out.append({"label": q["label"].get(l0) or q["id"], "value": ", ".join(v) if isinstance(v, list) else str(v)})
+    return 200, {"form": fid, "id": r.get("id"), "title": d["title"].get(l0) or "Form", "at": r.get("at"), "country": r.get("country") or "", "lang": r.get("lang") or "", "lines": out}
+
+
+def make_task(fid, rid):
+    """Make it a task, pressed on one answer. An answer that already has a task gets that task back."""
+    d = get(fid)
+    r = next((x for x in _rows(fid) if str(x.get("id")) == str(rid)), None) if d else None
+    if not r:
+        return 404, {"error": "not found"}
+    ref = f"{d['id']}:{r.get('id')}"
+    for t in tasks.all_tasks():
+        if t.get("source") == "form" and t.get("sourceRef") == ref:
+            return 200, {"task": t, "existing": True}
+    return 200, {"task": task_from(d, r), "existing": False}
+
+
 def _deliver(d, r):
     """A "me" form's answer goes where the form says: a Desk task, or a line in the day's note."""
     lines = _lines(d, r)
     l0 = d["langs"][0]
     title = d["title"].get(l0) or "Form"
     if d["dest"] == "task":
-        first = next((q for q in d["questions"] if q["type"] in ("short", "long") and r["answers"].get(q["id"])), None)
-        head = (r["answers"][first["id"]].split("\n")[0][:120] if first else title)
-        tasks.add(head, note="\n".join([title] + lines), source="form", source_ref=f"{d['id']}:{r.get('id')}")
+        task_from(d, r)
     elif d["dest"] == "note" and STORE.get("load") and STORE.get("upsert"):
         ms = int(r.get("at") or time.time() * 1000)
         when = datetime.fromtimestamp(ms / 1000, HCM)
@@ -774,6 +811,10 @@ def handle(method, parts, rec):
             return responses(fid)
         if method == "GET" and parts[1:] == ["csv"]:
             return to_csv(fid)
+        if method == "GET" and len(parts) == 3 and parts[1] == "answer":
+            return answer(fid, parts[2])
+        if method == "POST" and parts[1:] == ["task"]:
+            return make_task(fid, rec.get("rid"))
         if method == "POST" and parts[1:] == ["publish"]:
             return publish(fid)
         if method == "POST" and parts[1:] == ["close"]:
