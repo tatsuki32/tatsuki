@@ -3347,6 +3347,22 @@ function habitsView(){
   ${notesHere("habits")}
   ${list.length?`<div class="habits">${list.map(card).join("")}</div>`:`<div class="card empty"><b>No habits yet</b>Start with "+ Add a habit". Small ones like "walk 5 minutes" or "a glass of water" are plenty.</div>`}`;
 }
+/* confirm() does nothing in the Desk window (WKWebView answers "Cancel" without showing anything), so yes/no is asked in an in-page dialog */
+function askYes(msg,yes){
+  return new Promise(res=>{
+    if($("#modal").firstChild) return res(false);
+    $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop" role="alertdialog" aria-modal="true" aria-labelledby="askMsg">
+      <p id="askMsg" style="white-space:pre-wrap;margin:0 0 16px">${esc(msg)}</p>
+      <div class="row"><button class="btn primary" id="askYes">${esc(yes||"OK")}</button><button class="btn" id="askNo">Cancel</button></div>
+    </div></div>`;
+    const done=v=>{document.removeEventListener("keydown",key,true);$("#modal").innerHTML="";res(v)};
+    const key=e=>{if(e.key==="Escape"){e.preventDefault();e.stopPropagation();done(false)}};
+    document.addEventListener("keydown",key,true);
+    $("#askYes").focus();
+    $("#askYes").onclick=()=>done(true);$("#askNo").onclick=()=>done(false);
+    $("#scrim").onclick=e=>{if(e.target.id==="scrim")done(false)};
+  });
+}
 /* prompt()/confirm() do not work in a claude.ai Artifact (they return null silently), so input is asked in an in-page dialog */
 function askText(title,label,value,maxLen){
   return new Promise(res=>{
@@ -3638,7 +3654,7 @@ function wireIg(t){
   const i=((S.ig||{}).items||{})[t?.id]; if(!i) return;
   const c=$("#igCopy"); if(c) c.onclick=async()=>toast(await copyText($("#igText").value)?"📋 Copied":"Couldn't copy");
   const s=$("#igSend"); if(s) s.onclick=async()=>{const text=$("#igText").value.trim();if(!text){toast("Write the reply first");return}
-    if(!confirm(`Send this to @${i.name} on Instagram?\n\n${text}`))return; s.disabled=true;
+    if(!await askYes(`Send this to @${i.name} on Instagram?\n\n${text}`))return; s.disabled=true;
     const r=await fetch("/api/instagram/send",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({task:t.id,text})});let v={};try{v=await r.json()}catch(e){}
     if(!r.ok){toast(v.error||"Couldn't send");s.disabled=false;return}
     toast("Sent on Instagram");S.ig=await api("GET","/api/instagram").catch(()=>({}));
@@ -6717,10 +6733,10 @@ function wireCp(){
     try{const v=await cpPost(`/api/campus/issues/${d.id}/send`,{expect:c.confirm.active});c.doc=v.issue;c.confirm=null;
       c.msg=`Sent #${v.issue.no} to ${v.result.sent} readers.${v.result.pending?` ${v.result.pending} more go out tomorrow (daily limit).`:""}`;await cpLoad(d.id)}
     catch(e){c.confirm=null;c.msg=e.message}c.busy="";cpDraw()});
-  $("#cpDel")&&($("#cpDel").onclick=async()=>{if(!confirm("Delete this draft?"))return;try{await cpPost(`/api/campus/issues/${d.id}/remove`);c.doc=null;c.cur=null;await cpLoad()}catch(e){toast(e.message)}});
+  $("#cpDel")&&($("#cpDel").onclick=async()=>{if(!await askYes("Delete this draft?"))return;try{await cpPost(`/api/campus/issues/${d.id}/remove`);c.doc=null;c.cur=null;await cpLoad()}catch(e){toast(e.message)}});
   $("#cpsClose")&&($("#cpsClose").onclick=()=>{c.settings=false;cpDraw()});
   $("#cpsSave")&&($("#cpsSave").onclick=async()=>{try{c.data.settings=await cpPut("/api/campus/settings",{fromName:$("#cpsName").value,address:$("#cpsAddr").value,contact:$("#cpsContact").value,testTo:$("#cpsTest").value});c.settings=false;c.msg="Settings saved";await cpLoad()}catch(e){c.msg=e.message;cpDraw()}});
-  $("#cpsLanding")&&($("#cpsLanding").onclick=async()=>{if(!confirm("Publish tany.im/campus/ now? The site is deployed."))return;c.busy="landing";cpDraw();try{const v=await cpPost("/api/campus/publish-landing");c.msg="Signup page is up: "+v.url}catch(e){c.msg=e.message}c.busy="";cpDraw()});
+  $("#cpsLanding")&&($("#cpsLanding").onclick=async()=>{if(!await askYes("Publish tany.im/campus/ now? The site is deployed."))return;c.busy="landing";cpDraw();try{const v=await cpPost("/api/campus/publish-landing");c.msg="Signup page is up: "+v.url}catch(e){c.msg=e.message}c.busy="";cpDraw()});
 }
 document.addEventListener("keydown",e=>{
   if(viewId()!=="campus"||!(e.metaKey||e.ctrlKey))return;
@@ -6745,12 +6761,12 @@ function wirePsBulk(ctx,ids,set){
   const p=ps(),all=s=>document.querySelectorAll(s);
   all(`[data-pssel^="${ctx}|"]`).forEach(c=>c.onchange=()=>{const id=c.dataset.pssel.slice(ctx.length+1),l=psSel(ctx);
     if(c.checked){if(!l.includes(id))l.push(id)}else l.splice(l.indexOf(id),1);psDraw()});
-  all(`[data-psbulk^="${ctx}|"]`).forEach(b=>b.onclick=()=>{const k=b.dataset.psbulk.split("|")[1],now=ids();
+  all(`[data-psbulk^="${ctx}|"]`).forEach(b=>b.onclick=async()=>{const k=b.dataset.psbulk.split("|")[1],now=ids();
     if(k==="none"){p.sel[ctx]=[];return psDraw()}
     if(k==="every"){p.sel[ctx]=[...now];return psDraw()}
     if(k==="undo"){const back=p.undo.list;p.undo=null;return set(back)}
     const out=k==="all"?now:psSel(ctx).filter(id=>now.includes(id));if(!out.length)return;
-    if(k==="all"&&!confirm(`Remove all ${now.length} pictures from this ${ctx==="new"?"list":"post"}?`))return;
+    if(k==="all"&&!await askYes(`Remove all ${now.length} pictures from this ${ctx==="new"?"list":"post"}?`))return;
     p.undo={ctx,list:now};p.sel[ctx]=[];set(now.filter(id=>!out.includes(id)))});
 }
 function psNew(){
@@ -6847,7 +6863,7 @@ function wirePsStrip(){
   const p=ps(),post=p.cur;if(!post)return;const ids=()=>post.photos.map(x=>x.id);
   const save=list=>psPut({photos:list}).then(()=>{p.n={};psDraw()});
   all("[data-psmove]").forEach(b=>b.onclick=()=>{const [i,d]=b.dataset.psmove.split("|").map(Number),l=ids();[l[i],l[i+d]]=[l[i+d],l[i]];save(l)});
-  all("[data-psrm]").forEach(b=>b.onclick=()=>{if(post.photos.length===1&&!confirm("Remove the last picture?"))return;const l=ids();p.undo={ctx:"strip",list:[...l]};l.splice(+b.dataset.psrm,1);save(l)});
+  all("[data-psrm]").forEach(b=>b.onclick=async()=>{if(post.photos.length===1&&!await askYes("Remove the last picture?"))return;const l=ids();p.undo={ctx:"strip",list:[...l]};l.splice(+b.dataset.psrm,1);save(l)});
   wirePsBulk("strip",ids,save);
   let from=-1;
   all("[data-psord]").forEach(el=>{el.ondragstart=()=>{from=+el.dataset.psord};el.ondragover=e=>e.preventDefault();
@@ -7004,12 +7020,12 @@ function wirePs(){
   all("[data-pslinkmode]").forEach(el=>el.onchange=()=>saveSet({targets:[{id:el.dataset.pslinkmode,link:el.value}]}));
   all("[data-psacc]").forEach(el=>el.onchange=()=>saveSet({targets:[{id:el.dataset.psacc,account:el.value}]}));
   all("[data-psslots]").forEach(el=>el.onblur=()=>{if(el.value!==psSlotsText(tOf(el.dataset.psslots)?.slots))saveSet({targets:[{id:el.dataset.psslots,slots:psSlotsParse(el.value)}]})});
-  const approve=async(id,body,ask)=>{const t=tOf(id);if(ask&&!confirm(ask))return;
+  const approve=async(id,body,ask,yes)=>{const t=tOf(id);if(ask&&!await askYes(ask,yes))return;
     try{p.cur=await psSend("POST",`/api/posts/${encodeURIComponent(p.cur.id)}/approve`,{target:id,...body});toast(body.when==="now"?"Posting":"Scheduled")}catch(e){toast(e.message)}psDraw();psOpen(p.cur.id)};
-  all("[data-psnow]").forEach(b=>b.onclick=()=>{const t=tOf(b.dataset.psnow);approve(b.dataset.psnow,{when:"now"},`Post this to ${psHandle(t)} now? It will be public.`)});
+  all("[data-psnow]").forEach(b=>b.onclick=()=>{const t=tOf(b.dataset.psnow);approve(b.dataset.psnow,{when:"now"},`Post this to ${psHandle(t)} now? It will be public.`,"Post now")});
   all("[data-psslot]").forEach(b=>b.onclick=()=>approve(b.dataset.psslot,{when:"slot"}));
   all("[data-psatgo]").forEach(b=>b.onclick=()=>{const v=$(`[data-psat="${b.dataset.psatgo}"]`)?.value;if(!v){toast("Choose a date and time first");return}approve(b.dataset.psatgo,{when:"at",at:new Date(v).getTime()})});
-  all("[data-psunq]").forEach(b=>b.onclick=async()=>{if(!confirm("Cancel this scheduled post?"))return;try{p.cur=await psSend("POST",`/api/posts/${encodeURIComponent(p.cur.id)}/unqueue`,{target:b.dataset.psunq})}catch(e){toast(e.message)}psDraw()});
+  all("[data-psunq]").forEach(b=>b.onclick=async()=>{if(!await askYes("Cancel this scheduled post?"))return;try{p.cur=await psSend("POST",`/api/posts/${encodeURIComponent(p.cur.id)}/unqueue`,{target:b.dataset.psunq})}catch(e){toast(e.message)}psDraw()});
   all("[data-pspick]").forEach(c=>c.onchange=()=>{const id=c.dataset.pspick;p.pick=c.checked?[...new Set([...(p.pick||[]),id])]:(p.pick||[]).filter(x=>x!==id)});
   const make=$("#psMake");if(make)make.onclick=async()=>{
     p.busy=true;p.err="";psDraw();
@@ -7036,10 +7052,10 @@ function wirePs(){
     for(const n of p.cur.used?.[id]||[]){try{const v=await psSend("POST",`/api/posts/${encodeURIComponent(p.cur.id)}/save`,{target:id,n});
       const a=document.createElement("a");a.href="/api/utilities/file/"+v.file;a.download="";document.body.append(a);a.click();a.remove()}catch(e){toast(e.message);break}}
     toast("Saving to Downloads")});
-  const pub=async(body,ask)=>{if(ask&&!confirm(ask))return;try{p.cur=await psSend("POST",`/api/posts/${encodeURIComponent(p.cur.id)}/publish`,{tag:$("[data-pstag]")?.value,...body});toast(body.when==="at"?"Scheduled":"Publishing")}catch(e){toast(e.message)}psDraw();psOpen(p.cur.id)};
+  const pub=async(body,ask)=>{if(ask&&!await askYes(ask))return;try{p.cur=await psSend("POST",`/api/posts/${encodeURIComponent(p.cur.id)}/publish`,{tag:$("[data-pstag]")?.value,...body});toast(body.when==="at"?"Scheduled":"Publishing")}catch(e){toast(e.message)}psDraw();psOpen(p.cur.id)};
   all("[data-pspub]").forEach(b=>b.onclick=()=>pub({when:"now"},"Publish this article on tany.im/news/ now? It will be public."));
   all("[data-pspubatgo]").forEach(b=>b.onclick=()=>{const v=$("[data-pspubat]")?.value;if(!v){toast("Choose a date and time first");return}pub({when:"at",at:new Date(v).getTime()})});
-  all("[data-psunpub]").forEach(b=>b.onclick=async()=>{if(!confirm(p.cur.site?.status==="live"?"Take this article off tany.im?":"Cancel the scheduled article?"))return;try{p.cur=await psSend("POST",`/api/posts/${encodeURIComponent(p.cur.id)}/unpublish`,{})}catch(e){toast(e.message)}psDraw()});
+  all("[data-psunpub]").forEach(b=>b.onclick=async()=>{if(!await askYes(p.cur.site?.status==="live"?"Take this article off tany.im?":"Cancel the scheduled article?"))return;try{p.cur=await psSend("POST",`/api/posts/${encodeURIComponent(p.cur.id)}/unpublish`,{})}catch(e){toast(e.message)}psDraw()});
   all("[data-pssavevid]").forEach(b=>b.onclick=async()=>{b.disabled=true;b.textContent="Making the video…";try{const v=await psSend("POST",`/api/posts/${encodeURIComponent(p.cur.id)}/savevideo`,{target:b.dataset.pssavevid});
     const a=document.createElement("a");a.href="/api/utilities/file/"+v.file;a.download="";document.body.append(a);a.click();a.remove();toast("Saving to Downloads")}catch(e){toast(e.message)}b.disabled=false;b.textContent="Save video"});
   all("[data-psconnect]").forEach(b=>b.onclick=async()=>{try{const v=await psSend("POST","/api/posts/connect",{provider:b.dataset.psconnect});
