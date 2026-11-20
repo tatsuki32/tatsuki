@@ -29,7 +29,7 @@ class Sheet(unittest.TestCase):
         self.assertEqual(ls.parse_day("2026-08-09"), "2026-08-09")
         self.assertEqual(ls.parse_day("2026/08/09"), "2026-08-09")
         self.assertEqual(ls.parse_day("26/08/2026"), "2026-08-26")
-        self.assertEqual(ls.parse_day("12/08/2026 17:00:00"), "2026-08-13")
+        self.assertEqual(ls.parse_day("12/08/2026 17:00:00"), "2026-08-12")
         self.assertIsNone(ls.parse_day("x"))
 
     def test_sleep_zero_and_slid_columns(self):
@@ -55,11 +55,11 @@ class Sheet(unittest.TestCase):
         p = self.csv("m.csv", ",項目,エネルギー(kcal),飽和脂肪酸(g)\n,目標値,1850,1\n,種別(以上/未満),未満,未満\n日付,完璧度(%),エネルギー(kcal),飽和脂肪酸(g)\n"
                               "12/08/2026 17:00:00,81%,2530,12\n")
         recs = ls.records([p])
-        r = recs["sheet-meal-2026-08-13"]
+        r = recs["sheet-meal-2026-08-12"]
         self.assertEqual((r["kind"], r["values"]["energy_kcal"], r["values"]["saturated_fat_g"]), ("meal_screen", 2530, 12))
         ls.write(recs)
         with open(os.path.join(self.tmp, "habits.json"), encoding="utf-8") as f:
-            self.assertIn("2026-08-13", {h["id"]: h for h in json.load(f)}["log-meals"]["done"])
+            self.assertIn("2026-08-12", {h["id"]: h for h in json.load(f)}["log-meals"]["done"])
 
 
 if __name__ == "__main__":

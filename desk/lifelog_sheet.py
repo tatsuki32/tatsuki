@@ -8,8 +8,9 @@ Save each tab of the sheet as CSV (File → Download → CSV) and run, on the Ma
 
 The tab is told by its header row: sleep, meal_daily, 体重 (weight and body composition), steps, 血糖値 (glucose).
 What is fixed on the way in:
-  - dates in four shapes (2026-08-09, 2026/08/09, 26/08/2026, 13/08/2026 17:00:00) become YYYY-MM-DD. A time of
-    17:00:00 is midnight in Ho Chi Minh written in UTC, so that row is the next day.
+  - dates in four shapes (2026-08-09, 2026/08/09, 26/08/2026, 13/08/2026 17:00:00) become YYYY-MM-DD. The time
+    is dropped: the real sheet shows that a 17:00:00 row is that same day (taking it as the next day would put two
+    rows on 8/13 and 8/14).
   - a 0 is "not recorded", not zero; an empty row is skipped.
   - two rows for the same day: the later row wins.
   - sleep rows whose bedtime and wake time slid into the night-sleep and nap columns are put back.
@@ -23,7 +24,7 @@ import os
 import re
 import sys
 import time
-from datetime import date, timedelta
+from datetime import date
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lifelog as ll  # noqa: E402
@@ -60,8 +61,6 @@ def parse_day(text):
         day = date(y, mo, d)
     except ValueError:
         return None
-    if hour is not None and int(hour) == 17:
-        day += timedelta(days=1)  # midnight in Ho Chi Minh, written in UTC
     return day.isoformat()
 
 
