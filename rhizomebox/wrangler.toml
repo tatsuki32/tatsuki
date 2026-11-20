@@ -1,0 +1,38 @@
+# Rhizome Box — notes that grow like roots. https://rhizomebox.tany.im
+# Test:    cd rhizomebox && npm test
+# Tables:  npx wrangler d1 execute rhizomebox --remote --file schema.sql
+# Deploy:  npx wrangler deploy
+# Secrets (never in this repo):
+#   OWNER_EMAIL  the only address that can sign in (must be a verified destination in Email Routing for tany.im)
+#   MAIL_FROM    the sender of sign-in codes, an address at tany.im
+#   BACKUP_KEY   lets the Mac's Desk download a daily copy (macOS keychain item tatsuki-desk-rhizomebox)
+name = "rhizomebox"
+main = "src/index.js"
+compatibility_date = "2026-11-01"
+
+# Test stage: only the workers.dev address, hidden from search engines (STAGE=1). With no BASE_URL the
+# server uses the address the request came in on.
+# At launch: remove STAGE, set workers_dev = false, BASE_URL = "https://rhizomebox.tany.im" and add
+#   routes = [{ pattern = "rhizomebox.tany.im", custom_domain = true }]
+workers_dev = true
+
+[vars]
+STAGE = "1"
+
+[assets]
+directory = "public"
+binding = "ASSETS"
+run_worker_first = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "rhizomebox"
+database_id = "ec424b37-7619-4a98-8ac0-e0bf410a6712"
+
+[[r2_buckets]]
+binding = "FILES"
+bucket_name = "rhizomebox-files"
+
+# sign-in codes go only to verified Email Routing destinations
+[[send_email]]
+name = "MAIL"
