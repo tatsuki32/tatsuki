@@ -508,6 +508,49 @@ def month_usage():
     return read_json(lp("usage.json"), {}).get(today()[:7], {"photos": 0, "usd": 0.0})
 
 
+# Habits that tick themselves (2026-11-20): a sleep or meal record for a day puts that day into the habit's `done`.
+# They live in the Desk's habits (desk/data/habits.json) like any other habit; the owner can still tick or untick them.
+LOG_HABITS = (("log-sleep", "Log sleep", "😴", ("sleep",)), ("log-meals", "Log meals", "🍽️", ("meal_photo", "meal_screen")))
+
+
+def ensure_log_habits():
+    """Adds the two habits once. One deleted on purpose (deleted: true) stays deleted."""
+    path = os.path.join(data_dir(), "habits.json")
+    habits = read_json(path, [])
+    habits = habits if isinstance(habits, list) else []
+    have = {h.get("id") for h in habits if isinstance(h, dict)}
+    now = int(time.time() * 1000)
+    add = [{"id": hid, "name": name, "emoji": emoji, "done": [], "auto": kinds[0], "createdAt": now + i, "updatedAt": now}
+           for i, (hid, name, emoji, kinds) in enumerate(LOG_HABITS) if hid not in have]
+    if add:
+        write_json(path, habits + add)
+    return len(add)
+
+
+def mark_log_habits(records):
+    """Ticks the record's day on its habit. Never unticks; a deleted habit is left alone."""
+    days = {}
+    for r in records:
+        for hid, _, _, kinds in LOG_HABITS:
+            if r.get("kind") in kinds and r.get("date"):
+                days.setdefault(hid, set()).add(r["date"])
+    if not days:
+        return 0
+    ensure_log_habits()
+    path = os.path.join(data_dir(), "habits.json")
+    habits, changed = read_json(path, []), 0
+    for h in habits:
+        if isinstance(h, dict) and h.get("id") in days and not h.get("deleted"):
+            new = days[h["id"]] - set(h.get("done") or [])
+            if new:
+                h["done"] = sorted(set(h.get("done") or []) | new)
+                h["updatedAt"] = int(time.time() * 1000)
+                changed += 1
+    if changed:
+        write_json(path, habits)
+    return changed
+
+
 def _save_records(entry, records):
     """Writes each checked record, keyed by the photo so that reading a photo twice never doubles anything.
     A photo read again on purpose replaces its old reading, unless the owner already corrected that record."""
@@ -524,6 +567,7 @@ def _save_records(entry, records):
             saved.append(target[rec["id"]])
         write_json(bp("records.json"), body)
         write_json(receipts_path(), receipts)
+    mark_log_habits(saved)
     return saved
 
 
@@ -960,7 +1004,8 @@ def repeat_meal(rec_id, day=None):
         new_id = f"repeat-{int(time.time() * 1000)}"
         store[new_id] = {**src, "id": new_id, "date": day, "source": "repeat", "at": int(time.time()), "doubts": [], "status": "confirmed"}
         write_json(bp("records.json"), store)
-        return store[new_id]
+    mark_log_habits([store[new_id]])
+    return store[new_id]
 
 
 def view(day=None):
