@@ -1,3 +1,5 @@
+> **STOPPED (2026-11-20, the owner's decision).** If you are the `desk-world-brief` scheduled task: do not write an edition today. Write nothing, and end with one line: "World Desk is stopped; disable this task in the Claude app." Today's headlines on the Desk now come from Sift Daily.
+
 # World Desk の号の形（読む画面つき）
 
 World Desk の号は `editions/<日付>` に置きます（`python3 desk/sync.py put editions YYYY-MM-DD <file>`）。

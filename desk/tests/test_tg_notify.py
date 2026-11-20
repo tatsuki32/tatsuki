@@ -13,6 +13,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."
 import tg_notify as tg  # noqa: E402
 
 S = tg.clean_settings({})
+ALL = tg.clean_settings({"on": {k: True for k, _ in tg.KINDS}})  # every kind on
+ONE = tg.clean_settings({"on": {k: k != "digest" for k, _ in tg.KINDS}})  # one message per task
 
 
 def at(h, m=0, days=0):
@@ -39,31 +41,68 @@ class Plan(unittest.TestCase):
         self.assertEqual(st["seen"], {"a": "notyet"})
 
     def test_added_done_deleted(self):
-        _, st = tg.plan(at(10), [task("a"), task("b")], [], S, tg.blank_state())
-        out, st = tg.plan(at(10, 1), [task("a", "done"), task("b", deleted=True), task("c")], [], S, st)
+        _, st = tg.plan(at(10), [task("a"), task("b")], [], ALL, tg.blank_state())
+        out, st = tg.plan(at(10, 1), [task("a", "done"), task("b", deleted=True), task("c")], [], ALL, st)
         self.assertEqual(sorted(texts(out)), ["✅ Done: Task a", "🆕 Task added: Task c", "🗑️ Deleted: Task b"])
-        out, st = tg.plan(at(10, 2), [task("a", "done"), task("b", deleted=True), task("c")], [], S, st)
+        out, st = tg.plan(at(10, 2), [task("a", "done"), task("b", deleted=True), task("c")], [], ALL, st)
         self.assertEqual(texts(out), [])
 
+    def test_own_changes_are_quiet_by_default(self):
+        _, st = tg.plan(at(10), [task("a"), task("b")], [], S, tg.blank_state())
+        out, _ = tg.plan(at(10, 1), [task("a", "done"), task("b", deleted=True), task("c"), task("d", "doing")], [], S, st)
+        self.assertEqual(texts(out), [])
+
+    def test_old_saved_settings_move_to_the_digest(self):
+        os.makedirs(tg.DIR, exist_ok=True)
+        tg.write_json("settings.json", {"on": {k: True for k, _ in tg.KINDS if k != "digest"}, "chat": ""})
+        s = tg.settings()
+        self.assertFalse(s["on"]["added"])
+        self.assertTrue(s["on"]["digest"])
+        tg.write_json("settings.json", {**s, "on": {**s["on"], "added": True}})
+        self.assertTrue(tg.settings()["on"]["added"])  # chosen after the change: kept
+        os.remove(os.path.join(tg.DIR, "settings.json"))
+
+    def test_morning_digest_is_one_message(self):
+        old = (at(10) - 5 * tg.DAY) * 1000
+        tasks = [task("t", due_days=0), task("m", due_days=1), task("o", due_days=-9), task("s", "doing", updatedAt=old)]
+        out, st = tg.plan(at(10), tasks, [], S, tg.blank_state())
+        self.assertEqual(len(out), 1)
+        text = out[0]["text"]
+        self.assertTrue(text.startswith("☀️ Today,"))
+        for line in ("Past due", "• Task o (9 days)", "Due today", "• Task t", "Due tomorrow", "• Task m",
+                     "In progress, untouched 3+ days", "• Task s", "http://localhost:4747/#home"):
+            self.assertIn(line, text)
+        out, _ = tg.plan(at(11), tasks, [], S, st)
+        self.assertEqual(out, [])
+
+    def test_digest_cuts_long_sections(self):
+        tasks = [task(f"o{i}", due_days=-1) for i in range(12)]
+        out, _ = tg.plan(at(10), tasks, [], S, tg.blank_state())
+        self.assertIn(f"+{12 - tg.DIGEST_LINES} more", out[0]["text"])
+
+    def test_nothing_due_no_digest(self):
+        out, _ = tg.plan(at(10), [task("a")], [], S, tg.blank_state())
+        self.assertEqual(out, [])
+
     def test_night_waits_for_four(self):
-        _, st = tg.plan(at(22), [task("a")], [], S, tg.blank_state())
-        out, st = tg.plan(at(23), [task("a"), task("c")], [], S, st)
+        _, st = tg.plan(at(22), [task("a")], [], ALL, tg.blank_state())
+        out, st = tg.plan(at(23), [task("a"), task("c")], [], ALL, st)
         self.assertEqual(texts(out), [])
         self.assertEqual(len(st["queue"]), 1)
-        out, st = tg.plan(at(4, 0, 1), [task("a"), task("c")], [], S, st)
+        out, st = tg.plan(at(4, 0, 1), [task("a"), task("c")], [], ALL, st)
         self.assertIn("🆕 Task added: Task c", texts(out))
 
     def test_due_and_overdue_once_a_day(self):
         tasks = [task("t", due_days=0), task("m", due_days=1), task("o", due_days=-9)]
-        out, st = tg.plan(at(10), tasks, [], S, tg.blank_state())
+        out, st = tg.plan(at(10), tasks, [], ONE, tg.blank_state())
         self.assertEqual(texts(out), ["🚨 Overdue 9 days: Task o", "⏰ Due today: Task t", "📅 Due tomorrow: Task m"])
         self.assertIn("http://localhost:4747/#task/o", out[0]["text"])
-        out, st = tg.plan(at(11), tasks, [], S, st)
+        out, st = tg.plan(at(11), tasks, [], ONE, st)
         self.assertEqual(texts(out), [])
 
     def test_stuck_and_doing(self):
         old = (at(10) - 5 * tg.DAY) * 1000
-        out, _ = tg.plan(at(10), [task("s", "doing", updatedAt=old), task("d", "doing")], [], S, tg.blank_state())
+        out, _ = tg.plan(at(10), [task("s", "doing", updatedAt=old), task("d", "doing")], [], ONE, tg.blank_state())
         self.assertEqual(len(out), 2)
         self.assertTrue(texts(out)[0].startswith("⏸️ In progress, untouched for"))
         self.assertEqual(texts(out)[1], "▶️ In progress: Task d")
@@ -77,14 +116,14 @@ class Plan(unittest.TestCase):
 
     def test_limit_then_one_line(self):
         tasks = [task(f"o{i}", due_days=-1) for i in range(40)]
-        out, st = tg.plan(at(10), tasks, [], S, tg.blank_state())
+        out, st = tg.plan(at(10), tasks, [], ONE, tg.blank_state())
         self.assertEqual(len(out), tg.PER_TICK)
-        out, st = tg.plan(at(10, 1), tasks, [], S, st)
+        out, st = tg.plan(at(10, 1), tasks, [], ONE, st)
         self.assertEqual(len(out), tg.CAP - tg.PER_TICK + 1)
         self.assertTrue(out[-1]["text"].startswith("➕ 10 more task notifications"))
 
     def test_off_kind_not_sent(self):
-        s = tg.clean_settings({"on": {"due0": False}})
+        s = tg.clean_settings({"on": {"due0": False, "digest": False}})
         out, _ = tg.plan(at(10), [task("t", due_days=0)], [], s, tg.blank_state())
         self.assertEqual(out, [])
 
