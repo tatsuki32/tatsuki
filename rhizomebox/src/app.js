@@ -335,6 +335,8 @@ export async function handle(req, env, ctx, deps) {
   const stage = !!env.STAGE;
 
   if (path.startsWith('/app/') || path === '/favicon.svg' || path === '/og.png') return env.ASSETS.fetch(req);
+  // Search Console ownership check for https://rhizomebox.tany.im/ (keep it, or the property stops being verified)
+  if (path === '/google452bda1af1e31bf3.html') return new Response('google-site-verification: google452bda1af1e31bf3.html', { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
   if (path === '/robots.txt') {
     const body = stage ? 'User-agent: *\nDisallow: /\n' : `User-agent: *\nDisallow: /_/\nAllow: /\nSitemap: ${base}/sitemap.xml\n`;
     return new Response(body, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } });

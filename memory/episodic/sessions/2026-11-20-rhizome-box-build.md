@@ -40,3 +40,8 @@
 - 本人がログインできたので、rhizomebox.tany.im につないで公開した（STAGE を外し、workers.dev は止めた）。robots は `/_/` だけ止める、サイトマップに公開ページ。
 - Mac の写しを本番の住所に向けた（config.json を消した）。外から全住所と画面（写真・フォント・エラーなし）を確かめた。
 - 残り：Search Console に rhizomebox.tany.im を足す（今の許可は読むだけなので本人の操作か、許可の追加が要る）。
+
+## 追記 2026-11-21：Search Console
+- URL プレフィックス `https://rhizomebox.tany.im/` を足し、HTML ファイルで確認。サイトマップ `/sitemap.xml` は Success（2ページ）。
+- Workers の静的配信は `.html` を外す 307 をかけるので、確認ファイルは `src/app.js` が文字で直接返す。
+- wrangler の deploy はサンドボックスの中だとログイン情報の更新が書けずに失敗する。
