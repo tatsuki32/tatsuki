@@ -87,6 +87,29 @@ class AnkiTest(unittest.TestCase):
         self.assertEqual(c["anki"]["noteId"], notes[0]["noteId"])
         self.assertEqual(anki.round_(s)["sent"], 0)  # never twice
 
+    def test_note_this_card_made_is_recognized_as_sent(self):
+        s = MemStore([card("ягода", lang="ru")])
+        anki.round_(s)
+        c = s.cards()[0]
+        nid = c["anki"]["noteId"]
+        s.put({**c, "anki": {"state": "error", "error": "cannot create note because it is a duplicate"}})
+        out = anki.round_(s)
+        a = s.cards()[0]["anki"]
+        self.assertEqual((out["sent"], out["failed"]), (1, 0))
+        self.assertEqual((a["state"], a["noteId"], a["deck"]), ("sent", nid, "Desk::Russian"))
+        self.assertEqual(len(self.fake.notes), 2)  # the seeded one + ours, nothing new
+
+    def test_two_rounds_at_once_send_each_card_once(self):
+        import threading
+        s = MemStore([card(w) for w in ("alpha", "bravo", "charlie", "delta")])
+        res = []
+        ts = [threading.Thread(target=lambda: res.append(anki.round_(s))) for _ in range(2)]
+        [t.start() for t in ts]
+        [t.join() for t in ts]
+        self.assertEqual(sum(r["sent"] for r in res), 4)
+        self.assertEqual(sum(r["failed"] for r in res), 0)
+        self.assertTrue(all(c["anki"]["state"] == "sent" for c in s.cards()))
+
     def test_existing_word_anywhere_is_not_added(self):
         s = MemStore([card("esti", lang="eo")])
         out = anki.round_(s)

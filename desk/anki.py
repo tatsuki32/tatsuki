@@ -59,6 +59,7 @@ CSS = """.card{font-family:-apple-system,"Hiragino Sans",sans-serif;font-size:20
 .nightMode .card,.card.nightMode{color:#eee;background:#222}.nightMode .ctx{color:#ccc}"""
 
 _kick = threading.Event()
+_round_lock = threading.Lock()  # the minute loop and "Send now" must not send the same card twice
 _state = {"connected": False, "version": None, "checkedAt": 0, "error": "", "due": None, "dueAt": 0, "lastRound": 0}
 
 
@@ -228,8 +229,27 @@ def find_existing(card):
     return None
 
 
+def find_own(card):
+    """The note this Desk card already made (its DeskId field), or None."""
+    if not card.get("id"):
+        return None
+    ids = call("findNotes", query='"note:' + MODEL + '" "DeskId:' + re.sub(r'(["\\*_])', r"\\\1", card["id"]) + '"' ) or []
+    if not ids:
+        return None
+    n = (call("notesInfo", notes=ids[:1]) or [None])[0] or {}
+    deck = ""
+    if n.get("cards"):
+        info = call("cardsInfo", cards=n["cards"][:1]) or []
+        deck = info[0].get("deckName", "") if info else ""
+    sent = {k: (v or {}).get("value", "") for k, v in (n.get("fields") or {}).items()}
+    return {"state": "sent", "noteId": n.get("noteId") or ids[0], "deck": deck, "at": now_ms(), "sent": sent}
+
+
 def send(card, known_decks):
     """One card to Anki. Returns the card's new `anki` record."""
+    own = find_own(card)
+    if own:
+        return own
     have = find_existing(card)
     if have:
         return {"state": "exists", "noteId": have["noteId"], "deck": have["deck"], "at": now_ms()}
@@ -271,7 +291,13 @@ def refresh(card):
 
 
 def round_(store):
-    """One pass: send what waits, refresh what changed. Returns counts. Raises Closed when Anki is not there."""
+    """One pass: send what waits, refresh what changed. Returns counts. Raises Closed when Anki is not there.
+    Only one pass runs at a time; a second caller waits and then sees the cards the first one sent."""
+    with _round_lock:
+        return _round(store)
+
+
+def _round(store):
     version = call("version", timeout=3)
     _state.update(connected=True, version=version, checkedAt=now_ms(), error="")
     all_cards = store.cards()

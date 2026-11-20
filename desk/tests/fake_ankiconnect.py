@@ -44,6 +44,10 @@ class FakeAnki:
             self.decks.add(p["deck"])
             return 1
         if action == "findNotes":
+            own = re.search(r'"DeskId:((?:[^"\\]|\\.)*)"', p["query"])
+            if own:
+                want = own.group(1).replace('\\', '')
+                return [nid for nid, n in self.notes.items() if n["fields"].get("DeskId", {}).get("value") == want]
             words = [w.replace('\\', '') for w in re.findall(r'"((?:[^"\\]|\\.)*)"', p["query"])]
             return [nid for nid, n in self.notes.items()
                     if any(w.lower() in f["value"].lower() for w in words for f in n["fields"].values())]
