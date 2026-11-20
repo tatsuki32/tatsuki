@@ -246,8 +246,21 @@ def fetch_ethnic(lang_qids, opener=urllib.request.urlopen):
     qids = list(dict.fromkeys(lang_qids))[:ETHNIC_MAX_LANGS]
     if not qids:
         raise RuntimeError("no languages from Wikidata yet (official/used failed), so the peoples are left as they were")
+    # batches already answered today are kept in raw/ethnic.part.json, so a run cut short goes on from there
+    part = _read("raw/ethnic.part.json", {}) or {}
+    if part.get("at") != today():
+        part = {"at": today(), "done": {}}
     for i in range(0, len(qids), ETHNIC_BATCH):
-        out += sparql(Q_ETHNIC % " ".join("wd:" + q for q in qids[i:i + ETHNIC_BATCH]), opener=opener)
+        batch = qids[i:i + ETHNIC_BATCH]
+        key = f"{batch[0]}-{len(batch)}"
+        if key not in part["done"]:
+            part["done"][key] = sparql(Q_ETHNIC % " ".join("wd:" + q for q in batch), opener=opener)
+            _write("raw/ethnic.part.json", part)
+        out += part["done"][key]
+    try:
+        os.remove(_path("raw/ethnic.part.json"))
+    except OSError:
+        pass
     return out
 
 
