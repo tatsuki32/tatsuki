@@ -38,6 +38,12 @@
       "port": 4794
     },
     {
+      "name": "desk-startclean-test",
+      "runtimeExecutable": "/bin/sh",
+      "runtimeArgs": ["-c", "cd desk && STARTCLEAN_DIR=/tmp/claude/startclean-test DESK_PORT=${PORT:-4799} exec python3 server.py"],
+      "port": 4799
+    },
+    {
       "name": "desk-notify-test",
       "runtimeExecutable": "/bin/sh",
       "runtimeArgs": ["-c", "cd desk && NOTIFY_DIR=/tmp/claude/desk-notify-test DESK_PORT=${PORT:-4793} exec python3 server.py"],

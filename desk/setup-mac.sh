@@ -12,6 +12,7 @@
 #   com.tatsuki.desk.linenight   21:00 to 3:30, on mains power only: keeps the Mac awake so the 3:00 check finds it unlocked
 #   com.tatsuki.desk.webhistory  every hour, Chrome history comes to desk/data/webhistory (chrome_web_sync.py, read only)
 #   com.tatsuki.desk.wifilogin   when the network changes: opens the Wi-Fi sign-in page in Safari if one is needed (wifilogin-setup.sh, which also puts Wi-Fi Login.app on the Desktop)
+#   com.tatsuki.desk.startclean  at the first login after the Mac starts: only Claude, the Desk and Terminal stay open; Desk Home reopens the rest (startup_clean.py)
 #   com.tatsuki.desk.telegram    the Telegram bot: photos and messages reach this Mac (lifeos/bot/run.py). Without a token it waits and tries again
 # Run it again any time; it replaces the old jobs. Remove with: bash desk/setup-mac.sh --uninstall
 set -euo pipefail
@@ -29,7 +30,7 @@ UID_="$(id -u)"
 unload() { launchctl bootout "gui/$UID_/$1" 2>/dev/null || true; rm -f "$AGENTS/$1.plist"; }
 
 if [[ "${1:-}" == "--uninstall" ]]; then
-  unload com.tatsuki.desk.server; unload com.tatsuki.desk.pull; unload com.tatsuki.desk.backup; unload com.tatsuki.desk.wise; unload com.tatsuki.desk.screentime; unload com.tatsuki.desk.tabwatch; unload com.tatsuki.desk.webhistory; unload com.tatsuki.desk.line; unload com.tatsuki.desk.linenight; unload com.tatsuki.desk.telegram
+  unload com.tatsuki.desk.startclean; unload com.tatsuki.desk.server; unload com.tatsuki.desk.pull; unload com.tatsuki.desk.backup; unload com.tatsuki.desk.wise; unload com.tatsuki.desk.screentime; unload com.tatsuki.desk.tabwatch; unload com.tatsuki.desk.webhistory; unload com.tatsuki.desk.line; unload com.tatsuki.desk.linenight; unload com.tatsuki.desk.telegram
   rm -f "$HOME/Desktop/Tatsuki's Desk.html" "$HOME/Desktop/Tatsuki's Desk.app"
   bash "$DESK/wifilogin-setup.sh" --uninstall >/dev/null 2>&1 || true
   echo "Desk の常駐ジョブを削除しました。$DESK/data のデータはそのまま残っています。"; exit 0
@@ -49,7 +50,7 @@ case "$REPO/" in
 esac
 
 # stop our own jobs first, then make sure nothing else holds the port (the old Desk server)
-unload com.tatsuki.desk.server; unload com.tatsuki.desk.pull; unload com.tatsuki.desk.backup; unload com.tatsuki.desk.wise; unload com.tatsuki.desk.screentime; unload com.tatsuki.desk.tabwatch; unload com.tatsuki.desk.webhistory; unload com.tatsuki.desk.line; unload com.tatsuki.desk.linenight; unload com.tatsuki.desk.telegram
+unload com.tatsuki.desk.startclean; unload com.tatsuki.desk.server; unload com.tatsuki.desk.pull; unload com.tatsuki.desk.backup; unload com.tatsuki.desk.wise; unload com.tatsuki.desk.screentime; unload com.tatsuki.desk.tabwatch; unload com.tatsuki.desk.webhistory; unload com.tatsuki.desk.line; unload com.tatsuki.desk.linenight; unload com.tatsuki.desk.telegram
 if lsof -nP -iTCP:"$PORT" -sTCP:LISTEN >/dev/null 2>&1; then
   echo "ポート $PORT を別のプログラムが使っています（古い Desk サーバーの可能性）："
   lsof -nP -iTCP:"$PORT" -sTCP:LISTEN
@@ -184,6 +185,23 @@ cat > "$AGENTS/com.tatsuki.desk.webhistory.plist" <<PLIST
 </dict></plist>
 PLIST
 launchctl bootstrap "gui/$UID_" "$AGENTS/com.tatsuki.desk.webhistory.plist"
+# Startup Clean: the first login after the Mac starts closes the apps macOS reopened. This boot counts as done,
+# so installing it now closes nothing
+"$PY" "$DESK/startup_clean.py" mark || true
+cat > "$AGENTS/com.tatsuki.desk.startclean.plist" <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>com.tatsuki.desk.startclean</string>
+  <key>ProgramArguments</key><array><string>$PY</string><string>$DESK/startup_clean.py</string><string>run</string></array>
+  <key>WorkingDirectory</key><string>$DESK</string>
+  <key>RunAtLoad</key><true/>
+  <key>LimitLoadToSessionType</key><string>Aqua</string>
+  <key>StandardOutPath</key><string>$LOGS/tatsuki-desk-startclean.log</string>
+  <key>StandardErrorPath</key><string>$LOGS/tatsuki-desk-startclean.log</string>
+</dict></plist>
+PLIST
+launchctl bootstrap "gui/$UID_" "$AGENTS/com.tatsuki.desk.startclean.plist"
 cat > "$AGENTS/com.tatsuki.desk.telegram.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">

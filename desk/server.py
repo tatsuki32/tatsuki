@@ -42,6 +42,7 @@ import checkin
 import tg_notify
 import event_alarm
 import pc_monitor
+import startup_clean  # Startup Clean: the apps closed at the first login after the Mac starts, and reopening them
 import wifi_qr  # a QR code that joins the Wi-Fi this Mac is on; the password is never kept
 import routine_alarm
 import routine_sync
@@ -1008,6 +1009,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, news_sync.today())
         if path == "/api/netspeed":
             return self.send(200, netspeed.view())
+        if path == "/api/startclean":  # the apps closed at startup (desk/startup_clean.py); names only
+            return self.send(200, startup_clean.view())
         if path == "/api/wifi-login":  # what Wi-Fi this Mac is on and whether it needs a sign-in (desk/wifi_login.py); opens nothing
             return self.send(200, wifi_login.view())
         if path == "/api/footprint":  # rough daily CO2e from records already here (desk/footprint.py); nothing is sent anywhere
@@ -1369,6 +1372,16 @@ class Handler(BaseHTTPRequestHandler):
             if step == ("POST", "tgconnect"):
                 return self.send(*tg_notify.connect())
             return self.send(404, {"error": "not found"})
+        if method == "POST" and urlsplit(self.path).path in ("/api/startclean/reopen", "/api/startclean/dismiss"):
+            # reopen only what startup_clean closed and listed itself; the page sends which ones, never a path to run
+            if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+                return self.send(415, {"error": "json only"})
+            if urlsplit(self.path).path.endswith("/dismiss"):
+                return self.send(200, startup_clean.dismiss())
+            keys = rec.get("apps")
+            if keys is not None and not (isinstance(keys, list) and all(isinstance(k, str) for k in keys)):
+                return self.send(400, {"error": "bad request"})
+            return self.send(200, startup_clean.reopen(keys))
         if method == "POST" and urlsplit(self.path).path == "/api/pc/close":
             # same protection as claude(): Host/Origin checked, and JSON from another origin needs a preflight
             if not (self.headers.get("Content-Type") or "").startswith("application/json"):

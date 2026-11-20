@@ -1055,6 +1055,7 @@ body.cpfocus .cp{grid-template-columns:minmax(0,1fr)}
 .btn.upin[aria-pressed="true"]{border-color:var(--ink);color:var(--ink);font-weight:700}
 .unote{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--s2) var(--s3);margin:0;padding:var(--s2) var(--s3);border-left:3px solid var(--line-2);background:var(--surface);font-size:var(--t2)}
 .unote>span:first-child{flex:1 1 20em;min-width:0}
+.scpick{flex:1 1 100%;display:flex;flex-wrap:wrap;align-items:center;gap:var(--s2) var(--s3)}.scpick label{display:flex;align-items:center;gap:var(--s1)}
 .unacts{display:flex;gap:var(--s2)}
 @media (max-width:760px){.urow{grid-template-columns:minmax(0,1fr) 3em 5em 4.5em}.urow .uw{display:none}.urow.ucards{grid-template-columns:minmax(0,1fr) 3em 5.5em 4.5em}.urow.ubtns{grid-template-columns:minmax(0,1fr) 3em 5.5em}}
 .pcline{justify-self:start;text-decoration:none}
@@ -5305,6 +5306,7 @@ function home(){
   return `
   <header class="head"><div><p class="eyebrow">${d.toLocaleDateString("en-US",{month:"long",day:"numeric",weekday:"long"})} · ${greet}</p></div><button class="btn primary" data-stuck>Stuck? Start with Claude <kbd>G</kbd></button></header>
   ${uNotice()}
+  ${scLine()}
   ${todayBlock()}
   ${suggCard()}
   ${uTag(progressCard(),"wins")}
@@ -8505,7 +8507,7 @@ async function uSync(){
 }
 if(LOCALAPI) window.addEventListener("focus",()=>{if(Date.now()-(S.uSyncAt||0)>3600000)uSync()}); // the window stays open for days: Monday still arrives
 const UVIA={nav:"Menu",home:"Home",link:"Link",key:"Key",search:"Search",other:"Other"};
-const UNAME={"#noteBtn":"Open notes","#aiBtn":"Ask Claude","#nextBtn":"What's next?","#moreBtn":"More screens","#pcLine":"PC status line","#soundBtn":"New-item sound","data-opennext":"What's next?","data-stuck":"Stuck? Start with Claude","data-sugg":"Claude's suggestions","data-tdtask":"Today: task done","data-tdroutine":"Today: start routine","data-fromtoday":"Today: open","data-ttriage":"Triage","data-tqs":"Answer questions","data-topen":"Open a task","data-tstatus":"Task status","data-story":"News story","data-pal":"Command list","data-gonotyet":"Emails to reply to","data-ulay":"Usage controls",ext:"External link",go:"Link within the page"};
+const UNAME={"#noteBtn":"Open notes","#aiBtn":"Ask Claude","#nextBtn":"What's next?","#moreBtn":"More screens","#pcLine":"PC status line","#soundBtn":"New-item sound","data-opennext":"What's next?","data-stuck":"Stuck? Start with Claude","data-sugg":"Claude's suggestions","data-tdtask":"Today: task done","data-tdroutine":"Today: start routine","data-fromtoday":"Today: open","data-ttriage":"Triage","data-tqs":"Answer questions","data-topen":"Open a task","data-tstatus":"Task status","data-story":"News story","data-pal":"Command list","data-gonotyet":"Emails to reply to","data-ulay":"Usage controls","data-sc":"Startup Clean",ext:"External link",go:"Link within the page"};
 const uLabel=id=>VIEWS.find(v=>v.id===id)?.label||({_bar:"Any screen",_pop:"Pop-up"})[id]||id;
 const uCard=id=>HOMECARDS.find(c=>c[0]===id)?.[1]||id;
 const uSec=s=>{const m=Math.round(s/60);return s<60?`${Math.round(s)} sec`:m<60?`${m} min`:`${Math.floor(m/60)} hr${m%60?" "+m%60+" min":""}`};
@@ -8517,6 +8519,34 @@ function uMoves(ms){
   const of=f=>ms.filter(f).map(m=>m.kind==="home"?uCard(m.id):uLabel(m.id)).join(", "), nav=to=>of(m=>m.kind==="nav"&&m.to===to);
   return esc([nav("fav")&&`${nav("fav")} to "Frequently used"`,nav("rare")&&`${nav("rare")} to "Rarely used"`,nav("group")&&`${nav("group")} back to its group`,of(m=>m.kind==="home")&&`${of(m=>m.kind==="home")} moved up on Home`].filter(Boolean).join(". "));
 }
+/* Startup Clean: at the first login after the Mac starts, desk/startup_clean.py quits every app but Claude, the Desk and Terminal.
+   This line reopens them (all, or the ones picked). The server opens only what it closed itself. */
+S.sc=null;S.scPick=false;
+const scKey=a=>a.bundle||a.path;
+function scLine(){
+  const v=S.sc;if(!LOCALAPI||!v?.show)return"";
+  const left=v.apps.filter(a=>!a.reopened),names=left.slice(0,3).map(a=>esc(a.name)).join(", ")+(left.length>3?` and ${left.length-3} more`:"");
+  const pick=S.scPick?`<div class="scpick">${left.map(a=>`<label><input type="checkbox" value="${esc(scKey(a))}" checked> ${esc(a.name)}</label>`).join("")}<button class="btn sm primary" data-sc="some">Reopen selected</button></div>`:"";
+  return `<div class="unote" id="scLine"><span>Closed ${left.length} app${left.length===1?"":"s"} at startup: ${names}.</span><span class="unacts"><button class="btn sm" data-sc="all">Reopen all</button><button class="btn sm" data-sc="choose" aria-expanded="${S.scPick}">Choose</button><button class="btn sm" data-sc="dismiss">Dismiss</button></span>${pick}</div>`;
+}
+async function scLoad(){if(!LOCALAPI)return;try{const v=await api("GET","/api/startclean"),same=JSON.stringify(v)===JSON.stringify(S.sc);S.sc=v;if(!same&&viewId()==="home")render()}catch(e){}}
+document.addEventListener("click",async e=>{
+  const b=e.target.closest&&e.target.closest("[data-sc]");if(!b)return;e.preventDefault();
+  const k=b.dataset.sc;
+  if(k==="choose"){S.scPick=!S.scPick;return render()}
+  b.disabled=true;
+  try{
+    if(k==="dismiss")S.sc=await api("POST","/api/startclean/dismiss",{});
+    else{
+      const apps=k==="some"?[...document.querySelectorAll("#scLine .scpick input:checked")].map(x=>x.value):null;
+      if(apps&&!apps.length){b.disabled=false;return}
+      const r=await api("POST","/api/startclean/reopen",apps?{apps}:{});S.sc=r;
+      if(r.failed?.length)toast(`Could not open ${r.failed.join(", ")}`);
+    }
+    S.scPick=false;
+  }catch(err){toast("Could not reach the Desk server")}
+  if(viewId()==="home")render();
+});
 function uNotice(){
   const n=S.layout?.notice, ask=(S.layout?.ask||[]).map(id=>VIEWS.find(v=>v.id===id)).filter(Boolean);
   const askCard=ask.length?`<section class="card uask" aria-label="Screens you have not opened"><p><b>Not opened in 2 weeks.</b> Hide these from the menu? They stay in search and under Hidden.</p>${ask.map(v=>`<div class="uaskrow"><a href="#${v.id}">${v.e} ${esc(v.label)}</a><span class="unacts"><button class="btn sm" data-ulay="hide::${v.id}">Hide</button><button class="btn sm" data-ulay="keep::${v.id}">Keep</button></span></div>`).join("")}</section>`:"";
@@ -8681,6 +8711,7 @@ document.addEventListener("click",async e=>{
   if(t.hasAttribute("data-siteclarity")){try{await api("PUT","/api/site/settings",{clarity:$("#siteClarity").value.trim()});toast("Saved");siteLoad()}catch(err){toast("That does not look like a Clarity id")}}
 });
 setInterval(()=>{if(viewId()==="site"&&!document.hidden)siteLoad()},120000);
+if(LOCALAPI){scLoad();setInterval(()=>{if(viewId()==="home"&&!document.hidden)scLoad()},5*60000)}
 if(LOCALAPI){fpHomeLoad();setInterval(()=>{if(viewId()==="home"&&!document.hidden)fpHomeLoad()},30*60000)}
 if(LOCALAPI){siteHomeLoad();setInterval(()=>{if(viewId()==="home"&&!document.hidden)siteHomeLoad()},15*60000)}
 async function cuRefresh(){
