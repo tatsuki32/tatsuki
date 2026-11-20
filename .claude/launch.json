@@ -2,6 +2,12 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "profile-preview",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "4801", "-d", "/Applications/programming/my_profile_linkedin"],
+      "port": 4801
+    },
+    {
       "name": "desk-test",
       "runtimeExecutable": "/bin/sh",
       "runtimeArgs": ["-c", "cd desk && DESK_PORT=${PORT:-4791} exec python3 server.py"],
