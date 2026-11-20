@@ -539,8 +539,10 @@ def speak(rec):
         cands = voices_for(lang)
         voice = cands[0]["name"] if cands else None
     with tempfile.TemporaryDirectory() as d:
-        out = os.path.join(d, "s.m4a")
-        cmd = ["/usr/bin/say", "-r", str(int(175 * rate)), "-o", out] + (["-v", voice] if voice else []) + [text]
+        out, src = os.path.join(d, "s.m4a"), os.path.join(d, "s.txt")
+        with open(src, "w", encoding="utf-8") as f:  # the text goes in through a file: a sentence starting with "-" is never an option
+            f.write(text)
+        cmd = ["/usr/bin/say", "-r", str(int(175 * rate)), "-o", out, "-f", src] + (["-v", voice] if voice else [])
         try:
             r = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
         except (OSError, subprocess.SubprocessError):
