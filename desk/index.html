@@ -125,6 +125,33 @@ select{background:var(--surface);color:var(--ink);border:1px solid var(--line-2)
 /* ---------- home ---------- */
 /* the focal point: today's three. The first one is the biggest thing on the page. */
 .t3{border-color:rgba(226,184,102,.32)}
+/* Today: the first block on Home (2026-11-20). One card, sections by heading; done rows sink and fade */
+.td{border-color:rgba(226,184,102,.32);padding:var(--s3) var(--s4) var(--s4)}
+.tdtop{display:flex;align-items:baseline;gap:var(--s3);flex-wrap:wrap}
+.tdtop h2{margin:0;font-size:var(--t5);color:var(--accent)}
+.tdsec{margin-top:var(--s4)}
+.tdsec h3{margin:0 0 var(--s1);font-size:var(--t2);color:var(--muted);font-weight:700;letter-spacing:.02em}
+.tdrow{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:var(--s2);align-items:center;min-height:36px;border-top:1px solid var(--line)}
+.tdrow:first-of-type{border-top:0}
+.tdrow .tt{text-align:left;min-width:0;overflow-wrap:anywhere;color:var(--ink);text-decoration:none}
+.tdrow .sub{white-space:nowrap}
+.tdrow.done{opacity:.5}.tdrow.done .tt{text-decoration:line-through}
+.tdchk{width:24px;height:24px;border-radius:6px;border:1px solid var(--line-2);background:none;color:var(--ink);cursor:pointer;font:inherit;padding:0}
+.tdchk[aria-checked="true"]{background:var(--accent-soft);border-color:var(--accent)}
+.tdtime{font-variant-numeric:tabular-nums;color:var(--muted);font-size:var(--t2)}
+.tdrow.tdev{grid-template-columns:72px minmax(0,1fr) auto}.tdrow.tdev .tdtime{white-space:nowrap}
+.tdrow.past{opacity:.5}
+.tdmore summary{cursor:pointer;color:var(--muted);font-size:var(--t2);padding:var(--s1) 0;list-style:none}
+.tdnews a{color:var(--accent);text-decoration:none}
+.tdnews .sub{display:block;white-space:normal}
+.sugg{display:grid;gap:var(--s3);padding:var(--s3) var(--s4) var(--s4)}
+.sugg .sgtop{display:flex;align-items:baseline;gap:var(--s3);flex-wrap:wrap}
+.sugg h2{margin:0;font-size:var(--t4)}
+.sgkinds{display:flex;flex-wrap:wrap;gap:var(--s2)}
+.sgprev{border:1px solid var(--line-2);border-radius:var(--r);padding:var(--s3);background:var(--surface-2)}
+.sgprev .sub{display:block;margin-bottom:var(--s1)}
+.backbar{position:fixed;z-index:26;left:50%;transform:translateX(-50%);bottom:var(--s4);display:flex;align-items:center;gap:var(--s2);min-height:44px;padding:0 var(--s4);border-radius:22px;background:var(--surface-2);border:1px solid var(--accent);color:var(--ink);text-decoration:none;font-weight:700;box-shadow:0 4px 16px rgba(0,0,0,.4)}
+.backbar[hidden]{display:none}
 .t3row{display:grid;grid-template-columns:28px minmax(0,1fr);gap:var(--s1) var(--s2);padding:var(--s3);border-top:1px solid var(--line)}
 .t3row:first-child{border-top:0}
 .t3n{font-size:var(--t3);font-weight:700;color:var(--muted);line-height:1.5}
@@ -1455,6 +1482,7 @@ a.shelfbtn{text-decoration:none;display:inline-flex;align-items:center}
   #noteBtn{position:fixed;z-index:30;right:max(var(--s3),env(safe-area-inset-right,0px));bottom:calc(var(--tabbar) + var(--s3) + env(safe-area-inset-bottom,0px));width:52px;height:52px;border-radius:50%;padding:0;justify-content:center;background:var(--surface-2);border:2px solid var(--accent);box-shadow:0 8px 24px rgba(0,0,0,.45)}
   #noteBtn .e{width:auto;font-size:22px}
   #noteBtn .label,#noteBtn kbd{display:none}
+  .backbar{bottom:calc(var(--tabbar) + var(--s3) + env(safe-area-inset-bottom,0px))}
   #tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));position:fixed;z-index:25;left:0;right:0;bottom:0;height:calc(var(--tabbar) + env(safe-area-inset-bottom,0px));padding:0 env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px);background:rgba(15,15,17,.96);border-top:1px solid var(--line);backdrop-filter:blur(10px)}
   #tabs a,#tabs button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;text-decoration:none;color:var(--muted);font-size:var(--t1);background:none;border:0;cursor:pointer;position:relative;min-width:0}
   #tabs .e{font-size:20px;line-height:1.2}
@@ -1630,13 +1658,13 @@ a.shelfbtn{text-decoration:none;display:inline-flex;align-items:center}
     <label class="qbox"><span class="e" aria-hidden="true">🔎</span><input id="q" type="search" placeholder="Search" aria-label="Search everything (notes, memos, tasks, news, mail)" autocomplete="off"><kbd>/</kbd></label>
     <nav class="nav" id="nav" aria-label="Menu"></nav>
     <div class="foot">
-      <button class="railbtn" id="nextBtn" aria-label="What you were doing, and what to do next"><span class="e">🧭</span><span class="label">What's next?</span><kbd>G</kbd></button>
+      <button class="railbtn" id="nextBtn" aria-label="Stuck? The Desk picks one task and Claude starts it"><span class="e">🧭</span><span class="label">Stuck? Start</span><kbd>G</kbd></button>
       <button class="railbtn" id="noteBtn" aria-label="Write a note"><span class="e">📝</span><span class="label">Notes</span><kbd>N</kbd></button>
       <button class="railbtn" id="aiBtn" aria-label="Ask Claude (command list)"><span class="e">🤖</span><span class="label">Ask Claude</span><kbd>C</kbd></button>
       <p class="hint"><kbd>T</kbd> Add a task · <kbd>/</kbd><kbd>/</kbd> Commands</p>
     </div>
   </aside>
-  <main><a class="pcalert" id="pcAlert" href="#pc" style="display:none">Memory is running low. Check the PC screen</a><p class="pcalert" id="lineAlert" style="display:none"></p><div class="wrap tlbarwrap" id="timerBar" hidden aria-label="Running timers"></div><div class="wrap" id="view"></div></main>
+  <main><a class="pcalert" id="pcAlert" href="#pc" style="display:none">Memory is running low. Check the PC screen</a><p class="pcalert" id="lineAlert" style="display:none"></p><div class="wrap tlbarwrap" id="timerBar" hidden aria-label="Running timers"></div><div class="wrap" id="view"></div><a class="backbar" id="backBar" href="#home" hidden>← Back to Today <kbd>Esc</kbd></a></main>
 </div>
 <nav id="tabs" aria-label="Frequently used screens"></nav>
 <div id="modal"></div>
@@ -2240,7 +2268,8 @@ function openTriage(){
 }
 function triHome(){const n=unsorted().length;return n?`<div class="trhome"><button class="shelfbtn" data-ttriage>Triage ${n} unsorted →</button></div>`:""}
 /* the decisions that wait on you, as one row of large buttons: Home (under Today's Three) and the top of Tasks. Each opens its cards straight away. */
-function decideBar(){
+function decideBar(){return suggCard()}
+function decideBarOld(){
   const q=waitingQs().reduce((a,t)=>a+openQs(t).length,0);
   const items=[["data-tdecide","Decide what not to do",dropCands().length],["data-tqs","Answer open questions",q],["data-tmerge","Merge similar tasks",mpOpen().length],["data-ttypes","Review task types",typeProps().length],["data-okrrev","Review OKRs",okrDue().length]].filter(x=>x[2]);
   return items.length?`<section class="decbar" aria-label="Decisions waiting">${items.map(([a,l,n])=>`<button class="decbtn" ${a}><span>${l}</span><b>${n}</b></button>`).join("")}</section>`:""}
@@ -2648,6 +2677,109 @@ function topThree(){
   return `<section class="card t3" aria-label="Today's Three">${list.length?list.map(row).join(""):`<div class="empty"><b>Nothing in Today's Three</b>Take it easy. Press T to add a task.</div>`}</section>`;
 }
 const t3Mode=()=>new Date(Date.now()+HCMC).getUTCHours()<12?"Focus time (until noon)":"Admin time";
+/* ---------- Today: the first block on Home (2026-11-20, replaced Today's Three) ----------
+   Schedule (today's events) · Due today (due today or past due) · Routines & habits (not done today) · Planned today (planned for today or in progress) · News (Sift Daily).
+   Each row can be ticked in place; done rows sink and fade. Nothing here scolds: a past due date is just a date. */
+const TD_ROWS=5; // per section, the rest behind "+N more"
+function tdTasks(){
+  const today=hcmcDate(), end=Date.parse(today+"T23:59:59+07:00"), doneToday=t=>t.status==="done"&&hcmcDay(t.updatedAt||0)===today;
+  const live=S.board.filter(t=>t.source!=="daily");
+  const isDue=t=>t.deadline!=null&&t.deadline<=end;
+  const isPlan=t=>!isDue(t)&&((tWhen(t)&&tWhen(t)<=today)||t.status==="doing");
+  const pick=f=>({open:live.filter(t=>TOPEN.has(t.status)&&f(t)).sort(byDeadline),done:live.filter(t=>doneToday(t)&&f(t))});
+  return {due:pick(isDue),plan:pick(isPlan)};
+}
+function tdRoutines(){
+  if(!LOCALAPI||!S.routines)return [];
+  const log=rtLog(rtDay());
+  return rtSorted().map(l=>{const items=rtItems(l.id);if(!items.length)return null;
+    const n=Object.keys(log[l.id]||{}).filter(k=>items.some(i=>i.id===k)).length;
+    return {l,n,total:items.length,done:!!log[l.id+"Run"]||n>=items.length}}).filter(Boolean);
+}
+function tdNews(){
+  if(!LOCALAPI)return null;
+  if(!S.news||Date.now()-(S.newsAt||0)>10*6e4){S.newsAt=Date.now();api("GET","/api/news/today").then(d=>{const was=JSON.stringify(S.news);S.news=d;if(was!==JSON.stringify(d)&&viewId()==="home")render()}).catch(()=>{})}
+  return S.news;
+}
+function tdSection(title,rows,doneRows,extra){
+  if(!rows.length&&!doneRows.length)return "";
+  const all=[...rows,...doneRows], head=all.slice(0,TD_ROWS), rest=all.slice(TD_ROWS);
+  return `<section class="tdsec" aria-label="${esc(title)}"><h3>${esc(title)}${extra||""}</h3>${head.join("")}${rest.length?`<details class="tdmore"><summary>+${rest.length} more</summary>${rest.join("")}</details>`:""}</section>`;
+}
+const tdTaskRow=(t,done)=>`<div class="tdrow ${done?"done":""}"><button class="tdchk" data-tdtask="${esc(t.id)}" role="checkbox" aria-checked="${done}" aria-label="${done?"Done":"Mark done"}: ${esc(taskName(t))}">${done?"✓":""}</button><button class="tt" data-topen="${esc(t.id)}" data-noauto>${esc(taskName(t))}</button><span class="sub">${t.deadline!=null&&!done?(t.deadline<Date.now()&&hcmcDay(t.deadline)<hcmcDate()?"Was due "+esc(new Date(t.deadline).toLocaleDateString("en-US",{month:"short",day:"numeric"})):dlChip(t)):t.status==="doing"&&!done?"In progress":""}</span></div>`;
+function todayBlock(){
+  const now=Date.now(), d0=startOfDay(now), d1=dayStart(d0,1);
+  const evs=S.cal?calEvents().filter(e=>e.startMs<d1&&e.endMs>d0):[];
+  const evRows=evs.map(e=>{const past=!e.allDay&&e.endMs<=now;return `<div class="tdrow tdev ${past?"past":""}"><span class="tdtime">${e.allDay?"All day":esc(fmtTime(e.startMs))}</span><a class="tt" href="#calendar" data-fromtoday data-noauto>${esc(e.title||"Event")}</a><span class="sub">${!past&&!e.allDay&&e.startMs>now&&e.startMs-now<3*HOUR?untilChip(e.startMs):""}</span></div>`});
+  const {due,plan}=tdTasks();
+  const rts=tdRoutines(), hs=habitList().map(h=>({h,on:habitStats(h).today}));
+  const rtRow=r=>`<div class="tdrow ${r.done?"done":""}"><span class="tdchk" aria-hidden="true">${r.done?"✓":""}</span><a class="tt" href="#habits" data-fromtoday data-noauto>${esc(r.l.emoji||"")} ${esc(r.l.name||"Routine")}</a><span class="sub">${r.done?`${r.n}/${r.total}`:`<button class="btn sm" data-tdroutine="${esc(r.l.id)}">Start</button>`}</span></div>`;
+  const hRow=x=>`<div class="tdrow ${x.on?"done":""}"><button class="tdchk" data-habit="${esc(x.h.id)}" role="checkbox" aria-checked="${x.on}" aria-label="${esc(x.h.name)}">${x.on?"✓":""}</button><a class="tt" href="#habits" data-fromtoday data-noauto>${esc(x.h.emoji||"🌱")} ${esc(x.h.name)}</a><span class="sub">${x.h.auto&&!x.on?"Checks itself when the record arrives":""}</span></div>`;
+  const rh=[...rts.filter(r=>!r.done).map(rtRow),...hs.filter(x=>!x.on).map(hRow)], rhDone=[...rts.filter(r=>r.done).map(rtRow),...hs.filter(x=>x.on).map(hRow)];
+  const news=tdNews(), items=(news?.items||[]);
+  const newsRows=items.map(x=>`<div class="tdrow tdnews"><span class="tdchk" aria-hidden="true" style="border:0">·</span><span style="min-width:0"><a href="${esc(x.url)}" target="_blank" rel="noopener" data-noauto>${esc(x.title)}</a>${x.line?`<span class="sub">${esc(x.line)}</span>`:""}</span><span class="sub">${esc(x.site||"")}</span></div>`);
+  const total=due.open.length+due.done.length+plan.open.length+plan.done.length+rts.length+hs.length;
+  const done=due.done.length+plan.done.length+rts.filter(r=>r.done).length+hs.filter(x=>x.on).length;
+  const body=[tdSection("Schedule",evRows,[]),tdSection("Due today",due.open.map(t=>tdTaskRow(t,false)),due.done.map(t=>tdTaskRow(t,true))),
+    tdSection("Routines & habits",rh,rhDone),tdSection("Planned today",plan.open.map(t=>tdTaskRow(t,false)),plan.done.map(t=>tdTaskRow(t,true))),
+    tdSection("News",newsRows,[],news?.day?` <span class="sub">Sift Daily · ${esc(news.day.slice(5).replace("-","/"))}</span>`:"")].join("");
+  return `<section class="card td" aria-label="Today"><div class="tdtop"><h2>Today</h2>${total?`<span class="sub">${done}/${total} done</span>`:""}</div>
+    ${body||`<div class="empty"><b>Nothing for today yet</b>Press T to add a task, or plan one for today on Tasks.</div>`}</section>`;
+}
+/* ---------- Claude's suggestions: the decision cards as one card on Home, one kind after another ---------- */
+const SUGG=[
+  {id:"qs",label:"Answer a question",n:()=>waitingQs().reduce((a,t)=>a+openQs(t).length,0),first:()=>{const t=waitingQs()[0];return t?[openQs(t)[0]?.q||"",taskName(t)]:null},open:()=>openQuestions()},
+  {id:"triage",label:"Sort a task",n:()=>unsorted().length,first:()=>{const t=unsorted()[0];return t?[taskName(t),"When will you do it?"]:null},open:()=>openTriage()},
+  {id:"decide",label:"Decide what not to do",n:()=>dropCands().length,first:()=>{const t=dropCands()[0];return t?[taskName(t),t.skip?.ifNot?"If not: "+t.skip.ifNot:""]:null},open:()=>openDecide()},
+  {id:"merge",label:"Merge similar tasks",n:()=>mpOpen().length,first:()=>{const p=mpOpen()[0];return p?[p.title||"Merge",p.note||""]:null},open:()=>openMerge()},
+  {id:"types",label:"Review task types",n:()=>typeProps().length,first:()=>{const p=typeProps()[0];return p?[p.name||"",p.why||""]:null},open:()=>openTypes()},
+  {id:"okr",label:"Review OKRs",n:()=>okrDue().length,first:()=>{const x=okrDue()[0];return x?[x.k?.title||"",x.o?.title||""]:null},open:()=>openOkrReview()}];
+function suggCard(){
+  const live=SUGG.map(k=>({k,n:k.n()})).filter(x=>x.n);if(!live.length)return "";
+  const all=live.reduce((a,x)=>a+x.n,0), top=live[0], f=top.k.first()||["",""];
+  return `<section class="card sugg" aria-label="Claude's suggestions"><div class="sgtop"><h2>Claude's suggestions</h2><span class="sub">${all} waiting · one at a time</span></div>
+    <div class="sgprev"><span class="sub">${esc(top.k.label)}</span><b data-noauto>${esc(f[0])}</b>${f[1]?`<span class="sub" data-noauto>${esc(f[1])}</span>`:""}</div>
+    <div class="row"><button class="btn primary" data-sugg="all">Go through them</button>${live.map(x=>`<button class="btn sm" data-sugg="${x.k.id}">${esc(x.k.label)} ${x.n}</button>`).join("")}</div></section>`;
+}
+/* after one kind of cards closes, offer the next kind; Stop ends the run */
+function suggRun(ids){
+  const left=ids.filter(id=>{const k=SUGG.find(x=>x.id===id);return k&&k.n()});
+  if(!left.length){S.suggLeft=null;toast("All suggestions done");return}
+  const k=SUGG.find(x=>x.id===left[0]);S.suggLeft=left.slice(1);k.open();
+  if(!$("#modal").firstChild){S.suggLeft=null;return}
+  const mo=new MutationObserver(()=>{if($("#modal").firstChild)return;mo.disconnect();
+    const rest=(S.suggLeft||[]).filter(id=>SUGG.find(x=>x.id===id).n());if(!rest.length){S.suggLeft=null;return}
+    const nx=SUGG.find(x=>x.id===rest[0]);
+    $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop" role="dialog" aria-modal="true" aria-label="Next suggestions"><h2>Next: ${esc(nx.label)} (${nx.n()})</h2><div class="row"><button class="btn primary" id="sgGo">Continue <kbd>Enter</kbd></button><button class="btn" id="sgStop">Stop <kbd>Esc</kbd></button></div></div></div>`;
+    const stop=()=>{S.suggLeft=null;$("#modal").innerHTML=""};
+    $("#sgStop").onclick=stop;$("#sgGo").onclick=()=>{$("#modal").innerHTML="";suggRun(rest)};$("#sgGo").focus();
+    $("#scrim").onkeydown=e=>{if(e.key==="Escape"){e.preventDefault();stop()}}});
+  mo.observe($("#modal"),{childList:true});
+}
+/* ---------- Stuck? Start with Claude: the Desk picks one task and Claude starts it in Terminal (/kickoff) ---------- */
+function openStuck(){
+  if($("#modal").firstChild)return;
+  const list=rankedTasks().list;if(!list.length){toast("Nothing open. Take it easy");return}
+  let i=0,timer=null,left=3;
+  const draw=()=>{const t=list[i%list.length];
+    $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop" role="dialog" aria-modal="true" aria-label="Start with Claude"><div class="top"><h2>Starting with Claude</h2><button class="ibtn" id="stX" aria-label="Close">✕</button></div>
+      <p><b data-noauto>${esc(taskName(t))}</b></p><p class="sub">${esc(whyText(t,rankedTasks()))}. Claude does the first step in Terminal and gives you the next 5 minutes.</p>
+      <div class="row"><button class="btn primary" id="stGo">Start now${left>0?` (${left})`:""}</button>${list.length>1?`<button class="btn" id="stNext">Another</button>`:""}<button class="btn" id="stNo">Cancel</button></div></div></div>`;
+    const close=()=>{clearInterval(timer);$("#modal").innerHTML=""};
+    $("#stX").onclick=close;$("#stNo").onclick=close;$("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};
+    $("#scrim").onkeydown=e=>{if(e.key==="Escape")close()};
+    $("#stNext")&&($("#stNext").onclick=()=>{clearInterval(timer);timer=null;left=0;i++;draw()});
+    $("#stGo").onclick=()=>{close();stuckStart(t)};$("#stGo").focus()};
+  draw();
+  timer=setInterval(()=>{if(!$("#stGo")){clearInterval(timer);return}left--;if(left<=0){clearInterval(timer);const t=list[i%list.length];$("#modal").innerHTML="";stuckStart(t)}else $("#stGo").textContent=`Start now (${left})`},1000);
+}
+async function stuckStart(t){
+  if(!LOCALAPI){toast("This works in the Desk app on the Mac");return}
+  try{await api("POST","/api/claude",{cmd:"/kickoff",arg:taskName(t).slice(0,180)});toast("Claude is starting in Terminal");if(t.status==="notyet")await setTaskStatus(t.id,"doing")}
+  catch(e){toast("Could not open Terminal")}
+}
+/* ---------- Back to Today: after leaving Home from the Today block, a bar at the bottom brings you back (Esc too) ---------- */
+function backBar(){const b=$("#backBar");if(!b)return;if(viewId()==="home")S.fromToday=false;b.hidden=!S.fromToday||viewId()==="home"}
 /* ---------- 🧭 What's next?: what I was doing (memory/ + the desk) and the one thing to do next ---------- */
 /* plain words for the popup: no code, file names, PR numbers or brackets; about 40 characters */
 const plainMem=x=>String(x||"").replace(/`[^`]*`/g,"").replace(/[（(][^）)]*[）)]/g,"").replace(/\S+\/\S+|#\d+/g,"").replace(/\s+/g," ").trim().slice(0,40);
@@ -5054,14 +5186,14 @@ function openMore(){
   $("#modal").innerHTML=`<div class="scrim bottom" id="scrim"><div class="pop sheet" role="dialog" aria-modal="true" aria-label="More screens">
     <div class="top"><h2>Choose a screen</h2><button class="ibtn" id="xMore" aria-label="Close">✕</button></div>
     <nav class="nav">${navHtml()}</nav>
-    <button class="railbtn" id="moreNext"><span class="e">🧭</span>What's next? (What was I doing?)</button>
+    <button class="railbtn" id="moreNext"><span class="e">🧭</span>Stuck? Start with Claude</button>
     <button class="railbtn" id="moreAsk"><span class="e">🤖</span>Ask Claude</button>
   </div></div>`;
   const close=()=>{$("#modal").innerHTML=""};
   $("#xMore").onclick=close;$("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};
   $("#modal").querySelectorAll(".nav a").forEach(a=>a.addEventListener("click",close));
   $("#moreAsk").onclick=()=>{close();openAsk()};
-  $("#moreNext").onclick=()=>{close();S.nextSkip=0;openNext()};
+  $("#moreNext").onclick=()=>{close();openStuck()};
 }
 
 /* ---------- notes shown on a page ---------- */
@@ -5072,17 +5204,16 @@ const notesHere=()=>""; // notes pinned to a page ended with the memos; the view
 function home(){
   const d=new Date();const h=d.getHours();const greet=h<11?"Good morning":h<18?"Good afternoon":"Good evening";
   const tools=S.tools.filter(t=>!t.deleted), daily=tools.filter(t=>t.group==="Daily").sort((a,b)=>(a.order??99)-(b.order??99));
-  const top=topThreeIds();
-  const cards={triage:triHome(),focus:focusHomeCard(),pc:LOCALAPI?`<a class="sub pcline" id="pcLine" href="#pc">${pcLineText()}</a>`:"",site:LOCALAPI?siteHomeLine():"",footprint:LOCALAPI?fpHomeLine():"",body:homeBodyStrip(),
+  const cards={focus:focusHomeCard(),pc:LOCALAPI?`<a class="sub pcline" id="pcLine" href="#pc">${pcLineText()}</a>`:"",site:LOCALAPI?siteHomeLine():"",footprint:LOCALAPI?fpHomeLine():"",body:homeBodyStrip(),
     today:`<div class="duo">${todayEvents()}${habitStrip()||`<section class="card"><div class="dhead"><h2><span class="e">🌱</span>Today's habits</h2><a class="more" href="#habits">Add →</a></div><div class="empty">Add things you want to keep up in Habits.</div></section>`}</div>`,
-    heritage:heritageCard(),ideas:ideasCard(),claude:ccCard(),panel:todayPanel(top),inflow:inflow(),notes:notesHere("home"),
+    heritage:heritageCard(),ideas:ideasCard(),claude:ccCard(),inflow:inflow(),notes:notesHere("home"),
     tools:daily.length?`<section><div class="section-title"><span class="e">☀️</span>Daily tools<a href="#tools">All tools →</a></div><div class="tiles mini">${daily.map(tile).join("")}</div></section>`:`<p class="sub" style="margin:0"><a href="#tools" class="more">Open tools →</a></p>`};
   return `
-  ${uTag(progressCard(),"wins")}
-  <header class="head"><div><p class="eyebrow">${d.toLocaleDateString("en-US",{month:"long",day:"numeric",weekday:"long"})} · ${greet} · ${t3Mode()}</p><h1>Today's Three</h1></div><button class="btn" data-opennext>What's next?</button></header>
+  <header class="head"><div><p class="eyebrow">${d.toLocaleDateString("en-US",{month:"long",day:"numeric",weekday:"long"})} · ${greet}</p></div><button class="btn primary" data-stuck>Stuck? Start with Claude <kbd>G</kbd></button></header>
   ${uNotice()}
-  ${topThree()}
-  ${decideBar()}
+  ${todayBlock()}
+  ${suggCard()}
+  ${uTag(progressCard(),"wins")}
   ${homeOrder().filter(id=>id!=="wins").map(id=>uTag(cards[id]||"",id)).join("\n  ")}`;
 }
 const topThreeIds=()=>topList().map(t=>t.id);
@@ -5616,7 +5747,7 @@ function render(){
   S.dl=mails.filter(x=>!closed.has(x.uid)); // a mail task moved to Done / paused / archive leaves the deadline panel
   if(!replyOpen()) S.dl=S.dl.filter(x=>x.kind!=="mail"); // outside the reply window: no count, badge or chime for mail
   updateBadges();checkNew();
-  renderNav();timerBar();
+  renderNav();timerBar();backBar();
   if(viewId()==="lifeos"){$("#view").innerHTML=searchResults()+lifeosView();wire();wireLifeos();return}
   if(viewId()==="memolink"){mlLoad();$("#view").innerHTML=searchResults()+mlView();wire();wireMl();return}
   if(viewId()==="followups"){fuLoad();$("#view").innerHTML=searchResults()+fuView();wire();wireFu();return}
@@ -7880,6 +8011,12 @@ function wire(){
   $("#logDay")&&($("#logDay").onchange=e=>{S.logDay=e.target.value;render()});
   document.querySelectorAll("[data-region]").forEach(b=>b.onclick=()=>{S.region=b.dataset.region;render()});
   document.querySelectorAll("[data-opennext]").forEach(b=>b.onclick=()=>{S.nextSkip=0;openNext()});
+  document.querySelectorAll("[data-stuck]").forEach(b=>b.onclick=()=>openStuck());
+  document.querySelectorAll("[data-sugg]").forEach(b=>b.onclick=()=>suggRun(b.dataset.sugg==="all"?SUGG.map(k=>k.id):[b.dataset.sugg]));
+  document.querySelectorAll("[data-tdtask]").forEach(b=>b.onclick=()=>{const t=findTask(b.dataset.tdtask);if(t)setTaskStatus(t.id,t.status==="done"?"notyet":"done")});
+  document.querySelectorAll("[data-tdroutine]").forEach(b=>b.onclick=()=>rpOpen(b.dataset.tdroutine));
+  document.querySelectorAll("[data-fromtoday]").forEach(a=>a.addEventListener("click",()=>{S.fromToday=true}));
+  document.querySelectorAll(".td [data-topen]").forEach(b=>b.addEventListener("click",()=>{S.fromToday=true}));
   document.querySelectorAll("[data-t3]").forEach(b=>b.onclick=()=>setTaskStatus(b.dataset.id,b.dataset.t3));
   wireRoutines();
   document.querySelectorAll("[data-rthome]").forEach(a=>a.onclick=()=>{S.habTab="routines"});
@@ -8222,7 +8359,8 @@ function wireAsk(){
 const isPal=q=>/^[/／]/.test(q.trim());
 function palItems(){
   const act=[
-    {e:"🧭",name:"What's next?",key:"G",kw:"つぎ next",run:()=>{S.nextSkip=0;openNext()}},
+    {e:"🧭",name:"Stuck? Start with Claude",key:"G",kw:"つぎ next stuck kickoff 迷ったら",run:()=>openStuck()},
+    {e:"📍",name:"What was I doing?",kw:"なにしてた 続き recap",run:()=>{S.nextSkip=0;openNext()}},
     {e:"📝",name:"Write a note",key:"N",kw:"のーと めも memo note",run:()=>openNote()},
     {e:"☑️",name:"Add a task",key:"T",kw:"たすく task",run:()=>openTask(null)},
     {e:"⌨️",name:"Ask Claude",key:"C",kw:"くろーど claude",run:()=>openAsk()},
@@ -8271,20 +8409,21 @@ function palMove(d){
 }
 try{S.mute=localStorage.getItem("desk-mute")==="1"}catch(e){S.mute=false}
 $("#aiBtn").onclick=openAsk;
-$("#nextBtn").onclick=()=>{S.nextSkip=0;openNext()};
+$("#nextBtn").onclick=()=>openStuck();
 document.addEventListener("keydown",e=>{const t=e.target.tagName;if(t==="INPUT"||t==="TEXTAREA"||t==="SELECT")return;
   if(e.key==="n"||e.key==="N"){e.preventDefault();openNote()}
   if(e.key==="c"||e.key==="C"){if(e.metaKey||e.ctrlKey)return;e.preventDefault();openAsk()}
   if(e.key==="t"||e.key==="T"){if(e.metaKey||e.ctrlKey)return;e.preventDefault();openTask(null)}
-  if(e.key==="g"||e.key==="G"){if(e.metaKey||e.ctrlKey)return;e.preventDefault();S.nextSkip=0;openNext()}
-  if(e.key==="/"){e.preventDefault();$("#q").focus()}});
+  if(e.key==="g"||e.key==="G"){if(e.metaKey||e.ctrlKey)return;e.preventDefault();openStuck()}
+  if(e.key==="/"){e.preventDefault();$("#q").focus()}
+  if(e.key==="Escape"&&S.fromToday&&viewId()!=="home"&&!$("#modal").firstChild){e.preventDefault();location.hash="home"}});
 /* ---------- Usage: which screens, Home cards and buttons get used, and the weekly re-arrangement (desk/usage.py). Mac only.
    Counting keeps totals only. A button's name is built from the code (a camelCase id, the name of a data- attribute, the screen a
    link goes to, class names) and never from text on screen or from an attribute's value, so no title, name or id of a task gets in.
    Seconds are added only while the window is showing and something was touched in the last two minutes.
    The arrangement is two lists of screen ids and an order of card ids; every screen and card is drawn whatever they say. ---------- */
 S.layout=window.LAYOUT||null;
-const HOMECARDS=[["triage","Triage and questions"],["focus","Focus"],["pc","PC status line"],["site","Site line"],["footprint","Footprint line"],["body","Body summary"],["today","Today's events and habits"],["heritage","Daily World Heritage"],["ideas","This week's ideas"],["claude","Ask Claude"],["panel","Today's tasks"],["wins","Today's wins"],["inflow","Incoming"],["notes","Home notes"],["tools","Daily tools"]];
+const HOMECARDS=[["focus","Focus"],["pc","PC status line"],["site","Site line"],["footprint","Footprint line"],["body","Body summary"],["heritage","Daily World Heritage"],["ideas","This week's ideas"],["claude","Ask Claude"],["wins","Today's wins"],["inflow","Incoming"],["notes","Home notes"],["tools","Daily tools"]];
 function homeOrder(){
   const all=HOMECARDS.map(c=>c[0]), out=(S.layout?.home||[]).filter((id,i,xs)=>all.includes(id)&&xs.indexOf(id)===i);
   all.forEach((id,k)=>{if(out.includes(id))return;const prev=all.slice(0,k).filter(x=>out.includes(x)).pop();out.splice(prev?out.indexOf(prev)+1:0,0,id)});
@@ -8348,7 +8487,7 @@ async function uSync(){
 }
 if(LOCALAPI) window.addEventListener("focus",()=>{if(Date.now()-(S.uSyncAt||0)>3600000)uSync()}); // the window stays open for days: Monday still arrives
 const UVIA={nav:"Menu",home:"Home",link:"Link",key:"Key",search:"Search",other:"Other"};
-const UNAME={"#noteBtn":"Open notes","#aiBtn":"Ask Claude","#nextBtn":"What's next?","#moreBtn":"More screens","#pcLine":"PC status line","#soundBtn":"New-item sound","data-opennext":"What's next?","data-ttriage":"Triage","data-tqs":"Answer questions","data-topen":"Open a task","data-tstatus":"Task status","data-story":"News story","data-pal":"Command list","data-gonotyet":"Emails to reply to","data-ulay":"Usage controls",ext:"External link",go:"Link within the page"};
+const UNAME={"#noteBtn":"Open notes","#aiBtn":"Ask Claude","#nextBtn":"What's next?","#moreBtn":"More screens","#pcLine":"PC status line","#soundBtn":"New-item sound","data-opennext":"What's next?","data-stuck":"Stuck? Start with Claude","data-sugg":"Claude's suggestions","data-tdtask":"Today: task done","data-tdroutine":"Today: start routine","data-fromtoday":"Today: open","data-ttriage":"Triage","data-tqs":"Answer questions","data-topen":"Open a task","data-tstatus":"Task status","data-story":"News story","data-pal":"Command list","data-gonotyet":"Emails to reply to","data-ulay":"Usage controls",ext:"External link",go:"Link within the page"};
 const uLabel=id=>VIEWS.find(v=>v.id===id)?.label||({_bar:"Any screen",_pop:"Pop-up"})[id]||id;
 const uCard=id=>HOMECARDS.find(c=>c[0]===id)?.[1]||id;
 const uSec=s=>{const m=Math.round(s/60);return s<60?`${Math.round(s)} sec`:m<60?`${m} min`:`${Math.floor(m/60)} hr${m%60?" "+m%60+" min":""}`};

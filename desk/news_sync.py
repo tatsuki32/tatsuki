@@ -1,6 +1,7 @@
 """Brings "Make it a task" from Sift Daily (https://sift.tany.im) into the Desk's tasks.
 
-server.py runs watch() every 5 minutes, on 4747 only. Each round: ask Sift Daily for articles marked as a task that the Desk
+server.py runs watch() every 5 minutes, on 4747 only. Each round: keep today's headlines (GET /api/desk/today) in
+desk/data/news/today.json for the Today block on Home (GET /api/news/today), then ask Sift Daily for articles marked as a task that the Desk
 hasn't taken yet, add each as a Desk task (source "news", title "Read: <title>", the link in the note), then tell Sift Daily
 it was taken. An article already in the Desk (same link in sourceRef) is not added twice.
 Nothing from the Desk is sent to Sift Daily.
@@ -20,6 +21,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from lifeos.lib import tasks  # noqa: E402
 
 APP = os.environ.get("SIFT_URL", "https://sift.tany.im")
+DATA = os.environ.get("DESK_DATA") or os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+TODAY = os.path.join(DATA, "news", "today.json")
 KEYCHAIN = "tatsuki-desk-sift"
 EVERY = 300
 UA = "tatsuki-desk-sift-sync"
@@ -40,10 +43,38 @@ def _call(path, k, method="GET"):
         return json.load(r)
 
 
+def keep_today(k):
+    """Today's headlines from Sift Daily: titles, links, sites and one-line summaries. Only http(s) links are kept."""
+    d = _call("/api/desk/today", k)
+    items = [{"title": str(x.get("title") or "")[:200], "url": x["url"], "site": str(x.get("site") or "")[:60],
+              "line": str(x.get("line") or "")[:240]}
+             for x in (d.get("items") or []) if isinstance(x, dict) and str(x.get("url") or "").startswith(("https://", "http://"))]
+    out = {"day": d.get("day"), "summary": str(d.get("summary") or "")[:2000], "items": items[:30], "at": int(time.time())}
+    os.makedirs(os.path.dirname(TODAY), exist_ok=True)
+    tmp = TODAY + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(out, f, ensure_ascii=False)
+    os.replace(tmp, TODAY)
+    return len(items)
+
+
+def today():
+    """What Home shows: the file as kept, or nothing yet."""
+    try:
+        with open(TODAY, encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {"day": None, "summary": "", "items": []}
+
+
 def once():
     k = key()
     if not k:
         return {"skipped": "no key in the keychain"}
+    try:
+        headlines = keep_today(k)
+    except Exception as e:  # an older Worker without /api/desk/today: the tasks still come in
+        headlines = f"error: {e}"
     waiting = _call("/api/desk/tasks", k)
     have = {t.get("sourceRef") for t in tasks.all_tasks(include_deleted=True) if t.get("source") == "news"}
     added = 0
@@ -55,7 +86,7 @@ def once():
             have.add(url)
             added += 1
         _call(f"/api/desk/tasks/{it['id']}/sent", k, method="POST")
-    return {"waiting": len(waiting), "added": added}
+    return {"waiting": len(waiting), "added": added, "headlines": headlines}
 
 
 def watch():

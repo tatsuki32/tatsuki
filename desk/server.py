@@ -998,6 +998,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(200, accounts.view())
             except accounts.AccountsError:
                 return self.send(500, {"error": "read"})
+        if path == "/api/news/today":  # Sift Daily's headlines, kept by news_sync every 5 minutes
+            return self.send(200, news_sync.today())
         if path == "/api/netspeed":
             return self.send(200, netspeed.view())
         if path == "/api/footprint":  # rough daily CO2e from records already here (desk/footprint.py); nothing is sent anywhere

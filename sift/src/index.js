@@ -303,6 +303,14 @@ async function deskApi(req, env, path) {
     const { results } = await env.DB.prepare("SELECT items.id, items.url, items.title, items.line, items.descr, items.markedAt, feeds.name AS site FROM items JOIN feeds ON feeds.id = items.feedId WHERE items.userId = 'owner' AND items.mark = 'task' AND items.taskSent IS NULL ORDER BY items.markedAt LIMIT 50").all();
     return json(results);
   }
+  // today's headlines for the Desk's Today block: the newest day with articles, its summary, and up to 30 titles
+  if (path === "/api/desk/today" && req.method === "GET") {
+    const last = await env.DB.prepare("SELECT MAX(day) AS day FROM items WHERE userId = 'owner'").first();
+    if (!last || !last.day) return json({ day: null, summary: "", items: [] });
+    const { results } = await env.DB.prepare("SELECT items.title, items.url, items.line, feeds.name AS site FROM items JOIN feeds ON feeds.id = items.feedId WHERE items.userId = 'owner' AND items.day = ? ORDER BY items.published DESC LIMIT 30").bind(last.day).all();
+    const d = await env.DB.prepare("SELECT summary FROM digests WHERE userId = 'owner' AND day = ?").bind(last.day).first();
+    return json({ day: last.day, summary: (d && d.summary) || "", items: results });
+  }
   const m = path.match(/^\/api\/desk\/tasks\/([a-f0-9]+)\/sent$/);
   if (m && req.method === "POST") {
     await env.DB.prepare("UPDATE items SET taskSent = ? WHERE id = ? AND userId = 'owner'").bind(Date.now(), m[1]).run();
