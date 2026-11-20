@@ -279,6 +279,23 @@ class TestFetching(unittest.TestCase):
                 B.sparql("SELECT nonsense", opener=opener, gap=0)
         self.assertEqual(len(tries), 1)
 
+    def test_ethnic_goes_on_from_yesterdays_part(self):
+        yesterday = (B.dt.date.today() - B.dt.timedelta(days=1)).isoformat()
+        B._write("raw/ethnic.part.json", {"at": yesterday, "done": {"v2:Q1-1": [{"e": "kept"}]}})
+        asked = []
+        with mock.patch.object(B, "ETHNIC_BATCH", 1), \
+                mock.patch.object(B, "sparql", side_effect=lambda q, opener=None: asked.append(q) or [{"e": "new"}]):
+            out = B.fetch_ethnic(["Q1", "Q2"])
+        self.assertEqual(out, [{"e": "kept"}, {"e": "new"}])
+        self.assertEqual(len(asked), 1)  # only the batch not answered yet
+
+    def test_ethnic_drops_a_part_older_than_a_week(self):
+        old = (B.dt.date.today() - B.dt.timedelta(days=9)).isoformat()
+        B._write("raw/ethnic.part.json", {"at": old, "done": {"Q1-1": [{"e": "old"}]}})
+        with mock.patch.object(B, "ETHNIC_BATCH", 1), \
+                mock.patch.object(B, "sparql", side_effect=lambda q, opener=None: [{"e": "new"}]):
+            self.assertEqual(B.fetch_ethnic(["Q1"]), [{"e": "new"}])
+
     def test_qid(self):
         self.assertEqual(B.qid(WD + "Q7737"), "Q7737")
         self.assertEqual(B.qid(None), "")

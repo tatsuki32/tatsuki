@@ -7,7 +7,7 @@ Sources (each row keeps its source and the day it was fetched):
 - Glottolog (CC BY 4.0, glottolog-cldf): every language with an ISO 639-3 code, its family lineage, coordinates, countries.
 - Wikidata (CC0): countries (names, native name, capital, coordinates), official languages (P37), languages used (P2936),
   language names in Japanese, native names, speakers (P1098), scripts (P282); regions = administrative divisions (P150)
-  with an official language of their own; ethnic groups (Q41710) by the language they use (P2936) with a population.
+  with an official language of their own; ethnic groups (Q41710) by the language they use (P2936) or their native language (P103), population if known.
 - World Bank (CC BY 4.0): population, latest year (SP.POP.TOTL).
 
 Everything lands in desk/data/langmap/ (LANGMAP_DIR in tests): raw/*.json = what each source answered, then
@@ -188,7 +188,8 @@ SELECT ?iso2 ?r ?en ?ja ?native ?pop ?lat ?lon ?l ?iso3 ?glot ?type WHERE {
 Q_ETHNIC = """
 SELECT ?e ?en ?ja ?pop ?l ?country WHERE {
   VALUES ?l { %s }
-  ?e wdt:P31 wd:Q41710 ; wdt:P2936 ?l ; wdt:P1082 ?pop .
+  ?e wdt:P31 wd:Q41710 ; (wdt:P2936|wdt:P103) ?l .
+  OPTIONAL { ?e wdt:P1082 ?pop }
   OPTIONAL { ?e wdt:P17 ?cc . ?cc wdt:P297 ?country }
   OPTIONAL { ?e rdfs:label ?en FILTER(LANG(?en)="en") }
   OPTIONAL { ?e rdfs:label ?ja FILTER(LANG(?ja)="ja") }
@@ -246,13 +247,18 @@ def fetch_ethnic(lang_qids, opener=urllib.request.urlopen):
     qids = list(dict.fromkeys(lang_qids))[:ETHNIC_MAX_LANGS]
     if not qids:
         raise RuntimeError("no languages from Wikidata yet (official/used failed), so the peoples are left as they were")
-    # batches already answered today are kept in raw/ethnic.part.json, so a run cut short goes on from there
+    # batches already answered in the last week are kept in raw/ethnic.part.json, so a run cut short
+    # (Wikidata turning queries away for hours) goes on from there the next day
     part = _read("raw/ethnic.part.json", {}) or {}
-    if part.get("at") != today():
+    try:
+        fresh = (time.time() - time.mktime(time.strptime(part.get("at") or "", "%Y-%m-%d"))) < 7 * 86400
+    except ValueError:
+        fresh = False
+    if not fresh or not isinstance(part.get("done"), dict):
         part = {"at": today(), "done": {}}
     for i in range(0, len(qids), ETHNIC_BATCH):
         batch = qids[i:i + ETHNIC_BATCH]
-        key = f"{batch[0]}-{len(batch)}"
+        key = f"v2:{batch[0]}-{len(batch)}"  # v2: the query with P103 and population optional
         if key not in part["done"]:
             part["done"][key] = sparql(Q_ETHNIC % " ".join("wd:" + q for q in batch), opener=opener)
             _write("raw/ethnic.part.json", part)
@@ -506,7 +512,7 @@ def assemble():
                 langs[k]["countries"].append(c["id"])
     kept.sort(key=lambda r: (r["country"], -(r["pop"] or 0)))
 
-    # --- ethnic groups: by the language they use, with a population
+    # --- ethnic groups: by the language they use or their native language; population when Wikidata has one
     ethnic = {}
     for r in raw["ethnic"].get("data") or []:
         key = wd_lang_key.get(qid(r.get("l")))
