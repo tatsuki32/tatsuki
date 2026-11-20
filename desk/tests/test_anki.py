@@ -3,6 +3,7 @@ python3 -m unittest desk.tests.test_anki"""
 import os
 import socket
 import sys
+import tempfile
 import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
@@ -13,6 +14,7 @@ with socket.socket() as _s:
     PORT = _s.getsockname()[1]
 os.environ["ANKI_URL"] = f"http://127.0.0.1:{PORT}"
 os.environ["ANKI_NO_AUDIO"] = "1"
+os.environ.setdefault("DESK_READER_DIR", tempfile.mkdtemp())  # never the real dictionary cache
 
 import anki  # noqa: E402
 import cards  # noqa: E402
