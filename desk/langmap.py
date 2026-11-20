@@ -132,9 +132,9 @@ def set_hidden(rec):
     return 200, {"ok": True, "hidden": len(h)}
 
 
-def _run_build():
+def _run_build(only=None):
     try:
-        B.run()
+        B.run(only) if only else B.run()
         _build["error"] = ""
     except Exception as e:  # the page shows why; the old files stay
         _build["error"] = f"{type(e).__name__}: {e}"[:300]
@@ -142,25 +142,29 @@ def _run_build():
         _build["running"] = False
 
 
-def start_build():
+def start_build(only=None):
     with _lock:
         if _build["running"]:
             return 200, {"build": dict(_build)}
         _build.update(running=True, started=int(time.time() * 1000), error="")
-    threading.Thread(target=_run_build, daemon=True).start()
+    threading.Thread(target=_run_build, args=(only,), daemon=True).start()
     return 200, {"build": dict(_build)}
 
 
 def watch():
-    """Once a month: fetch again (4747 only). The first run waits for the person or `python3 desk/langmap_build.py`."""
+    """Once a month: fetch again (4747 only). A step that failed is tried again once a day.
+    The first run waits for the person or `python3 desk/langmap_build.py`."""
     time.sleep(600)
     while True:
         try:
             meta = B._read("meta.json", {}) or {}
             last = meta.get("at") or ""
             age = (time.time() - time.mktime(time.strptime(last, "%Y-%m-%d"))) if last else None
+            failed = {n for n, st in (meta.get("steps") or {}).items() if not st.get("ok") and st.get("triedAt") != B.today()}
             if age is not None and age > MONTH and not _build["running"]:
                 start_build()
+            elif failed and not _build["running"]:  # a step Wikidata turned away: once a day until it comes in
+                start_build(failed)
         except Exception as e:
             print("langmap:", type(e).__name__, e, file=sys.stderr, flush=True)
         time.sleep(6 * 3600)
