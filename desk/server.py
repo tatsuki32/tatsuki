@@ -1715,7 +1715,8 @@ class Handler(BaseHTTPRequestHandler):
             if len(p) == 2 and method == "PUT":
                 return self.send(200, minutes.put(p[1], rec))
             if len(p) == 3 and method == "POST" and p[2] == "remove":
-                minutes_share.forget(p[1])  # its Google Doc goes to the trash first, so the public link stops working
+                if not minutes_share.forget(p[1]):  # its Google Doc goes to the trash first, so the public link stops working
+                    return self.send(502, {"error": "Couldn't take down its Google Doc. Check the internet connection and try again"})
                 return self.send(200, minutes.remove(p[1]))
             if len(p) == 3 and method == "POST" and p[2] == "calendar":
                 return self.send(200, minutes.write_calendar(p[1]))

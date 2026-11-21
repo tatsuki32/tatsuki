@@ -231,8 +231,8 @@ def auto():
         g = m.get('gdoc') or {}
         if not shareable(m):
             if g.get('id'):  # it had a doc, and now has no summary: the doc must not stay public
-                forget(m['id'])
-                minutes.set_share(m['id'], 'gdoc', None)
+                if forget(m['id']):
+                    minutes.set_share(m['id'], 'gdoc', None)  # only once it is really in the trash; else the next pass tries again
             continue
         if g and g.get('fp') == fingerprint(m):
             continue
@@ -252,17 +252,23 @@ def auto():
 
 
 def forget(mid):
-    """Before a minute is deleted: its Google Doc goes to the Drive trash, so the link stops working."""
+    """The minute's Google Doc goes to the Drive trash, so the link stops working. True when there is no doc left public."""
     try:
         g = minutes.get(mid).get('gdoc') or {}
     except minutes.MinutesError:
-        return
+        return True
     if not g.get('id') or meetcheck.fake():
-        return
+        return True
     try:
         meetcheck._google('PATCH', f'{meetcheck.FILES}/{g["id"]}', {'trashed': True})
-    except (meetcheck.MeetError, OSError):
-        print('[minutes] the Google Doc of a deleted minute could not be trashed', flush=True)
+        return True
+    except meetcheck.MeetError as e:
+        if len(e.args) > 1 and e.args[1] == 404:
+            return True  # already gone
+    except OSError:
+        pass
+    print('[minutes] a Google Doc could not be taken down; trying again later', flush=True)
+    return False
 
 
 def watch():
