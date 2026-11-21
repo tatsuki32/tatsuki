@@ -10,6 +10,10 @@ is a separate, explicit action, and it needs one-time permission to write events
 Files: desk/data/minutes/<id>.json (private; backup_data.py ignores the folder).
 Text is sent to Claude only for the summary. The Google write sends the link to the minute, never its text.
 
+Notes added to Transcribe as text (pasted, Word, PDF, Google Docs; 2026-11-21) become minutes too, without any call to
+Claude: the minute shows the notes, and once "Make minutes" is pressed (here or in Transcribe) the transcriber's
+minutes (Sonnet 5.5) replace the "not made yet" part on the next pass, unless the minute's text was edited here.
+
   python3 minutes.py sync     make minutes for ready recordings that do not have one yet
   python3 minutes.py auth     allow Desk to write the minute link into Google Calendar events
 """
@@ -213,6 +217,10 @@ def sync():
     made = 0
     for s in sessions:
         sid = s.get("id") or ""
+        if s.get("kind") == "text" and ID_RE.match(sid):
+            made += _sync_notes(s, sid in known)
+            known.add(sid)
+            continue
         if s.get("status") not in ("done", "partial") or sid in known or not ID_RE.match(sid):
             continue
         try:
@@ -231,6 +239,119 @@ def sync():
         known.add(sid)
         made += 1
     return made
+
+
+def _by_sid(sid):
+    for r in _all(deleted=True):
+        src = r.get("source") or {}
+        if src.get("kind") == "transcribe" and src.get("sid") == sid:
+            return r
+    return None
+
+
+def _noon(met, default):
+    try:
+        return datetime.strptime(met + " 12:00", "%Y-%m-%d %H:%M").timestamp()
+    except (TypeError, ValueError):
+        return float(default)
+
+
+def _stamp(m):
+    return max(float((m or {}).get("at") or 0), float((m or {}).get("edited") or 0))
+
+
+def _sync_notes(s, known):
+    """A text note from Transcribe. Returns 1 when a new minute was made. No call to Claude happens here."""
+    sid = s["id"]
+    if known:
+        with LOCK:
+            rec = _read((_by_sid(sid) or {}).get("id", ""))
+        src = (rec or {}).get("source") or {}
+        # refresh only when the transcriber has newer minutes and the text here is still the one this pass wrote
+        # ("Make minutes" pressed here sets force, so the new minutes replace an edited text too)
+        edited = _fp(rec.get("body") if rec else "") != src.get("fp")
+        if not rec or rec.get("deleted") or not s.get("has_minutes") or (edited and not src.get("force")):
+            return 0
+    try:
+        full = _http_json(f"{TRANSCRIBE}/api/sessions/{sid}")
+    except (OSError, ValueError):
+        return 0
+    m = full.get("minutes")
+    now = time.time()
+    if known:
+        if _stamp(m) <= src.get("minutesAt", 0):
+            return 0
+        with LOCK:
+            rec = _read(rec["id"])
+            rec["body"] = notes_body(m, full.get("text") or "")
+            rec["source"] = {**{k: v for k, v in src.items() if k != "force"}, "minutesAt": _stamp(m), "fp": _fp(rec["body"])}
+            rec["updated"] = now
+            _write(rec)
+        return 0
+    body = notes_body(m, full.get("text") or "")
+    rec = {"id": uuid.uuid4().hex, "title": _text(full.get("title"), 200) or "Untitled meeting",
+           "body": body, "status": "draft", "place": "",
+           "at": _noon(full.get("met"), full.get("created") or now),
+           "source": {"kind": "transcribe", "sid": sid, "from": "notes", "minutesAt": _stamp(m), "fp": _fp(body)},
+           "event": None, "calendar": None, "created": now, "updated": now}
+    with LOCK:
+        _write(rec)
+    return 1
+
+
+def notes_body(m, text):
+    """Markdown for a note from Transcribe: its minutes when there are some, then the notes themselves."""
+    parts = []
+    if m:
+        if m.get("summary"):
+            parts.append("## Summary\n" + "\n".join("- " + x for x in m["summary"]))
+        if m.get("decisions"):
+            parts.append("## Decisions\n" + "\n".join("- " + x for x in m["decisions"]))
+        if m.get("actions"):
+            rows = []
+            for a in m["actions"]:
+                extra = " — " + a["who"] if a.get("who") else ""
+                extra += f" (due {a['due']})" if a.get("due") else ""
+                rows.append(f"- [ ] {a['what']}{extra}")
+            parts.append("## Next steps\n" + "\n".join(rows))
+        if m.get("next"):
+            parts.append("## For next time\n" + "\n".join("- " + x for x in m["next"]))
+    else:
+        parts.append("## Summary\nNot made yet. Press \"Make minutes\" to get a summary, decisions and next steps.")
+    body = text.strip()
+    more = "\n..." if len(body) > PASTE_MAX else ""
+    parts.append("## Original notes\n" + body[:PASTE_MAX] + more)
+    return "\n\n".join(parts)
+
+
+def make_from_notes(mid):
+    """Asks Transcribe to make minutes for the note behind this minute (it sends the text to Claude, once)."""
+    rec = get(mid)
+    src = rec.get("source") or {}
+    if src.get("kind") != "transcribe" or not src.get("sid"):
+        raise MinutesError("This minute did not come from Transcribe.")
+    req = urllib.request.Request(f"{TRANSCRIBE}/api/sessions/{src['sid']}/minutes", data=b"{}", method="POST",
+                                 headers={"Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=15) as r:
+            json.load(r)
+    except urllib.error.HTTPError as e:
+        try:
+            msg = json.load(e).get("error") or ""
+        except (ValueError, OSError):
+            msg = ""
+        raise MinutesError(msg or f"Transcribe answered {e.code}.") from None
+    except (OSError, ValueError):
+        raise MinutesError("Transcribe is not running. Open the Transcribe view once, then try again.") from None
+    with LOCK:  # pressing it means the new minutes may replace an edited text
+        cur = _read(mid)
+        cur["source"] = {**(cur.get("source") or {}), "force": True}
+        _write(cur)
+    return {"ok": True}
+
+
+def _fp(text):
+    return hashlib.sha256((text or "").encode("utf-8")).hexdigest()[:16]
 
 
 def watch():

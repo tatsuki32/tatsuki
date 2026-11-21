@@ -7332,7 +7332,10 @@ function mnMd(src){
       continue}
     out.push(`<p>${inl(l)}</p>`);i++}
   return out.join("")}
-const mnRow=m=>`<a class="mnrow" href="#minutes/${esc(m.id)}" data-noauto><span class="mnt">${esc(m.title)}</span><span class="mns">${esc(mnWhen(m.at))}${m.status==="draft"?" · Draft":""} · ${m.event?"📅 "+esc(m.event.title):"Not linked to an event"}</span></a>`;
+const mnNotes=m=>(m.source||{}).from==="notes";
+const mnPending=m=>mnNotes(m)&&/^## Summary\nNot made yet\./.test(m.body||"");
+const mnRow=m=>`<a class="mnrow" href="#minutes/${esc(m.id)}" data-noauto><span class="mnt">${esc(m.title)}</span><span class="mns">${mnNotes(m)?esc(mnDay(m.at)):esc(mnWhen(m.at))}${mnNotes(m)?" · Notes":""}${mnPending(m)?" · No summary yet":""}${m.status==="draft"?" · Draft":""} · ${m.event?"📅 "+esc(m.event.title):"Not linked to an event"}</span></a>`;
+const mnDay=t=>t?new Date(t*1000).toLocaleDateString("en-US",{dateStyle:"medium"}):"";
 function mnPicker(){const now=Date.now(),xs=(S.cal?.events||[]).filter(e=>{const t=Date.parse(e.start);return isFinite(t)&&t>=now-86400000&&t<=now+21*86400000}).sort((a,b)=>Date.parse(a.start)-Date.parse(b.start)).slice(0,60);
   return `<div class="mnpick">${xs.length?xs.map(e=>`<button type="button" class="mnpk" data-mnlink="${esc(e.id)}">${esc(e.title)}<span class="sub">${esc(mnRange(e))}</span></button>`).join(""):`<div class="empty">No events from yesterday to three weeks ahead. The Calendar view has them, once it has loaded.</div>`}</div>`}
 function mnDetail(id){
@@ -7341,7 +7344,8 @@ function mnDetail(id){
   const ev=m.event,cal=m.calendar;
   const calLine=!ev?"":cal&&cal.ok?`<p class="sub">The link is in this Google Calendar event.</p>`:cal&&!cal.ok?`<p class="due" role="alert">${esc(cal.error||"The link was not written.")}</p>`:"";
   return `<a class="mnback" href="#minutes">← Minutes</a>
-  <header class="head mnhead"><div class="mnhd"><input class="mntitle" value="${esc(m.title)}" data-mnfield="title" aria-label="Title"><p class="sub">${esc(mnWhen(m.at))}${m.place?" · "+esc(m.place):""} · ${m.status==="ready"?"Ready":"Draft"}</p></div></header>
+  <header class="head mnhead"><div class="mnhd"><input class="mntitle" value="${esc(m.title)}" data-mnfield="title" aria-label="Title"><p class="sub">${esc(mnNotes(m)?mnDay(m.at):mnWhen(m.at))}${m.place?" · "+esc(m.place):""} · ${m.status==="ready"?"Ready":"Draft"}${mnNotes(m)?" · From notes":""}</p></div></header>
+  ${(m.source||{}).kind==="transcribe"?`<section class="card mnsrc"><div class="mnevrow">${mnNotes(m)?`<button class="btn${mnPending(m)?" primary":""}" type="button" data-mnmake ${st.busy?"disabled":""}>${mnPending(m)?"Make minutes":"Make again"}</button><span class="sub">Sends the notes to Claude (Sonnet 5.5, a few yen). The result appears here in a minute or two.</span>`:""}<a class="btn" href="http://localhost:8791/?id=${esc(m.source.sid)}" target="_blank" rel="noopener">Open in Transcribe ↗</a></div></section>`:""}
   <section class="card mnev"><div class="section-title">Calendar</div>
     ${ev?`<div class="mnevrow"><span>📅 ${esc(ev.title)} · ${esc(mnRange(ev))}</span><button class="btn" type="button" data-mnpick ${st.busy?"disabled":""}>Change</button><button class="btn" type="button" data-mnunlink ${st.busy?"disabled":""}>Unlink</button></div>`
           :`<div class="mnevrow"><span>Not linked to an event.</span><button class="btn" type="button" data-mnpick ${st.busy?"disabled":""}>Link to an event</button></div>`}
@@ -7384,6 +7388,8 @@ function wireMn(){
   document.querySelectorAll("[data-mnck]").forEach(b=>b.onclick=()=>{if(!m)return;const n=+b.dataset.mnck;let k=-1;
     const body=m.body.split("\n").map(l=>{if(/^\s*- \[( |x)\] /.test(l)){k++;if(k===n)return l.replace(/^(\s*- \[)( |x)(\] )/,(_,a,c,d)=>a+(c==="x"?" ":"x")+d)}return l}).join("\n");
     mnDo(()=>mnApi("PUT",`/api/minutes/${m.id}`,{body}),"")});
+  document.querySelectorAll("[data-mnmake]").forEach(b=>b.onclick=()=>{if(!m)return;if(!mnPending(m)&&!confirm("Make the minutes again? The text here will be replaced by the new minutes."))return;
+    mnDo(()=>mnApi("POST",`/api/minutes/${m.id}/make`,{}),"Claude is writing the minutes. They appear here in a minute or two.")});
   document.querySelectorAll("[data-mndel]").forEach(b=>b.onclick=()=>{if(m&&confirm("Delete this minute? Its text is erased."))mnDo(async()=>{await mnApi("POST",`/api/minutes/${m.id}/remove`,{});location.hash="#minutes"},"")});
 }
 /* Transcribe: long recordings turned into text on this Mac. The recorder is its own server (desk/transcribe/, 8791) and opens in the default browser,

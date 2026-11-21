@@ -1,5 +1,6 @@
 """Minutes: made from ready recordings, linked to calendar events, and the link written into Google Calendar.
 Nothing here reaches the transcriber, Claude or Google: the network calls are replaced in each test."""
+import io
 import json
 import os
 import shutil
@@ -51,6 +52,64 @@ class Minutes(unittest.TestCase):
             minutes.remove(mid)
             self.assertEqual(minutes.sync(), 0)
         self.assertEqual(minutes.view()["minutes"], [])
+
+    def notes_server(self, state):
+        """A fake transcriber with one text note; state['minutes'] can change between passes."""
+        def fake(url):
+            if url.endswith("/api/sessions"):
+                return [{"id": SID, "kind": "text", "status": "done", "title": "Planning", "has_minutes": bool(state.get("minutes"))}]
+            return {"id": SID, "kind": "text", "title": "Planning", "met": "2026-06-23", "created": CREATED,
+                    "text": "We agreed on the plan.", "minutes": state.get("minutes")}
+        return fake
+
+    def test_notes_become_a_minute_without_claude_and_pick_up_minutes_later(self):
+        state = {}
+        with mock.patch.object(minutes, "_http_json", side_effect=self.notes_server(state)), \
+                mock.patch.object(minutes, "summarize", side_effect=AssertionError("no Claude for notes")):
+            self.assertEqual(minutes.sync(), 1)
+            rec = minutes.view()["minutes"][0]
+            self.assertEqual(rec["source"]["from"], "notes")
+            self.assertIn("Not made yet", rec["body"])
+            self.assertIn("## Original notes\nWe agreed on the plan.", rec["body"])
+            self.assertEqual(minutes.datetime.fromtimestamp(rec["at"]).strftime("%Y-%m-%d"), "2026-06-23")
+            # minutes made in Transcribe arrive on the next pass
+            state["minutes"] = {"summary": ["The plan"], "decisions": ["Go"], "next": [], "at": 1795000100,
+                                "actions": [{"what": "Send the quote", "who": "Aki", "due": "2026-12-01"}]}
+            self.assertEqual(minutes.sync(), 0)
+            body = minutes.get(rec["id"])["body"]
+            self.assertIn("- [ ] Send the quote — Aki (due 2026-12-01)", body)
+            self.assertNotIn("Not made yet", body)
+            # an edit here is kept, even when the minutes change again
+            minutes.put(rec["id"], {"body": "My own text"})
+            state["minutes"] = {**state["minutes"], "edited": 1795000200}
+            minutes.sync()
+            self.assertEqual(minutes.get(rec["id"])["body"], "My own text")
+            # pressing Make minutes here lets the next minutes replace the edit
+            cur = minutes._read(rec["id"])
+            cur["source"]["force"] = True
+            minutes._write(cur)
+            state["minutes"] = {**state["minutes"], "edited": 1795000300}
+            minutes.sync()
+            self.assertIn("Send the quote", minutes.get(rec["id"])["body"])
+            self.assertNotIn("force", minutes.get(rec["id"])["source"])
+
+    def test_make_from_notes_asks_transcribe(self):
+        with mock.patch.object(minutes, "_http_json", side_effect=self.notes_server({})):
+            minutes.sync()
+        rec = minutes.view()["minutes"][0]
+        with mock.patch.object(minutes.urllib.request, "urlopen") as op:
+            op.return_value.__enter__.return_value = io.BytesIO(b"{}")
+            self.assertEqual(minutes.make_from_notes(rec["id"]), {"ok": True})
+        self.assertTrue(minutes.get(rec["id"])["source"]["force"])
+        with mock.patch.object(minutes.urllib.request, "urlopen") as op:
+            op.return_value.__enter__.return_value = io.BytesIO(b"{}")
+            minutes.make_from_notes(rec["id"])
+            req = op.call_args[0][0]
+            self.assertTrue(req.full_url.endswith(f"/api/sessions/{SID}/minutes"))
+            self.assertEqual(req.get_method(), "POST")
+        plain = minutes.create({"title": "Typed"})
+        with self.assertRaises(minutes.MinutesError):
+            minutes.make_from_notes(plain["id"])
 
     def test_no_transcriber_is_not_an_error(self):
         with mock.patch.object(minutes, "_http_json", side_effect=OSError("down")):

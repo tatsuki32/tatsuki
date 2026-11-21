@@ -1694,6 +1694,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(200, minutes.remove(p[1]))
             if len(p) == 3 and method == "POST" and p[2] == "calendar":
                 return self.send(200, minutes.write_calendar(p[1]))
+            if len(p) == 3 and method == "POST" and p[2] == "make":  # a note from Transcribe: ask it for minutes (Claude, once)
+                return self.send(200, minutes.make_from_notes(p[1]))
             return self.send(405, {"error": "method not allowed"})
         except minutes.MinutesError as e:
             return self.send(404 if str(e) == "Not found" else 400, {"error": str(e)})
