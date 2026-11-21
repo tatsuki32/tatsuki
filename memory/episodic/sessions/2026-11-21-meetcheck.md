@@ -21,3 +21,8 @@
 - 作成直後に保存すると一覧の読み込みが飛ばされ、許可の状態が読まれなかった（`loadedAt` で区別）。
 - Desk の HTML に viewport の meta がないので、ブラウザのスマホ表示は 980px で描く。375px は iframe で確かめた。
 - 作業中に別のセッションが 11-15 の古い stash を当て、`server.py` などに衝突の印が残った。stash の中身だけだと確かめて HEAD に戻した（stash は残してある）。
+
+## 追加：議事録の形・Google ドキュメント・お礼メールの下書き（同じ日）
+- 議事録を「会議の記録」の形に（`minutes.record_body`、`VERSION = 3`）。メモからの議事録も同じ形。
+- `desk/minutes_share.py`：Google ドキュメント（だれでも閲覧、drive.file）、Gmail のヘッダーから参加者のアドレス候補、お礼の Gmail 下書き（送らない）。
+- 事故：試験を一緒に走らせた順のせいで、本物の `desk/data/minutes/` を消した。保管の外だったので、Transcribe の録音とメモから作り直した。本人の手直し・予定へのリンクは戻らない。対策は `memory/semantic/patterns/test-data-isolation.md`。
