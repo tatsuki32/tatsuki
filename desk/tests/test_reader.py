@@ -99,6 +99,20 @@ class TextTest(unittest.TestCase):
         self.assertNotIn("12", chs[0]["paras"])
         self.assertEqual(chs[0]["paras"][2], "Another page begins and ends here.")
 
+    def test_page_after_a_blank_page_starts_a_chapter(self):
+        text = "Intro line one.\nIntro line two.\f \fA good networker is patient.\nBody of the part.\nMore body.\f \fand this goes on mid-sentence.\nStill the same part."
+        chs = reader.chapters_from_pdf(text)
+        self.assertEqual([c["title"] for c in chs], ["", "A good networker is patient."])
+        self.assertIn("and this goes on mid-sentence.", chs[1]["paras"])
+
+    @unittest.skipUnless(os.path.exists(reader.WORDS_FILE), "needs the Mac word list")
+    def test_mirrored_pdf_page_is_mended(self):
+        # PDFKit read the page backwards; reversing it turns ligatures around and some justified lines have no spaces.
+        page = "We screen the world of nonifction to ifnd the ifrst oiffce.\ntheirprofessionallife.Ahalfhourofyourtimehereandtherecould"
+        out = reader.fix_mirrored(page)
+        self.assertIn("nonfiction to find the first office.", out)
+        self.assertIn("their professional life. A half hour of your time here and there could", out)
+
 
 class VoiceTest(unittest.TestCase):
     def test_voice_parsing_and_filter(self):

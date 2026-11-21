@@ -304,6 +304,94 @@ def _pdftext():
     return PDFTEXT
 
 
+WORDS_FILE = "/usr/share/dict/words"
+_words = None
+_SHORT = {"a", "i", "an", "as", "at", "be", "by", "do", "go", "he", "if", "in", "is", "it", "me", "my", "no", "of", "on", "or",
+          "so", "to", "up", "us", "we", "am", "ok"}
+_LIGS = (("iff", "ffi"), ("lff", "ffl"), ("if", "fi"), ("lf", "fl"))
+
+
+def _wordset():
+    global _words
+    if _words is None:
+        try:
+            with open(WORDS_FILE, encoding="utf-8", errors="ignore") as f:
+                _words = {w.strip().lower() for w in f if w.strip()}
+        except OSError:
+            _words = set()
+    return _words
+
+
+def _known(w):
+    """An English word, give or take an ending (the Mac's list has few plurals or -ing forms)."""
+    w = w.lower().replace("’", "'")
+    if w.endswith("'s"):
+        w = w[:-2]
+    if len(w) <= 2:
+        return w in _SHORT
+    ws = _wordset()
+    if w in ws:
+        return True
+    for end, add in (("s", ""), ("es", ""), ("ed", ""), ("ed", "e"), ("ing", ""), ("ing", "e"), ("ly", ""), ("er", ""),
+                     ("ers", ""), ("ies", "y"), ("ied", "y"), ("ings", ""), ("ment", ""), ("ments", ""), ("ness", "")):
+        if w.endswith(end) and len(w) - len(end) >= 3 and (w[:-len(end)] + add) in ws:
+            return True
+    return False
+
+
+def _unlig(word):
+    """Reversing a page also turns its ligatures around: "first" comes out "ifrst", "office" "oiffce"."""
+    if _known(word) or not re.search(r"if|lf", word, re.I):
+        return word
+    for bad, good in _LIGS:
+        i = word.lower().find(bad)
+        while i >= 0:
+            cand = word[:i] + good + word[i + len(bad):]
+            if word[i].isupper():
+                cand = word[:i] + good.capitalize() + word[i + len(bad):]
+            fixed = _unlig(cand) if re.search(r"if|lf", cand[i + len(good):], re.I) else cand
+            if _known(fixed):
+                return fixed
+            i = word.lower().find(bad, i + 1)
+    return word
+
+
+def _split_run(run):
+    """A run of letters with its spaces lost ("theirprofessionallife") back into words, fewest words first; None if it can't."""
+    n = len(run)
+    best = [None] * (n + 1)
+    best[0] = []
+    for j in range(1, n + 1):
+        for i in range(max(0, j - 24), j):
+            if best[i] is not None and _known(run[i:j]):
+                cand = best[i] + [run[i:j]]
+                if best[j] is None or len(cand) < len(best[j]):
+                    best[j] = cand
+    return best[n]
+
+
+def fix_mirrored(page):
+    """Mend a page that PDFKit read backwards and pdftext turned around: ligatures and justified lines without spaces."""
+    if not _wordset():
+        return page
+
+    def token(m):
+        t = m.group(0)
+        if _known(t):
+            return t
+        u = _unlig(t)
+        if u != t:
+            return u
+        if len(t) >= 12:
+            parts = _split_run(t)
+            if parts and len(parts) > 1:
+                return " ".join(_unlig(x) for x in parts)
+        return t
+
+    page = re.sub(r"(?<=[a-z])([.,:;?!])(?=[A-Za-z]{2})", r"\1 ", page)  # "life.Ahalf" -> "life. Ahalf"
+    return re.sub(r"[A-Za-z]+", token, page)
+
+
 def pdf_text(path):
     try:
         tool = _pdftext()
@@ -314,53 +402,64 @@ def pdf_text(path):
         raise ValueError("This PDF is locked with a password")
     if r.returncode != 0:
         raise ValueError("Could not read this PDF")
-    return r.stdout
+    return "\f".join(fix_mirrored(pg[1:]) if pg.startswith("\x01") else pg for pg in r.stdout.split("\f"))
 
 
 def chapters_from_pdf(text):
     """Pages come apart with form feeds. Lines are joined into paragraphs: a line ending a sentence ends a paragraph when the
-    page has no blank lines of its own."""
+    page has no blank lines of its own. A page with text after an empty page starts a chapter, its first short paragraph the
+    title (summaries such as Blinkist put each part on a new page after a blank one)."""
     chapters, pages = [], text.split("\f")
-    paras = []
+    paras, heads = [], set()  # heads: indexes in paras that start a chapter because a blank page came before
+    blank_before = False
     for pg in pages:
         pg = pg.replace("\r", "")
+        if not pg.strip():
+            blank_before = True
+            continue
+        first = len(paras)
         if re.search(r"\n\s*\n", pg):
             paras.extend(paragraphs(pg))
-            continue
-        cur = []
-        for line in pg.split("\n"):
-            line = line.strip()
-            if not line:
-                continue
-            if re.fullmatch(r"\d{1,4}", line):  # a page number on its own
-                continue
-            if is_heading(line):  # a chapter title on its own line
-                if cur:
+        else:
+            cur = []
+            for line in pg.split("\n"):
+                line = line.strip()
+                if not line:
+                    continue
+                if re.fullmatch(r"\d{1,4}", line):  # a page number on its own
+                    continue
+                if is_heading(line):  # a chapter title on its own line
+                    if cur:
+                        paras.append(" ".join(cur))
+                        cur = []
+                    paras.append(line)
+                    continue
+                cur.append(line)
+                if re.search(r"[.!?。！？」”\"']$", line):
                     paras.append(" ".join(cur))
                     cur = []
-                paras.append(line)
-                continue
-            cur.append(line)
-            if re.search(r"[.!?。！？」”\"']$", line):
+            if cur:
                 paras.append(" ".join(cur))
-                cur = []
-        if cur:
-            paras.append(" ".join(cur))
-    paras = [" ".join(p.split()) for p in paras if p.strip()]
-    if not paras:
+        if blank_before and first and len(paras) > first + 1 and len(" ".join(paras[first].split())) <= 120 \
+                and not paras[first].lstrip()[:1].islower():
+            heads.add(first)
+        blank_before = False
+    keep = [(i, " ".join(p.split())) for i, p in enumerate(paras) if p.strip()]
+    if not keep:
         raise ValueError("No text in this PDF (a scan has none; this reader does not do OCR)")
     cur = {"title": "", "paras": []}
-    for p in paras:
-        if is_heading(p) and cur["paras"]:
+    for i, p in keep:
+        head = is_heading(p) or i in heads
+        if head and cur["paras"]:
             chapters.append(cur)
             cur = {"title": p, "paras": []}
-        elif is_heading(p) and not cur["title"]:
+        elif head and not cur["title"]:
             cur["title"] = p
         else:
             cur["paras"].append(p)
     if cur["paras"]:
         chapters.append(cur)
-    return chapters or [{"title": "", "paras": paras}]
+    return chapters or [{"title": "", "paras": [p for _, p in keep]}]
 
 
 # ---------- adding and keeping books ----------
