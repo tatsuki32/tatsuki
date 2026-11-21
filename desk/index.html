@@ -11175,9 +11175,17 @@ autoLinkStart();
     else{tbSave();tbRender()}
   }
   // a screen change that the tab bar did not start (a menu, search, a button, a link in a page) opens a new tab next to the current one
+  // "Back to Today", Esc and the browser's back/forward move the current tab, they do not open one
+  const tbStay=()=>{TB.stay=true;clearTimeout(TB.stayT);TB.stayT=setTimeout(()=>{TB.stay=false},100)};
+  document.addEventListener("click",e=>{if(e.target.closest?.("#backBar"))tbStay()},true);
+  document.addEventListener("keydown",e=>{if(e.key==="Escape")tbStay()},true);
+  // a history entry made by a hash change is marked; going back or forward lands on a marked entry (a fresh one has no mark)
   window.addEventListener("hashchange",()=>{
     const t=tbCur();if(!t)return;const h=tbNorm(location.hash);
+    const traverse=!!(history.state&&history.state.tbk);
+    if(!traverse){try{history.replaceState({tbk:1},"")}catch(err){}}
     if(t.hash===h){tbRender();return}
+    if(TB.stay||traverse){TB.stay=false;t.hash=h;tbSave();tbRender();return}
     if(TB.tabs.length>=MAX){t.hash=h;tbSave();tbRender();return}
     const n={id:tbId(),hash:h};TB.tabs.splice(TB.tabs.indexOf(t)+1,0,n);TB.active=n.id;tbSave();tbRender();
   });
