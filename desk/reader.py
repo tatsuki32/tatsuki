@@ -518,9 +518,24 @@ def voices():
     return out
 
 
+NOVELTY = re.compile(r"^(Albert|Bad News|Bahh|Bells|Boing|Bubbles|Cellos|Wobble|Fred|Good News|Jester|Junior|Organ|Superstar|Ralph|Trinoids|Whisper|Zarvox|Kathy)\b", re.I)
+ELOQUENCE = re.compile(r"^(Eddy|Flo|Grandma|Grandpa|Reed|Rocko|Sandy|Shelley)\b", re.I)
+
+
+def voice_rank(name):
+    """Best first, as in the page (rdVoiceRank): Premium, Enhanced, the natural compact voices, then the old Eloquence ones."""
+    if re.search(r"premium", name, re.I):
+        return 0
+    if re.search(r"enhanced|siri", name, re.I):
+        return 1
+    return 3 if ELOQUENCE.match(name) else 2
+
+
 def voices_for(lang):
+    """The Mac's voices for a language, best first; novelty voices (Bells, Zarvox, ...) are left out."""
     pre = VOICE_LANG.get((lang or "en")[:2], (lang or "en")[:2] + "_")
-    return [v for v in voices() if v["lang"].startswith(pre)]
+    vs = [v for v in voices() if v["lang"].startswith(pre) and not NOVELTY.match(v["name"])]
+    return sorted(vs, key=lambda v: voice_rank(v["name"]))
 
 
 def speak(rec):

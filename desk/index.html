@@ -1816,6 +1816,7 @@ a.shelfbtn{text-decoration:none;display:inline-flex;align-items:center}
 .rdcont{border-left:3px solid var(--accent)}
 .rdcont b{font-size:var(--t4)}
 .rdread{display:grid;gap:var(--s3);padding-bottom:96px}
+.wrap:has(> .rdread){max-width:1160px;margin-left:0}
 .rdtop{display:flex;align-items:center;gap:var(--s2);flex-wrap:wrap}
 .rdtop .rdtitle{flex:1 1 12em;min-width:0;overflow-wrap:anywhere;font-size:var(--t3)}
 .rdchap{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:var(--s2);align-items:center}
@@ -1831,6 +1832,7 @@ a.shelfbtn{text-decoration:none;display:inline-flex;align-items:center}
 .rdbar{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;gap:var(--s2);align-items:center;flex-wrap:wrap;padding:var(--s2) max(var(--s3),env(safe-area-inset-right,0px)) calc(var(--s2) + env(safe-area-inset-bottom,0px)) max(var(--s3),env(safe-area-inset-left,0px));background:var(--rail);border-top:1px solid var(--line)}
 .rdbar .cdsel{max-width:11em}
 .rdbar .rdvoice{max-width:14em}
+.vhsteps{margin:0;padding-left:1.4em;display:grid;gap:var(--s1);line-height:1.6}
 .rdbar .rdpos{margin-left:auto}
 @media (min-width:861px){.rdbar{left:224px}}
 @media (max-width:860px){.rdbar{bottom:56px}.rdread{padding-bottom:150px}}
@@ -1990,11 +1992,11 @@ body.rdth-night main{--bg:var(--rdn-bg);--surface:var(--rdn-surface);--surface-2
 body.rdth-paper main,body.rdth-sepia main,body.rdth-night main{background:var(--bg);color:var(--ink);min-height:100vh;color-scheme:light}
 body.rdth-night main{color-scheme:dark}
 body.rdth-paper main .btn.primary:hover,body.rdth-sepia main .btn.primary:hover{background:var(--accent);filter:brightness(1.1)}
-.rdmain{display:grid;grid-template-columns:minmax(0,680px) minmax(280px,340px);gap:var(--s5);align-items:start;justify-content:start}
+.rdmain{display:grid;grid-template-columns:minmax(0,800px) minmax(232px,272px);gap:var(--s4);align-items:start;justify-content:start}
 .rdcol{display:grid;gap:var(--s3);min-width:0}
 .rdseg{display:inline-flex;gap:var(--s1)}
 .rdseg .btn.on{border-color:var(--accent);font-weight:700}
-.rdsheet{position:relative;background:var(--rd-page,var(--surface));color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:var(--s5) 48px var(--s4);box-shadow:0 1px 0 var(--line),0 16px 40px rgba(0,0,0,.14);transform-origin:left center;backface-visibility:hidden}
+.rdsheet{position:relative;aspect-ratio:128/188;background:var(--rd-page,var(--surface));color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:56px 64px var(--s4) 72px;box-shadow:0 1px 0 var(--line),0 16px 40px rgba(0,0,0,.14);transform-origin:left center;backface-visibility:hidden}
 .rdsheet::before{content:"";position:absolute;top:0;bottom:0;left:0;width:28px;border-radius:6px 0 0 6px;background:linear-gradient(90deg,rgba(0,0,0,.09),transparent);pointer-events:none}
 .rdbody{font-family:Georgia,"Iowan Old Style","Hiragino Mincho ProN","Yu Mincho",serif;font-size:var(--t3);line-height:1.9}
 .rdread.f2 .rdbody{font-size:var(--t4);line-height:1.9}
@@ -2014,25 +2016,28 @@ body.rdth-paper main .btn.primary:hover,body.rdth-sepia main .btn.primary:hover{
 .rdhl{color:inherit;border-radius:2px;padding:0 1px;background:var(--hl)}
 .c-yellow{--hl:var(--rd-hl-yellow)}.c-green{--hl:var(--rd-hl-green)}.c-blue{--hl:var(--rd-hl-blue)}
 .rdflash{outline:3px solid var(--accent);outline-offset:2px;border-radius:3px}
-.rdside{position:sticky;top:var(--s3);max-height:calc(100vh - 112px);overflow-y:auto;display:grid;gap:var(--s3);align-content:start;padding:var(--s3);background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
-.rdstats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--s2)}
+.rdside{position:sticky;top:var(--s3);max-height:calc(100vh - 112px);overflow-y:auto;display:grid;gap:var(--s2);align-content:start;padding:var(--s3);background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+.rdstats{margin:0;font-size:var(--t1);color:var(--muted)}
 .rdstats div{display:grid;gap:2px}
 .rdstats b{font-size:var(--t4);line-height:1.2}
 .rdtabs{display:flex;gap:var(--s1);border-bottom:1px solid var(--line)}
 .rdtabs button{background:none;border:0;border-bottom:2px solid transparent;padding:var(--s2) var(--s1);margin-bottom:-1px;color:var(--muted);font:inherit;font-size:var(--t2);cursor:pointer}
 .rdtabs button[aria-selected="true"]{color:var(--ink);font-weight:700;border-color:var(--accent)}
 .rdtabbody{display:grid;gap:var(--s3)}
-.rdcur{display:grid;gap:var(--s2);padding:var(--s3);border:1px solid var(--line);border-radius:var(--r-s);background:var(--rd-page,var(--surface-2))}
+.rdcur{display:grid;gap:var(--s1);padding:var(--s2) var(--s3);border:1px solid var(--line);border-radius:var(--r-s);background:var(--rd-page,var(--surface-2))}
 .rdcurhead{display:flex;align-items:center;gap:var(--s2)}
-.rdcurhead .rdterm{font-size:var(--t4);overflow-wrap:anywhere;flex:1 1 auto;min-width:0}
-.rdres{margin:0;font-size:var(--t3);line-height:1.6;overflow-wrap:anywhere}
+.rdcurhead .rdterm{font-size:var(--t3);overflow-wrap:anywhere;flex:1 1 auto;min-width:0}
+.rdcurhead .rdterm .sub{white-space:nowrap;font-weight:400}
+.rdres{margin:0;font-size:var(--t2);line-height:1.5;overflow-wrap:anywhere}
+.rdres.en{color:var(--ink-2)}
 .rdsrc{margin:0;font-size:var(--t2);color:var(--muted);border-left:2px solid var(--line-2);padding-left:var(--s2);overflow-wrap:anywhere}
 .rdex{margin:0;font-style:italic}
 .rdlist{display:grid}
-.rdli{display:grid;gap:2px;width:100%;text-align:left;background:none;border:0;border-top:1px solid var(--line);padding:var(--s2) 0;color:var(--ink);font:inherit;cursor:pointer}
+.rdli{display:grid;gap:2px;width:100%;text-align:left;background:none;border:0;border-top:1px solid var(--line);padding:6px 0;color:var(--ink);font:inherit;cursor:pointer}
 .rdli:first-child{border-top:0}
 .rdli b{overflow-wrap:anywhere;font-size:var(--t2)}
 .rdli .rdlr{color:var(--ink-2);font-size:var(--t2);overflow-wrap:anywhere}
+.rdli1{display:flex;gap:var(--s2);align-items:baseline;min-width:0}.rdli1 b{flex:none}.rdli1 .rdlr{flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rdli1 .sub{flex:none}
 .rdhli{grid-template-columns:4px minmax(0,1fr) auto;gap:var(--s2);cursor:default;align-items:start}
 .rdhlbar{align-self:stretch;border-radius:2px;background:var(--hl)}
 .rdhlmain{display:grid;gap:var(--s1);min-width:0}
@@ -2050,7 +2055,7 @@ body.rdth-paper main .btn.primary:hover,body.rdth-sepia main .btn.primary:hover{
 .rdcursheet[hidden]{display:none}
 @media (max-width:1179px){.rdmain{grid-template-columns:minmax(0,1fr)}.rdside{position:static;max-height:none}}
 @media (max-width:860px){.rdcursheet{left:0;bottom:56px;z-index:32;max-height:55vh}}
-@media (max-width:560px){.rdsheet{padding:var(--s4) var(--s3) var(--s3)}.rdsheet::before{width:12px}.rdstats b{font-size:var(--t3)}}
+@media (max-width:560px){.rdsheet{aspect-ratio:auto;padding:var(--s4) var(--s3) var(--s3)}.rdsheet::before{width:12px}.rdstats b{font-size:var(--t3)}}
 .mnrow{display:block;padding:var(--s2) 0;border-bottom:1px solid var(--line);text-decoration:none;color:inherit}
 .mnrow:last-child{border-bottom:0}
 .mnt{display:block;font-weight:700}
@@ -10195,7 +10200,7 @@ function rdReadView(id){
     <div class="rdcursheet" id="rdCurSheet" hidden></div>
     <div class="rdbar" id="rdBar"><button class="btn primary" id="rdPlay" aria-label="${S.rd.playing?"Pause":"Play"}">${S.rd.playing?"❚❚ Pause":"▶ Play"}</button><button class="btn" id="rdBack" aria-label="Back one sentence">⏮ Back</button>
       <select class="wd-field cdsel" id="rdRate" aria-label="Speed">${RD_RATES.map(r=>`<option value="${r}" ${r===S.rd.rate?"selected":""}>${r}×</option>`).join("")}</select>
-      <select class="wd-field cdsel rdvoice" id="rdVoice" aria-label="Voice">${voices.map(v=>`<option value="${esc(v.id)}" ${v.id===vsel?"selected":""}>${esc(v.label)}</option>`).join("")||`<option value="">No voice for ${esc(RD_LANGS[b.lang]||b.lang)}</option>`}</select><span class="sub rdpos" id="rdPos"></span></div></div>`;
+      <select class="wd-field cdsel rdvoice" id="rdVoice" aria-label="Voice">${rdVoiceOpts(b.lang,vsel)}</select><span class="sub rdpos" id="rdPos"></span></div></div>`;
 }
 /* chapters turn like a page: the old sheet swings away on its spine, the new one settles in */
 function rdGoCh(i,dir){
@@ -10221,7 +10226,7 @@ function wireRd(){
   on("#rdEdit",rdEditPrompt);
   on("#rdPlay",()=>S.rd.playing?rdPause():rdPlay());on("#rdBack",rdBack);
   $("#rdRate").onchange=e=>{S.rd.rate=+e.target.value;try{localStorage.setItem("desk-rd-rate",S.rd.rate)}catch(e){}if(S.rd.playing){rdPause();rdPlay()}};
-  $("#rdVoice").onchange=e=>{try{localStorage.setItem("desk-rd-voice-"+b.lang,e.target.value)}catch(e){}if(S.rd.playing){rdPause();rdPlay()}};
+  $("#rdVoice").onchange=e=>{if(e.target.value==="__get"){e.target.value=rdVoicePick(b.lang);rdVoiceHelp(b.lang);return}try{localStorage.setItem("desk-rd-voice2-"+b.lang,e.target.value)}catch(e){}if(S.rd.playing){rdPause();rdPlay()}};
   const body=$("#rdBody");
   body.onclick=rdTap;
   body.addEventListener("mouseup",()=>setTimeout(()=>rdSelCheck(false),0));
@@ -10353,11 +10358,11 @@ async function rdLookup(o){
 function rdShowCur(m){S.rd.cur={...m};S.rd.tab="look";rdDrawSide();rdDrawCur()}
 function rdCurHtml(){
   const c=S.rd.cur, b=S.rd.book;
-  if(!c)return rdWide()?`<p class="sub">Tap a word or select a sentence. Its translation appears here and the words stay marked.</p>`:"";
+  if(!c)return rdWide()?`<p class="sub">Tap a word or select a sentence.</p>`:"";
   const head=(t)=>`<div class="rdcurhead"><b class="rdterm" data-noauto>${t}</b><button class="ibtn" data-rdcsay aria-label="Read aloud">🔊</button><button class="ibtn" data-rdcx aria-label="Close">✕</button></div>`;
   if(c.mode==="word"){const i=c.info||{}, have=S.cards.find(k=>!k.deleted&&(k.lang||"en")===b.lang&&[k.term,k.lemma].map(rdNorm).includes(rdNorm(c.text)));
     return `<div class="rdcur" data-noauto>${head(esc(i.lemma&&rdNorm(i.lemma)!==rdNorm(c.text)?`${c.text} → ${i.lemma}`:c.text)+(i.ipa?` <span class="sub">/${esc(i.ipa)}/</span>`:""))}
-      ${c.busy?`<p class="sub">Looking it up…</p>`:c.err?`<p class="sub">${esc(c.err)}</p>`:`${i.meaning_ja?`<p class="rdres">${esc(i.meaning_ja)}</p>`:""}${i.meaning_en?`<p class="rdres">${esc(i.meaning_en)}</p>`:""}${i.pos?`<span class="sub">${esc(i.pos)}</span>`:""}${i.example?`<p class="sub rdex">${esc(i.example)}</p>`:""}`}
+      ${c.busy?`<p class="sub">Looking it up…</p>`:c.err?`<p class="sub">${esc(c.err)}</p>`:`${i.meaning_ja?`<p class="rdres">${esc(i.meaning_ja)}</p>`:""}${i.meaning_en?`<p class="rdres en">${esc(i.meaning_en)}</p>`:""}`}
       ${c.busy||c.err?"":`<div class="row">${have||c.added?`<span class="sub">✓ ${esc(have?ankiMark(have):"On its way to Anki")}</span>`:`<button class="btn primary sm" data-rdcadd>Add to Anki</button>`}</div>`}</div>`}
   return `<div class="rdcur" data-noauto>${head("Sentence")}<p class="rdsrc">${esc(c.text)}</p>${c.busy?`<p class="sub">Translating…</p>`:c.err?`<p class="sub">${esc(c.err)}</p>`:`<p class="rdres">${esc(c.result||"")}</p>`}</div>`;
 }
@@ -10394,11 +10399,12 @@ function rdSideHtml(){
   const b=S.rd.book;if(!b||!b.chapters_full)return "";
   const ms=rdBookMarks().sort((x,y)=>(y.at||0)-(x.at||0)), lk=ms.filter(m=>m.kind==="lookup"), hl=ms.filter(m=>m.kind==="highlight"), nt=ms.filter(m=>m.kind==="note"||(m.kind==="highlight"&&m.note));
   const t=S.rd.tab, short=(s,n)=>{s=String(s||"");return s.length>n?s.slice(0,n-1)+"…":s};
-  const stats=`<div class="rdstats"><div><b>${lk.length}</b><span class="sub">translated</span></div><div><b>${lk.filter(m=>m.ch===S.rd.ch).length}</b><span class="sub">this chapter</span></div><div><b>${hl.length}</b><span class="sub">highlights</span></div><div><b>${rdPct(b)}%</b><span class="sub">read</span></div></div>`;
+  const stats=`<p class="rdstats">${rdPct(b)}% read · ${lk.length} looked up${hl.length?` · ${hl.length} highlight${hl.length===1?"":"s"}`:""}</p>`;
   const tabs=`<div class="rdtabs" role="tablist">${[["look","Translations"],["hl","Highlights"],["notes","Notes"]].map(([k,l])=>`<button role="tab" data-rdtab="${k}" aria-selected="${t===k}">${l}</button>`).join("")}</div>`;
   const chip=m=>`<span class="sub">${esc(rdChLabel(b,m.ch))}</span>`;
   let body="";
-  if(t==="look")body=`<div id="rdCur"></div>${lk.length?`<div class="rdlist">${lk.slice(0,300).map(m=>`<button class="rdli" data-rdgo="${esc(m.id)}" data-noauto><b>${esc(short(m.text,80))}</b><span class="rdlr">${esc(short(m.result||m.info?.meaning_en||"",120))}</span>${chip(m)}</button>`).join("")}</div>`:`<p class="sub">Nothing translated in this book yet.</p>`}`;
+  if(t==="look"){const seen=new Map();for(const m of lk){const k=rdNorm(m.text);if(seen.has(k))seen.get(k).n++;else seen.set(k,{m,n:1})}
+    body=`<div id="rdCur"></div>${seen.size?`<div class="rdlist">${[...seen.values()].slice(0,300).map(({m,n})=>`<button class="rdli rdli1" data-rdgo="${esc(m.id)}" data-noauto><b>${esc(short(m.text,40))}</b><span class="rdlr">${esc(short(m.info?.meaning_ja||m.result||m.info?.meaning_en||"",80))}</span>${n>1?`<span class="sub">×${n}</span>`:""}</button>`).join("")}</div>`:`<p class="sub">Nothing translated in this book yet.</p>`}`}
   if(t==="hl")body=hl.length?`<div class="rdlist">${hl.map(m=>`<div class="rdli rdhli c-${esc(m.color||"yellow")}" data-noauto><span class="rdhlbar" aria-hidden="true"></span><div class="rdhlmain"><button class="rdlink" data-rdgo="${esc(m.id)}">${esc(short(m.text,220))}</button>${chip(m)}<textarea class="wd-field rdnote" data-rdnote="${esc(m.id)}" rows="1" placeholder="Add a note">${esc(m.note||"")}</textarea></div><button class="ibtn" data-rddel="${esc(m.id)}" aria-label="Remove highlight">✕</button></div>`).join("")}</div>`:`<p class="sub">Select words in the book, then pick a color.</p>`;
   if(t==="notes")body=`<div class="rdnew"><textarea class="wd-field rdnote" id="rdNoteNew" rows="3" placeholder="A note on ${esc(rdChLabel(b,S.rd.ch))}"></textarea><button class="btn sm primary" id="rdNoteAdd">Add note</button></div>
     ${nt.length?`<div class="rdlist">${nt.map(m=>`<div class="rdli rdnoteli" data-noauto>${m.kind==="highlight"?`<button class="rdlink rdq" data-rdgo="${esc(m.id)}">“${esc(short(m.text,160))}”</button>`:`<button class="rdlink" data-rdgo="${esc(m.id)}">${esc(rdChLabel(b,m.ch))}</button>`}<textarea class="wd-field rdnote" data-rdnote="${esc(m.id)}" rows="2">${esc(m.note||"")}</textarea><div class="row"><span class="sub">${new Date(m.at||0).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span><button class="btn sm" data-rddel="${esc(m.id)}">${m.kind==="highlight"?"Remove highlight":"Delete"}</button></div></div>`).join("")}</div>`:`<p class="sub">Notes stay with this book.</p>`}`;
@@ -10433,13 +10439,29 @@ document.addEventListener("mousedown",e=>{if($("#rdSelBar")&&!e.target.closest("
 window.addEventListener("resize",()=>{if(viewId()==="reader"&&rdBookId())rdDrawCur()});
 
 /* ---------- reading aloud: the browser's voices, or the Mac's `say` through the server ---------- */
+/* voices, best first: Premium and Enhanced (downloaded in System Settings) → the natural compact voices → the old Eloquence voices.
+   Novelty voices (Bells, Zarvox, …) are never offered. The same order lives in reader.py (voice_rank). */
+const RD_NOVELTY=/^(Albert|Bad News|Bahh|Bells|Boing|Bubbles|Cellos|Wobble|Fred|Good News|Jester|Junior|Organ|Superstar|Ralph|Trinoids|Whisper|Zarvox|Kathy)\b/i;
+const RD_ELOQ=/^(Eddy|Flo|Grandma|Grandpa|Reed|Rocko|Sandy|Shelley)\b/i;
+function rdVoiceRank(name){return /premium/i.test(name)?0:/enhanced|siri/i.test(name)?1:RD_ELOQ.test(name)?3:2}
 function rdVoiceList(lang){
-  const web=(window.speechSynthesis?.getVoices?.()||[]).filter(v=>(v.lang||"").toLowerCase().replace("_","-").startsWith(lang)).map(v=>({id:"web:"+v.name,label:v.name+(v.localService===false?" (online)":"")}));
-  const mac=(S.rd.mac&&S.rd.macVoicesFor===lang?S.rd.mac:[]).map(v=>({id:"mac:"+v.name,label:v.name+" (Mac)"}));
-  return [...web,...mac];
+  const web=(window.speechSynthesis?.getVoices?.()||[]).filter(v=>(v.lang||"").toLowerCase().replace("_","-").startsWith(lang)&&!RD_NOVELTY.test(v.name)).map(v=>({id:"web:"+v.name,name:v.name,label:v.name+(v.localService===false?" (online)":"")}));
+  const mac=(S.rd.mac&&S.rd.macVoicesFor===lang?S.rd.mac:[]).filter(v=>!RD_NOVELTY.test(v.name)).map(v=>({id:"mac:"+v.name,name:v.name,label:v.name+" (Mac)"}));
+  return [...web,...mac].map((v,i)=>({...v,i,r:rdVoiceRank(v.name)})).sort((a,b)=>a.r-b.r||a.i-b.i);
 }
-function rdVoicePick(lang){let v="";try{v=localStorage.getItem("desk-rd-voice-"+lang)||""}catch(e){}const list=rdVoiceList(lang);return list.some(x=>x.id===v)?v:(list[0]?.id||"")}
-async function rdMacVoices(lang){if(!LOCALAPI)return;S.rd.macVoicesFor=lang;try{S.rd.mac=await api("GET","/api/reader/voices?lang="+encodeURIComponent(lang))}catch(e){S.rd.mac=[]}if(viewId()==="reader"&&rdBookId()&&$("#rdVoice")&&!S.rd.playing){const b=S.rd.book,sel=rdVoicePick(b.lang);$("#rdVoice").innerHTML=rdVoiceList(b.lang).map(v=>`<option value="${esc(v.id)}" ${v.id===sel?"selected":""}>${esc(v.label)}</option>`).join("")||`<option value="">No voice for ${esc(RD_LANGS[b.lang]||b.lang)}</option>`}}
+const rdHasGoodVoice=lang=>rdVoiceList(lang).some(v=>v.r<=1);
+function rdVoiceOpts(lang,sel){const vs=rdVoiceList(lang);
+  return (vs.map(v=>`<option value="${esc(v.id)}" ${v.id===sel?"selected":""}>${esc(v.label)}</option>`).join("")||`<option value="">No voice for ${esc(RD_LANGS[lang]||lang)}</option>`)+`<option value="__get">${rdHasGoodVoice(lang)?"More voices…":"Get a better voice…"}</option>`}
+function rdVoiceHelp(lang){
+  if($("#modal").firstChild)return;const name=RD_LANGS[lang]||lang;
+  $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop cdpop" role="dialog" aria-modal="true" aria-label="Better voices"><div class="top"><h2>Better voices for ${esc(name)}</h2><button class="ibtn" id="vhX" aria-label="Close">✕</button></div>
+    <p class="mtalk">The Mac has natural voices, but they are downloaded one by one. Premium is the most natural, Enhanced is next.</p>
+    <ol class="vhsteps"><li>Open System Settings → Accessibility → Spoken Content.</li><li>Next to System voice, open the menu and choose Manage Voices…</li><li>Find ${esc(name)} and download a voice marked Premium (for English, Ava, Zoe or Evan) or Enhanced.</li><li>Quit and reopen the Desk. The new voice is chosen first.</li></ol>
+    <p class="sub">Voices run on this Mac. Nothing is sent anywhere.</p></div></div>`;
+  const close=()=>{$("#modal").innerHTML=""};$("#vhX").onclick=close;$("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};$("#scrim").onkeydown=e=>{if(e.key==="Escape"){e.stopPropagation();close()}};$("#vhX").focus();
+}
+function rdVoicePick(lang){let v="";try{v=localStorage.getItem("desk-rd-voice2-"+lang)||""}catch(e){}const list=rdVoiceList(lang);return list.some(x=>x.id===v)?v:(list[0]?.id||"")}
+async function rdMacVoices(lang){if(!LOCALAPI)return;S.rd.macVoicesFor=lang;try{S.rd.mac=await api("GET","/api/reader/voices?lang="+encodeURIComponent(lang))}catch(e){S.rd.mac=[]}if(viewId()==="reader"&&rdBookId()&&$("#rdVoice")&&!S.rd.playing){const b=S.rd.book,sel=rdVoicePick(b.lang);$("#rdVoice").innerHTML=rdVoiceOpts(b.lang,sel)||`<option value="">No voice for ${esc(RD_LANGS[b.lang]||b.lang)}</option>`}}
 const rdSentenceEls=()=>[...document.querySelectorAll("#rdBody .rds")];
 function rdHighlight(i,scroll=true){document.querySelectorAll("#rdBody .rds.on").forEach(x=>x.classList.remove("on"));const el=rdSentenceEls()[i];if(!el)return;el.classList.add("on");
   if(scroll){const r=el.getBoundingClientRect();if(r.top<80||r.bottom>window.innerHeight-120)el.scrollIntoView({block:"center",behavior:"smooth"})}
