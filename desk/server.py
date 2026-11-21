@@ -58,6 +58,7 @@ import cards
 import words
 import cards_sync
 import reader
+import reader_parallel  # Reader side by side: a chapter and its translation (sent to Claude only when asked)
 import langmap  # Language Map: countries, languages, regions and peoples from public data (desk/langmap.py, langmap_build.py)
 import translate  # Translate: lookups, concepts across languages, card candidates (desk/translate.py)
 import chrome_web_sync
@@ -1059,6 +1060,9 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, news_sync.today())
         if path == "/api/reader/books":  # Desk Reader: the books on this Mac (desk/reader.py); titles and progress only
             return self.send(200, reader.list_books())
+        m = re.fullmatch(r"/api/reader/books/([a-z0-9]+)/parallel/(\d+)", path)
+        if m:
+            return self.send(*reader_parallel.state(m.group(1), int(m.group(2))))
         if path.startswith("/api/reader/books/") and path.count("/") == 4:
             return self.send(*reader.get(path.rsplit("/", 1)[1]))
         if path == "/api/reader/gvoices":  # Google's natural voices for a language (desk/gtts.py); empty without a key
@@ -1608,7 +1612,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def reader_write(self, method, step):
         """Desk Reader and flashcards (desk/reader.py, desk/cards.py). JSON only, so another origin would need a preflight.
-        A book's text goes nowhere but `say`; one word and its sentence go to Claude for the meaning."""
+        A book's text goes nowhere but `say`, except a chapter Tatsuki asks to see side by side (reader_parallel); one word and its sentence go to Claude for the meaning."""
         if not (self.headers.get("Content-Type") or "").startswith("application/json"):
             return self.send(415, {"error": "json only"})
         try:
@@ -1622,6 +1626,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(*reader.set_pos(step[2], rec))
             if method == "PUT" and len(step) == 3 and step[1] == "books":
                 return self.send(*reader.edit(step[2], rec))
+            if method == "POST" and len(step) == 5 and step[1] == "books" and step[3] == "parallel" and step[4].isdigit():
+                return self.send(*reader_parallel.start(step[2], int(step[4]), again=bool(rec.get("again"))))
             if method == "POST" and len(step) == 4 and step[1] == "books" and step[3] == "remove":
                 return self.send(*reader.remove(step[2]))
             if method == "POST" and step[1:] == ["speak"]:

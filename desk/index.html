@@ -2013,6 +2013,24 @@ body.rdth-paper main .btn.primary:hover,body.rdth-sepia main .btn.primary:hover{
 @keyframes rdInPrev{from{transform:perspective(1800px) rotateY(-18deg) translateX(-24px);opacity:0}to{transform:none;opacity:1}}
 @media (prefers-reduced-motion:reduce){.rdsheet{animation:none!important}}
 .rdtr{border-bottom:2px dotted var(--accent);cursor:pointer}
+.wrap:has(> .rdread.rdpar){max-width:1480px}
+@media (min-width:1180px){.rdread.rdpar .rdmain{grid-template-columns:minmax(0,1160px) minmax(232px,272px)}}
+.rdpar .rdfoot{flex-wrap:wrap;gap:var(--s2)}
+.rdpar .rdsheet{aspect-ratio:auto}
+.rdpp{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:var(--s4);align-items:start;margin:0 0 1em}
+.rdpp .rdp{margin:0}
+.rdpt{margin:0;color:var(--ink-2);cursor:pointer;font-size:.9em;line-height:1.8}
+.rdpar .rdp{cursor:pointer}
+.rdlit{background:var(--accent-soft);color:inherit;border-radius:2px;box-shadow:0 0 0 2px var(--accent-soft);border-bottom:2px solid var(--accent)}
+.rdlit.soft{background:transparent;box-shadow:none;border-bottom:2px solid var(--accent-soft)}
+.rdpm{border-bottom:2px solid var(--accent)}
+.rdtson{background:var(--accent-soft)}
+.rdparbar{display:flex;gap:var(--s3);align-items:center;justify-content:space-between;flex-wrap:wrap}
+.rdparbar p{margin:0}
+.rdparhint{margin:0}
+.rdparli{cursor:default}
+.rdparli .row{gap:var(--s2);align-items:center;flex-wrap:wrap}
+@media (max-width:700px){.rdpp{grid-template-columns:minmax(0,1fr);gap:var(--s1)}.rdpt{padding-left:var(--s2);border-left:2px solid var(--line)}}
 .rdtr:hover{background:var(--accent-soft)}
 .rdhl{color:inherit;border-radius:2px;padding:0 1px;background:var(--hl)}
 .c-yellow{--hl:var(--rd-hl-yellow)}.c-green{--hl:var(--rd-hl-green)}.c-blue{--hl:var(--rd-hl-blue)}
@@ -10182,7 +10200,7 @@ function rdMarkup(text,lang,known){
 async function rdOpen(id){
   if(S.rd.book?.id===id)return;
   rdStop();S.rd.book={id,loading:true};
-  try{const [b,ms]=await Promise.all([api("GET","/api/reader/books/"+encodeURIComponent(id)),api("GET","/api/readmarks").catch(()=>[])]);S.rd.marks=(ms||[]).filter(m=>m&&m.bookId===id&&!m.deleted);S.rd.cur=null;S.rd.book=b;S.rd.ch=b.pos?.ch||0;S.rd.si=-1;S.rd.word=null;S.rd.jump=b.pos?.para||0}
+  try{const [b,ms]=await Promise.all([api("GET","/api/reader/books/"+encodeURIComponent(id)),api("GET","/api/readmarks").catch(()=>[])]);S.rd.marks=(ms||[]).filter(m=>m&&m.bookId===id&&!m.deleted);S.rd.cur=null;S.rd.book=b;S.rd.tab=rdIsPar()?"par":(S.rd.tab==="par"?"look":S.rd.tab);S.rd.lit=null;S.rd.ch=b.pos?.ch||0;S.rd.si=-1;S.rd.word=null;S.rd.jump=b.pos?.para||0}
   catch(e){S.rd.book={id,error:true}}
   if(rdBookId()===id)render();
 }
@@ -10203,17 +10221,20 @@ function rdReadView(id){
   if(b.error)return `<div class="money rdv" id="rdView"><a class="btn" href="#reader">← Books</a><p class="due">Could not open this book.</p></div>`;
   const chs=b.chapters_full||[], ch=Math.min(S.rd.ch,Math.max(0,chs.length-1)), c=chs[ch]||{paras:[]}, known=rdKnown(b.lang);
   let si=0;
-  const paras=(c.paras||[]).map((p,pi)=>`<p class="rdp" data-p="${pi}">${rdSentences(p,b.lang).map(s=>`<span class="rds" data-s="${si++}">${rdMarkup(s,b.lang,known)}</span>`).join("")}</p>`).join("");
+  const par=rdIsPar(), pst=par?rdParCur():null;
+  if(par&&!pst)rdParLoad(b.id,ch);
+  const paras=(c.paras||[]).map((p,pi)=>{const en=`<p class="rdp" data-p="${pi}">${rdSentences(p,b.lang).map(s=>`<span class="rds" data-s="${si++}">${rdMarkup(s,b.lang,known)}</span>`).join("")}</p>`;
+    return par?`<div class="rdpp"><div>${en}</div><p class="rdpt" data-p="${pi}" lang="${esc(pst?.to||"ja")}">${rdParText(pst,pi)}</p></div>`:en}).join("");
   const voices=rdVoiceList(b.lang), vsel=rdVoicePick(b.lang), turn=S.rd.turn?` turnin-${S.rd.turn}`:"";
-  return `<div class="rdread f${S.rd.font}" id="rdView" lang="${esc(b.lang)}">
+  return `<div class="rdread f${S.rd.font}${par?" rdpar":""}" id="rdView" lang="${esc(b.lang)}">
     <div class="rdtop"><a class="btn sm" href="#reader">← Books</a><b class="rdtitle" data-noauto>${esc(b.title)}</b>
-      <span class="row"><span class="rdseg" role="group" aria-label="Page color">${RD_THEMES.map(([k,l])=>`<button class="btn sm${S.rd.theme===k?" on":""}" data-rdtheme="${k}" aria-pressed="${S.rd.theme===k}">${l}</button>`).join("")}</span>
+      <span class="row"><span class="rdseg" role="group" aria-label="Reading mode"><button class="btn sm${par?"":" on"}" data-rdmode="read" aria-pressed="${!par}">Read</button><button class="btn sm${par?" on":""}" data-rdmode="par" aria-pressed="${par}">Parallel</button></span><span class="rdseg" role="group" aria-label="Page color">${RD_THEMES.map(([k,l])=>`<button class="btn sm${S.rd.theme===k?" on":""}" data-rdtheme="${k}" aria-pressed="${S.rd.theme===k}">${l}</button>`).join("")}</span>
       <button class="btn sm" id="rdFontDn" aria-label="Smaller text" ${S.rd.font<=1?"disabled":""}>A−</button><button class="btn sm" id="rdFontUp" aria-label="Larger text" ${S.rd.font>=3?"disabled":""}>A+</button><button class="btn sm" id="rdEdit" aria-label="Book details">Details</button></span></div>
     <div class="rdmain">
       <div class="rdcol">
         <div class="rdchap"><button class="btn sm" id="rdPrev" ${ch<=0?"disabled":""} aria-label="Previous chapter">‹</button><select class="wd-field cdsel" id="rdChSel" aria-label="Chapter">${chs.map((x,i)=>`<option value="${i}" ${i===ch?"selected":""}>${esc(x.title||`Chapter ${i+1}`)}</option>`).join("")}</select><button class="btn sm" id="rdNext" ${ch>=chs.length-1?"disabled":""} aria-label="Next chapter">›</button></div>
-        <article class="rdsheet${turn}" id="rdSheet"><div class="rdbody" id="rdBody" data-noauto>${c.title?`<h2 class="rdh">${esc(c.title)}</h2>`:""}${paras||`<p class="sub">This chapter has no text.</p>`}</div>
-          <div class="rdfoot">${ch<chs.length-1?`<button class="btn" id="rdNext2">Next chapter →</button>`:`<span class="sub">The end.</span>`}<span class="sub">${ch+1} / ${chs.length}</span></div></article>
+        ${par?`<div id="rdParBar">${rdParBar(pst)}</div>`:""}<article class="rdsheet${turn}" id="rdSheet"><div class="rdbody" id="rdBody" data-noauto>${c.title?`<h2 class="rdh">${esc(c.title)}</h2>`:""}${paras||`<p class="sub">This chapter has no text.</p>`}</div>
+          <div class="rdfoot">${ch<chs.length-1?`<button class="btn" id="rdNext2">Next chapter →</button>`:`<span class="sub">The end.</span>`}<span class="sub">${ch+1} / ${chs.length}</span>${par&&pst&&["done","partial","error"].includes(pst.state)?`<button class="btn sm" id="rdParAgain">Translate again</button>`:""}</div></article>
       </div>
       <aside class="rdside" id="rdSide" aria-label="Translations, highlights and notes">${rdSideHtml()}</aside>
     </div>
@@ -10247,8 +10268,11 @@ function wireRd(){
   on("#rdPlay",()=>S.rd.playing?rdPause():rdPlay());on("#rdBack",rdBack);
   $("#rdRate").onchange=e=>{S.rd.rate=+e.target.value;try{localStorage.setItem("desk-rd-rate",S.rd.rate)}catch(e){}if(S.rd.playing){rdPause();rdPlay()}};
   $("#rdVoice").onchange=e=>{if(e.target.value==="__get"){e.target.value=rdVoicePick(b.lang);rdVoiceHelp(b.lang);return}try{localStorage.setItem("desk-rd-voice2-"+b.lang,e.target.value)}catch(e){}if(S.rd.playing){rdPause();rdPlay()}};
+  document.querySelectorAll("[data-rdmode]").forEach(x=>x.onclick=()=>rdSetMode(x.dataset.rdmode));
+  on("#rdParAgain",()=>{if(confirm("Translate this chapter again? Its text goes to Claude once more."))rdParStart(true)});
+  rdParWireBar();
   const body=$("#rdBody");
-  body.onclick=rdTap;
+  body.onclick=e=>rdIsPar()?rdParTap(e):rdTap(e);
   body.addEventListener("mouseup",()=>setTimeout(()=>rdSelCheck(false),0));
   body.addEventListener("touchend",()=>setTimeout(()=>rdSelCheck(false),300));
   body.addEventListener("keyup",e=>{if(e.shiftKey)rdSelCheck(false)});
@@ -10297,6 +10321,7 @@ function rdWrap(p,start,end,make){
 function rdApplyMarks(){
   const body=$("#rdBody");if(!body)return;
   body.querySelectorAll("[data-rm]").forEach(el=>el.replaceWith(...el.childNodes));body.normalize();
+  if(rdIsPar()){rdParMarks();return}
   const ms=rdBookMarks().filter(m=>m.ch===S.rd.ch&&(m.kind==="lookup"||m.kind==="highlight")&&m.text);
   ms.sort((a,b)=>(a.kind==="highlight")-(b.kind==="highlight"));
   ms.forEach(m=>{const p=body.querySelector(`.rdp[data-p="${m.para}"]`);if(!p)return;const t=p.textContent;let s=m.start;
@@ -10326,6 +10351,7 @@ function rdTap(e){
 }
 /* a selection inside one paragraph: translated at once, and a small bar offers Highlight and Note */
 function rdSelCheck(force){
+  if(rdIsPar())return; // the Parallel mode marks words by tapping; no selection bar
   const s=window.getSelection();if(!s||s.isCollapsed||!s.rangeCount){rdSelBar(null);return}
   const r=s.getRangeAt(0), el=n=>n&&(n.nodeType===1?n:n.parentElement), p=el(r.startContainer)?.closest(".rdp");
   if(!p||!p.closest("#rdBody")){rdSelBar(null);return}
@@ -10413,6 +10439,130 @@ function rdGoMark(id){
   rdFlash(id);
 }
 
+/* ---------- Parallel: the chapter next to its translation (desk/reader_parallel.py) ----------
+   Nothing is sent until "Translate this chapter"; then the chapter goes to Claude once and the answer stays on this Mac.
+   A paragraph's translation: {t, s [[a,b,c,d]] sentences, p [[a,b,c,d,idiom]] pairs} (a-b in the book's paragraph, c-d in t).
+   Tapping a word lights its pair on both sides. A tapped source word with a pair gets the mark "Translated":
+   readmarks {kind:"par", ch, para, start, end, text, ja, state:"translated", context}. */
+S.rd.par={};S.rd.lit=null;
+const rdIsPar=()=>{const b=S.rd.book;if(!b?.id)return false;try{return localStorage.getItem("desk-rd-mode-"+b.id)==="par"}catch(e){return false}};
+const rdParKey=(id,ch)=>id+":"+ch;
+const rdParCur=()=>S.rd.book?S.rd.par[rdParKey(S.rd.book.id,S.rd.ch)]:null;
+function rdSetMode(m){const b=S.rd.book;if(!b)return;try{localStorage.setItem("desk-rd-mode-"+b.id,m)}catch(e){}
+  rdStop();S.rd.cur=null;S.rd.lit=null;rdSelBar(null);S.rd.tab=m==="par"?"par":(S.rd.tab==="par"?"look":S.rd.tab);render()}
+function rdParText(st,pi){
+  if(!st)return "";const d=(st.paras||[])[pi];
+  if(d&&d.err)return `<button class="btn sm" data-rdpretry>Try again</button>`;
+  if(d)return esc(d.t||"");
+  return st.state==="running"?`<span class="sub">Translating…</span>`:"";
+}
+function rdParBar(st){
+  const to=RD_LANGS[st?.to]||"Japanese";
+  if(!st)return `<p class="sub">Loading…</p>`;
+  if(st.state==="none")return `<section class="card rdparbar"><div><b>See this chapter in ${esc(to)}</b><p class="sub">About ${(st.words||0).toLocaleString("en-US")} words. The chapter's text goes to Claude once; the translation stays on this Mac.</p></div><button class="btn primary" id="rdParGo">Translate this chapter</button></section>`;
+  const ps=st.paras||[], ok=ps.filter(p=>p&&!p.err).length, bad=ps.filter(p=>p&&p.err).length;
+  if(st.state==="running")return `<section class="card rdparbar"><p class="sub" role="status">Translating… ${ok} / ${st.total||ps.length} paragraphs</p></section>`;
+  if(bad)return `<section class="card rdparbar"><p class="sub" role="status">${bad} paragraph${bad===1?"":"s"} could not be translated.</p><button class="btn sm" id="rdParRetry">Try again</button></section>`;
+  if(st.error)return `<section class="card rdparbar"><p class="sub" role="status">${esc(st.error)}</p></section>`;
+  return `<p class="sub rdparhint">Tap a word on either side to see its pair. Words you tap in the book are kept under Translated.</p>`;
+}
+function rdParWireBar(){const go=$("#rdParGo"),re=$("#rdParRetry");if(go)go.onclick=()=>rdParStart(false);if(re)re.onclick=()=>rdParStart(false)}
+async function rdParLoad(id,ch){
+  if(!LOCALAPI)return;const k=rdParKey(id,ch);
+  if(S.rd.parBusy===k)return;S.rd.parBusy=k;
+  try{S.rd.par[k]=await api("GET",`/api/reader/books/${encodeURIComponent(id)}/parallel/${ch}`)}catch(e){S.rd.par[k]={state:"none",error:"Could not load the translation."}}
+  S.rd.parBusy=null;
+  if(S.rd.book?.id===id&&S.rd.ch===ch&&rdIsPar())rdParFill();
+  if(S.rd.par[k]?.state==="running")setTimeout(()=>{if(S.rd.book?.id===id&&viewId()==="reader")rdParLoad(id,ch)},2500);
+}
+async function rdParStart(again){
+  const b=S.rd.book;if(!b)return;const ch=S.rd.ch,k=rdParKey(b.id,ch);
+  try{S.rd.par[k]=await api("POST",`/api/reader/books/${encodeURIComponent(b.id)}/parallel/${ch}`,{again:!!again})}
+  catch(e){toast(e.message==="503"?"Claude cannot translate on this Mac yet (no Anthropic key).":"Could not reach the Desk server. Try again in a moment.");return}
+  rdParFill();if(S.rd.par[k]?.state==="running")setTimeout(()=>rdParLoad(b.id,ch),2500);
+}
+/* new paragraphs come in without a redraw, so the page does not jump and a playing voice is not cut */
+function rdParFill(){
+  const st=rdParCur();if(!$("#rdBody"))return;
+  if(!document.querySelector("#rdBody .rdpt")){render();return}
+  document.querySelectorAll("#rdBody .rdpt").forEach(el=>{const h=rdParText(st,+el.dataset.p);if(el.innerHTML!==h){el.innerHTML=h;if(st?.to)el.lang=st.to}});
+  const bar=$("#rdParBar");if(bar){bar.innerHTML=rdParBar(st);rdParWireBar()}
+  if(S.rd.lit)rdParLight(S.rd.lit);
+}
+function rdUnwrap(sel){document.querySelectorAll("#rdBody "+sel).forEach(el=>{const p=el.parentNode;el.replaceWith(...el.childNodes);p&&p.normalize()})}
+const rdParSrc=pi=>$(`#rdBody .rdp[data-p="${pi}"]`), rdParTr=pi=>$(`#rdBody .rdpt[data-p="${pi}"]`);
+/* the book's paragraph must read exactly as the server's, or positions would point at the wrong words */
+const rdParOk=pi=>{const el=rdParSrc(pi),txt=(S.rd.book.chapters_full[S.rd.ch]?.paras||[])[pi];return el&&el.textContent===txt};
+function rdParMarks(){
+  rdBookMarks().filter(m=>m.kind==="par"&&m.ch===S.rd.ch).forEach(m=>{if(!rdParOk(m.para))return;const p=rdParSrc(m.para);
+    if(p.textContent.slice(m.start,m.end)!==m.text)return;rdWrap(p,m.start,m.end,()=>{const el=document.createElement("span");el.className="rdpm";el.dataset.rm=m.id;return el})});
+  if(S.rd.lit)rdParLight(S.rd.lit);
+}
+function rdParLight(l){
+  rdUnwrap(".rdlit");S.rd.lit=l;if(!l)return;
+  const p=rdParSrc(l.pi),t=rdParTr(l.pi);if(!p||!t)return;
+  const mk=()=>{const el=document.createElement("mark");el.className="rdlit"+(l.soft?" soft":"");return el};
+  if(l.a>=0&&rdParOk(l.pi))rdWrap(p,l.a,l.b,mk);
+  if(t.textContent.length>=l.d)rdWrap(t,l.c,l.d,mk);
+}
+/* a tap picks the pair under it: an idiom first, then the shortest; with no pair, the whole sentence (lit softly) */
+function rdParPick(d,off,side){
+  const hit=(x,y)=>off>=x&&off<y, ps=(d.p||[]).filter(q=>side==="s"?hit(q[0],q[1]):hit(q[2],q[3]));
+  ps.sort((x,y)=>(y[4]-x[4])||((x[1]-x[0])-(y[1]-y[0])));
+  if(ps[0])return{pair:ps[0]};
+  const s=(d.s||[]).find(q=>side==="s"?hit(q[0],q[1]):hit(q[2],q[3]));
+  return s?{sent:s}:null;
+}
+async function rdParTap(e){
+  const b=S.rd.book, st=rdParCur();if(!b)return;
+  if(e.target.closest("[data-rdpretry]")){rdParStart(false);return}
+  const tr=e.target.closest(".rdpt"), src=tr?null:e.target.closest(".rdp"), el=tr||src;if(!el||!st)return;
+  const pi=+el.dataset.p, d=(st.paras||[])[pi];if(!d||d.err||!d.t)return;
+  if(src&&!rdParOk(pi))return;
+  const r=document.caretRangeFromPoint?document.caretRangeFromPoint(e.clientX,e.clientY):null;if(!r||!el.contains(r.startContainer))return;
+  const off=rdOff(el,r.startContainer,r.startOffset), got=rdParPick(d,off,tr?"t":"s");
+  if(!got){rdParLight(null);return}
+  const q=got.pair||got.sent, l={pi,a:q[0],b:q[1],c:q[2],d:q[3],soft:!got.pair};
+  const same=S.rd.lit&&["pi","a","b","c","d"].every(k=>S.rd.lit[k]===l[k]);
+  rdParLight(same?null:l);
+  if(src&&got.pair&&!same){
+    const text=el.textContent.slice(q[0],q[1]);
+    if(!rdBookMarks().some(m=>m.kind==="par"&&m.ch===S.rd.ch&&m.para===pi&&m.start===q[0]&&m.end===q[1])){
+      const sent=(d.s||[]).find(s=>q[0]>=s[0]&&q[0]<s[1]), ctx=sent?el.textContent.slice(sent[0],sent[1]).trim():"";
+      await rdPutMark({id:rdMarkId(),bookId:b.id,kind:"par",ch:S.rd.ch,para:pi,start:q[0],end:q[1],text,ja:d.t.slice(q[2],q[3]),to:st.to,lang:b.lang,state:"translated",context:ctx.slice(0,400),at:Date.now(),deleted:false});
+      rdUnwrap(".rdlit");rdUnwrap(".rdpm");rdParMarks();rdDrawSide();
+    }
+  }
+}
+/* reading aloud: the translation of the sentence being read is lit too */
+function rdParSay(el){
+  rdUnwrap(".rdtson");const p=el.closest(".rdp"), st=rdParCur();if(!p||!st)return;const pi=+p.dataset.p, d=(st.paras||[])[pi];
+  if(!d||d.err||!rdParOk(pi))return;const r=document.createRange();r.setStart(p,0);r.setEndBefore(el);
+  const off=r.toString().length+Math.max(0,el.textContent.search(/\S/)), s=(d.s||[]).find(q=>off>=q[0]&&off<q[1]), t=rdParTr(pi);
+  if(s&&t)rdWrap(t,s[2],s[3],()=>{const x=document.createElement("span");x.className="rdtson";return x});
+}
+function rdParListHtml(pm){
+  const b=S.rd.book, seen=new Map();
+  for(const m of pm){const k=rdNorm(m.text);if(!seen.has(k))seen.set(k,{m,n:0});seen.get(k).n++}
+  if(!seen.size)return `<p class="sub">${rdIsPar()?"Tap a word in the book to see its translation. It is kept here.":"Words you tap in the Parallel mode are kept here."}</p>`;
+  const short=(s,n)=>{s=String(s||"");return s.length>n?s.slice(0,n-1)+"…":s};
+  return `<p class="sub">${seen.size} word${seen.size===1?"":"s"} in this book</p><div class="rdlist">${[...seen.values()].slice(0,400).map(({m,n})=>{
+    const have=S.cards.find(k=>!k.deleted&&(k.lang||"en")===b.lang&&[k.term,k.lemma].map(rdNorm).includes(rdNorm(m.text)));
+    return `<div class="rdli rdparli" data-noauto><button class="rdlink" data-rdgo="${esc(m.id)}"><b>${esc(short(m.text,40))}</b> <span class="rdlr">${esc(short(m.ja,60))}</span></button>
+      <div class="row"><span class="sub">${esc(rdChLabel(b,m.ch))}${n>1?` · ×${n}`:""}</span>${have?`<span class="sub">✓ ${esc(ankiMark(have))}</span>`:`<button class="btn sm" data-rdpadd="${esc(m.id)}">Add to Anki</button>`}<button class="ibtn" data-rdpdel="${esc(m.id)}" aria-label="Remove ${esc(m.text)} from the list">✕</button></div></div>`}).join("")}</div>`;
+}
+async function rdParAnki(id,btn){
+  const b=S.rd.book, m=S.rd.marks.find(x=>x.id===id);if(!b||!m)return;
+  btn.disabled=true;btn.textContent="Adding…";
+  const k=await cdAdd({term:m.text,lang:b.lang,context:m.context||"",source:{kind:"book",ref:b.id},book:{id:b.id,title:b.title,chapter:rdChLabel(b,m.ch)}});
+  if(k)rdRemark();rdDrawSide();
+}
+async function rdParUnmark(id){
+  const m=S.rd.marks.find(x=>x.id===id);if(!m)return;const k=rdNorm(m.text);
+  for(const x of rdBookMarks().filter(y=>y.kind==="par"&&rdNorm(y.text)===k))await rdPutMark({...x,deleted:true});
+  if(rdIsPar()){rdUnwrap(".rdlit");rdUnwrap(".rdpm");rdParMarks()}rdDrawSide();
+}
+
 /* ---------- the panel on the right: counts, then Translations / Highlights / Notes ---------- */
 function rdPct(b){const chs=b.chapters_full||[];let total=0,done=0;chs.forEach((c,i)=>{const n=(c.paras||[]).length;total+=n;if(i<S.rd.ch)done+=n});
   if(b.pos?.ch===S.rd.ch)done+=b.pos.para||0;return total?Math.min(100,Math.round(done/total*100)):0}
@@ -10421,11 +10571,13 @@ function rdSideHtml(){
   const ms=rdBookMarks().sort((x,y)=>(y.at||0)-(x.at||0)), lk=ms.filter(m=>m.kind==="lookup"), hl=ms.filter(m=>m.kind==="highlight"), nt=ms.filter(m=>m.kind==="note"||(m.kind==="highlight"&&m.note));
   const t=S.rd.tab, short=(s,n)=>{s=String(s||"");return s.length>n?s.slice(0,n-1)+"…":s};
   const stats=`<p class="rdstats">${rdPct(b)}% read · ${lk.length} looked up${hl.length?` · ${hl.length} highlight${hl.length===1?"":"s"}`:""}</p>`;
-  const tabs=`<div class="rdtabs" role="tablist">${[["look","Translations"],["hl","Highlights"],["notes","Notes"]].map(([k,l])=>`<button role="tab" data-rdtab="${k}" aria-selected="${t===k}">${l}</button>`).join("")}</div>`;
+  const pm=ms.filter(m=>m.kind==="par"), showPar=rdIsPar()||pm.length;
+  const tabs=`<div class="rdtabs" role="tablist">${[...(showPar?[["par","Translated"]]:[]),["look","Translations"],["hl","Highlights"],["notes","Notes"]].map(([k,l])=>`<button role="tab" data-rdtab="${k}" aria-selected="${t===k}">${l}</button>`).join("")}</div>`;
   const chip=m=>`<span class="sub">${esc(rdChLabel(b,m.ch))}</span>`;
   let body="";
   if(t==="look"){const seen=new Map();for(const m of lk){const k=rdNorm(m.text);if(seen.has(k))seen.get(k).n++;else seen.set(k,{m,n:1})}
     body=`<div id="rdCur"></div>${seen.size?`<div class="rdlist">${[...seen.values()].slice(0,300).map(({m,n})=>`<button class="rdli rdli1" data-rdgo="${esc(m.id)}" data-noauto><b>${esc(short(m.text,40))}</b><span class="rdlr">${esc(short(m.info?.meaning_ja||m.result||m.info?.meaning_en||"",80))}</span>${n>1?`<span class="sub">×${n}</span>`:""}</button>`).join("")}</div>`:`<p class="sub">Nothing translated in this book yet.</p>`}`}
+  if(t==="par")body=rdParListHtml(pm);
   if(t==="hl")body=hl.length?`<div class="rdlist">${hl.map(m=>`<div class="rdli rdhli c-${esc(m.color||"yellow")}" data-noauto><span class="rdhlbar" aria-hidden="true"></span><div class="rdhlmain"><button class="rdlink" data-rdgo="${esc(m.id)}">${esc(short(m.text,220))}</button>${chip(m)}<textarea class="wd-field rdnote" data-rdnote="${esc(m.id)}" rows="1" placeholder="Add a note">${esc(m.note||"")}</textarea></div><button class="ibtn" data-rddel="${esc(m.id)}" aria-label="Remove highlight">✕</button></div>`).join("")}</div>`:`<p class="sub">Select words in the book, then pick a color.</p>`;
   if(t==="notes")body=`<div class="rdnew"><textarea class="wd-field rdnote" id="rdNoteNew" rows="3" placeholder="A note on ${esc(rdChLabel(b,S.rd.ch))}"></textarea><button class="btn sm primary" id="rdNoteAdd">Add note</button></div>
     ${nt.length?`<div class="rdlist">${nt.map(m=>`<div class="rdli rdnoteli" data-noauto>${m.kind==="highlight"?`<button class="rdlink rdq" data-rdgo="${esc(m.id)}">“${esc(short(m.text,160))}”</button>`:`<button class="rdlink" data-rdgo="${esc(m.id)}">${esc(rdChLabel(b,m.ch))}</button>`}<textarea class="wd-field rdnote" data-rdnote="${esc(m.id)}" rows="2">${esc(m.note||"")}</textarea><div class="row"><span class="sub">${new Date(m.at||0).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span><button class="btn sm" data-rddel="${esc(m.id)}">${m.kind==="highlight"?"Remove highlight":"Delete"}</button></div></div>`).join("")}</div>`:`<p class="sub">Notes stay with this book.</p>`}`;
@@ -10440,6 +10592,8 @@ function rdWireSide(){
   const el=$("#rdSide");if(!el)return;
   el.querySelectorAll("[data-rdtab]").forEach(x=>x.onclick=()=>{S.rd.tab=x.dataset.rdtab;rdDrawSide();rdDrawCur()});
   el.querySelectorAll("[data-rdgo]").forEach(x=>x.onclick=()=>rdGoMark(x.dataset.rdgo));
+  el.querySelectorAll("[data-rdpadd]").forEach(x=>x.onclick=()=>rdParAnki(x.dataset.rdpadd,x));
+  el.querySelectorAll("[data-rdpdel]").forEach(x=>x.onclick=()=>rdParUnmark(x.dataset.rdpdel));
   el.querySelectorAll("[data-rddel]").forEach(x=>x.onclick=async()=>{const m=S.rd.marks.find(y=>y.id===x.dataset.rddel);if(!m)return;await rdPutMark({...m,deleted:true});rdApplyMarks();rdDrawSide()});
   el.querySelectorAll("[data-rdnote]").forEach(x=>{x.onblur=async()=>{const m=S.rd.marks.find(y=>y.id===x.dataset.rdnote);const v=x.value.trim();if(!m||v===(m.note||""))return;await rdPutMark({...m,note:v});setTimeout(rdDrawSide,0)};
     x.onkeydown=e=>{if(e.key==="Enter"&&(e.metaKey||e.ctrlKey)){e.preventDefault();x.blur()}}});
@@ -10493,7 +10647,7 @@ function rdVoiceHelp(lang){
 function rdVoicePick(lang){let v="";try{v=localStorage.getItem("desk-rd-voice2-"+lang)||""}catch(e){}const list=rdVoiceList(lang);return list.some(x=>x.id===v)?v:(list[0]?.id||"")}
 async function rdMacVoices(lang){if(!LOCALAPI)return;S.rd.macVoicesFor=lang;try{S.rd.mac=await api("GET","/api/reader/voices?lang="+encodeURIComponent(lang))}catch(e){S.rd.mac=[]}if(viewId()==="reader"&&rdBookId()&&$("#rdVoice")&&!S.rd.playing){const b=S.rd.book,sel=rdVoicePick(b.lang);$("#rdVoice").innerHTML=rdVoiceOpts(b.lang,sel)||`<option value="">No voice for ${esc(RD_LANGS[b.lang]||b.lang)}</option>`}}
 const rdSentenceEls=()=>[...document.querySelectorAll("#rdBody .rds")];
-function rdHighlight(i,scroll=true){document.querySelectorAll("#rdBody .rds.on").forEach(x=>x.classList.remove("on"));const el=rdSentenceEls()[i];if(!el)return;el.classList.add("on");
+function rdHighlight(i,scroll=true){document.querySelectorAll("#rdBody .rds.on").forEach(x=>x.classList.remove("on"));const el=rdSentenceEls()[i];if(!el)return;el.classList.add("on");if(rdIsPar())rdParSay(el);
   if(scroll){const r=el.getBoundingClientRect();if(r.top<80||r.bottom>window.innerHeight-120)el.scrollIntoView({block:"center",behavior:"smooth"})}
   const pos=$("#rdPos");if(pos)pos.textContent=`${i+1} / ${rdSentenceEls().length}`}
 function rdFirstVisible(){const els=rdSentenceEls();const i=els.findIndex(el=>el.getBoundingClientRect().bottom>96);return i<0?0:i}
@@ -10505,7 +10659,7 @@ function rdPlay(){
   rdSpeakAt(S.rd.si);
 }
 function rdPause(){S.rd.playing=false;rdRun++;if(rdAudio){rdAudio.pause();rdAudio=null}if(window.speechSynthesis)speechSynthesis.cancel();const p=$("#rdPlay");if(p){p.textContent="▶ Play";p.setAttribute("aria-label","Play")}}
-function rdStop(){rdPause();S.rd.si=-1;document.querySelectorAll("#rdBody .rds.on").forEach(x=>x.classList.remove("on"))}
+function rdStop(){rdPause();S.rd.si=-1;document.querySelectorAll("#rdBody .rds.on").forEach(x=>x.classList.remove("on"));rdUnwrap(".rdtson")}
 function rdBack(){const was=S.rd.playing;rdPause();S.rd.si=Math.max(0,(S.rd.si<0?rdFirstVisible():S.rd.si)-1);rdHighlight(S.rd.si);if(was)rdPlay()}
 async function rdSpeakAt(i){
   const run=++rdRun, els=rdSentenceEls(), b=S.rd.book;
