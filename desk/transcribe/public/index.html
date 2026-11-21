@@ -7,7 +7,7 @@
 <style>
   :root {
     --bg: #0a0a0b; --panel: #141417; --line: #26262b; --text: #ededee; --muted: #9a9aa2;
-    --accent: #e4b768; --danger: #e5675f; --ok: #6cc08b; --spk1: #7fa8f0; --spk2: #c39af0;
+    --accent: #e4b768; --danger: #e5675f; --ok: #6cc08b; --spk1: #7fa8f0; --spk2: #c39af0; --spk3: #6cc0b0; --spk4: #a8b4c4;
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.7 -apple-system, "Hiragino Sans", sans-serif; }
@@ -68,6 +68,8 @@
   .who { background: none; border: 0; padding: 0 8px 0 0; font-size: 13px; font-weight: 700; cursor: pointer; }
   .who.s1 { color: var(--spk1); }
   .who.s2 { color: var(--spk2); }
+  .who.s3 { color: var(--spk3); }
+  .who.s4 { color: var(--spk4); }
   .who:hover { text-decoration: underline; }
   .line { display: flex; align-items: baseline; flex-wrap: wrap; min-width: 0; }
   .line div { flex: 1 1 200px; min-width: 0; overflow-wrap: anywhere; }
@@ -125,16 +127,16 @@ const STATUS = {
   converting: 'Converting', transcribing: 'Transcribing', splitting: 'Telling voices apart', done: 'Done', partial: 'Partly done', error: "Didn't finish",
 };
 const ACTIVE = ['queued', 'converting', 'transcribing', 'splitting'];
-const MODES = { mic: 'Mic only', meeting: 'Meeting', inperson: 'In person' };
-const SPK_CLASS = { me: 's1', A: 's1', them: 's2', B: 's2' };
+const MODES = { inperson: 'In person', meeting: 'Meeting', mic: 'Mic only' };
+const SPK_CLASS = { me: 's1', A: 's1', them: 's2', B: 's2', C: 's3', D: 's4' };
 const store = {
   get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
   set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* 覚えられなくても動く */ } },
 };
 const MODE_HINT = {
-  mic: 'One voice track, as before',
+  mic: 'One voice, no split by speaker',
   meeting: 'Your mic is “Me”. What Zoom or Meet plays on this Mac is “Them”.',
-  inperson: 'Two people, one mic. After the text is ready, voices are split into A and B.',
+  inperson: 'One mic in the room. After the text is ready, voices are split into the number of people you choose.',
 };
 const VOICES = { mac: 'This Mac', room: 'The room' };
 const VOICE_HINT = {
@@ -142,7 +144,8 @@ const VOICE_HINT = {
   room: 'Phone on speaker, or face to face. Only the mic records; voices are split into Me and Them afterwards.',
 };
 let voice = VOICES[store.get('tr-voice')] ? store.get('tr-voice') : 'mac';
-let mode = MODES[store.get('tr-mode')] ? store.get('tr-mode') : 'mic';
+let mode = MODES[store.get('tr-mode')] ? store.get('tr-mode') : 'inperson';
+let people = [2, 3, 4].includes(Number(store.get('tr-people'))) ? Number(store.get('tr-people')) : 2;
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const clock = (sec) => {
@@ -222,7 +225,7 @@ async function startRecording() {
     loadMics();
     await buildAudioGraph();
     const language = $('language').value;
-    const meta = await post('/api/sessions', { language, mode, voice });
+    const meta = await post('/api/sessions', { language, mode, voice, people });
     Object.assign(rec, { active: true, sid: meta.id, sent: 0, captured: 0, queue: [], pending: [], finishing: false, netError: false,
       quietSince: Date.now(), mode, voice, clockSent: false, tap: null, themQuietSince: Date.now() });
     if (mode === 'meeting') pollTap();
@@ -379,6 +382,8 @@ function renderRecorder() {
   const meeting = (rec.active ? rec.mode : mode) === 'meeting';
   const v = rec.active ? rec.voice : voice;
   $('voiceBar').style.display = meeting ? 'flex' : 'none';
+  $('peopleBar').style.display = (rec.active ? rec.mode : mode) === 'inperson' ? 'flex' : 'none';
+  document.querySelectorAll('#people button').forEach((el) => { el.disabled = rec.active; el.setAttribute('aria-pressed', String(Number(el.dataset.people) === people)); });
   document.querySelectorAll('#voices button').forEach((el) => { el.disabled = rec.finishing; el.setAttribute('aria-pressed', String(el.dataset.voice === v)); });
   $('themRow').style.display = meeting && v === 'mac' ? 'contents' : 'none';
   $('modeHint').textContent = meeting ? VOICE_HINT[v] + (rec.active ? ' Let everyone know you\'re recording.' : '') : MODE_HINT[mode];
@@ -409,6 +414,7 @@ function renderHome() {
     <div class="recorder">
       <div class="modes" role="group" aria-label="What are you recording?">${Object.entries(MODES).map(([k, v]) => `<button data-mode="${k}" aria-pressed="${k === mode}">${v}</button>`).join('')}</div>
       <div class="voicebar" id="voiceBar"><span class="hint">Their voice</span><div class="modes" id="voices" role="group" aria-label="Where does their voice come from?">${Object.entries(VOICES).map(([k, v]) => `<button data-voice="${k}" aria-pressed="${k === voice}">${v}</button>`).join('')}</div></div>
+      <div class="voicebar" id="peopleBar"><span class="hint">People</span><div class="modes" id="people" role="group" aria-label="How many people are talking?">${[2, 3, 4].map((n) => `<button data-people="${n}" aria-pressed="${n === people}">${n}</button>`).join('')}</div></div>
       <div class="hint" id="modeHint"></div>
       ${mode === 'meeting' && !status.tap_ready ? '<div class="notice soft">Meeting audio needs a one-time setup: run desk/transcribe/setup.sh. Until then only your mic is recorded.</div>' : ''}
       <div class="timer" id="timer">00:00:00</div>
@@ -434,6 +440,9 @@ function renderHome() {
   });
   document.querySelectorAll('#voices button').forEach((el) => {
     el.onclick = () => switchVoice(el.dataset.voice);
+  });
+  document.querySelectorAll('#people button').forEach((el) => {
+    el.onclick = () => { people = Number(el.dataset.people); store.set('tr-people', people); renderRecorder(); };
   });
   const drop = $('drop');
   drop.onclick = () => $('file').click();
@@ -470,7 +479,7 @@ function uploadOne(file, onProgress) {
   return new Promise((resolve, reject) => {
     const language = $('language') ? $('language').value : 'ja';
     const xhr = new XMLHttpRequest();
-    xhr.open('POST', `/api/upload?name=${encodeURIComponent(file.name)}&language=${language}&mode=${mode === 'inperson' ? 'inperson' : 'mic'}`);
+    xhr.open('POST', `/api/upload?name=${encodeURIComponent(file.name)}&language=${language}&mode=${mode === 'inperson' ? 'inperson' : 'mic'}&people=${people}`);
     xhr.upload.onprogress = (e) => onProgress(Math.round(e.loaded / e.total * 100));
     xhr.onload = () => {
       let data = {};
@@ -591,7 +600,7 @@ async function renderDetail() {
       ${hasText ? `<button id="txt">Save as text</button>` : ''}
       ${m.mode === 'inperson' && hasSpk ? '<button id="swap">Swap A and B</button>' : ''}
       ${m.has_room && ['done', 'partial'].includes(m.status) ? '<button id="roomSwap" title="For the parts recorded with “The room”">Swap Me and Them (room parts)</button>' : ''}
-      ${canSplit ? `<button id="split" ${status.diar_ready ? '' : 'disabled title="Run setup.sh once"'}>${m.mode === 'inperson' ? 'Split again' : 'Split into 2 speakers'}</button>` : ''}
+      ${canSplit ? `<select id="splitPeople" aria-label="How many people">${[2, 3, 4].map((n) => `<option value="${n}" ${n === (m.people || 2) ? 'selected' : ''}>${n} people</option>`).join('')}</select><button id="split" ${status.diar_ready ? '' : 'disabled title="Run setup.sh once"'}>${m.mode === 'inperson' ? 'Split again' : 'Split by speaker'}</button>` : ''}
       ${m.status === 'interrupted' ? '<button id="resume">Transcribe what was saved</button>' : ''}
       ${m.status === 'partial' || m.status === 'error' ? '<button id="retry">Retry failed parts</button>' : ''}
       ${!isText && ['done', 'partial', 'error'].includes(m.status) ? `<select id="redoLang" aria-label="Language for the redo">${Object.entries(LANG).map(([k, v]) => `<option value="${k}" ${k === m.language ? 'selected' : ''}>${v}</option>`).join('')}</select><button id="redo">Start over</button>` : ''}
@@ -664,7 +673,7 @@ async function renderDetail() {
   if ($('split')) $('split').onclick = async () => {
     if (hasSpk && !confirm('This splits the voices again and undoes the speaker changes you made by hand. Continue?')) return;
     renderedKey = '';
-    await post(`/api/sessions/${m.id}/split`);
+    await post(`/api/sessions/${m.id}/split`, { people: Number($('splitPeople').value) });
     await refreshList();
     renderMain();
   };

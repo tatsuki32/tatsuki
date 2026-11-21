@@ -229,16 +229,104 @@ def sync():
             continue
         summary = summarize(text, s.get("title") or "") if text.strip() else None
         now = time.time()
-        rec = {"id": uuid.uuid4().hex,
-               "title": _text(s.get("title"), 200) or _text((summary or {}).get("title"), 200) or "Untitled meeting",
-               "body": build_body(summary, text), "status": "draft", "place": "",
-               "at": float(s.get("created") or now), "source": {"kind": "transcribe", "sid": sid},
+        title = _pick_title(s.get("title"), summary)
+        rec = {"id": uuid.uuid4().hex, "title": title,
+               "body": build_body(summary, text, _meeting_info(s, summary)), "status": "draft", "place": "",
+               "at": float(s.get("created") or now), "source": {"kind": "transcribe", "sid": sid, **({"v": 2} if summary else {})},
                "event": None, "calendar": None, "created": now, "updated": now}
         with LOCK:
             _write(rec)
+        _retitle_recording(sid, s.get("title"), title)
         known.add(sid)
         made += 1
+    made += _redo_old_recordings(sessions)
     return made
+
+
+DEFAULT_TITLE = re.compile(r"^(Recording|Meeting|Conversation) \d{4}-\d{2}-\d{2} \d{1,2}:\d{2}$|^\d{4}-\d{2}-\d{2} \d{1,2}:\d{2} の録音$|^(Untitled meeting)?$")
+
+
+def _pick_title(session_title, summary):
+    """The recorder names a recording by its time. Then the title Claude gave from the content is used instead."""
+    own = _text(session_title, 200)
+    made = _text((summary or {}).get("title"), 200)
+    if own and not DEFAULT_TITLE.match(own):
+        return own
+    return made or own or "Untitled meeting"
+
+
+def _retitle_recording(sid, old, new):
+    """The same readable title in Transcribe's list, when the recording still has the time as its name."""
+    if not new or new == old or not DEFAULT_TITLE.match(_text(old, 200)) or os.environ.get("MINUTES_DIR"):
+        return
+    req = urllib.request.Request(f"{TRANSCRIBE}/api/sessions/{sid}", data=json.dumps({"title": new}).encode("utf-8"),
+                                 method="PATCH", headers={"Content-Type": "application/json"})
+    try:
+        urllib.request.urlopen(req, timeout=5).read()
+    except (OSError, ValueError):
+        pass
+
+
+def _is_ja(summary):
+    words = " ".join([(summary or {}).get("title", "")] + (summary or {}).get("summary", []))
+    return bool(re.search(r"[\u3040-\u30ff\u4e00-\u9fff]", words))
+
+
+def _meeting_info(s, summary):
+    """Date, time, length and who took part, in the minute's own language."""
+    start = float(s.get("created") or 0)
+    dur = float(s.get("duration") or 0)
+    if not start:
+        return ""
+    a, b = datetime.fromtimestamp(start), datetime.fromtimestamp(start + dur)
+    mins = max(1, round(dur / 60)) if dur else 0
+    people = [p for p in (summary or {}).get("participants", []) if p]
+    if _is_ja(summary):
+        lines = [f"- 日時：{a:%Y-%m-%d} {a:%H:%M}–{b:%H:%M}" + (f"（{mins}分）" if mins else "")]
+        lines.append("- 参加者：" + ("、".join(people) if people else "記録から分かりません"))
+        return "## 会議の情報\n" + "\n".join(lines)
+    lines = [f"- When: {a:%Y-%m-%d} {a:%H:%M}–{b:%H:%M}" + (f" ({mins} min)" if mins else "")]
+    lines.append("- Who: " + (", ".join(people) if people else "not clear from the recording"))
+    return "## Meeting\n" + "\n".join(lines)
+
+
+def _redo_old_recordings(sessions):
+    """Minutes made by the first version (English only, the time as the title, or no summary) are made again once,
+    with the content's title and language, if nobody has touched them. Returns how many were remade."""
+    by_sid = {x.get("id"): x for x in sessions if x.get("kind") != "text"}
+    with LOCK:
+        olds = [r for r in _all() if (r.get("source") or {}).get("kind") == "transcribe"
+                and (r.get("source") or {}).get("from") != "notes" and (r.get("source") or {}).get("v") != 2
+                and r.get("updated") == r.get("created") and not r.get("event")
+                and (r.get("source") or {}).get("tries", 0) < 3]
+    done = 0
+    for r in olds[:3]:  # a few per pass, so a long list does not hold the loop
+        s = by_sid.get(r["source"]["sid"])
+        if not s or s.get("status") not in ("done", "partial"):
+            continue
+        try:
+            text = _http_text(f"{TRANSCRIBE}/api/sessions/{s['id']}/transcript.txt?ts=1")
+        except (OSError, ValueError):
+            continue
+        summary = summarize(text, s.get("title") or "") if text.strip() else None
+        if not summary:
+            with LOCK:  # try again on a later pass, 3 times at most
+                cur = _read(r["id"])
+                if cur:
+                    cur["source"] = {**cur["source"], "tries": cur["source"].get("tries", 0) + 1}
+                    _write(cur)
+            continue
+        title = _pick_title(s.get("title"), summary)
+        with LOCK:
+            cur = _read(r["id"])
+            if not cur or cur.get("updated") != cur.get("created"):
+                continue
+            cur.update(title=title, body=build_body(summary, text, _meeting_info(s, summary)))
+            cur["source"] = {**cur["source"], "v": 2}
+            _write(cur)
+        _retitle_recording(s["id"], s.get("title"), title)
+        done += 1
+    return done
 
 
 def _by_sid(sid):
@@ -398,11 +486,13 @@ def _anthropic_key():
 
 
 PROMPT = """You write meeting minutes for Tatsuki's Desk. The transcript below was made from a recording.
-Speakers' names appear as "Name: words" when known. Write everything in English. Keep names and terms as they were said.
+Speakers' names appear as "Name: words" when known. Write in the language most of the meeting was spoken in: a Japanese
+meeting gets Japanese minutes, an English meeting English minutes; if that is unclear, use English. Keep names and terms as they were said.
 Do not invent facts. If something is not in the transcript, leave it out. Give no advice.
 
 Return only one JSON object with these keys:
-- "title": a short title, at most 8 words
+- "title": a title that says what the meeting was about (at most 8 words, or 25 characters in Japanese); not a date
+- "participants": names of the people who took part, as said in the meeting (empty if no names are said; "Speaker A" labels are not names)
 - "summary": 3 to 6 short bullets of what was discussed
 - "decisions": bullets of what was decided (may be empty)
 - "todos": a list of {"text": "...", "owner": "...", "due": "YYYY-MM-DD or empty"} for things someone agreed to do (may be empty)
@@ -423,7 +513,7 @@ def summarize(text, title=""):
     body = text.strip()
     if len(body) > TRANSCRIPT_MAX:
         body = body[:TRANSCRIPT_MAX] + "\n[The transcript is longer; the rest is not included.]"
-    payload = {"model": MODEL, "max_tokens": 3000,
+    payload = {"model": MODEL, "max_tokens": 8000, "output_config": {"effort": "low"},
                "messages": [{"role": "user", "content": PROMPT + body}]}
     req = urllib.request.Request("https://api.anthropic.com/v1/messages", data=json.dumps(payload).encode("utf-8"),
                                  headers={"x-api-key": key, "anthropic-version": "2023-06-01",
@@ -454,32 +544,35 @@ def sanitize(j):
     for t in (j.get("topics") if isinstance(j.get("topics"), list) else [])[:5]:
         if isinstance(t, dict) and _text(t.get("heading"), 120):
             topics.append({"heading": _text(t.get("heading"), 120), "points": lines(t.get("points"), 8)})
-    return {"title": _text(j.get("title"), 200), "summary": lines(j.get("summary")),
+    return {"title": _text(j.get("title"), 200), "participants": lines(j.get("participants"), 12), "summary": lines(j.get("summary")),
             "decisions": lines(j.get("decisions")), "todos": todos, "topics": topics}
 
 
-def build_body(s, text):
+def build_body(s, text, info=""):
     """The minute's text in the simple markdown the page draws: ## headings, bullets and - [ ] checkboxes."""
     if not s:
         body = text.strip()
         more = "\n..." if len(body) > PASTE_MAX else ""
         return ("## Summary\nNot made yet. Claude writes the summary when it can read the transcript.\n\n"
                 "## Transcript\n" + body[:PASTE_MAX] + more)
-    parts = []
+    ja = _is_ja(s)
+    h = ({"summary": "要点", "decisions": "決まったこと", "next": "次にやること", "due": "期限", "none": "要点を取り出せませんでした。"} if ja else
+         {"summary": "Summary", "decisions": "Decisions", "next": "Next steps", "due": "due", "none": "No summary came out of this transcript."})
+    parts = [info] if info else []
     if s["summary"]:
-        parts.append("## Summary\n" + "\n".join("- " + x for x in s["summary"]))
+        parts.append(f"## {h['summary']}\n" + "\n".join("- " + x for x in s["summary"]))
     if s["decisions"]:
-        parts.append("## Decisions\n" + "\n".join("- " + x for x in s["decisions"]))
+        parts.append(f"## {h['decisions']}\n" + "\n".join("- " + x for x in s["decisions"]))
     if s["todos"]:
         rows = []
         for t in s["todos"]:
             extra = " — " + t["owner"] if t["owner"] else ""
-            extra += f" (due {t['due']})" if t["due"] else ""
+            extra += f" ({h['due']} {t['due']})" if t["due"] else ""
             rows.append(f"- [ ] {t['text']}{extra}")
-        parts.append("## Next steps\n" + "\n".join(rows))
+        parts.append(f"## {h['next']}\n" + "\n".join(rows))
     for t in s["topics"]:
         parts.append(f"## {t['heading']}\n" + "\n".join("- " + p for p in t["points"]))
-    return "\n\n".join(parts) if parts else "## Summary\nNo summary came out of this transcript."
+    return "\n\n".join(parts) if len(parts) > (1 if info else 0) else (info + "\n\n" if info else "") + f"## {h['summary']}\n{h['none']}"
 
 
 # ---------- the Google Calendar link (write, explicit) ----------
