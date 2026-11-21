@@ -9,12 +9,14 @@ The list is data/videos/nature.json. A video removed on the screen is never fetc
 
   python3 desk/nature.py fetch     # fetch now, in this terminal
   python3 desk/nature.py status
+  python3 desk/nature.py add <file> [title]   # a video already on this Mac (kept here only, never sent anywhere)
 """
 import hashlib
 import html
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import threading
@@ -249,9 +251,36 @@ def hide(vid):
     return view()
 
 
+def add_local(path, title="", source="Saved on this Mac", license="Personal use only", page="", sound=True):
+    """A video the owner saved: copied next to the others, played with its own sound if it has one."""
+    path = os.path.abspath(os.path.expanduser(path))
+    with open(path, "rb") as f:
+        head = f.read(12)
+    ext = "mp4" if head[4:8] == b"ftyp" else "webm" if head.startswith(b"\x1a\x45\xdf\xa3") else ""
+    if not ext:
+        raise ValueError("not an mp4 or webm video")
+    st = os.stat(path)
+    vid = "l:%s:%d" % (os.path.basename(path), st.st_size)
+    d = load()
+    if any(v["id"] == vid for v in d["videos"]):
+        return view()
+    name = hashlib.sha256(vid.encode("utf-8")).hexdigest()[:32] + "." + ext
+    os.makedirs(DIR, exist_ok=True)
+    tmp = os.path.join(DIR, name + ".part")
+    shutil.copyfile(path, tmp)
+    os.replace(tmp, os.path.join(DIR, name))
+    if not title:
+        title = re.sub(r"_(\d{3,4}p)$", "", os.path.splitext(os.path.basename(path))[0]).replace(" _ ", " · ")
+    d["hidden"] = [h for h in d["hidden"] if h != vid]
+    d["videos"].insert(0, {"id": vid, "file": name, "title": title[:120], "author": "", "license": license, "page": page,
+                           "source": source, "size": st.st_size, "sound": bool(sound), "local": True, "at": int(time.time() * 1000)})
+    save(d)
+    return view()
+
+
 def view():
     d = load()
-    vids = [{k: v.get(k) for k in ("id", "file", "title", "author", "license", "page", "source", "dur")}
+    vids = [{k: v.get(k) for k in ("id", "file", "title", "author", "license", "page", "source", "dur", "sound", "local")}
             for v in d["videos"] if os.path.exists(os.path.join(DIR, v.get("file") or "-"))]
     return {"videos": vids, "state": dict(STATE), "pexels": bool(pexels_key()),
             "size": sum(v.get("size", 0) for v in d["videos"])}
@@ -261,4 +290,6 @@ if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else "status"
     if cmd == "fetch":
         fetch()
+    elif cmd == "add" and len(sys.argv) > 2:
+        add_local(sys.argv[2], " ".join(sys.argv[3:]))
     print(json.dumps(view(), ensure_ascii=False, indent=1))

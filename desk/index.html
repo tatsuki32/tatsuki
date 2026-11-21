@@ -11285,7 +11285,7 @@ function wireFocus(){
 /* ---------- Study Focus (#study): Pomodoro 25 + 5, FocusBlock for the whole session, a forest with one plant of my own,
    soft noise, and a food jar that only study time fills ($ per hour). Sessions in studylog, the jar in wallet. Mac only. ---------- */
 const SF_KINDS=[["study","Study","Fills the food jar"],["reading","Reading","The plant grows, no money"],["other","Other","The plant grows, no money"]];
-const SF_SOUNDS=[["off","No sound"],["forest","Mountain forest"],["birds","Birds and breeze"],["pink","Pink noise"],["brown","Brown noise"],["gray","Gray noise"],["waves","Slow waves"],["wind","Forest wind"]];
+const SF_SOUNDS=[["off","No sound"],["video","The video's own sound"],["forest","Mountain forest"],["birds","Birds and breeze"],["pink","Pink noise"],["brown","Brown noise"],["gray","Gray noise"],["waves","Slow waves"],["wind","Forest wind"]];
 const SF_STAGES=[[0,"Seed"],[1,"Sprout"],[5,"Seedling"],[15,"Sapling"],[30,"Young tree"],[50,"Tree"],[75,"Tall tree"],[100,"Forest giant"]];
 const SF_W=25,SF_B=5,SF_MIN=6e4,SF_PREF="desk-sf";
 S.sf=Object.assign({kind:"study",rounds:4,block:true,sound:"forest",vol:.4,title:""},(()=>{try{return JSON.parse(localStorage.getItem(SF_PREF))||{}}catch(e){return {}}})());
@@ -11298,25 +11298,32 @@ async function natLoad(){
   catch(e){S.nat.loaded=true}
 }
 /* real footage: two videos on top of each other, a slow cross-fade to the next one when one ends (or after 4 minutes) */
-const SFV={order:[],i:-1,el:null,t:0};
+const SFV={order:[],i:-1,el:null,t:0,key:"",v:null};
+/* "The video's own sound": only videos that have real sound, one round of focus is one pass from the start */
+const sfVidPool=()=>{const all=S.nat.videos,snd=all.filter(v=>v.sound);return S.sf.sound==="video"&&snd.length?snd:all};
+function sfVideoAudio(){
+  const on=SFA.kind==="video"&&SFV.el&&SFV.v?.sound,lvl=Math.max(0,Math.min(1,S.sf.vol*1.5*sfPhaseLevel()));
+  document.querySelectorAll(".sfvid").forEach(el=>{const me=on&&el===SFV.el;el.muted=!me;if(me)el.volume=lvl});
+}
 const sfVideoHtml=()=>S.nat.videos.length?`<video class="sfvid" id="sfVidA" muted playsinline preload="auto"></video><video class="sfvid" id="sfVidB" muted playsinline preload="auto"></video><p class="sfcredit" id="sfCredit" data-noauto></p>`:"";
 function sfVideoStart(){
-  const vids=S.nat.videos;if(!vids.length||!$("#sfVidA"))return;
-  if(SFV.order.length!==vids.length){SFV.order=vids.map((_,i)=>i).sort(()=>Math.random()-.5);SFV.i=-1}
+  const vids=sfVidPool();if(!vids.length||!$("#sfVidA"))return;
+  const key=vids.map(v=>v.id).join("|");
+  if(SFV.key!==key){SFV.key=key;SFV.order=vids.map((_,i)=>i).sort(()=>Math.random()-.5);SFV.i=-1}
   SFV.el=null;sfVideoNext();
 }
 function sfVideoNext(){
-  const vids=S.nat.videos,a=$("#sfVidA"),b=$("#sfVidB");if(!a||!vids.length)return;
+  const vids=sfVidPool(),a=$("#sfVidA"),b=$("#sfVidB");if(!a||!vids.length)return;
   SFV.i=(SFV.i+1)%SFV.order.length;const v=vids[SFV.order[SFV.i]]||vids[0];
   const cur=SFV.el&&document.body.contains(SFV.el)?SFV.el:null,next=cur===a?b:a;
-  next.loop=vids.length===1;next.src="/videos/"+encodeURIComponent(v.file);
-  let shown=false;const show=()=>{if(shown||SFV.el!==next)return;shown=true;next.play().catch(()=>{});next.classList.add("on");
-    const c=$("#sfCredit");if(c)c.innerHTML=`Video: <a href="${esc(v.page||"")}" target="_blank" rel="noopener">${esc(v.title||"")}</a> · ${esc(v.author||"")} · ${esc(v.license||"")} · ${esc(v.source||"")}`;
+  next.loop=vids.length===1;next.muted=true;next.src="/videos/"+encodeURIComponent(v.file);
+  let shown=false;const show=()=>{if(shown||SFV.el!==next)return;shown=true;sfVideoAudio();next.play().catch(()=>{next.muted=true;next.play().catch(()=>{})});next.classList.add("on");
+    const c=$("#sfCredit");if(c)c.innerHTML="Video: "+[v.page?`<a href="${esc(v.page)}" target="_blank" rel="noopener">${esc(v.title||"")}</a>`:esc(v.title||""),v.author,v.license,v.source].filter(Boolean).map((x,i)=>i?esc(x):x).join(" · ");
     if(cur){cur.classList.remove("on");setTimeout(()=>{if(!cur.classList.contains("on")){cur.pause();cur.removeAttribute("src");cur.load()}},3500)}};
   next.oncanplay=show;setTimeout(()=>{if(next.readyState>=2)show()},1200); // canplay can come before the handler is in place
   next.onended=()=>{if(SFV.el===next)sfVideoNext()};
   next.onerror=()=>{if(SFV.el===next&&vids.length>1)setTimeout(sfVideoNext,800)};
-  SFV.el=next;clearTimeout(SFV.t);if(vids.length>1)SFV.t=setTimeout(()=>{if(SFV.el===next)sfVideoNext()},240000);
+  SFV.el=next;SFV.v=v;clearTimeout(SFV.t);if(vids.length>1&&S.sf.sound!=="video")SFV.t=setTimeout(()=>{if(SFV.el===next)sfVideoNext()},240000);
 }
 function sfNatPanel(){
   const n=S.nat,st=n.state||{},list=n.videos||[];
@@ -11326,7 +11333,7 @@ function sfNatPanel(){
     :`<div class="row"><button class="btn sm${list.length?"":" primary"}" id="sfGetVid">${list.length?"Get more videos":"Get nature videos"}</button></div>
       <p class="sub" style="margin:0">From ${src}, free licenses, with the author shown. Up to 10 videos and 2.5 GB, kept on this Mac only.${n.pexels?"":" For more beautiful footage, put a free Pexels key in the keychain as tatsuki-desk-pexels."}</p>
       ${st.error?`<p class="sub" style="margin:0">${esc(st.error)}</p>`:""}`;
-  const rows=list.map(v=>`<li><span>${esc(v.title)} · ${esc(v.author)} · ${esc(v.source)}</span><span><button class="ibtn" data-sfvhide="${esc(v.id)}" aria-label="Remove this video">✕</button></span></li>`).join("");
+  const rows=list.map(v=>`<li><span>${[v.title,v.author,v.source].filter(Boolean).map(esc).join(" · ")}${v.sound?" · with sound":""}</span><span><button class="ibtn" data-sfvhide="${esc(v.id)}" aria-label="Remove this video">✕</button></span></li>`).join("");
   return list.length?`<details class="card sfset" data-noauto><summary class="sub">Nature videos (${list.length})</summary>${body}<ul class="sflist">${rows}</ul></details>`
     :`<section class="card" data-noauto><div class="dhead"><h2>Real nature footage</h2></div>${body}</section>`;
 }
@@ -11400,6 +11407,7 @@ function sfNoise(ctx,kind){
 }
 function sfSoundStop(fade=3){
   clearTimeout(SFA.birdT);SFA.birds=false;
+  if(SFA.kind==="video"){SFA.kind="off";sfVideoAudio()}
   const ctx=SFA.ctx,g=SFA.gain,pg=SFA.pg,nodes=SFA.nodes;if(!ctx||!g)return;
   const t=ctx.currentTime;g.gain.cancelScheduledValues(t);g.gain.setValueAtTime(g.gain.value,t);g.gain.linearRampToValueAtTime(0,t+fade);
   setTimeout(()=>{nodes.forEach(x=>{try{x.stop?.()}catch(e){}try{x.disconnect()}catch(e){}});try{g.disconnect();pg?.disconnect()}catch(e){}},fade*1000+200);
@@ -11426,8 +11434,10 @@ function sfBird(){ // a bird call made from a few short whistles, from a random 
   SFA.birdT=setTimeout(sfBird,2500+Math.random()*7500);
 }
 function sfSoundStart(kind=S.sf.sound){
-  if(SFA.kind===kind&&SFA.gain)return sfVolume();
+  if(kind==="video"&&!S.nat.videos.some(v=>v.sound))kind="forest"; // no video with sound yet
+  if(SFA.kind===kind&&(SFA.gain||kind==="video"))return sfVolume();
   sfSoundStop(1.5);if(kind==="off")return;
+  if(kind==="video"){SFA.kind="video";sfVideoAudio();return}
   const ctx=sfCtx();if(!ctx)return;
   const g=ctx.createGain(),pg=ctx.createGain(),t=ctx.currentTime,nodes=[];
   g.gain.setValueAtTime(0,t);pg.gain.value=sfPhaseLevel();g.connect(pg);pg.connect(ctx.destination);
@@ -11449,7 +11459,7 @@ function sfSoundStart(kind=S.sf.sound){
   g.gain.linearRampToValueAtTime(S.sf.vol*.5,t+5); // a slow fade in
   if(SFA.birds){clearTimeout(SFA.birdT);SFA.birdT=setTimeout(sfBird,1500)}
 }
-function sfVolume(){const g=SFA.gain,ctx=SFA.ctx;if(!g||!ctx)return;const t=ctx.currentTime;g.gain.cancelScheduledValues(t);g.gain.setValueAtTime(g.gain.value,t);g.gain.linearRampToValueAtTime(S.sf.vol*.5,t+.4)}
+function sfVolume(){if(SFA.kind==="video")return sfVideoAudio();const g=SFA.gain,ctx=SFA.ctx;if(!g||!ctx)return;const t=ctx.currentTime;g.gain.cancelScheduledValues(t);g.gain.setValueAtTime(g.gain.value,t);g.gain.linearRampToValueAtTime(S.sf.vol*.5,t+.4)}
 function sfChime(){ // a soft bell between focus and break
   const ctx=sfCtx();if(!ctx)return;const t=ctx.currentTime;
   [[523.25,0,.18],[783.99,.35,.12],[659.25,.7,.1]].forEach(([fr,d,v])=>{const o=ctx.createOscillator(),g=ctx.createGain();o.type="sine";o.frequency.value=fr;
@@ -11542,7 +11552,8 @@ let sfLastMode="";
 function sfTick(){
   const r=sfRunning();if(!r){sfLastMode="";return}
   const p=sfPhase(r);if(p.done){sfFinish(r,"done");return}
-  const m=p.mode+p.round;if(sfLastMode&&m!==sfLastMode)sfChime();sfLastMode=m;
+  const m=p.mode+p.round;if(sfLastMode&&m!==sfLastMode){sfChime();if(p.mode==="focus"&&SFA.kind==="video"&&SFV.el)try{SFV.el.currentTime=0}catch(e){}}sfLastMode=m;
+  sfVideoAudio();
   if(SFA.pg&&SFA.ctx)SFA.pg.gain.setTargetAtTime(sfPhaseLevel(),SFA.ctx.currentTime,1.2);
   document.querySelectorAll("[data-sfnav]").forEach(el=>el.textContent=fbLeft(p.left));
   if(viewId()==="study")sfPanels();
