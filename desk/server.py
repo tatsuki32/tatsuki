@@ -32,6 +32,7 @@ from urllib.parse import parse_qs, unquote, urlsplit
 
 import bank
 import accounts
+import tabs  # the open tabs of Desk's tab bar (desk/tabs.py)
 import netspeed
 import wifi_login
 import footprint
@@ -1130,6 +1131,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.web_get(path.rsplit("/", 1)[1], parse_qs(urlsplit(self.path).query))
         if path == "/api/usage":
             return self.send(200, {**usage.view(parse_qs(urlsplit(self.path).query).get("period", ["14"])[0]), "on": usage.enabled(PORT)})
+        if path == "/api/tabs":
+            return self.send(200, tabs.read())  # the tab bar's open tabs (desk/tabs.py); a test run reads its own folder
         if path == "/api/layout":
             return self.send(200, usage.public(usage.read_layout(), usage.enabled(PORT)))
         if path == "/api/site":
@@ -1398,6 +1401,8 @@ class Handler(BaseHTTPRequestHandler):
         if method == "POST" and urlsplit(self.path).path == "/api/usage":
             # counts only; a test server on another port answers and keeps nothing
             return self.send(200, {"ok": usage.enabled(PORT) and usage.record(rec)})
+        if method == "PUT" and urlsplit(self.path).path == "/api/tabs":
+            return self.send(200, tabs.write(rec))
         if method == "PUT" and urlsplit(self.path).path == "/api/layout":
             return self.send(200, usage.change(rec, usage.enabled(PORT)))
         if urlsplit(self.path).path.startswith("/api/site/") and method in ("POST", "PUT"):

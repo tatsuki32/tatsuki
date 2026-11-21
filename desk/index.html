@@ -2086,6 +2086,19 @@ body.rdth-paper main .btn.primary:hover,body.rdth-sepia main .btn.primary:hover{
 .mnedit{width:100%;min-height:360px;background:var(--surface-2);color:var(--ink);border:1px solid var(--line);border-radius:var(--r-s);padding:var(--s2) var(--s3);font:inherit;font-size:var(--t2);line-height:1.6;box-sizing:border-box}
 .mnactions{display:flex;gap:var(--s2);flex-wrap:wrap;margin-top:var(--s2)}
 .mnfoot{display:flex;gap:var(--s2);margin-top:var(--s3)}
+/* tabs (2026-11-21): a Chrome-style strip at the top of the main column; the active tab is the screen on show */
+.tabbar{position:sticky;top:0;z-index:30;display:flex;align-items:flex-end;gap:4px;background:var(--rail);border-bottom:1px solid var(--line);padding:6px 8px 0;min-width:0}
+.tabbar[hidden]{display:none}
+.tbstrip{display:flex;gap:2px;overflow-x:auto;min-width:0;flex:1 1 auto;scrollbar-width:thin}
+.tbtab{display:flex;align-items:center;flex:0 1 200px;min-width:120px;max-width:220px;background:var(--surface);border:1px solid var(--line);border-bottom:0;border-radius:8px 8px 0 0;color:var(--muted)}
+.tbtab.on{background:var(--bg);color:var(--ink);border-color:var(--line-2)}
+.tbgo{display:flex;align-items:center;gap:6px;flex:1;min-width:0;padding:6px 6px 6px 10px;background:none;border:0;color:inherit;font:inherit;font-size:var(--t1);cursor:pointer;text-align:left}
+.tbt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tbx{flex:none;background:none;border:0;color:inherit;font:inherit;font-size:16px;line-height:1;padding:6px 8px;border-radius:4px;cursor:pointer}
+.tbx:hover,.tbgo:hover{color:var(--ink)}
+.tbgo:focus-visible,.tbx:focus-visible,.tbnew:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.tbnew{flex:none;background:none;border:0;color:var(--muted);font:inherit;font-size:18px;line-height:1;padding:6px 10px 8px;border-radius:6px;cursor:pointer}
+.tbnew:hover{color:var(--ink);background:var(--surface)}
 </style>
 
 <div class="app">
@@ -2100,7 +2113,7 @@ body.rdth-paper main .btn.primary:hover,body.rdth-sepia main .btn.primary:hover{
       <p class="hint"><kbd>T</kbd> Add a task · <kbd>/</kbd><kbd>/</kbd> Commands</p>
     </div>
   </aside>
-  <main><a class="pcalert" id="pcAlert" href="#pc" style="display:none">Memory is running low. Check the PC screen</a><p class="pcalert" id="lineAlert" style="display:none"></p><div class="wrap tlbarwrap" id="timerBar" hidden aria-label="Running timers"></div><div class="wrap" id="view"></div><a class="backbar" id="backBar" href="#home" hidden>← Back to Today <kbd>Esc</kbd></a></main>
+  <main><div class="tabbar" id="tabBar" hidden aria-label="Open tabs"></div><a class="pcalert" id="pcAlert" href="#pc" style="display:none">Memory is running low. Check the PC screen</a><p class="pcalert" id="lineAlert" style="display:none"></p><div class="wrap tlbarwrap" id="timerBar" hidden aria-label="Running timers"></div><div class="wrap" id="view"></div><a class="backbar" id="backBar" href="#home" hidden>← Back to Today <kbd>Esc</kbd></a></main>
 </div>
 <nav id="tabs" aria-label="Frequently used screens"></nav>
 <div id="modal"></div>
@@ -11105,6 +11118,83 @@ autoLinkStart();
   sub("lifemap",d=>S.lifemap=d.map(x=>({id:x.id,...x.data()})));
   sub("followups",d=>S.fuDocs=d.map(x=>({id:x.id,...x.data()})));
   db.collection("dues").onSnapshot(s=>{S.dues=duesById(s.docs.filter(d=>d.exists).map(d=>d.data()));render()},()=>{});
+})();
+</script>
+<script>
+/* ---------- tabs (2026-11-21): Chrome-style tabs over Desk's screens. A tab is a screen's hash; the URL is the active tab's.
+   Menu links open a new tab; ⌘/Ctrl-click and the middle button do too. ⌘T new, ⌘W close, Ctrl+Tab next/previous.
+   The tabs are saved on the Mac (/api/tabs), so they come back after a restart. Online (no local server): off. */
+(function tabsModule(){
+  if(typeof LOCALAPI==="undefined"||!LOCALAPI)return;
+  const MAX=30, TB={tabs:[],active:null,timer:null};
+  const tbId=()=>"t"+Math.random().toString(36).slice(2,10);
+  const tbNorm=h=>{const s=String(h||"").trim();return !s||s==="#"?"#home":(s[0]==="#"?s:"#"+s)};
+  const tbEsc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const tbCur=()=>TB.tabs.find(t=>t.id===TB.active);
+  const tbBar=()=>document.getElementById("tabBar");
+  function tbSave(){clearTimeout(TB.timer);TB.timer=setTimeout(()=>{fetch("/api/tabs",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({tabs:TB.tabs,active:TB.active})}).catch(()=>{})},200)}
+  function tbLabel(h){
+    const s=h.slice(1), m=/^project\/(.+)$/.exec(s);
+    if(m){const p=(S.projects||[]).find(x=>x.id===decodeURIComponent(m[1]));return p?{e:p.emoji||"📁",t:p.name}:{e:"📁",t:"Project"}}
+    const first=s.split(/[\/?]/)[0];
+    if(!first||first==="home")return {e:"🏠",t:"Home"};
+    const v=VIEWS.find(x=>x.id===first);
+    if(v)return {e:v.e,t:v.label};
+    return {e:"📄",t:first.replace(/^./,c=>c.toUpperCase())};
+  }
+  function tbRender(){
+    const bar=tbBar();if(!bar)return;bar.hidden=false;
+    bar.innerHTML=`<div class="tbstrip" role="tablist">${TB.tabs.map(t=>{const L=tbLabel(t.hash),on=t.id===TB.active;
+      return `<div class="tbtab${on?" on":""}" role="tab" aria-selected="${on}" title="${tbEsc(L.t)}"><button class="tbgo" data-tbgo="${t.id}"><span class="e">${L.e}</span><span class="tbt">${tbEsc(L.t)}</span></button><button class="tbx" data-tbx="${t.id}" aria-label="Close tab">×</button></div>`}).join("")}</div><button class="tbnew" id="tbNew" aria-label="New tab" title="New tab (⌘T)">+</button>`;
+    bar.querySelectorAll("[data-tbgo]").forEach(b=>b.onclick=()=>tbGo(b.dataset.tbgo));
+    bar.querySelectorAll("[data-tbx]").forEach(b=>b.onclick=e=>{e.stopPropagation();tbClose(b.dataset.tbx)});
+    document.getElementById("tbNew").onclick=()=>tbOpen("#home");
+  }
+  function tbGo(id){
+    const t=TB.tabs.find(x=>x.id===id);if(!t)return;
+    TB.active=id;tbSave();tbRender();
+    if(tbNorm(location.hash)!==t.hash)location.hash=t.hash;
+  }
+  function tbOpen(hash){
+    if(TB.tabs.length>=MAX){toast("Close a tab first (30 open)");return}
+    const h=tbNorm(hash), t={id:tbId(),hash:h};
+    TB.tabs.push(t);TB.active=t.id;tbSave();tbRender();
+    if(tbNorm(location.hash)!==h)location.hash=h;
+  }
+  function tbClose(id){
+    const i=TB.tabs.findIndex(x=>x.id===id);if(i<0)return;
+    if(TB.tabs.length===1){TB.tabs[0].hash="#home";TB.active=TB.tabs[0].id;tbSave();tbRender();if(tbNorm(location.hash)!=="#home")location.hash="home";return}
+    const wasOn=TB.active===id;TB.tabs.splice(i,1);
+    if(wasOn){const n=TB.tabs[Math.max(0,i-1)];TB.active=n.id;tbSave();tbRender();if(tbNorm(location.hash)!==n.hash)location.hash=n.hash}
+    else{tbSave();tbRender()}
+  }
+  // the URL follows the active tab; a screen reached any other way (Back, a link inside a page) changes that tab
+  window.addEventListener("hashchange",()=>{const t=tbCur();if(!t)return;const h=tbNorm(location.hash);if(t.hash!==h){t.hash=h;tbSave()}tbRender()});
+  // menu links (rail, bottom bar, More sheet) open a new tab; ⌘/Ctrl-click does the same anywhere in Desk
+  document.addEventListener("click",e=>{
+    const a=e.target.closest?.('a[href^="#"]');if(!a)return;const href=a.getAttribute("href");if(href.length<2)return;
+    const menu=!!a.closest("#nav,#tabs,#modal .nav");
+    if(menu||e.metaKey||e.ctrlKey){if(e.button!==0)return;e.preventDefault();tbOpen(href)}
+  },true);
+  document.addEventListener("auxclick",e=>{if(e.button!==1)return;const a=e.target.closest?.('a[href^="#"]');if(!a)return;e.preventDefault();tbOpen(a.getAttribute("href"))});
+  document.addEventListener("keydown",e=>{
+    if(e.ctrlKey&&e.key==="Tab"){e.preventDefault();const i=TB.tabs.findIndex(t=>t.id===TB.active);tbGo(TB.tabs[(i+(e.shiftKey?-1:1)+TB.tabs.length)%TB.tabs.length].id);return}
+    if(!(e.metaKey||e.ctrlKey)||e.altKey)return;
+    const k=e.key.toLowerCase();
+    if(k==="t"&&!e.shiftKey){e.preventDefault();tbOpen("#home")}
+    else if(k==="w"&&TB.active){e.preventDefault();tbClose(TB.active)}
+  });
+  (async function tbBoot(){
+    let s={};try{s=await (await fetch("/api/tabs",{cache:"no-store"})).json()}catch(err){s={}}
+    const cur=tbNorm(location.hash);
+    TB.tabs=(Array.isArray(s.tabs)&&s.tabs.length?s.tabs:[{id:tbId(),hash:cur}]).slice(0,MAX).map(t=>({id:t.id,hash:t.hash}));
+    const act=TB.tabs.find(t=>t.id===s.active)||TB.tabs[0];
+    TB.active=act.id;
+    // a page opened on a screen (a bookmark, the launcher) shows that screen in the active tab
+    if(!location.hash)location.hash=act.hash;
+    else if(tbNorm(location.hash)!==act.hash)act.hash=tbNorm(location.hash);
+    tbSave();tbRender();
+  })();
 })();
 </script>
 
