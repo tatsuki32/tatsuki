@@ -51,6 +51,7 @@ import routine_sync
 import news_sync
 import rhizomebox_backup
 import anki
+import gtts
 import cards
 import words
 import cards_sync
@@ -1058,6 +1059,12 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, reader.list_books())
         if path.startswith("/api/reader/books/") and path.count("/") == 4:
             return self.send(*reader.get(path.rsplit("/", 1)[1]))
+        if path == "/api/reader/gvoices":  # Google's natural voices for a language (desk/gtts.py); empty without a key
+            lang = parse_qs(urlsplit(self.path).query).get("lang", ["en"])[0]
+            try:
+                return self.send(200, {"voices": gtts.voices(lang), **gtts.status()})
+            except gtts.Unavailable as e:
+                return self.send(200, {"voices": [], "error": str(e), **gtts.status()})
         if path == "/api/reader/voices":
             return self.send(200, reader.voices_for(parse_qs(urlsplit(self.path).query).get("lang", ["en"])[0]))
         if path == "/api/words":  # every word looked up or put in Anki, per language (desk/words.py)
@@ -1613,7 +1620,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(*reader.remove(step[2]))
             if method == "POST" and step[1:] == ["speak"]:
                 code, out = reader.speak(rec)
-                return self.send(code, out, "audio/mp4") if code == 200 else self.send(code, out)
+                kind = "audio/mpeg" if code == 200 and (out[:3] == b"ID3" or out[:1] == b"\xff") else "audio/mp4"  # Google sends MP3, say makes m4a
+                return self.send(code, out, kind) if code == 200 else self.send(code, out)
             return self.send(404, {"error": "not found"})
         store = cards.Store(load_locked, upsert)
         if method == "POST" and step[1:] == ["add"]:

@@ -548,6 +548,13 @@ def speak(rec):
     lang = str(rec.get("lang") or "en")[:2]
     rate = float(rec.get("rate") or 1)
     rate = min(1.3, max(0.7, rate))
+    want = rec.get("voice") if isinstance(rec.get("voice"), str) else ""
+    if want.startswith("google:"):  # Google's natural voice (desk/gtts.py); on any trouble the Mac reads instead
+        import gtts
+        try:
+            return 200, gtts.speak(text, want[7:], rate)
+        except gtts.Unavailable:
+            pass
     names = {v["name"] for v in voices()}
     voice = rec.get("voice") if isinstance(rec.get("voice"), str) and rec.get("voice") in names else None
     if not voice:

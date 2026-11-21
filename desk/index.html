@@ -1833,6 +1833,7 @@ a.shelfbtn{text-decoration:none;display:inline-flex;align-items:center}
 .rdbar .cdsel{max-width:11em}
 .rdbar .rdvoice{max-width:14em}
 .vhsteps{margin:0;padding-left:1.4em;display:grid;gap:var(--s1);line-height:1.6}
+.cdpop h3{font-size:var(--t3);margin:var(--s2) 0 0}
 .rdbar .rdpos{margin-left:auto}
 @media (min-width:861px){.rdbar{left:224px}}
 @media (max-width:860px){.rdbar{bottom:56px}.rdread{padding-bottom:150px}}
@@ -10237,6 +10238,7 @@ function wireRd(){
   else if(S.rd.jump!=null){const p=$(`#rdBody .rdp[data-p="${S.rd.jump}"]`);S.rd.jump=null;if(p&&+p.dataset.p>0)setTimeout(()=>p.scrollIntoView({block:"start"}),0)}
   if(S.rd.si>=0)rdHighlight(S.rd.si,false);
   if(!S.rd.macVoicesFor||S.rd.macVoicesFor!==b.lang)rdMacVoices(b.lang);
+  if(S.rd.gFor!==b.lang)rdGVoices(b.lang);
   if(window.speechSynthesis&&!S.rd.voicesHooked){S.rd.voicesHooked=true;speechSynthesis.onvoiceschanged=()=>{if(viewId()==="reader"&&rdBookId()&&!S.rd.playing&&!S.rd.cur)render()}}
   if(!S.rd.scrollHooked){S.rd.scrollHooked=true;let t=0;window.addEventListener("scroll",()=>{if(viewId()!=="reader"||!rdBookId())return;rdSelBar(null);clearTimeout(t);t=setTimeout(()=>rdSavePos(false),1200)},{passive:true})}
 }
@@ -10447,17 +10449,26 @@ function rdVoiceRank(name){return /premium/i.test(name)?0:/enhanced|siri/i.test(
 function rdVoiceList(lang){
   const web=(window.speechSynthesis?.getVoices?.()||[]).filter(v=>(v.lang||"").toLowerCase().replace("_","-").startsWith(lang)&&!RD_NOVELTY.test(v.name)).map(v=>({id:"web:"+v.name,name:v.name,label:v.name+(v.localService===false?" (online)":"")}));
   const mac=(S.rd.mac&&S.rd.macVoicesFor===lang?S.rd.mac:[]).filter(v=>!RD_NOVELTY.test(v.name)).map(v=>({id:"mac:"+v.name,name:v.name,label:v.name+" (Mac)"}));
-  return [...web,...mac].map((v,i)=>({...v,i,r:rdVoiceRank(v.name)})).sort((a,b)=>a.r-b.r||a.i-b.i);
+  const goo=(S.rd.g&&S.rd.gFor===lang?S.rd.g.voices||[]:[]).map(v=>({id:v.id,name:v.name,label:v.label,google:true}));
+  return [...goo,...web,...mac].map((v,i)=>({...v,i,r:v.google?-1:rdVoiceRank(v.name)})).sort((a,b)=>a.r-b.r||a.i-b.i);
 }
 const rdHasGoodVoice=lang=>rdVoiceList(lang).some(v=>v.r<=1);
+const rdServerVoice=pick=>pick.startsWith("mac:")?pick.slice(4):pick.startsWith("google:")?pick:undefined;
+async function rdGVoices(lang){if(!LOCALAPI)return;S.rd.gFor=lang;try{S.rd.g=await api("GET","/api/reader/gvoices?lang="+encodeURIComponent(lang))}catch(e){S.rd.g=null}
+  if(viewId()==="reader"&&rdBookId()&&$("#rdVoice")&&!S.rd.playing){const b=S.rd.book;$("#rdVoice").innerHTML=rdVoiceOpts(b.lang,rdVoicePick(b.lang))}}
 function rdVoiceOpts(lang,sel){const vs=rdVoiceList(lang);
   return (vs.map(v=>`<option value="${esc(v.id)}" ${v.id===sel?"selected":""}>${esc(v.label)}</option>`).join("")||`<option value="">No voice for ${esc(RD_LANGS[lang]||lang)}</option>`)+`<option value="__get">${rdHasGoodVoice(lang)?"More voices…":"Get a better voice…"}</option>`}
+function rdGoogleHelp(){const g=S.rd.g||{};
+  if(g.hasKey)return `<h3>Google voices</h3><p class="mtalk">${g.voices?.length?"On. They are at the top of the voice menu.":g.error?esc(g.error):"There is no Google voice for this language."} This month: ${(g.used||0).toLocaleString("en-US")} of ${(g.limit||0).toLocaleString("en-US")} characters. After that the Mac's voice reads.</p><p class="sub">Each sentence goes to Google once, then plays from this Mac.</p>`;
+  return `<h3>Google voices (most natural)</h3><p class="mtalk">Google's Chirp 3 HD voices sound close to a person. The sentence being read is sent to Google; each sentence only once. Up to 1 million characters a month are free.</p>
+    <ol class="vhsteps"><li>In Google Cloud Console, in your project, turn on the Cloud Text-to-Speech API (and Cloud Translation, if you want the Translate screen too).</li><li>Make an API key under APIs &amp; Services → Credentials, and limit it to those APIs.</li><li>In Terminal: <code>security add-generic-password -s tatsuki-desk-gtts -a api -w</code> and paste the key when asked.</li><li>Reopen this book. Google voices appear at the top.</li></ol>`}
 function rdVoiceHelp(lang){
   if($("#modal").firstChild)return;const name=RD_LANGS[lang]||lang;
   $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop cdpop" role="dialog" aria-modal="true" aria-label="Better voices"><div class="top"><h2>Better voices for ${esc(name)}</h2><button class="ibtn" id="vhX" aria-label="Close">✕</button></div>
-    <p class="mtalk">The Mac has natural voices, but they are downloaded one by one. Premium is the most natural, Enhanced is next.</p>
+    ${rdGoogleHelp()}
+    <h3>Mac voices (free, on this Mac)</h3><p class="mtalk">The Mac has natural voices, but they are downloaded one by one. Premium is the most natural, Enhanced is next.</p>
     <ol class="vhsteps"><li>Open System Settings → Accessibility → Spoken Content.</li><li>Next to System voice, open the menu and choose Manage Voices…</li><li>Find ${esc(name)} and download a voice marked Premium (for English, Ava, Zoe or Evan) or Enhanced.</li><li>Quit and reopen the Desk. The new voice is chosen first.</li></ol>
-    <p class="sub">Voices run on this Mac. Nothing is sent anywhere.</p></div></div>`;
+    <p class="sub">Mac voices run on this Mac. Nothing is sent anywhere.</p></div></div>`;
   const close=()=>{$("#modal").innerHTML=""};$("#vhX").onclick=close;$("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};$("#scrim").onkeydown=e=>{if(e.key==="Escape"){e.stopPropagation();close()}};$("#vhX").focus();
 }
 function rdVoicePick(lang){let v="";try{v=localStorage.getItem("desk-rd-voice2-"+lang)||""}catch(e){}const list=rdVoiceList(lang);return list.some(x=>x.id===v)?v:(list[0]?.id||"")}
@@ -10500,12 +10511,12 @@ async function rdSpeakAt(i){
 }
 async function rdMacSay(text,lang,pick,run){
   if(!LOCALAPI)return false;
-  const voice=pick.startsWith("mac:")?pick.slice(4):undefined;
+  const voice=rdServerVoice(pick);
   try{
-    const blob=rdNextBlob&&rdNextBlob.text===text&&rdNextBlob.rate===S.rd.rate?rdNextBlob.blob:await rdFetchSay(text,lang,voice);
+    const blob=rdNextBlob&&rdNextBlob.text===text&&rdNextBlob.rate===S.rd.rate&&rdNextBlob.voice===voice?rdNextBlob.blob:await rdFetchSay(text,lang,voice);
     rdNextBlob=null;if(rdRun!==run)return true;
     const els=rdSentenceEls(), nx=els[S.rd.si+1]?.textContent.trim();
-    if(nx&&/[\p{L}\p{N}]/u.test(nx))rdFetchSay(nx,lang,voice).then(bl=>{rdNextBlob={text:nx,rate:S.rd.rate,blob:bl}}).catch(()=>{}); // one sentence ahead, so there is no gap
+    if(nx&&/[\p{L}\p{N}]/u.test(nx))rdFetchSay(nx,lang,voice).then(bl=>{rdNextBlob={text:nx,rate:S.rd.rate,voice,blob:bl}}).catch(()=>{}); // one sentence ahead, so there is no gap
     return await new Promise(res=>{const a=new Audio(URL.createObjectURL(blob));rdAudio=a;a.onended=()=>{URL.revokeObjectURL(a.src);if(rdAudio===a)rdAudio=null;res(true)};a.onerror=()=>res(false);a.play().catch(()=>res(false))});
   }catch(e){return false}
 }
@@ -10516,7 +10527,7 @@ async function rdSay(text,lang){
   const pick=rdVoicePick(lang);
   if(pick.startsWith("web:")&&window.speechSynthesis){const v=speechSynthesis.getVoices().find(x=>x.name===pick.slice(4));const u=new SpeechSynthesisUtterance(text);u.voice=v||null;u.lang=v?.lang||lang;u.rate=1;speechSynthesis.cancel();speechSynthesis.speak(u);return}
   if(!LOCALAPI)return;
-  try{const blob=await rdFetchSay(text,lang,pick.startsWith("mac:")?pick.slice(4):undefined);const a=new Audio(URL.createObjectURL(blob));a.onended=()=>URL.revokeObjectURL(a.src);a.play()}catch(e){toast("No voice for this word")}
+  try{const blob=await rdFetchSay(text,lang,rdServerVoice(pick));const a=new Audio(URL.createObjectURL(blob));a.onended=()=>URL.revokeObjectURL(a.src);a.play()}catch(e){toast("No voice for this word")}
 }
 
 /* ---------- Usage: which screens, Home cards and buttons get used, and the weekly re-arrangement (desk/usage.py). Mac only.

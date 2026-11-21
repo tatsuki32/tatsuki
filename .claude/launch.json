@@ -120,6 +120,12 @@
       "runtimeExecutable": "/bin/sh",
       "runtimeArgs": ["-c", "python3 desk/tests/fake_ankiconnect.py 8798 & cd desk && ANKI_URL=http://127.0.0.1:8798 ANKI_NO_AUDIO=1 DESK_READER_DIR=/tmp/claude/desk-anki-test DESK_PORT=${PORT:-4785} exec python3 server.py"],
       "port": 4785
+    },
+    {
+      "name": "desk-voice-test",
+      "runtimeExecutable": "/bin/sh",
+      "runtimeArgs": ["-c", "python3 desk/tests/fake_gtts.py 8796 & cd desk && GTTS_URL=http://127.0.0.1:8796 GTTS_KEY=test-key DESK_READER_DIR=/tmp/claude/desk-reader-test DESK_PORT=${PORT:-4784} exec python3 server.py"],
+      "port": 4784
     }
   ]
 }
