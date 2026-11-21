@@ -2051,6 +2051,35 @@ body.rdth-paper main .btn.primary:hover,body.rdth-sepia main .btn.primary:hover{
 @media (max-width:1179px){.rdmain{grid-template-columns:minmax(0,1fr)}.rdside{position:static;max-height:none}}
 @media (max-width:860px){.rdcursheet{left:0;bottom:56px;z-index:32;max-height:55vh}}
 @media (max-width:560px){.rdsheet{padding:var(--s4) var(--s3) var(--s3)}.rdsheet::before{width:12px}.rdstats b{font-size:var(--t3)}}
+.mnrow{display:block;padding:var(--s2) 0;border-bottom:1px solid var(--line);text-decoration:none;color:inherit}
+.mnrow:last-child{border-bottom:0}
+.mnt{display:block;font-weight:700}
+.mns{display:block;color:var(--muted);font-size:var(--t1)}
+.mnlist{padding:0 var(--s3)}
+.mnsearch{width:100%;background:var(--surface-2);color:var(--ink);border:1px solid var(--line);border-radius:var(--r-s);padding:var(--s2) var(--s3);font:inherit;font-size:var(--t2);box-sizing:border-box}
+.mnback{display:inline-block;margin-bottom:var(--s2);color:var(--muted);text-decoration:none;font-size:var(--t1)}
+.mnhd{flex:1;min-width:0}
+.mntitle{width:100%;background:transparent;border:0;color:var(--ink);font:inherit;font-size:var(--t5);font-weight:700;padding:0}
+.mnev{padding:var(--s3)}
+.mnevrow{display:flex;gap:var(--s2);align-items:center;flex-wrap:wrap;margin:var(--s1) 0}
+.mnpick{margin:var(--s2) 0}
+.mnpk{display:block;width:100%;text-align:left;background:var(--surface-2);color:var(--ink);border:0;border-radius:var(--r-s);padding:var(--s2) var(--s3);margin:var(--s1) 0;font:inherit;cursor:pointer}
+.mnbody{padding:var(--s3);margin-top:var(--s3)}
+.mndoc{font-size:var(--t2);line-height:1.7}
+.mndoc h2{font-size:var(--t3);margin:var(--s4) 0 var(--s1)}
+.mndoc h2:first-child{margin-top:0}
+.mndoc p{margin:var(--s1) 0}
+.mndoc ul{padding-left:var(--s3);margin:var(--s1) 0}
+.mncks{list-style:none;padding:0;margin:var(--s1) 0}
+.mnck{display:flex;gap:var(--s2);align-items:flex-start;margin:var(--s1) 0}
+.mnck.on span{color:var(--muted);text-decoration:line-through}
+.mnbox{flex:none;width:20px;height:20px;margin-top:2px;border:1px solid var(--line-2);border-radius:4px;background:transparent;color:var(--ink);cursor:pointer;padding:0;line-height:1}
+.mntbl{overflow-x:auto;margin:var(--s2) 0}
+.mntbl table{border-collapse:collapse;width:100%}
+.mntbl th,.mntbl td{border-bottom:1px solid var(--line);padding:var(--s1) var(--s2);text-align:left;vertical-align:top}
+.mnedit{width:100%;min-height:360px;background:var(--surface-2);color:var(--ink);border:1px solid var(--line);border-radius:var(--r-s);padding:var(--s2) var(--s3);font:inherit;font-size:var(--t2);line-height:1.6;box-sizing:border-box}
+.mnactions{display:flex;gap:var(--s2);flex-wrap:wrap;margin-top:var(--s2)}
+.mnfoot{display:flex;gap:var(--s2);margin-top:var(--s3)}
 </style>
 
 <div class="app">
@@ -2100,7 +2129,7 @@ S.projects=[];S.sections=[];S.okrs=[];S.krOpen={};S.projFilter="all";S.pDone=fal
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const okUrl=u=>/^(https:\/\/|file:\/\/|#)/.test(u||"");
-const viewId=()=>{const h=(location.hash||"").slice(1);if(h==="mail")return "tasks";if(h==="inbox")return "presents";if(/^project\//.test(h))return "project";if(/^forms\//.test(h))return "forms";if(/^task\//.test(h))return "tasks";if(/^concept\//.test(h))return "translate";if(/^langmap[\/?]/.test(h)||/^language\//.test(h))return "langmap";if(/^reader\//.test(h))return "reader";if(/^words\//.test(h))return "words";if(h==="cards/review")return "cards";return VIEWS.some(v=>v.id===h&&v.g!=="hidden")?h:"home"}; // the morning mail screen moved into the tasks
+const viewId=()=>{const h=(location.hash||"").slice(1);if(h==="mail")return "tasks";if(h==="inbox")return "presents";if(/^project\//.test(h))return "project";if(/^minutes\//.test(h))return "minutes";if(/^forms\//.test(h))return "forms";if(/^task\//.test(h))return "tasks";if(/^concept\//.test(h))return "translate";if(/^langmap[\/?]/.test(h)||/^language\//.test(h))return "langmap";if(/^reader\//.test(h))return "reader";if(/^words\//.test(h))return "words";if(h==="cards/review")return "cards";return VIEWS.some(v=>v.id===h&&v.g!=="hidden")?h:"home"}; // the morning mail screen moved into the tasks
 const viewLabel=id=>(VIEWS.find(v=>v.id===id)||{}).label||id;
 /* Old mail data has Japanese topics: keep those titles in Japanese, new ones in English */
 const JA_RE=/[ぁ-んァ-ン一-龥]/;
@@ -2139,6 +2168,7 @@ if(LOCALAPI) VIEWS.push({id:"post",e:"📣",label:"Post Studio",g:"write"});
 if(LOCALAPI) VIEWS.push({id:"campus",e:"✉️",label:"Campus Letter",g:"write"}); // the free newsletter 地球キャンパス通信: written here, readers only on tany.im (desk/campus.py) // photos and a memo become drafts for each social account; nothing is posted from Desk (desk/posts.py)
 if(LOCALAPI) VIEWS.push({id:"forms",e:"📋",label:"Forms",g:"write"}); // forms on tany.im instead of Google Forms: made here, answered on tany.im, answers back every 5 minutes (desk/forms.py)
 if(LOCALAPI) VIEWS.push({id:"transcribe",e:"🎙️",label:"Transcribe",g:"write"}); // long recordings to text on this Mac (desk/transcribe/, its own server on 8791)
+if(LOCALAPI) VIEWS.push({id:"minutes",e:"📝",label:"Minutes",g:"write"}); // made from Transcribe recordings; linked to Calendar events (desk/minutes.py) // long recordings to text on this Mac (desk/transcribe/, its own server on 8791)
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="heritage")+1,0,{id:"reader",e:"📖",label:"Reader",g:"read"},{id:"cards",e:"🃏",label:"Cards",g:"read"}); // books read aloud and flashcards (desk/reader.py, desk/cards.py)
 if(LOCALAPI) VIEWS.push({id:"wifi",e:"📲",label:"Wi-Fi QR",g:"write"}); // a code that joins the Wi-Fi this Mac is on; the password comes from the keychain and is never kept (desk/wifi_qr.py)
 if(LOCALAPI) VIEWS.push({id:"bank",e:"🏦",label:"Bank Accounts",g:"tool"}); // same: from Tools and the / list. Details stay on this Mac (desk/bank.py)
@@ -6761,6 +6791,7 @@ function render(){
   if(viewId()==="netspeed"){nsLoad();$("#view").innerHTML=searchResults()+nsView();wire();wireNs();return}
   if(viewId()==="wifi"){wfLoad();if(!$("#wfView")||!document.activeElement?.closest?.(".wffield"))wfDraw();return} // a redraw from elsewhere never takes the password being typed
   if(viewId()==="transcribe"){trLoad();$("#view").innerHTML=searchResults()+trView();wire();wireTr();return}
+  if(viewId()==="minutes"){mnLoad();$("#view").innerHTML=searchResults()+mnView();wire();wireMn();return}
   if(viewId()==="post"){if(!ps().data&&!ps().loading)psLoad();if(!document.activeElement?.closest?.(".psedit")||!$("#psView"))psDraw();return} // a redraw from elsewhere never takes the text being typed
   if(viewId()==="forms"){fmSync();if(!document.activeElement?.closest?.(".fmed,.fmbox,.fmtitle")||!$("#fmView"))fmDraw();return} // a redraw from elsewhere never takes the text being typed
   if(viewId()==="book"){if(!bkg().data&&!bkg().loading)bkgLoad();if(!document.activeElement?.closest?.(".bkgedit")||!$("#bkgView"))bkgDraw();return} // a redraw from elsewhere never takes the rules being typed
@@ -7252,6 +7283,90 @@ function wireFp(){
 async function fpHomeLoad(){if(!LOCALAPI)return;try{S.fpHome=await api("GET","/api/footprint/home");const el=$("#fpLine");if(el){const t=document.createElement("div");t.innerHTML=fpHomeLine();el.textContent=t.firstChild.textContent}}catch(e){}}
 const fpHomeLine=()=>{const h=S.fpHome;if(!LOCALAPI)return "";if(!h||!h.kg)return `<a class="sub pcline" id="fpLine" href="#footprint">Footprint: yesterday's CO2e</a>`;
   return `<a class="sub pcline" id="fpLine" href="#footprint">Footprint yesterday: ${fpKg(h.kg)} CO2e${h.cowHours?` · ${fpHours(h.cowHours)} of a cow`:""}</a>`};
+/* ---------- 📝 Minutes (#minutes, #minutes/<id>): made from Transcribe recordings, linked to a Calendar event, and the link written into that event (desk/minutes.py) ---------- */
+const mn=()=>S.mn||(S.mn={data:null,err:"",loadedAt:0,loading:false,q:"",picker:false,edit:false,busy:false,msg:""});
+const mnId=()=>{const m=/^#minutes\/(.+)$/.exec(location.hash||"");return m?decodeURIComponent(m[1]):null};
+async function mnApi(method,path,body){const r=await fetch(path,{method,headers:{"Content-Type":"application/json"},body:body?JSON.stringify(body):undefined});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||("Error "+r.status));return j}
+async function mnLoad(force){const st=mn();if(st.loading||(!force&&Date.now()-st.loadedAt<8000))return;st.loading=true;
+  try{st.data=await mnApi("GET","/api/minutes");st.err=""}catch(e){st.err="Minutes could not be read. Is the Desk server running?"}
+  st.loading=false;st.loadedAt=Date.now();if(viewId()==="minutes"&&!st.edit&&!st.picker&&!st.busy)render()}
+setInterval(()=>{if(viewId()==="minutes")mnLoad(true)},20000);
+async function mnDo(fn,msg){const st=mn();st.busy=true;st.msg="";try{await fn();st.msg=msg||""}catch(e){st.msg=e.message||"Failed."}finally{st.busy=false}await mnLoad(true);if(viewId()==="minutes")render()}
+const mnWhen=t=>t?new Date(t*1000).toLocaleString("en-US",{dateStyle:"medium",timeStyle:"short"}):"";
+const mnRange=e=>{const s=new Date(e.start),n=new Date(e.end||e.start);if(e.allDay||isNaN(s))return e.start||"";return s.toLocaleString("en-US",{dateStyle:"medium",timeStyle:"short"})+(isNaN(n)?"":" – "+n.toLocaleTimeString("en-US",{timeStyle:"short"}))};
+function mnMd(src){
+  const lines=String(src||"").split("\n");const out=[];let i=0,ck=0;
+  const inl=s=>esc(s).replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>");
+  while(i<lines.length){const l=lines[i].trimEnd();
+    if(!l.trim()){i++;continue}
+    if(/^## /.test(l)){out.push(`<h2>${inl(l.slice(3))}</h2>`);i++;continue}
+    if(/^\s*- \[( |x)\] /.test(l)){const items=[];
+      while(i<lines.length&&/^\s*- \[( |x)\] /.test(lines[i])){const mm=/^\s*- \[( |x)\] (.*)$/.exec(lines[i]);const done=mm[1]==="x";
+        items.push(`<li class="mnck${done?" on":""}"><button type="button" class="mnbox" data-mnck="${ck}" aria-pressed="${done}" aria-label="Done">${done?"✓":""}</button><span>${inl(mm[2])}</span></li>`);ck++;i++}
+      out.push(`<ul class="mncks">${items.join("")}</ul>`);continue}
+    if(/^\s*- /.test(l)){const items=[];
+      while(i<lines.length&&/^\s*- /.test(lines[i])&&!/^\s*- \[( |x)\] /.test(lines[i])){items.push(`<li>${inl(lines[i].replace(/^\s*- /,""))}</li>`);i++}
+      out.push(`<ul>${items.join("")}</ul>`);continue}
+    if(/^\|/.test(l)){const rows=[];
+      while(i<lines.length&&/^\|/.test(lines[i])){if(!/^\|[\s:|-]+\|?$/.test(lines[i]))rows.push(lines[i].replace(/^\||\|$/g,"").split("|").map(c=>c.trim()));i++}
+      if(rows.length){const [h,...b]=rows;out.push(`<div class="mntbl"><table><thead><tr>${h.map(c=>`<th>${inl(c)}</th>`).join("")}</tr></thead><tbody>${b.map(r=>`<tr>${r.map(c=>`<td>${inl(c)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`)}
+      continue}
+    out.push(`<p>${inl(l)}</p>`);i++}
+  return out.join("")}
+const mnRow=m=>`<a class="mnrow" href="#minutes/${esc(m.id)}" data-noauto><span class="mnt">${esc(m.title)}</span><span class="mns">${esc(mnWhen(m.at))}${m.status==="draft"?" · Draft":""} · ${m.event?"📅 "+esc(m.event.title):"Not linked to an event"}</span></a>`;
+function mnPicker(){const now=Date.now(),xs=(S.cal?.events||[]).filter(e=>{const t=Date.parse(e.start);return isFinite(t)&&t>=now-86400000&&t<=now+21*86400000}).sort((a,b)=>Date.parse(a.start)-Date.parse(b.start)).slice(0,60);
+  return `<div class="mnpick">${xs.length?xs.map(e=>`<button type="button" class="mnpk" data-mnlink="${esc(e.id)}">${esc(e.title)}<span class="sub">${esc(mnRange(e))}</span></button>`).join(""):`<div class="empty">No events from yesterday to three weeks ahead. The Calendar view has them, once it has loaded.</div>`}</div>`}
+function mnDetail(id){
+  const st=mn();const m=(st.data?.minutes||[]).find(x=>x.id===id);
+  if(!m) return `<a class="mnback" href="#minutes">← Minutes</a><div class="card empty">${st.data?"This minute is not here any more.":"Loading…"}</div>`;
+  const ev=m.event,cal=m.calendar;
+  const calLine=!ev?"":cal&&cal.ok?`<p class="sub">The link is in this Google Calendar event.</p>`:cal&&!cal.ok?`<p class="due" role="alert">${esc(cal.error||"The link was not written.")}</p>`:"";
+  return `<a class="mnback" href="#minutes">← Minutes</a>
+  <header class="head mnhead"><div class="mnhd"><input class="mntitle" value="${esc(m.title)}" data-mnfield="title" aria-label="Title"><p class="sub">${esc(mnWhen(m.at))}${m.place?" · "+esc(m.place):""} · ${m.status==="ready"?"Ready":"Draft"}</p></div></header>
+  <section class="card mnev"><div class="section-title">Calendar</div>
+    ${ev?`<div class="mnevrow"><span>📅 ${esc(ev.title)} · ${esc(mnRange(ev))}</span><button class="btn" type="button" data-mnpick ${st.busy?"disabled":""}>Change</button><button class="btn" type="button" data-mnunlink ${st.busy?"disabled":""}>Unlink</button></div>`
+          :`<div class="mnevrow"><span>Not linked to an event.</span><button class="btn" type="button" data-mnpick ${st.busy?"disabled":""}>Link to an event</button></div>`}
+    ${st.picker?mnPicker():""}
+    ${ev?`<div class="mnevrow"><button class="btn primary" type="button" data-mnwrite ${st.busy?"disabled":""}>Write link to Google Calendar</button></div>`:""}
+    ${calLine}${st.msg?`<p class="sub" role="status">${esc(st.msg)}</p>`:""}</section>
+  <section class="card mnbody">${st.edit
+    ?`<textarea class="mnedit" id="mnTa" aria-label="Minute text">${esc(m.body)}</textarea><div class="mnactions"><button class="btn primary" type="button" data-mnsave>Save text</button><button class="btn" type="button" data-mnedit>Done</button></div>`
+    :`<div class="mndoc" data-noauto>${mnMd(m.body)}</div><div class="mnactions"><button class="btn" type="button" data-mnedit>Edit text</button></div>`}</section>
+  <section class="mnfoot">${m.status==="ready"?`<button class="btn" type="button" data-mnstatus="draft">Back to draft</button>`:`<button class="btn" type="button" data-mnstatus="ready">Mark ready</button>`}<button class="btn" type="button" data-mndel>Delete</button></section>`;
+}
+function mnView(){
+  const st=mn();
+  const head=`<header class="head"><div><p class="eyebrow">Write</p><h1>Minutes</h1></div><button class="btn primary" type="button" data-mnnew ${st.busy?"disabled":""}>New minute</button></header>`;
+  if(mnId()) return mnDetail(mnId());
+  if(st.err&&!st.data) return head+`<div class="card empty">${esc(st.err)}</div>`;
+  const all=st.data?.minutes||[];
+  return head+(st.data&&!st.data.transcriber?`<p class="sub">Transcribe is not running. A recording becomes a minute when it has been turned into text.</p>`:"")+
+    `<section class="card"><input class="mnsearch" type="search" placeholder="Search minutes" value="${esc(st.q)}" data-mnq aria-label="Search minutes"></section>
+    <div id="mnList">${mnList()}</div>`;
+}
+function mnList(){const st=mn();const all=st.data?.minutes||[];const q=st.q.trim().toLowerCase();
+  const rows=all.filter(m=>!q||(m.title+" "+(m.body||"")).toLowerCase().includes(q));
+  return rows.length?`<section class="card mnlist">${rows.map(mnRow).join("")}</section>`
+    :`<div class="card empty">${all.length?"No minutes match.":"No minutes yet. Record a meeting in Transcribe, and its minutes appear here."}</div>`}
+function wireMn(){
+  const st=mn();const id=mnId();const m=id?(st.data?.minutes||[]).find(x=>x.id===id):null;
+  document.querySelectorAll("[data-mnq]").forEach(i=>i.oninput=()=>{st.q=i.value;const l=$("#mnList");if(l)l.innerHTML=mnList()});
+  document.querySelectorAll("[data-mnnew]").forEach(b=>b.onclick=()=>mnDo(async()=>{const r=await mnApi("POST","/api/minutes",{title:"Untitled meeting"});location.hash="#minutes/"+r.id},"")); 
+  document.querySelectorAll("[data-mnpick]").forEach(b=>b.onclick=()=>{st.picker=!st.picker;st.msg="";render()});
+  document.querySelectorAll("[data-mnlink]").forEach(b=>b.onclick=()=>{const e=(S.cal?.events||[]).find(x=>x.id===b.dataset.mnlink);if(!e||!m)return;st.picker=false;
+    const uid=e.id.slice(0,e.id.lastIndexOf("_"));
+    mnDo(()=>mnApi("PUT",`/api/minutes/${m.id}`,{event:{id:e.id,uid,title:e.title,start:e.start,end:e.end||"",allDay:!!e.allDay}}),"Linked to the event.")});
+  document.querySelectorAll("[data-mnunlink]").forEach(b=>b.onclick=()=>m&&mnDo(()=>mnApi("PUT",`/api/minutes/${m.id}`,{event:null}),"Unlinked."));
+  document.querySelectorAll("[data-mnwrite]").forEach(b=>b.onclick=()=>m&&mnDo(()=>mnApi("POST",`/api/minutes/${m.id}/calendar`),"The link is in the Google Calendar event."));
+  document.querySelectorAll("[data-mnfield='title']").forEach(i=>i.onchange=()=>m&&mnDo(()=>mnApi("PUT",`/api/minutes/${m.id}`,{title:i.value}),""));
+  document.querySelectorAll("[data-mnedit]").forEach(b=>b.onclick=()=>{st.edit=!st.edit;st.msg="";render()});
+  document.querySelectorAll("[data-mnsave]").forEach(b=>b.onclick=()=>{const t=$("#mnTa");if(m&&t)mnDo(()=>mnApi("PUT",`/api/minutes/${m.id}`,{body:t.value}),"Saved.")});
+  document.querySelectorAll("[data-mnstatus]").forEach(b=>b.onclick=()=>m&&mnDo(()=>mnApi("PUT",`/api/minutes/${m.id}`,{status:b.dataset.mnstatus}),""));
+  document.querySelectorAll("[data-mnck]").forEach(b=>b.onclick=()=>{if(!m)return;const n=+b.dataset.mnck;let k=-1;
+    const body=m.body.split("\n").map(l=>{if(/^\s*- \[( |x)\] /.test(l)){k++;if(k===n)return l.replace(/^(\s*- \[)( |x)(\] )/,(_,a,c,d)=>a+(c==="x"?" ":"x")+d)}return l}).join("\n");
+    mnDo(()=>mnApi("PUT",`/api/minutes/${m.id}`,{body}),"")});
+  document.querySelectorAll("[data-mndel]").forEach(b=>b.onclick=()=>{if(m&&confirm("Delete this minute? Its text is erased."))mnDo(async()=>{await mnApi("POST",`/api/minutes/${m.id}/remove`,{});location.hash="#minutes"},"")});
+}
 /* Transcribe: long recordings turned into text on this Mac. The recorder is its own server (desk/transcribe/, 8791) and opens in the default browser,
    which can use the microphone. This view only reads the sessions (desk/transcribe_desk.py) and starts the server when it is not running. */
 const TRWORD={recording:"Recording",interrupted:"Stopped early",uploading:"Importing",queued:"Waiting",converting:"Converting",transcribing:"Transcribing",splitting:"Telling voices apart",done:"Done",partial:"Partly done",error:"Didn't finish"};

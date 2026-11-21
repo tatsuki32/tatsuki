@@ -37,6 +37,7 @@ import wifi_login
 import footprint
 import finder
 import transcribe_desk
+import minutes  # 議事録: made from Transcribe recordings, linked to Calendar events (desk/minutes.py)
 import notify
 import checkin
 import tg_notify
@@ -1029,6 +1030,13 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(200, bank.view())
             except bank.BankError:
                 return self.send(500, {"error": "read"})
+        if path == "/api/minutes":
+            return self.send(200, minutes.view())
+        if path.startswith("/api/minutes/") and path.count("/") == 3:
+            try:
+                return self.send(200, minutes.get(path.split("/")[3]))
+            except minutes.MinutesError as e:
+                return self.send(404, {"error": str(e)})
         if path == "/api/accounts":
             try:
                 return self.send(200, accounts.view())
@@ -1378,6 +1386,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.bank_write(method, rec)
         if urlsplit(self.path).path.startswith("/api/accounts/"):
             return self.accounts_write(method, rec)
+        if urlsplit(self.path).path == "/api/minutes" or urlsplit(self.path).path.startswith("/api/minutes/"):
+            return self.minutes_write(method, rec)
         if method == "POST" and urlsplit(self.path).path == "/api/usage":
             # counts only; a test server on another port answers and keeps nothing
             return self.send(200, {"ok": usage.enabled(PORT) and usage.record(rec)})
@@ -1656,6 +1666,24 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(500, {"error": "could not open Terminal"})
         return self.send(200, {"ok": True})
 
+    def minutes_write(self, method, rec):
+        # JSON only, like the other writes; the answers carry no text of a minute, only its id and the errors
+        if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+            return self.send(415, {"error": "json only"})
+        p = urlsplit(self.path).path.split("/")[2:]  # [minutes] or [minutes, <id>] or [minutes, <id>, <action>]
+        try:
+            if p == ["minutes"] and method == "POST":
+                return self.send(200, minutes.create(rec))
+            if len(p) == 2 and method == "PUT":
+                return self.send(200, minutes.put(p[1], rec))
+            if len(p) == 3 and method == "POST" and p[2] == "remove":
+                return self.send(200, minutes.remove(p[1]))
+            if len(p) == 3 and method == "POST" and p[2] == "calendar":
+                return self.send(200, minutes.write_calendar(p[1]))
+            return self.send(405, {"error": "method not allowed"})
+        except minutes.MinutesError as e:
+            return self.send(404 if str(e) == "Not found" else 400, {"error": str(e)})
+
     def accounts_write(self, method, rec):
         # the same guard as bank_write: JSON only, so another origin needs a preflight. Errors carry no value.
         if not (self.headers.get("Content-Type") or "").startswith("application/json"):
@@ -1757,6 +1785,7 @@ if __name__ == "__main__":
         threading.Thread(target=instagram_dm.watch, daemon=True).start()  # Instagram DMs to Replies, every 5 minutes
         threading.Thread(target=posts.watch, daemon=True).start()  # Post Studio: company-site news scheduled for later
         threading.Thread(target=routine_alarm.watch, daemon=True).start()  # routine start alarm (quiet 22:00-07:00)
+        threading.Thread(target=minutes.watch, daemon=True).start()  # 議事録: a minute for each ready recording, every minute
         threading.Thread(target=routine_sync.watch, daemon=True).start()  # routines <-> the Routine app on the phone
         threading.Thread(target=cards_sync.watch, daemon=True).start()  # flashcards <-> the Cards app on the phone
         threading.Thread(target=cards.watch, args=(cards.Store(load_locked, upsert),), daemon=True).start()  # fills missing meanings every 30 minutes
