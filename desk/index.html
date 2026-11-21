@@ -11318,7 +11318,7 @@ function sfVideoNext(){
   const cur=SFV.el&&document.body.contains(SFV.el)?SFV.el:null,next=cur===a?b:a;
   next.loop=vids.length===1;next.muted=true;next.src="/videos/"+encodeURIComponent(v.file);
   let shown=false;const show=()=>{if(shown||SFV.el!==next)return;shown=true;sfVideoAudio();next.play().catch(()=>{next.muted=true;next.play().catch(()=>{})});next.classList.add("on");
-    const c=$("#sfCredit");if(c)c.innerHTML="Video: "+[v.page?`<a href="${esc(v.page)}" target="_blank" rel="noopener">${esc(v.title||"")}</a>`:esc(v.title||""),v.author,v.license,v.source].filter(Boolean).map((x,i)=>i?esc(x):x).join(" · ");
+    const c=$("#sfCredit");if(c){const head=v.page?`<a href="${esc(v.page)}" target="_blank" rel="noopener">${esc(v.title||"")}</a>`:esc(v.title||"");c.innerHTML="Video: "+[head,...[v.author,v.license,v.source].filter(Boolean).map(esc)].filter(Boolean).join(" · ")}
     if(cur){cur.classList.remove("on");setTimeout(()=>{if(!cur.classList.contains("on")){cur.pause();cur.removeAttribute("src");cur.load()}},3500)}};
   next.oncanplay=show;setTimeout(()=>{if(next.readyState>=2)show()},1200); // canplay can come before the handler is in place
   next.onended=()=>{if(SFV.el===next)sfVideoNext()};

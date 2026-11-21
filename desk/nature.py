@@ -291,5 +291,7 @@ if __name__ == "__main__":
     if cmd == "fetch":
         fetch()
     elif cmd == "add" and len(sys.argv) > 2:
+        if not os.path.isfile(os.path.expanduser(sys.argv[2])):
+            sys.exit("No file at: %s\nPut the real file name in quotes, or drag the video into the Terminal window." % sys.argv[2])
         add_local(sys.argv[2], " ".join(sys.argv[3:]))
     print(json.dumps(view(), ensure_ascii=False, indent=1))
