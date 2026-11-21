@@ -11552,7 +11552,7 @@ let sfLastMode="";
 function sfTick(){
   const r=sfRunning();if(!r){sfLastMode="";return}
   const p=sfPhase(r);if(p.done){sfFinish(r,"done");return}
-  const m=p.mode+p.round;if(sfLastMode&&m!==sfLastMode){sfChime();if(p.mode==="focus"&&SFA.kind==="video"&&SFV.el)try{SFV.el.currentTime=0}catch(e){}}sfLastMode=m;
+  const m=p.mode+p.round;if(sfLastMode&&m!==sfLastMode){sfChime();if(p.mode==="focus"&&SFA.kind==="video"&&SFV.el){if(sfVidPool().length>1)sfVideoNext();else try{SFV.el.currentTime=0}catch(e){}}}sfLastMode=m;
   sfVideoAudio();
   if(SFA.pg&&SFA.ctx)SFA.pg.gain.setTargetAtTime(sfPhaseLevel(),SFA.ctx.currentTime,1.2);
   document.querySelectorAll("[data-sfnav]").forEach(el=>el.textContent=fbLeft(p.left));
