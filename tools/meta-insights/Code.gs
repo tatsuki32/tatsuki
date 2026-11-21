@@ -2,6 +2,7 @@
  * Meta インサイト取得（Google スプレッドシートの Apps Script）
  *
  * 1つのスプレッドシートに、同じ会社のアカウント（Facebook ページ＋Instagram の組）をいくつでも入れられる。
+ * アカウントごとに、日別のシートと分析のシートを分けて作る（例：IG_お宿ひさ家・分析_お宿ひさ家）。
  * 毎朝、前日までの数字を Meta Graph API から読んで、シートに書く。読むだけで、投稿や変更はしない。
  *
  * 置くもの
@@ -15,12 +16,13 @@ const SHEETS = {
   accounts: 'アカウント',
   config: '設定',
   summary: '概要',
-  igDaily: 'IG_日別',
   igPosts: 'IG_投稿',
-  fbDaily: 'FB_日別',
   fbPosts: 'FB_投稿',
   log: 'ログ',
 };
+
+// フォロワー数のように「今の値」を見る指標（それ以外は期間の合計で比べる）
+const LEVEL_METRICS = ['follower_count', 'page_follows'];
 
 const DEFAULT_CONFIG = [
   ['APIバージョン', '', '空欄ならアプリの既定のバージョン。例：v24.0'],
@@ -34,8 +36,8 @@ const DEFAULT_CONFIG = [
   ['毎日の取り直し日数', '3', '数字が後から確定するので、直近何日を毎回取り直すか'],
 ];
 
-// 日別・投稿のシートの先頭の列（この後ろに指標が並ぶ）
-const DAILY_KEYS = ['日付', 'アカウント'];
+// 日別のシートの先頭の列（この後ろに指標が並ぶ。シートはアカウントごとに分かれる）
+const DAILY_KEYS = ['日付'];
 const IG_POST_HEAD = ['アカウント', '投稿日時', '種類', 'キャプション', 'リンク', 'いいね', 'コメント'];
 const FB_POST_HEAD = ['アカウント', '投稿日時', '本文', 'リンク', 'リアクション', 'コメント', 'シェア'];
 
@@ -50,7 +52,8 @@ function onOpen() {
     .addSeparator()
     .addItem('今すぐ取得', 'runDaily')
     .addItem('接続を確かめる', 'checkConnection')
-    .addItem('概要を作り直す', 'buildSummary')
+    .addItem('概要と分析を作り直す', 'buildSummary')
+    .addItem('旧の日別シートをアカウントごとに分ける（一度だけ）', 'migrateOld')
     .addItem('毎朝の自動取得をオフ', 'removeTrigger')
     .addToUi();
 }
@@ -78,8 +81,6 @@ function setup() {
   DEFAULT_CONFIG.filter(r => have.indexOf(r[0]) < 0).forEach(r => cfg.appendRow(r)); // 本人が直した値は消さない
   cfg.setColumnWidth(1, 200).setColumnWidth(2, 420).setColumnWidth(3, 420);
 
-  ensureSheet_(SHEETS.igDaily, DAILY_KEYS);
-  ensureSheet_(SHEETS.fbDaily, DAILY_KEYS);
   ensureSheet_(SHEETS.igPosts, IG_POST_HEAD);
   ensureSheet_(SHEETS.fbPosts, FB_POST_HEAD);
   ensureSheet_(SHEETS.log, ['日時', '内容']);
@@ -172,11 +173,12 @@ function fetchAll_(days) {
       }
     } catch (e) { log_(a.name + ' の Facebook：' + e.message); }
   });
-  upsertDaily_(SHEETS.igDaily, igRows);
-  upsertDaily_(SHEETS.fbDaily, fbRows);
+  upsertDaily_('IG', igRows);
+  upsertDaily_('FB', fbRows);
   const c = config_();
   writePosts_(SHEETS.igPosts, IG_POST_HEAD.concat(igPostMetricNames_(c)), igPosts, accs.map(a => a.name));
   writePosts_(SHEETS.fbPosts, FB_POST_HEAD.concat(c.fbPostMetrics), fbPosts, accs.map(a => a.name));
+  buildSummary();
 }
 
 function igDay_(a, day) {
@@ -331,32 +333,44 @@ function ensureSheet_(name, header) {
   return sh;
 }
 
-/** 日別のシートに、日付＋アカウントをキーにして上書き・追加する。指標が増えたら右に列を足す。 */
-function upsertDaily_(name, rowsByKey) {
-  const keys = Object.keys(rowsByKey);
-  if (!keys.length) return;
-  const sh = ensureSheet_(name, DAILY_KEYS);
-  const header = sh.getRange(1, 1, 1, Math.max(sh.getLastColumn(), 2)).getValues()[0].filter(String);
-  keys.forEach(k => Object.keys(rowsByKey[k]).forEach(m => { if (header.indexOf(m) < 0) header.push(m); }));
-  sh.getRange(1, 1, 1, header.length).setValues([header]).setFontWeight('bold');
-  const last = sh.getLastRow();
-  const rows = last > 1 ? sh.getRange(2, 1, last - 1, header.length).getValues() : [];
-  const index = {};
-  rows.forEach((r, i) => { index[fmt_(r[0]) + '|' + r[1]] = i; });
-  keys.forEach(k => {
-    const [d, acc] = k.split('|');
-    const row = header.map((h, j) => j === 0 ? toDate_(d) : j === 1 ? acc : (rowsByKey[k][h] !== undefined ? rowsByKey[k][h] : ''));
-    if (index[k] !== undefined) {
-      const old = rows[index[k]];
-      rows[index[k]] = row.map((v, j) => (v === '' && old[j] !== '') ? old[j] : v); // 前に取れた値は消さない
-    } else {
-      index[k] = rows.length;
-      rows.push(row);
-    }
+/** アカウントごとの日別シート名。例：IG_お宿ひさ家 */
+function dailySheetName_(platform, acc) { return platform + '_' + acc; }
+
+/** rowsByKey は「日付|アカウント」が鍵。アカウントごとのシートに分けて書く。 */
+function upsertDaily_(platform, rowsByKey) {
+  const byAcc = {};
+  Object.keys(rowsByKey).forEach(k => {
+    const i = k.indexOf('|');
+    const d = k.slice(0, i), acc = k.slice(i + 1);
+    (byAcc[acc] = byAcc[acc] || {})[d] = rowsByKey[k];
   });
-  rows.sort((a, b) => (new Date(a[0]) - new Date(b[0])) || String(a[1]).localeCompare(String(b[1])));
-  sh.getRange(2, 1, rows.length, header.length).setValues(rows);
-  sh.getRange(2, 1, rows.length, 1).setNumberFormat('yyyy-mm-dd');
+  Object.keys(byAcc).forEach(acc => upsertSheet_(dailySheetName_(platform, acc), byAcc[acc]));
+}
+
+/** 1つのアカウントの日別シートに、日付をキーにして上書き・追加する。指標が増えたら右に列を足す。 */
+function upsertSheet_(name, rowsByDate) {
+  const sh = ensureSheet_(name, DAILY_KEYS);
+  const header = sh.getRange(1, 1, 1, Math.max(sh.getLastColumn(), 1)).getValues()[0].map(String).filter(String);
+  if (header[0] !== '日付') header.unshift('日付');
+  Object.keys(rowsByDate).forEach(d => Object.keys(rowsByDate[d]).forEach(m => { if (header.indexOf(m) < 0) header.push(m); }));
+  sh.getRange(1, 1, 1, header.length).setValues([header]).setFontWeight('bold');
+
+  const last = sh.getLastRow();
+  const old = last > 1 ? sh.getRange(2, 1, last - 1, header.length).getValues() : [];
+  const byDate = {};
+  old.forEach(r => { const k = fmt_(r[0]); if (k) byDate[k] = r; });
+  Object.keys(rowsByDate).forEach(d => {
+    const v = rowsByDate[d];
+    const row = header.map((h, j) => j === 0 ? toDate_(d) : (v[h] !== undefined ? v[h] : ''));
+    const prev = byDate[d];
+    // 前に取れた値は消さない（今回空欄のところだけ前の値を残す）
+    byDate[d] = prev ? row.map((x, j) => (x === '' && prev[j] !== '') ? prev[j] : x) : row;
+  });
+  const rows = Object.keys(byDate).sort().map(k => byDate[k]);
+  if (rows.length) {
+    sh.getRange(2, 1, rows.length, header.length).setValues(rows);
+    sh.getRange(2, 1, rows.length, 1).setNumberFormat('yyyy-mm-dd');
+  }
 }
 
 /** 投稿のシートは毎回書き直す。今回読めなかったアカウントの行は前のまま残す。 */
@@ -379,59 +393,157 @@ function writePosts_(name, header, newRows, names) {
   }
 }
 
-/** 概要：アカウントごとに、直近7日・前の7日・増減・直近28日（数式）と、投稿の上位5件。 */
+/* ---------- 概要と分析 ---------- */
+
+/** 概要：アカウントごとに、直近7日・前の7日・増減・直近28日と、投稿の上位5件・種類別。分析のシートも作り直す。 */
 function buildSummary() {
   const ss = SpreadsheetApp.getActive();
   let sh = ss.getSheetByName(SHEETS.summary);
   if (!sh) sh = ss.insertSheet(SHEETS.summary, 0);
   sh.clear();
   sh.getRange('A1').setValue('インサイトの概要').setFontSize(16).setFontWeight('bold');
-  sh.getRange('A2').setFormula('="最終更新：" & IFERROR(TEXT(MAX(\'' + SHEETS.igDaily + '\'!A:A),"yyyy-mm-dd"),"まだ")');
-  sh.getRange('A3').setValue('※ リーチなどは日ごとの合計なので、同じ人が何日も見ると重なって数えます。新しいアカウントを足したら、メニューの「概要を作り直す」を押してください。').setFontColor('#666666');
+  sh.getRange('A2').setValue('最終更新：' + Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy-MM-dd HH:mm'));
+  sh.getRange('A3').setValue('※ フォロワーは「今の値」と「7日前・28日前」で比べます。リーチなどは日ごとの合計なので、同じ人が何日も見ると重なって数えます。新しいアカウントを足したら、メニューの「概要と分析を作り直す」を押してください。').setFontColor('#666666');
 
-  const q = s => '\'' + s + '\'';
-  const block = (top, title, sheet, acc) => {
+  const q = s => "'" + String(s).replace(/'/g, "''") + "'";
+  const block = (top, title, sheetName) => {
     sh.getRange(top, 1).setValue(title).setFontWeight('bold').setFontSize(12);
-    sh.getRange(top + 1, 1, 1, 5).setValues([['指標', '直近7日', '前の7日', '増減', '直近28日']]).setFontWeight('bold').setBackground('#f1f3f4');
-    const n = 12; // 指標は日別シートの3列目から最大12個
+    sh.getRange(top + 1, 1, 1, 5).setValues([['指標', '直近7日（フォロワーは今）', '前の7日（フォロワーは7日前）', '増減', '直近28日（フォロワーは今）']]).setFontWeight('bold').setBackground('#f1f3f4');
+    const S = q(sheetName);
+    const n = 12; // 指標は日別シートの2列目から最大12個
     for (let i = 0; i < n; i++) {
       const r = top + 2 + i;
-      const col = i + 3;
-      const name = 'INDEX(' + q(sheet) + '!$1:$1,' + col + ')';
-      const vals = 'INDEX(' + q(sheet) + '!$A:$Z,0,' + col + ')';
-      const dates = q(sheet) + '!$A:$A';
-      const accs = q(sheet) + '!$B:$B';
-      const sum = (from, to) => 'SUMIFS(' + vals + ',' + accs + ',"' + acc.replace(/"/g, '""') + '",' + dates + ',">="&(TODAY()-' + from + '),' + dates + ',"<"&(TODAY()-' + to + '))';
-      sh.getRange(r, 1).setFormula('=IFERROR(IF(' + name + '="","",' + name + '),"")');
-      sh.getRange(r, 2).setFormula('=IF($A' + r + '="","",' + sum(7, 0) + ')');
-      sh.getRange(r, 3).setFormula('=IF($A' + r + '="","",' + sum(14, 7) + ')');
-      sh.getRange(r, 4).setFormula('=IF(OR($A' + r + '="",C' + r + '=0),"",B' + r + '/C' + r + '-1)');
-      sh.getRange(r, 5).setFormula('=IF($A' + r + '="","",' + sum(28, 0) + ')');
+      const col = i + 2;
+      const name = 'IFERROR(INDEX(' + S + '!$1:$1,1,' + col + '),"")';
+      const vals = 'INDEX(' + S + '!$A:$Z,0,' + col + ')';
+      const dates = S + '!$A:$A';
+      const isLevel = 'OR($A' + r + '="follower_count",$A' + r + '="page_follows")';
+      const sum = (from, to) => 'IFERROR(SUMIFS(' + vals + ',' + dates + ',">="&(TODAY()-' + from + '),' + dates + ',"<"&(TODAY()-' + to + ')),"")';
+      const latest = 'IFERROR(LOOKUP(2,1/(' + vals + '<>""),' + vals + '),"")';
+      const at = days => 'IFERROR(INDEX(' + vals + ',MATCH(TODAY()-' + days + ',' + dates + ',0)),"")';
+      sh.getRange(r, 1).setFormula('=IF(' + name + '="","",' + name + ')');
+      sh.getRange(r, 2).setFormula('=IF($A' + r + '="","",IF(' + isLevel + ',' + latest + ',' + sum(7, 0) + '))');
+      sh.getRange(r, 3).setFormula('=IF($A' + r + '="","",IF(' + isLevel + ',' + at(7) + ',' + sum(14, 7) + '))');
+      sh.getRange(r, 4).setFormula('=IF(OR($A' + r + '="",C' + r + '="",C' + r + '=0),"",IF(' + isLevel + ',TEXT(B' + r + '-C' + r + ',"+#,##0;-#,##0;0"),TEXT(B' + r + '/C' + r + '-1,"+0%;-0%;0%")))');
+      sh.getRange(r, 5).setFormula('=IF($A' + r + '="","",IF(' + isLevel + ',' + latest + ',' + sum(28, 0) + '))');
     }
-    sh.getRange(top + 2, 2, n, 2).setNumberFormat('#,##0');
-    sh.getRange(top + 2, 5, n, 1).setNumberFormat('#,##0');
-    sh.getRange(top + 2, 4, n, 1).setNumberFormat('+0%;-0%;0%');
+    sh.getRange(top + 2, 2, n, 3).setNumberFormat('#,##0');
+    sh.getRange(top + 2, 4, n, 1).setHorizontalAlignment('right');
     return top + 2 + n + 1;
   };
 
   let row = 5;
   const accs = accounts_();
-  if (!accs.length) sh.getRange(row, 1).setValue('「アカウント」シートに名前と ID を入れて、「概要を作り直す」を押してください。');
+  if (!accs.length) sh.getRange(row, 1).setValue('「アカウント」シートに名前と ID を入れて、「概要と分析を作り直す」を押してください。');
   accs.forEach(a => {
     sh.getRange(row, 1).setValue(a.name).setFontSize(14).setFontWeight('bold');
     row += 1;
-    if (a.igId) row = block(row, 'Instagram', SHEETS.igDaily, a.name);
-    if (a.pageId) row = block(row, 'Facebook ページ', SHEETS.fbDaily, a.name);
+    if (a.igId) row = block(row, 'Instagram', dailySheetName_('IG', a.name));
+    if (a.pageId) row = block(row, 'Facebook ページ', dailySheetName_('FB', a.name));
     if (a.igId) {
+      const an = a.name.replace(/'/g, "''");
       sh.getRange(row, 1).setValue('Instagram の投稿 上位5件（リーチ順）').setFontWeight('bold');
       // IG_投稿 の H 列が「IG投稿の指標」の1つ目（既定は reach）
-      sh.getRange(row + 1, 1).setFormula('=IFERROR(QUERY(' + q(SHEETS.igPosts) + '!A:Z,"select B,C,D,E,H,F,G where A = \'' + a.name.replace(/'/g, "''") + '\' order by H desc limit 5",1),"投稿のデータはまだありません")');
-      row += 8;
+      sh.getRange(row + 1, 1).setFormula('=IFERROR(QUERY(' + q(SHEETS.igPosts) + '!A:Z,"select B,C,D,E,H,F,G where A = \'' + an + '\' order by H desc limit 5",1),"投稿のデータはまだありません")');
+      sh.getRange(row + 8, 1).setValue('投稿の種類ごとの平均（次の投稿の作戦に使う）').setFontWeight('bold');
+      sh.getRange(row + 9, 1).setFormula('=IFERROR(QUERY(' + q(SHEETS.igPosts) + '!A:Z,"select C, count(B), avg(H) where A = \'' + an + '\' and C is not null group by C label count(B) \'件\', avg(H) \'平均リーチ\' order by avg(H) desc",1),"まだ投稿のデータがありません")');
+      row += 16;
+      buildAnalysis_(a.name);
     }
     row += 1;
   });
   sh.setColumnWidth(1, 240);
-  [2, 3, 4, 5].forEach(c => sh.setColumnWidth(c, 110));
+  [2, 3, 4, 5].forEach(c => sh.setColumnWidth(c, 130));
+}
+
+/** 分析：1アカウントの日別の表（フォロワーの増減・率・7日平均）と、グラフ3つ。IG の日別シートから作る。 */
+function buildAnalysis_(acc) {
+  const ss = SpreadsheetApp.getActive();
+  const src = ss.getSheetByName(dailySheetName_('IG', acc));
+  const sh = ensureSheet_('分析_' + acc, ['日付']);
+  sh.getCharts().forEach(c => sh.removeChart(c));
+  sh.clear();
+  if (!src || src.getLastRow() < 2) {
+    sh.getRange(1, 1).setValue('まだデータがありません。「③ 過去30日を取り込む」を押してください。');
+    return;
+  }
+  const vals = src.getDataRange().getValues();
+  const h = vals[0];
+  const at = m => h.indexOf(m);
+  const ci = { f: at('follower_count'), reach: at('reach'), views: at('views'), likes: at('likes'),
+    saves: at('saves'), shares: at('shares'), prof: at('profile_views') };
+  const num = (r, i) => (i < 0 || r[i] === '' || r[i] === null || isNaN(Number(r[i]))) ? null : Number(r[i]);
+  const ratio = (a, b) => (a !== null && b) ? a / b : '';
+
+  const head = ['日付', 'フォロワー数', 'フォロワー増減', 'リーチ', '再生数', 'いいね', '保存', 'シェア', 'プロフィール表示',
+    'いいね率（いいね÷再生）', '保存率（保存÷リーチ）', 'プロフィール率（プロフ÷リーチ）', 'フォロー率（増減÷リーチ）', 'リーチ7日平均'];
+  const data = vals.slice(1).filter(r => r[0] !== '' && r[0] !== null)
+    .sort((a, b) => new Date(a[0]) - new Date(b[0]));
+  const out = [];
+  let prevF = null;
+  const reaches = [];
+  data.forEach(r => {
+    const f = num(r, ci.f), reach = num(r, ci.reach), views = num(r, ci.views), likes = num(r, ci.likes);
+    const saves = num(r, ci.saves), shares = num(r, ci.shares), prof = num(r, ci.prof);
+    const gain = (f !== null && prevF !== null) ? f - prevF : '';
+    if (f !== null) prevF = f;
+    reaches.push(reach || 0);
+    const last7 = reaches.slice(-7);
+    const avg7 = last7.length >= 7 ? Math.round(last7.reduce((s, x) => s + x, 0) / 7) : '';
+    out.push([toDateOnly_(r[0]), f === null ? '' : f, gain, reach === null ? '' : reach, views === null ? '' : views,
+      likes === null ? '' : likes, saves === null ? '' : saves, shares === null ? '' : shares, prof === null ? '' : prof,
+      ratio(likes, views), ratio(saves, reach), ratio(prof, reach), gain === '' ? '' : ratio(gain, reach), avg7]);
+  });
+  if (!out.length) return;
+  sh.getRange(1, 1, 1, head.length).setValues([head]).setFontWeight('bold').setWrap(true);
+  sh.getRange(2, 1, out.length, head.length).setValues(out);
+  sh.getRange(2, 1, out.length, 1).setNumberFormat('yyyy-mm-dd');
+  sh.getRange(2, 2, out.length, head.length - 1).setNumberFormat('#,##0');
+  sh.getRange(2, 10, out.length, 4).setNumberFormat('0.0%');
+  sh.getRange(2, 3, out.length, 1).setNumberFormat('+#,##0;-#,##0;0');
+  sh.setFrozenRows(1).setFrozenColumns(1);
+  sh.setColumnWidths(1, head.length, 110);
+
+  const n = out.length;
+  const chart = (type, cols, title, anchorRow) => sh.newChart()
+    .setChartType(type)
+    .addRange(sh.getRange(1, 1, n + 1, 1))
+    .addRange(sh.getRange(1, cols, n + 1, 1))
+    .setOption('title', title)
+    .setOption('legend', { position: 'none' })
+    .setPosition(anchorRow, head.length + 2, 0, 0)
+    .build();
+  sh.insertChart(chart(Charts.ChartType.LINE, 2, 'フォロワー数の推移', 2));
+  sh.insertChart(chart(Charts.ChartType.COLUMN, 3, 'フォロワーの増減（日ごと）', 20));
+  sh.insertChart(chart(Charts.ChartType.COLUMN, 4, 'リーチ（日ごと）', 38));
+}
+
+/* ---------- 旧シートの移行（一度だけ） ---------- */
+
+/** 前の版の「IG_日別」「FB_日別」（アカウント列つき）を、アカウントごとのシートに分ける。元のシートは消さない。 */
+function migrateOld() {
+  const ss = SpreadsheetApp.getActive();
+  const moved = [];
+  [['IG', 'IG_日別'], ['FB', 'FB_日別']].forEach(p => {
+    const sh = ss.getSheetByName(p[1]);
+    if (!sh || sh.getLastRow() < 2) return;
+    const v = sh.getDataRange().getValues();
+    const h = v[0];
+    const rowsByKey = {};
+    v.slice(1).forEach(r => {
+      const d = fmt_(r[0]);
+      const acc = String(r[1]).trim();
+      if (!d || !acc || acc === 'アカウント') return;
+      const o = {};
+      h.forEach((m, i) => { if (i > 1 && m !== '') o[m] = r[i]; });
+      rowsByKey[d + '|' + acc] = o;
+    });
+    upsertDaily_(p[0], rowsByKey);
+    moved.push(p[1]);
+  });
+  log_('旧シートを分けました：' + (moved.join('、') || 'なし'));
+  buildSummary();
+  SpreadsheetApp.getUi().alert(moved.length ? '旧の日別シートをアカウントごとに分けました。元のシート（IG_日別・FB_日別）は残してあります。' : '分ける旧シートはありませんでした。');
 }
 
 /* ---------- 小物 ---------- */
@@ -444,6 +556,7 @@ function range_(day) {
 function daysAgo_(n) { return Utilities.formatDate(new Date(Date.now() - n * 86400000), 'Asia/Tokyo', 'yyyy-MM-dd'); }
 function fmt_(v) { return v instanceof Date ? Utilities.formatDate(v, 'Asia/Tokyo', 'yyyy-MM-dd') : String(v); }
 function toDate_(d) { return Utilities.parseDate(d, 'Asia/Tokyo', 'yyyy-MM-dd'); }
+function toDateOnly_(v) { return v instanceof Date ? toDate_(fmt_(v)) : toDate_(String(v)); }
 function short_(s) { s = String(s || '').replace(/\s+/g, ' ').trim(); return s.length > 80 ? s.slice(0, 80) + '…' : s; }
 function sumObject_(o) { return Object.keys(o).reduce((a, k) => a + (Number(o[k]) || 0), 0); }
 function kindJa_(m) {
