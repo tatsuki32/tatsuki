@@ -11168,8 +11168,13 @@ autoLinkStart();
     if(wasOn){const n=TB.tabs[Math.max(0,i-1)];TB.active=n.id;tbSave();tbRender();if(tbNorm(location.hash)!==n.hash)location.hash=n.hash}
     else{tbSave();tbRender()}
   }
-  // the URL follows the active tab; a screen reached any other way (Back, a link inside a page) changes that tab
-  window.addEventListener("hashchange",()=>{const t=tbCur();if(!t)return;const h=tbNorm(location.hash);if(t.hash!==h){t.hash=h;tbSave()}tbRender()});
+  // a screen change that the tab bar did not start (a menu, search, a button, a link in a page) opens a new tab next to the current one
+  window.addEventListener("hashchange",()=>{
+    const t=tbCur();if(!t)return;const h=tbNorm(location.hash);
+    if(t.hash===h){tbRender();return}
+    if(TB.tabs.length>=MAX){t.hash=h;tbSave();tbRender();return}
+    const n={id:tbId(),hash:h};TB.tabs.splice(TB.tabs.indexOf(t)+1,0,n);TB.active=n.id;tbSave();tbRender();
+  });
   // menu links (rail, bottom bar, More sheet) open a new tab; ⌘/Ctrl-click does the same anywhere in Desk
   document.addEventListener("click",e=>{
     const a=e.target.closest?.('a[href^="#"]');if(!a)return;const href=a.getAttribute("href");if(href.length<2)return;
