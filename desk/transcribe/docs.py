@@ -232,7 +232,16 @@ def _drive(path, query=None, raw=False):
         if e.code == 401:
             TOKEN.update(value='', until=0)
             raise NotConnected('Google Drive needs to be connected again') from None
-        if e.code in (403, 404):
+        if e.code == 403:
+            try:
+                err = json.load(e).get('error', {})
+            except (ValueError, OSError):
+                err = {}
+            if any(d.get('reason') == 'SERVICE_DISABLED' for d in err.get('details', [])):
+                raise DocError('The Google Drive API is turned off in the Google Cloud project. Turn it on once '
+                               '(APIs & Services › Library › Google Drive API › Enable), wait a minute, then try again') from None
+            raise DocError("This file can't be opened with your Google account. Check the link and who it is shared with") from None
+        if e.code == 404:
             raise DocError("This file can't be opened with your Google account. Check the link and who it is shared with") from None
         raise DocError(f'Google Drive returned an error ({e.code})') from None
     except OSError:
