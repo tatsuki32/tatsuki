@@ -6,6 +6,8 @@ import unittest
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 os.environ.setdefault('MINUTES_DIR', __import__('tempfile').mkdtemp(prefix='desk-minutes-test-'))  # never the real minutes
 import minutes_share  # noqa: E402
+import minutes  # noqa: E402
+from unittest import mock  # noqa: E402
 
 
 class Share(unittest.TestCase):
@@ -27,6 +29,27 @@ class Share(unittest.TestCase):
         self.assertTrue(minutes_share._matches('山田 さん', '山田 太郎', 'x@example.com'))
         self.assertTrue(minutes_share._matches('Kenta', '', 'kenta.s@example.com'))
         self.assertFalse(minutes_share._matches('Ken', 'Aya', 'aya@example.com'))
+
+
+class Auto(unittest.TestCase):
+    def setUp(self):
+        self.assertIn('desk-minutes-test-', minutes.DIR)
+        os.environ['MEETCHECK_FAKE'] = '1'
+
+    def tearDown(self):
+        del os.environ['MEETCHECK_FAKE']
+
+    def test_every_minute_gets_a_doc_and_the_doc_follows_the_text(self):
+        m = minutes.create({'title': 'Plan', 'body': '## Decided\n- Go'})
+        minutes_share.auto()
+        g = minutes.get(m['id'])['gdoc']
+        self.assertIn('docs.google.com', g['url'])
+        self.assertEqual(minutes_share.auto(), 0)  # nothing changed: no new call
+        minutes.put(m['id'], {'body': '## Decided\n- Stop'})
+        self.assertEqual(minutes_share.auto(), 0)  # just edited: waits
+        with mock.patch.object(minutes_share.time, 'time', return_value=minutes.get(m['id'])['updated'] + 300):
+            self.assertEqual(minutes_share.auto(), 1)
+        self.assertEqual(minutes.get(m['id'])['gdoc']['id'], g['id'])  # same doc, same link
 
 
 if __name__ == '__main__':

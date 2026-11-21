@@ -8,6 +8,7 @@
 """
 
 import base64
+import hashlib
 import html
 import re
 import time
@@ -77,6 +78,10 @@ def md_html(src):
     return ''.join(out)
 
 
+def fingerprint(m):
+    return hashlib.sha1(((m.get('title') or '') + '\n' + (m.get('body') or '')).encode()).hexdigest()[:16]
+
+
 def make_doc(mid):
     m = _minute(mid)
     title = m.get('title') or 'Minutes'
@@ -91,7 +96,7 @@ def make_doc(mid):
         raise
     except meetcheck.MeetError as e:
         raise ShareError(str(e.args[0])) from None
-    minutes.set_share(mid, 'gdoc', {'id': doc['id'], 'url': doc['url'], 'at': time.time()})
+    minutes.set_share(mid, 'gdoc', {'id': doc['id'], 'url': doc['url'], 'at': time.time(), 'fp': fingerprint(m)})
     return {'url': doc['url'], 'again': bool(old)}
 
 
@@ -186,6 +191,47 @@ def thanks(mid, rec):
     mail_id = (d.get('message') or {}).get('id', '')
     minutes.set_share(mid, 'thanks', {'to': to, 'subject': subject, 'draftId': d.get('id', ''), 'at': time.time()})
     return {'url': f'https://mail.google.com/mail/u/0/#drafts?compose={mail_id}' if mail_id else 'https://mail.google.com/mail/u/0/#drafts'}
+
+
+AUTO_PER_PASS = 3   # docs made or rewritten per minute, so 30 old minutes do not hit Google at once
+QUIET = 120         # a minute edited less than 2 minutes ago waits, so the doc is not rewritten while it is being edited
+
+
+def auto():
+    """Every minute gets its Google Doc, and the doc follows the text. Returns how many docs were made or rewritten."""
+    if not meetcheck.status().get('connected'):
+        return 0
+    done = 0
+    rows = sorted(minutes.view()['minutes'], key=lambda r: -(r.get('at') or 0))  # newest first
+    for m in rows:
+        if done >= AUTO_PER_PASS:
+            break
+        g = m.get('gdoc') or {}
+        if g and g.get('fp') == fingerprint(m):
+            continue
+        if g and time.time() - (m.get('updated') or 0) < QUIET:
+            continue
+        if (g.get('failedAt') or 0) > time.time() - 3600:  # a doc that failed waits an hour
+            continue
+        try:
+            make_doc(m['id'])
+            done += 1
+        except meetcheck.NotConnected:
+            return done
+        except (ShareError, OSError):
+            minutes.set_share(m['id'], 'gdoc', {**g, 'failedAt': time.time()})
+            print('[minutes] a Google Doc could not be made', flush=True)
+    return done
+
+
+def watch():
+    """Run by the Desk server on 4747 only."""
+    while True:
+        try:
+            auto()
+        except Exception as e:  # keep the loop alive; the message names no content
+            print(f'[minutes] doc pass failed: {type(e).__name__}', flush=True)
+        time.sleep(60)
 
 
 def handle(mid, action, rec):

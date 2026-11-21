@@ -1828,6 +1828,7 @@ if __name__ == "__main__":
         threading.Thread(target=posts.watch, daemon=True).start()  # Post Studio: company-site news scheduled for later
         threading.Thread(target=routine_alarm.watch, daemon=True).start()  # routine start alarm (quiet 22:00-07:00)
         threading.Thread(target=minutes.watch, daemon=True).start()  # 議事録: a minute for each ready recording, every minute
+        threading.Thread(target=minutes_share.watch, daemon=True).start()  # every minute gets its Google Doc (anyone with the link can view), kept in step with the text
         threading.Thread(target=routine_sync.watch, daemon=True).start()  # routines <-> the Routine app on the phone
         threading.Thread(target=cards_sync.watch, daemon=True).start()  # flashcards <-> the Cards app on the phone
         threading.Thread(target=cards.watch, args=(cards.Store(load_locked, upsert),), daemon=True).start()  # fills missing meanings every 30 minutes
