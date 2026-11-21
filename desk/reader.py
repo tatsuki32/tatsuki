@@ -34,6 +34,7 @@ PDFTEXT = os.path.expanduser("~/Library/Application Support/TatsukiDesk/pdftext"
 SPEAK_MAX = 1200
 VOICE_LANG = {"en": "en_", "ja": "ja_", "ru": "ru_", "es": "es_", "fr": "fr_", "de": "de_", "vi": "vi_", "zh": "zh_", "ko": "ko_", "it": "it_", "pt": "pt_"}
 _voices = None
+_voices_at = 0.0
 
 
 def now_ms():
@@ -501,9 +502,9 @@ def remove(book_id):
 # ---------- reading aloud with macOS ----------
 
 def voices():
-    """The Mac's voices: [{name, lang}], read once."""
-    global _voices
-    if _voices is not None:
+    """The Mac's voices: [{name, lang}], kept for 10 minutes."""
+    global _voices, _voices_at
+    if _voices is not None and time.time() - _voices_at < 600:  # read again every 10 minutes: voices downloaded later appear
         return _voices
     out = []
     try:
@@ -514,7 +515,7 @@ def voices():
                 out.append({"name": m.group(1).strip(), "lang": m.group(2).replace("-", "_")})
     except (OSError, subprocess.SubprocessError):
         pass
-    _voices = out
+    _voices, _voices_at = out, time.time()
     return out
 
 
