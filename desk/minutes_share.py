@@ -78,8 +78,11 @@ def md_html(src):
     return ''.join(out)
 
 
+SHARE_V = 2  # what goes into a doc changed (no raw transcript or notes): a new value makes every doc rewritten once
+
+
 def fingerprint(m):
-    return hashlib.sha1(((m.get('title') or '') + '\n' + (m.get('body') or '')).encode()).hexdigest()[:16]
+    return hashlib.sha1(f"{SHARE_V}\n{m.get('title') or ''}\n{doc_body(m)}".encode()).hexdigest()[:16]
 
 
 RAW = re.compile(r'^## (Transcript|Original notes|元のメモ)\s*$', re.M)
@@ -227,6 +230,9 @@ def auto():
             break
         g = m.get('gdoc') or {}
         if not shareable(m):
+            if g.get('id'):  # it had a doc, and now has no summary: the doc must not stay public
+                forget(m['id'])
+                minutes.set_share(m['id'], 'gdoc', None)
             continue
         if g and g.get('fp') == fingerprint(m):
             continue

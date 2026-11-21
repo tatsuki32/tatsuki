@@ -61,6 +61,9 @@ class Auto(unittest.TestCase):
         with mock.patch.object(minutes_share.time, 'time', return_value=minutes.get(m['id'])['updated'] + 300):
             self.assertEqual(minutes_share.auto(), 1)
         self.assertEqual(minutes.get(m['id'])['gdoc']['id'], g['id'])  # same doc, same link
+        minutes.put(m['id'], {'body': ''})
+        minutes_share.auto()
+        self.assertIsNone(minutes.get(m['id'])['gdoc'])  # no summary any more: the doc is taken down
 
 
 if __name__ == '__main__':
