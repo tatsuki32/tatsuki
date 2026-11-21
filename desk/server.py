@@ -53,6 +53,7 @@ import news_sync
 import rhizomebox_backup
 import anki
 import gtts
+import eo_tts
 import cards
 import words
 import cards_sync
@@ -1063,9 +1064,9 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/reader/gvoices":  # Google's natural voices for a language (desk/gtts.py); empty without a key
             lang = parse_qs(urlsplit(self.path).query).get("lang", ["en"])[0]
             try:
-                return self.send(200, {"voices": gtts.voices(lang), **gtts.status()})
+                return self.send(200, {"voices": eo_tts.voices(lang) + gtts.voices(lang), **gtts.status()})
             except gtts.Unavailable as e:
-                return self.send(200, {"voices": [], "error": str(e), **gtts.status()})
+                return self.send(200, {"voices": eo_tts.voices(lang), "error": str(e), **gtts.status()})
         if path == "/api/reader/voices":
             return self.send(200, reader.voices_for(parse_qs(urlsplit(self.path).query).get("lang", ["en"])[0]))
         if path == "/api/words":  # every word looked up or put in Anki, per language (desk/words.py)

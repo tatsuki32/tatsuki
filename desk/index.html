@@ -10466,7 +10466,7 @@ function rdVoiceList(lang){
   return [...goo,...web,...mac].map((v,i)=>({...v,i,r:v.google?-1:rdVoiceRank(v.name)})).sort((a,b)=>a.r-b.r||a.i-b.i);
 }
 const rdHasGoodVoice=lang=>rdVoiceList(lang).some(v=>v.r<=1);
-const rdServerVoice=pick=>pick.startsWith("mac:")?pick.slice(4):pick.startsWith("google:")?pick:undefined;
+const rdServerVoice=pick=>pick.startsWith("mac:")?pick.slice(4):/^(google|omni):/.test(pick)?pick:undefined;
 async function rdGVoices(lang){if(!LOCALAPI)return;S.rd.gFor=lang;try{S.rd.g=await api("GET","/api/reader/gvoices?lang="+encodeURIComponent(lang))}catch(e){S.rd.g=null}
   if(viewId()==="reader"&&rdBookId()&&$("#rdVoice")&&!S.rd.playing){const b=S.rd.book;$("#rdVoice").innerHTML=rdVoiceOpts(b.lang,rdVoicePick(b.lang))}}
 function rdVoiceOpts(lang,sel){const vs=rdVoiceList(lang);

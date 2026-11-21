@@ -550,6 +550,12 @@ def speak(rec):
     rate = float(rec.get("rate") or 1)
     rate = min(1.3, max(0.7, rate))
     want = rec.get("voice") if isinstance(rec.get("voice"), str) else ""
+    if want.startswith("omni:"):  # OmniVoice on this Mac (desk/eo_tts.py), for Esperanto and Serbian
+        import eo_tts
+        try:
+            return 200, eo_tts.speak(text, want[5:])
+        except eo_tts.Unavailable:
+            pass
     if want.startswith("google:"):  # Google's natural voice (desk/gtts.py); on any trouble the Mac reads instead
         import gtts
         try:
