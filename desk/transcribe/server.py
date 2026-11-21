@@ -67,7 +67,13 @@ TAP_APP = os.environ.get('TRANSCRIBE_TAP_APP') or os.path.expanduser('~/Applicat
 TAP_CMD = os.environ.get('TRANSCRIBE_TAP_CMD')
 MODES = ('mic', 'meeting', 'inperson')
 VOICES = ('mac', 'room')
-DEFAULT_SPEAKERS = {'meeting': {'me': 'Me', 'them': 'Them'}, 'inperson': {'A': 'Speaker A', 'B': 'Speaker B'}}
+DEFAULT_SPEAKERS = {'meeting': {'me': 'Me', 'them': 'Them'},
+                    'inperson': {'A': 'Speaker A', 'B': 'Speaker B', 'C': 'Speaker C', 'D': 'Speaker D'}}
+PEOPLE = (2, 3, 4)  # how many voices In person splits into. Counting them automatically was tried and splits real rooms into dozens
+
+
+def people_of(meta):
+    return meta.get('people') if meta.get('people') in PEOPLE else 2
 
 RATE = 16000
 BYTES_PER_SEC = RATE * 2
@@ -165,6 +171,8 @@ def track_offset(meta, track):
 
 def speakers_of(meta):
     names = dict(DEFAULT_SPEAKERS.get(meta.get('mode'), {}))
+    if meta.get('mode') == 'inperson':
+        names = dict(list(names.items())[:people_of(meta)])
     names.update({k: v for k, v in (meta.get('speakers') or {}).items() if k in names})
     return names
 
@@ -179,6 +187,8 @@ def public_meta(meta):
     meta['met'] = met_of(meta)
     meta['has_minutes'] = os.path.exists(os.path.join(sdir(sid), 'minutes.json'))
     meta['speakers'] = speakers_of(meta)
+    if meta['mode'] == 'inperson':
+        meta['people'] = people_of(meta)
     if meta['mode'] == 'meeting':
         meta['voice'] = current_voice(meta)
         meta['has_room'] = has_room(meta)
@@ -234,13 +244,15 @@ def matches(meta, q):
         return False
 
 
-def create_session(title, language, source, status, mode='mic', voice='mac'):
+def create_session(title, language, source, status, mode='mic', voice='mac', people=2):
     sid = uuid.uuid4().hex
     os.makedirs(sdir(sid))
     now = time.time()
     meta = {'id': sid, 'title': title, 'language': language, 'source': source, 'status': status,
             'created': now, 'last_chunk': now, 'done_chunks': 0, 'total_chunks': 0, 'failed_chunks': [],
             'error': None, 'mode': mode if mode in MODES else 'mic'}
+    if meta['mode'] == 'inperson':
+        meta['people'] = people if people in PEOPLE else 2
     if meta['mode'] == 'meeting':
         meta['src_log'] = [[0.0, voice if voice in VOICES else 'mac']]
     write_json(os.path.join(sdir(sid), 'meta.json'), meta)
@@ -809,7 +821,9 @@ def diarize(sid):
     size = pcm_size(sid) & ~1
     write_wav_slice(pcm_path(sid), 0, size, wav)
     duration = size / BYTES_PER_SEC
-    cmd = [DIAR_BIN, '--clustering.num-clusters=2', f'--segmentation.pyannote-model={DIAR_SEG}',
+    meta = load_meta(sid) or {}
+    n = people_of(meta) if meta.get('mode') == 'inperson' else 2  # the room parts of a meeting: me and the phone
+    cmd = [DIAR_BIN, f'--clustering.num-clusters={n}', f'--segmentation.pyannote-model={DIAR_SEG}',
            f'--embedding.model={DIAR_EMB}', '--segmentation.num-threads=4', '--embedding.num-threads=4', wav]
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     current['proc'] = proc
@@ -828,7 +842,7 @@ def diarize(sid):
     for line in out.decode('utf-8', 'replace').splitlines():
         m = DIAR_LINE.match(line)
         if m:
-            label = names.setdefault(m.group(3), 'AB'[min(len(names), 1)])
+            label = names.setdefault(m.group(3), 'ABCD'[min(len(names), 3)])
             turns.append([float(m.group(1)), float(m.group(2)), label])
     return turns
 
@@ -1118,7 +1132,8 @@ class Handler(BaseHTTPRequestHandler):
                 default = {'meeting': 'Meeting %Y-%m-%d %H:%M', 'inperson': 'Conversation %Y-%m-%d %H:%M'}
                 title = str(data.get('title') or '')[:200] or time.strftime(default.get(mode, 'Recording %Y-%m-%d %H:%M'))
                 voice = data.get('voice') if data.get('voice') in VOICES else 'mac'
-                return self.send_obj(public_meta(create_session(title, language, 'recording', 'recording', mode, voice)))
+                people = data.get('people') if data.get('people') in PEOPLE else 2
+                return self.send_obj(public_meta(create_session(title, language, 'recording', 'recording', mode, voice, people)))
         if len(parts) >= 3 and parts[1] == 'sessions':
             return self.handle_session(method, parts[2], parts[3:], query)
         return self.fail(404, 'Not found')
@@ -1220,7 +1235,9 @@ class Handler(BaseHTTPRequestHandler):
                         os.remove(os.path.join(sdir(sid), name))
                     except FileNotFoundError:
                         pass
-                update_meta(sid, mode='inperson', status='queued', diar_error=None)
+                people = self.body_json().get('people')
+                update_meta(sid, mode='inperson', status='queued', diar_error=None,
+                            people=people if people in PEOPLE else people_of(meta))
             wake.set()
             return self.send_obj(public_meta(load_meta(sid)))
         if action == 'transcribe' and method == 'POST':
@@ -1269,7 +1286,11 @@ class Handler(BaseHTTPRequestHandler):
         if os.path.splitext(name)[1].lower() in docs.DOC_EXT:
             return self.handle_doc_upload(name, length, title)
         mode = 'inperson' if query.get('mode', [''])[0] == 'inperson' else 'mic'
-        meta = create_session(title, language if language in LANGUAGES else 'ja', 'file', 'uploading', mode)
+        try:
+            people = int(query.get('people', ['2'])[0])
+        except ValueError:
+            people = 2
+        meta = create_session(title, language if language in LANGUAGES else 'ja', 'file', 'uploading', mode, 'mac', people)
         sid = meta['id']
         ext = re.sub(r'[^a-zA-Z0-9.]', '', os.path.splitext(name)[1])[:8]
         path = os.path.join(sdir(sid), 'source' + ext)

@@ -130,6 +130,27 @@ class TranscribeSpeakers(unittest.TestCase):
         self.assertEqual([r['spk'] for r in rows], ['A', 'B'])
         self.assertEqual(s.transcript_lines(sid, True), ['[00:00:00] Speaker A: good morning', '[00:00:02] Speaker B: good morning'])
 
+    def test_people_count_sets_the_split_and_the_names(self):
+        s = self.s
+        meta = s.create_session('Room', 'ja', 'recording', 'recording', 'inperson', 'mac', 3)
+        self.assertEqual(meta['people'], 3)
+        self.assertEqual(list(s.speakers_of(meta)), ['A', 'B', 'C'])
+        self.assertEqual(s.public_meta(s.create_session('Room', 'ja', 'recording', 'recording', 'inperson', 'mac', 9))['people'], 2)
+        seen = {}
+        real = s.subprocess.Popen
+
+        def spy(cmd, *a, **k):
+            if cmd and cmd[0].endswith('speaker-diarization'):
+                seen['cmd'] = cmd
+            return real(cmd, *a, **k)
+        s.append_chunk(meta['id'], 0, tone(1, 1000))
+        s.subprocess.Popen = spy
+        try:
+            self.run_session(meta['id'])
+        finally:
+            s.subprocess.Popen = real
+        self.assertIn('--clustering.num-clusters=3', seen['cmd'])
+
     def test_split_an_old_recording_later(self):
         s = self.s
         sid = s.create_session('Old', 'ja', 'recording', 'recording', 'mic')['id']

@@ -34,7 +34,7 @@ class Minutes(unittest.TestCase):
             self.assertEqual(minutes.sync(), 0)  # the second pass finds it and makes nothing
         rows = minutes.view()["minutes"]
         self.assertEqual(len(rows), 1)
-        self.assertEqual(rows[0]["source"], {"kind": "transcribe", "sid": SID})
+        self.assertEqual(rows[0]["source"], {"kind": "transcribe", "sid": SID, "v": 2})
         self.assertEqual(rows[0]["status"], "draft")
         self.assertIn("## Summary", rows[0]["body"])
         self.assertIn("- [ ] Check the test result", rows[0]["body"])
@@ -123,6 +123,54 @@ class Minutes(unittest.TestCase):
         plain = minutes.create({"title": "Typed"})
         with self.assertRaises(minutes.MinutesError):
             minutes.make_from_notes(plain["id"])
+
+    def test_title_from_the_content_and_minutes_in_the_meetings_language(self):
+        ja = minutes.sanitize({"title": "動画スクールの無料体験", "participants": ["田中"], "summary": ["8週間の体験の説明"],
+                               "decisions": ["11月23日に開始"], "todos": [{"text": "資料を送る", "owner": "Me", "due": "2026-11-22"}], "topics": []})
+        self.assertEqual(minutes._pick_title("Recording 2026-11-21 13:03", ja), "動画スクールの無料体験")
+        self.assertEqual(minutes._pick_title("Meeting 2026-11-21 9:05", ja), "動画スクールの無料体験")
+        self.assertEqual(minutes._pick_title("Weekly sync", ja), "Weekly sync")  # a name the owner gave stays
+        info = minutes._meeting_info({"created": minutes.datetime(2026, 11, 21, 13, 3).timestamp(), "duration": 1353}, ja)
+        self.assertEqual(info, "## 会議の情報\n- 日時：2026-11-21 13:03–13:25（23分）\n- 参加者：田中")
+        body = minutes.build_body(ja, "", info)
+        self.assertTrue(body.startswith("## 会議の情報"))
+        self.assertIn("## 要点\n- 8週間の体験の説明", body)
+        self.assertIn("## 決まったこと", body)
+        self.assertIn("- [ ] 資料を送る — Me (期限 2026-11-22)", body)
+        en = minutes.sanitize({"title": "Plan", "summary": ["We planned"], "decisions": [], "todos": [], "topics": []})
+        self.assertIn("- Who: not clear from the recording", minutes._meeting_info({"created": 1795000000, "duration": 60}, en))
+        self.assertTrue(minutes.build_body(en, "").startswith("## Summary"))
+
+    def test_an_old_english_minute_is_made_again_once(self):
+        now = 1795000000.0
+        old = {"id": "c" * 32, "title": "Recording 2026-11-21 13:03", "body": "## Summary\n- old", "status": "draft", "place": "",
+               "at": now, "source": {"kind": "transcribe", "sid": SID}, "event": None, "calendar": None, "created": now, "updated": now}
+        minutes._write(old)
+        sess = [{"id": SID, "title": "Recording 2026-11-21 13:03", "status": "done", "created": CREATED, "duration": 600}]
+        with mock.patch.object(minutes, "_http_json", return_value=sess), \
+                mock.patch.object(minutes, "_http_text", return_value="A: hi\n"), \
+                mock.patch.object(minutes, "summarize", return_value=minutes.sanitize(
+                    {"title": "New plan", "summary": ["x"], "decisions": [], "todos": [], "topics": []})):
+            self.assertEqual(minutes.sync(), 1)
+            self.assertEqual(minutes.sync(), 0)  # once only
+        rec = minutes.get("c" * 32)
+        self.assertEqual(rec["title"], "New plan")
+        self.assertTrue(rec["body"].startswith("## Meeting"))
+        self.assertEqual(rec["source"]["v"], 2)
+
+    def test_a_failing_old_minute_is_tried_three_times_at_most(self):
+        now = 1795000000.0
+        minutes._write({"id": "d" * 32, "title": "Recording 2026-11-17 10:02", "body": "## Summary\nNot made yet.", "status": "draft",
+                        "place": "", "at": now, "source": {"kind": "transcribe", "sid": SID}, "event": None, "calendar": None,
+                        "created": now, "updated": now})
+        sess = [{"id": SID, "title": "Recording 2026-11-17 10:02", "status": "done", "created": CREATED}]
+        calls = []
+        with mock.patch.object(minutes, "_http_json", return_value=sess), \
+                mock.patch.object(minutes, "_http_text", return_value="A: hi\n"), \
+                mock.patch.object(minutes, "summarize", side_effect=lambda *a: calls.append(1)):
+            for _ in range(5):
+                minutes.sync()
+        self.assertEqual(len(calls), 3)
 
     def test_no_transcriber_is_not_an_error(self):
         with mock.patch.object(minutes, "_http_json", side_effect=OSError("down")):
