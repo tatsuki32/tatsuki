@@ -37,7 +37,7 @@ const DEFAULT_CONFIG = [
 ];
 
 // 日別のシートの先頭の列（この後ろに指標が並ぶ。シートはアカウントごとに分かれる）
-const DAILY_KEYS = ['日付'];
+const DAILY_KEYS = ['日付', 'アカウント'];
 const IG_POST_HEAD = ['アカウント', '投稿日時', '種類', 'キャプション', 'リンク', 'いいね', 'コメント'];
 const FB_POST_HEAD = ['アカウント', '投稿日時', '本文', 'リンク', 'リアクション', 'コメント', 'シェア'];
 
@@ -344,14 +344,14 @@ function upsertDaily_(platform, rowsByKey) {
     const d = k.slice(0, i), acc = k.slice(i + 1);
     (byAcc[acc] = byAcc[acc] || {})[d] = rowsByKey[k];
   });
-  Object.keys(byAcc).forEach(acc => upsertSheet_(dailySheetName_(platform, acc), byAcc[acc]));
+  Object.keys(byAcc).forEach(acc => upsertSheet_(dailySheetName_(platform, acc), byAcc[acc], acc));
 }
 
 /** 1つのアカウントの日別シートに、日付をキーにして上書き・追加する。指標が増えたら右に列を足す。 */
-function upsertSheet_(name, rowsByDate) {
+function upsertSheet_(name, rowsByDate, acc) {
   const sh = ensureSheet_(name, DAILY_KEYS);
-  const header = sh.getRange(1, 1, 1, Math.max(sh.getLastColumn(), 1)).getValues()[0].map(String).filter(String);
-  if (header[0] !== '日付') header.unshift('日付');
+  const old0 = sh.getRange(1, 1, 1, Math.max(sh.getLastColumn(), 1)).getValues()[0].map(String).filter(String);
+  const header = DAILY_KEYS.slice().concat(old0.filter(h => DAILY_KEYS.indexOf(h) < 0));
   Object.keys(rowsByDate).forEach(d => Object.keys(rowsByDate[d]).forEach(m => { if (header.indexOf(m) < 0) header.push(m); }));
   sh.getRange(1, 1, 1, header.length).setValues([header]).setFontWeight('bold');
 
@@ -361,7 +361,7 @@ function upsertSheet_(name, rowsByDate) {
   old.forEach(r => { const k = fmt_(r[0]); if (k) byDate[k] = r; });
   Object.keys(rowsByDate).forEach(d => {
     const v = rowsByDate[d];
-    const row = header.map((h, j) => j === 0 ? toDate_(d) : (v[h] !== undefined ? v[h] : ''));
+    const row = header.map((h, j) => j === 0 ? toDate_(d) : j === 1 ? acc : (v[h] !== undefined ? v[h] : ''));
     const prev = byDate[d];
     // 前に取れた値は消さない（今回空欄のところだけ前の値を残す）
     byDate[d] = prev ? row.map((x, j) => (x === '' && prev[j] !== '') ? prev[j] : x) : row;
@@ -410,10 +410,10 @@ function buildSummary() {
     sh.getRange(top, 1).setValue(title).setFontWeight('bold').setFontSize(12);
     sh.getRange(top + 1, 1, 1, 5).setValues([['指標', '直近7日（フォロワーは今）', '前の7日（フォロワーは7日前）', '増減', '直近28日（フォロワーは今）']]).setFontWeight('bold').setBackground('#f1f3f4');
     const S = q(sheetName);
-    const n = 12; // 指標は日別シートの2列目から最大12個
+    const n = 12; // 指標は日別シートの3列目（C）から最大12個
     for (let i = 0; i < n; i++) {
       const r = top + 2 + i;
-      const col = i + 2;
+      const col = i + 3;
       const name = 'IFERROR(INDEX(' + S + '!$1:$1,1,' + col + '),"")';
       const vals = 'INDEX(' + S + '!$A:$Z,0,' + col + ')';
       const dates = S + '!$A:$A';
@@ -446,7 +446,7 @@ function buildSummary() {
       // IG_投稿 の H 列が「IG投稿の指標」の1つ目（既定は reach）
       sh.getRange(row + 1, 1).setFormula('=IFERROR(QUERY(' + q(SHEETS.igPosts) + '!A:Z,"select B,C,D,E,H,F,G where A = \'' + an + '\' order by H desc limit 5",1),"投稿のデータはまだありません")');
       sh.getRange(row + 8, 1).setValue('投稿の種類ごとの平均（次の投稿の作戦に使う）').setFontWeight('bold');
-      sh.getRange(row + 9, 1).setFormula('=IFERROR(QUERY(' + q(SHEETS.igPosts) + '!A:Z,"select C, count(B), avg(H) where A = \'' + an + '\' and C is not null group by C label count(B) \'件\', avg(H) \'平均リーチ\' order by avg(H) desc",1),"まだ投稿のデータがありません")');
+      sh.getRange(row + 9, 1).setFormula('=IFERROR(QUERY(' + q(SHEETS.igPosts) + '!A:Z,"select C, count(B), avg(H) where A = \'' + an + '\' group by C label count(B) \'件\', avg(H) \'平均リーチ\'",1),"まだ投稿のデータがありません")');
       row += 16;
       buildAnalysis_(a.name);
     }
