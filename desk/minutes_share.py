@@ -82,13 +82,32 @@ def fingerprint(m):
     return hashlib.sha1(((m.get('title') or '') + '\n' + (m.get('body') or '')).encode()).hexdigest()[:16]
 
 
+RAW = re.compile(r'^## (Transcript|Original notes|元のメモ)\s*$', re.M)
+PENDING = re.compile(r'^## Summary\nNot made yet\.', re.M)
+
+
+def shareable(m):
+    """Only minutes with a summary go to Google: never one that is still a raw transcript or notes waiting for minutes."""
+    body = m.get('body') or ''
+    return bool(body.strip()) and not PENDING.search(body) and not body.lstrip().startswith('## Summary\nNot made yet')
+
+
+def doc_body(m):
+    """The minute without the raw transcript or the original notes under it."""
+    body = m.get('body') or ''
+    cut = RAW.search(body)
+    return body[:cut.start()].rstrip() if cut else body
+
+
 def make_doc(mid):
     m = _minute(mid)
+    if not shareable(m):
+        raise ShareError('This minute has no summary yet. Make the minutes first')
     title = m.get('title') or 'Minutes'
     day = time.strftime('%Y-%m-%d', time.localtime(m.get('at') or time.time()))
     name = f'{day} {title}' + (' 議事録' if _ja(m) else ' — Minutes')
     page = ('<html><head><meta charset="utf-8"></head><body>'
-            f'<h1>{html.escape(title)}</h1>' + md_html(m.get('body') or '') + '</body></html>')
+            f'<h1>{html.escape(title)}</h1>' + md_html(doc_body(m)) + '</body></html>')
     old = (m.get('gdoc') or {}).get('id', '')
     try:
         doc = meetcheck.put_doc(name, page, FOLDER, 'reader', old)
@@ -207,6 +226,8 @@ def auto():
         if done >= AUTO_PER_PASS:
             break
         g = m.get('gdoc') or {}
+        if not shareable(m):
+            continue
         if g and g.get('fp') == fingerprint(m):
             continue
         if g and time.time() - (m.get('updated') or 0) < QUIET:
@@ -222,6 +243,20 @@ def auto():
             minutes.set_share(m['id'], 'gdoc', {**g, 'failedAt': time.time()})
             print('[minutes] a Google Doc could not be made', flush=True)
     return done
+
+
+def forget(mid):
+    """Before a minute is deleted: its Google Doc goes to the Drive trash, so the link stops working."""
+    try:
+        g = minutes.get(mid).get('gdoc') or {}
+    except minutes.MinutesError:
+        return
+    if not g.get('id') or meetcheck.fake():
+        return
+    try:
+        meetcheck._google('PATCH', f'{meetcheck.FILES}/{g["id"]}', {'trashed': True})
+    except (meetcheck.MeetError, OSError):
+        print('[minutes] the Google Doc of a deleted minute could not be trashed', flush=True)
 
 
 def watch():

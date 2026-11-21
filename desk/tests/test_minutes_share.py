@@ -25,6 +25,14 @@ class Share(unittest.TestCase):
         self.assertEqual(minutes_share.names({'body': '- Who: Ken, Speaker A'}), ['Ken'])
         self.assertEqual(minutes_share.names({'body': '- 参加者：記録から分かりません'}), [])
 
+    def test_raw_text_never_goes_to_google(self):
+        self.assertFalse(minutes_share.shareable({'body': '## Summary\nNot made yet. Press "Make minutes".\n\n## Original notes\nsecret'}))
+        self.assertFalse(minutes_share.shareable({'body': ''}))
+        m = {'body': '## 要点\n- A\n\n## 元のメモ\n秘密のメモ'}
+        self.assertTrue(minutes_share.shareable(m))
+        self.assertNotIn('秘密', minutes_share.doc_body(m))
+        self.assertNotIn('secret', minutes_share.doc_body({'body': '## Summary\n- x\n\n## Transcript\nsecret'}))
+
     def test_name_matches_an_address(self):
         self.assertTrue(minutes_share._matches('山田 さん', '山田 太郎', 'x@example.com'))
         self.assertTrue(minutes_share._matches('Kenta', '', 'kenta.s@example.com'))
@@ -40,8 +48,11 @@ class Auto(unittest.TestCase):
         del os.environ['MEETCHECK_FAKE']
 
     def test_every_minute_gets_a_doc_and_the_doc_follows_the_text(self):
-        m = minutes.create({'title': 'Plan', 'body': '## Decided\n- Go'})
-        minutes_share.auto()
+        m = minutes.create({'title': 'Plan'})
+        self.assertEqual(minutes_share.auto(), 0)  # empty: not shared
+        minutes.put(m['id'], {'body': '## Decided\n- Go'})
+        with mock.patch.object(minutes_share.time, 'time', return_value=minutes.get(m['id'])['updated'] + 300):
+            minutes_share.auto()
         g = minutes.get(m['id'])['gdoc']
         self.assertIn('docs.google.com', g['url'])
         self.assertEqual(minutes_share.auto(), 0)  # nothing changed: no new call
