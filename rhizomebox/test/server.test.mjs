@@ -159,7 +159,7 @@ test('the Desk word lists: own key, "<Language> words" pages only, the owner\'s 
   assert.equal((await send({ title: 'Diary', lines: ['x'] })).status, 400);
   assert.equal((await send({ title: 'Russian words', lines: ['x'] }, { Authorization: 'Bearer ' + WK })).status, 403);
   // first write makes a public page
-  const r = await send({ title: 'Russian words', head: ['Words in [Russian].'], lines: ['2026-11', ' спасибо — ありがとう'], pub: true });
+  const r = await send({ title: 'Russian words', head: ['Words in [Russian].'], lines: ['2026-11', ' спасибо — ありがとう'], setPub: true });
   assert.equal(r.status, 200);
   const id = (await r.json()).page.id;
   const pg = await (await t.call('GET', '/_/api/page/' + id)).json();
@@ -170,4 +170,9 @@ test('the Desk word lists: own key, "<Language> words" pages only, the owner\'s 
   assert.equal((await send({ title: 'Russian words', lines: ['2026-11', ' ягода — ベリー'] })).status, 200);
   const after = (await (await t.call('GET', '/_/api/page/' + id)).json()).page.lines;
   assert.deepEqual(after, ['Russian words', 'Words in [Russian].', 'my own note', '', 'The Desk adds the words below this line by itself.', '2026-11', ' ягода — ベリー']);
+  // turned off on the Desk: the page goes private but keeps its words; turned on again: public
+  assert.equal((await send({ title: 'Russian words', lines: ['2026-11', ' ягода — ベリー'], setPub: false })).status, 200);
+  assert.equal((await t.call('GET', '/_/api/page/' + id)).status, 404);
+  assert.equal((await send({ title: 'Russian words', lines: ['2026-11', ' ягода — ベリー'], setPub: true })).status, 200);
+  assert.equal((await t.call('GET', '/_/api/page/' + id)).status, 200);
 });

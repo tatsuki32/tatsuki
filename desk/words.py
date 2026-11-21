@@ -243,7 +243,7 @@ def summary(book, snap=None, days=30, today=None):
 def word_list(book, lang):
     rows = [e for e in book.values() if e["lang"] == lang]
     rows.sort(key=lambda e: -(max(e["first"], e["ankiAt"]) or 0))
-    return [{**e, "public": public_ok(e)} for e in rows]
+    return [{**e, "public": public_ok(e), "onPage": on_page(e)} for e in rows]
 
 
 # ---------- Anki: what has been learned ----------
@@ -296,34 +296,76 @@ def page_title(lang):
     return names().get(lang, lang) + " words"
 
 
-def page_lines(book, lang):
-    rows = [e for e in book.values() if e["lang"] == lang and public_ok(e)]
-    rows.sort(key=lambda e: (-(max(e["first"], e["ankiAt"]) or 0), e["term"].lower()))
-    out, month = [], None
-    for e in rows:
-        m = local_day(max(e["first"], e["ankiAt"]))[:7] or "Earlier"
-        if m != month:
+def on_page(e):
+    """A word goes to the public page once Anki shows it 21 days apart or more (learned), and it is safe to show."""
+    return bool(e.get("learned")) and public_ok(e)
+
+
+def _item(e):
+    """The words of one entry as they go on the page. Kept as sent: a word once on the page does not change."""
+    meaning = e["meaning"]["ja"] or e["meaning"]["en"]
+    it = {"k": e["key"], "t": _safe(e["term"], 60), "m": _safe(meaning)}
+    ex = e.get("example")
+    if ex and ex.get("by") == "claude" and not e["imported"]:
+        it["ex"] = _safe(ex["text"], 200) + (f" — {_safe(ex.get('translation'))}" if ex.get("translation") else "")
+    return it
+
+
+def _plan(book, lang, page, today=None):
+    """What the page holds: the words already sent (as they were sent, minus hidden ones), then the newly learned ones
+    under today's date. Returns (items, new)."""
+    hid = {k for k, e in book.items() if e.get("hidden")}
+    items = [it for it in (page or {}).get("items", []) if it["k"] not in hid]
+    have = {it["k"] for it in items}
+    day = (today or dt.date.today()).isoformat()
+    rows = sorted((e for e in book.values() if e["lang"] == lang and on_page(e) and e["key"] not in have),
+                  key=lambda e: e["term"].lower())
+    new = [{**_item(e), "day": day} for e in rows]
+    return items + new, new
+
+
+def page_lines(items):
+    out, day = [], None
+    for it in items:
+        if it.get("day") != day:
             if out:
                 out.append("")
-            out.append(f"[* {m}]")
-            month = m
-        meaning = e["meaning"]["ja"] or e["meaning"]["en"]
-        out.append(f" {_safe(e['term'], 60)} — {_safe(meaning)}")
-        ex = e.get("example")
-        if ex and ex.get("by") == "claude" and not e["imported"]:
-            tr = f" — {_safe(ex.get('translation'))}" if ex.get("translation") else ""
-            out.append(f"  {_safe(ex['text'], 200)}{tr}")
+            day = it.get("day")
+            out.append(f"[* Added {day}]")
+        out.append(f" {it['t']} — {it['m']}")
+        if it.get("ex"):
+            out.append(f"  {it['ex']}")
     return out
 
 
+def page_title(lang):
+    return names().get(lang, lang) + " words"
+
+
 def page_head(lang):
-    return [f"[{names().get(lang, lang)}] words I looked up or put in Anki. My Desk adds them by itself."]
+    return [f"Words I have learned in [{names().get(lang, lang)}]. My Desk adds new ones at the bottom as I learn them."]
 
 
-def preview(book):
-    langs = sorted({e["lang"] for e in book.values() if public_ok(e)}, key=lambda l: names().get(l, l))
-    return [{"lang": l, "title": page_title(l), "lines": page_lines(book, l), "count": sum(1 for e in book.values() if e["lang"] == l and public_ok(e))}
-            for l in langs]
+def _state():
+    st = _read("publish.json", {})
+    st.setdefault("langs", {})
+    return st
+
+
+def preview(book, lang=None):
+    """Per language: how many learned words are on the page, how many are new, and the page as it would be."""
+    st = _state()
+    langs = sorted({e["lang"] for e in book.values() if e["lang"] != NATIVE and e["lang"] in names()}, key=lambda l: names().get(l, l))
+    out = []
+    for l in langs:
+        if lang and l != lang:
+            continue
+        pg = st["langs"].get(l) or {}
+        items, new = _plan(book, l, pg)
+        out.append({"lang": l, "name": names().get(l, l), "title": page_title(l), "on": bool(pg.get("on")), "url": pg.get("url", ""),
+                    "count": len(items), "sent": len(items) - len(new), "new": len(new), "at": pg.get("at", 0),
+                    "lines": page_lines(items) if lang else None})
+    return out
 
 
 def key():
@@ -342,11 +384,13 @@ def _put(site, k, body, opener=None):
         return json.loads(r.read() or b"{}")
 
 
-def publish(book, force=False, k=None, site=None, opener=None):
-    """Send the pages whose lines changed. Nothing before 'Start publishing'. Returns the publish state."""
+def publish(book, only=None, k=None, site=None, opener=None, today=None):
+    """Send the pages of the languages that are on, when something changed: new learned words go at the bottom.
+    A language just turned on is made public; one just turned off is made private (its words stay on it)."""
     with _lock:
-        st = _read("publish.json", {"started": False, "pages": {}})
-        if not st.get("started"):
+        st = _state()
+        todo = [l for l, pg in st["langs"].items() if (pg.get("on") or pg.get("setPub") is False) and (not only or l == only)]
+        if not todo:
             return st
         k = k or key()
         if not k:
@@ -357,33 +401,47 @@ def publish(book, force=False, k=None, site=None, opener=None):
             import rhizomebox_backup
             site = rhizomebox_backup.site()
         st["error"] = ""
-        for p in preview(book):
-            body = {"title": p["title"], "head": page_head(p["lang"]), "lines": p["lines"], "pub": True}
-            h = hashlib.sha256(json.dumps(body, ensure_ascii=False).encode()).hexdigest()[:16]
-            old = st["pages"].get(p["lang"]) or {}
-            if old.get("hash") == h and not force:
+        for l in todo:
+            pg = st["langs"][l]
+            items, new = _plan(book, l, pg, today)
+            body = {"title": page_title(l), "head": page_head(l), "lines": page_lines(items)}
+            h = hashlib.sha256(json.dumps(body, ensure_ascii=False).encode()).hexdigest()[:16]  # the words only
+            if "setPub" in pg:
+                body["setPub"] = pg["setPub"]
+            if pg.get("hash") == h and "setPub" not in pg:
                 continue
+            if not items and not pg.get("id"):
+                continue  # nothing learned yet: no empty page
             try:
                 out = _put(site, k, body, opener)
             except (urllib.error.URLError, OSError, ValueError) as e:
                 st["error"] = f"Could not reach Rhizome Box ({getattr(e, 'code', '') or type(e).__name__}). It tries again in 30 minutes."
                 break
-            pg = out.get("page") or {}
-            st["pages"][p["lang"]] = {"title": p["title"], "hash": h, "at": now_ms(), "count": p["count"],
-                                      "url": site + "/" + p["title"].replace(" ", "_")}
-            if pg.get("id"):
-                st["pages"][p["lang"]]["id"] = pg["id"]
+            pg.update(items=items, hash=h, at=now_ms(), title=page_title(l), url=site + "/" + page_title(l).replace(" ", "_"))
+            if new:
+                pg.setdefault("log", []).append({"at": now_ms(), "n": len(new)})
+                pg["log"] = pg["log"][-50:]
+            pg.pop("setPub", None)
+            if (out.get("page") or {}).get("id"):
+                pg["id"] = out["page"]["id"]
         st["at"] = now_ms()
         _write("publish.json", st)
+        _memo["at"] = 0
         return st
 
 
-def start_publishing():
-    st = _read("publish.json", {"started": False, "pages": {}})
-    st["started"] = True
-    st["startedAt"] = now_ms()
+def set_lang(lang, on):
+    """Turn one language's public page on (made public at the next send) or off (made private; its words stay)."""
+    if lang not in names() or lang == NATIVE:
+        return False
+    st = _state()
+    pg = st["langs"].setdefault(lang, {})
+    pg["on"] = bool(on)
+    if on or pg.get("id"):
+        pg["setPub"] = bool(on)
     _write("publish.json", st)
-    return st
+    _memo["at"] = 0
+    return True
 
 
 def set_hidden(rec):
@@ -408,11 +466,12 @@ def state(load):
     if _memo["val"] and time.time() - _memo["at"] < 60:
         return _memo["val"]
     snap = _read("anki.json", {})
-    out = summary(book_from(load), snap)
-    st = _read("publish.json", {"started": False, "pages": {}})
+    book = book_from(load)
+    out = summary(book, snap)
+    st = _state()
     out["anki"] = {"at": snap.get("at", 0), "total": snap.get("total", 0)}
-    out["publish"] = {"started": st.get("started", False), "pages": st.get("pages", {}), "error": st.get("error", ""),
-                      "at": st.get("at", 0), "hasKey": bool(key())}
+    out["publish"] = {"langs": preview(book), "error": st.get("error", ""), "at": st.get("at", 0), "hasKey": bool(key()),
+                      "pages": {l: {"url": pg.get("url", ""), "title": pg.get("title", "")} for l, pg in st["langs"].items() if pg.get("on") and pg.get("url")}}
     _memo.update(at=time.time(), val=out)
     return out
 

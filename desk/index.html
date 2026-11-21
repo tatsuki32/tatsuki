@@ -6434,14 +6434,18 @@ function wbkView(){
     <p class="sub" style="margin:var(--s2) 0 0">Learned means Anki now shows the card 21 days apart or more${ankiAt?` · read from Anki ${esc(new Date(ankiAt).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}))}`:""}.</p></section>
   ${wbkPublish(pub)}`}
 function wbkPublish(pub){
-  const pre=S.wbk.pre;
-  const body=pub.started
-    ?`<p>Publishing is on. New words reach the pages within 30 minutes.${pub.at?` Last sent ${esc(new Date(pub.at).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}))}.`:""}</p>${pub.error?`<p class="sub">${esc(pub.error)}</p>`:""}<div class="row"><button class="btn sm" id="wbkSend">Send now</button></div>`
-    :`<p>Your words can go to public pages on Rhizome Box, one per language (e.g. "Russian words"). Only single words with a meaning; no sentences from books or Google Translate, no names. Look first, then start.</p>
-      ${pub.hasKey?"":`<p class="sub">Needs a key first: run <code>bash desk/words_setup.sh</code> once.</p>`}
-      <div class="row"><button class="btn sm" id="wbkPre">${pre?"Hide preview":"Preview pages"}</button>${pre?`<button class="btn primary sm" id="wbkStart"${pub.hasKey?"":" disabled"}>Start publishing</button>`:""}</div>
-      ${pre?(pre.length?pre.map(p=>`<div class="section-title" style="margin-top:var(--s3)">${esc(p.title)} <span class="count">${p.count} words</span></div><div class="wbkpre">${esc(p.lines.slice(0,40).join("\n"))}${p.lines.length>40?"\n…":""}</div>`).join(""):`<p class="sub">No words to publish yet.</p>`):""}`;
-  return `<section class="card"><div class="section-title">Rhizome Box pages</div>${body}</section>`}
+  const langs=(pub.langs||[]).filter(l=>l.count||l.on), pv=S.wbk.pre||{};
+  const ago=t=>t?new Date(t).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}):"";
+  const rows=langs.map(l=>`<tr><td>${l.on&&l.url?`<a href="${esc(l.url)}" target="_blank" rel="noopener" data-noauto>${esc(l.name)} ↗</a>`:esc(l.name)}</td>
+    <td class="num">${l.on?wbkN(l.sent):"—"}</td><td class="num">${l.new?"+"+wbkN(l.new):""}</td>
+    <td class="hidesm sub">${l.on?(l.at?"Sent "+esc(ago(l.at)):"Waiting to send"):"Not public"}</td>
+    <td style="text-align:right;white-space:nowrap"><button class="btn sm" data-wbkpv="${esc(l.lang)}">${pv[l.lang]?"Hide":"Preview"}</button> <button class="btn sm${l.on?"":" primary"}" data-wbkon="${esc(l.lang)}" data-on="${l.on?0:1}"${pub.hasKey?"":" disabled"}>${l.on?"Stop":"Publish"}</button></td></tr>
+    ${pv[l.lang]?`<tr><td colspan="5"><div class="wbkpre" lang="${esc(l.lang)}">${pv[l.lang].length?esc(pv[l.lang].slice(0,60).join("\n"))+(pv[l.lang].length>60?"\n…":""):"No learned words yet."}</div></td></tr>`:""}`).join("");
+  return `<section class="card"><div class="section-title">Rhizome Box pages</div>
+    <p class="sub" style="margin:0 0 var(--s2)">One public page per language ("Russian words"), only words Anki now shows 21 days apart or more. Words already on a page stay as they are; newly learned ones are added at the bottom under the date. Stop makes the page private again.</p>
+    ${pub.hasKey?"":`<p class="sub">Needs a key first: run <code>bash desk/words_setup.sh</code> once.</p>`}${pub.error?`<p class="sub">${esc(pub.error)}</p>`:""}
+    ${langs.length?`<table class="wbktab"><thead><tr><th>Language</th><th class="num">On page</th><th class="num">New</th><th class="hidesm">Status</th><th></th></tr></thead><tbody>${rows}</tbody></table>`
+      :`<p class="sub">No learned words yet. Keep Anki open for a few minutes so the Desk can see which words you have learned.</p>`}</section>`}
 function wbkLangView(lang){
   const st=S.wbk.st, row=st.langs.find(r=>r.lang===lang)||{name:lang}, list=S.wbk.list[lang], p=(st.publish?.pages||{})[lang];
   const q=S.wbk.q.trim().toLowerCase(), f=S.wbk.filt;
@@ -6452,7 +6456,7 @@ function wbkLangView(lang){
   ${!list?`<p class="sub">Loading…</p>`:shown.length?shown.map(w=>{const d=Math.max(w.first,w.ankiAt);const st=w.learned?"Learned":w.inAnki?"In Anki":"Looked up";
     return `<div class="wbkw" data-noauto><div><div><span class="t" lang="${esc(lang)}">${esc(w.term)}</span> <span class="m">— ${esc(w.meaning.ja||w.meaning.en||"")}</span></div>
       ${w.example?`<div class="x" lang="${esc(lang)}">${esc(w.example.text)}${w.example.translation?" — "+esc(w.example.translation):""}</div>`:w.context?`<div class="x" lang="${esc(lang)}">${esc(w.context.slice(0,160))}</div>`:""}
-      <div class="x">${st}${d?" · "+esc(new Date(d).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})):""}${w.looked>1?" · looked up "+w.looked+"×":""}${w.hidden?" · off the page":w.public?" · on the page":""}</div></div>
+      <div class="x">${st}${d?" · "+esc(new Date(d).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})):""}${w.looked>1?" · looked up "+w.looked+"×":""}${w.hidden?" · kept off the page":w.onPage?" · on the page when published":""}</div></div>
       <div>${w.hidden?`<button class="btn sm" data-wbkhide="${esc(w.key)}" data-on="0">Show on page</button>`:w.public?`<button class="btn sm" data-wbkhide="${esc(w.key)}" data-on="1">Hide from page</button>`:""}</div></div>`}).join(""):`<p class="sub">No words here.</p>`}</section>`}
 function wireWbk(){
   document.querySelectorAll("[data-wbklang]").forEach(r=>r.onclick=e=>{if(e.target.closest("a"))return;location.hash="words/"+r.dataset.wbklang});
@@ -6460,10 +6464,14 @@ function wireWbk(){
   $("#wbkQ")&&($("#wbkQ").oninput=e=>{S.wbk.q=e.target.value;render()});
   document.querySelectorAll("[data-wbkhide]").forEach(b=>b.onclick=async()=>{const on=b.dataset.on==="1";
     try{await api("PUT","/api/words/hide",{key:b.dataset.wbkhide,hidden:on});const w=(S.wbk.list[wbkLang()]||[]).find(x=>x.key===b.dataset.wbkhide);if(w){w.hidden=on;w.public=!on}render();toast(on?"Off the page from the next send":"Back on the page from the next send")}catch(e){toast("Could not save")}});
-  $("#wbkPre")&&($("#wbkPre").onclick=async()=>{if(S.wbk.pre){S.wbk.pre=null;return render()}try{S.wbk.pre=(await api("GET","/api/words/preview")).pages;render()}catch(e){toast("Could not make the preview")}});
-  $("#wbkStart")&&($("#wbkStart").onclick=async()=>{if(!confirm("Start publishing? These pages will be public on Rhizome Box, and new words will be added by themselves."))return;
-    try{const r=await api("POST","/api/words/publish",{start:true});S.wbk.pre=null;await wbkLoad(true);toast(r.error?r.error:"Published")}catch(e){toast("Could not publish")}});
-  $("#wbkSend")&&($("#wbkSend").onclick=async()=>{try{const r=await api("POST","/api/words/publish",{});await wbkLoad(true);toast(r.error||"Sent")}catch(e){toast("Could not send")}})}
+  document.querySelectorAll("[data-wbkpv]").forEach(b=>b.onclick=async()=>{const l=b.dataset.wbkpv;S.wbk.pre=S.wbk.pre||{};
+    if(S.wbk.pre[l]){delete S.wbk.pre[l];return render()}
+    try{const r=await api("GET","/api/words/preview?lang="+encodeURIComponent(l));S.wbk.pre[l]=(r.pages[0]||{}).lines||[];render()}catch(e){toast("Could not make the preview")}});
+  document.querySelectorAll("[data-wbkon]").forEach(b=>b.onclick=async()=>{const l=b.dataset.wbkon, on=b.dataset.on==="1";
+    const name=(S.wbk.st.publish.langs.find(x=>x.lang===l)||{}).name||l;
+    if(on&&!confirm(`Publish "${name} words" on Rhizome Box? The page will be public, and new learned words will be added at the bottom by themselves.`))return;
+    if(!on&&!confirm(`Stop "${name} words"? The page becomes private. Its words stay on it.`))return;
+    b.disabled=true;try{const r=await api("POST","/api/words/publish",{lang:l,on});await wbkLoad(true);toast(r.error||(on?"Published":"Now private"))}catch(e){b.disabled=false;toast("Could not save")}})}
 /* ---------- 🗺️ Language Map (#langmap, #langmap/<ISO2>, #language/<id>, #langmap?concept=<id>): every country, the languages
    spoken there, speakers, population, regions and peoples, from public data (desk/langmap_build.py, desk/langmap.py).
    The map is an SVG drawn here from Natural Earth shapes (no tiles, nothing fetched from outside). Learned words come from

@@ -1054,8 +1054,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, reader.voices_for(parse_qs(urlsplit(self.path).query).get("lang", ["en"])[0]))
         if path == "/api/words":  # every word looked up or put in Anki, per language (desk/words.py)
             return self.send(200, words.state(load_locked))
-        if path == "/api/words/preview":  # what the Rhizome Box pages would say
-            return self.send(200, {"pages": words.preview(words.book_from(load_locked))})
+        if path.split("?")[0] == "/api/words/preview":  # what the Rhizome Box pages would say
+            return self.send(200, {"pages": words.preview(words.book_from(load_locked), parse_qs(urlsplit(self.path).query).get("lang", [""])[0][:12] or None)})
         if path.startswith("/api/words/lang/"):
             return self.send(200, {"words": words.word_list(words.book_from(load_locked), path.rsplit("/", 1)[1][:12])})
         if path == "/api/anki":  # Desk words -> Anki (desk/anki.py): is Anki open, what waits, Anki's due count
@@ -1565,11 +1565,11 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(400, {"error": "bad json"})
         if path == "/api/words/hide":
             return self.send(*words.set_hidden(rec))
-        if rec.get("start"):
-            words.start_publishing()
-        st = words.publish(words.book_from(load_locked), force=bool(rec.get("force")))
-        words._memo["at"] = 0
-        return self.send(200, {"started": st.get("started", False), "pages": st.get("pages", {}), "error": st.get("error", "")})
+        lang = str(rec.get("lang") or "")[:12]
+        if lang and "on" in rec and not words.set_lang(lang, bool(rec["on"])):
+            return self.send(400, {"error": "lang"})
+        st = words.publish(words.book_from(load_locked), only=lang or None)
+        return self.send(200, {"error": st.get("error", ""), "langs": words.preview(words.book_from(load_locked))})
 
     def anki_post(self, path):
         """Anki (desk/anki.py): bring Anki to the front, or send what waits now. JSON only, like every write here."""

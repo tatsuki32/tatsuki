@@ -40,32 +40,44 @@ class WordsTest(unittest.TestCase):
         s = words.summary(b, {"byLang": {"ru": 7, "eo": 3}})
         self.assertEqual({r["lang"]: r["learned"] for r in s["langs"]}, {"ru": 7, "eo": 3})
 
-    def test_public_page_keeps_private_things_out(self):
+    def page(self, book, lang, page=None, today=None):
+        items, new = words._plan(book, lang, page, today)
+        return words.page_lines(items), items, new
+
+    def test_only_learned_and_safe_words_go_on_the_page(self):
+        learned = {"words": ["ru:дом", "ru:кабан", "ru:иван", "ru:кот", "ru:река", "ru:я люблю тебя очень сильно"]}
         b = words.build([lk("Иван", "ru", "ja", "イワン", pos="proper noun"),
                          lk("я люблю тебя очень сильно", "ru", "ja", "とても愛してる"),
                          lk("кот", "ru", "ja", "猫", via="search"),
-                         lk("дом", "ru", "ja", "家", examples=[{"text": "Это мой дом.", "translation": "これは私の家です。"}])],
+                         lk("дом", "ru", "ja", "家", examples=[{"text": "Это мой дом.", "translation": "これは私の家です。"}]),
+                         lk("вода", "ru", "ja", "水")],
                         [card("кабан", "ru", "イノシシ", kind="sheet", example="my diary line"), card("река", "ru", "川")],
-                        hidden=["ru:река"])
-        lines = words.page_lines(b, "ru")
+                        learned, hidden=["ru:река"])
+        lines, _, _ = self.page(b, "ru")
         text = "\n".join(lines)
         self.assertIn(" дом — 家", lines)
         self.assertIn("  Это мой дом. — これは私の家です。", lines)
         self.assertIn(" кабан — イノシシ", lines)
-        for bad in ("Иван", "люблю", "кот", "diary", "река"):
+        for bad in ("Иван", "люблю", "кот", "diary", "река", "вода"):  # вода is looked up but not learned yet
             self.assertNotIn(bad, text)
 
     def test_markup_cannot_get_into_the_page(self):
-        b = words.build([lk("[x] #tag", "en", "ja", "[link]")], [])
-        self.assertEqual(words.page_lines(b, "en")[1], " (x) tag — (link)")
+        b = words.build([lk("[x] #tag", "en", "ja", "[link]")], [], {"words": ["en:[x] #tag"]})
+        self.assertEqual(self.page(b, "en")[0][1], " (x) tag — (link)")
 
-    def test_months_newest_first(self):
-        b = words.build([lk("old", "en", "ja", "古い", at=NOW - 40 * DAY), lk("new", "en", "ja", "新しい")], [])
-        lines = words.page_lines(b, "en")
-        self.assertTrue(lines[0].startswith("[* ") and lines[0] > lines[3])
-        self.assertEqual(lines[1], " new — 新しい")
+    def test_sent_words_stay_and_new_ones_go_below_with_the_date(self):
+        import datetime as dt
+        d1, d2 = dt.date(2026, 11, 21), dt.date(2026, 12, 3)
+        b = words.build([lk("house", "en", "ja", "家"), lk("water", "en", "ja", "水")], [], {"words": ["en:house"]})
+        _, items, new = self.page(b, "en", today=d1)
+        self.assertEqual([i["k"] for i in new], ["en:house"])
+        # later: the meaning changes on the Desk and a second word is learned
+        b = words.build([lk("house", "en", "ja", "住宅"), lk("water", "en", "ja", "水")], [], {"words": ["en:house", "en:water"]})
+        lines, items2, new2 = self.page(b, "en", {"items": items}, today=d2)
+        self.assertEqual(lines, ["[* Added 2026-11-21]", " house — 家", "", "[* Added 2026-12-03]", " water — 水"])
+        self.assertEqual([i["k"] for i in new2], ["en:water"])
 
-    def test_publish_waits_for_start_then_sends_only_changes(self):
+    def test_publish_only_languages_turned_on_then_only_changes(self):
         sent = []
 
         class R(io.BytesIO):
@@ -79,18 +91,24 @@ class WordsTest(unittest.TestCase):
             sent.append((req.get_method(), req.full_url, req.headers.get("Authorization"), json.loads(req.data)))
             return R(json.dumps({"page": {"id": "p1"}}).encode())
 
-        b = words.build([lk("дом", "ru", "ja", "家")], [])
-        words._write("publish.json", {"started": False, "pages": {}})
-        self.assertFalse(words.publish(b, k="K", site="https://rb.test", opener=opener)["started"])
-        self.assertEqual(sent, [])
-        words.start_publishing()
+        snap = {"words": ["ru:дом", "en:house"]}
+        b = words.build([lk("дом", "ru", "ja", "家"), lk("house", "en", "ja", "家")], [], snap)
+        words._write("publish.json", {})
+        words.publish(b, k="K", site="https://rb.test", opener=opener)
+        self.assertEqual(sent, [])  # nothing is on yet
+        words.set_lang("ru", True)
         st = words.publish(b, k="K", site="https://rb.test", opener=opener)
         self.assertEqual(len(sent), 1)
         m, url, auth, body = sent[0]
-        self.assertEqual((m, url, auth, body["title"], body["pub"]), ("PUT", "https://rb.test/_/api/desk/words", "Bearer K", "Russian words", True))
-        self.assertEqual(st["pages"]["ru"]["url"], "https://rb.test/Russian_words")
+        self.assertEqual((m, url, auth, body["title"], body["setPub"]), ("PUT", "https://rb.test/_/api/desk/words", "Bearer K", "Russian words", True))
+        self.assertEqual(st["langs"]["ru"]["url"], "https://rb.test/Russian_words")
         words.publish(b, k="K", site="https://rb.test", opener=opener)
         self.assertEqual(len(sent), 1)  # nothing changed, nothing sent
+        words.set_lang("ru", False)
+        words.publish(b, k="K", site="https://rb.test", opener=opener)
+        self.assertEqual((len(sent), sent[-1][3]["setPub"]), (2, False))  # made private once, words kept
+        words.publish(b, k="K", site="https://rb.test", opener=opener)
+        self.assertEqual(len(sent), 2)
 
     def test_reader_lookup_is_one_per_word_and_day(self):
         got = {}

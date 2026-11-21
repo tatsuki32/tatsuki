@@ -62,7 +62,9 @@ async function saveWords(env, ctx, body) {
     id = randHex(12);
     lines = [title, ...head, '', WORDS_MARK, ...add];
   }
-  return savePage(env, ctx, id, { lines, pub: old ? null : (body.pub ? 1 : 0) });
+  // setPub: the Desk turns a language's page public (on) or private (off). Otherwise the page keeps what it is.
+  const pub = typeof body.setPub === 'boolean' ? (body.setPub ? 1 : 0) : (old ? null : 0);
+  return savePage(env, ctx, id, { lines, pub });
 }
 const bearerOk = (req, env) => !!env.BACKUP_KEY && safeEq((req.headers.get('Authorization') || '').replace(/^Bearer\s+/, ''), env.BACKUP_KEY);
 
