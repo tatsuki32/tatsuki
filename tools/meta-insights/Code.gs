@@ -406,6 +406,7 @@ function buildSummary() {
   sh.getRange('A3').setValue('※ フォロワーは「今の値」と「7日前・28日前」で比べます。リーチなどは日ごとの合計なので、同じ人が何日も見ると重なって数えます。新しいアカウントを足したら、メニューの「概要と分析を作り直す」を押してください。').setFontColor('#666666');
 
   const q = s => "'" + String(s).replace(/'/g, "''") + "'";
+  const rules = []; // 増減の色（増えたら緑、減ったら赤）
   const block = (top, title, sheetName) => {
     sh.getRange(top, 1).setValue(title).setFontWeight('bold').setFontSize(12);
     sh.getRange(top + 1, 1, 1, 5).setValues([['指標', '直近7日（フォロワーは今）', '前の7日（フォロワーは7日前）', '増減', '直近28日（フォロワーは今）']]).setFontWeight('bold').setBackground('#f1f3f4');
@@ -429,6 +430,11 @@ function buildSummary() {
     }
     sh.getRange(top + 2, 2, n, 3).setNumberFormat('#,##0');
     sh.getRange(top + 2, 4, n, 1).setHorizontalAlignment('right');
+    const dR = sh.getRange(top + 2, 4, n, 1);
+    rules.push(SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied('=LEFT(D' + (top + 2) + ',1)="+"')
+      .setBackground('#D9EAD3').setFontColor('#37763A').setBold(true).setRanges([dR]).build());
+    rules.push(SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied('=LEFT(D' + (top + 2) + ',1)="-"')
+      .setBackground('#F4CCCC').setFontColor('#B61B1B').setBold(true).setRanges([dR]).build());
     return top + 2 + n + 1;
   };
 
@@ -452,6 +458,7 @@ function buildSummary() {
     }
     row += 1;
   });
+  sh.setConditionalFormatRules(rules);
   sh.setColumnWidth(1, 240);
   [2, 3, 4, 5].forEach(c => sh.setColumnWidth(c, 130));
 }
@@ -513,6 +520,19 @@ function buildAnalysis_(acc) {
     .setOption('legend', { position: 'none' })
     .setPosition(anchorRow, head.length + 2, 0, 0)
     .build();
+  // 色：増減は増えたら緑・減ったら赤。リーチは1万以上を金、各月の最大を青
+  const colRange = c => sh.getRange(2, c, n, 1);
+  const last = n + 1;
+  sh.setConditionalFormatRules([
+    SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied('=AND(ISNUMBER(C2),C2>0)')
+      .setBackground('#D9EAD3').setFontColor('#37763A').setBold(true).setRanges([colRange(3)]).build(),
+    SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied('=AND(ISNUMBER(C2),C2<0)')
+      .setBackground('#F4CCCC').setFontColor('#B61B1B').setBold(true).setRanges([colRange(3)]).build(),
+    SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied('=AND(ISNUMBER(D2),D2>=10000)')
+      .setBackground('#FFE599').setBold(true).setRanges([colRange(4)]).build(),
+    SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied('=AND(ISNUMBER(D2),D2=MAXIFS($D$2:$D$' + last + ',$A$2:$A$' + last + ',">="&(EOMONTH(A2,-1)+1),$A$2:$A$' + last + ',"<="&EOMONTH(A2,0)))')
+      .setBackground('#CFE2F3').setBold(true).setRanges([colRange(4)]).build(),
+  ]);
   sh.insertChart(chart(Charts.ChartType.LINE, 2, 'フォロワー数の推移', 2));
   sh.insertChart(chart(Charts.ChartType.COLUMN, 3, 'フォロワーの増減（日ごと）', 20));
   sh.insertChart(chart(Charts.ChartType.COLUMN, 4, 'リーチ（日ごと）', 38));
