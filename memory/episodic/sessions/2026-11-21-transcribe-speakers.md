@@ -32,3 +32,7 @@
 - `desk/transcribe/docs.py`：Word などは `textutil`、PDF は `reader.pdf_text`、Docs は Drive API（`drive.readonly`、client はメール整理と共用、refresh は `tatsuki-desk-gdrive`）。議事録は `claude-sonnet-5-5` の構造化出力＋`fallbacks: "default"`。
 - 本物の API で見本の会議から議事録が出た（入力877・出力179トークン、約0.5円）。
 - ハマりどころ：サーバーに `do_PUT` が無く、議事録の直しが 501 で捨てられていた。テストサーバーは `/tmp` の置き場なのでキーチェーンを読まず、議事録は「キーがない」になる（正しい動き）。サンドボックスの中では `textutil` が docx を書けない（試験は外で通す）。
+
+## 追加：Desk の Minutes にまとめた（同じ日）
+- 別の作業で同じ日に Desk の「📝 Minutes」（`desk/minutes.py`）ができていて、議事録が2か所に分かれていた。取り込んだ文も Minutes に入るようにした（Claude には送らない。押したときだけ Transcribe で Sonnet 5.5）。
+- ハマりどころ：前の版の `sync` が文の記録にも transcript.txt を頼み、空の議事録を19件作っていた。触られていないものだけ1回作り直す。本文を直したかは時刻でなく指紋（`fp`）で見る（同じ秒の直しを見落とすため）。
