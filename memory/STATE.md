@@ -1,5 +1,5 @@
 # 今の状態（STATE）
-最終更新：2026-11-20（Reader と暗記カード）
+最終更新：2026-11-21（カレンダーを iCal で取り込む）
 ## 進行中の作業
 - Desk は Mac 専用（データは非公開リポジトリに15分ごとに保管）。本線は main に一本化（2026-11-09）：`desk/page-cards`・プロジェクト・持ち物・Mac だけにあった変更を全部 main に入れ、Mac は main で `desk/pull.sh` が5分ごとに取り込む。
 - 作りたい機能リスト（全11件）：全部 main にマージ済み（tatsuki32/tatsuki#9）。使ってみて直す段階。③ は `/recap`。⑦ ペルソナは仮の設定。
@@ -24,7 +24,7 @@
 - Post Studio（`#post`、`desk/posts.py`）：写真・PDF・動画から投稿先ごとの案。自動投稿は Instagram（英・露）・Threads 露・Facebook ページ（英語）・X（リンクなし、1件約 $0.015）・LinkedIn（個人、60日で再サインイン）で動作。YouTube 接続済み・R2（動画）有効だがどちらも未投稿。会社のお知らせは tany.im へ直接公開。残り：英語の Threads、Instagram の DM、TikTok（審査）。記録 `memory/episodic/sessions/2026-11-15-post-studio.md`。
 - Footprint（`desk/footprint.py`、`#footprint`）：画面時間・AI・食事・支出・移動から CO2e を幅で推定、牛・羊・平均の人と比べる。main に入れた。使ってみて一言と係数を直す段階。
 - ホームの Today（2026-11-20、要件定義 KpHCwmoBcjzAJYF2ouErnj）：今日の3つを消し、予定・期日・ルーティンと習慣・今日のタスク・Sift の見出しを1枚に。決めるカードは1枚、G は Claude が始める。Telegram は朝1通。World Desk は停止（Mac の Claude アプリでも無効にする）。シートの取り込みは Mac で CSV を渡す待ち。Sift の Worker の公開が要る。 Startup Clean（`desk/startup_clean.py`）：起動後の最初のログインで Claude・Desk・Terminal 以外を閉じ、Home の1行で戻す。Mac で `setup-mac.sh` を1回走らせるまで動かない。本物の再起動では未確認。 Reader と暗記カード（`desk/reader.py`・`desk/cards.py`、`#reader`・`#cards`、2026-11-20）：main に入れた。iPhone の Cards アプリは `bash cards/setup.sh` を本人が1回走らせるまで同期しない。シートと Anki は取り込み済み（169枚）。 Desk の言葉を Anki へ（`desk/anki.py`）：偽の AnkiConnect で確認済み。本人が AnkiConnect（2055492159）を入れて Anki を開くまで送らない。 Translate（`desk/translate.py`、`#translate`、2026-11-20）：訳す・履歴・概念・To cards・Web履歴の取り込みを実装、Claude 経由で動作確認。Google の鍵（キーチェーン `tatsuki-desk-gtranslate`）は本人が作るまで Claude が訳す。①の `cards` は別セッションが作成中。記録 `memory/episodic/sessions/2026-11-20-translate.md`。 言語地図（`desk/langmap.py`・`langmap_build.py`、`#langmap`、2026-11-20）：国・言語・地域・民族の地図と、Translate で覚えた語の表示を main に。民族は Wikidata の制限で取り直しが要ることがある。記録 `memory/episodic/sessions/2026-11-20-langmap.md`。
-- 予約ページ（`tany.im/book`、`desk/book.py`、`#book`。2026-11-20）：本番で予約・Meet・確認メール・取り消しまで確認済み。旧 `tatsuki-slots.pages.dev` は転送済み。残りは Rules（初期値のまま）と Apps Script の公開停止。記録 `memory/episodic/sessions/2026-11-20-booking.md`。 Rhizome Box（`rhizomebox/`、Scrapbox 風ノート）：2026-11-20 に rhizomebox.tany.im で公開。Search Console 登録とサイトマップ送信済み（2026-11-21）。
+- 予約ページ（`tany.im/book`、`desk/book.py`、`#book`。2026-11-20）：本番で予約・Meet・確認メール・取り消しまで確認済み。旧 `tatsuki-slots.pages.dev` は転送済み。残りは Rules（初期値のまま）と Apps Script の公開停止。記録 `memory/episodic/sessions/2026-11-20-booking.md`。 Rhizome Box（`rhizomebox/`、Scrapbox 風ノート）：2026-11-20 に rhizomebox.tany.im で公開。Search Console 登録とサイトマップ送信済み（2026-11-21）。 カレンダーの取り込み（`desk/gcal_ics.py`、2026-11-21）：11/5 から止まっていたのを、サーバーが iCal の非公開アドレスを5分ごとに読む形に。本人がアドレスをキーチェーン `tatsuki-desk-gcal-ics` に入れるまで動かない。記録 `memory/episodic/sessions/2026-11-21-calendar-ical.md`。
 ## 決定済みの事項
 - 作ったものは必ず main に入れる（どの Claude も。`.claude/rules/main-branch.md`）。Mac は main だけを取り込む。
 - デザインの本を読む作業はしない（2026-11-15、全作業）。UI は `.claude/rules/design-ui.md` と `design-nondesigner.md` のルールで作る。

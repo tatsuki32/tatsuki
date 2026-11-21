@@ -40,6 +40,7 @@ import transcribe_desk
 import notify
 import checkin
 import tg_notify
+import gcal_ics
 import event_alarm
 import pc_monitor
 import startup_clean  # Startup Clean: the apps closed at the first login after the Mac starts, and reopening them
@@ -173,6 +174,12 @@ def put_doc(col, doc_id, rec):
         raise ValueError("bad doc")
     rec = {k: v for k, v in rec.items() if k != "id"}
     write_atomic(doc_path(col, doc_id), json.dumps(rec, ensure_ascii=False, indent=1))
+
+
+def calendar_from_ical(doc):
+    """gcal_ics.py: the Calendar view's doc, written like write_feed.py calendar."""
+    put_doc("calendar", "upcoming", doc)
+    rebuild_feed("calendar")
 
 
 def feed_docs(col):
@@ -1716,6 +1723,7 @@ if __name__ == "__main__":
         threading.Thread(target=notify.watch, daemon=True).start()
         threading.Thread(target=checkin.watch, args=(load, save, LOCK), daemon=True).start()  # in-progress timers: ask every 10 minutes
         threading.Thread(target=tg_notify.watch, daemon=True).start()  # tasks and events to Telegram
+        threading.Thread(target=gcal_ics.watch, args=(calendar_from_ical,), daemon=True).start()  # Calendar view: Google's secret iCal every 5 minutes
         threading.Thread(target=event_alarm.watch, daemon=True).start()  # alarm 3 minutes before each calendar event
         threading.Thread(target=instagram_dm.watch, daemon=True).start()  # Instagram DMs to Replies, every 5 minutes
         threading.Thread(target=posts.watch, daemon=True).start()  # Post Studio: company-site news scheduled for later
