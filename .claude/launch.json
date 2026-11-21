@@ -14,6 +14,12 @@
       "port": 4801
     },
     {
+      "name": "desk-study-test",
+      "runtimeExecutable": "/bin/sh",
+      "runtimeArgs": ["-c", "mkdir -p /tmp/claude/desk-study-test/videos && cd desk && DESK_DATA_DIR=/tmp/claude/desk-study-test NATURE_DIR=/tmp/claude/desk-study-test/videos DESK_PORT=${PORT:-4787} exec python3 server.py"],
+      "port": 4787
+    },
+    {
       "name": "desk-test",
       "runtimeExecutable": "/bin/sh",
       "runtimeArgs": ["-c", "cd desk && DESK_PORT=${PORT:-4791} exec python3 server.py"],

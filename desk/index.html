@@ -2121,6 +2121,13 @@ body.rdth-paper main .btn.primary:hover,body.rdth-sepia main .btn.primary:hover{
 .sfstage{position:relative;height:min(66vh,620px);min-height:380px;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:#6f8f6b;margin-bottom:var(--s3)}
 .sfstage.small{height:min(36vh,320px);min-height:220px}
 .sfstage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.sfvid{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 3s ease}
+.sfvid.on{opacity:1}
+.sfcredit{position:absolute;left:var(--s2);bottom:var(--s2);margin:0;padding:2px 8px;border-radius:6px;background:rgba(14,18,16,.5);color:#dfe5dc;font-size:var(--t1);max-width:calc(100% - 16px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sfcredit a{color:inherit}
+body.sffull .sfstage{position:fixed;inset:0;z-index:38;height:auto;min-height:0;max-height:none;margin:0;border:0;border-radius:0}
+body.sffull{overflow:hidden}
+@media (prefers-reduced-motion:reduce){.sfvid{transition:none}}
 .sfstage:fullscreen{height:100vh;max-height:none;border:0;border-radius:0}
 .sfover{position:absolute;left:var(--s3);top:var(--s3);max-width:min(420px,calc(100% - 32px));padding:var(--s3);border-radius:var(--r);background:rgba(14,18,16,.55);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);color:#f4f6f2;display:grid;gap:var(--s2)}
 .sfover .eyebrow{color:#ecdfbd;margin:0}
@@ -6844,6 +6851,7 @@ function render(){
   if(!replyOpen()) S.dl=S.dl.filter(x=>x.kind!=="mail"); // outside the reply window: no count, badge or chime for mail
   updateBadges();checkNew();
   renderNav();timerBar();backBar();
+  document.body.classList.toggle("sffull",viewId()==="study"&&sfLocked());
   if(viewId()==="study"){if(!S.sfLoaded&&!S.sfErr&&!S.sfAsked){S.sfAsked=true;sfLoad()}const key=sfKey(); // the forest keeps moving: a refresh with nothing new only updates the numbers
     if($("#sfCanvas")&&S.sfShown===key&&!S.q){sfPanels();return}S.sfShown=key;$("#view").innerHTML=searchResults()+studyView();wire();wireSf();sfPanels();sfCanvasStart();return}
   S.sfShown=null;
@@ -11282,6 +11290,61 @@ const SF_STAGES=[[0,"Seed"],[1,"Sprout"],[5,"Seedling"],[15,"Sapling"],[30,"Youn
 const SF_W=25,SF_B=5,SF_MIN=6e4,SF_PREF="desk-sf";
 S.sf=Object.assign({kind:"study",rounds:4,block:true,sound:"forest",vol:.4,title:""},(()=>{try{return JSON.parse(localStorage.getItem(SF_PREF))||{}}catch(e){return {}}})());
 S.sfLog=[];S.sfWallet=[];S.sfLoaded=false;S.sfErr=false;
+S.nat={videos:[],state:{},pexels:false,loaded:false};
+async function natLoad(){
+  try{const v=await api("GET","/api/nature");const was=JSON.stringify([S.nat.videos.length,S.nat.state]);S.nat={...v,loaded:true};
+    if(was!==JSON.stringify([v.videos.length,v.state])&&viewId()==="study")render();
+    if(v.state?.running)setTimeout(natLoad,3000)}
+  catch(e){S.nat.loaded=true}
+}
+/* real footage: two videos on top of each other, a slow cross-fade to the next one when one ends (or after 4 minutes) */
+const SFV={order:[],i:-1,el:null,t:0};
+const sfVideoHtml=()=>S.nat.videos.length?`<video class="sfvid" id="sfVidA" muted playsinline preload="auto"></video><video class="sfvid" id="sfVidB" muted playsinline preload="auto"></video><p class="sfcredit" id="sfCredit" data-noauto></p>`:"";
+function sfVideoStart(){
+  const vids=S.nat.videos;if(!vids.length||!$("#sfVidA"))return;
+  if(SFV.order.length!==vids.length){SFV.order=vids.map((_,i)=>i).sort(()=>Math.random()-.5);SFV.i=-1}
+  SFV.el=null;sfVideoNext();
+}
+function sfVideoNext(){
+  const vids=S.nat.videos,a=$("#sfVidA"),b=$("#sfVidB");if(!a||!vids.length)return;
+  SFV.i=(SFV.i+1)%SFV.order.length;const v=vids[SFV.order[SFV.i]]||vids[0];
+  const cur=SFV.el&&document.body.contains(SFV.el)?SFV.el:null,next=cur===a?b:a;
+  next.loop=vids.length===1;next.src="/videos/"+encodeURIComponent(v.file);
+  let shown=false;const show=()=>{if(shown||SFV.el!==next)return;shown=true;next.play().catch(()=>{});next.classList.add("on");
+    const c=$("#sfCredit");if(c)c.innerHTML=`Video: <a href="${esc(v.page||"")}" target="_blank" rel="noopener">${esc(v.title||"")}</a> · ${esc(v.author||"")} · ${esc(v.license||"")} · ${esc(v.source||"")}`;
+    if(cur){cur.classList.remove("on");setTimeout(()=>{if(!cur.classList.contains("on")){cur.pause();cur.removeAttribute("src");cur.load()}},3500)}};
+  next.oncanplay=show;setTimeout(()=>{if(next.readyState>=2)show()},1200); // canplay can come before the handler is in place
+  next.onended=()=>{if(SFV.el===next)sfVideoNext()};
+  next.onerror=()=>{if(SFV.el===next&&vids.length>1)setTimeout(sfVideoNext,800)};
+  SFV.el=next;clearTimeout(SFV.t);if(vids.length>1)SFV.t=setTimeout(()=>{if(SFV.el===next)sfVideoNext()},240000);
+}
+function sfNatPanel(){
+  const n=S.nat,st=n.state||{},list=n.videos||[];
+  if(!LOCALAPI||!n.loaded)return "";
+  const src=`Wikimedia Commons${n.pexels?" and Pexels":""}`;
+  const body=st.running?`<p class="sub" style="margin:0">Getting nature videos: ${st.done||0} of ${st.want||"…"}${st.current?` · ${esc(st.current)}`:""}</p>`
+    :`<div class="row"><button class="btn sm${list.length?"":" primary"}" id="sfGetVid">${list.length?"Get more videos":"Get nature videos"}</button></div>
+      <p class="sub" style="margin:0">From ${src}, free licenses, with the author shown. Up to 10 videos and 2.5 GB, kept on this Mac only.${n.pexels?"":" For more beautiful footage, put a free Pexels key in the keychain as tatsuki-desk-pexels."}</p>
+      ${st.error?`<p class="sub" style="margin:0">${esc(st.error)}</p>`:""}`;
+  const rows=list.map(v=>`<li><span>${esc(v.title)} · ${esc(v.author)} · ${esc(v.source)}</span><span><button class="ibtn" data-sfvhide="${esc(v.id)}" aria-label="Remove this video">✕</button></span></li>`).join("");
+  return list.length?`<details class="card sfset" data-noauto><summary class="sub">Nature videos (${list.length})</summary>${body}<ul class="sflist">${rows}</ul></details>`
+    :`<section class="card" data-noauto><div class="dhead"><h2>Real nature footage</h2></div>${body}</section>`;
+}
+/* while a session runs: the whole window, and no other screen */
+const sfLocked=()=>!!sfRunning()&&!sfPhase(sfRunning()).done;
+function sfWindowFull(on){
+  const h=window.webkit?.messageHandlers?.deskWindow;
+  if(h){try{h.postMessage({fullscreen:!!on})}catch(e){}return}
+  try{if(on&&!document.fullscreenElement)document.documentElement.requestFullscreen?.().catch(()=>{});
+    if(!on&&document.fullscreenElement)document.exitFullscreen?.().catch(()=>{})}catch(e){}
+}
+window.addEventListener("hashchange",()=>{if(sfLocked()&&viewId()!=="study")location.replace("#study")});
+window.addEventListener("keydown",e=>{
+  if(!sfLocked()||e.target.closest?.("#modal,.sfover"))return;
+  if(e.key==="Tab")return;
+  e.preventDefault();e.stopImmediatePropagation();
+},true);
+const sfEmergencyUsed=()=>S.sfLog.some(x=>x.emergency&&hcmcDay(x.end||0)===hcmcDate());
 function sfSave(){try{const {kind,rounds,block,sound,vol,title}=S.sf;localStorage.setItem(SF_PREF,JSON.stringify({kind,rounds,block,sound,vol,title}))}catch(e){}}
 const sfSet=()=>Object.assign({rate:3,goalDays:30},S.sfWallet.find(x=>x.id==="settings")||{});
 const sfRunning=()=>S.sfLog.find(x=>x.status==="running");
@@ -11314,6 +11377,7 @@ async function sfLoad(){
     S.sfLog=(l||[]).filter(x=>x&&!x.deleted);S.sfWallet=(w||[]).filter(x=>x&&!x.deleted);S.sfLoaded=true;S.sfErr=false}
   catch(e){S.sfErr=true}
   const r=sfRunning();if(r&&sfPhase(r).done) return sfFinish(r,"done"); // the window was closed while it ended
+  if(r&&viewId()!=="study"){location.replace("#study");return}
   if(viewId()==="study"||r) render();
 }
 async function sfPut(col,doc){
@@ -11437,8 +11501,12 @@ function sfPlant(g,x,y,H,gr,t){
 function sfPaint(cv,now){
   const dpr=Math.min(2,window.devicePixelRatio||1),w=cv.clientWidth,h=cv.clientHeight;if(!w||!h)return;
   if(cv.width!==Math.round(w*dpr)||cv.height!==Math.round(h*dpr)){cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);SF.bg=null}
-  if(!SF.bg||SF.bg.width!==cv.width)SF.bg=sfDrawBg(w,h,dpr);
-  const g=cv.getContext("2d"),t=(now-SF.t0)/1000;g.setTransform(1,0,0,1,0,0);g.drawImage(SF.bg,0,0);g.setTransform(dpr,0,0,dpr,0,0);
+  const g=cv.getContext("2d"),t=(now-SF.t0)/1000;
+  if(SF.video){g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,cv.width,cv.height);g.setTransform(dpr,0,0,dpr,0,0);
+    const H=Math.min(h*.5,360),x=w-Math.max(90,Math.min(180,w*.14)),y=h-28,sh=g.createRadialGradient(x,y,0,x,y,H*.35);
+    sh.addColorStop(0,"rgba(0,0,0,.35)");sh.addColorStop(1,"rgba(0,0,0,0)");g.fillStyle=sh;g.beginPath();g.ellipse(x,y,H*.35,H*.08,0,0,Math.PI*2);g.fill();
+    sfPlant(g,x,y,H,SF.growth,t);return}
+  if(!SF.bg||SF.bg.width!==cv.width)SF.bg=sfDrawBg(w,h,dpr);g.setTransform(1,0,0,1,0,0);g.drawImage(SF.bg,0,0);g.setTransform(dpr,0,0,dpr,0,0);
   g.save();g.globalCompositeOperation="screen";
   for(let i=0;i<4;i++){const a=.05+.035*Math.sin(t*.09+i*1.7),x=w*(.6+i*.08);g.fillStyle=`rgba(255,244,212,${a})`;g.beginPath();g.moveTo(x,0);g.lineTo(x+w*.05,0);g.lineTo(x-w*.2+i*w*.03,h);g.lineTo(x-w*.32+i*w*.03,h);g.closePath();g.fill()}
   g.restore();
@@ -11451,7 +11519,7 @@ function sfPaint(cv,now){
 }
 function sfFrame(now){const cv=$("#sfCanvas");if(!cv){SF.raf=0;return}SF.raf=requestAnimationFrame(sfFrame);if(now-SF.last<40)return;SF.last=now;sfPaint(cv,now)}
 function sfCanvasStart(){
-  SF.growth=sfGrowth(sfStats().hours);const cv=$("#sfCanvas");if(!cv)return;
+  SF.growth=sfGrowth(sfStats().hours);SF.video=S.nat.videos.length>0;const cv=$("#sfCanvas");if(!cv)return;sfVideoStart();
   if(matchMedia("(prefers-reduced-motion:reduce)").matches){sfPaint(cv,SF.t0);return}
   if(!SF.raf)SF.raf=requestAnimationFrame(sfFrame);
 }
@@ -11468,7 +11536,7 @@ async function sfStart(){
     catch(e){toast("Blocking did not start: "+e.message)}
   }
   try{await sfPut("studylog",doc)}catch(e){toast("Could not save the session");return}
-  sfChime();render();
+  sfWindowFull(true);sfChime();location.replace("#study");render();
 }
 let sfLastMode="";
 function sfTick(){
@@ -11479,16 +11547,16 @@ function sfTick(){
   document.querySelectorAll("[data-sfnav]").forEach(el=>el.textContent=fbLeft(p.left));
   if(viewId()==="study")sfPanels();
 }
-async function sfFinish(r,status,reason=""){
+async function sfFinish(r,status,reason="",emergency=false){
   if(S.sfFinishing)return;S.sfFinishing=true;
   try{
     const end=status==="done"?r.start+sfTotalMs(r):Date.now(),workMs=status==="done"?r.rounds*r.work*SF_MIN:sfPhase(r,end).workMs,earned=sfEarn(r,workMs);
-    await sfPut("studylog",{...r,status,end,workMs,earned,reason});
+    await sfPut("studylog",{...r,status,end,workMs,earned,reason,...(emergency?{emergency:true}:{})});
     if(workMs>=SF_MIN){
       try{await tlPut({id:"sf-"+r.id,taskId:"",title:r.title||sfKindLabel(r.kind),start:r.start,end,pausedMs:0,via:"desk"})}catch(e){}
       try{await store.putWin({id:winId("focus-"+r.id),kind:"focus",title:`${r.title||sfKindLabel(r.kind)} · ${sfDur(workMs)} focused${earned?` · +${sfMoney(earned)} for food`:""}`,ref:r.id})}catch(e){}
     }
-    sfSoundStop();
+    sfSoundStop();sfWindowFull(false);
     if(status==="done"){sfChime();toast(earned?`✨ +${sfMoney(earned)} in the food jar`:"✨ Session done")}
     else toast(workMs>=SF_MIN?`Stopped. ${sfDur(workMs)} counted${earned?`, +${sfMoney(earned)}`:""}`:"Stopped");
   }catch(e){toast("Could not save the session")}
@@ -11500,20 +11568,23 @@ function openSfStop(){
   $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop" role="dialog" aria-modal="true" aria-label="Stop early">
     <div class="top"><h2>Stop early?</h2><button class="ibtn" id="xSf" aria-label="Close">✕</button></div>
     <p class="hint">Take one slow breath first. The button opens in <b id="sfWait">60</b> seconds. The focus time so far still counts.</p>
+    ${sfEmergencyUsed()?`<p class="sub" style="margin:0">The emergency stop for today is used. It comes back tomorrow.</p>`:`<p class="sub" style="margin:0">Once a day you can stop right away for something urgent, like a meeting.</p>`}
     <label class="sub" for="sfWhy">Why are you stopping?</label>
     <textarea id="sfWhy" rows="2" maxlength="300"></textarea>
     ${blocking?`<label class="sub" for="sfPw">Unlock password (leave empty to keep blocking until ${esc(fmtDue((r.start+sfTotalMs(r))))})</label><input type="password" id="sfPw" autocomplete="off">`:""}
     <p class="msg err" id="sfErr" role="alert" style="margin:0"></p>
-    <div class="row"><button class="btn primary" id="sfStopGo" disabled>Stop</button><button class="btn" id="sfNo">Keep going</button></div>
+    <div class="row"><button class="btn primary" id="sfStopGo" disabled>Stop</button>${sfEmergencyUsed()?"":`<button class="btn" id="sfEmerg" disabled>Emergency stop now</button>`}<button class="btn" id="sfNo">Keep going</button></div>
   </div></div>`;
   let left=60;const why=$("#sfWhy"),go=$("#sfStopGo");
-  const ok=()=>{go.disabled=left>0||!why.value.trim()};
+  const ok=()=>{go.disabled=left>0||!why.value.trim();const em=$("#sfEmerg");if(em)em.disabled=!why.value.trim()};
   const iv=setInterval(()=>{left--;const w=$("#sfWait");if(!w){clearInterval(iv);return}w.textContent=Math.max(0,left);if(left<=0)clearInterval(iv);ok()},1000);
   const close=()=>{clearInterval(iv);$("#modal").innerHTML=""};
   why.oninput=ok;why.focus();
-  go.onclick=async()=>{go.disabled=true;const pw=$("#sfPw")?.value||"";
-    if(pw){try{await fbPost("stop",{password:pw})}catch(e){$("#sfErr").textContent=e.message;go.disabled=false;return}}
-    close();await sfFinish(r,"stopped",why.value.trim().slice(0,300))};
+  const stop=async(emergency,btn)=>{btn.disabled=true;const pw=$("#sfPw")?.value||"";
+    if(pw){try{await fbPost("stop",{password:pw})}catch(e){$("#sfErr").textContent=e.message;btn.disabled=false;return}}
+    close();await sfFinish(r,"stopped",why.value.trim().slice(0,300),emergency)};
+  go.onclick=()=>stop(false,go);
+  $("#sfEmerg")&&($("#sfEmerg").onclick=()=>stop(true,$("#sfEmerg")));
   $("#sfNo").onclick=close;$("#xSf").onclick=close;$("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};
 }
 
@@ -11538,14 +11609,14 @@ function sfSoundBar(){
 }
 function sfRunView(r,st){
   const p=sfPhase(r);
-  return `<section class="sfstage" id="sfStage"><canvas id="sfCanvas" aria-hidden="true"></canvas>
+  return `<section class="sfstage" id="sfStage">${sfVideoHtml()}<canvas id="sfCanvas" aria-hidden="true"></canvas>
     <div class="sfover" data-noauto>
       <p class="eyebrow" id="sfMode"></p>
       <div class="sfclock" id="sfClock">${fbLeft(p.left)}</div>
       <p class="sfsub" id="sfSub"></p>
       <div class="sfdots" id="sfDots"></div>
       <div class="sfbar">${sfSoundBar()}</div>
-      <div class="row">${SFA.kind==="off"&&S.sf.sound!=="off"?`<button class="btn sm" id="sfPlay">Play sound</button>`:""}<button class="btn sm" id="sfFull">Full screen</button><button class="btn sm" id="sfStop">Stop early</button></div>
+      <div class="row">${SFA.kind==="off"&&S.sf.sound!=="off"?`<button class="btn sm" id="sfPlay">Play sound</button>`:""}<button class="btn sm" id="sfStop">Stop early</button></div>
     </div>
     <p class="sfplant" id="sfPlantLbl">${esc(sfPlantLine(st.hours))}</p>
   </section>
@@ -11568,7 +11639,7 @@ function sfStartView(st){
   const recent=S.sfLog.filter(x=>x.status!=="running").sort((a,b)=>b.start-a.start).slice(0,8);
   const spends=S.sfWallet.filter(x=>x.kind==="spend").sort((a,b)=>(b.at||0)-(a.at||0)).slice(0,6);
   return `<header class="head"><div><p class="eyebrow">Study Focus</p><h1>Focus in the forest</h1><p class="sub">25 minutes of focus, then 5 minutes of rest, on their own. The sound lasts one focus round and fades out as it ends.</p></div></header>
-  <section class="sfstage small" id="sfStage"><canvas id="sfCanvas" aria-hidden="true"></canvas><p class="sfplant" id="sfPlantLbl">${esc(sfPlantLine(st.hours))}</p></section>
+  <section class="sfstage small" id="sfStage">${sfVideoHtml()}<canvas id="sfCanvas" aria-hidden="true"></canvas><p class="sfplant" id="sfPlantLbl">${esc(sfPlantLine(st.hours))}</p></section>
   <section class="card fbform" data-noauto>
     <div class="fbgroup"><h2>What is this time for?</h2><div class="chips">${SF_KINDS.map(([k,l])=>`<button class="chip" data-sfkind="${k}" aria-pressed="${f.kind===k}">${l}</button>`).join("")}</div>
       <p class="sub" style="margin:0">${esc((SF_KINDS.find(x=>x[0]===f.kind)||SF_KINDS[0])[2])}</p>
@@ -11580,6 +11651,7 @@ function sfStartView(st){
     <div class="fbgroup sfbar">${sfSoundBar()}</div>
     <div class="row"><button class="btn primary" id="sfGo">Start</button></div>
   </section>
+  ${sfNatPanel()}
   <section class="card sfjarcard" aria-label="Food jar" data-noauto>${sfJar(st)}
     <div class="sfjartext"><p class="eyebrow">Food jar</p><p class="sfbig">${sfMoney(st.balance)}</p>
       <p class="sub" style="margin:0">Earned ${sfMoney(st.earned)} · Spent ${sfMoney(st.spent)}${st.todayEarned?` · Today +${sfMoney(st.todayEarned)}`:""}</p>
@@ -11594,7 +11666,7 @@ function studyView(){
   if(!S.sfLoaded) return `<header class="head"><div><p class="eyebrow">Study Focus</p><h1>${S.sfErr?"Cannot reach the Desk server":"Loading"}</h1></div></header>`;
   const r=sfRunning(),st=sfStats();return r?sfRunView(r,st):sfStartView(st);
 }
-const sfKey=()=>{const r=sfRunning();return JSON.stringify([S.sfLoaded,S.sfErr,r?.id,r?SFA.kind==="off":[S.sf.kind,S.sf.rounds,S.sf.block,S.fb.apps,S.fb.web,!!S.fb.state?.hasPassword],S.sfLog.map(x=>x.updatedAt).join(),S.sfWallet.map(x=>x.updatedAt).join()])};
+const sfKey=()=>{const r=sfRunning();return JSON.stringify([S.nat.videos.length,S.nat.state?.running,S.nat.state?.done,S.nat.state?.error,S.sfLoaded,S.sfErr,r?.id,r?SFA.kind==="off":[S.sf.kind,S.sf.rounds,S.sf.block,S.fb.apps,S.fb.web,!!S.fb.state?.hasPassword],S.sfLog.map(x=>x.updatedAt).join(),S.sfWallet.map(x=>x.updatedAt).join()])};
 function wireSf(){
   const pref=(k,v)=>{S.sf[k]=v;sfSave();render()};
   document.querySelectorAll("[data-sfkind]").forEach(b=>b.onclick=()=>pref("kind",b.dataset.sfkind));
@@ -11606,6 +11678,8 @@ function wireSf(){
   $("#sfGo")&&($("#sfGo").onclick=sfStart);
   $("#sfPlay")&&($("#sfPlay").onclick=()=>{sfSoundStart();render()});
   $("#sfStop")&&($("#sfStop").onclick=openSfStop);
+  $("#sfGetVid")&&($("#sfGetVid").onclick=async()=>{try{S.nat={...await api("POST","/api/nature/fetch",{}),loaded:true};render();setTimeout(natLoad,3000)}catch(e){toast("Could not start")}});
+  document.querySelectorAll("[data-sfvhide]").forEach(b=>b.onclick=async()=>{try{S.nat={...await api("POST","/api/nature/hide",{id:b.dataset.sfvhide}),loaded:true};SFV.order=[];render()}catch(e){toast("Could not remove")}});
   $("#sfFull")&&($("#sfFull").onclick=()=>{const s=$("#sfStage");if(document.fullscreenElement)document.exitFullscreen();else(s.requestFullscreen||s.webkitRequestFullscreen)?.call(s)});
   $("#sfUse")&&($("#sfUse").onclick=async()=>{const a=Math.round(+$("#sfAmt").value*100)/100;if(!(a>0)){$("#sfAmt").focus();return}
     try{await sfPut("wallet",{id:"sp"+Date.now().toString(36),kind:"spend",amount:a,note:$("#sfNote").value.trim().slice(0,80),date:hcmcDate(),at:Date.now()});toast("Enjoy your meal")}catch(e){toast("Could not save")}render()});
@@ -11613,7 +11687,7 @@ function wireSf(){
   $("#sfSetSave")&&($("#sfSetSave").onclick=async()=>{const rate=Math.min(100,Math.max(0,+$("#sfRate").value||0)),goalDays=Math.min(365,Math.max(1,Math.round(+$("#sfGoal").value||30)));
     try{await sfPut("wallet",{...sfSet(),id:"settings",kind:"settings",rate,goalDays});toast("Saved")}catch(e){toast("Could not save")}render()});
 }
-window.addEventListener("hashchange",()=>{if(viewId()==="study"&&LOCALAPI)sfLoad()});
+window.addEventListener("hashchange",()=>{if(viewId()==="study"&&LOCALAPI){sfLoad();natLoad()}});
 
 /* ---------- boot ---------- */
 render();
@@ -11622,7 +11696,7 @@ autoLinkStart();
   if(Array.isArray(window.TOOLS)){ // PC version
     try{S.dues=JSON.parse(localStorage.getItem("desk-dues")||"{}")||{}}catch(e){S.dues={}}
     S.loaded=true;S.local=true;S.tools=window.TOOLS.map(enOf);S.editions=window.WORLD||[];S.days=window.MAIL||[];S.cal=window.CAL||null;S.gtasks=window.GTASKS||null;S.reports=window.REPORTS||[];S.watch=window.WATCH||[];S.heritage=(window.HERITAGE||[]).filter(h=>!h.deleted);S.hcountries=(window.HERITAGE_COUNTRIES||[]).map(([code,name,region])=>({code,name,region}));S.memory=window.MEMORY||null;
-    if(LOCALAPI){uEnter();uSync();fbLoad();setInterval(fbLoad,5000);sfLoad();setInterval(sfTick,1000);await loadApiMemos();setInterval(loadApiMemos,30000);window.addEventListener("focus",loadApiMemos);return}
+    if(LOCALAPI){uEnter();uSync();fbLoad();setInterval(fbLoad,5000);sfLoad();natLoad();setInterval(sfTick,1000);await loadApiMemos();setInterval(loadApiMemos,30000);window.addEventListener("focus",loadApiMemos);return}
     try{S.memos=JSON.parse(localStorage.getItem("desk-memos")||"[]")}catch(e){S.memos=[]}
     try{S.tasks=JSON.parse(localStorage.getItem("desk-tasks")||"[]")}catch(e){S.tasks=[]}
     try{S.prompts=JSON.parse(localStorage.getItem("desk-prompts")||"{}")||{}}catch(e){S.prompts={}}

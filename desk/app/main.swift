@@ -37,13 +37,17 @@ func failurePage(_ reason: String) -> String {
     """
 }
 
-final class DeskController: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDelegate {
+final class DeskController: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler {
     var window: NSWindow!
     var web: WKWebView!
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let config = WKWebViewConfiguration()
         config.websiteDataStore = .default()
+        // Study Focus asks for the whole screen while a session runs: {fullscreen: true|false}
+        config.userContentController.add(self, name: "deskWindow")
+        if #available(macOS 12.3, *) { config.preferences.isElementFullscreenEnabled = true }
+        config.mediaTypesRequiringUserActionForPlayback = []
         web = WKWebView(frame: .zero, configuration: config)
         web.navigationDelegate = self
         web.uiDelegate = self
@@ -65,6 +69,12 @@ final class DeskController: NSObject, NSApplicationDelegate, WKNavigationDelegat
         buildMenu()
         NSApp.activate(ignoringOtherApps: true)
         openDesk()
+    }
+
+    func userContentController(_ controller: WKUserContentController, didReceive message: WKScriptMessage) {
+        guard message.name == "deskWindow", let body = message.body as? [String: Any],
+              let want = body["fullscreen"] as? Bool, let w = window else { return }
+        if w.styleMask.contains(.fullScreen) != want { w.toggleFullScreen(nil) }
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {

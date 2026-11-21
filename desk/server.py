@@ -34,6 +34,7 @@ import bank
 import accounts
 import tabs  # the open tabs of Desk's tab bar (desk/tabs.py)
 import netspeed
+import nature  # real nature videos for Study Focus, fetched only when asked (desk/nature.py)
 import wifi_login
 import footprint
 import finder
@@ -83,7 +84,7 @@ import wise_report
 import wise_sync
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
-DATA = os.path.join(ROOT, "data")
+DATA = os.environ.get("DESK_DATA_DIR") or os.path.join(ROOT, "data")  # DESK_DATA_DIR: a throwaway data folder for tests
 PORT = int(os.environ.get("DESK_PORT", "4747"))
 COLLECTIONS = ("memos", "dues", "tasks", "prompts", "notes", "habits", "lifemap", "wins", "worldlog", "presents", "heritagelog", "routines", "routinelog", "rewards", "ideaslog", "gear", "projects", "sections", "jobapps", "replywin", "genres", "tasktypes", "mergeprops", "timelog", "genrelog", "typeprops", "wboards", "wcards", "okrs", "readmarks", "lookups", "concepts", "cards", "cardlog", "studylog", "wallet")
 # file in data/, global the page reads, value when the file is missing
@@ -1089,6 +1090,8 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/cards-link":  # the phone's one-time setup link for the Cards app; the passphrase rides in the # part
             k = cards_sync.key()
             return self.send(200, {"url": cards_sync.APP + ("#key=" + urllib.parse.quote(k, safe="") if k else ""), "sync": bool(k)})
+        if path == "/api/nature":
+            return self.send(200, nature.view())
         if path == "/api/netspeed":
             return self.send(200, netspeed.view())
         if path == "/api/startclean":  # the apps closed at startup (desk/startup_clean.py); names only
@@ -1433,6 +1436,13 @@ class Handler(BaseHTTPRequestHandler):
             if not (self.headers.get("Content-Type") or "").startswith("application/json"):
                 return self.send(415, {"error": "json only"})
             return self.send(200, wifi_login.run())
+        if method == "POST" and urlsplit(self.path).path in ("/api/nature/fetch", "/api/nature/hide"):
+            if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+                return self.send(415, {"error": "json only"})
+            if self.path.endswith("/hide"):
+                return self.send(200, nature.hide(str(rec.get("id") or "")))
+            nature.start()
+            return self.send(200, nature.view())
         if method == "POST" and urlsplit(self.path).path == "/api/netspeed/run":
             if not (self.headers.get("Content-Type") or "").startswith("application/json"):
                 return self.send(415, {"error": "json only"})
