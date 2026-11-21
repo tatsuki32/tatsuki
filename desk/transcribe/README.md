@@ -13,6 +13,22 @@ iPhoneの録音は、ボイスメモをAirDropでMacに送り、画面にドロ�
 録音サーバー（127.0.0.1:8791）は Desk のサーバーが起動時に立ち上げ、止まったら1分以内に立ち上げ直します（`desk/transcribe_desk.py`）。
 初めての Mac では `bash desk/transcribe/setup.sh` を1回実行してエンジン（約1.6GB）を入れます。
 
+## 話者を分ける（2026-11-21）
+
+録音画面の上で3つから選びます。選んだものは次回も残ります。
+
+| 選ぶもの | 録るもの | 分け方 |
+|---|---|---|
+| Mic only | マイク1本 | 分けない（前と同じ） |
+| Meeting | マイク＝Me、Mac の音＝Them | 2本を別々に文字にして時刻で並べる |
+| In person | マイク1本 | 文字にしたあと、声の特徴で Speaker A / B に分ける |
+
+- Meeting の Mac の音は `~/Applications/TatsukiAudioTap.app`（`desk/app/audiotap.swift`）が録ります。Zoom・ブラウザ（Meet）・Teams・FaceTime の音だけで、通知音や音楽は入りません。初回だけ「システム設定 › プライバシーとセキュリティ › 画面とシステムオーディオの録音」で Tatsuki Audio Tap を許可します。画面の絵は残しません。
+- 相手に録音することを伝えてください。スピーカーだと相手の声がマイクにも入るので、イヤホンを使います（同じ時刻・同じ文の Me の行は自動で消します）。
+- 名前を押すと「名前を変える」（全部の行）と「この行を別の人にする」。In person は「Swap A and B」も。前に録った録音や取り込んだ録音は「Split into 2 speakers」で後から分けられます。
+- Copy all と Save as text は「名前: 発言」で、同じ人が続く行は1つにまとめます。
+- 話者分けは sherpa-onnx（pyannote の区間検出＋3D-Speaker CAM++、約65MB、`engine/diar/`）。Mac の中だけで動きます。
+
 ## 長時間使うときの注意
 
 - 録音にはChromeをおすすめします（動作確認に使ったブラウザです）。
@@ -41,3 +57,5 @@ iPhoneの録音は、ボイスメモをAirDropでMacに送り、画面にドロ�
 - `desk/data/transcribe/sessions/` … 録音と文字起こしの結果（git にも非公開の保管にも入れない）
 - `desk/transcribe/engine/` … エンジンとモデル（git に入れない）。`setup.sh` で作り直せます
 - `desk/transcribe/server.py`, `public/` … 本体（Python標準ライブラリのみ）
+- `desk/app/audiotap.swift` … 会議の相手の声を録るアプリ。作り直すと許可が外れるので、`setup.sh` は無いときだけ作る
+- 試験：`python3 -m unittest desk.tests.test_transcribe`、画面は `.claude/launch.json` の `transcribe-test`（8792。Mac の音は録らない）

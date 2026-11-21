@@ -2,6 +2,12 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "transcribe-test",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "PORT=${PORT:-8792} TRANSCRIBE_DIR=/tmp/claude/transcribe-test TRANSCRIBE_TAP_CMD=/usr/bin/true exec python3 desk/transcribe/server.py"],
+      "port": 8792
+    },
+    {
       "name": "profile-preview",
       "runtimeExecutable": "python3",
       "runtimeArgs": ["-m", "http.server", "4801", "-d", "/Applications/programming/my_profile_linkedin"],

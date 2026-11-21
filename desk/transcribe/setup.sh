@@ -34,4 +34,35 @@ if [ ! -x engine/whisper-cli ]; then
 fi
 
 fetch "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/$MODEL" "engine/models/$MODEL" "$MODEL_SIZE"
+# 対面の話者分け(sherpa-onnx)。区間の検出(pyannote)と声の特徴(3D-Speaker CAM++)のモデル
+SHERPA=v2.0.2
+SHERPA_PKG=sherpa-onnx-$SHERPA-osx-arm64-shared-no-tts; SHERPA_SIZE=20197239
+SEG=sherpa-onnx-pyannote-segmentation-3-0;            SEG_SIZE=6958444
+EMB=3dspeaker_speech_campplus_sv_zh_en_16k-common_advanced.onnx; EMB_SIZE=28281165
+REL=https://github.com/k2-fsa/sherpa-onnx/releases/download
+mkdir -p engine/diar
+if [ ! -x engine/diar/bin/sherpa-onnx-offline-speaker-diarization ]; then
+  fetch "$REL/$SHERPA/$SHERPA_PKG.tar.bz2" "engine/diar/pkg.tar.bz2" "$SHERPA_SIZE"
+  tar xjf engine/diar/pkg.tar.bz2 -C engine/diar --strip-components=1
+  rm engine/diar/pkg.tar.bz2
+  # 使うのは話者分けの1本だけ
+  find engine/diar/bin -type f ! -name sherpa-onnx-offline-speaker-diarization -delete
+  rm -rf engine/diar/include
+fi
+if [ ! -f engine/diar/segmentation.onnx ]; then
+  fetch "$REL/speaker-segmentation-models/$SEG.tar.bz2" "engine/diar/seg.tar.bz2" "$SEG_SIZE"
+  tar xjf engine/diar/seg.tar.bz2 -C engine/diar
+  mv "engine/diar/$SEG/model.onnx" engine/diar/segmentation.onnx
+  rm -rf "engine/diar/$SEG" engine/diar/seg.tar.bz2
+fi
+fetch "$REL/speaker-recongition-models/$EMB" "engine/diar/embedding.onnx" "$EMB_SIZE"
+
+# 会議の相手の声(Mac の音)を録る小さなアプリ。作り直すと「画面収録」の許可が外れるので、無いときだけ作る
+TAP="$HOME/Applications/TatsukiAudioTap.app"
+if [ ! -x "$TAP/Contents/MacOS/TatsukiAudioTap" ]; then
+  mkdir -p "$TAP/Contents/MacOS"
+  swiftc -O -framework ScreenCaptureKit -framework CoreMedia "../app/audiotap.swift" -o "$TAP/Contents/MacOS/TatsukiAudioTap"
+  cp ../app/audiotap-info.plist "$TAP/Contents/Info.plist"
+  codesign -f -s - -i com.tatsuki.desk.audiotap "$TAP"
+fi
 echo "セットアップ完了"

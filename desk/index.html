@@ -7175,8 +7175,8 @@ const fpHomeLine=()=>{const h=S.fpHome;if(!LOCALAPI)return "";if(!h||!h.kg)retur
   return `<a class="sub pcline" id="fpLine" href="#footprint">Footprint yesterday: ${fpKg(h.kg)} CO2e${h.cowHours?` · ${fpHours(h.cowHours)} of a cow`:""}</a>`};
 /* Transcribe: long recordings turned into text on this Mac. The recorder is its own server (desk/transcribe/, 8791) and opens in the default browser,
    which can use the microphone. This view only reads the sessions (desk/transcribe_desk.py) and starts the server when it is not running. */
-const TRWORD={recording:"Recording",interrupted:"Stopped early",uploading:"Importing",queued:"Waiting",converting:"Converting",transcribing:"Transcribing",done:"Done",partial:"Partly done",error:"Didn't finish"};
-const TRBUSY=["recording","queued","converting","transcribing"];
+const TRWORD={recording:"Recording",interrupted:"Stopped early",uploading:"Importing",queued:"Waiting",converting:"Converting",transcribing:"Transcribing",splitting:"Telling voices apart",done:"Done",partial:"Partly done",error:"Didn't finish"};
+const TRBUSY=["recording","queued","converting","transcribing","splitting"];
 const trLen=v=>{const t=Math.round(v||0),h=Math.floor(t/3600),m=Math.floor(t%3600/60);return h?`${h} hr ${m} min`:m?`${m} min`:`${t} sec`};
 const trState=x=>x.status==="transcribing"&&x.total?`${TRWORD.transcribing} · ${Math.round(x.done/x.total*100)}%`:x.status==="partial"?`${TRWORD.partial} · ${x.failed} part${x.failed>1?"s":""} to retry`:TRWORD[x.status]||x.status;
 async function trLoad(){

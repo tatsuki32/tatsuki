@@ -22,7 +22,7 @@ DIR = os.environ.get("TRANSCRIBE_DIR") or os.path.join(ROOT, "data", "transcribe
 PORT = int(os.environ.get("TRANSCRIBE_PORT", "8791"))
 URL = f"http://localhost:{PORT}/"
 ENGINE_FILES = ("whisper-cli", "models/ggml-large-v3-turbo.bin", "models/ggml-silero-v5.1.2.bin")
-ACTIVE = ("queued", "converting", "transcribing")
+ACTIVE = ("queued", "converting", "transcribing", "splitting")
 STALE = 30  # seconds without audio before a recording counts as stopped (the same rule as transcribe/server.py)
 _lock = threading.Lock()
 

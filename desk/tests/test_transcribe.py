@@ -1,0 +1,177 @@
+"""Transcribe: Me / Them for meetings, A / B for one mic. Run: python3 -m unittest desk.tests.test_transcribe
+
+The speech engine, the speaker engine and the Mac-audio app are small fake scripts, so nothing is downloaded or recorded.
+"""
+import array
+import importlib.util
+import json
+import os
+import shutil
+import sys
+import tempfile
+import time
+import unittest
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+SERVER = os.path.join(os.path.dirname(HERE), 'transcribe', 'server.py')
+
+# whisper-cli stand-in: one line per file. Loud audio says "them", quiet audio says "me".
+FAKE_WHISPER = r'''#!/usr/bin/env python3
+import array, json, sys, wave
+a = sys.argv
+wav, stem = a[a.index('-f') + 1], a[a.index('-of') + 1]
+with wave.open(wav) as w:
+    n = w.getnframes()
+    x = array.array('h'); x.frombytes(w.readframes(n))
+level = sum(abs(v) for v in x) / max(len(x), 1)
+text = 'see you on friday' if level > 4000 else 'good morning' if level > 100 else ''
+items = [{'offsets': {'from': 0, 'to': int(n / 16)}, 'text': text}] if text else []
+json.dump({'transcription': items}, open(stem + '.json', 'w'))
+'''
+
+FAKE_DIAR = r'''#!/usr/bin/env python3
+print('Started')
+print('0.000 -- 1.900 speaker_01')
+print('2.100 -- 4.000 speaker_00')
+'''
+
+
+def tone(seconds, amp):
+    x = array.array('h', [amp if i % 2 else -amp for i in range(int(seconds * 16000))])
+    return x.tobytes()
+
+
+def write_exe(path, body):
+    with open(path, 'w') as f:
+        f.write(body)
+    os.chmod(path, 0o755)
+
+
+class TranscribeSpeakers(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.tmp = tempfile.mkdtemp()
+        engine = os.path.join(cls.tmp, 'engine')
+        os.makedirs(os.path.join(engine, 'models'))
+        os.makedirs(os.path.join(engine, 'diar', 'bin'))
+        write_exe(os.path.join(engine, 'whisper-cli'), FAKE_WHISPER.replace('#!/usr/bin/env python3', '#!' + sys.executable))
+        write_exe(os.path.join(engine, 'diar', 'bin', 'sherpa-onnx-offline-speaker-diarization'),
+                  FAKE_DIAR.replace('#!/usr/bin/env python3', '#!' + sys.executable))
+        for name in ('models/ggml-large-v3-turbo.bin', 'models/ggml-silero-v5.1.2.bin', 'diar/segmentation.onnx', 'diar/embedding.onnx'):
+            open(os.path.join(engine, name), 'w').close()
+        os.environ.update(TRANSCRIBE_DIR=os.path.join(cls.tmp, 'data'), TRANSCRIBE_ENGINE=engine, TRANSCRIBE_TAP_CMD='/usr/bin/true')
+        spec = importlib.util.spec_from_file_location('tr_server', SERVER)
+        cls.s = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(cls.s)
+        os.makedirs(cls.s.SESSIONS, exist_ok=True)
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(cls.tmp, ignore_errors=True)
+        for k in ('TRANSCRIBE_DIR', 'TRANSCRIBE_ENGINE', 'TRANSCRIBE_TAP_CMD'):
+            os.environ.pop(k, None)
+
+    def run_session(self, sid):
+        self.s.queue_transcription(sid)
+        self.s.process(sid)
+        return self.s.load_meta(sid)
+
+    def test_meeting_puts_me_and_them_in_time_order(self):
+        s = self.s
+        meta = s.create_session('Call', 'en', 'recording', 'recording', 'meeting')
+        sid = meta['id']
+        mic_start = time.time()
+        s.update_meta(sid, mic_start=mic_start)
+        s.append_chunk(sid, 0, tone(3, 1000))                     # Me: 3 s, quiet
+        with open(os.path.join(s.sdir(sid), 'them.pcm'), 'wb') as f:
+            f.write(tone(1, 8000))                                 # Them: 1 s, loud, starting 2 s later
+        s.write_json(os.path.join(s.sdir(sid), 'tap.json'),
+                     {'state': 'stopped', 'started': mic_start + 2.0, 'updated': time.time(), 'apps': ['zoom.us']})
+        meta = self.run_session(sid)
+        self.assertEqual(meta['status'], 'done')
+        self.assertAlmostEqual(meta['them_offset'], 2.0, places=2)
+        self.assertEqual(meta['tap_apps'], ['zoom.us'])
+        rows = s.assemble(sid)
+        self.assertEqual([(r['spk'], r['text']) for r in rows], [('me', 'good morning'), ('them', 'see you on friday')])
+        self.assertAlmostEqual(rows[1]['start'], 2.0, places=1)
+        self.assertTrue(rows[1]['key'].startswith('t'))
+        # the mix is as long as the longer side and plays instead of the mic alone
+        self.assertEqual(s.file_size(s.mix_path(sid)), 3 * 32000)
+        self.assertEqual(s.play_path(sid), s.mix_path(sid))
+        self.assertEqual(s.public_meta(s.load_meta(sid))['speakers'], {'me': 'Me', 'them': 'Them'})
+
+    def test_rename_and_fix_one_line(self):
+        s = self.s
+        sid = s.create_session('Call', 'en', 'recording', 'recording', 'meeting')['id']
+        s.update_meta(sid, mic_start=time.time(), them_offset=0.0)
+        s.append_chunk(sid, 0, tone(1, 1000))
+        meta = self.run_session(sid)
+        s.update_meta(sid, speakers={'them': 'Aki'})
+        self.assertEqual(s.speakers_of(s.load_meta(sid)), {'me': 'Me', 'them': 'Aki'})
+        key = s.assemble(sid)[0]['key']
+        s.write_json(os.path.join(s.sdir(sid), 'speakers.json'), {key: 'them'})
+        self.assertEqual(s.assemble(sid)[0]['spk'], 'them')
+        self.assertEqual(s.transcript_lines(sid, False), ['Aki: good morning'])
+        self.assertEqual(meta['status'], 'done')
+
+    def test_in_person_splits_into_a_and_b(self):
+        s = self.s
+        sid = s.create_session('Talk', 'en', 'recording', 'recording', 'inperson')['id']
+        s.append_chunk(sid, 0, tone(4, 1000))
+        # two lines from the fake engine: split the audio into two parts so each gets its own line
+        s.write_json(os.path.join(s.sdir(sid), 'plan.json'), [[0, 2 * 32000], [2 * 32000, 4 * 32000]])
+        meta = self.run_session(sid)
+        self.assertEqual(meta['status'], 'done')
+        self.assertIsNone(meta.get('diar_error'))
+        rows = s.assemble(sid)
+        # the first voice heard is A, whatever number the engine gave it
+        self.assertEqual([r['spk'] for r in rows], ['A', 'B'])
+        self.assertEqual(s.transcript_lines(sid, True), ['[00:00:00] Speaker A: good morning', '[00:00:02] Speaker B: good morning'])
+
+    def test_split_an_old_recording_later(self):
+        s = self.s
+        sid = s.create_session('Old', 'ja', 'recording', 'recording', 'mic')['id']
+        s.append_chunk(sid, 0, tone(1, 1000))
+        self.run_session(sid)
+        self.assertNotIn('spk', s.assemble(sid)[0])
+        s.update_meta(sid, mode='inperson', status='queued')
+        s.process(sid)  # the text is kept; only the speakers are added
+        self.assertEqual(s.assemble(sid)[0]['spk'], 'A')
+
+    def test_same_speaker_lines_join_without_spaces_in_japanese(self):
+        s = self.s
+        sid = s.create_session('JP', 'ja', 'recording', 'recording', 'inperson')['id']
+        s.append_chunk(sid, 0, tone(1, 1000))
+        s.write_json(os.path.join(s.sdir(sid), 'plan.json'), [[0, 16000], [16000, 32000]])
+        s.write_json(os.path.join(s.sdir(sid), 'diar.json'), [[0, 1, 'A']])
+        self.run_session(sid)
+        self.assertEqual(s.transcript_lines(sid, False), ['Speaker A: good morninggood morning'])
+
+    def test_echo_from_speakers_is_dropped_from_me(self):
+        s = self.s
+        me = [{'start': 1.0, 'end': 3.0, 'text': 'See you on Friday.'}, {'start': 5.0, 'end': 6.0, 'text': 'Sounds good'}]
+        them = [{'start': 0.8, 'end': 3.1, 'text': 'see you on friday'}]
+        self.assertEqual([x['text'] for x in s.drop_echo(me, them)], ['Sounds good'])
+
+    def test_speaker_for_uses_overlap_then_nearest(self):
+        s = self.s
+        turns = [[0, 2, 'A'], [2, 5, 'B']]
+        self.assertEqual(s.speaker_for({'start': 1.5, 'end': 4.0}, turns), 'B')
+        self.assertEqual(s.speaker_for({'start': 6.0, 'end': 7.0}, turns), 'B')
+
+    def test_lost_tap_is_shown_and_missing_app_is_reported(self):
+        s = self.s
+        sid = s.create_session('Call', 'en', 'recording', 'recording', 'meeting')['id']
+        s.write_json(os.path.join(s.sdir(sid), 'tap.json'), {'state': 'recording', 'updated': time.time() - 20})
+        self.assertEqual(s.tap_state(sid)['state'], 'lost')
+        old = s.TAP_CMD
+        s.TAP_CMD, s.TAP_APP = None, '/nowhere/TatsukiAudioTap.app'
+        try:
+            sid2 = s.create_session('Call', 'en', 'recording', 'recording', 'meeting')['id']
+            self.assertEqual(s.tap_state(sid2), {'state': 'error', 'error': 'missing'})
+        finally:
+            s.TAP_CMD = old
+
+
+if __name__ == '__main__':
+    unittest.main()
