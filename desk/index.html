@@ -1818,11 +1818,9 @@ a.shelfbtn{text-decoration:none;display:inline-flex;align-items:center}
 .rdread{display:grid;gap:var(--s3);padding-bottom:96px}
 .rdtop{display:flex;align-items:center;gap:var(--s2);flex-wrap:wrap}
 .rdtop .rdtitle{flex:1 1 12em;min-width:0;overflow-wrap:anywhere;font-size:var(--t3)}
-.rdchap{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:var(--s2);align-items:center;max-width:680px;width:100%;margin:0 auto}
+.rdchap{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:var(--s2);align-items:center}
 .rdchap .cdsel{width:100%;max-width:none}
-.rdbody{max-width:680px;width:100%;margin:0 auto;font-size:var(--t3);line-height:1.9;cursor:text}
-.rdread.f2 .rdbody{font-size:19px;line-height:1.95}
-.rdread.f3 .rdbody{font-size:23px;line-height:2}
+.rdbody{cursor:text}
 .rdbody .rdh{font-size:var(--t4);margin:0 0 var(--s3)}
 .rdread.f3 .rdbody .rdh{font-size:var(--t5)}
 .rdp{margin:0 0 1em}
@@ -1981,6 +1979,78 @@ a.shelfbtn{text-decoration:none;display:inline-flex;align-items:center}
 .wbk .wbkfilt input{flex:1;min-width:120px}
 .wbk .wbkpre{white-space:pre-wrap;font-size:var(--t1);color:var(--ink-2);background:var(--surface-2);border-radius:var(--r-s);padding:var(--s2);max-height:240px;overflow:auto}
 @media (max-width:560px){.wbk .wbktab .hidesm{display:none}.wbk .wbknum b{font-size:var(--t4)}}
+/* Reader: the book on the left as a page, the panel on the right. Page colors live in :root; a book view sets them on <main>. */
+:root{--rdp-bg:#ebe3d0;--rdp-page:#fbf7ee;--rdp-surface:#f4eee0;--rdp-surface2:#ebe3d1;--rdp-ink:#2b2620;--rdp-ink2:#4a4236;--rdp-muted:#6b6253;--rdp-line:#dcd2bd;--rdp-line2:#c4b89e;--rdp-accent:#8a5d10;--rdp-accent-soft:rgba(176,122,24,.16);--rdp-accent-ink:#fffaf0;
+  --rds-bg:#e3d5b8;--rds-page:#f4e8d0;--rds-surface:#efe2c7;--rds-surface2:#e6d6b6;--rds-ink:#3a2e20;--rds-ink2:#544531;--rds-muted:#6e5d45;--rds-line:#d6c39f;--rds-line2:#bfa982;
+  --rdn-bg:#141311;--rdn-page:#1f1d1a;--rdn-surface:#24221e;--rdn-surface2:#2d2a25;--rdn-ink:#e8e1d3;--rdn-ink2:#cfc7b8;--rdn-muted:#a69d8e;--rdn-line:#36322b;--rdn-line2:#4a453c;
+  --rd-hl-yellow:rgba(240,190,0,.38);--rd-hl-green:rgba(70,180,100,.34);--rd-hl-blue:rgba(80,140,255,.32)}
+body.rdth-paper main{--bg:var(--rdp-bg);--surface:var(--rdp-surface);--surface-2:var(--rdp-surface2);--ink:var(--rdp-ink);--ink-2:var(--rdp-ink2);--muted:var(--rdp-muted);--line:var(--rdp-line);--line-2:var(--rdp-line2);--rail:var(--rdp-surface);--accent:var(--rdp-accent);--accent-2:var(--rdp-accent);--accent-soft:var(--rdp-accent-soft);--accent-ink:var(--rdp-accent-ink);--rd-page:var(--rdp-page)}
+body.rdth-sepia main{--bg:var(--rds-bg);--surface:var(--rds-surface);--surface-2:var(--rds-surface2);--ink:var(--rds-ink);--ink-2:var(--rds-ink2);--muted:var(--rds-muted);--line:var(--rds-line);--line-2:var(--rds-line2);--rail:var(--rds-surface);--accent:var(--rdp-accent);--accent-2:var(--rdp-accent);--accent-soft:var(--rdp-accent-soft);--accent-ink:var(--rdp-accent-ink);--rd-page:var(--rds-page)}
+body.rdth-night main{--bg:var(--rdn-bg);--surface:var(--rdn-surface);--surface-2:var(--rdn-surface2);--ink:var(--rdn-ink);--ink-2:var(--rdn-ink2);--muted:var(--rdn-muted);--line:var(--rdn-line);--line-2:var(--rdn-line2);--rail:var(--rdn-surface);--rd-page:var(--rdn-page)}
+body.rdth-paper main,body.rdth-sepia main,body.rdth-night main{background:var(--bg);color:var(--ink);min-height:100vh;color-scheme:light}
+body.rdth-night main{color-scheme:dark}
+body.rdth-paper main .btn.primary:hover,body.rdth-sepia main .btn.primary:hover{background:var(--accent);filter:brightness(1.1)}
+.rdmain{display:grid;grid-template-columns:minmax(0,680px) minmax(280px,340px);gap:var(--s5);align-items:start;justify-content:start}
+.rdcol{display:grid;gap:var(--s3);min-width:0}
+.rdseg{display:inline-flex;gap:var(--s1)}
+.rdseg .btn.on{border-color:var(--accent);font-weight:700}
+.rdsheet{position:relative;background:var(--rd-page,var(--surface));color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:var(--s5) 48px var(--s4);box-shadow:0 1px 0 var(--line),0 16px 40px rgba(0,0,0,.14);transform-origin:left center;backface-visibility:hidden}
+.rdsheet::before{content:"";position:absolute;top:0;bottom:0;left:0;width:28px;border-radius:6px 0 0 6px;background:linear-gradient(90deg,rgba(0,0,0,.09),transparent);pointer-events:none}
+.rdbody{font-family:Georgia,"Iowan Old Style","Hiragino Mincho ProN","Yu Mincho",serif;font-size:var(--t3);line-height:1.9}
+.rdread.f2 .rdbody{font-size:var(--t4);line-height:1.9}
+.rdread.f3 .rdbody{font-size:24px;line-height:1.95}
+.rdfoot{display:flex;justify-content:space-between;align-items:center;gap:var(--s2);margin-top:var(--s4);padding-top:var(--s3);border-top:1px solid var(--line)}
+.rdsheet.turnout-next{animation:rdOutNext .32s ease-in forwards}
+.rdsheet.turnout-prev{transform-origin:right center;animation:rdOutPrev .32s ease-in forwards}
+.rdsheet.turnin-next{animation:rdInNext .38s ease-out}
+.rdsheet.turnin-prev{transform-origin:right center;animation:rdInPrev .38s ease-out}
+@keyframes rdOutNext{to{transform:perspective(1800px) rotateY(-75deg);opacity:.15;box-shadow:-30px 10px 60px rgba(0,0,0,.3)}}
+@keyframes rdOutPrev{to{transform:perspective(1800px) rotateY(75deg);opacity:.15;box-shadow:30px 10px 60px rgba(0,0,0,.3)}}
+@keyframes rdInNext{from{transform:perspective(1800px) rotateY(18deg) translateX(24px);opacity:0}to{transform:none;opacity:1}}
+@keyframes rdInPrev{from{transform:perspective(1800px) rotateY(-18deg) translateX(-24px);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.rdsheet{animation:none!important}}
+.rdtr{border-bottom:2px dotted var(--accent);cursor:pointer}
+.rdtr:hover{background:var(--accent-soft)}
+.rdhl{color:inherit;border-radius:2px;padding:0 1px;background:var(--hl)}
+.c-yellow{--hl:var(--rd-hl-yellow)}.c-green{--hl:var(--rd-hl-green)}.c-blue{--hl:var(--rd-hl-blue)}
+.rdflash{outline:3px solid var(--accent);outline-offset:2px;border-radius:3px}
+.rdside{position:sticky;top:var(--s3);max-height:calc(100vh - 112px);overflow-y:auto;display:grid;gap:var(--s3);align-content:start;padding:var(--s3);background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+.rdstats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--s2)}
+.rdstats div{display:grid;gap:2px}
+.rdstats b{font-size:var(--t4);line-height:1.2}
+.rdtabs{display:flex;gap:var(--s1);border-bottom:1px solid var(--line)}
+.rdtabs button{background:none;border:0;border-bottom:2px solid transparent;padding:var(--s2) var(--s1);margin-bottom:-1px;color:var(--muted);font:inherit;font-size:var(--t2);cursor:pointer}
+.rdtabs button[aria-selected="true"]{color:var(--ink);font-weight:700;border-color:var(--accent)}
+.rdtabbody{display:grid;gap:var(--s3)}
+.rdcur{display:grid;gap:var(--s2);padding:var(--s3);border:1px solid var(--line);border-radius:var(--r-s);background:var(--rd-page,var(--surface-2))}
+.rdcurhead{display:flex;align-items:center;gap:var(--s2)}
+.rdcurhead .rdterm{font-size:var(--t4);overflow-wrap:anywhere;flex:1 1 auto;min-width:0}
+.rdres{margin:0;font-size:var(--t3);line-height:1.6;overflow-wrap:anywhere}
+.rdsrc{margin:0;font-size:var(--t2);color:var(--muted);border-left:2px solid var(--line-2);padding-left:var(--s2);overflow-wrap:anywhere}
+.rdex{margin:0;font-style:italic}
+.rdlist{display:grid}
+.rdli{display:grid;gap:2px;width:100%;text-align:left;background:none;border:0;border-top:1px solid var(--line);padding:var(--s2) 0;color:var(--ink);font:inherit;cursor:pointer}
+.rdli:first-child{border-top:0}
+.rdli b{overflow-wrap:anywhere;font-size:var(--t2)}
+.rdli .rdlr{color:var(--ink-2);font-size:var(--t2);overflow-wrap:anywhere}
+.rdhli{grid-template-columns:4px minmax(0,1fr) auto;gap:var(--s2);cursor:default;align-items:start}
+.rdhlbar{align-self:stretch;border-radius:2px;background:var(--hl)}
+.rdhlmain{display:grid;gap:var(--s1);min-width:0}
+.rdlink{background:none;border:0;padding:0;color:var(--ink);font:inherit;font-size:var(--t2);text-align:left;cursor:pointer;overflow-wrap:anywhere}
+.rdlink:hover{text-decoration:underline}
+.rdq{font-family:Georgia,"Hiragino Mincho ProN",serif}
+.rdnoteli{cursor:default;gap:var(--s1)}
+.rdside textarea.rdnote{min-height:36px}
+.rdnote{max-width:none;min-height:32px;padding:var(--s1) var(--s2);font-size:var(--t2);line-height:1.6;resize:vertical;background:var(--rd-page,var(--surface))}
+.rdnew{display:grid;gap:var(--s2);justify-items:start}
+.rdnew textarea{width:100%}
+.rdselbar{position:fixed;z-index:35;display:flex;gap:var(--s1);align-items:center;padding:var(--s1);background:var(--surface);border:1px solid var(--line-2);border-radius:999px;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.rddot{width:28px;height:28px;border-radius:50%;border:1px solid var(--line-2);background:var(--hl);cursor:pointer;padding:0}
+.rdcursheet{position:fixed;left:224px;right:0;bottom:64px;z-index:31;max-height:45vh;overflow-y:auto;padding:var(--s2) var(--s3);background:var(--bg);border-top:1px solid var(--line-2);box-shadow:0 -12px 40px rgba(0,0,0,.2)}
+.rdcursheet[hidden]{display:none}
+@media (max-width:1179px){.rdmain{grid-template-columns:minmax(0,1fr)}.rdside{position:static;max-height:none}}
+@media (max-width:860px){.rdcursheet{left:0;bottom:56px;z-index:32;max-height:55vh}}
+@media (max-width:560px){.rdsheet{padding:var(--s4) var(--s3) var(--s3)}.rdsheet::before{width:12px}.rdstats b{font-size:var(--t3)}}
 </style>
 
 <div class="app">
@@ -5049,7 +5119,7 @@ function showSelMenu(){
   const s=window.getSelection(); const txt=s&&!s.isCollapsed?s.toString().trim():"";
   if(!txt||txt.length>200||txt.includes("\n")&&txt.length>80) return hideSelMenu();
   const node=s.anchorNode&&(s.anchorNode.nodeType===1?s.anchorNode:s.anchorNode.parentElement);
-  if(!node||node.closest("input,textarea,select,.selmenu,[contenteditable],.bkp")||/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName||"")) return hideSelMenu();
+  if(!node||node.closest("input,textarea,select,.selmenu,[contenteditable],.bkp,#rdBody,#rdSide")||/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName||"")) return hideSelMenu();
   const own=node.closest("[data-edit]"), src=node.closest("[data-src]"), word=txt.replace(/[\[\]\n]/g," ").replace(/\s+/g," ").trim().slice(0,80), has=!!noteByTitle(word);
   const r=s.getRangeAt(0).getBoundingClientRect();
   hideSelMenu();
@@ -6647,7 +6717,8 @@ function lgmDraw(){ // keeps the map (and its zoom) when nothing it shows has ch
   S.lgm.sig=sig;$("#view").innerHTML=searchResults()+`<div id="lgmView" class="lgm">${lgmView()}</div>`;wire();wireLm();
   if(r.kind==="map"&&S.lgm.vb)lgmRedrawLayers()}
 function render(){
-  if(S.wf&&viewId()!=="wifi")S.wf=null; // Wi-Fi QR: leaving the screen drops the code
+  if(S.wf&&viewId()!=="wifi")S.wf=null;
+  rdThemeBody(); // a book's page color covers the screen only while the book is open // Wi-Fi QR: leaving the screen drops the code
   if(S.ed){if(viewId()==="notes"&&S.noteId===S.ed.id)return;edClose();return}
   if($("#view .inedit"))return;
   if(document.activeElement?.id==="winText"&&S.winView===viewId())return; // a background refresh must not wipe what is being typed
@@ -9655,7 +9726,7 @@ $("#nextBtn").onclick=()=>openStuck();
 document.addEventListener("keydown",e=>{const t=e.target.tagName;if(t==="INPUT"||t==="TEXTAREA"||t==="SELECT")return;
   if(e.key==="n"||e.key==="N"){e.preventDefault();openNote()}
   if(e.key==="c"||e.key==="C"){if(e.metaKey||e.ctrlKey)return;e.preventDefault();openAsk()}
-  if(e.key==="t"||e.key==="T"){if(e.metaKey||e.ctrlKey)return;e.preventDefault();const sel=(window.getSelection?.()?.toString()||"").trim();if(LOCALAPI&&sel&&sel.length<=5000)xlOpen(sel);else openTask(null)} // T with text selected: translate it
+  if(e.key==="t"||e.key==="T"){if(e.metaKey||e.ctrlKey)return;e.preventDefault();const sel=(window.getSelection?.()?.toString()||"").trim();if(LOCALAPI&&sel&&$("#rdBody")?.contains(window.getSelection()?.anchorNode))rdSelCheck(true);else if(LOCALAPI&&sel&&sel.length<=5000)xlOpen(sel);else openTask(null)} // T with text selected: translate it
   if(e.key==="g"||e.key==="G"){if(e.metaKey||e.ctrlKey)return;e.preventDefault();openStuck()}
   if(e.key==="/"){e.preventDefault();$("#q").focus()}
   if(e.key==="Escape"&&S.fromToday&&viewId()!=="home"&&!$("#modal").firstChild){e.preventDefault();location.hash="home"}});
@@ -9963,50 +10034,83 @@ function rdMarkup(text,lang,known){
 async function rdOpen(id){
   if(S.rd.book?.id===id)return;
   rdStop();S.rd.book={id,loading:true};
-  try{const b=await api("GET","/api/reader/books/"+encodeURIComponent(id));S.rd.book=b;S.rd.ch=b.pos?.ch||0;S.rd.si=-1;S.rd.word=null;S.rd.jump=b.pos?.para||0}
+  try{const [b,ms]=await Promise.all([api("GET","/api/reader/books/"+encodeURIComponent(id)),api("GET","/api/readmarks").catch(()=>[])]);S.rd.marks=(ms||[]).filter(m=>m&&m.bookId===id&&!m.deleted);S.rd.cur=null;S.rd.book=b;S.rd.ch=b.pos?.ch||0;S.rd.si=-1;S.rd.word=null;S.rd.jump=b.pos?.para||0}
   catch(e){S.rd.book={id,error:true}}
   if(rdBookId()===id)render();
 }
+/* The book view: a page on the left (Paper, Sepia or Night), a panel on the right with what was translated in this book,
+   highlights and notes. A tap or a selection translates right here; nothing jumps to the Translate screen.
+   Marks (translations, highlights, notes) are the collection "readmarks": {bookId, kind lookup|highlight|note, ch, para,
+   start, end (characters inside the paragraph), text, result, info, mode word|sent, color, note, at, deleted}. */
+const RD_THEMES=[["paper","Paper"],["sepia","Sepia"],["night","Night"]];
+try{S.rd.theme=localStorage.getItem("desk-rd-theme")||"paper"}catch(e){S.rd.theme="paper"}
+S.rd.marks=[];S.rd.tab="look";S.rd.cur=null;
+const rdWide=()=>matchMedia("(min-width:1180px)").matches;
+function rdThemeBody(){const on=viewId()==="reader"&&!!rdBookId();RD_THEMES.forEach(([k])=>document.body.classList.toggle("rdth-"+k,on&&S.rd.theme===k))}
+const rdChLabel=(b,ch)=>((b.chapters_full||[])[ch]?.title||`Chapter ${ch+1}`).slice(0,60);
 function rdReadView(id){
   const b=S.rd.book;
   if(!b||b.id!==id){rdOpen(id);return `<div class="money rdv" id="rdView"><p class="due">Opening…</p></div>`}
   if(b.loading)return `<div class="money rdv" id="rdView"><p class="due">Opening…</p></div>`;
   if(b.error)return `<div class="money rdv" id="rdView"><a class="btn" href="#reader">← Books</a><p class="due">Could not open this book.</p></div>`;
-  const chs=b.chapters_full||[], ch=Math.min(S.rd.ch,Math.max(0,chs.length-1)), c=chs[ch]||{paras:[]}, known=rdKnown(b.lang), n=rdCardsOf(b.id);
+  const chs=b.chapters_full||[], ch=Math.min(S.rd.ch,Math.max(0,chs.length-1)), c=chs[ch]||{paras:[]}, known=rdKnown(b.lang);
   let si=0;
   const paras=(c.paras||[]).map((p,pi)=>`<p class="rdp" data-p="${pi}">${rdSentences(p,b.lang).map(s=>`<span class="rds" data-s="${si++}">${rdMarkup(s,b.lang,known)}</span>`).join("")}</p>`).join("");
-  const voices=rdVoiceList(b.lang), vsel=rdVoicePick(b.lang);
+  const voices=rdVoiceList(b.lang), vsel=rdVoicePick(b.lang), turn=S.rd.turn?` turnin-${S.rd.turn}`:"";
   return `<div class="rdread f${S.rd.font}" id="rdView" lang="${esc(b.lang)}">
-    <div class="rdtop"><a class="btn sm" href="#reader">← Books</a><b class="rdtitle" data-noauto>${esc(b.title)}</b><span class="sub">${n?`${n} card${n===1?"":"s"} from this book`:""}</span>
-      <span class="row"><button class="btn sm" id="rdFontDn" aria-label="Smaller text" ${S.rd.font<=1?"disabled":""}>A−</button><button class="btn sm" id="rdFontUp" aria-label="Larger text" ${S.rd.font>=3?"disabled":""}>A+</button><button class="btn sm" id="rdEdit" aria-label="Book details">Details</button></span></div>
-    <div class="rdchap"><button class="btn sm" id="rdPrev" ${ch<=0?"disabled":""} aria-label="Previous chapter">‹</button><select class="wd-field cdsel" id="rdChSel" aria-label="Chapter">${chs.map((x,i)=>`<option value="${i}" ${i===ch?"selected":""}>${esc(x.title||`Chapter ${i+1}`)}</option>`).join("")}</select><button class="btn sm" id="rdNext" ${ch>=chs.length-1?"disabled":""} aria-label="Next chapter">›</button></div>
-    <article class="rdbody" id="rdBody" data-noauto>${c.title?`<h2 class="rdh">${esc(c.title)}</h2>`:""}${paras||`<p class="sub">This chapter has no text.</p>`}</article>
-    ${ch<chs.length-1?`<div class="row rdend"><button class="btn" id="rdNext2">Next chapter: ${esc(chs[ch+1].title||`Chapter ${ch+2}`)} →</button></div>`:`<p class="sub rdend">The end.</p>`}
+    <div class="rdtop"><a class="btn sm" href="#reader">← Books</a><b class="rdtitle" data-noauto>${esc(b.title)}</b>
+      <span class="row"><span class="rdseg" role="group" aria-label="Page color">${RD_THEMES.map(([k,l])=>`<button class="btn sm${S.rd.theme===k?" on":""}" data-rdtheme="${k}" aria-pressed="${S.rd.theme===k}">${l}</button>`).join("")}</span>
+      <button class="btn sm" id="rdFontDn" aria-label="Smaller text" ${S.rd.font<=1?"disabled":""}>A−</button><button class="btn sm" id="rdFontUp" aria-label="Larger text" ${S.rd.font>=3?"disabled":""}>A+</button><button class="btn sm" id="rdEdit" aria-label="Book details">Details</button></span></div>
+    <div class="rdmain">
+      <div class="rdcol">
+        <div class="rdchap"><button class="btn sm" id="rdPrev" ${ch<=0?"disabled":""} aria-label="Previous chapter">‹</button><select class="wd-field cdsel" id="rdChSel" aria-label="Chapter">${chs.map((x,i)=>`<option value="${i}" ${i===ch?"selected":""}>${esc(x.title||`Chapter ${i+1}`)}</option>`).join("")}</select><button class="btn sm" id="rdNext" ${ch>=chs.length-1?"disabled":""} aria-label="Next chapter">›</button></div>
+        <article class="rdsheet${turn}" id="rdSheet"><div class="rdbody" id="rdBody" data-noauto>${c.title?`<h2 class="rdh">${esc(c.title)}</h2>`:""}${paras||`<p class="sub">This chapter has no text.</p>`}</div>
+          <div class="rdfoot">${ch<chs.length-1?`<button class="btn" id="rdNext2">Next chapter →</button>`:`<span class="sub">The end.</span>`}<span class="sub">${ch+1} / ${chs.length}</span></div></article>
+      </div>
+      <aside class="rdside" id="rdSide" aria-label="Translations, highlights and notes">${rdSideHtml()}</aside>
+    </div>
+    <div class="rdcursheet" id="rdCurSheet" hidden></div>
     <div class="rdbar" id="rdBar"><button class="btn primary" id="rdPlay" aria-label="${S.rd.playing?"Pause":"Play"}">${S.rd.playing?"❚❚ Pause":"▶ Play"}</button><button class="btn" id="rdBack" aria-label="Back one sentence">⏮ Back</button>
       <select class="wd-field cdsel" id="rdRate" aria-label="Speed">${RD_RATES.map(r=>`<option value="${r}" ${r===S.rd.rate?"selected":""}>${r}×</option>`).join("")}</select>
       <select class="wd-field cdsel rdvoice" id="rdVoice" aria-label="Voice">${voices.map(v=>`<option value="${esc(v.id)}" ${v.id===vsel?"selected":""}>${esc(v.label)}</option>`).join("")||`<option value="">No voice for ${esc(RD_LANGS[b.lang]||b.lang)}</option>`}</select><span class="sub rdpos" id="rdPos"></span></div></div>`;
+}
+/* chapters turn like a page: the old sheet swings away on its spine, the new one settles in */
+function rdGoCh(i,dir){
+  const b=S.rd.book, chs=b?.chapters_full||[];if(!b)return;
+  i=Math.max(0,Math.min(i,chs.length-1));if(i===S.rd.ch&&!S.rd.jumpMark)return;
+  dir=dir||(i>S.rd.ch?"next":"prev");rdStop();S.rd.cur=null;rdSelBar(null);
+  const go=()=>{S.rd.ch=i;S.rd.si=-1;S.rd.jump=S.rd.jumpMark?null:0;S.rd.turn=dir;render();if(!S.rd.jumpMark)window.scrollTo(0,0);rdSavePos(true)};
+  const sh=$("#rdSheet"), still=matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if(!sh||still){go();return}
+  sh.classList.add("turnout-"+dir);setTimeout(go,320);
 }
 function wireRd(){
   const on=(id,fn)=>{const el=$(id);if(el)el.onclick=fn};
   on("#rdAdd",rdAddPrompt);
   const b=S.rd.book;if(!b||!$("#rdBody"))return;
-  const chs=b.chapters_full||[];
-  const goCh=i=>{rdStop();S.rd.ch=Math.max(0,Math.min(i,chs.length-1));S.rd.si=-1;S.rd.word=null;S.rd.jump=0;render();window.scrollTo(0,0);rdSavePos(true)};
-  on("#rdPrev",()=>goCh(S.rd.ch-1));on("#rdNext",()=>goCh(S.rd.ch+1));on("#rdNext2",()=>goCh(S.rd.ch+1));
-  $("#rdChSel").onchange=e=>goCh(+e.target.value);
-  on("#rdFontUp",()=>{S.rd.font=Math.min(3,S.rd.font+1);try{localStorage.setItem("desk-rd-font",S.rd.font)}catch(e){}$("#rdView").className=`rdread f${S.rd.font}`;$("#rdFontUp").disabled=S.rd.font>=3;$("#rdFontDn").disabled=false});
-  on("#rdFontDn",()=>{S.rd.font=Math.max(1,S.rd.font-1);try{localStorage.setItem("desk-rd-font",S.rd.font)}catch(e){}$("#rdView").className=`rdread f${S.rd.font}`;$("#rdFontDn").disabled=S.rd.font<=1;$("#rdFontUp").disabled=false});
+  S.rd.turn=null;
+  on("#rdPrev",()=>rdGoCh(S.rd.ch-1,"prev"));on("#rdNext",()=>rdGoCh(S.rd.ch+1,"next"));on("#rdNext2",()=>rdGoCh(S.rd.ch+1,"next"));
+  $("#rdChSel").onchange=e=>rdGoCh(+e.target.value);
+  document.querySelectorAll("[data-rdtheme]").forEach(x=>x.onclick=()=>{S.rd.theme=x.dataset.rdtheme;try{localStorage.setItem("desk-rd-theme",S.rd.theme)}catch(e){}rdThemeBody();
+    document.querySelectorAll("[data-rdtheme]").forEach(y=>{const k=y.dataset.rdtheme===S.rd.theme;y.classList.toggle("on",k);y.setAttribute("aria-pressed",k)})});
+  const font=d=>{S.rd.font=Math.max(1,Math.min(3,S.rd.font+d));try{localStorage.setItem("desk-rd-font",S.rd.font)}catch(e){}$("#rdView").className=`rdread f${S.rd.font}`;$("#rdFontUp").disabled=S.rd.font>=3;$("#rdFontDn").disabled=S.rd.font<=1};
+  on("#rdFontUp",()=>font(1));on("#rdFontDn",()=>font(-1));
   on("#rdEdit",rdEditPrompt);
   on("#rdPlay",()=>S.rd.playing?rdPause():rdPlay());on("#rdBack",rdBack);
   $("#rdRate").onchange=e=>{S.rd.rate=+e.target.value;try{localStorage.setItem("desk-rd-rate",S.rd.rate)}catch(e){}if(S.rd.playing){rdPause();rdPlay()}};
   $("#rdVoice").onchange=e=>{try{localStorage.setItem("desk-rd-voice-"+b.lang,e.target.value)}catch(e){}if(S.rd.playing){rdPause();rdPlay()}};
-  $("#rdBody").onclick=rdTap;
-  $("#rdBody").onkeydown=e=>{if(e.key==="Escape"&&S.rd.word){rdCloseWord()}};
-  if(S.rd.jump!=null){const p=$(`#rdBody .rdp[data-p="${S.rd.jump}"]`);S.rd.jump=null;if(p&&+p.dataset.p>0)setTimeout(()=>p.scrollIntoView({block:"start"}),0)}
+  const body=$("#rdBody");
+  body.onclick=rdTap;
+  body.addEventListener("mouseup",()=>setTimeout(()=>rdSelCheck(false),0));
+  body.addEventListener("touchend",()=>setTimeout(()=>rdSelCheck(false),300));
+  body.addEventListener("keyup",e=>{if(e.shiftKey)rdSelCheck(false)});
+  rdApplyMarks();rdWireSide();rdDrawCur();
+  if(S.rd.jumpMark){const id=S.rd.jumpMark;S.rd.jumpMark=null;setTimeout(()=>rdFlash(id),0)}
+  else if(S.rd.jump!=null){const p=$(`#rdBody .rdp[data-p="${S.rd.jump}"]`);S.rd.jump=null;if(p&&+p.dataset.p>0)setTimeout(()=>p.scrollIntoView({block:"start"}),0)}
   if(S.rd.si>=0)rdHighlight(S.rd.si,false);
   if(!S.rd.macVoicesFor||S.rd.macVoicesFor!==b.lang)rdMacVoices(b.lang);
-  if(window.speechSynthesis&&!S.rd.voicesHooked){S.rd.voicesHooked=true;speechSynthesis.onvoiceschanged=()=>{if(viewId()==="reader"&&rdBookId()&&!S.rd.playing)render()}}
-  if(!S.rd.scrollHooked){S.rd.scrollHooked=true;let t=0;window.addEventListener("scroll",()=>{if(viewId()!=="reader"||!rdBookId())return;clearTimeout(t);t=setTimeout(()=>rdSavePos(false),1200)},{passive:true})}
+  if(window.speechSynthesis&&!S.rd.voicesHooked){S.rd.voicesHooked=true;speechSynthesis.onvoiceschanged=()=>{if(viewId()==="reader"&&rdBookId()&&!S.rd.playing&&!S.rd.cur)render()}}
+  if(!S.rd.scrollHooked){S.rd.scrollHooked=true;let t=0;window.addEventListener("scroll",()=>{if(viewId()!=="reader"||!rdBookId())return;rdSelBar(null);clearTimeout(t);t=setTimeout(()=>rdSavePos(false),1200)},{passive:true})}
 }
 /* the first paragraph on screen is where to continue; saved a little after the scrolling stops */
 async function rdSavePos(now){
@@ -10030,44 +10134,180 @@ function rdEditPrompt(){
   $("#rdETitle").focus();
 }
 
-/* ---------- a tapped word: the small card under its paragraph ---------- */
+/* ---------- translating in place: a tap is one word, a selection is a word, a phrase or a sentence ---------- */
+const rdMarkId=()=>"rm"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const rdBookMarks=()=>S.rd.marks.filter(m=>!m.deleted&&m.bookId===S.rd.book?.id);
+const rdIsWord=(t,lang)=>rdSpaced(lang)?t.split(/\s+/).length<=3&&t.length<=40:t.length<=8;
+function rdOff(p,node,off){const r=document.createRange();r.setStart(p,0);r.setEnd(node,off);return r.toString().length}
+/* a part of the paragraph's text (by character) wrapped in an element, one piece per text node so nothing else moves */
+function rdWrap(p,start,end,make){
+  const w=document.createTreeWalker(p,NodeFilter.SHOW_TEXT), parts=[];let pos=0,n;
+  while((n=w.nextNode())){const len=n.data.length,a=Math.max(start,pos),z=Math.min(end,pos+len);if(a<z)parts.push([n,a-pos,z-pos]);pos+=len;if(pos>=end)break}
+  parts.forEach(([n,a,z])=>{let mid=n;if(a>0)mid=n.splitText(a);if(z-a<mid.data.length)mid.splitText(z-a);const el=make();mid.parentNode.insertBefore(el,mid);el.appendChild(mid)});
+}
+function rdApplyMarks(){
+  const body=$("#rdBody");if(!body)return;
+  body.querySelectorAll("[data-rm]").forEach(el=>el.replaceWith(...el.childNodes));body.normalize();
+  const ms=rdBookMarks().filter(m=>m.ch===S.rd.ch&&(m.kind==="lookup"||m.kind==="highlight")&&m.text);
+  ms.sort((a,b)=>(a.kind==="highlight")-(b.kind==="highlight"));
+  ms.forEach(m=>{const p=body.querySelector(`.rdp[data-p="${m.para}"]`);if(!p)return;const t=p.textContent;let s=m.start;
+    if(t.slice(s,s+m.text.length)!==m.text){s=t.indexOf(m.text);if(s<0)return}
+    rdWrap(p,s,s+m.text.length,()=>{const el=document.createElement(m.kind==="lookup"?"span":"mark");el.className=m.kind==="lookup"?"rdtr":"rdhl c-"+(m.color||"yellow");el.dataset.rm=m.id;return el})});
+}
+async function rdPutMark(m){
+  m={...m,updatedAt:Date.now()};S.rd.marks=[...S.rd.marks.filter(x=>x.id!==m.id),m];
+  if(!LOCALAPI)return m;
+  const {id,...rec}=m;
+  try{await api("PUT","/api/readmarks/"+encodeURIComponent(id),rec)}catch(e){toast("Could not save. Try again in a moment.")}
+  return m;
+}
 function rdTap(e){
-  if(e.target.closest(".rdpop"))return;
   const b=S.rd.book;if(!b)return;
-  const p=e.target.closest(".rdp");if(!p){rdCloseWord();return}
-  const sel=window.getSelection(), text=sel&&!sel.isCollapsed?sel.toString().trim():"";
-  let term="", sentEl=null;
-  if(text&&text.length<=80&&p.contains(sel.anchorNode)&&p.contains(sel.focusNode)){term=text;sentEl=sel.anchorNode.parentElement?.closest(".rds")||p.querySelector(".rds")}
-  else{
-    const r=document.caretRangeFromPoint?document.caretRangeFromPoint(e.clientX,e.clientY):null;if(!r||r.startContainer.nodeType!==3)return;
-    const node=r.startContainer, s=node.textContent, i=r.startOffset, wordRe=rdSpaced(b.lang)?/[\p{L}\p{M}\p{N}'’-]/u:/[\p{L}\p{M}]/u;
-    let a=i,z=i;while(a>0&&wordRe.test(s[a-1]))a--;while(z<s.length&&wordRe.test(s[z]))z++;
-    if(!rdSpaced(b.lang)){a=Math.max(0,i-1);z=Math.min(s.length,i+2)} // no spaces: take the two or three characters around the tap, then let the person widen the selection
-    term=s.slice(a,z).trim();sentEl=node.parentElement?.closest(".rds");
-    if(!term)return;
-  }
-  const context=(sentEl?.textContent||p.textContent||"").trim().replace(/\s+/g," ");
-  rdShowWord(term,context,p);
+  const s=window.getSelection();if(s&&!s.isCollapsed&&s.toString().trim())return; // a selection is handled on mouseup
+  const mk=e.target.closest(".rdtr[data-rm]");if(mk){const m=S.rd.marks.find(x=>x.id===mk.dataset.rm);if(m){rdShowCur(m);return}}
+  const p=e.target.closest(".rdp");if(!p)return;
+  const r=document.caretRangeFromPoint?document.caretRangeFromPoint(e.clientX,e.clientY):null;if(!r||r.startContainer.nodeType!==3)return;
+  const node=r.startContainer, t=node.textContent, i=r.startOffset, wordRe=rdSpaced(b.lang)?/[\p{L}\p{M}\p{N}'’-]/u:/[\p{L}\p{M}]/u;
+  let a=i,z=i;while(a>0&&wordRe.test(t[a-1]))a--;while(z<t.length&&wordRe.test(t[z]))z++;
+  if(!rdSpaced(b.lang)){a=Math.max(0,i-1);z=Math.min(t.length,i+2)} // no spaces: the characters around the tap; select to widen
+  while(a<z&&!wordRe.test(t[a]))a++;while(z>a&&!wordRe.test(t[z-1]))z--;
+  const term=t.slice(a,z);if(!term)return;
+  const start=rdOff(p,node,a);
+  rdLookup({para:+p.dataset.p,start,end:start+term.length,text:term,context:(node.parentElement?.closest(".rds")||p).textContent.trim().replace(/\s+/g," ")});
 }
-function rdCloseWord(){document.querySelectorAll("#rdBody .rdpop").forEach(x=>x.remove());S.rd.word=null}
-async function rdShowWord(term,context,p){
-  const b=S.rd.book;rdCloseWord();
-  const w={term,context,lang:b.lang,info:null,at:Date.now()};S.rd.word=w;
-  const have=S.cards.find(c=>!c.deleted&&(c.lang||"en")===b.lang&&[c.term,c.lemma].map(rdNorm).includes(rdNorm(term)));
-  const box=document.createElement("div");box.className="rdpop";box.setAttribute("role","dialog");box.setAttribute("aria-label","Word");p.after(box);
-  const draw=()=>{if(S.rd.word!==w||!box.isConnected)return;const i=w.info, inCards=have||w.added;
-    box.innerHTML=`<div class="rdpophead"><b class="rdterm" data-noauto>${esc(i?.lemma&&rdNorm(i.lemma)!==rdNorm(term)?`${term} → ${i.lemma}`:term)}</b>${i?.ipa?`<span class="sub">/${esc(i.ipa)}/</span>`:""}<button class="ibtn" data-rdsay aria-label="Read aloud">🔊</button><button class="ibtn" data-rdx aria-label="Close">✕</button></div>
-      <div class="rdpopbody" data-noauto>${i?`${i.meaning_ja?`<p class="cdmean">${esc(i.meaning_ja)}</p>`:""}${i.meaning_en?`<p class="cdmean">${esc(i.meaning_en)}</p>`:""}${i.pos?`<span class="sub">${esc(i.pos)}</span>`:""}`:w.err?`<p class="sub">${esc(w.err)}</p>`:`<p class="sub">Looking it up…</p>`}</div>
-      <div class="row">${inCards?`<span class="sub">✓ ${esc(have?ankiMark(have):"On its way to Anki")}${have&&have.lookups>1?` · looked up ${have.lookups}×`:""}</span>`:`<button class="btn primary sm" data-rdadd>Add to Anki</button>`}<span class="sub rdpopctx">${esc(context.length>120?context.slice(0,118)+"…":context)}</span></div>`;
-    box.querySelector("[data-rdx]").onclick=rdCloseWord;box.querySelector("[data-rdsay]").onclick=()=>rdSay(i?.lemma||term,b.lang);
-    const add=box.querySelector("[data-rdadd]");if(add)add.onclick=async()=>{add.disabled=true;add.textContent="Adding…";const c=await cdAdd({term,lang:b.lang,context,info:i||undefined,source:{kind:"book",ref:b.id},book:{id:b.id,title:b.title,chapter:(b.chapters_full||[])[S.rd.ch]?.title||`Chapter ${S.rd.ch+1}`}});if(c){w.added=true;rdRemark()}draw()}};
-  draw();
-  if(!LOCALAPI){w.err="Meanings need the Desk app on the Mac";draw();return}
-  try{const info=await api("POST","/api/cards/lookup",{term,context,lang:b.lang});if(S.rd.word===w){w.info=info;draw()}}
-  catch(e){if(S.rd.word===w){w.err="Claude could not answer now. You can still add the word; the meaning comes later.";draw()}}
+/* a selection inside one paragraph: translated at once, and a small bar offers Highlight and Note */
+function rdSelCheck(force){
+  const s=window.getSelection();if(!s||s.isCollapsed||!s.rangeCount){rdSelBar(null);return}
+  const r=s.getRangeAt(0), el=n=>n&&(n.nodeType===1?n:n.parentElement), p=el(r.startContainer)?.closest(".rdp");
+  if(!p||!p.closest("#rdBody")){rdSelBar(null);return}
+  const p2=el(r.endContainer)?.closest(".rdp"), full=p.textContent;
+  let start=rdOff(p,r.startContainer,r.startOffset), end=p2===p?rdOff(p,r.endContainer,r.endOffset):full.length;
+  const raw=full.slice(start,end);start+=raw.length-raw.trimStart().length;end=start+raw.trim().length;
+  const text=full.slice(start,end);if(!text||text.length>600){rdSelBar(null);return}
+  const sel={para:+p.dataset.p,start,end,text};
+  const last=S.rd.lastSel;if(!force&&last&&last.para===sel.para&&last.start===start&&last.end===end&&$("#rdSelBar"))return;
+  S.rd.lastSel=sel;rdSelBar(sel,r.getBoundingClientRect());
+  const sent=el(r.startContainer)?.closest(".rds");
+  rdLookup({...sel,context:(rdIsWord(text,S.rd.book.lang)&&sent?sent.textContent:text).trim().replace(/\s+/g," ")});
 }
-/* after a card is added, the word gets its thin underline everywhere on the page without redrawing (a playing voice is not cut) */
-function rdRemark(){const b=S.rd.book;if(!b||!$("#rdBody"))return;const known=rdKnown(b.lang);document.querySelectorAll("#rdBody .rds").forEach(s=>{const t=s.textContent;const h=rdMarkup(t,b.lang,known);if(h!==s.innerHTML&&!s.classList.contains("on"))s.innerHTML=h})}
+function rdSelBar(sel,rect){
+  $("#rdSelBar")?.remove();if(!sel||!rect)return;
+  const bar=document.createElement("div");bar.className="rdselbar";bar.id="rdSelBar";bar.setAttribute("role","toolbar");bar.setAttribute("aria-label","Highlight");
+  bar.innerHTML=`${[["yellow","Yellow"],["green","Green"],["blue","Blue"]].map(([k,l])=>`<button class="rddot c-${k}" data-hl="${k}" aria-label="Highlight ${l}" title="Highlight"></button>`).join("")}<button class="btn sm" data-hlnote>Note</button>`;
+  ($("#rdView")||document.body).appendChild(bar);
+  const w=bar.offsetWidth, x=Math.max(8,Math.min(innerWidth-w-8,rect.left+rect.width/2-w/2)), y=rect.top>64?rect.top-bar.offsetHeight-8:rect.bottom+8;
+  bar.style.left=x+"px";bar.style.top=y+"px";
+  bar.onmousedown=e=>e.preventDefault();
+  bar.querySelectorAll("[data-hl]").forEach(x=>x.onclick=()=>rdAddHighlight(sel,x.dataset.hl,false));
+  bar.querySelector("[data-hlnote]").onclick=()=>rdAddHighlight(sel,"yellow",true);
+}
+async function rdAddHighlight(sel,color,withNote){
+  const b=S.rd.book;rdSelBar(null);window.getSelection()?.removeAllRanges();
+  const same=rdBookMarks().find(m=>m.kind==="highlight"&&m.ch===S.rd.ch&&m.para===sel.para&&m.start===sel.start&&m.end===sel.end);
+  const m=await rdPutMark({...(same||{id:rdMarkId(),bookId:b.id,kind:"highlight",ch:S.rd.ch,para:sel.para,start:sel.start,end:sel.end,text:sel.text,note:"",at:Date.now()}),color,deleted:false});
+  rdApplyMarks();S.rd.tab=withNote?"notes":"hl";rdDrawSide();
+  if(withNote)setTimeout(()=>{const t=$(`#rdSide [data-rdnote="${m.id}"]`);if(t){t.focus();t.scrollIntoView({block:"nearest"})}},0);
+  else toast("Highlighted");
+}
+async function rdLookup(o){
+  const b=S.rd.book, lang=b.lang, word=rdIsWord(o.text,lang);
+  const same=rdBookMarks().find(m=>m.kind==="lookup"&&m.ch===S.rd.ch&&m.para===o.para&&m.start===o.start&&m.end===o.end);
+  if(same&&(same.result||same.info)){rdShowCur(same);return}
+  const cur={id:same?.id||rdMarkId(),bookId:b.id,kind:"lookup",ch:S.rd.ch,para:o.para,start:o.start,end:o.end,text:o.text,context:(o.context||"").slice(0,400),lang,mode:word?"word":"sent",busy:true};
+  S.rd.cur=cur;S.rd.tab="look";rdDrawSide();rdDrawCur();
+  if(!LOCALAPI){cur.busy=false;cur.err="Translating needs the Desk app on the Mac";rdDrawCur();return}
+  try{
+    if(word){const i=await api("POST","/api/cards/lookup",{term:o.text,context:cur.context,lang});
+      cur.info={lemma:i.lemma||"",meaning_ja:i.meaning_ja||"",meaning_en:i.meaning_en||"",ipa:i.ipa||"",pos:i.pos||"",example:i.example||""};cur.result=i.meaning_ja||i.meaning_en||""}
+    else{const v=await xlPost("/api/translate",{text:o.text,via:"reader"});cur.result=v.lookup?.result||"";cur.to=v.lookup?.to||"";
+      if(v.lookup&&Array.isArray(S.lookups)&&!S.lookups.some(x=>x.id===v.lookup.id))S.lookups.unshift(v.lookup)}
+    cur.busy=false;cur.at=Date.now();
+    const {busy,err,...rec}=cur;const saved=await rdPutMark(rec);if(S.rd.cur===cur)S.rd.cur=saved;
+    rdApplyMarks();
+  }catch(e){cur.busy=false;cur.err=word?"Claude could not answer now. Tap the word again in a moment.":(e.message||"Could not translate")}
+  if(S.rd.cur?.id===cur.id)rdDrawCur();rdDrawSide();
+}
+function rdShowCur(m){S.rd.cur={...m};S.rd.tab="look";rdDrawSide();rdDrawCur()}
+function rdCurHtml(){
+  const c=S.rd.cur, b=S.rd.book;
+  if(!c)return rdWide()?`<p class="sub">Tap a word or select a sentence. Its translation appears here and the words stay marked.</p>`:"";
+  const head=(t)=>`<div class="rdcurhead"><b class="rdterm" data-noauto>${t}</b><button class="ibtn" data-rdcsay aria-label="Read aloud">🔊</button><button class="ibtn" data-rdcx aria-label="Close">✕</button></div>`;
+  if(c.mode==="word"){const i=c.info||{}, have=S.cards.find(k=>!k.deleted&&(k.lang||"en")===b.lang&&[k.term,k.lemma].map(rdNorm).includes(rdNorm(c.text)));
+    return `<div class="rdcur" data-noauto>${head(esc(i.lemma&&rdNorm(i.lemma)!==rdNorm(c.text)?`${c.text} → ${i.lemma}`:c.text)+(i.ipa?` <span class="sub">/${esc(i.ipa)}/</span>`:""))}
+      ${c.busy?`<p class="sub">Looking it up…</p>`:c.err?`<p class="sub">${esc(c.err)}</p>`:`${i.meaning_ja?`<p class="rdres">${esc(i.meaning_ja)}</p>`:""}${i.meaning_en?`<p class="rdres">${esc(i.meaning_en)}</p>`:""}${i.pos?`<span class="sub">${esc(i.pos)}</span>`:""}${i.example?`<p class="sub rdex">${esc(i.example)}</p>`:""}`}
+      ${c.busy||c.err?"":`<div class="row">${have||c.added?`<span class="sub">✓ ${esc(have?ankiMark(have):"On its way to Anki")}</span>`:`<button class="btn primary sm" data-rdcadd>Add to Anki</button>`}</div>`}</div>`}
+  return `<div class="rdcur" data-noauto>${head("Sentence")}<p class="rdsrc">${esc(c.text)}</p>${c.busy?`<p class="sub">Translating…</p>`:c.err?`<p class="sub">${esc(c.err)}</p>`:`<p class="rdres">${esc(c.result||"")}</p>`}</div>`;
+}
+function rdDrawCur(){
+  const box=rdWide()?$("#rdCur"):$("#rdCurSheet"), other=rdWide()?$("#rdCurSheet"):null;
+  if(other){other.hidden=true;other.innerHTML=""}
+  if(!box)return;
+  box.innerHTML=rdCurHtml();if(box.id==="rdCurSheet")box.hidden=!S.rd.cur;
+  const c=S.rd.cur, b=S.rd.book;if(!c)return;
+  const q=s=>box.querySelector(s);
+  q("[data-rdcx]")&&(q("[data-rdcx]").onclick=()=>{S.rd.cur=null;rdDrawCur()});
+  q("[data-rdcsay]")&&(q("[data-rdcsay]").onclick=()=>rdSay(c.info?.lemma||c.text,b.lang));
+  const add=q("[data-rdcadd]");if(add)add.onclick=async()=>{add.disabled=true;add.textContent="Adding…";
+    const k=await cdAdd({term:c.text,lang:b.lang,context:c.context,info:c.info||undefined,source:{kind:"book",ref:b.id},book:{id:b.id,title:b.title,chapter:rdChLabel(b,c.ch)}});
+    if(k){c.added=true;rdRemark()}rdDrawCur()};
+}
+/* after a card is added, the word gets its thin underline without a redraw (a playing voice is not cut) */
+function rdRemark(){const b=S.rd.book;if(!b||!$("#rdBody"))return;const known=rdKnown(b.lang);
+  document.querySelectorAll("#rdBody [data-rm]").forEach(el=>el.replaceWith(...el.childNodes));
+  document.querySelectorAll("#rdBody .rds").forEach(s=>{const h=rdMarkup(s.textContent,b.lang,known);if(h!==s.innerHTML)s.innerHTML=h});rdApplyMarks()}
+function rdFlash(id){const el=$(`#rdBody [data-rm="${id}"]`);if(!el)return;el.scrollIntoView({block:"center",behavior:"smooth"});el.classList.add("rdflash");setTimeout(()=>el.classList.remove("rdflash"),1600)}
+function rdGoMark(id){
+  const m=S.rd.marks.find(x=>x.id===id);if(!m)return;
+  if(m.kind==="lookup")rdShowCur(m);
+  if(m.ch!==S.rd.ch){S.rd.jumpMark=m.kind==="note"?null:id;if(m.kind==="note")S.rd.jump=m.para||0;rdGoCh(m.ch);return}
+  if(m.kind==="note"){$(`#rdBody .rdp[data-p="${m.para||0}"]`)?.scrollIntoView({block:"start",behavior:"smooth"});return}
+  rdFlash(id);
+}
+
+/* ---------- the panel on the right: counts, then Translations / Highlights / Notes ---------- */
+function rdPct(b){const chs=b.chapters_full||[];let total=0,done=0;chs.forEach((c,i)=>{const n=(c.paras||[]).length;total+=n;if(i<S.rd.ch)done+=n});
+  if(b.pos?.ch===S.rd.ch)done+=b.pos.para||0;return total?Math.min(100,Math.round(done/total*100)):0}
+function rdSideHtml(){
+  const b=S.rd.book;if(!b||!b.chapters_full)return "";
+  const ms=rdBookMarks().sort((x,y)=>(y.at||0)-(x.at||0)), lk=ms.filter(m=>m.kind==="lookup"), hl=ms.filter(m=>m.kind==="highlight"), nt=ms.filter(m=>m.kind==="note"||(m.kind==="highlight"&&m.note));
+  const t=S.rd.tab, short=(s,n)=>{s=String(s||"");return s.length>n?s.slice(0,n-1)+"…":s};
+  const stats=`<div class="rdstats"><div><b>${lk.length}</b><span class="sub">translated</span></div><div><b>${lk.filter(m=>m.ch===S.rd.ch).length}</b><span class="sub">this chapter</span></div><div><b>${hl.length}</b><span class="sub">highlights</span></div><div><b>${rdPct(b)}%</b><span class="sub">read</span></div></div>`;
+  const tabs=`<div class="rdtabs" role="tablist">${[["look","Translations"],["hl","Highlights"],["notes","Notes"]].map(([k,l])=>`<button role="tab" data-rdtab="${k}" aria-selected="${t===k}">${l}</button>`).join("")}</div>`;
+  const chip=m=>`<span class="sub">${esc(rdChLabel(b,m.ch))}</span>`;
+  let body="";
+  if(t==="look")body=`<div id="rdCur"></div>${lk.length?`<div class="rdlist">${lk.slice(0,300).map(m=>`<button class="rdli" data-rdgo="${esc(m.id)}" data-noauto><b>${esc(short(m.text,80))}</b><span class="rdlr">${esc(short(m.result||m.info?.meaning_en||"",120))}</span>${chip(m)}</button>`).join("")}</div>`:`<p class="sub">Nothing translated in this book yet.</p>`}`;
+  if(t==="hl")body=hl.length?`<div class="rdlist">${hl.map(m=>`<div class="rdli rdhli c-${esc(m.color||"yellow")}" data-noauto><span class="rdhlbar" aria-hidden="true"></span><div class="rdhlmain"><button class="rdlink" data-rdgo="${esc(m.id)}">${esc(short(m.text,220))}</button>${chip(m)}<textarea class="wd-field rdnote" data-rdnote="${esc(m.id)}" rows="1" placeholder="Add a note">${esc(m.note||"")}</textarea></div><button class="ibtn" data-rddel="${esc(m.id)}" aria-label="Remove highlight">✕</button></div>`).join("")}</div>`:`<p class="sub">Select words in the book, then pick a color.</p>`;
+  if(t==="notes")body=`<div class="rdnew"><textarea class="wd-field rdnote" id="rdNoteNew" rows="3" placeholder="A note on ${esc(rdChLabel(b,S.rd.ch))}"></textarea><button class="btn sm primary" id="rdNoteAdd">Add note</button></div>
+    ${nt.length?`<div class="rdlist">${nt.map(m=>`<div class="rdli rdnoteli" data-noauto>${m.kind==="highlight"?`<button class="rdlink rdq" data-rdgo="${esc(m.id)}">“${esc(short(m.text,160))}”</button>`:`<button class="rdlink" data-rdgo="${esc(m.id)}">${esc(rdChLabel(b,m.ch))}</button>`}<textarea class="wd-field rdnote" data-rdnote="${esc(m.id)}" rows="2">${esc(m.note||"")}</textarea><div class="row"><span class="sub">${new Date(m.at||0).toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span><button class="btn sm" data-rddel="${esc(m.id)}">${m.kind==="highlight"?"Remove highlight":"Delete"}</button></div></div>`).join("")}</div>`:`<p class="sub">Notes stay with this book.</p>`}`;
+  return stats+tabs+`<div class="rdtabbody">${body}</div>`;
+}
+function rdDrawSide(){
+  const el=$("#rdSide");if(!el)return;
+  const a=document.activeElement;if(el.contains(a)&&a.tagName==="TEXTAREA")return; // never take what is being typed
+  el.innerHTML=rdSideHtml();rdWireSide();
+}
+function rdWireSide(){
+  const el=$("#rdSide");if(!el)return;
+  el.querySelectorAll("[data-rdtab]").forEach(x=>x.onclick=()=>{S.rd.tab=x.dataset.rdtab;rdDrawSide();rdDrawCur()});
+  el.querySelectorAll("[data-rdgo]").forEach(x=>x.onclick=()=>rdGoMark(x.dataset.rdgo));
+  el.querySelectorAll("[data-rddel]").forEach(x=>x.onclick=async()=>{const m=S.rd.marks.find(y=>y.id===x.dataset.rddel);if(!m)return;await rdPutMark({...m,deleted:true});rdApplyMarks();rdDrawSide()});
+  el.querySelectorAll("[data-rdnote]").forEach(x=>{x.onblur=async()=>{const m=S.rd.marks.find(y=>y.id===x.dataset.rdnote);const v=x.value.trim();if(!m||v===(m.note||""))return;await rdPutMark({...m,note:v});setTimeout(rdDrawSide,0)};
+    x.onkeydown=e=>{if(e.key==="Enter"&&(e.metaKey||e.ctrlKey)){e.preventDefault();x.blur()}}});
+  const add=$("#rdNoteAdd");if(add)add.onclick=async()=>{const t=$("#rdNoteNew"), v=t.value.trim();if(!v){t.focus();return}
+    const top=[...document.querySelectorAll("#rdBody .rdp")].find(p=>p.getBoundingClientRect().bottom>72);
+    t.value="";t.blur();await rdPutMark({id:rdMarkId(),bookId:S.rd.book.id,kind:"note",ch:S.rd.ch,para:top?+top.dataset.p:0,text:"",note:v,at:Date.now(),deleted:false});rdDrawSide()};
+  if(S.rd.tab==="look")rdDrawCur();
+}
+/* keys in a book: ← → turn the chapter, Esc closes the translation */
+document.addEventListener("keydown",e=>{
+  if(viewId()!=="reader"||!rdBookId()||!$("#rdBody")||$("#modal").firstChild)return;
+  const t=e.target.tagName;if(t==="INPUT"||t==="TEXTAREA"||t==="SELECT"||e.metaKey||e.ctrlKey||e.altKey)return;
+  if(e.key==="ArrowRight"){e.preventDefault();rdGoCh(S.rd.ch+1,"next")}
+  if(e.key==="ArrowLeft"){e.preventDefault();rdGoCh(S.rd.ch-1,"prev")}
+  if(e.key==="Escape"&&(S.rd.cur||$("#rdSelBar"))){e.preventDefault();e.stopPropagation();S.rd.cur=null;rdSelBar(null);rdDrawCur()}
+},true);
+document.addEventListener("mousedown",e=>{if($("#rdSelBar")&&!e.target.closest("#rdSelBar"))rdSelBar(null)});
+window.addEventListener("resize",()=>{if(viewId()==="reader"&&rdBookId())rdDrawCur()});
 
 /* ---------- reading aloud: the browser's voices, or the Mac's `say` through the server ---------- */
 function rdVoiceList(lang){
