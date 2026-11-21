@@ -570,7 +570,7 @@ async function renderDetail() {
   const hasSpk = m.segments.some((x) => x.spk);
   const canSplit = m.mode !== 'meeting' && ['done', 'partial'].includes(m.status) && hasText;
   const isText = m.kind === 'text';
-  const SRC = { paste: 'Pasted', file: `From ${(m.src && m.src.name) || 'a file'}`, gdoc: 'From Google Docs' };
+  const SRC = { paste: 'Pasted', file: `From ${esc((m.src && m.src.name) || 'a file')}`, gdoc: 'From Google Docs' };
   $('view').innerHTML = `
     <input class="title" id="title" value="${esc(m.title)}" aria-label="Title">
     <div class="sub"><input type="date" id="met" value="${esc(m.met)}" aria-label="Meeting date"> · ${isText ? `Notes · ${SRC[m.source] || ''}` : `${clock(m.duration)} · ${LANG[m.language] || m.language} · ${STATUS[m.status] || m.status}`}</div>
