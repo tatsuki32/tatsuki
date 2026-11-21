@@ -137,6 +137,9 @@ final class DeskController: NSObject, NSApplicationDelegate, WKNavigationDelegat
             return decisionHandler(.cancel)
         }
         if isDesk(url) { return decisionHandler(.allow) }
+        // a frame inside the page (a Google Doc preview, a video) loads in place. Sending it to the browser made the
+        // frame try again, and the browser opened page after page (2026-11-21)
+        if let frame = action.targetFrame, !frame.isMainFrame { return decisionHandler(.allow) }
         NSWorkspace.shared.open(url)
         decisionHandler(.cancel)
     }
