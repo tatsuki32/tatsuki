@@ -147,6 +147,36 @@ class TranscribeSpeakers(unittest.TestCase):
         self.run_session(sid)
         self.assertEqual(s.transcript_lines(sid, False), ['Speaker A: good morninggood morning'])
 
+    def test_room_parts_are_split_by_voice_and_mac_parts_are_not(self):
+        s = self.s
+        # The room (0-2 s) → This Mac (2 s-). The fake splitter hears voice "A" first (until 1.9 s), then "B" (from 2.1 s)
+        sid = s.create_session('Phone then Mac', 'en', 'recording', 'recording', 'meeting', 'room')['id']
+        self.assertEqual(s.current_voice(s.load_meta(sid)), 'room')
+        self.assertFalse(os.path.exists(os.path.join(s.sdir(sid), 'alive')))  # no Mac audio while in the room
+        mic_start = time.time() - 2.0
+        s.update_meta(sid, mic_start=mic_start)
+        s.switch_voice(sid, 'mac')
+        meta = s.load_meta(sid)
+        self.assertEqual([v for _, v in meta['src_log']], ['room', 'mac'])
+        self.assertAlmostEqual(meta['src_log'][1][0], 2.0, delta=0.5)
+        s.update_meta(sid, src_log=[[0.0, 'room'], [2.0, 'mac']])
+        s.append_chunk(sid, 0, tone(4, 1000))
+        s.write_json(os.path.join(s.sdir(sid), 'plan.json'), [[0, 2 * 32000], [2 * 32000, 4 * 32000]])
+        s.write_json(os.path.join(s.sdir(sid), 'tap.json'), {'state': 'stopped', 'started': mic_start + 2.0, 'updated': time.time()})
+        meta = self.run_session(sid)
+        self.assertTrue(os.path.exists(os.path.join(s.sdir(sid), 'diar.json')))
+        rows = s.assemble(sid)
+        # the Mac part is Me by the mic and its voice is "B", so the other voice "A" in the room part is Them
+        self.assertEqual([(round(r['start']), r['spk']) for r in rows], [(0, 'them'), (2, 'me')])
+        self.assertTrue(s.public_meta(meta)['has_room'])
+        s.update_meta(sid, room_swap=True)
+        self.assertEqual([r['spk'] for r in s.assemble(sid)], ['me', 'me'])
+
+    def test_room_only_guesses_the_first_voice_is_me(self):
+        turns = [[0, 1.9, 'A'], [2.1, 4, 'B']]
+        self.assertEqual(self.s.room_me_voice([], turns), 'A')
+        self.assertEqual(self.s.room_me_voice([], turns, swap=True), 'B')
+
     def test_echo_from_speakers_is_dropped_from_me(self):
         s = self.s
         me = [{'start': 1.0, 'end': 3.0, 'text': 'See you on Friday.'}, {'start': 5.0, 'end': 6.0, 'text': 'Sounds good'}]

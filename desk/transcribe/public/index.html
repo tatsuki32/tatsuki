@@ -55,6 +55,9 @@
   .modes { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; margin-bottom: 16px; max-width: 100%; }
   .modes button { border: 0; border-radius: 0; background: none; padding: 6px 12px; white-space: nowrap; }
   #modeHint { margin-bottom: 8px; }
+  .voicebar { display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap; }
+  .voicebar .modes { margin-bottom: 8px; }
+  .voicebar .hint { margin-bottom: 8px; }
   .modes button + button { border-left: 1px solid var(--line); }
   .modes button[aria-pressed="true"] { background: var(--panel); color: var(--accent); }
   .modes button:disabled { opacity: .45; }
@@ -108,6 +111,12 @@ const MODE_HINT = {
   meeting: 'Your mic is “Me”. What Zoom or Meet plays on this Mac is “Them”.',
   inperson: 'Two people, one mic. After the text is ready, voices are split into A and B.',
 };
+const VOICES = { mac: 'This Mac', room: 'The room' };
+const VOICE_HINT = {
+  mac: 'Zoom or Meet on this Mac. Your mic is “Me”; what the call plays here is “Them”, even in earphones.',
+  room: 'Phone on speaker, or face to face. Only the mic records; voices are split into Me and Them afterwards.',
+};
+let voice = VOICES[store.get('tr-voice')] ? store.get('tr-voice') : 'mac';
 let mode = MODES[store.get('tr-mode')] ? store.get('tr-mode') : 'mic';
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -132,7 +141,7 @@ let sessions = [];
 const rec = {
   active: false, starting: false, sid: null, sent: 0, captured: 0, queue: [], sending: false, finishing: false,
   stream: null, ctx: null, node: null, wakeLock: null, peak: 0, quietSince: 0, netError: false, warning: '', pending: [],
-  mode: 'mic', clockSent: false, tap: null, tapTimer: null, themQuietSince: 0,
+  mode: 'mic', voice: 'mac', clockSent: false, tap: null, tapTimer: null, themQuietSince: 0,
 };
 
 // 会議のとき、Mac の音を録るアプリの様子を1秒ごとに見る
@@ -146,7 +155,24 @@ async function pollTap() {
   rec.tapTimer = setTimeout(pollTap, 1000);
 }
 
+// 「相手の声」を変える。録音前は次の録音に、録音中はこの時刻から効く
+async function switchVoice(next) {
+  voice = next;
+  store.set('tr-voice', next);
+  if (rec.active && rec.mode === 'meeting' && rec.voice !== next) {
+    rec.voice = next;
+    renderRecorder();
+    try {
+      await post(`/api/sessions/${rec.sid}/voice`, { voice: next });
+      rec.tap = null;
+      rec.themQuietSince = Date.now();
+    } catch (e) { rec.warning = `Couldn't switch: ${e.message}`; }
+  }
+  renderRecorder();
+}
+
 function tapNote() {
+  if (rec.voice !== 'mac') return '';
   const t = rec.tap;
   if (!t || t.state === 'starting') return 'Starting meeting audio…';
   if (t.state === 'error' && t.error === 'permission') return 'To record the other side, allow “Tatsuki Audio Tap” in System Settings › Privacy & Security › Screen & System Audio Recording. Then stop and record again. Your microphone is still recording.';
@@ -170,9 +196,9 @@ async function startRecording() {
     loadMics();
     await buildAudioGraph();
     const language = $('language').value;
-    const meta = await post('/api/sessions', { language, mode });
+    const meta = await post('/api/sessions', { language, mode, voice });
     Object.assign(rec, { active: true, sid: meta.id, sent: 0, captured: 0, queue: [], pending: [], finishing: false, netError: false,
-      quietSince: Date.now(), mode, clockSent: false, tap: null, themQuietSince: Date.now() });
+      quietSince: Date.now(), mode, voice, clockSent: false, tap: null, themQuietSince: Date.now() });
     if (mode === 'meeting') pollTap();
     rec.stream.getTracks().forEach((t) => {
       t.onended = () => { rec.warning = 'The microphone was disconnected. Everything up to now is saved. Check the connection, then press Stop.'; renderRecorder(); };
@@ -323,11 +349,13 @@ function renderRecorder() {
   b.textContent = rec.finishing ? 'Saving' : rec.active ? 'Stop' : 'Record';
   b.disabled = rec.starting || rec.finishing;
   $('language').disabled = $('mic').disabled = rec.active;
-  document.querySelectorAll('.modes button').forEach((el) => { el.disabled = rec.active; el.setAttribute('aria-pressed', String(el.dataset.mode === (rec.active ? rec.mode : mode))); });
+  document.querySelectorAll('.modes button[data-mode]').forEach((el) => { el.disabled = rec.active; el.setAttribute('aria-pressed', String(el.dataset.mode === (rec.active ? rec.mode : mode))); });
   const meeting = (rec.active ? rec.mode : mode) === 'meeting';
-  $('themRow').style.display = meeting ? 'contents' : 'none';
-  $('modeHint').textContent = rec.active && meeting ? 'Let everyone know you\'re recording. Use earphones so their voice stays out of your mic.'
-    : MODE_HINT[mode];
+  const v = rec.active ? rec.voice : voice;
+  $('voiceBar').style.display = meeting ? 'flex' : 'none';
+  document.querySelectorAll('#voices button').forEach((el) => { el.disabled = rec.finishing; el.setAttribute('aria-pressed', String(el.dataset.voice === v)); });
+  $('themRow').style.display = meeting && v === 'mac' ? 'contents' : 'none';
+  $('modeHint').textContent = meeting ? VOICE_HINT[v] + (rec.active ? ' Let everyone know you\'re recording.' : '') : MODE_HINT[mode];
   $('recWarn').textContent = !rec.active && rec.warning ? rec.warning : '';
   $('recWarn').style.display = !rec.active && rec.warning ? 'block' : 'none';
   $('recTips').style.display = rec.active ? 'block' : 'none';
@@ -354,6 +382,7 @@ function renderHome() {
     <div class="notice" id="recWarn" style="display:none"></div>
     <div class="recorder">
       <div class="modes" role="group" aria-label="What are you recording?">${Object.entries(MODES).map(([k, v]) => `<button data-mode="${k}" aria-pressed="${k === mode}">${v}</button>`).join('')}</div>
+      <div class="voicebar" id="voiceBar"><span class="hint">Their voice</span><div class="modes" id="voices" role="group" aria-label="Where does their voice come from?">${Object.entries(VOICES).map(([k, v]) => `<button data-voice="${k}" aria-pressed="${k === voice}">${v}</button>`).join('')}</div></div>
       <div class="hint" id="modeHint"></div>
       ${mode === 'meeting' && !status.tap_ready ? '<div class="notice soft">Meeting audio needs a one-time setup: run desk/transcribe/setup.sh. Until then only your mic is recorded.</div>' : ''}
       <div class="timer" id="timer">00:00:00</div>
@@ -372,8 +401,11 @@ function renderHome() {
     <div class="drop" id="drop">Drop an audio file here, or click to choose one<br><small>m4a (iPhone Voice Memos), mp3, wav, aiff, aac, caf</small></div>
     <input type="file" id="file" accept="audio/*,.m4a,.mp3,.wav,.aiff,.aac,.caf" hidden>`;
   $('recBtn').onclick = () => (rec.active ? stopRecording() : startRecording());
-  document.querySelectorAll('.modes button').forEach((el) => {
+  document.querySelectorAll('.modes button[data-mode]').forEach((el) => {
     el.onclick = () => { mode = el.dataset.mode; store.set('tr-mode', mode); renderHome(); };
+  });
+  document.querySelectorAll('#voices button').forEach((el) => {
+    el.onclick = () => switchVoice(el.dataset.voice);
   });
   const drop = $('drop');
   drop.onclick = () => $('file').click();
@@ -454,6 +486,7 @@ async function renderDetail() {
     ${m.diar_error ? `<div class="notice">Couldn't tell the voices apart: ${esc(m.diar_error)}</div>` : ''}
     ${m.mode === 'meeting' && m.tap_error === 'missing' ? '<div class="notice soft">Only your mic was recorded. Run desk/transcribe/setup.sh once to record the other side too.</div>' : ''}
     ${m.mode === 'meeting' && m.tap_apps && m.tap_apps.length ? `<div class="hint">Them: sound from ${esc(m.tap_apps.join(', '))}</div>` : ''}
+    ${m.has_room ? '<div class="hint">Parts recorded with “The room” were split by voice, so Me and Them there are a guess.</div>' : ''}
     ${running ? `
       <div class="hint">${STATUS[m.status]} ${m.total_chunks ? `${m.done_chunks} of ${m.total_chunks} parts ${estimateLeft(m)}` : ''}</div>
       <div class="bar"><i style="width:${percent}%"></i></div>
@@ -464,6 +497,7 @@ async function renderDetail() {
       ${hasText ? '<button id="copy">Copy all</button>' : ''}
       ${hasText ? `<button id="txt">Save as text</button>` : ''}
       ${m.mode === 'inperson' && hasSpk ? '<button id="swap">Swap A and B</button>' : ''}
+      ${m.has_room && ['done', 'partial'].includes(m.status) ? '<button id="roomSwap" title="For the parts recorded with “The room”">Swap Me and Them (room parts)</button>' : ''}
       ${canSplit ? `<button id="split" ${status.diar_ready ? '' : 'disabled title="Run setup.sh once"'}>${m.mode === 'inperson' ? 'Split again' : 'Split into 2 speakers'}</button>` : ''}
       ${m.status === 'interrupted' ? '<button id="resume">Transcribe what was saved</button>' : ''}
       ${m.status === 'partial' || m.status === 'error' ? '<button id="retry">Retry failed parts</button>' : ''}
@@ -525,6 +559,11 @@ async function renderDetail() {
   const others = (spk) => Object.keys(names).filter((k) => k !== spk);
   const saveNames = async (next) => { renderedKey = ''; await api(`/api/sessions/${m.id}`, { method: 'PATCH', body: JSON.stringify({ speakers: next }) }); renderDetail(); };
   if ($('swap')) $('swap').onclick = () => saveNames({ A: names.B, B: names.A });
+  if ($('roomSwap')) $('roomSwap').onclick = async () => {
+    renderedKey = '';
+    await api(`/api/sessions/${m.id}`, { method: 'PATCH', body: JSON.stringify({ room_swap: !m.room_swap }) });
+    renderDetail();
+  };
   if ($('split')) $('split').onclick = async () => {
     if (hasSpk && !confirm('This splits the voices again and undoes the speaker changes you made by hand. Continue?')) return;
     renderedKey = '';

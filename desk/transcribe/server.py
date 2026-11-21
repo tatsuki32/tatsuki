@@ -16,6 +16,8 @@ Desk のサーバー(4747)が起動時に立ち上げる(desk/transcribe_desk.py
   - mode 'meeting': マイク(audio.pcm)=Me、Mac の音(them.pcm、TatsukiAudioTap が録る)=Them。トラックごとに文字にして時刻で並べる。
   - mode 'inperson': マイク1本を、文字にしたあと sherpa-onnx で2人(A / B)に分ける。取り込んだ録音にも後からかけられる。
   - 名前は meta の speakers、行ごとの直しは speakers.json。
+  - 会議の「相手の声」(meta の src_log): 'mac' は Mac の音を録る、'room' はマイクだけ(iPhone のスピーカー・対面)。
+    録音中にも切り替えられ、'room' の間のマイクは声で2人に分けて Me / Them を推測する。
 """
 import array
 import difflib
@@ -52,6 +54,7 @@ DIAR_EMB = os.path.join(DIAR, 'embedding.onnx')
 TAP_APP = os.environ.get('TRANSCRIBE_TAP_APP') or os.path.expanduser('~/Applications/TatsukiAudioTap.app')
 TAP_CMD = os.environ.get('TRANSCRIBE_TAP_CMD')
 MODES = ('mic', 'meeting', 'inperson')
+VOICES = ('mac', 'room')
 DEFAULT_SPEAKERS = {'meeting': {'me': 'Me', 'them': 'Them'}, 'inperson': {'A': 'Speaker A', 'B': 'Speaker B'}}
 
 RATE = 16000
@@ -161,6 +164,9 @@ def public_meta(meta):
     meta['duration'] = file_size(play_path(sid)) / BYTES_PER_SEC
     meta['mode'] = meta.get('mode') or 'mic'
     meta['speakers'] = speakers_of(meta)
+    if meta['mode'] == 'meeting':
+        meta['voice'] = current_voice(meta)
+        meta['has_room'] = has_room(meta)
     if meta['status'] == 'recording' and time.time() - meta.get('last_chunk', 0) > RECORDING_STALE_SEC:
         meta['status'] = 'interrupted'
     return meta
@@ -177,17 +183,59 @@ def list_sessions():
     return out
 
 
-def create_session(title, language, source, status, mode='mic'):
+def create_session(title, language, source, status, mode='mic', voice='mac'):
     sid = uuid.uuid4().hex
     os.makedirs(sdir(sid))
     now = time.time()
     meta = {'id': sid, 'title': title, 'language': language, 'source': source, 'status': status,
             'created': now, 'last_chunk': now, 'done_chunks': 0, 'total_chunks': 0, 'failed_chunks': [],
             'error': None, 'mode': mode if mode in MODES else 'mic'}
+    if meta['mode'] == 'meeting':
+        meta['src_log'] = [[0.0, voice if voice in VOICES else 'mac']]
     write_json(os.path.join(sdir(sid), 'meta.json'), meta)
     open(pcm_path(sid), 'ab').close()
-    if meta['mode'] == 'meeting':
+    if meta['mode'] == 'meeting' and meta['src_log'][0][1] == 'mac':
         start_tap(sid)
+    return meta
+
+
+def current_voice(meta):
+    log = meta.get('src_log') or [[0.0, 'mac']]
+    return log[-1][1]
+
+
+def voice_spans(meta, end=1e12):
+    """[(start, end, 'mac'|'room'), ...] をマイクの時間で返す。"""
+    log = meta.get('src_log') or [[0.0, 'mac']]
+    return [(t, log[i + 1][0] if i + 1 < len(log) else end, v) for i, (t, v) in enumerate(log)]
+
+
+def voice_at(meta, t):
+    v = 'mac'
+    for start, _, kind in voice_spans(meta):
+        if t >= start:
+            v = kind
+    return v
+
+
+def has_room(meta):
+    return meta.get('mode') == 'meeting' and any(v == 'room' for _, v in (meta.get('src_log') or []))
+
+
+def switch_voice(sid, voice):
+    """録音中に「相手の声」を切り替える。切り替えた時刻(マイクの時間)を残す。"""
+    with lock:
+        meta = load_meta(sid)
+        if current_voice(meta) == voice:
+            return meta
+        t = max(0.0, time.time() - meta['mic_start']) if meta.get('mic_start') else 0.0
+        log = [x for x in (meta.get('src_log') or [[0.0, 'mac']]) if x[0] < t] or []
+        log.append([round(t, 2), voice])
+        meta = update_meta(sid, src_log=log)
+    if voice == 'mac':
+        start_tap(sid)
+    else:
+        stop_tap(sid, wait=False)
     return meta
 
 
@@ -202,6 +250,8 @@ def touch(path):
 
 def start_tap(sid):
     folder = sdir(sid)
+    if os.path.exists(os.path.join(folder, 'stop')):
+        stop_tap(sid)  # 止めている途中のものが終わってから。2つが同じファイルに書かないように
     touch(os.path.join(folder, 'alive'))
     try:
         os.remove(os.path.join(folder, 'stop'))
@@ -261,7 +311,7 @@ def tend_taps():
     """録音中の会議のアプリを生かし続け、落ちていたら立ち上げ直す。keep_awake から5秒ごとに呼ぶ。"""
     now = time.time()
     for meta in list_sessions():
-        if meta.get('mode') != 'meeting' or meta['status'] != 'recording':
+        if meta.get('mode') != 'meeting' or meta['status'] != 'recording' or current_voice(meta) != 'mac':
             continue
         sid = meta['id']
         touch(os.path.join(sdir(sid), 'alive'))
@@ -582,7 +632,8 @@ def process(sid):
             done += 1
             update_meta(sid, done_chunks=done)
     shutil.rmtree(os.path.join(sdir(sid), 'tmp'), ignore_errors=True)
-    if load_meta(sid).get('mode') == 'inperson' and not os.path.exists(os.path.join(sdir(sid), 'diar.json')):
+    needs_split = load_meta(sid).get('mode') == 'inperson' or has_room(load_meta(sid))
+    if needs_split and not os.path.exists(os.path.join(sdir(sid), 'diar.json')):
         update_meta(sid, status='splitting')
         try:
             write_json(os.path.join(sdir(sid), 'diar.json'), diarize(sid))
@@ -649,6 +700,20 @@ def speaker_for(seg, turns):
     return best or nearest
 
 
+def room_me_voice(mac_lines, turns, swap=False):
+    """The room の間、どちらの声が自分か。This Mac の間にマイクで話していた声に近い方。無ければ先に話した方(A)。"""
+    score = {}
+    for x in mac_lines:
+        for start, end, label in turns:
+            overlap = min(x['end'], end) - max(x['start'], start)
+            if overlap > 0:
+                score[label] = score.get(label, 0) + overlap
+    mine = max(score, key=score.get) if score else 'A'
+    if swap:
+        mine = 'B' if mine == 'A' else 'A'
+    return mine
+
+
 def norm_text(text):
     return re.sub(r'[\s、。,.!?！？「」"\'-]+', '', text).lower()
 
@@ -680,8 +745,17 @@ def assemble(sid):
         by_track[t] = rows
     mode = meta.get('mode')
     if mode == 'meeting':
-        me = [{**s, 'spk': 'me'} for s in drop_echo(by_track['me'], by_track.get('them', []))]
-        out = sorted(me + [{**s, 'spk': 'them'} for s in by_track.get('them', [])], key=lambda s: (s['start'], s['end']))
+        mid = lambda x: (x['start'] + x['end']) / 2
+        on_mac = [x for x in by_track['me'] if voice_at(meta, mid(x)) == 'mac']
+        in_room = [x for x in by_track['me'] if voice_at(meta, mid(x)) == 'room']
+        me = [{**x, 'spk': 'me'} for x in drop_echo(on_mac, by_track.get('them', []))]
+        turns = read_json(os.path.join(sdir(sid), 'diar.json'), None) if in_room else None
+        if turns:
+            mine = room_me_voice(on_mac, turns, meta.get('room_swap'))
+            me += [{**x, 'spk': 'me' if speaker_for(x, turns) == mine else 'them'} for x in in_room]
+        else:
+            me += [{**x, 'spk': 'me'} for x in in_room]  # 声で分ける前・分けられなかったとき
+        out = sorted(me + [{**x, 'spk': 'them'} for x in by_track.get('them', [])], key=lambda x: (x['start'], x['end']))
     else:
         out = by_track['me']
         turns = read_json(os.path.join(sdir(sid), 'diar.json'), None) if mode == 'inperson' else None
@@ -864,7 +938,8 @@ class Handler(BaseHTTPRequestHandler):
                 mode = data.get('mode') if data.get('mode') in MODES else 'mic'
                 default = {'meeting': 'Meeting %Y-%m-%d %H:%M', 'inperson': 'Conversation %Y-%m-%d %H:%M'}
                 title = str(data.get('title') or '')[:200] or time.strftime(default.get(mode, 'Recording %Y-%m-%d %H:%M'))
-                return self.send_obj(public_meta(create_session(title, language, 'recording', 'recording', mode)))
+                voice = data.get('voice') if data.get('voice') in VOICES else 'mac'
+                return self.send_obj(public_meta(create_session(title, language, 'recording', 'recording', mode, voice)))
         if len(parts) >= 3 and parts[1] == 'sessions':
             return self.handle_session(method, parts[2], parts[3:], query)
         return self.fail(404, 'Not found')
@@ -886,6 +961,8 @@ class Handler(BaseHTTPRequestHandler):
                     allowed = DEFAULT_SPEAKERS.get(meta.get('mode'), {})
                     names = {k: str(v).strip()[:40] or allowed[k] for k, v in data['speakers'].items() if k in allowed}
                     fields['speakers'] = {**(meta.get('speakers') or {}), **names}
+                if 'room_swap' in data and meta.get('mode') == 'meeting':
+                    fields['room_swap'] = bool(data['room_swap'])
                 return self.send_obj(public_meta(update_meta(sid, **fields) if fields else meta))
             if method == 'DELETE':
                 stop_tap(sid, wait=False)
@@ -912,6 +989,13 @@ class Handler(BaseHTTPRequestHandler):
             if not meta.get('mic_start'):
                 update_meta(sid, mic_start=mic_start)
             return self.send_obj({'ok': True})
+        if action == 'voice' and method == 'POST':
+            voice = self.body_json().get('voice')
+            if meta.get('mode') != 'meeting' or voice not in VOICES:
+                return self.fail(400, 'Unknown choice')
+            if meta['status'] != 'recording':
+                return self.fail(409, 'Only while recording')
+            return self.send_obj(public_meta(switch_voice(sid, voice)))
         if action == 'tap' and method == 'GET':
             return self.send_obj(tap_state(sid))
         if action == 'finish' and method == 'POST':

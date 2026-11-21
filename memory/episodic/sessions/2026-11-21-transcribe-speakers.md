@@ -21,3 +21,9 @@
 ## ハマりどころ
 - サンドボックスの中の `swiftc` は ScreenCaptureKit のモジュールキャッシュを書けない（`-module-cache-path` で回避）。
 - 偽のエンジンで Me と Them の文が似ていると `drop_echo` が Me を消す（試験の文は違うものにする）。
+
+## 追加：相手の声の切り替え（同じ日）
+- Meeting に「Their voice」：This Mac（Mac の音を録る）／The room（iPhone のスピーカー・対面。マイクだけ）。録音前も録音中も。
+- `src_log` に切り替えの時刻（マイクの秒）。room に切り替えると `stop` を置き、`tend_taps` は立ち上げ直さない。mac に戻すと `start_tap`（止めている途中なら待ってから）。アプリは前の `started` を引き継いで無音で埋めるので時刻はずれない。
+- room の間のマイクだけ `diarize` の結果で Me / Them。どちらが Me かは This Mac の間のマイクの行と重なる声（`room_me_voice`）。
+- 試験10件。ブラウザの枠はマイクを使えないので、切り替えは API で確かめた。

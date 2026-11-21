@@ -26,6 +26,7 @@ iPhoneの録音は、ボイスメモをAirDropでMacに送り、画面にドロ�
 - Meeting の Mac の音は `~/Applications/TatsukiAudioTap.app`（`desk/app/audiotap.swift`）が録ります。Zoom・ブラウザ（Meet）・Teams・FaceTime の音だけで、通知音や音楽は入りません。初回だけ「システム設定 › プライバシーとセキュリティ › 画面とシステムオーディオの録音」で Tatsuki Audio Tap を許可します。画面の絵は残しません。
 - 相手に録音することを伝えてください。スピーカーだと相手の声がマイクにも入るので、イヤホンを使います（同じ時刻・同じ文の Me の行は自動で消します）。
 - 名前を押すと「名前を変える」（全部の行）と「この行を別の人にする」。In person は「Swap A and B」も。前に録った録音や取り込んだ録音は「Split into 2 speakers」で後から分けられます。
+- Meeting には「Their voice」のスイッチがあります。This Mac＝Zoom・Meet を Mac で使う（Mac の音を録る。イヤホンでも録れる）、The room＝iPhone のスピーカーでの通話や対面（Mac の音は録らず、マイクを声で2人に分けて Me / Them を推測）。録音前にも録音中にも切り替えられ、切り替えた時刻から効きます。推測が逆なら「Swap Me and Them (room parts)」。
 - Copy all と Save as text は「名前: 発言」で、同じ人が続く行は1つにまとめます。
 - 話者分けは sherpa-onnx（pyannote の区間検出＋3D-Speaker CAM++、約65MB、`engine/diar/`）。Mac の中だけで動きます。
 
