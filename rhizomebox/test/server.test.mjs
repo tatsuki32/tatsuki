@@ -146,3 +146,28 @@ test('link previews: never fetch private or local addresses; read titles and ima
   const m = readMeta('<html><head><title>Plain &amp; title</title><meta property="og:image" content="/img/a.jpg"><meta property="og:site_name" content="Site"></head>', 'https://example.com/p');
   assert.deepEqual(m, { title: 'Plain & title', image: 'https://example.com/img/a.jpg', site: 'Site' });
 });
+
+test('the Desk word lists: own key, "<Language> words" pages only, the owner\'s lines above the mark stay', async () => {
+  const WK = 'w'.repeat(40);
+  const t = makeEnv({ WORDS_KEY: WK });
+  const tok = await t.signIn();
+  const H = { ...t.W, Authorization: 'Bearer ' + WK };
+  const send = (body, headers = H) => t.call('PUT', '/_/api/desk/words', { body, headers });
+  // the backup key and no key are refused; so is any other title
+  assert.equal((await send({ title: 'Russian words', lines: ['x'] }, { ...t.W, Authorization: 'Bearer ' + 'k'.repeat(40) })).status, 401);
+  assert.equal((await send({ title: 'Russian words', lines: ['x'] }, t.W)).status, 401);
+  assert.equal((await send({ title: 'Diary', lines: ['x'] })).status, 400);
+  assert.equal((await send({ title: 'Russian words', lines: ['x'] }, { Authorization: 'Bearer ' + WK })).status, 403);
+  // first write makes a public page
+  const r = await send({ title: 'Russian words', head: ['Words in [Russian].'], lines: ['2026-11', ' спасибо — ありがとう'], pub: true });
+  assert.equal(r.status, 200);
+  const id = (await r.json()).page.id;
+  const pg = await (await t.call('GET', '/_/api/page/' + id)).json();
+  assert.deepEqual(pg.page.lines, ['Russian words', 'Words in [Russian].', '', 'The Desk adds the words below this line by itself.', '2026-11', ' спасибо — ありがとう']);
+  // the owner writes above the mark; the next Desk write keeps it and replaces only what is below
+  const own = [...pg.page.lines.slice(0, 2), 'my own note', ...pg.page.lines.slice(2)];
+  assert.equal((await t.call('PUT', '/_/api/page/' + id, { body: { lines: own, baseRev: pg.page.rev }, cookie: tok, headers: t.W })).status, 200);
+  assert.equal((await send({ title: 'Russian words', lines: ['2026-11', ' ягода — ベリー'] })).status, 200);
+  const after = (await (await t.call('GET', '/_/api/page/' + id)).json()).page.lines;
+  assert.deepEqual(after, ['Russian words', 'Words in [Russian].', 'my own note', '', 'The Desk adds the words below this line by itself.', '2026-11', ' ягода — ベリー']);
+});

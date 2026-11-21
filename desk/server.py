@@ -51,6 +51,7 @@ import news_sync
 import rhizomebox_backup
 import anki
 import cards
+import words
 import cards_sync
 import reader
 import langmap  # Language Map: countries, languages, regions and peoples from public data (desk/langmap.py, langmap_build.py)
@@ -1051,6 +1052,12 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(*reader.get(path.rsplit("/", 1)[1]))
         if path == "/api/reader/voices":
             return self.send(200, reader.voices_for(parse_qs(urlsplit(self.path).query).get("lang", ["en"])[0]))
+        if path == "/api/words":  # every word looked up or put in Anki, per language (desk/words.py)
+            return self.send(200, words.state(load_locked))
+        if path == "/api/words/preview":  # what the Rhizome Box pages would say
+            return self.send(200, {"pages": words.preview(words.book_from(load_locked))})
+        if path.startswith("/api/words/lang/"):
+            return self.send(200, {"words": words.word_list(words.book_from(load_locked), path.rsplit("/", 1)[1][:12])})
         if path == "/api/anki":  # Desk words -> Anki (desk/anki.py): is Anki open, what waits, Anki's due count
             with LOCK:
                 all_cards = load("cards")
@@ -1322,6 +1329,8 @@ class Handler(BaseHTTPRequestHandler):
                 self.close_connection = True
                 return self.send(413, {"error": "A file can be up to 50 MB"})
             return self.send(*reader.add_file(self.rfile.read(n), unquote(self.headers.get("X-File-Name") or "")))
+        if urlsplit(self.path).path in ("/api/words/hide", "/api/words/publish") and method in ("PUT", "POST"):
+            return self.words_write(urlsplit(self.path).path)
         if method == "POST" and urlsplit(self.path).path in ("/api/anki/open", "/api/anki/sync"):
             return self.anki_post(urlsplit(self.path).path)
         if urlsplit(self.path).path.startswith("/api/reader/") or urlsplit(self.path).path in ("/api/cards/add", "/api/cards/lookup", "/api/cards/enrich", "/api/cards/suggest"):
@@ -1546,6 +1555,22 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    def words_write(self, path):
+        """Words (desk/words.py): take a word off the public pages, or start / run publishing. JSON only."""
+        if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+            return self.send(415, {"error": "json only"})
+        try:
+            rec = self.body()
+        except (ValueError, json.JSONDecodeError):
+            return self.send(400, {"error": "bad json"})
+        if path == "/api/words/hide":
+            return self.send(*words.set_hidden(rec))
+        if rec.get("start"):
+            words.start_publishing()
+        st = words.publish(words.book_from(load_locked), force=bool(rec.get("force")))
+        words._memo["at"] = 0
+        return self.send(200, {"started": st.get("started", False), "pages": st.get("pages", {}), "error": st.get("error", "")})
+
     def anki_post(self, path):
         """Anki (desk/anki.py): bring Anki to the front, or send what waits now. JSON only, like every write here."""
         if not (self.headers.get("Content-Type") or "").startswith("application/json"):
@@ -1587,7 +1612,11 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(code, out)
         if method == "POST" and step[1:] == ["lookup"]:
             try:
-                return self.send(200, cards.lookup(str(rec.get("term") or "")[:cards.TERM_MAX], str(rec.get("lang") or "en")[:8], str(rec.get("context") or "")[:cards.CONTEXT_MAX]))
+                term, lang = str(rec.get("term") or "")[:cards.TERM_MAX], str(rec.get("lang") or "en")[:8]
+                info = cards.lookup(term, lang, str(rec.get("context") or "")[:cards.CONTEXT_MAX])
+                if rec.get("log", True):
+                    words.reader_lookup(upsert, term, lang, info)  # the Words page counts the Reader's words too
+                return self.send(200, info)
             except cards.Unavailable as e:
                 return self.send(503, {"error": str(e)})
         if method == "POST" and step[1:] == ["enrich"]:
@@ -1732,6 +1761,7 @@ if __name__ == "__main__":
         threading.Thread(target=cards_sync.watch, daemon=True).start()  # flashcards <-> the Cards app on the phone
         threading.Thread(target=cards.watch, args=(cards.Store(load_locked, upsert),), daemon=True).start()  # fills missing meanings every 30 minutes
         threading.Thread(target=anki.watch, args=(cards.Store(load_locked, upsert),), daemon=True).start()  # words -> Anki, every minute
+        threading.Thread(target=words.watch, args=(load_locked,), daemon=True).start()  # Anki's learned words, Rhizome Box word pages
         try:
             lifelog.ensure_log_habits()  # "Log sleep" / "Log meals": tick themselves when a record arrives
         except Exception as e:

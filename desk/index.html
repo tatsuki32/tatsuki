@@ -1959,6 +1959,28 @@ a.shelfbtn{text-decoration:none;display:inline-flex;align-items:center}
 .lgmwords div{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .lgm a.xlm{color:var(--ink);text-decoration:none}
 @media (max-width:760px){.lgmwrap{flex-direction:column}.lgmside{flex:none}.lgmsvg{max-height:none}.lgmli{grid-template-columns:minmax(0,1fr) 64px}.lgmli>span:nth-child(2){display:none}.lgmmine{grid-template-columns:minmax(0,1fr) 80px}.lgmrow{grid-template-columns:84px minmax(0,1fr)}.lgmhead{text-align:left}}
+/* Words (#words): counts, 30-day bars, languages, the word book. Classes start with wbk */
+.wbk .wbknums{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--s3)}
+.wbk .wbknum b{display:block;font-size:var(--t5);line-height:1.2}
+.wbk .wbknum span{font-size:var(--t1);color:var(--muted)}
+.wbk .wbkbars{display:flex;align-items:flex-end;gap:2px;height:96px;margin-top:var(--s2)}
+.wbk .wbkbar{flex:1;display:flex;flex-direction:column-reverse;min-width:0;height:100%}
+.wbk .wbkbar i{display:block;width:100%}
+.wbk .wbkbar .lk{background:var(--blue)}.wbk .wbkbar .ak{background:var(--green)}
+.wbk .wbkkey{display:flex;gap:var(--s3);font-size:var(--t1);color:var(--muted);margin-top:var(--s2);flex-wrap:wrap}
+.wbk .wbkkey i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:var(--s1)}
+.wbk .wbktab{width:100%;border-collapse:collapse;font-size:var(--t2)}
+.wbk .wbktab th,.wbk .wbktab td{padding:var(--s2);border-bottom:1px solid var(--line);text-align:left}
+.wbk .wbktab th{font-size:var(--t1);color:var(--muted);font-weight:400}
+.wbk .wbktab .num{text-align:right;font-variant-numeric:tabular-nums}
+.wbk .wbktab tr[data-wbklang]{cursor:pointer}.wbk .wbktab tr[data-wbklang]:hover td{background:var(--surface-2)}
+.wbk .wbkw{padding:var(--s2) 0;border-bottom:1px solid var(--line);display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--s2)}
+.wbk .wbkw .t{font-weight:700}.wbk .wbkw .m{color:var(--ink-2)}.wbk .wbkw .x{font-size:var(--t1);color:var(--muted)}
+.wbk [lang]:not([lang="ja"]):not([lang="zh"]):not([lang="ko"]){font-family:-apple-system,system-ui,"Segoe UI",var(--font)} /* Hiragino draws Cyrillic and Greek full-width */
+.wbk .wbkfilt{display:flex;gap:var(--s2);flex-wrap:wrap;align-items:center;margin-bottom:var(--s2)}
+.wbk .wbkfilt input{flex:1;min-width:120px}
+.wbk .wbkpre{white-space:pre-wrap;font-size:var(--t1);color:var(--ink-2);background:var(--surface-2);border-radius:var(--r-s);padding:var(--s2);max-height:240px;overflow:auto}
+@media (max-width:560px){.wbk .wbktab .hidesm{display:none}.wbk .wbknum b{font-size:var(--t4)}}
 </style>
 
 <div class="app">
@@ -2008,7 +2030,7 @@ S.projects=[];S.sections=[];S.okrs=[];S.krOpen={};S.projFilter="all";S.pDone=fal
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const okUrl=u=>/^(https:\/\/|file:\/\/|#)/.test(u||"");
-const viewId=()=>{const h=(location.hash||"").slice(1);if(h==="mail")return "tasks";if(h==="inbox")return "presents";if(/^project\//.test(h))return "project";if(/^forms\//.test(h))return "forms";if(/^task\//.test(h))return "tasks";if(/^concept\//.test(h))return "translate";if(/^langmap[\/?]/.test(h)||/^language\//.test(h))return "langmap";if(/^reader\//.test(h))return "reader";if(h==="cards/review")return "cards";return VIEWS.some(v=>v.id===h&&v.g!=="hidden")?h:"home"}; // the morning mail screen moved into the tasks
+const viewId=()=>{const h=(location.hash||"").slice(1);if(h==="mail")return "tasks";if(h==="inbox")return "presents";if(/^project\//.test(h))return "project";if(/^forms\//.test(h))return "forms";if(/^task\//.test(h))return "tasks";if(/^concept\//.test(h))return "translate";if(/^langmap[\/?]/.test(h)||/^language\//.test(h))return "langmap";if(/^reader\//.test(h))return "reader";if(/^words\//.test(h))return "words";if(h==="cards/review")return "cards";return VIEWS.some(v=>v.id===h&&v.g!=="hidden")?h:"home"}; // the morning mail screen moved into the tasks
 const viewLabel=id=>(VIEWS.find(v=>v.id===id)||{}).label||id;
 /* Old mail data has Japanese topics: keep those titles in Japanese, new ones in English */
 const JA_RE=/[ぁ-んァ-ン一-龥]/;
@@ -2024,6 +2046,7 @@ const LOCALAPI=/^https?:$/.test(location.protocol)&&/^(localhost|127\.0\.0\.1)$/
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="habits")+1,0,{id:"body",e:"🫀",label:"Summary",g:"body"},{id:"bodysleep",e:"😴",label:"Sleep",g:"body"},{id:"bodymeal",e:"🍽️",label:"Meals & Calories",g:"body"},{id:"bodyweight",e:"⚖️",label:"Weight",g:"body"},{id:"bodysteps",e:"👟",label:"Steps",g:"body"},{id:"bodyworkout",e:"💪",label:"Workouts",g:"body"},{id:"workoutboard",e:"🧘",label:"Workout Board",g:"body"},{id:"bodyhabits",e:"📚",label:"Study & Screen Time",g:"body"}); // photos and health records stay on this Mac
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="followups")+1,0,{id:"mailclean",e:"🧹",label:"Inbox Cleanup",g:"in"});
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="heritage")+1,0,{id:"translate",e:"🔤",label:"Translate",g:"read"}); // translate inside Desk; every lookup kept, one meaning across languages (desk/translate.py)
+if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="translate")+1,0,{id:"words",e:"📒",label:"Words",g:"read"}); // every word looked up or put in Anki, per language; Rhizome Box word pages (desk/words.py)
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="translate")+1,0,{id:"langmap",e:"🗺️",label:"Language Map",g:"read"}); // every country and its languages, regions and peoples, with my learned words (desk/langmap.py)
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="presents")+1,0,{id:"ideas",e:"💡",label:"Ideas",g:"in"});
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="presents")+1,0,{id:"site",e:"📈",label:"Site",g:"in"}); // tany.im analytics (desk/site_sync.py)
@@ -6306,6 +6329,71 @@ function wireXl(){
   $("#xlMergeQ")&&($("#xlMergeQ").oninput=()=>{S.xl.merge=$("#xlMergeQ").value});
   $("#xlMergeGo")&&($("#xlMergeGo").onclick=xlMerge);
 }
+/* ---------- 📒 Words (#words, #words/<lang>): every word looked up (Translate, Reader, searches) and every word put in Anki,
+   per language, with Anki's learned count and the public Rhizome Box pages "<Language> words" (desk/words.py) ---------- */
+S.wbk={st:null,at:0,busy:false,list:{},filt:"all",q:"",pre:null};
+async function wbkLoad(force){
+  if(!LOCALAPI||S.wbk.busy)return;
+  const lang=wbkLang();
+  if(!force&&S.wbk.st&&Date.now()-S.wbk.at<60000&&(!lang||S.wbk.list[lang]))return;
+  S.wbk.busy=true;S.wbk.at=Date.now();
+  try{const [st,ls]=await Promise.all([api("GET","/api/words"),lang?api("GET","/api/words/lang/"+encodeURIComponent(lang)):Promise.resolve(null)]);
+    S.wbk.st=st;if(ls)S.wbk.list[lang]=ls.words;S.wbk.err=""}
+  catch(e){S.wbk.err="Could not read the word records"}
+  S.wbk.busy=false;if(viewId()==="words")render()}
+function wbkLang(){const m=/^#words\/([a-z-]{2,12})$/.exec(location.hash);return m?m[1]:""}
+const wbkN=n=>(n||0).toLocaleString("en-US");
+function wbkBars(days){const max=Math.max(1,...days.map(d=>d.looked+d.anki));
+  return `<div class="wbkbars" role="img" aria-label="Words per day, last 30 days">${days.map(d=>`<div class="wbkbar" title="${esc(d.date)}: ${d.looked} looked up, ${d.anki} to Anki"><i class="lk" style="height:${d.looked/max*100}%"></i><i class="ak" style="height:${d.anki/max*100}%"></i></div>`).join("")}</div>
+  <div class="wbkkey"><span><i style="background:var(--blue)"></i>Looked up</span><span><i style="background:var(--green)"></i>Into Anki</span><span style="margin-left:auto">${esc(days[0]?.date||"")} – today</span></div>`}
+function wbkView(){
+  const st=S.wbk.st;if(!st)return `<header class="head"><div><h1>📒 Words</h1></div></header><div class="card empty">${S.wbk.err?esc(S.wbk.err):"Loading…"}</div>`;
+  const lang=wbkLang();if(lang)return wbkLangView(lang);
+  const t=st.totals, pub=st.publish||{}, ankiAt=st.anki?.at;
+  return `<header class="head"><div><p class="eyebrow">Read</p><h1>📒 Words</h1><p class="sub">Every word you looked up or put in Anki, by language.</p></div></header>
+  <section class="card"><div class="wbknums">
+    <div class="wbknum"><b>${wbkN(t.looked)}</b><span>Looked up</span></div>
+    <div class="wbknum"><b>${wbkN(t.inAnki)}</b><span>In Anki</span></div>
+    <div class="wbknum"><b>${wbkN(t.learned)}</b><span>Learned${ankiAt?"":" · open Anki once to count"}</span></div></div>
+    <p class="sub" style="margin:var(--s2) 0 0">+${wbkN(t.week)} new this week · +${wbkN(t.month)} this month</p></section>
+  <section class="card"><div class="section-title">Last 30 days</div>${wbkBars(st.days)}</section>
+  <section class="card"><div class="section-title">Languages <span class="count">${st.langs.length}</span></div>
+    <table class="wbktab"><thead><tr><th>Language</th><th class="num">Looked up</th><th class="num">In Anki</th><th class="num">Learned</th><th class="num hidesm">This week</th><th class="hidesm">Page</th></tr></thead><tbody>
+    ${st.langs.map(r=>{const p=(pub.pages||{})[r.lang];return `<tr data-wbklang="${esc(r.lang)}"><td>${esc(r.name)}</td><td class="num">${wbkN(r.looked)}</td><td class="num">${wbkN(r.inAnki)}</td><td class="num">${wbkN(r.learned)}</td><td class="num hidesm">${r.week?"+"+wbkN(r.week):""}</td><td class="hidesm">${p?`<a href="${esc(p.url)}" target="_blank" rel="noopener" data-noauto>${esc(p.title)} ↗</a>`:""}</td></tr>`}).join("")}
+    </tbody></table>
+    <p class="sub" style="margin:var(--s2) 0 0">Learned means Anki now shows the card 21 days apart or more${ankiAt?` · read from Anki ${esc(new Date(ankiAt).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}))}`:""}.</p></section>
+  ${wbkPublish(pub)}`}
+function wbkPublish(pub){
+  const pre=S.wbk.pre;
+  const body=pub.started
+    ?`<p>Publishing is on. New words reach the pages within 30 minutes.${pub.at?` Last sent ${esc(new Date(pub.at).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}))}.`:""}</p>${pub.error?`<p class="sub">${esc(pub.error)}</p>`:""}<div class="row"><button class="btn sm" id="wbkSend">Send now</button></div>`
+    :`<p>Your words can go to public pages on Rhizome Box, one per language (e.g. "Russian words"). Only single words with a meaning; no sentences from books or Google Translate, no names. Look first, then start.</p>
+      ${pub.hasKey?"":`<p class="sub">Needs a key first: run <code>bash desk/words_setup.sh</code> once.</p>`}
+      <div class="row"><button class="btn sm" id="wbkPre">${pre?"Hide preview":"Preview pages"}</button>${pre?`<button class="btn primary sm" id="wbkStart"${pub.hasKey?"":" disabled"}>Start publishing</button>`:""}</div>
+      ${pre?(pre.length?pre.map(p=>`<div class="section-title" style="margin-top:var(--s3)">${esc(p.title)} <span class="count">${p.count} words</span></div><div class="wbkpre">${esc(p.lines.slice(0,40).join("\n"))}${p.lines.length>40?"\n…":""}</div>`).join(""):`<p class="sub">No words to publish yet.</p>`):""}`;
+  return `<section class="card"><div class="section-title">Rhizome Box pages</div>${body}</section>`}
+function wbkLangView(lang){
+  const st=S.wbk.st, row=st.langs.find(r=>r.lang===lang)||{name:lang}, list=S.wbk.list[lang], p=(st.publish?.pages||{})[lang];
+  const q=S.wbk.q.trim().toLowerCase(), f=S.wbk.filt;
+  const shown=(list||[]).filter(w=>(f==="all"||(f==="anki"&&w.inAnki)||(f==="learned"&&w.learned)||(f==="looked"&&!w.inAnki))&&(!q||(w.term+" "+w.meaning.ja+" "+w.meaning.en).toLowerCase().includes(q)));
+  const fb=(k,l)=>`<button class="btn sm${f===k?" primary":""}" data-wbkf="${k}">${l}</button>`;
+  return `<header class="head"><div><p class="eyebrow"><a href="#words">Words</a></p><h1>${esc(row.name)}</h1><p class="sub">${wbkN(row.looked)} looked up · ${wbkN(row.inAnki)} in Anki · ${wbkN(row.learned)} learned${p?` · <a href="${esc(p.url)}" target="_blank" rel="noopener" data-noauto>${esc(p.title)} ↗</a>`:""}</p></div></header>
+  <section class="card"><div class="wbkfilt">${fb("all","All")}${fb("anki","In Anki")}${fb("learned","Learned")}${fb("looked","Looked up only")}<input id="wbkQ" type="search" placeholder="Find a word" value="${esc(S.wbk.q)}"></div>
+  ${!list?`<p class="sub">Loading…</p>`:shown.length?shown.map(w=>{const d=Math.max(w.first,w.ankiAt);const st=w.learned?"Learned":w.inAnki?"In Anki":"Looked up";
+    return `<div class="wbkw" data-noauto><div><div><span class="t" lang="${esc(lang)}">${esc(w.term)}</span> <span class="m">— ${esc(w.meaning.ja||w.meaning.en||"")}</span></div>
+      ${w.example?`<div class="x" lang="${esc(lang)}">${esc(w.example.text)}${w.example.translation?" — "+esc(w.example.translation):""}</div>`:w.context?`<div class="x" lang="${esc(lang)}">${esc(w.context.slice(0,160))}</div>`:""}
+      <div class="x">${st}${d?" · "+esc(new Date(d).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})):""}${w.looked>1?" · looked up "+w.looked+"×":""}${w.hidden?" · off the page":w.public?" · on the page":""}</div></div>
+      <div>${w.hidden?`<button class="btn sm" data-wbkhide="${esc(w.key)}" data-on="0">Show on page</button>`:w.public?`<button class="btn sm" data-wbkhide="${esc(w.key)}" data-on="1">Hide from page</button>`:""}</div></div>`}).join(""):`<p class="sub">No words here.</p>`}</section>`}
+function wireWbk(){
+  document.querySelectorAll("[data-wbklang]").forEach(r=>r.onclick=e=>{if(e.target.closest("a"))return;location.hash="words/"+r.dataset.wbklang});
+  document.querySelectorAll("[data-wbkf]").forEach(b=>b.onclick=()=>{S.wbk.filt=b.dataset.wbkf;render()});
+  $("#wbkQ")&&($("#wbkQ").oninput=e=>{S.wbk.q=e.target.value;render()});
+  document.querySelectorAll("[data-wbkhide]").forEach(b=>b.onclick=async()=>{const on=b.dataset.on==="1";
+    try{await api("PUT","/api/words/hide",{key:b.dataset.wbkhide,hidden:on});const w=(S.wbk.list[wbkLang()]||[]).find(x=>x.key===b.dataset.wbkhide);if(w){w.hidden=on;w.public=!on}render();toast(on?"Off the page from the next send":"Back on the page from the next send")}catch(e){toast("Could not save")}});
+  $("#wbkPre")&&($("#wbkPre").onclick=async()=>{if(S.wbk.pre){S.wbk.pre=null;return render()}try{S.wbk.pre=(await api("GET","/api/words/preview")).pages;render()}catch(e){toast("Could not make the preview")}});
+  $("#wbkStart")&&($("#wbkStart").onclick=async()=>{if(!confirm("Start publishing? These pages will be public on Rhizome Box, and new words will be added by themselves."))return;
+    try{const r=await api("POST","/api/words/publish",{start:true});S.wbk.pre=null;await wbkLoad(true);toast(r.error?r.error:"Published")}catch(e){toast("Could not publish")}});
+  $("#wbkSend")&&($("#wbkSend").onclick=async()=>{try{const r=await api("POST","/api/words/publish",{});await wbkLoad(true);toast(r.error||"Sent")}catch(e){toast("Could not send")}})}
 /* ---------- 🗺️ Language Map (#langmap, #langmap/<ISO2>, #language/<id>, #langmap?concept=<id>): every country, the languages
    spoken there, speakers, population, regions and peoples, from public data (desk/langmap_build.py, desk/langmap.py).
    The map is an SVG drawn here from Natural Earth shapes (no tiles, nothing fetched from outside). Learned words come from
@@ -6571,6 +6659,7 @@ function render(){
   updateBadges();checkNew();
   renderNav();timerBar();backBar();
   if(viewId()==="langmap"){lgmLoad();lgmDraw();return}
+  if(viewId()==="words"){wbkLoad();const f=document.activeElement,keep=f?.id==="wbkQ"?{s:f.selectionStart}:null;$("#view").innerHTML=searchResults()+`<div class="wbk">${wbkView()}</div>`;wire();wireWbk();if(keep){const q=$("#wbkQ");q.focus();try{q.setSelectionRange(keep.s,keep.s)}catch(e){}}return}
   if(viewId()==="translate"){xlLoad();const f=document.activeElement, keep=f?.classList?.contains("xlfield")&&f.id?{id:f.id,v:f.value,s:f.selectionStart,e:f.selectionEnd}:null;
     $("#view").innerHTML=searchResults()+xlView();wire();if(keep){const el=document.getElementById(keep.id);if(el){el.value=keep.v;try{el.setSelectionRange(keep.s,keep.e)}catch(e){}el.focus()}}return}
   if(viewId()==="lifeos"){$("#view").innerHTML=searchResults()+lifeosView();wire();wireLifeos();return}
@@ -9398,6 +9487,7 @@ const FDESC={ // what each screen is for, in plain words (English and Japanese k
   ideas:"weekly ideas of things to build from your notes 提案",
   aidone:"work Claude did on its own, JOINS application drafts, Send for me 応募",
   langmap:"world map of languages: every country, official and spoken languages, speakers, population, regions like autonomous republics, peoples, where my learned words are understood 言語地図 世界地図 民族 自治共和国 人口 話者",
+  words:"every word I looked up or put in Anki, per language: counts, learned, last 30 days, word lists, public Rhizome Box word pages 単語帳 覚えた単語 調べた単語 言語ごと 記録",
   translate:"translate words and sentences, lookup history, the same meaning across languages (concepts), candidates for cards 翻訳 ほんやく 辞書 言葉 訳す",
   news:"World Desk news edition, predictions ニュース",watch:"Minor Countries watch マイナー国",heritage:"Daily World Heritage, 3 countries a day 世界遺産",
   notes:"Scrapbox-style notes, daily notes ノート メモ",memolink:"import memos from other apps メモ連携",
@@ -9513,6 +9603,7 @@ function palItems(){
     {e:"⚡",name:"Command list (this one)",key:"/ /",kw:"こまんど command palette",run:()=>{const q=$("#q");q.value="/";S.q="/";S.palSel=0;render();q.focus()}},
     {e:"🔎",name:"Search",key:"/",kw:"けんさく search",run:()=>setTimeout(()=>$("#q")?.focus(),0)},
     {e:"❓",name:"Ask Desk where something is",key:"?",kw:"どこ さがす ask where find AI",run:()=>setTimeout(()=>{const q=$("#q");q.value="?";S.q="?";S.ask.focus=true;render()},0)},
+    {e:"📒",name:"Words I looked up and learned",kw:"たんご 単語帳 覚えた 調べた words vocabulary anki",run:()=>{location.hash="words"}},
     {e:"🗺️",name:"Language Map",kw:"げんご ちず 言語地図 language map world 民族",run:()=>{location.hash="langmap"}},
     {e:"🔤",name:"Translate a word or sentence",key:">",kw:"ほんやく 翻訳 translate 訳す 辞書",run:()=>setTimeout(()=>{const q=$("#q");q.value="> ";S.q="> ";render();q.focus()},0)},
     {e:"🗂️",name:"Triage unsorted tasks",kw:"しわけ みぶんるい triage",run:()=>openTriage()},

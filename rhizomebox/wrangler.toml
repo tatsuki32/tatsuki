@@ -6,6 +6,7 @@
 #   OWNER_EMAIL  the only address that can sign in (must be a verified destination in Email Routing for tany.im)
 #   MAIL_FROM    the sender of sign-in codes, an address at tany.im
 #   BACKUP_KEY   lets the Mac's Desk download a daily copy (macOS keychain item tatsuki-desk-rhizomebox)
+#   WORDS_KEY    lets the Desk write the "<Language> words" pages below their mark (keychain tatsuki-desk-rhizomebox-words)
 name = "rhizomebox"
 main = "src/index.js"
 compatibility_date = "2026-11-01"

@@ -41,6 +41,29 @@ async function isOwner(req, env) {
   const row = await env.DB.prepare('SELECT expires FROM sessions WHERE hash = ?').bind(await sha256(tok)).first();
   return !!row && row.expires > now();
 }
+const wordsKeyOk = (req, env) => !!env.WORDS_KEY && safeEq((req.headers.get('Authorization') || '').replace(/^Bearer\s+/, ''), env.WORDS_KEY);
+/* The Desk's word lists: it may write only pages titled "<Language> words", and only below this line. */
+export const WORDS_MARK = 'The Desk adds the words below this line by itself.';
+const WORDS_TITLE = /^[A-Z][A-Za-z' ()-]{1,40} words$/;
+async function saveWords(env, ctx, body) {
+  const title = String(body.title || '').trim();
+  if (!WORDS_TITLE.test(title)) return json({ error: 'title' }, 400);
+  const add = body.lines;
+  if (!Array.isArray(add) || add.some((l) => typeof l !== 'string')) return json({ error: 'lines' }, 400);
+  const head = Array.isArray(body.head) ? body.head.filter((l) => typeof l === 'string').slice(0, 20) : [];
+  const old = await env.DB.prepare('SELECT * FROM pages WHERE title = ? COLLATE NOCASE AND deleted = 0').bind(title).first();
+  let lines, id;
+  if (old) {
+    id = old.id;
+    const cur = parseJSON(old.lines, []);
+    const at = cur.indexOf(WORDS_MARK);
+    lines = [...(at >= 0 ? cur.slice(0, at) : [...cur, '']), WORDS_MARK, ...add];  // the owner's own lines above the mark stay as they are
+  } else {
+    id = randHex(12);
+    lines = [title, ...head, '', WORDS_MARK, ...add];
+  }
+  return savePage(env, ctx, id, { lines, pub: old ? null : (body.pub ? 1 : 0) });
+}
 const bearerOk = (req, env) => !!env.BACKUP_KEY && safeEq((req.headers.get('Authorization') || '').replace(/^Bearer\s+/, ''), env.BACKUP_KEY);
 
 /* ---------- pages ---------- */
@@ -368,6 +391,10 @@ export async function handle(req, env, ctx, deps) {
       const { results } = await env.DB.prepare('SELECT * FROM pages ORDER BY created').all();
       const { results: files } = await env.DB.prepare('SELECT name, type, size, created FROM files ORDER BY created').all();
       return json({ at: now(), pages: results.map((r) => ({ ...entry(r, true), created: r.created, deleted: !!r.deleted })), files });
+    }
+    if (api === 'desk/words' && method === 'PUT') {
+      if (!wordsKeyOk(req, env)) return json({ error: 'auth' }, 401);
+      return saveWords(env, ctx, await req.json().catch(() => ({})));
     }
     if (api === 'index' && method === 'GET') return json({ pages: await listPages(env, owner), owner });
     if (api === 'search' && method === 'GET') {
