@@ -3,7 +3,7 @@
 Runs in desk/omnivoice/engine/venv (Python 3.11, torch). The Desk (desk/eo_tts.py) starts it when needed and it quits by itself
 after IDLE seconds without a request, so the ~2.5 GB model is in memory only while reading. Listens on 127.0.0.1 only.
 
-  POST /speak {"text": "...", "voice": "female"|"male"|"auto"} -> WAV (24 kHz, 16-bit mono)
+  POST /speak {"text", "voice": "female"|"male"|"auto", "lang": "eo", "speed": 0.7-1.3, "steps"} -> WAV (24 kHz, 16-bit mono)
   GET  /ping -> {"ok": true}
   python speak_server.py --selftest      loads the model and writes engine/selftest.wav
 """
@@ -49,13 +49,18 @@ def wav_bytes(samples, rate=24000):
     return buf.getvalue()
 
 
-def speak(text, voice="female"):
+STEPS = int(os.environ.get("OMNIVOICE_STEPS", "8"))  # the model default is 32; 8 makes a sentence faster than it plays (M-series Mac)
+
+
+def speak(text, voice="female", lang=None, speed=None, steps=None):
     text = " ".join(str(text or "").split())[:1200]
     if not text:
         raise ValueError("no text")
     with _lock:
         kw = {"instruct": VOICES[voice]} if voice in VOICES else {}
-        audio = model().generate(text=text, **kw)
+        if speed and abs(float(speed) - 1) > 0.01:
+            kw["speed"] = min(1.3, max(0.7, float(speed)))
+        audio = model().generate(text=text, language=lang or None, num_step=int(steps or STEPS), **kw)
     return wav_bytes(audio[0])
 
 
@@ -81,7 +86,7 @@ class H(BaseHTTPRequestHandler):
             return self._send(404, b"{}")
         try:
             rec = json.loads(self.rfile.read(int(self.headers.get("Content-Length") or 0)))
-            out = speak(rec.get("text"), rec.get("voice") or "female")
+            out = speak(rec.get("text"), rec.get("voice") or "female", rec.get("lang"), rec.get("speed"), rec.get("steps"))
         except Exception as e:  # noqa: BLE001 -- the Desk falls back to the Mac's voice
             return self._send(500, json.dumps({"error": type(e).__name__}).encode())
         _last = time.time()
@@ -93,7 +98,7 @@ class H(BaseHTTPRequestHandler):
 
 def main():
     if "--selftest" in sys.argv:
-        data = speak("Saluton! Mi legas tiun ĉi libron por vi.")
+        data = speak("Saluton! Mi legas tiun ĉi libron por vi.", lang="eo")
         with open(os.path.join(ENGINE, "selftest.wav"), "wb") as f:
             f.write(data)
         print("selftest ok:", len(data), "bytes")

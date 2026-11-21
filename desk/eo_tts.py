@@ -68,19 +68,20 @@ def ensure_server(wait=120):
     raise Unavailable("OmniVoice did not start")
 
 
-def speak(text, voice="female"):
+def speak(text, voice="female", lang="eo", rate=1.0):
     """One sentence -> m4a bytes (AAC). The cache first."""
     text = " ".join(str(text or "").split())[:1200]
     if not text:
         raise Unavailable("No text")
     voice = voice if voice in dict(VOICES) else "female"
-    h = hashlib.sha256(f"{voice}|{text}".encode()).hexdigest()
+    rate = min(1.3, max(0.7, float(rate or 1)))
+    h = hashlib.sha256(f"{voice}|{lang}|{rate:.2f}|{text}".encode()).hexdigest()
     path = os.path.join(CACHE, h[:2], h + ".m4a")
     if os.path.exists(path):
         with open(path, "rb") as f:
             return f.read()
     ensure_server()
-    req = urllib.request.Request(URL + "/speak", data=json.dumps({"text": text, "voice": voice}).encode(),
+    req = urllib.request.Request(URL + "/speak", data=json.dumps({"text": text, "voice": voice, "lang": lang, "speed": rate}).encode(),
                                  headers={"Content-Type": "application/json"})
     try:
         with urllib.request.urlopen(req, timeout=180) as r:

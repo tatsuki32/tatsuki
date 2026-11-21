@@ -553,7 +553,7 @@ def speak(rec):
     if want.startswith("omni:"):  # OmniVoice on this Mac (desk/eo_tts.py), for Esperanto and Serbian
         import eo_tts
         try:
-            return 200, eo_tts.speak(text, want[5:])
+            return 200, eo_tts.speak(text, want[5:], lang, rate)
         except eo_tts.Unavailable:
             pass
     if want.startswith("google:"):  # Google's natural voice (desk/gtts.py); on any trouble the Mac reads instead
