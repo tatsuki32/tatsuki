@@ -267,6 +267,24 @@ def _sync_notes(s, known):
         with LOCK:
             rec = _read((_by_sid(sid) or {}).get("id", ""))
         src = (rec or {}).get("source") or {}
+        # made before notes were known here: an empty "transcript" entry. Rebuilt once, if nobody touched it.
+        old = rec and not rec.get("deleted") and src.get("from") != "notes"
+        if old and rec.get("updated") == rec.get("created") and not rec.get("event") and rec.get("body", "").rstrip().endswith("## Transcript"):
+            try:
+                full = _http_json(f"{TRANSCRIBE}/api/sessions/{sid}")
+            except (OSError, ValueError):
+                return 0
+            m, now = full.get("minutes"), time.time()
+            with LOCK:
+                cur = _read(rec["id"])
+                cur["body"] = notes_body(m, full.get("text") or "")
+                cur["at"] = _noon(full.get("met"), full.get("created") or cur.get("at") or now)
+                cur["source"] = {"kind": "transcribe", "sid": sid, "from": "notes", "minutesAt": _stamp(m), "fp": _fp(cur["body"])}
+                cur["updated"] = cur["created"]  # still counts as untouched
+                _write(cur)
+            return 0
+        if old:
+            return 0
         # refresh only when the transcriber has newer minutes and the text here is still the one this pass wrote
         # ("Make minutes" pressed here sets force, so the new minutes replace an edited text too)
         edited = _fp(rec.get("body") if rec else "") != src.get("fp")

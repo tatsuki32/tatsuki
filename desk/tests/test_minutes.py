@@ -93,6 +93,19 @@ class Minutes(unittest.TestCase):
             self.assertIn("Send the quote", minutes.get(rec["id"])["body"])
             self.assertNotIn("force", minutes.get(rec["id"])["source"])
 
+    def test_an_empty_entry_made_before_notes_were_known_is_upgraded_once(self):
+        now = 1795000000.0
+        old = {"id": "b" * 32, "title": "Planning", "body": "## Summary\nNot made yet. Claude writes the summary when it can read the transcript.\n\n## Transcript\n",
+               "status": "draft", "place": "", "at": now, "source": {"kind": "transcribe", "sid": SID}, "event": None,
+               "calendar": None, "created": now, "updated": now}
+        minutes._write(old)
+        with mock.patch.object(minutes, "_http_json", side_effect=self.notes_server({})):
+            self.assertEqual(minutes.sync(), 0)  # upgraded, not a second entry
+        rows = minutes.view()["minutes"]
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["source"]["from"], "notes")
+        self.assertIn("We agreed on the plan.", rows[0]["body"])
+
     def test_make_from_notes_asks_transcribe(self):
         with mock.patch.object(minutes, "_http_json", side_effect=self.notes_server({})):
             minutes.sync()
