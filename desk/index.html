@@ -2117,6 +2117,44 @@ body.rdth-paper main .btn.primary:hover,body.rdth-sepia main .btn.primary:hover{
 .tbgo:focus-visible,.tbx:focus-visible,.tbnew:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 .tbnew{flex:none;background:none;border:0;color:var(--muted);font:inherit;font-size:18px;line-height:1;padding:6px 10px 8px;border-radius:6px;cursor:pointer}
 .tbnew:hover{color:var(--ink);background:var(--surface)}
+/* Study Focus (#study): the forest stage, the food jar */
+.sfstage{position:relative;height:min(66vh,620px);min-height:380px;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:#6f8f6b;margin-bottom:var(--s3)}
+.sfstage.small{height:min(36vh,320px);min-height:220px}
+.sfstage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.sfstage:fullscreen{height:100vh;max-height:none;border:0;border-radius:0}
+.sfover{position:absolute;left:var(--s3);top:var(--s3);max-width:min(420px,calc(100% - 32px));padding:var(--s3);border-radius:var(--r);background:rgba(14,18,16,.55);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);color:#f4f6f2;display:grid;gap:var(--s2)}
+.sfover .eyebrow{color:#ecdfbd;margin:0}
+.sfover .sub{color:#d6dbd4}
+.sfclock{font-size:56px;font-weight:700;line-height:1.05}
+.sfsub{margin:0;font-size:var(--t2);color:#e6eae3}
+.sfdots{display:flex;gap:var(--s2);flex-wrap:wrap}
+.sfdots span{width:10px;height:10px;border-radius:50%;border:1px solid rgba(255,255,255,.55)}
+.sfdots span.on{background:var(--accent);border-color:var(--accent)}
+.sfdots span.now{border-color:var(--accent);box-shadow:0 0 0 2px rgba(226,184,102,.3)}
+.sfbar{display:flex;flex-wrap:wrap;gap:var(--s2) var(--s3);align-items:center}
+.sfsnd{display:flex;align-items:center;gap:var(--s2)}
+.sfsnd select,.sfsnd input[type=range]{max-width:150px}
+.sfplant{position:absolute;right:var(--s2);top:var(--s2);margin:0;padding:var(--s1) 12px;border-radius:999px;background:rgba(14,18,16,.55);color:#f4f6f2;font-size:var(--t1);white-space:nowrap;max-width:calc(100% - 16px);overflow:hidden;text-overflow:ellipsis}
+.sfrow{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s2) var(--s4)}
+.sfbig{font-size:var(--t5);font-weight:700;margin:0;line-height:1.2}
+.sfjarcard{display:grid;grid-template-columns:120px 1fr;gap:var(--s4);align-items:start}
+.sfjar{width:120px;height:150px}
+.sfjartext{display:grid;gap:var(--s2);min-width:0}
+.sfdays{display:flex;flex-wrap:wrap;gap:6px}
+.sfdays span{width:12px;height:12px;border-radius:3px;background:var(--surface-2);border:1px solid var(--line)}
+.sfdays span.on{background:var(--accent);border-color:var(--accent)}
+#sfTitle,.sfspend input{background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:var(--r-s);min-height:36px;padding:0 12px;font:inherit;font-size:var(--t2)}
+#sfTitle{width:100%}
+#sfTitle:focus,.sfspend input:focus{outline:none;border-color:var(--accent)}
+.sfspend{display:flex;flex-wrap:wrap;gap:var(--s2);align-items:center}
+.sfspend input{min-width:0;width:auto;flex:1 1 90px}
+.sfspend input[type=number]{flex:0 1 90px}
+.sfspend label{display:flex;align-items:center;gap:var(--s1)}
+.sflist{list-style:none;margin:0;padding:0;display:grid;gap:var(--s1)}
+.sflist li{display:flex;justify-content:space-between;gap:var(--s2);font-size:var(--t1);color:var(--ink-2);border-top:1px solid var(--line);padding-top:var(--s1)}
+.sflist li span:first-child{min-width:0;overflow-wrap:anywhere}
+.sflist li span:last-child{white-space:nowrap;display:inline-flex;align-items:center;gap:var(--s1)}
+@media (max-width:560px){.sfjarcard{grid-template-columns:1fr}.sfjar{width:96px;height:120px}.sfclock{font-size:var(--t5)}.sfover{left:var(--s2);top:var(--s2);max-width:calc(100% - 16px);padding:12px}.sfstage{min-height:440px}}
 </style>
 
 <div class="app">
@@ -2190,6 +2228,7 @@ if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="ideas")+1,0,{id:"aidone",e:
 VIEWS.splice(VIEWS.findIndex(v=>v.id==="replies")+1,0,{id:"notdoing",e:"🍃",label:"Not doing",g:"today"},{id:"genres",e:"🏷️",label:"Genres",g:"today"});
 VIEWS.splice(VIEWS.findIndex(v=>v.id==="replies")+1,0,{id:"timelog",e:"⏱️",label:"Time",g:"today"}); // 4th in Today (Home, Tasks, Replies, Time)
 if(LOCALAPI) VIEWS.splice(4,0,{id:"focus",e:"🎯",label:"Focus",g:"today"}); // blocks apps on this Mac, so the Mac version only
+if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="focus")+1,0,{id:"study",e:"🌲",label:"Study Focus",g:"today"}); // Pomodoro in a forest, a plant of my own, a food jar for study hours (studylog, wallet)
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="focus")+1,0,{id:"notices",e:"🔔",label:"Notifications",g:"today"}); // Mac notifications: desk/notify.py decides, this page lists and sets
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="calendar")+1,0,{id:"book",e:"🗓️",label:"Bookings",g:"today"}); // the rules and the list behind tany.im/book; the page runs in the tany.im Worker (desk/book.py)
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="memolink")+1,0,{id:"money",e:"💰",label:"Money",g:"write"}); // statements stay on this Mac
@@ -5664,6 +5703,7 @@ try{S.aiExp=JSON.parse(localStorage.getItem("desk-ai-exp")||"{}")||{}}catch(e){S
 
 /* ---------- nav ---------- */
 function navCount(id){
+  if(id==="study"){const r=sfRunning(),p=r&&sfPhase(r);if(p&&!p.done)return `<span class="count" data-sfnav>${fbLeft(p.left)}</span>`}
   if(id==="focus"&&fbActive()) return `<span class="count" data-fleft="${fbEndMs()}">${fbLeft(fbEndMs()-Date.now())}</span>`;
   const fresh=presentsNew(), winsN=id==="wins"?winsToday().length:0, taskN=S.board.filter(t=>t.status==="doing").length;
   const repN=id==="replies"&&replyOpen()?replyList().length:0;
@@ -6804,6 +6844,9 @@ function render(){
   if(!replyOpen()) S.dl=S.dl.filter(x=>x.kind!=="mail"); // outside the reply window: no count, badge or chime for mail
   updateBadges();checkNew();
   renderNav();timerBar();backBar();
+  if(viewId()==="study"){if(!S.sfLoaded&&!S.sfErr&&!S.sfAsked){S.sfAsked=true;sfLoad()}const key=sfKey(); // the forest keeps moving: a refresh with nothing new only updates the numbers
+    if($("#sfCanvas")&&S.sfShown===key&&!S.q){sfPanels();return}S.sfShown=key;$("#view").innerHTML=searchResults()+studyView();wire();wireSf();sfPanels();sfCanvasStart();return}
+  S.sfShown=null;
   if(viewId()==="langmap"){lgmLoad();lgmDraw();return}
   if(viewId()==="words"){wbkLoad();const f=document.activeElement,keep=f?.id==="wbkQ"?{s:f.selectionStart}:null;$("#view").innerHTML=searchResults()+`<div class="wbk">${wbkView()}</div>`;wire();wireWbk();if(keep){const q=$("#wbkQ");q.focus();try{q.setSelectionRange(keep.s,keep.s)}catch(e){}}return}
   if(viewId()==="translate"){xlLoad();const f=document.activeElement, keep=f?.classList?.contains("xlfield")&&f.id?{id:f.id,v:f.value,s:f.selectionStart,e:f.selectionEnd}:null;
@@ -9712,6 +9755,7 @@ const FDESC={ // what each screen is for, in plain words (English and Japanese k
   genres:"task genres: rename, merge, undo merges ジャンル",
   calendar:"Google Calendar events and task due dates カレンダー 予定",
   focus:"block apps and websites to focus (FocusBlock) 集中 ブロック",
+  study:"Pomodoro study session in a forest, a plant that grows, noise, food money jar 勉強 集中タイム ポモドーロ 貯金箱",
   notices:"Mac notification settings, pause, test お知らせ 通知",
   habits:"habits, morning and night routines, reward cards 習慣 ルーティン",
   body:"body summary: sleep, meals, weight, steps, workouts 身体 体",
@@ -11230,6 +11274,347 @@ function wireFocus(){
   $("#fbStart")&&($("#fbStart").onclick=fbStartNow);
 }
 
+/* ---------- Study Focus (#study): Pomodoro 25 + 5, FocusBlock for the whole session, a forest with one plant of my own,
+   soft noise, and a food jar that only study time fills ($ per hour). Sessions in studylog, the jar in wallet. Mac only. ---------- */
+const SF_KINDS=[["study","Study","Fills the food jar"],["reading","Reading","The plant grows, no money"],["other","Other","The plant grows, no money"]];
+const SF_SOUNDS=[["off","No sound"],["forest","Mountain forest"],["birds","Birds and breeze"],["pink","Pink noise"],["brown","Brown noise"],["gray","Gray noise"],["waves","Slow waves"],["wind","Forest wind"]];
+const SF_STAGES=[[0,"Seed"],[1,"Sprout"],[5,"Seedling"],[15,"Sapling"],[30,"Young tree"],[50,"Tree"],[75,"Tall tree"],[100,"Forest giant"]];
+const SF_W=25,SF_B=5,SF_MIN=6e4,SF_PREF="desk-sf";
+S.sf=Object.assign({kind:"study",rounds:4,block:true,sound:"forest",vol:.4,title:""},(()=>{try{return JSON.parse(localStorage.getItem(SF_PREF))||{}}catch(e){return {}}})());
+S.sfLog=[];S.sfWallet=[];S.sfLoaded=false;S.sfErr=false;
+function sfSave(){try{const {kind,rounds,block,sound,vol,title}=S.sf;localStorage.setItem(SF_PREF,JSON.stringify({kind,rounds,block,sound,vol,title}))}catch(e){}}
+const sfSet=()=>Object.assign({rate:3,goalDays:30},S.sfWallet.find(x=>x.id==="settings")||{});
+const sfRunning=()=>S.sfLog.find(x=>x.status==="running");
+const sfTotalMs=s=>(s.rounds*s.work+(s.rounds-1)*s.brk)*SF_MIN;
+const sfKindLabel=k=>(SF_KINDS.find(x=>x[0]===k)||SF_KINDS[2])[1];
+const sfMoney=n=>"$"+(Math.round((+n||0)*100)/100).toFixed(2);
+const sfEarn=(s,workMs)=>s.kind==="study"?Math.round(workMs/36e5*(+s.rate||0)*100)/100:0;
+const sfDur=ms=>{const m=Math.round(ms/SF_MIN),h=Math.floor(m/60);return h?`${h} hr${m%60?` ${m%60} min`:""}`:`${m} min`};
+const sfHours=h=>h<10?h.toFixed(1):String(Math.round(h));
+/* where a session stands at a time: which round, focus or break, how long is left, how much focus time so far */
+function sfPhase(s,now=Date.now()){
+  const t=Math.max(0,now-s.start),w=s.work*SF_MIN,cyc=(s.work+s.brk)*SF_MIN;
+  if(t>=sfTotalMs(s)) return {done:true,round:s.rounds,left:0,workMs:s.rounds*w};
+  const i=Math.floor(t/cyc),within=t-i*cyc,workMs=i*w+Math.min(within,w);
+  return within<w?{mode:"focus",round:i+1,left:w-within,workMs}:{mode:"break",round:i+1,left:cyc-within,workMs};
+}
+function sfStats(){
+  const set=sfSet(),r=sfRunning(),live=r?sfPhase(r).workMs:0,done=S.sfLog.filter(x=>x.status!=="running");
+  const sum=l=>l.reduce((a,x)=>a+(x.workMs||0),0);
+  const hours=(sum(done)+live)/36e5, earned=done.reduce((a,x)=>a+(+x.earned||0),0);
+  const spent=S.sfWallet.filter(x=>x.kind==="spend").reduce((a,x)=>a+(+x.amount||0),0);
+  const days=new Set(done.filter(x=>x.kind==="study"&&(x.workMs||0)>=SF_W*SF_MIN).map(x=>hcmcDay(x.start)));
+  const todayEarned=done.filter(x=>hcmcDay(x.start)===hcmcDate()).reduce((a,x)=>a+(+x.earned||0),0);
+  return {set,hours,earned,spent,balance:Math.round((earned-spent)*100)/100,days,todayEarned,live:r?sfEarn(r,live):0};
+}
+function sfStage(h){let i=0;SF_STAGES.forEach(([x],k)=>{if(h>=x)i=k});return {i,name:SF_STAGES[i][1],next:SF_STAGES[i+1]}}
+const sfGrowth=h=>Math.min(1,Math.sqrt(Math.max(0,h)/100)); // early hours show, the last ones come slowly
+async function sfLoad(){
+  try{const [l,w]=await Promise.all([api("GET","/api/studylog"),api("GET","/api/wallet")]);
+    S.sfLog=(l||[]).filter(x=>x&&!x.deleted);S.sfWallet=(w||[]).filter(x=>x&&!x.deleted);S.sfLoaded=true;S.sfErr=false}
+  catch(e){S.sfErr=true}
+  const r=sfRunning();if(r&&sfPhase(r).done) return sfFinish(r,"done"); // the window was closed while it ended
+  if(viewId()==="study"||r) render();
+}
+async function sfPut(col,doc){
+  const {id,...rec}={...doc,updatedAt:Date.now()};await api("PUT",`/api/${col}/`+encodeURIComponent(id),rec);
+  const k=col==="studylog"?"sfLog":"sfWallet";S[k]=[...S[k].filter(x=>x.id!==id),...(rec.deleted?[]:[{id,...rec}])];
+}
+
+/* ---- sound: made here with Web Audio, nothing is downloaded ---- */
+const SFA={ctx:null,nodes:[],gain:null,pg:null,kind:"off",birds:false,birdT:0};
+function sfCtx(){if(!SFA.ctx){const C=window.AudioContext||window.webkitAudioContext;if(!C)return null;SFA.ctx=new C()}if(SFA.ctx.state==="suspended")SFA.ctx.resume();return SFA.ctx}
+function sfNoise(ctx,kind){
+  const sr=ctx.sampleRate,n=sr*10,f=Math.floor(sr*.5),b=ctx.createBuffer(2,n,sr);
+  for(let ch=0;ch<2;ch++){const d=b.getChannelData(ch);let b0=0,b1=0,b2=0,b3=0,b4=0,b5=0,b6=0,last=0;
+    for(let i=0;i<n;i++){const w=Math.random()*2-1;
+      if(kind==="brown"||kind==="waves"){last=(last+.02*w)/1.02;d[i]=last*3.2}
+      else{b0=.99886*b0+w*.0555179;b1=.99332*b1+w*.0750759;b2=.969*b2+w*.153852;b3=.8665*b3+w*.3104856;b4=.55*b4+w*.5329522;b5=-.7616*b5-w*.016898;d[i]=(b0+b1+b2+b3+b4+b5+b6+w*.5362)*.11;b6=w*.115926}}
+    for(let i=0;i<f;i++){const a=i/f;d[i]=d[i]*a+d[n-f+i]*(1-a)} // the loop joins without a click
+  }
+  return b;
+}
+function sfSoundStop(fade=3){
+  clearTimeout(SFA.birdT);SFA.birds=false;
+  const ctx=SFA.ctx,g=SFA.gain,pg=SFA.pg,nodes=SFA.nodes;if(!ctx||!g)return;
+  const t=ctx.currentTime;g.gain.cancelScheduledValues(t);g.gain.setValueAtTime(g.gain.value,t);g.gain.linearRampToValueAtTime(0,t+fade);
+  setTimeout(()=>{nodes.forEach(x=>{try{x.stop?.()}catch(e){}try{x.disconnect()}catch(e){}});try{g.disconnect();pg?.disconnect()}catch(e){}},fade*1000+200);
+  SFA.nodes=[];SFA.gain=null;SFA.pg=null;SFA.kind="off";
+}
+/* one 25-minute focus round is one "song": it comes in over 20 seconds and fades out over the last minute; breaks stay quiet */
+function sfPhaseLevel(){
+  const r=sfRunning();if(!r)return 1;const p=sfPhase(r);if(p.done)return 0;
+  if(p.mode==="break")return .3;
+  return Math.max(0,Math.min(1,(r.work*SF_MIN-p.left)/2e4,p.left/6e4));
+}
+function sfBird(){ // a bird call made from a few short whistles, from a random side, every few seconds
+  const ctx=SFA.ctx,bus=SFA.gain;if(!ctx||!bus||!SFA.birds)return;
+  const t=ctx.currentTime+.05,out=ctx.createGain(),pan=ctx.createStereoPanner?ctx.createStereoPanner():null,base=2000+Math.random()*2400,kind=Math.floor(Math.random()*4);
+  out.gain.value=.12+Math.random()*.1;if(pan){pan.pan.value=Math.random()*1.6-.8;out.connect(pan);pan.connect(bus)}else out.connect(bus);
+  const note=(st,dur,f1,f2,v=1)=>{const o=ctx.createOscillator(),g=ctx.createGain();o.type="sine";o.frequency.setValueAtTime(f1,st);o.frequency.exponentialRampToValueAtTime(f2,st+dur);
+    g.gain.setValueAtTime(0,st);g.gain.linearRampToValueAtTime(v,st+dur*.15);g.gain.exponentialRampToValueAtTime(.001,st+dur);o.connect(g);g.connect(out);o.start(st);o.stop(st+dur+.02)};
+  const n=2+Math.floor(Math.random()*3);
+  if(kind===0)for(let i=0;i<n;i++)note(t+i*.24,.17,base*1.2,base*.8);
+  if(kind===1)for(let i=0;i<7+n*2;i++)note(t+i*.06,.045,base,base*1.15,.7);
+  if(kind===2){note(t,.26,base*.62,base*.58);note(t+.38,.32,base*.5,base*.47)}
+  if(kind===3)for(let i=0;i<n;i++)note(t+i*.15,.09,base*.8,base*1.4);
+  setTimeout(()=>{try{out.disconnect();pan?.disconnect()}catch(e){}},4000);
+  SFA.birdT=setTimeout(sfBird,2500+Math.random()*7500);
+}
+function sfSoundStart(kind=S.sf.sound){
+  if(SFA.kind===kind&&SFA.gain)return sfVolume();
+  sfSoundStop(1.5);if(kind==="off")return;
+  const ctx=sfCtx();if(!ctx)return;
+  const g=ctx.createGain(),pg=ctx.createGain(),t=ctx.currentTime,nodes=[];
+  g.gain.setValueAtTime(0,t);pg.gain.value=sfPhaseLevel();g.connect(pg);pg.connect(ctx.destination);
+  const noise=(nk,lvl)=>{const src=ctx.createBufferSource();src.buffer=sfNoise(ctx,nk);src.loop=true;src.loopEnd=src.buffer.duration-.5;src.start();nodes.push(src);const lv=ctx.createGain();lv.gain.value=lvl;return [src,lv]};
+  const chain=(first,list,lv)=>{let tail=first;list.forEach(n=>{tail.connect(n);tail=n});tail.connect(lv);lv.connect(g)};
+  const filt=(type,f,q,gain)=>{const b=ctx.createBiquadFilter();b.type=type;b.frequency.value=f;if(q!=null)b.Q.value=q;if(gain!=null)b.gain.value=gain;return b};
+  const lfo=(param,rate,depth)=>{const o=ctx.createOscillator(),d=ctx.createGain();o.frequency.value=rate;d.gain.value=depth;o.connect(d);d.connect(param);o.start();nodes.push(o)};
+  if(kind==="pink"){const [s,l]=noise("pink",1);chain(s,[],l)}
+  if(kind==="brown"){const [s,l]=noise("brown",1);chain(s,[filt("lowpass",900)],l)}
+  if(kind==="gray"){const [s,l]=noise("pink",1);chain(s,[filt("lowshelf",160,null,9),filt("peaking",3500,.8,-6),filt("highshelf",8000,null,3)],l)} // roughly the inverse of how loud each pitch sounds
+  if(kind==="waves"){const [s,l]=noise("brown",.6);chain(s,[filt("lowpass",1100)],l);lfo(l.gain,.075,.4)}
+  if(kind==="wind"){const [s,l]=noise("pink",1),lp=filt("lowpass",700,.7);chain(s,[lp],l);lfo(lp.frequency,.05,380)}
+  if(kind==="forest"||kind==="birds"){ // wind in the trees, a mountain stream, birds
+    const [w,wl]=noise("brown",kind==="forest"?.45:.3),lp=filt("lowpass",500,.7);chain(w,[lp],wl);lfo(lp.frequency,.04,250);
+    if(kind==="forest"){const [s,sl]=noise("pink",.3);chain(s,[filt("highpass",350),filt("bandpass",1400,.5)],sl);lfo(sl.gain,.13,.05)}
+    SFA.birds=true;
+  }
+  SFA.nodes=nodes;SFA.gain=g;SFA.pg=pg;SFA.kind=kind;
+  g.gain.linearRampToValueAtTime(S.sf.vol*.5,t+5); // a slow fade in
+  if(SFA.birds){clearTimeout(SFA.birdT);SFA.birdT=setTimeout(sfBird,1500)}
+}
+function sfVolume(){const g=SFA.gain,ctx=SFA.ctx;if(!g||!ctx)return;const t=ctx.currentTime;g.gain.cancelScheduledValues(t);g.gain.setValueAtTime(g.gain.value,t);g.gain.linearRampToValueAtTime(S.sf.vol*.5,t+.4)}
+function sfChime(){ // a soft bell between focus and break
+  const ctx=sfCtx();if(!ctx)return;const t=ctx.currentTime;
+  [[523.25,0,.18],[783.99,.35,.12],[659.25,.7,.1]].forEach(([fr,d,v])=>{const o=ctx.createOscillator(),g=ctx.createGain();o.type="sine";o.frequency.value=fr;
+    g.gain.setValueAtTime(0,t+d);g.gain.linearRampToValueAtTime(v,t+d+.03);g.gain.exponentialRampToValueAtTime(.0001,t+d+3.2);o.connect(g);g.connect(ctx.destination);o.start(t+d);o.stop(t+d+3.3)});
+}
+
+/* ---- the forest: drawn here (no video, nothing downloaded). Far trees are drawn once, light, mist, pollen and the plant move slowly ---- */
+const SF={raf:0,bg:null,last:0,t0:performance.now(),growth:0};
+function sfRand(seed){let s=seed>>>0||1;return()=>{s=(s*1664525+1013904223)>>>0;return s/4294967296}}
+function sfDrawBg(w,h,dpr){
+  const c=document.createElement("canvas");c.width=Math.round(w*dpr);c.height=Math.round(h*dpr);const g=c.getContext("2d");g.scale(dpr,dpr);
+  const sky=g.createLinearGradient(0,0,0,h);sky.addColorStop(0,"#a9cdcf");sky.addColorStop(.5,"#d9e8d6");sky.addColorStop(1,"#6f8f6b");g.fillStyle=sky;g.fillRect(0,0,w,h);
+  const sun=g.createRadialGradient(w*.74,h*.16,0,w*.74,h*.16,Math.max(w,h)*.55);sun.addColorStop(0,"rgba(255,247,220,.9)");sun.addColorStop(1,"rgba(255,247,220,0)");g.fillStyle=sun;g.fillRect(0,0,w,h);
+  const R=sfRand(11),layers=[["#93b5a6",.50,.12],["#76998a",.58,.17],["#587f6c",.67,.23],["#3b6150",.77,.31],["#25463a",.88,.42]];
+  layers.forEach(([col,base,size],li)=>{
+    const by=h*base;g.fillStyle=col;g.fillRect(0,by,w,h-by);
+    let x=-20;while(x<w+20){const ht=h*size*(.55+R()*.6),wd=ht*(.28+R()*.14);
+      if(R()<.72){for(let k=0;k<4;k++){const yy=by-ht*(k/4),ww=wd*(1-k*.18);g.beginPath();g.moveTo(x-ww/2,yy+ht*.08);g.lineTo(x,yy-ht*.42);g.lineTo(x+ww/2,yy+ht*.08);g.closePath();g.fill()}}
+      else{g.beginPath();g.ellipse(x,by-ht*.45,wd*.75,ht*.5,0,0,Math.PI*2);g.fill();g.fillRect(x-wd*.05,by-ht*.2,wd*.1,ht*.2)}
+      x+=wd*(.45+R()*.5)}
+    if(li<layers.length-1){const hz=g.createLinearGradient(0,by-h*size,0,h);hz.addColorStop(0,"rgba(226,238,228,0)");hz.addColorStop(.5,"rgba(226,238,228,.22)");hz.addColorStop(1,"rgba(226,238,228,.05)");g.fillStyle=hz;g.fillRect(0,by-h*size,w,h)}
+  });
+  const gr=g.createLinearGradient(0,h*.86,0,h);gr.addColorStop(0,"#2f5236");gr.addColorStop(1,"#1d3423");g.fillStyle=gr;g.fillRect(0,h*.86,w,h*.14);
+  const R2=sfRand(5);g.strokeStyle="rgba(120,170,105,.55)";g.lineWidth=1;
+  for(let i=0;i<w*.9;i++){const x=R2()*w,y=h*.87+R2()*h*.13,l=4+R2()*9;g.beginPath();g.moveTo(x,y);g.lineTo(x+(R2()-.5)*4,y-l);g.stroke()}
+  return c;
+}
+function sfPlant(g,x,y,H,gr,t){
+  g.fillStyle="#3a2a1c";g.beginPath();g.ellipse(x,y,Math.max(22,H*.09),7,0,0,Math.PI*2);g.fill();
+  if(gr<.04){g.fillStyle="#8a6a3e";g.beginPath();g.ellipse(x,y-5,6,4,-.4,0,Math.PI*2);g.fill();
+    if(gr>.01){g.strokeStyle="#7fae5a";g.lineWidth=1.5;g.beginPath();g.moveTo(x+1,y-8);g.quadraticCurveTo(x+3,y-14,x+6,y-16);g.stroke()}return}
+  const depth=1+gr*6.4,L=H*(.06+.12*gr),R=sfRand(42),rn=[];for(let i=0;i<600;i++)rn.push(R());let k=0;const nx=()=>rn[(k++)%rn.length];
+  const leaves=[];
+  const br=(x0,y0,len,ang,d,wid)=>{
+    const part=Math.min(1,depth-d);if(part<=0)return;
+    const a=ang+Math.sin(t*.5+d*.9)*.01*d,l=len*part,x1=x0+Math.sin(a)*l,y1=y0-Math.cos(a)*l;
+    g.strokeStyle=d<2?"#4a3424":"#5d4532";g.lineWidth=Math.max(.8,wid);g.lineCap="round";g.beginPath();g.moveTo(x0,y0);g.lineTo(x1,y1);g.stroke();
+    if(part<1||d+1>=depth){leaves.push([x1,y1]);if(part<1)return}
+    const n=d===0?1:d>3?2:2+(nx()>.55?1:0);
+    for(let i=0;i<n;i++){const sp=.32+nx()*.3,na=a+(n===1?(nx()-.5)*.15:(i/(n-1)-.5)*2*sp)+(nx()-.5)*.18;br(x1,y1,len*(d===0?.9:.7+nx()*.1),na,d+1,wid*.68)}
+    if(d>=2&&nx()>.45)leaves.push([x1,y1]);
+  };
+  br(x,y-3,L,0,0,Math.max(1.6,1+H*.03*gr));
+  const lr=Math.max(3,H*(.01+.022*gr)),n=gr<.15?1:3; // a few leaves together at each tip, so the crown fills in as it grows
+  leaves.forEach(([lx,ly],i)=>{for(let j=0;j<n;j++){const s=lr*(.7+((i*37+j*17)%10)/22),bloom=gr>.8&&(i+j)%7===0,ox=n>1?Math.cos(i*2.4+j*2.1)*lr*.9:0,oy=n>1?Math.sin(i*1.7+j*2.1)*lr*.6:0;
+    g.fillStyle=bloom?"rgba(248,212,224,.95)":`hsla(${98+(i*13+j*9)%34},${44+(i*7+j*5)%22}%,${28+(i*11+j*7)%22}%,.9)`;
+    g.beginPath();g.ellipse(lx+ox+Math.sin(t*.7+i+j)*1.4,ly+oy+Math.cos(t*.5+i)*.6,s,s*.6,((i+j)%7)/7*Math.PI,0,Math.PI*2);g.fill()}});
+}
+function sfPaint(cv,now){
+  const dpr=Math.min(2,window.devicePixelRatio||1),w=cv.clientWidth,h=cv.clientHeight;if(!w||!h)return;
+  if(cv.width!==Math.round(w*dpr)||cv.height!==Math.round(h*dpr)){cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);SF.bg=null}
+  if(!SF.bg||SF.bg.width!==cv.width)SF.bg=sfDrawBg(w,h,dpr);
+  const g=cv.getContext("2d"),t=(now-SF.t0)/1000;g.setTransform(1,0,0,1,0,0);g.drawImage(SF.bg,0,0);g.setTransform(dpr,0,0,dpr,0,0);
+  g.save();g.globalCompositeOperation="screen";
+  for(let i=0;i<4;i++){const a=.05+.035*Math.sin(t*.09+i*1.7),x=w*(.6+i*.08);g.fillStyle=`rgba(255,244,212,${a})`;g.beginPath();g.moveTo(x,0);g.lineTo(x+w*.05,0);g.lineTo(x-w*.2+i*w*.03,h);g.lineTo(x-w*.32+i*w*.03,h);g.closePath();g.fill()}
+  g.restore();
+  for(let i=0;i<3;i++){const y=h*(.6+i*.09),span=w*1.6,x=((t*(3+i*1.5)+i*w*.5)%span)-w*.3,m=g.createRadialGradient(x,y,0,x,y,w*.35);
+    m.addColorStop(0,"rgba(238,246,240,.16)");m.addColorStop(1,"rgba(238,246,240,0)");g.fillStyle=m;g.beginPath();g.ellipse(x,y,w*.35,h*.05,0,0,Math.PI*2);g.fill()}
+  const R=sfRand(3);for(let i=0;i<28;i++){const px=R(),py=R(),v=.3+R(),ph=R()*6;
+    const x=((px*w+t*v*6)%(w+20))-10,y=py*h*.85+Math.sin(t*.4*v+ph)*12,a=.25+.35*(.5+.5*Math.sin(t*.7+ph));
+    g.fillStyle=`rgba(255,250,222,${a})`;g.beginPath();g.arc(x,y,1.3,0,Math.PI*2);g.fill()}
+  sfPlant(g,w*.5,h*.88,h,SF.growth,t);
+}
+function sfFrame(now){const cv=$("#sfCanvas");if(!cv){SF.raf=0;return}SF.raf=requestAnimationFrame(sfFrame);if(now-SF.last<40)return;SF.last=now;sfPaint(cv,now)}
+function sfCanvasStart(){
+  SF.growth=sfGrowth(sfStats().hours);const cv=$("#sfCanvas");if(!cv)return;
+  if(matchMedia("(prefers-reduced-motion:reduce)").matches){sfPaint(cv,SF.t0);return}
+  if(!SF.raf)SF.raf=requestAnimationFrame(sfFrame);
+}
+window.addEventListener("resize",()=>{SF.bg=null;const cv=$("#sfCanvas");if(cv&&!SF.raf)sfPaint(cv,performance.now())});
+
+/* ---- start, tick, finish ---- */
+async function sfStart(){
+  if(sfRunning())return;
+  const set=sfSet(),now=Date.now(),doc={id:"sf"+now.toString(36),kind:S.sf.kind,title:(S.sf.title||"").trim().slice(0,120),start:now,rounds:S.sf.rounds,work:SF_W,brk:SF_B,
+    rate:S.sf.kind==="study"?Math.max(0,+set.rate||0):0,status:"running",blocked:false,createdAt:now};
+  sfCtx();sfSoundStart(); // the click lets the sound start
+  if(S.sf.block&&S.fb.state?.hasPassword&&(S.fb.apps||S.fb.web)){
+    try{await fbPost("start",{end:(now+sfTotalMs(doc))/1000,apps:!!S.fb.apps,web:!!S.fb.web});doc.blocked=true}
+    catch(e){toast("Blocking did not start: "+e.message)}
+  }
+  try{await sfPut("studylog",doc)}catch(e){toast("Could not save the session");return}
+  sfChime();render();
+}
+let sfLastMode="";
+function sfTick(){
+  const r=sfRunning();if(!r){sfLastMode="";return}
+  const p=sfPhase(r);if(p.done){sfFinish(r,"done");return}
+  const m=p.mode+p.round;if(sfLastMode&&m!==sfLastMode)sfChime();sfLastMode=m;
+  if(SFA.pg&&SFA.ctx)SFA.pg.gain.setTargetAtTime(sfPhaseLevel(),SFA.ctx.currentTime,1.2);
+  document.querySelectorAll("[data-sfnav]").forEach(el=>el.textContent=fbLeft(p.left));
+  if(viewId()==="study")sfPanels();
+}
+async function sfFinish(r,status,reason=""){
+  if(S.sfFinishing)return;S.sfFinishing=true;
+  try{
+    const end=status==="done"?r.start+sfTotalMs(r):Date.now(),workMs=status==="done"?r.rounds*r.work*SF_MIN:sfPhase(r,end).workMs,earned=sfEarn(r,workMs);
+    await sfPut("studylog",{...r,status,end,workMs,earned,reason});
+    if(workMs>=SF_MIN){
+      try{await tlPut({id:"sf-"+r.id,taskId:"",title:r.title||sfKindLabel(r.kind),start:r.start,end,pausedMs:0,via:"desk"})}catch(e){}
+      try{await store.putWin({id:winId("focus-"+r.id),kind:"focus",title:`${r.title||sfKindLabel(r.kind)} · ${sfDur(workMs)} focused${earned?` · +${sfMoney(earned)} for food`:""}`,ref:r.id})}catch(e){}
+    }
+    sfSoundStop();
+    if(status==="done"){sfChime();toast(earned?`✨ +${sfMoney(earned)} in the food jar`:"✨ Session done")}
+    else toast(workMs>=SF_MIN?`Stopped. ${sfDur(workMs)} counted${earned?`, +${sfMoney(earned)}`:""}`:"Stopped");
+  }catch(e){toast("Could not save the session")}
+  finally{S.sfFinishing=false;render()}
+}
+function openSfStop(){
+  const r=sfRunning();if(!r||$("#modal").firstChild)return;
+  const blocking=r.blocked&&fbActive();
+  $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop" role="dialog" aria-modal="true" aria-label="Stop early">
+    <div class="top"><h2>Stop early?</h2><button class="ibtn" id="xSf" aria-label="Close">✕</button></div>
+    <p class="hint">Take one slow breath first. The button opens in <b id="sfWait">60</b> seconds. The focus time so far still counts.</p>
+    <label class="sub" for="sfWhy">Why are you stopping?</label>
+    <textarea id="sfWhy" rows="2" maxlength="300"></textarea>
+    ${blocking?`<label class="sub" for="sfPw">Unlock password (leave empty to keep blocking until ${esc(fmtDue((r.start+sfTotalMs(r))))})</label><input type="password" id="sfPw" autocomplete="off">`:""}
+    <p class="msg err" id="sfErr" role="alert" style="margin:0"></p>
+    <div class="row"><button class="btn primary" id="sfStopGo" disabled>Stop</button><button class="btn" id="sfNo">Keep going</button></div>
+  </div></div>`;
+  let left=60;const why=$("#sfWhy"),go=$("#sfStopGo");
+  const ok=()=>{go.disabled=left>0||!why.value.trim()};
+  const iv=setInterval(()=>{left--;const w=$("#sfWait");if(!w){clearInterval(iv);return}w.textContent=Math.max(0,left);if(left<=0)clearInterval(iv);ok()},1000);
+  const close=()=>{clearInterval(iv);$("#modal").innerHTML=""};
+  why.oninput=ok;why.focus();
+  go.onclick=async()=>{go.disabled=true;const pw=$("#sfPw")?.value||"";
+    if(pw){try{await fbPost("stop",{password:pw})}catch(e){$("#sfErr").textContent=e.message;go.disabled=false;return}}
+    close();await sfFinish(r,"stopped",why.value.trim().slice(0,300))};
+  $("#sfNo").onclick=close;$("#xSf").onclick=close;$("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};
+}
+
+/* ---- the screen ---- */
+function sfJar(st){
+  const per=Math.max(.25,(+st.set.rate||3)/4),coins=Math.min(48,Math.floor(st.balance/per)); // one coin = 15 min of study
+  let c="";for(let i=0;i<coins;i++){const row=Math.floor(i/6),col=i%6;c+=`<ellipse cx="${30+col*12+(row%2)*6}" cy="${128-row*6}" rx="7" ry="3.2" fill="var(--accent)" stroke="#8a6a2c" stroke-width="1"/>`}
+  return `<svg class="sfjar" viewBox="0 0 120 150" role="img" aria-label="Food jar, ${sfMoney(st.balance)}">
+    <rect x="34" y="8" width="52" height="12" rx="3" fill="var(--surface-2)" stroke="var(--line-2)"/>
+    <path d="M38 20 h44 v10 q18 8 18 30 v66 q0 16 -16 16 h-48 q-16 0 -16 -16 v-66 q0 -22 18 -30z" fill="rgba(255,255,255,.04)" stroke="var(--line-2)" stroke-width="2"/>
+    ${c}</svg>`;
+}
+function sfDays(st){
+  const goal=Math.max(1,Math.min(365,+st.set.goalDays||30)),n=st.days.size,shown=Math.max(goal,n);
+  return `<div class="sfdays" aria-label="${n} study days of ${goal}">${Array.from({length:shown},(_,i)=>`<span class="${i<n?"on":""}"></span>`).join("")}</div>
+    <p class="sub" style="margin:0">Day ${n} of ${goal}${n>=goal?" — goal reached":""}</p>`;
+}
+function sfPlantLine(h){const s=sfStage(h);return `${s.name} · ${sfHours(h)} of 100 hours${s.next?` · ${s.next[1]} at ${s.next[0]} h`:""}`}
+function sfSoundBar(){
+  return `<label class="sfsnd"><span class="sub">Sound</span><select id="sfSound">${SF_SOUNDS.map(([k,l])=>`<option value="${k}" ${S.sf.sound===k?"selected":""}>${l}</option>`).join("")}</select></label>
+    <label class="sfsnd"><span class="sub">Volume</span><input type="range" id="sfVol" min="0" max="1" step="0.05" value="${S.sf.vol}"></label>`;
+}
+function sfRunView(r,st){
+  const p=sfPhase(r);
+  return `<section class="sfstage" id="sfStage"><canvas id="sfCanvas" aria-hidden="true"></canvas>
+    <div class="sfover" data-noauto>
+      <p class="eyebrow" id="sfMode"></p>
+      <div class="sfclock" id="sfClock">${fbLeft(p.left)}</div>
+      <p class="sfsub" id="sfSub"></p>
+      <div class="sfdots" id="sfDots"></div>
+      <div class="sfbar">${sfSoundBar()}</div>
+      <div class="row">${SFA.kind==="off"&&S.sf.sound!=="off"?`<button class="btn sm" id="sfPlay">Play sound</button>`:""}<button class="btn sm" id="sfFull">Full screen</button><button class="btn sm" id="sfStop">Stop early</button></div>
+    </div>
+    <p class="sfplant" id="sfPlantLbl">${esc(sfPlantLine(st.hours))}</p>
+  </section>
+  <section class="card sfrow"><div><p class="eyebrow">Food jar</p><p class="sfbig" id="sfLive">${sfMoney(st.balance)}</p></div>
+    <p class="sub" style="margin:0">${r.kind==="study"?`This session: <b id="sfLiveNow">+${sfMoney(st.live)}</b> at ${sfMoney(r.rate)} an hour`:"Reading and other time grow the plant. Only study fills the jar."}</p></section>`;
+}
+function sfPanels(){
+  const r=sfRunning();if(!r||!$("#sfClock"))return;
+  const p=sfPhase(r),st=sfStats(),set=(id,v)=>{const el=$("#"+id);if(el&&el.innerHTML!==v)el.innerHTML=v};
+  set("sfClock",fbLeft(p.left));
+  set("sfMode",`${p.mode==="focus"?"Focus":"Break"} · Round ${p.round} of ${r.rounds}${r.blocked&&fbActive()?" · Blocking on":""}`);
+  set("sfSub",esc(p.mode==="focus"?`${sfKindLabel(r.kind)}${r.title?": "+r.title:""}`:"Look at the trees. Stand up, stretch, drink some water."));
+  set("sfDots",Array.from({length:r.rounds},(_,i)=>`<span class="${i+1<p.round||(i+1===p.round&&p.mode==="break")?"on":i+1===p.round?"now":""}"></span>`).join(""));
+  set("sfPlantLbl",esc(sfPlantLine(st.hours)));set("sfLiveNow","+"+sfMoney(st.live));
+  SF.growth=sfGrowth(st.hours);
+}
+function sfStartView(st){
+  const f=S.sf,fb=S.fb.state,set=st.set,dur=sfTotalMs({rounds:f.rounds,work:SF_W,brk:SF_B}),earn=f.kind==="study"?f.rounds*SF_W/60*(+set.rate||0):0;
+  const fbNote=!LOCALAPI?"":!fb?"FocusBlock is not reachable, so nothing will be blocked.":!fb.hasPassword?"Set an unlock password in FocusBlock first to block.":!(S.fb.apps||S.fb.web)?"Choose apps or websites on the Focus screen to block.":"";
+  const recent=S.sfLog.filter(x=>x.status!=="running").sort((a,b)=>b.start-a.start).slice(0,8);
+  const spends=S.sfWallet.filter(x=>x.kind==="spend").sort((a,b)=>(b.at||0)-(a.at||0)).slice(0,6);
+  return `<header class="head"><div><p class="eyebrow">Study Focus</p><h1>Focus in the forest</h1><p class="sub">25 minutes of focus, then 5 minutes of rest, on their own. The sound lasts one focus round and fades out as it ends.</p></div></header>
+  <section class="sfstage small" id="sfStage"><canvas id="sfCanvas" aria-hidden="true"></canvas><p class="sfplant" id="sfPlantLbl">${esc(sfPlantLine(st.hours))}</p></section>
+  <section class="card fbform" data-noauto>
+    <div class="fbgroup"><h2>What is this time for?</h2><div class="chips">${SF_KINDS.map(([k,l])=>`<button class="chip" data-sfkind="${k}" aria-pressed="${f.kind===k}">${l}</button>`).join("")}</div>
+      <p class="sub" style="margin:0">${esc((SF_KINDS.find(x=>x[0]===f.kind)||SF_KINDS[0])[2])}</p>
+      <input id="sfTitle" maxlength="120" placeholder="What you will do (optional)" value="${esc(f.title)}"></div>
+    <div class="fbgroup"><h2>How many rounds?</h2><div class="chips">${[1,2,3,4,6,8].map(n=>`<button class="chip" data-sfround="${n}" aria-pressed="${f.rounds===n}">${n}</button>`).join("")}</div>
+      <p class="sub" style="margin:0">${sfDur(dur)} in all${earn?` · ${sfMoney(earn)} for food`:""}</p></div>
+    <div class="fbgroup"><div class="chips"><button class="chip" data-sfblock aria-pressed="${!!f.block}">Block apps and sites</button></div>
+      ${f.block&&fbNote?`<p class="sub" style="margin:0">${esc(fbNote)}</p>`:f.block?`<p class="sub" style="margin:0">FocusBlock stays on until the last round ends. Claude keeps working.</p>`:""}</div>
+    <div class="fbgroup sfbar">${sfSoundBar()}</div>
+    <div class="row"><button class="btn primary" id="sfGo">Start</button></div>
+  </section>
+  <section class="card sfjarcard" aria-label="Food jar" data-noauto>${sfJar(st)}
+    <div class="sfjartext"><p class="eyebrow">Food jar</p><p class="sfbig">${sfMoney(st.balance)}</p>
+      <p class="sub" style="margin:0">Earned ${sfMoney(st.earned)} · Spent ${sfMoney(st.spent)}${st.todayEarned?` · Today +${sfMoney(st.todayEarned)}`:""}</p>
+      ${sfDays(st)}
+      <div class="sfspend"><input id="sfAmt" type="number" min="0" step="0.5" inputmode="decimal" placeholder="$" aria-label="Amount in dollars"><input id="sfNote" maxlength="80" placeholder="What you ate" aria-label="What you ate"><button class="btn sm" id="sfUse">Use for food</button></div>
+      ${spends.length?`<ul class="sflist">${spends.map(x=>`<li><span>${esc(x.date||"")} · ${esc(x.note||"Food")}</span><span>−${sfMoney(x.amount)} <button class="ibtn" data-sfdel="${esc(x.id)}" aria-label="Remove">✕</button></span></li>`).join("")}</ul>`:""}
+      <details class="sfset"><summary class="sub">Settings</summary><div class="sfspend"><label class="sub">Per study hour $<input id="sfRate" type="number" min="0" max="100" step="0.5" value="${esc(set.rate)}"></label><label class="sub">Goal days <input id="sfGoal" type="number" min="1" max="365" value="${esc(set.goalDays)}"></label><button class="btn sm" id="sfSetSave">Save</button></div></details>
+    </div></section>
+  ${recent.length?`<section class="card" data-noauto><div class="dhead"><h2>Recent sessions</h2></div><ul class="sflist">${recent.map(x=>`<li><span>${esc(hcmcDay(x.start))} · ${esc(sfKindLabel(x.kind))}${x.title?" · "+esc(x.title):""}${x.status==="stopped"?` · stopped${x.reason?": "+esc(x.reason):""}`:""}</span><span>${sfDur(x.workMs||0)}${x.earned?" · +"+sfMoney(x.earned):""}</span></li>`).join("")}</ul></section>`:""}`;
+}
+function studyView(){
+  if(!S.sfLoaded) return `<header class="head"><div><p class="eyebrow">Study Focus</p><h1>${S.sfErr?"Cannot reach the Desk server":"Loading"}</h1></div></header>`;
+  const r=sfRunning(),st=sfStats();return r?sfRunView(r,st):sfStartView(st);
+}
+const sfKey=()=>{const r=sfRunning();return JSON.stringify([S.sfLoaded,S.sfErr,r?.id,r?SFA.kind==="off":[S.sf.kind,S.sf.rounds,S.sf.block,S.fb.apps,S.fb.web,!!S.fb.state?.hasPassword],S.sfLog.map(x=>x.updatedAt).join(),S.sfWallet.map(x=>x.updatedAt).join()])};
+function wireSf(){
+  const pref=(k,v)=>{S.sf[k]=v;sfSave();render()};
+  document.querySelectorAll("[data-sfkind]").forEach(b=>b.onclick=()=>pref("kind",b.dataset.sfkind));
+  document.querySelectorAll("[data-sfround]").forEach(b=>b.onclick=()=>pref("rounds",+b.dataset.sfround));
+  $("[data-sfblock]")&&($("[data-sfblock]").onclick=()=>pref("block",!S.sf.block));
+  $("#sfTitle")&&($("#sfTitle").oninput=e=>{S.sf.title=e.target.value;sfSave()});
+  $("#sfSound")&&($("#sfSound").onchange=e=>{S.sf.sound=e.target.value;sfSave();if(sfRunning()){sfSoundStart();render()}});
+  $("#sfVol")&&($("#sfVol").oninput=e=>{S.sf.vol=+e.target.value;sfSave();sfVolume()});
+  $("#sfGo")&&($("#sfGo").onclick=sfStart);
+  $("#sfPlay")&&($("#sfPlay").onclick=()=>{sfSoundStart();render()});
+  $("#sfStop")&&($("#sfStop").onclick=openSfStop);
+  $("#sfFull")&&($("#sfFull").onclick=()=>{const s=$("#sfStage");if(document.fullscreenElement)document.exitFullscreen();else(s.requestFullscreen||s.webkitRequestFullscreen)?.call(s)});
+  $("#sfUse")&&($("#sfUse").onclick=async()=>{const a=Math.round(+$("#sfAmt").value*100)/100;if(!(a>0)){$("#sfAmt").focus();return}
+    try{await sfPut("wallet",{id:"sp"+Date.now().toString(36),kind:"spend",amount:a,note:$("#sfNote").value.trim().slice(0,80),date:hcmcDate(),at:Date.now()});toast("Enjoy your meal")}catch(e){toast("Could not save")}render()});
+  document.querySelectorAll("[data-sfdel]").forEach(b=>b.onclick=async()=>{const x=S.sfWallet.find(y=>y.id===b.dataset.sfdel);if(!x)return;try{await sfPut("wallet",{...x,deleted:true})}catch(e){toast("Could not save")}render()});
+  $("#sfSetSave")&&($("#sfSetSave").onclick=async()=>{const rate=Math.min(100,Math.max(0,+$("#sfRate").value||0)),goalDays=Math.min(365,Math.max(1,Math.round(+$("#sfGoal").value||30)));
+    try{await sfPut("wallet",{...sfSet(),id:"settings",kind:"settings",rate,goalDays});toast("Saved")}catch(e){toast("Could not save")}render()});
+}
+window.addEventListener("hashchange",()=>{if(viewId()==="study"&&LOCALAPI)sfLoad()});
+
 /* ---------- boot ---------- */
 render();
 autoLinkStart();
@@ -11237,7 +11622,7 @@ autoLinkStart();
   if(Array.isArray(window.TOOLS)){ // PC version
     try{S.dues=JSON.parse(localStorage.getItem("desk-dues")||"{}")||{}}catch(e){S.dues={}}
     S.loaded=true;S.local=true;S.tools=window.TOOLS.map(enOf);S.editions=window.WORLD||[];S.days=window.MAIL||[];S.cal=window.CAL||null;S.gtasks=window.GTASKS||null;S.reports=window.REPORTS||[];S.watch=window.WATCH||[];S.heritage=(window.HERITAGE||[]).filter(h=>!h.deleted);S.hcountries=(window.HERITAGE_COUNTRIES||[]).map(([code,name,region])=>({code,name,region}));S.memory=window.MEMORY||null;
-    if(LOCALAPI){uEnter();uSync();fbLoad();setInterval(fbLoad,5000);await loadApiMemos();setInterval(loadApiMemos,30000);window.addEventListener("focus",loadApiMemos);return}
+    if(LOCALAPI){uEnter();uSync();fbLoad();setInterval(fbLoad,5000);sfLoad();setInterval(sfTick,1000);await loadApiMemos();setInterval(loadApiMemos,30000);window.addEventListener("focus",loadApiMemos);return}
     try{S.memos=JSON.parse(localStorage.getItem("desk-memos")||"[]")}catch(e){S.memos=[]}
     try{S.tasks=JSON.parse(localStorage.getItem("desk-tasks")||"[]")}catch(e){S.tasks=[]}
     try{S.prompts=JSON.parse(localStorage.getItem("desk-prompts")||"{}")||{}}catch(e){S.prompts={}}
