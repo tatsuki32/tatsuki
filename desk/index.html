@@ -2163,6 +2163,32 @@ body.sffull{overflow:hidden}
 .sflist li span:first-child{min-width:0;overflow-wrap:anywhere}
 .sflist li span:last-child{white-space:nowrap;display:inline-flex;align-items:center;gap:var(--s1)}
 @media (max-width:560px){.sfjarcard{grid-template-columns:1fr}.sfjar{width:96px;height:120px}.sfclock{font-size:var(--t5)}.sfover{left:var(--s2);top:var(--s2);max-width:calc(100% - 16px);padding:12px}.sfstage{min-height:440px}}
+.mtgintro{margin:0 0 var(--s3)}
+.mtgstats{margin-bottom:var(--s3)}
+.mtgrate{display:flex;align-items:center;gap:var(--s1)}
+.mtgrate input{width:100%;min-width:0;background:var(--surface-2);color:var(--ink);border:1px solid var(--line);border-radius:var(--r-s);padding:var(--s1) var(--s2);font:inherit}
+.mtgcard{display:grid;gap:var(--s3);margin-bottom:var(--s3)}
+.mtgq{margin:0;font-size:var(--t3)}
+.mtgbig{margin:0;font-size:var(--t4)}
+.mtgmeet .mtgbig{color:var(--green)}
+.mtgf{display:grid;gap:var(--s1);min-width:0}
+.mtgf .hint{margin:0}
+.mtgin{width:100%;box-sizing:border-box;background:var(--surface-2);color:var(--ink);border:1px solid var(--line);border-radius:var(--r-s);padding:var(--s2) var(--s3);font:inherit;font-size:var(--t2);resize:vertical}
+.mtglong{min-height:120px}
+.mtgchoices{display:flex;flex-wrap:wrap;gap:var(--s2)}
+.mtgch{background:var(--surface-2);color:var(--ink);border:1px solid var(--line);border-radius:var(--r-s);padding:var(--s2) var(--s3);font:inherit;font-size:var(--t2);cursor:pointer;text-align:left}
+.mtgch.on{border-color:var(--accent);color:var(--accent);font-weight:700}
+.mtgnav{display:flex;flex-wrap:wrap;gap:var(--s2);align-items:center}
+.mtgfoot{display:flex;flex-wrap:wrap;gap:var(--s2);margin-bottom:var(--s3)}
+.mtgok{margin:0;color:var(--green);font-weight:700}
+.mtgno{margin:0;color:var(--muted)}
+.mtgcost{margin:0;color:var(--muted)}
+.mtgcheck{display:flex;gap:var(--s2);align-items:center}
+.mtgdots{display:flex;gap:var(--s1);margin:0 0 var(--s3)}
+.mtgdots span{flex:1;height:4px;border-radius:2px;background:var(--line)}
+.mtgdots span.done{background:var(--muted)} .mtgdots span.on{background:var(--accent)}
+.mtgtitle{overflow-wrap:anywhere}
+.mtgevb{white-space:nowrap;flex:none}
 </style>
 
 <div class="app">
@@ -2212,7 +2238,7 @@ S.projects=[];S.sections=[];S.okrs=[];S.krOpen={};S.projFilter="all";S.pDone=fal
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const okUrl=u=>/^(https:\/\/|file:\/\/|#)/.test(u||"");
-const viewId=()=>{const h=(location.hash||"").slice(1);if(h==="mail")return "tasks";if(h==="inbox")return "presents";if(/^project\//.test(h))return "project";if(/^minutes\//.test(h))return "minutes";if(/^forms\//.test(h))return "forms";if(/^task\//.test(h))return "tasks";if(/^concept\//.test(h))return "translate";if(/^langmap[\/?]/.test(h)||/^language\//.test(h))return "langmap";if(/^reader\//.test(h))return "reader";if(/^words\//.test(h))return "words";if(h==="cards/review")return "cards";return VIEWS.some(v=>v.id===h&&v.g!=="hidden")?h:"home"}; // the morning mail screen moved into the tasks
+const viewId=()=>{const h=(location.hash||"").slice(1);if(h==="mail")return "tasks";if(h==="inbox")return "presents";if(/^project\//.test(h))return "project";if(/^minutes\//.test(h))return "minutes";if(/^meetcheck\//.test(h))return "meetcheck";if(/^forms\//.test(h))return "forms";if(/^task\//.test(h))return "tasks";if(/^concept\//.test(h))return "translate";if(/^langmap[\/?]/.test(h)||/^language\//.test(h))return "langmap";if(/^reader\//.test(h))return "reader";if(/^words\//.test(h))return "words";if(h==="cards/review")return "cards";return VIEWS.some(v=>v.id===h&&v.g!=="hidden")?h:"home"}; // the morning mail screen moved into the tasks
 const viewLabel=id=>(VIEWS.find(v=>v.id===id)||{}).label||id;
 /* Old mail data has Japanese topics: keep those titles in Japanese, new ones in English */
 const JA_RE=/[ぁ-んァ-ン一-龥]/;
@@ -2239,6 +2265,7 @@ if(LOCALAPI) VIEWS.splice(4,0,{id:"focus",e:"🎯",label:"Focus",g:"today"}); //
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="focus")+1,0,{id:"study",e:"🌲",label:"Study Focus",g:"today"}); // Pomodoro in a forest, a plant of my own, a food jar for study hours (studylog, wallet)
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="focus")+1,0,{id:"notices",e:"🔔",label:"Notifications",g:"today"}); // Mac notifications: desk/notify.py decides, this page lists and sets
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="calendar")+1,0,{id:"book",e:"🗓️",label:"Bookings",g:"today"}); // the rules and the list behind tany.im/book; the page runs in the tany.im Worker (desk/book.py)
+if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="calendar")+1,0,{id:"meetcheck",e:"🤝",label:"Should we meet?",g:"today"}); // four questions decide whether a meeting earns its place (desk/meetcheck.py)
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="memolink")+1,0,{id:"money",e:"💰",label:"Money",g:"write"}); // statements stay on this Mac
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="money")+1,0,{id:"screentime",e:"📱",label:"Screen Time",g:"write"});
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="screentime")+1,0,{id:"webhistory",e:"🌐",label:"Web History",g:"write"});
@@ -4713,13 +4740,14 @@ function calEvents(){
 }
 function untilText(ms){const a=Math.max(0,ms),h=Math.floor(a/HOUR),m=Math.floor(a%HOUR/6e4),s=Math.floor(a%6e4/1e3);return "in "+(h?h+":"+pad(m):m)+":"+pad(s)}
 const untilChip=ms=>`<span class="until" data-until="${ms}">${untilText(ms-Date.now())}</span>`;
-function evRow(e,ds,win){
+function evRow(e,ds,win,mtgb){
   const now=Date.now(), de=dayStart(ds,1);
   const time=e.allDay?"All day":(e.startMs<ds?"until ":fmtTime(e.startMs)+"–")+(e.endMs>de?"":fmtTime(e.endMs));
   const state=!e.allDay&&e.endMs<=now?"past":!e.allDay&&e.startMs<=now?"now":"";
   const tail=MARK.test(e.title)?`<span class="pill amber">Task</span>`:state==="now"?`<span class="pill live">Now</span>`:"";
   const inner=`<time>${esc(time)}</time><span class="t">${esc(e.title)}</span>${tail}${e.location?`<span class="loc">📍 ${esc(e.location)}</span>`:""}`;
   const row=okUrl(e.url)?`<a class="ev ${state}" href="${esc(e.url)}" target="_blank" rel="noopener">${inner}</a>`:`<div class="ev ${state}">${inner}</div>`;
+  if(mtgb&&LOCALAPI&&!e.allDay&&state!=="past"&&!MARK.test(e.title)) return `<div class="evwrap">${row}<button class="btn sm mtgevb" data-mtgev="${esc(e.id)}">Should we meet?</button></div>`;
   if(!(win&&state==="past"&&!MARK.test(e.title))) return row;
   return `<div class="evwrap">${row}${S.wins.some(w=>w.id===evWinId(e))?`<span class="sub evdone">✓ Done</span>`:`<button class="btn sm" data-winev="${esc(e.id)}">Done</button>`}</div>`;
 }
@@ -4738,7 +4766,7 @@ function calendar(){
   const d0=startOfDay(Date.now()), evs=calEvents();
   const days=[0,1,2,3,4,5,6].map(i=>{const ds=dayStart(d0,i), de=dayStart(d0,i+1), list=evs.filter(e=>e.startMs<de&&e.endMs>ds);
     const label=new Date(ds).toLocaleDateString("en-US",{month:"short",day:"numeric",weekday:"short"});
-    return `<section class="card day ${i===0?"is-today":""}"><h2>${esc(label)}<span class="sub">${i===0?"Today":i===1?"Tomorrow":""}${list.length?" · "+list.length+(list.length===1?" event":" events"):""}</span></h2>${list.map(e=>evRow(e,ds,i===0)).join("")||`<div class="ev"><time>—</time><span class="t" style="color:var(--muted);font-weight:500">No events</span></div>`}</section>`});
+    return `<section class="card day ${i===0?"is-today":""}"><h2>${esc(label)}<span class="sub">${i===0?"Today":i===1?"Tomorrow":""}${list.length?" · "+list.length+(list.length===1?" event":" events"):""}</span></h2>${list.map(e=>evRow(e,ds,i===0,true)).join("")||`<div class="ev"><time>—</time><span class="t" style="color:var(--muted);font-weight:500">No events</span></div>`}</section>`});
   return head+notesHere("calendar")+`<p class="sub" style="margin:0">Events whose title starts with "TODO", "【やる】" or "☑" are tagged as a Task automatically.</p><div class="days">${days.join("")}</div>`;
 }
 
@@ -6880,6 +6908,7 @@ function render(){
   if(viewId()==="netspeed"){nsLoad();$("#view").innerHTML=searchResults()+nsView();wire();wireNs();return}
   if(viewId()==="wifi"){wfLoad();if(!$("#wfView")||!document.activeElement?.closest?.(".wffield"))wfDraw();return} // a redraw from elsewhere never takes the password being typed
   if(viewId()==="transcribe"){trLoad();$("#view").innerHTML=searchResults()+trView();wire();wireTr();return}
+  if(viewId()==="meetcheck"){mtgLoad();if(!document.activeElement?.closest?.("#mtgView")||!$("#mtgView"))mtgDraw();return} // a redraw from elsewhere never takes the answer being typed
   if(viewId()==="minutes"){mnLoad();$("#view").innerHTML=searchResults()+mnView();wire();wireMn();return}
   if(viewId()==="post"){if(!ps().data&&!ps().loading)psLoad();if(!document.activeElement?.closest?.(".psedit")||!$("#psView"))psDraw();return} // a redraw from elsewhere never takes the text being typed
   if(viewId()==="forms"){fmSync();if(!document.activeElement?.closest?.(".fmed,.fmbox,.fmtitle")||!$("#fmView"))fmDraw();return} // a redraw from elsewhere never takes the text being typed
@@ -7372,6 +7401,209 @@ function wireFp(){
 async function fpHomeLoad(){if(!LOCALAPI)return;try{S.fpHome=await api("GET","/api/footprint/home");const el=$("#fpLine");if(el){const t=document.createElement("div");t.innerHTML=fpHomeLine();el.textContent=t.firstChild.textContent}}catch(e){}}
 const fpHomeLine=()=>{const h=S.fpHome;if(!LOCALAPI)return "";if(!h||!h.kg)return `<a class="sub pcline" id="fpLine" href="#footprint">Footprint: yesterday's CO2e</a>`;
   return `<a class="sub pcline" id="fpLine" href="#footprint">Footprint yesterday: ${fpKg(h.kg)} CO2e${h.cowHours?` · ${fpHours(h.cowHours)} of a cow`:""}</a>`};
+/* ---------- 🤝 Should we meet? (#meetcheck, #meetcheck/<id>): a meeting has to earn its place. Four of the owner's answers decide;
+   Claude only drafts them (desk/meetcheck.py). Meet → a pre-read Google Doc anyone with the link can comment on. Don't meet → an
+   alternative, a reply to copy (never sent) and the time and yen saved. Records: the meetchecks collection (doc _settings holds the rate). */
+const MTG_LENS=[15,25,50,60];
+const MTG_WHY={live:"Needs fast back-and-forth",trust:"Trust, a relationship or something sensitive",unknowns:"Too open to write down yet",text:"Text or comments can decide it"};
+const MTG_ALT={announce:["Text announcement","Write it once and send it. People answer only if something is wrong."],
+  doc:["Doc with comments","Write the proposal in a doc. People comment by a date, then the decider decides."],
+  recording:["Short recording","Record 3–5 minutes. People watch when they can and comment."],
+  call:["Two-person call","Talk for 15 minutes with the one person who decides."]};
+const MTG_ALT_FOR={q1:"announce",q2:"doc",q3:"call",q4:"recording"};
+const MTG_Q=["","Decision","Why not text","Decider and people","Time and cost","Talk to first"];
+const mtg=()=>S.mtgs||(S.mtgs={list:null,status:null,busy:false,msg:"",err:"",override:false,loading:false,poll:0});
+const mtgId=()=>{const m=/^#meetcheck\/(.+)$/.exec(location.hash||"");return m?decodeURIComponent(m[1]):null};
+const mtgRecs=()=>(mtg().list||[]).filter(x=>x.id&&x.id[0]!=="_"&&!x.deleted);
+const mtgRate=()=>{const s=(mtg().list||[]).find(x=>x.id==="_settings");return Math.max(0,+(s?.rate)||3000)};
+const mtgPeople=v=>(Array.isArray(v)?v:String(v||"").split(/[,、，\n]+/)).map(x=>String(x).trim()).filter(Boolean).slice(0,40);
+const MTG_VAGUE=/(について|に関して|の件|の共有|共有|報告|update|sync|catch[- ]?up|check[- ]?in)[。.!！]?$|^(about|re:|regarding)\b/i;
+const MTG_DECISION=/(か|かどうか|どちら|どっち|どれ)[。.]?$|[?？]$|\bwhether\b|\bwhich\b|\bor\b|\bshould\b/i;
+const MTG_MANY=/全員|みんな|皆|チーム全体|everyone|\ball\b|the team/i;
+function mtgCheck(a){ // the same rules as meetcheck.check in Python
+  a=a||{};const q1=String(a.q1?.text||"").trim(),q2=a.q2||{},q3=a.q3||{},q4=a.q4||{},o={};
+  o.q1=!q1?[false,"No decision is written."]:(MTG_VAGUE.test(q1)||!MTG_DECISION.test(q1))?[false,"This is a topic, not a decision. Write it as “whether to …” or “A or B”."]:[true,""];
+  o.q2=q2.choice==="text"?[false,"Text or comments can decide it."]:(!q2.choice||!String(q2.why||"").trim())?[false,"No reason why text cannot decide it."]:[true,""];
+  const d=String(q3.decider||"").trim(),req=mtgPeople(q3.required);
+  o.q3=(!d||MTG_MANY.test(d)||mtgPeople(d).length>1)?[false,"There is no single person who decides."]:!String(q3.proposal||"").trim()?[false,"There is no proposed answer to react to."]
+    :!req.length?[false,"No one is required."]:req.length>8?[false,"More than 8 people are required."]:[true,""];
+  o.q4=!MTG_LENS.includes(+q4.len)?[false,"No length is chosen."]:q4.worth!=="yes"?[false,"The cost is more than the decision is worth."]:[true,""];
+  return o}
+const mtgVerdict=a=>{const c=mtgCheck(a);for(const q of ["q1","q2","q3","q4"])if(!c[q][0])return ["skip",q];return ["meet",""]};
+const mtgCost=(a,rate)=>{const q3=a?.q3||{},n=Math.max(2,mtgPeople(q3.required).length+mtgPeople(q3.optional).length),m=+(a?.q4?.len)||0;return {people:n,minutes:m,personMinutes:n*m,yen:Math.round((rate||0)*n*m/60)}};
+const mtgYen=n=>"¥"+Math.round(n||0).toLocaleString("en-US");
+const mtgHrs=m=>m>=60?`${Math.round(m/6)/10} hr`:`${m} min`;
+async function mtgApi(method,path,body){const r=await fetch(path,{method,headers:{"Content-Type":"application/json"},body:body?JSON.stringify(body):undefined});
+  const j=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(j.error||("Error "+r.status));e.connect=!!j.connect;throw e}return j}
+async function mtgLoad(force){const st=mtg();if(st.loading||(st.loadedAt&&!force))return;st.loading=true;
+  try{const [l,s]=await Promise.all([api("GET","/api/meetchecks"),mtgApi("GET","/api/meetcheck/status").catch(()=>null)]);st.list=(l||[]).filter(x=>x&&x.id);st.status=s;st.err=""}
+  catch(e){st.err="Could not read the checks. Is the Desk server running?"}
+  st.loading=false;st.loadedAt=Date.now();if(viewId()==="meetcheck")mtgDraw()}
+async function mtgSave(r){r.updatedAt=Date.now();r.createdAt=r.createdAt||r.updatedAt;const {id,...rec}=r;
+  await api("PUT","/api/meetchecks/"+encodeURIComponent(id),rec);const st=mtg();st.list=[...(st.list||[]).filter(x=>x.id!==id),r]}
+function mtgDraw(){if(viewId()!=="meetcheck")return;$("#view").innerHTML=searchResults()+mtgView();wire();wireMtg()}
+async function mtgNew(from){
+  await mtgLoad();
+  if(from?.eventId){const had=mtgRecs().find(x=>x.eventId===from.eventId);if(had){location.hash="#meetcheck/"+encodeURIComponent(had.id);return}}
+  const r={id:"mc"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),title:"",when:"",note:"",invited:false,step:0,answers:{},verdict:"",...(from||{})};
+  try{await mtgSave(r)}catch(e){toast("Could not save");return}
+  location.hash="#meetcheck/"+encodeURIComponent(r.id)}
+function mtgFromEvent(e){
+  const when=e.allDay?new Date(e.startMs).toLocaleDateString("en-US",{dateStyle:"medium"})
+    :new Date(e.startMs).toLocaleString("en-US",{dateStyle:"medium",timeStyle:"short"})+"–"+new Date(e.endMs).toLocaleTimeString("en-US",{timeStyle:"short"});
+  const mins=e.allDay?0:Math.round((e.endMs-e.startMs)/60000),len=MTG_LENS.find(x=>x>=mins)||60;
+  return {title:e.title||"",eventId:String(e.id),start:e.startMs,when,answers:{q4:{len}}}}
+
+function mtgView(){
+  const st=mtg(),id=mtgId();
+  if(!st.list) return `<div id="mtgView"><div class="card empty">${esc(st.err||"Loading…")}</div></div>`;
+  if(id){const r=mtgRecs().find(x=>x.id===id);return `<div id="mtgView">${r?mtgDetail(r):`<a class="mnback" href="#meetcheck">← Should we meet?</a><div class="card empty">This check is not here any more.</div>`}</div>`}
+  const all=mtgRecs().sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-((d.getDay()+6)%7));const wk=d.getTime();
+  const skipped=all.filter(r=>r.verdict==="skip"),week=skipped.filter(r=>(r.decidedAt||0)>=wk);
+  const sum=xs=>xs.reduce((s,r)=>({n:s.n+1,m:s.m+(r.cost?.personMinutes||0),y:s.y+(r.cost?.yen||0)}),{n:0,m:0,y:0});
+  const w=sum(week),t=sum(skipped);
+  return `<div id="mtgView"><header class="head"><div><p class="eyebrow">Today</p><h1>Should we meet?</h1></div><button class="btn primary" type="button" data-mtgnew>Check a meeting</button></header>
+  <p class="sub mtgintro">A meeting has to decide one thing that text and comments cannot. Answer four questions; your answers decide, not Claude.</p>
+  <section class="card mtgstats"><div class="mnums">
+    <div class="mnum"><span class="sub">Skipped this week</span><b>${w.n}</b><span class="sub">${mtgHrs(w.m)} · ${mtgYen(w.y)}</span></div>
+    <div class="mnum"><span class="sub">Skipped in total</span><b>${t.n}</b><span class="sub">${mtgHrs(t.m)} · ${mtgYen(t.y)}</span></div>
+    <div class="mnum"><label class="sub" for="mtgRate">Cost per person per hour</label><span class="mtgrate">¥<input id="mtgRate" type="number" min="0" step="500" inputmode="numeric" value="${mtgRate()}"></span><span class="sub">The same for everyone</span></div>
+  </div></section>
+  ${all.length?`<section class="card mnlist">${all.map(r=>`<a class="mnrow" href="#meetcheck/${encodeURIComponent(r.id)}" data-noauto><span class="mnt">${esc(r.title||"Untitled meeting")}</span><span class="mns">${r.verdict==="meet"?(r.override?"Met anyway":"Meet"):r.verdict==="skip"?"Not meeting":"Not decided yet"}${r.when?" · "+esc(r.when):""}${r.verdict==="skip"&&r.cost?" · saves "+mtgYen(r.cost.yen):""}${r.docUrl?" · Pre-read made":""}</span></a>`).join("")}</section>`
+    :`<div class="card empty">No checks yet. Press “Check a meeting”, or “Should we meet?” on an event in Calendar.</div>`}</div>`}
+
+function mtgField(label,inner,hint){return `<div class="mtgf"><label class="sub">${label}</label>${inner}${hint?`<p class="hint">${hint}</p>`:""}</div>`}
+const mtgVal=(r,p)=>p.split(".").reduce((o,k)=>o?.[k],r);
+const mtgInput=(r,p,ph,area)=>area?`<textarea class="mtgin" data-mtgf="${p}" rows="2" placeholder="${esc(ph||"")}">${esc(mtgVal(r,p)||"")}</textarea>`
+  :`<input class="mtgin" data-mtgf="${p}" value="${esc(Array.isArray(mtgVal(r,p))?mtgVal(r,p).join(", "):mtgVal(r,p)||"")}" placeholder="${esc(ph||"")}">`;
+const mtgChoice=(r,p,opts)=>`<div class="mtgchoices" role="radiogroup">${opts.map(([v,l])=>`<button type="button" class="mtgch${String(mtgVal(r,p))===String(v)?" on":""}" role="radio" aria-checked="${String(mtgVal(r,p))===String(v)}" data-mtgset="${p}" data-v="${esc(v)}">${esc(l)}</button>`).join("")}</div>`;
+function mtgCheckLine(r,q){const c=mtgCheck(r.answers)[q];return c?(c[0]?`<p class="mtgok" role="status">✓ Passes</p>`:`<p class="mtgno" role="status">Stops here: ${esc(c[1])}</p>`):""}
+function mtgCostLine(r){const c=mtgCost(r.answers,mtgRate());return c.minutes?`${c.people} people × ${c.minutes} min = ${mtgHrs(c.personMinutes)} of people's time · ${mtgYen(c.yen)} at ${mtgYen(mtgRate())} an hour`:"Choose a length to see the cost."}
+function mtgDetail(r){
+  const st=mtg(),step=r.step||0;
+  const top=`<a class="mnback" href="#meetcheck">← Should we meet?</a>
+  <header class="head mtghead"><div class="mnhd"><p class="eyebrow">${step>=1&&step<=5?`Question ${step} of 5 · ${MTG_Q[step]}`:step===6?"Answer":"Start"}</p><h1 class="mtgtitle">${esc(r.title||"Untitled meeting")}</h1>${r.when?`<p class="sub">${esc(r.when)}</p>`:""}</div></header>
+  ${step>=1&&step<=5?`<div class="mtgdots" aria-hidden="true">${[1,2,3,4,5].map(i=>`<span class="${i<step?"done":i===step?"on":""}"></span>`).join("")}</div>`:""}`;
+  const msg=st.msg?`<p class="sub" role="status">${esc(st.msg)}</p>`:"";
+  const nav=(next="Next")=>`<div class="mtgnav"><button class="btn" type="button" data-mtgstep="${step-1}">Back</button><button class="btn primary" type="button" data-mtgstep="${step+1}">${next}</button></div>`;
+  if(step===0){const ai=st.status?.ai!==false;
+    return top+`<section class="card mtgcard">
+      ${mtgField("Meeting",mtgInput(r,"title","What the invite says"))}
+      ${mtgField("When",mtgInput(r,"when","Optional"))}
+      ${mtgField("One line about it",mtgInput(r,"note","Who asked, what it is for. Claude sees only this, the title and the time",true))}
+      <label class="mtgcheck"><input type="checkbox" data-mtginv ${r.invited?"checked":""}> Someone else invited me</label>
+      <div class="mtgnav">${ai?`<button class="btn primary" type="button" data-mtgdraft ${st.busy?"disabled":""}>${st.busy?"Drafting…":"Draft answers with Claude"}</button>`:""}<button class="btn${ai?"":" primary"}" type="button" data-mtgstep="1">Answer myself</button></div>
+      ${ai?`<p class="hint">Claude (Haiku) drafts from the title, the time and this line only. You keep or change every answer.</p>`:""}${msg}</section>
+      <div class="mtgfoot"><button class="btn" type="button" data-mtgdel>Delete this check</button></div>`}
+  if(step===1) return top+`<section class="card mtgcard"><h2 class="mtgq">What will be decided?</h2>
+      ${mtgField("The decision, in one sentence",mtgInput(r,"answers.q1.text","Whether to … / A or B?",true),"A topic (“about …”, an update, a sync) does not pass.")}
+      <div id="mtgChk">${mtgCheckLine(r,"q1")}</div>${nav()}${msg}</section>`;
+  if(step===2) return top+`<section class="card mtgcard"><h2 class="mtgq">Why can't text or comments decide it?</h2>
+      ${mtgChoice(r,"answers.q2.choice",Object.entries(MTG_WHY))}
+      ${mtgField("Why, in one line",mtgInput(r,"answers.q2.why","What text would miss"))}
+      <div id="mtgChk">${mtgCheckLine(r,"q2")}</div>${nav()}${msg}</section>`;
+  if(step===3) return top+`<section class="card mtgcard"><h2 class="mtgq">Who decides, and who must be there?</h2>
+      ${mtgField("The one person who decides",mtgInput(r,"answers.q3.decider","One name"))}
+      ${mtgField("The answer they propose now",mtgInput(r,"answers.q3.proposal","People react to this",true))}
+      ${mtgField("Other options, and why they lose (optional)",mtgInput(r,"answers.q3.options","",true))}
+      ${mtgField("Required",mtgInput(r,"answers.q3.required","Names, separated by commas"),"Up to 8. Only people the decision needs.")}
+      ${mtgField("Optional",mtgInput(r,"answers.q3.optional","They can comment on the doc instead"))}
+      <div id="mtgChk">${mtgCheckLine(r,"q3")}</div>${nav()}${msg}</section>`;
+  if(step===4) return top+`<section class="card mtgcard"><h2 class="mtgq">How long, and is it worth it?</h2>
+      ${mtgField("Length",mtgChoice(r,"answers.q4.len",MTG_LENS.map(x=>[x,x+" min"])))}
+      <p class="mtgcost" id="mtgCost">${esc(mtgCostLine(r))}</p>
+      ${mtgField("Is the decision worth this?",mtgChoice(r,"answers.q4.worth",[["yes","Yes"],["no","No"]]))}
+      <div id="mtgChk">${mtgCheckLine(r,"q4")}</div>${nav()}${msg}</section>`;
+  if(step===5) return top+`<section class="card mtgcard"><h2 class="mtgq">Who should you talk to first?</h2>
+      ${mtgField("People to talk to one on one before (optional)",mtgInput(r,"answers.q5.people","Names, separated by commas"),"Optional. It does not change the answer. A short talk first often makes the meeting shorter.")}
+      ${nav("See the answer")}${msg}</section>`;
+  return top+mtgResult(r)}
+function mtgResult(r){
+  const st=mtg(),c=r.cost||mtgCost(r.answers,mtgRate()),checks=mtgCheck(r.answers);
+  const change=`<button class="btn" type="button" data-mtgstep="1">Change answers</button>`;
+  if(r.verdict==="meet"){const s=st.status||{};
+    const doc=r.docUrl?`<div class="mtgnav"><a class="btn primary" href="${esc(r.docUrl)}" target="_blank" rel="noopener">Open the pre-read ↗</a><button class="btn" type="button" data-mtgcopy="doc">Copy link</button></div>
+        <p class="hint">Paste the link into the invite. Anyone with the link can comment. ${r.docFolder==="own"?"It is in the Drive folder “会議の事前資料 (Desk)”.":""}</p>`
+      :s.connecting?`<p class="sub" role="status">Waiting for you to press Allow on the Google page in the browser…</p>`
+      :!s.connected?`<div class="mtgnav"><button class="btn primary" type="button" data-mtgconnect ${st.busy?"disabled":""}>Connect Google Docs</button></div><p class="hint">Opens Google in the browser once. Press Allow there. The Desk can only see the files it makes itself.</p>`
+      :`<div class="mtgnav"><button class="btn primary" type="button" data-mtgdoc ${st.busy?"disabled":""}>${st.busy?"Making…":"Make the pre-read doc"}</button></div><p class="hint">A Google Doc in Drive with the decision, the proposal, the people, the time and a record section. Anyone with the link can comment.</p>`;
+    return `<section class="card mtgcard mtgmeet"><h2 class="mtgbig">Meet.</h2><p>${r.override?`Meeting anyway: ${esc(r.override)}`:"All four questions pass."}</p>
+      <p class="mtgcost">${esc(mtgCostLine(r))}</p>${doc}${st.msg?`<p class="sub" role="status">${esc(st.msg)}</p>`:""}</section>
+      <div class="mtgfoot">${change}${r.override?`<button class="btn" type="button" data-mtgunover>Undo “Meet anyway”</button>`:""}</div>`}
+  const q=r.failed||"q1",alt=r.alt||{},kind=alt.kind||MTG_ALT_FOR[q]||"doc",n=+q.slice(1);
+  return `<section class="card mtgcard mtgskip"><h2 class="mtgbig">Don't meet.</h2><p>Stopped at question ${n} (${MTG_Q[n]}): ${esc(checks[q]?.[1]||"")}</p>
+      <p class="mtgcost">Saves ${mtgHrs(c.personMinutes)} of people's time · ${mtgYen(c.yen)}</p></section>
+    <section class="card mtgcard"><h2 class="mtgq">Do it this way instead</h2>
+      ${mtgChoice({alt:{kind}},"alt.kind",Object.entries(MTG_ALT).map(([k,v])=>[k,v[0]]))}
+      <p class="hint">${esc(MTG_ALT[kind][1])}</p>
+      ${mtgField("What to send or write",`<textarea class="mtgin mtglong" data-mtgf="alt.text" rows="5" placeholder="${st.busy?"Claude is writing…":"Write the message or the outline"}">${esc(alt.text||"")}</textarea>`)}
+      <div class="mtgnav">${alt.taskId?`<span class="mtgok">✓ In Tasks</span>`:`<button class="btn" type="button" data-mtgtask>Make it a task</button>`}<button class="btn" type="button" data-mtgcopy="alt">Copy</button></div></section>
+    ${r.invited?`<section class="card mtgcard"><h2 class="mtgq">Reply to the invite</h2>
+      ${mtgField("Draft",`<textarea class="mtgin mtglong" data-mtgf="reply" rows="5" placeholder="${st.busy?"Claude is writing…":"A short reply that offers to handle it in writing"}">${esc(r.reply||"")}</textarea>`,"Copy only. The Desk never sends it.")}
+      <div class="mtgnav"><button class="btn" type="button" data-mtgcopy="reply">Copy reply</button></div></section>`:""}
+    ${st.msg?`<p class="sub" role="status">${esc(st.msg)}</p>`:""}
+    <div class="mtgfoot">${change}<button class="btn" type="button" data-mtgover>Meet anyway</button></div>
+    ${st.override?`<section class="card mtgcard">${mtgField("Why meet anyway? (one line, kept with the check)",`<input class="mtgin" id="mtgOver" placeholder="The reason">`)}<div class="mtgnav"><button class="btn primary" type="button" data-mtgoverok>Meet anyway</button></div></section>`:""}`}
+
+async function mtgDecide(r){
+  const [v,f]=mtgVerdict(r.answers),rate=mtgRate(),st=mtg();
+  Object.assign(r,{verdict:v,failed:f,cost:mtgCost(r.answers,rate),rate,decidedAt:Date.now(),step:6,override:""});
+  const wid=winId("meet-skip-"+r.id);
+  if(v==="skip"){r.alt={...(r.alt||{}),kind:(r.alt||{}).kind||MTG_ALT_FOR[f]};
+    await mtgSave(r);if(!S.wins.some(w=>w.id===wid&&!w.deleted))store.putWin({id:wid,kind:"meetskip",title:"Skipped a meeting: "+(r.title||"Untitled"),sub:"Saved "+mtgYen(r.cost.yen),ref:r.id}).catch(()=>{});
+    mtgDraw();
+    if(st.status?.ai!==false&&!(r.alt.text||"").trim()){st.busy=true;mtgDraw();
+      try{const a=await mtgApi("POST","/api/meetcheck/alt",{title:r.title,answers:r.answers,failed:f,invited:!!r.invited});
+        const cur=mtgRecs().find(x=>x.id===r.id)||r;if(!(cur.alt?.text||"").trim())cur.alt={...cur.alt,kind:a.kind||cur.alt.kind,text:a.text||""};if(cur.invited&&!(cur.reply||"").trim())cur.reply=a.reply||"";await mtgSave(cur)}
+      catch(e){st.msg=e.message}finally{st.busy=false}mtgDraw()}
+    return}
+  const had=S.wins.find(w=>w.id===wid&&!w.deleted);if(had)store.putWin({...had,deleted:true}).catch(()=>{});
+  await mtgSave(r);mtgDraw()}
+function mtgPollStatus(){const st=mtg();clearInterval(st.poll);st.poll=setInterval(async()=>{
+  try{st.status=await mtgApi("GET","/api/meetcheck/status")}catch(e){}
+  if(!st.status?.connecting||viewId()!=="meetcheck"){clearInterval(st.poll);if(st.status?.error)st.msg=st.status.error;mtgDraw()}},3000)}
+function wireMtg(){
+  const st=mtg(),id=mtgId(),r=id?mtgRecs().find(x=>x.id===id):null,on=(sel,f)=>document.querySelectorAll(sel).forEach(f);
+  let t=0;const later=()=>{clearTimeout(t);t=setTimeout(()=>r&&mtgSave(r).catch(()=>toast("Could not save")),600)};
+  on("[data-mtgnew]",b=>b.onclick=()=>mtgNew());
+  on("#mtgRate",i=>i.onchange=async()=>{const s=(st.list||[]).find(x=>x.id==="_settings")||{id:"_settings"};s.rate=Math.max(0,+i.value||0);try{await mtgSave(s);mtgDraw()}catch(e){toast("Could not save")}});
+  if(!r) return;
+  on("[data-mtgf]",i=>i.oninput=()=>{const ks=i.dataset.mtgf.split("."),last=ks.pop();let o=r;for(const k of ks)o=o[k]=o[k]&&typeof o[k]==="object"?o[k]:{};
+    o[last]=/required|optional|people$/.test(last)?mtgPeople(i.value):i.value;
+    const step=r.step||0,chk=$("#mtgChk");if(chk&&step>=1&&step<=4)chk.innerHTML=mtgCheckLine(r,"q"+step);const cl=$("#mtgCost");if(cl)cl.textContent=mtgCostLine(r);
+    if(i.dataset.mtgf==="title"){const h=$(".mtgtitle");if(h)h.textContent=i.value||"Untitled meeting"}later()});
+  on("[data-mtgset]",b=>b.onclick=()=>{const ks=b.dataset.mtgset.split("."),last=ks.pop();
+    if(ks[0]==="alt"){r.alt={...(r.alt||{}),kind:b.dataset.v}}else{let o=r;for(const k of ks)o=o[k]=o[k]&&typeof o[k]==="object"?o[k]:{};o[last]=last==="len"?+b.dataset.v:b.dataset.v}
+    mtgSave(r).catch(()=>toast("Could not save"));mtgDraw()});
+  on("[data-mtginv]",c=>c.onchange=()=>{r.invited=c.checked;later()});
+  on("[data-mtgstep]",b=>b.onclick=async()=>{clearTimeout(t);st.msg="";const n=+b.dataset.mtgstep;
+    if(n<0){location.hash="#meetcheck";return}
+    if(n===6) return mtgDecide(r);
+    r.step=n;try{await mtgSave(r)}catch(e){toast("Could not save")}mtgDraw();window.scrollTo(0,0)});
+  on("[data-mtgdraft]",b=>b.onclick=async()=>{clearTimeout(t);st.busy=true;st.msg="";mtgDraw();
+    try{const d=await mtgApi("POST","/api/meetcheck/draft",{title:r.title,when:r.when,note:r.note,invited:!!r.invited});
+      const a=r.answers||{},keepLen=a.q4?.len;r.answers={...d.answers,q4:{...d.answers.q4,...(keepLen?{len:keepLen}:{})}};r.drafted=Date.now();r.step=1;await mtgSave(r)}
+    catch(e){st.msg=e.message+" You can still answer yourself."}finally{st.busy=false}mtgDraw()});
+  on("[data-mtgdoc]",b=>b.onclick=async()=>{st.busy=true;st.msg="";mtgDraw();
+    try{const d=await mtgApi("POST","/api/meetcheck/doc",{record:r,rate:mtgRate()});r.docUrl=d.url;r.docFolder=d.folder;r.docAt=Date.now();await mtgSave(r)}
+    catch(e){st.msg=e.message;if(e.connect&&st.status)st.status.connected=false}finally{st.busy=false}mtgDraw()});
+  on("[data-mtgconnect]",b=>b.onclick=async()=>{st.busy=true;st.msg="";mtgDraw();
+    try{await mtgApi("POST","/api/meetcheck/connect",{});st.status={...(st.status||{}),connecting:true};mtgPollStatus()}catch(e){st.msg=e.message}finally{st.busy=false}mtgDraw()});
+  on("[data-mtgcopy]",b=>b.onclick=async()=>{const k=b.dataset.mtgcopy,txt=k==="doc"?r.docUrl:k==="alt"?r.alt?.text:r.reply;
+    if(!(txt||"").trim()){toast("Nothing to copy yet");return}toast(await copyText(txt)?"Copied":"Could not copy")});
+  on("[data-mtgtask]",b=>b.onclick=async()=>{const a=r.alt||{},k=a.kind||"doc";
+    const task={id:newTaskId(),title:`${MTG_ALT[k][0]} instead of a meeting: ${r.title||"Untitled"}`,source:"meetcheck",sourceRef:r.id,status:"notyet",createdAt:Date.now(),
+      note:[MTG_ALT[k][1],a.text||"",r.answers?.q1?.text?"Decision: "+r.answers.q1.text:""].filter(Boolean).join("\n\n")};
+    try{await store.putTask(task);r.alt={...a,taskId:task.id};await mtgSave(r);toast("🗂️ Added to tasks");mtgDraw()}catch(e){toast("Could not save")}});
+  on("[data-mtgover]",b=>b.onclick=()=>{st.override=!st.override;mtgDraw();$("#mtgOver")?.focus()});
+  on("[data-mtgoverok]",b=>b.onclick=async()=>{const why=($("#mtgOver")?.value||"").trim();if(!why){toast("Write one line why");return}
+    st.override=false;r.verdict="meet";r.override=why;r.overrideAt=Date.now();
+    const wid=winId("meet-skip-"+r.id),had=S.wins.find(w=>w.id===wid&&!w.deleted);if(had)store.putWin({...had,deleted:true}).catch(()=>{});
+    try{await mtgSave(r)}catch(e){toast("Could not save")}mtgDraw()});
+  on("[data-mtgunover]",b=>b.onclick=()=>mtgDecide(r));
+  on("[data-mtgdel]",b=>b.onclick=async()=>{if(!confirm("Delete this check?"))return;r.deleted=true;try{await mtgSave(r)}catch(e){}location.hash="#meetcheck"});
+}
 /* ---------- 📝 Minutes (#minutes, #minutes/<id>): made from Transcribe recordings, linked to a Calendar event, and the link written into that event (desk/minutes.py) ---------- */
 const mn=()=>S.mn||(S.mn={data:null,err:"",loadedAt:0,loading:false,q:"",picker:false,edit:false,busy:false,msg:""});
 const mnId=()=>{const m=/^#minutes\/(.+)$/.exec(location.hash||"");return m?decodeURIComponent(m[1]):null};
@@ -9554,6 +9786,7 @@ function wire(){
   if($("#winAdd")){S.winView=viewId();$("#winAdd").onsubmit=e=>{e.preventDefault();addWin()}}
   $("#pgSet")&&($("#pgSet").onclick=openPg);
   $("#winMore")&&($("#winMore").onclick=()=>{S.winsDays+=30;render()});
+  document.querySelectorAll("[data-mtgev]").forEach(b=>b.onclick=()=>{const e=calEvents().find(x=>String(x.id)===b.dataset.mtgev);if(e)mtgNew(mtgFromEvent(e))});
   document.querySelectorAll("[data-winev]").forEach(b=>b.onclick=()=>{const e=calEvents().find(x=>String(x.id)===b.dataset.winev);if(e){b.disabled=true;eventWin(e)}});
   document.querySelectorAll("[data-windel]").forEach(b=>b.onclick=async()=>{if(!b.dataset.sure){b.dataset.sure="1";b.textContent="Delete?";return}
     const w=S.wins.find(x=>x.id===b.dataset.windel);if(w)try{await store.putWin({...w,deleted:true})}catch(e){toast("Could not save")}});
@@ -9763,6 +9996,7 @@ const FDESC={ // what each screen is for, in plain words (English and Japanese k
   notdoing:"tasks you decided not to do, bring them back やらないリスト",
   genres:"task genres: rename, merge, undo merges ジャンル",
   calendar:"Google Calendar events and task due dates カレンダー 予定",
+  meetcheck:"Should we meet? Check if a meeting is needed: decision, decider, cost; pre-read Google Doc or an alternative 会議 判定 事前資料 会議しない",
   focus:"block apps and websites to focus (FocusBlock) 集中 ブロック",
   study:"Pomodoro study session in a forest, a plant that grows, noise, food money jar 勉強 集中タイム ポモドーロ 貯金箱",
   notices:"Mac notification settings, pause, test お知らせ 通知",

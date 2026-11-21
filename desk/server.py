@@ -39,6 +39,7 @@ import wifi_login
 import footprint
 import finder
 import transcribe_desk
+import meetcheck  # Should we meet?: the questions, Claude drafts and the pre-read Google Doc (desk/meetcheck.py)
 import minutes  # 議事録: made from Transcribe recordings, linked to Calendar events (desk/minutes.py)
 import notify
 import checkin
@@ -86,7 +87,7 @@ import wise_sync
 ROOT = os.path.dirname(os.path.abspath(__file__))
 DATA = os.environ.get("DESK_DATA_DIR") or os.path.join(ROOT, "data")  # DESK_DATA_DIR: a throwaway data folder for tests
 PORT = int(os.environ.get("DESK_PORT", "4747"))
-COLLECTIONS = ("memos", "dues", "tasks", "prompts", "notes", "habits", "lifemap", "wins", "worldlog", "presents", "heritagelog", "routines", "routinelog", "rewards", "ideaslog", "gear", "projects", "sections", "jobapps", "replywin", "genres", "tasktypes", "mergeprops", "timelog", "genrelog", "typeprops", "wboards", "wcards", "okrs", "readmarks", "lookups", "concepts", "cards", "cardlog", "studylog", "wallet")
+COLLECTIONS = ("memos", "dues", "tasks", "prompts", "notes", "habits", "lifemap", "wins", "worldlog", "presents", "heritagelog", "routines", "routinelog", "rewards", "ideaslog", "gear", "projects", "sections", "jobapps", "replywin", "genres", "tasktypes", "mergeprops", "timelog", "genrelog", "typeprops", "wboards", "wcards", "okrs", "readmarks", "lookups", "concepts", "cards", "cardlog", "studylog", "wallet", "meetchecks")
 # file in data/, global the page reads, value when the file is missing
 DATA_JS = [
     ("tools.js", "TOOLS", "[]"),
@@ -1035,6 +1036,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(200, bank.view())
             except bank.BankError:
                 return self.send(500, {"error": "read"})
+        if path == "/api/meetcheck/status":
+            return self.send(200, meetcheck.status())
         if path == "/api/minutes":
             return self.send(200, minutes.view())
         if path.startswith("/api/minutes/") and path.count("/") == 3:
@@ -1404,6 +1407,10 @@ class Handler(BaseHTTPRequestHandler):
             return self.bank_write(method, rec)
         if urlsplit(self.path).path.startswith("/api/accounts/"):
             return self.accounts_write(method, rec)
+        if urlsplit(self.path).path.startswith("/api/meetcheck/"):  # Should we meet? (the records are the meetchecks collection)
+            if method != "POST" or not (self.headers.get("Content-Type") or "").startswith("application/json"):
+                return self.send(415 if method == "POST" else 405, {"error": "json only" if method == "POST" else "method not allowed"})
+            return self.send(*meetcheck.handle(urlsplit(self.path).path.split("/")[3], rec if isinstance(rec, dict) else {}))
         if urlsplit(self.path).path == "/api/minutes" or urlsplit(self.path).path.startswith("/api/minutes/"):
             return self.minutes_write(method, rec)
         if method == "POST" and urlsplit(self.path).path == "/api/usage":

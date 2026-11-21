@@ -128,6 +128,12 @@
       "port": 4785
     },
     {
+      "name": "desk-meetcheck-test",
+      "runtimeExecutable": "/bin/sh",
+      "runtimeArgs": ["-c", "cd desk && MEETCHECK_FAKE=1 DESK_DATA_DIR=/tmp/claude/mtg-test DESK_PORT=${PORT:-4783} exec python3 server.py"],
+      "port": 4783
+    },
+    {
       "name": "desk-voice-test",
       "runtimeExecutable": "/bin/sh",
       "runtimeArgs": ["-c", "python3 desk/tests/fake_gtts.py 8796 & cd desk && GTTS_URL=http://127.0.0.1:8796 GTTS_KEY=test-key DESK_READER_DIR=/tmp/claude/desk-reader-test DESK_PORT=${PORT:-4784} exec python3 server.py"],
