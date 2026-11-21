@@ -30,6 +30,16 @@ iPhoneの録音は、ボイスメモをAirDropでMacに送り、画面にドロ�
 - Copy all と Save as text は「名前: 発言」で、同じ人が続く行は1つにまとめます。
 - 話者分けは sherpa-onnx（pyannote の区間検出＋3D-Speaker CAM++、約65MB、`engine/diar/`）。Mac の中だけで動きます。
 
+## 文から議事録（2026-11-21）
+
+録音していない会議のまとめも、同じ一覧に入れて議事録にできます。
+
+- 入れ方：録音画面の下に Word・PDF・テキスト・Markdown を落とす（何個でも）、「Paste text」で貼る、「Google Docs link」で Docs のリンクを貼る。
+- Google Docs は初回だけ「Connect Google Drive」で読むだけの許可を出します（メール整理と同じ Google Cloud の仕組み。Drive には何も書きません）。テスト中のアプリなので、7日ほどで切れたら押し直します。
+- 文字を取り出すのは Mac の中です（Word は `textutil`、PDF は Reader と同じ `pdftext`）。元のファイルは残しません。画像だけの PDF は読めません。
+- 「Make minutes」を押したときだけ、文（録音なら文字起こし）を Claude（Sonnet 5.5）に送り、要点・決まったこと・やること・次に話すことにします。1件数円。音声は送りません。議事録はその場で直せ、「Copy minutes」でコピー、やることは「Make it a task」で Desk のタスクになります。
+- 一覧の上の検索は、題・本文・文字起こし・議事録から探します。会議の日は題の下の日付で直せます。
+
 ## 長時間使うときの注意
 
 - 録音にはChromeをおすすめします（動作確認に使ったブラウザです）。
@@ -58,5 +68,6 @@ iPhoneの録音は、ボイスメモをAirDropでMacに送り、画面にドロ�
 - `desk/data/transcribe/sessions/` … 録音と文字起こしの結果（git にも非公開の保管にも入れない）
 - `desk/transcribe/engine/` … エンジンとモデル（git に入れない）。`setup.sh` で作り直せます
 - `desk/transcribe/server.py`, `public/` … 本体（Python標準ライブラリのみ）
+- `desk/transcribe/docs.py` … 文の取り出し・Google Docs・議事録（`python3 docs.py connect|status`）
 - `desk/app/audiotap.swift` … 会議の相手の声を録るアプリ。作り直すと許可が外れるので、`setup.sh` は無いときだけ作る
 - 試験：`python3 -m unittest desk.tests.test_transcribe`、画面は `.claude/launch.json` の `transcribe-test`（8792。Mac の音は録らない）

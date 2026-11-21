@@ -27,3 +27,8 @@
 - `src_log` に切り替えの時刻（マイクの秒）。room に切り替えると `stop` を置き、`tend_taps` は立ち上げ直さない。mac に戻すと `start_tap`（止めている途中なら待ってから）。アプリは前の `started` を引き継いで無音で埋めるので時刻はずれない。
 - room の間のマイクだけ `diarize` の結果で Me / Them。どちらが Me かは This Mac の間のマイクの行と重なる声（`room_me_voice`）。
 - 試験10件。ブラウザの枠はマイクを使えないので、切り替えは API で確かめた。
+
+## 追加：文から議事録（同じ日）
+- `desk/transcribe/docs.py`：Word などは `textutil`、PDF は `reader.pdf_text`、Docs は Drive API（`drive.readonly`、client はメール整理と共用、refresh は `tatsuki-desk-gdrive`）。議事録は `claude-sonnet-5-5` の構造化出力＋`fallbacks: "default"`。
+- 本物の API で見本の会議から議事録が出た（入力877・出力179トークン、約0.5円）。
+- ハマりどころ：サーバーに `do_PUT` が無く、議事録の直しが 501 で捨てられていた。テストサーバーは `/tmp` の置き場なのでキーチェーンを読まず、議事録は「キーがない」になる（正しい動き）。サンドボックスの中では `textutil` が docx を書けない（試験は外で通す）。

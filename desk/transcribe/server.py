@@ -18,8 +18,14 @@ Desk のサーバー(4747)が起動時に立ち上げる(desk/transcribe_desk.py
   - 名前は meta の speakers、行ごとの直しは speakers.json。
   - 会議の「相手の声」(meta の src_log): 'mac' は Mac の音を録る、'room' はマイクだけ(iPhone のスピーカー・対面)。
     録音中にも切り替えられ、'room' の間のマイクは声で2人に分けて Me / Them を推測する。
+
+文の記録と議事録(2026-11-21、docs.py):
+  - kind 'text': 貼り付け・Word・PDF・テキスト・Google Docs のリンクから。本文は text.txt、会議の日は met。
+  - 「Make minutes」を押したときだけ、文(録音なら文字起こし)を Claude に送って minutes.json にする。
+  - 「Make it a task」で議事録の1行を Desk のタスクにする(source: transcribe)。
 """
 import array
+import datetime
 import difflib
 import json
 import os
@@ -27,6 +33,8 @@ import re
 import shlex
 import shutil
 import signal
+import sys
+import tempfile
 import subprocess
 import threading
 import time
@@ -34,6 +42,10 @@ import uuid
 import wave
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))  # repo root: lifeos.lib.tasks
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import docs  # noqa: E402  this folder: text out of files, Google Docs, minutes
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 PUBLIC = os.path.join(ROOT, 'public')
@@ -163,6 +175,9 @@ def public_meta(meta):
     sid = meta['id']
     meta['duration'] = file_size(play_path(sid)) / BYTES_PER_SEC
     meta['mode'] = meta.get('mode') or 'mic'
+    meta['kind'] = meta.get('kind') or 'audio'
+    meta['met'] = met_of(meta)
+    meta['has_minutes'] = os.path.exists(os.path.join(sdir(sid), 'minutes.json'))
     meta['speakers'] = speakers_of(meta)
     if meta['mode'] == 'meeting':
         meta['voice'] = current_voice(meta)
@@ -172,15 +187,51 @@ def public_meta(meta):
     return meta
 
 
-def list_sessions():
+def met_of(meta):
+    """会議の日。文の記録は本人が付けた日、録音は録った日。"""
+    return meta.get('met') or time.strftime('%Y-%m-%d', time.localtime(meta['created']))
+
+
+def list_sessions(q=''):
     os.makedirs(SESSIONS, exist_ok=True)
     out = []
     for sid in os.listdir(SESSIONS):
         meta = load_meta(sid)
-        if meta:
+        if meta and (not q or matches(meta, q)):
             out.append(public_meta(meta))
-    out.sort(key=lambda m: m['created'], reverse=True)
+    out.sort(key=lambda m: (m['met'], m['created']), reverse=True)
     return out
+
+
+def text_path(sid):
+    return os.path.join(sdir(sid), 'text.txt')
+
+
+def read_text(sid):
+    try:
+        with open(text_path(sid), encoding='utf-8') as f:
+            return f.read()
+    except FileNotFoundError:
+        return ''
+
+
+def body_text(sid, meta):
+    """議事録の材料：文の記録は本文、録音は文字起こし(話者があれば「名前: 発言」)。"""
+    return read_text(sid) if meta.get('kind') == 'text' else '\n'.join(transcript_lines(sid, False))
+
+
+def matches(meta, q):
+    q = q.lower()
+    sid = meta['id']
+    if q in (meta.get('title') or '').lower():
+        return True
+    minutes = read_json(os.path.join(sdir(sid), 'minutes.json'), None)
+    if minutes and q in json.dumps(minutes, ensure_ascii=False).lower():
+        return True
+    try:
+        return q in body_text(sid, meta).lower()
+    except OSError:
+        return False
 
 
 def create_session(title, language, source, status, mode='mic', voice='mac'):
@@ -237,6 +288,101 @@ def switch_voice(sid, voice):
     else:
         stop_tap(sid, wait=False)
     return meta
+
+
+def create_text_session(title, met, text, src):
+    """文の記録(議事録の材料)。音声は持たない。"""
+    sid = uuid.uuid4().hex
+    os.makedirs(sdir(sid))
+    now = time.time()
+    meta = {'id': sid, 'title': (title or 'Notes').strip()[:200], 'language': 'auto', 'source': src.get('kind', 'paste'),
+            'status': 'done', 'created': now, 'last_chunk': now, 'done_chunks': 0, 'total_chunks': 0,
+            'failed_chunks': [], 'error': None, 'mode': 'mic', 'kind': 'text', 'src': src}
+    if valid_date(met):
+        meta['met'] = met
+    with open(text_path(sid), 'w', encoding='utf-8') as f:
+        f.write(text)
+    write_json(os.path.join(sdir(sid), 'meta.json'), meta)
+    return meta
+
+
+def valid_date(v):
+    try:
+        return datetime.date.fromisoformat(str(v)).isoformat() == v
+    except ValueError:
+        return False
+
+
+def find_by_src(kind, ref):
+    for m in list_sessions():
+        src = m.get('src') or {}
+        if src.get('kind') == kind and src.get('id') == ref:
+            return m
+    return None
+
+
+# ---------- 議事録 ----------
+
+def minutes_path(sid):
+    return os.path.join(sdir(sid), 'minutes.json')
+
+
+def run_minutes(sid):
+    """裏で1回だけ Claude に頼む。結果は minutes.json、状態は meta の minutes_state。"""
+    meta = load_meta(sid)
+    try:
+        text = body_text(sid, meta)
+        if not text.strip():
+            raise docs.DocError('There is no text to make minutes from yet')
+        minutes, usage = docs.make_minutes(meta['title'], text, met_of(meta))
+        with lock:
+            if load_meta(sid) is None:
+                return
+            write_json(minutes_path(sid), {**minutes, 'at': time.time(), 'by': usage['model'], 'usage': usage})
+            update_meta(sid, minutes_state='done', minutes_error=None)
+    except docs.DocError as e:
+        update_meta(sid, minutes_state='error', minutes_error=str(e))
+    except Exception as e:  # 1件の失敗でサーバーを止めない
+        print(f'[{sid[:8]}] minutes failed: {e}', flush=True)
+        update_meta(sid, minutes_state='error', minutes_error='Something went wrong. Try again')
+
+
+def start_minutes(sid):
+    meta = load_meta(sid)
+    if meta.get('minutes_state') == 'running' and time.time() - meta.get('minutes_at', 0) < 900:
+        return meta
+    meta = update_meta(sid, minutes_state='running', minutes_error=None, minutes_at=time.time())
+    threading.Thread(target=run_minutes, args=(sid,), daemon=True).start()
+    return meta
+
+
+def due_ms(due):
+    """「2026-12-01」の形の期日だけ Desk の期日にする(ホーチミンの正午、Desk と同じ)。"""
+    if not valid_date(due):
+        return None
+    d = datetime.datetime.fromisoformat(due + 'T12:00:00+07:00')
+    return int(d.timestamp() * 1000)
+
+
+def action_to_task(sid, index):
+    from lifeos.lib import tasks
+    with lock:
+        meta = load_meta(sid)
+        minutes = read_json(minutes_path(sid), None)
+        if not minutes or not (0 <= index < len(minutes.get('actions') or [])):
+            raise docs.DocError('That line is gone. Reload the page')
+        act = minutes['actions'][index]
+        if act.get('taskId'):
+            return act['taskId']
+        note = '\n'.join(x for x in [
+            f'From the minutes of “{meta["title"]}” ({met_of(meta)})',
+            f'Who: {act["who"]}' if act.get('who') else '',
+            f'Due: {act["due"]}' if act.get('due') else '',
+            f'http://localhost:{PORT}/?id={sid}'] if x)
+        rec = tasks.add(act['what'], due=due_ms(act.get('due')), note=note, source='transcribe', source_ref=f'{sid}:{index}')
+        act['taskId'] = rec['id']
+        write_json(minutes_path(sid), minutes)
+        return rec['id']
 
 
 # ---------- Mac の音(会議の相手の声) ----------
@@ -912,6 +1058,9 @@ class Handler(BaseHTTPRequestHandler):
     def do_PATCH(self):
         self.dispatch('PATCH')
 
+    def do_PUT(self):
+        self.dispatch('PUT')
+
     def do_DELETE(self):
         self.dispatch('DELETE')
 
@@ -929,9 +1078,39 @@ class Handler(BaseHTTPRequestHandler):
                                   'tap_ready': bool(TAP_CMD) or os.path.exists(TAP_APP)})
         if parts[1:] == ['upload'] and method == 'POST':
             return self.handle_upload(query)
+        if parts[1:] == ['texts'] and method == 'POST':
+            data = self.body_json()
+            text = docs.clean(str(data.get('text') or ''))
+            if not text:
+                return self.fail(400, 'Paste some text first')
+            if len(text) > docs.MAX_CHARS:
+                return self.fail(400, f'This is longer than {docs.MAX_CHARS:,} characters. Split it into parts first')
+            title = str(data.get('title') or '').strip() or text.split('\n', 1)[0][:60]
+            return self.send_obj(public_meta(create_text_session(title, data.get('met'), text, {'kind': 'paste'})))
+        if parts[1:] == ['gdoc', 'status'] and method == 'GET':
+            return self.send_obj(docs.drive_status())
+        if parts[1:] == ['gdoc', 'connect'] and method == 'POST':
+            try:
+                return self.send_obj({'url': docs.start_connect()})
+            except docs.DocError as e:
+                return self.fail(400, str(e))
+        if parts[1:] == ['gdoc'] and method == 'POST':
+            data = self.body_json()
+            try:
+                fid = docs.file_id(data.get('url'))
+                old = find_by_src('gdoc', fid)
+                if old and not data.get('again'):
+                    return self.send_obj({**old, 'existing': True})
+                got = docs.read_drive(fid)
+            except docs.NotConnected as e:
+                return self.send_obj({'error': str(e), 'connect': True}, 409)
+            except docs.DocError as e:
+                return self.fail(400, str(e))
+            meta = create_text_session(got['title'], data.get('met') or got['met'], got['text'], {'kind': 'gdoc', 'id': got['id']})
+            return self.send_obj(public_meta(meta))
         if parts[1:] == ['sessions']:
             if method == 'GET':
-                return self.send_obj(list_sessions())
+                return self.send_obj(list_sessions(query.get('q', [''])[0].strip()[:100]))
             if method == 'POST':
                 data = self.body_json()
                 language = data.get('language') if data.get('language') in LANGUAGES else 'ja'
@@ -951,6 +1130,9 @@ class Handler(BaseHTTPRequestHandler):
         if not rest:
             if method == 'GET':
                 extra = {'tap': tap_state(sid)} if meta.get('mode') == 'meeting' else {}
+                extra['minutes'] = read_json(minutes_path(sid), None)
+                if meta.get('kind') == 'text':
+                    return self.send_obj({**public_meta(meta), **extra, 'segments': [], 'text': read_text(sid)})
                 return self.send_obj({**public_meta(meta), **extra, 'segments': assemble(sid)})
             if method == 'PATCH':
                 data = self.body_json()
@@ -961,6 +1143,8 @@ class Handler(BaseHTTPRequestHandler):
                     allowed = DEFAULT_SPEAKERS.get(meta.get('mode'), {})
                     names = {k: str(v).strip()[:40] or allowed[k] for k, v in data['speakers'].items() if k in allowed}
                     fields['speakers'] = {**(meta.get('speakers') or {}), **names}
+                if 'met' in data and valid_date(data['met']):
+                    fields['met'] = data['met']
                 if 'room_swap' in data and meta.get('mode') == 'meeting':
                     fields['room_swap'] = bool(data['room_swap'])
                 return self.send_obj(public_meta(update_meta(sid, **fields) if fields else meta))
@@ -974,12 +1158,36 @@ class Handler(BaseHTTPRequestHandler):
                     shutil.rmtree(sdir(sid), ignore_errors=True)
                 return self.send_obj({'ok': True})
         action = rest[0] if rest else ''
+        if meta.get('kind') == 'text' and action in ('chunk', 'finish', 'transcribe', 'split', 'voice', 'audio.wav'):
+            return self.fail(409, 'This entry is text, not a recording')
         if action == 'chunk' and method == 'POST':
             try:
                 offset = int(query.get('offset', [''])[0])
             except ValueError:
                 return self.fail(400, 'Bad offset')
             return self.send_obj({'size': append_chunk(sid, offset, self.body())})
+        if action == 'minutes':
+            if method == 'POST' and len(rest) == 1:
+                if meta['status'] in ACTIVE or meta['status'] == 'recording':
+                    return self.fail(409, 'Wait until the text is ready')
+                return self.send_obj(public_meta(start_minutes(sid)))
+            if method == 'PUT' and len(rest) == 1:  # 本人の直し。タスクにした印は残す
+                with lock:
+                    old = read_json(minutes_path(sid), {}) or {}
+                    new = docs.normalize_minutes(self.body_json().get('minutes') or {})
+                    ids = {a['what']: a.get('taskId') for a in old.get('actions', []) if a.get('taskId')}
+                    for a in new['actions']:
+                        a['taskId'] = a.get('taskId') or ids.get(a['what'], '')
+                    write_json(minutes_path(sid), {**old, **new, 'edited': time.time()})
+                return self.send_obj({'ok': True})
+            if method == 'POST' and rest[1:] == ['task']:
+                try:
+                    task_id = action_to_task(sid, int(self.body_json().get('index', -1)))
+                except (docs.DocError, ValueError) as e:
+                    return self.fail(400, str(e))
+                except Exception as e:  # Desk が止まっているなど
+                    return self.fail(502, f"Couldn't add the task to the Desk: {e}")
+                return self.send_obj({'taskId': task_id})
         if action == 'clock' and method == 'POST':
             # 録音画面が、マイクの最初の音の時刻を知らせる(Them とのずれの計算に使う)
             try:
@@ -1056,8 +1264,10 @@ class Handler(BaseHTTPRequestHandler):
         language = query.get('language', ['ja'])[0]
         length = int(self.headers.get('Content-Length') or 0)
         if not length:
-            return self.fail(400, 'The file is empty')
+            return self.fail(400, f'{os.path.basename(name)}: the file is empty')
         title = os.path.splitext(name)[0][:200] or 'Imported audio'
+        if os.path.splitext(name)[1].lower() in docs.DOC_EXT:
+            return self.handle_doc_upload(name, length, title)
         mode = 'inperson' if query.get('mode', [''])[0] == 'inperson' else 'mic'
         meta = create_session(title, language if language in LANGUAGES else 'ja', 'file', 'uploading', mode)
         sid = meta['id']
@@ -1079,6 +1289,32 @@ class Handler(BaseHTTPRequestHandler):
         update_meta(sid, source_file=os.path.basename(path), status='queued')
         wake.set()
         return self.send_obj(public_meta(load_meta(sid)))
+
+    def handle_doc_upload(self, name, length, title):
+        """Word・PDF・テキストのファイル。文字を取り出して文の記録にする。元のファイルは残さない。"""
+        if length > 50 * 1024 * 1024:
+            self.close_connection = True
+            return self.fail(400, 'This file is over 50 MB')
+        tmp = tempfile.mkdtemp(dir=DATA)
+        try:
+            path = os.path.join(tmp, 'file' + os.path.splitext(name)[1].lower())
+            left = length
+            with open(path, 'wb') as f:
+                while left > 0:
+                    buf = self.rfile.read(min(left, 1 << 20))
+                    if not buf:
+                        self.close_connection = True
+                        return None
+                    f.write(buf)
+                    left -= len(buf)
+            try:
+                text = docs.extract(path, name)
+            except docs.DocError as e:
+                return self.fail(400, f'{name}: {e}')
+            meta = create_text_session(title, docs.guess_date(name), text, {'kind': 'file', 'name': name})
+            return self.send_obj(public_meta(meta))
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
 
     def send_audio(self, sid):
         src = play_path(sid)

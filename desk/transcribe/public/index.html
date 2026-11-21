@@ -74,6 +74,30 @@
   .menu { position: absolute; z-index: 5; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 4px; display: grid; min-width: 180px; }
   .menu button { border: 0; text-align: left; background: none; padding: 6px 10px; }
   .menu button:hover { background: var(--line); }
+  .search { width: 100%; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; margin-bottom: 16px; }
+  .adds { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 16px; }
+  .form { border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-top: 16px; display: grid; gap: 8px; }
+  .form input, .form textarea { width: 100%; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; }
+  .form textarea { min-height: 200px; resize: vertical; }
+  .form .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .form .row input[type=date] { width: auto; }
+  .minutes { border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin: 16px 0; }
+  .minutes h3 { font-size: 13px; color: var(--muted); font-weight: 700; margin: 16px 0 4px; }
+  .minutes h3:first-of-type { margin-top: 8px; }
+  .minutes ul { margin: 0; padding-left: 20px; }
+  .minutes li { padding: 2px 0; }
+  .minutes [contenteditable]:focus { outline: 0; background: var(--panel); border-radius: 4px; }
+  .minutes .head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .minutes .head b { font-size: 16px; flex: 1; }
+  .act { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline; }
+  .act span[data-f="what"] { flex: 1 1 220px; min-width: 0; overflow-wrap: anywhere; }
+  .act small { color: var(--muted); }
+  .act button { font-size: 12px; padding: 2px 8px; }
+  .act .done { color: var(--ok); font-size: 12px; }
+  details.orig { margin: 16px 0; }
+  details.orig summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+  details.orig pre { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; margin: 8px 0 0; }
+  .sub input[type=date] { background: none; border: 1px solid var(--line); border-radius: 6px; color: var(--muted); font-size: 13px; padding: 0 4px; }
   .failed { border: 1px solid var(--danger); color: var(--danger); border-radius: 8px; padding: 8px 12px; margin: 8px 0; font-size: 13px; }
   @media (max-width: 720px) {
     .app { grid-template-columns: 1fr; }
@@ -87,7 +111,8 @@
 <div class="app">
   <aside>
     <button class="new" id="newBtn">+ New recording</button>
-    <h2>Recordings</h2>
+    <input class="search" id="search" type="search" placeholder="Search titles, text and minutes" aria-label="Search">
+    <h2>Meetings</h2>
     <div id="list"></div>
   </aside>
   <main><div class="wrap" id="view"></div></main>
@@ -136,6 +161,7 @@ let selected = null;      // 開いている記録のID。nullなら録音画面
 let renderedKey = '';     // 文字部分を不要に描き直さないための印
 let status = { engine_ready: true, free_bytes: Infinity };
 let sessions = [];
+let query = '';           // 一覧の検索語
 
 /* ---------- 録音 ---------- */
 const rec = {
@@ -398,8 +424,10 @@ function renderHome() {
       </div>
       <div class="hint" id="recTips" style="display:none">Your Mac stays awake while recording. Keep the lid open, and plug in for long sessions.</div>
     </div>
-    <div class="drop" id="drop">Drop an audio file here, or click to choose one<br><small>m4a (iPhone Voice Memos), mp3, wav, aiff, aac, caf</small></div>
-    <input type="file" id="file" accept="audio/*,.m4a,.mp3,.wav,.aiff,.aac,.caf" hidden>`;
+    <div class="drop" id="drop">Drop audio or documents here, or click to choose<br><small>Audio: m4a (iPhone Voice Memos), mp3, wav, aiff, aac, caf · Notes: Word, PDF, text, Markdown</small></div>
+    <input type="file" id="file" accept="audio/*,.m4a,.mp3,.wav,.aiff,.aac,.caf,.docx,.doc,.rtf,.odt,.pdf,.txt,.md" multiple hidden>
+    <div class="adds"><button id="pasteBtn">Paste text</button><button id="linkBtn">Google Docs link</button></div>
+    <div id="addForm"></div>`;
   $('recBtn').onclick = () => (rec.active ? stopRecording() : startRecording());
   document.querySelectorAll('.modes button[data-mode]').forEach((el) => {
     el.onclick = () => { mode = el.dataset.mode; store.set('tr-mode', mode); renderHome(); };
@@ -411,38 +439,100 @@ function renderHome() {
   drop.onclick = () => $('file').click();
   drop.ondragover = (e) => { e.preventDefault(); drop.classList.add('over'); };
   drop.ondragleave = () => drop.classList.remove('over');
-  drop.ondrop = (e) => { e.preventDefault(); drop.classList.remove('over'); if (e.dataTransfer.files[0]) upload(e.dataTransfer.files[0]); };
-  $('file').onchange = (e) => { if (e.target.files[0]) upload(e.target.files[0]); };
+  drop.ondrop = (e) => { e.preventDefault(); drop.classList.remove('over'); if (e.dataTransfer.files.length) uploadAll([...e.dataTransfer.files]); };
+  $('file').onchange = (e) => { if (e.target.files.length) uploadAll([...e.target.files]); };
+  $('pasteBtn').onclick = showPaste;
+  $('linkBtn').onclick = showLink;
   loadMics();
   renderRecorder();
 }
 
-function upload(file) {
+// 1つずつ順に送る。音声は文字起こしへ、文書は文字を取り出して文の記録に。1件だけなら開く
+async function uploadAll(files) {
   const drop = $('drop');
-  const language = $('language').value;
-  const xhr = new XMLHttpRequest();
-  xhr.open('POST', `/api/upload?name=${encodeURIComponent(file.name)}&language=${language}&mode=${mode === 'inperson' ? 'inperson' : 'mic'}`);
-  xhr.upload.onprogress = (e) => { if ($('drop')) drop.textContent = `Importing… ${Math.round(e.loaded / e.total * 100)}%`; };
-  xhr.onload = async () => {
-    if (xhr.status === 200) {
-      selected = JSON.parse(xhr.responseText).id;
-      renderedKey = '';
-      await refreshList();
-      renderMain();
-    } else {
-      drop.textContent = 'The import didn\'t finish. Try again.';
-    }
+  const errors = [];
+  let last = null;
+  for (const [i, file] of files.entries()) {
+    try {
+      last = await uploadOne(file, (pct) => { if ($('drop')) drop.textContent = `Importing ${i + 1} of ${files.length}… ${pct}%`; });
+    } catch (e) { errors.push(e.message); }
+  }
+  await refreshList();
+  if (errors.length) {
+    if ($('drop')) drop.innerHTML = errors.map(esc).join('<br>');
+    return;
+  }
+  if (files.length === 1 && last) { selected = last.id; renderedKey = ''; renderMain(); return; }
+  if ($('drop')) drop.textContent = `Added ${files.length}. They're in the list.`;
+}
+
+function uploadOne(file, onProgress) {
+  return new Promise((resolve, reject) => {
+    const language = $('language') ? $('language').value : 'ja';
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `/api/upload?name=${encodeURIComponent(file.name)}&language=${language}&mode=${mode === 'inperson' ? 'inperson' : 'mic'}`);
+    xhr.upload.onprogress = (e) => onProgress(Math.round(e.loaded / e.total * 100));
+    xhr.onload = () => {
+      let data = {};
+      try { data = JSON.parse(xhr.responseText); } catch (e) { /* 下で扱う */ }
+      if (xhr.status === 200) resolve(data);
+      else reject(new Error(data.error || `${file.name}: the import didn't finish`));
+    };
+    xhr.onerror = () => reject(new Error(`${file.name}: the import didn't finish`));
+    xhr.send(file);
+  });
+}
+
+const todayIso = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+
+function showPaste() {
+  $('addForm').innerHTML = `<div class="form">
+      <div class="row"><input id="pTitle" placeholder="Title (optional)" style="flex:1"><input id="pMet" type="date" value="${todayIso()}" aria-label="Meeting date"></div>
+      <textarea id="pText" placeholder="Paste notes, a summary or a transcript here"></textarea>
+      <div class="row"><button id="pSave">Save</button><span class="hint" id="pNote"></span></div></div>`;
+  $('pText').focus();
+  $('pSave').onclick = async () => {
+    try {
+      const m = await post('/api/texts', { title: $('pTitle').value, met: $('pMet').value, text: $('pText').value });
+      selected = m.id; renderedKey = ''; await refreshList(); renderMain();
+    } catch (e) { $('pNote').textContent = e.message; }
   };
-  xhr.onerror = () => { drop.textContent = 'The import didn\'t finish. Try again.'; };
-  xhr.send(file);
+}
+
+function showLink() {
+  $('addForm').innerHTML = `<div class="form">
+      <div class="row"><input id="lUrl" placeholder="https://docs.google.com/document/d/…" style="flex:1"><button id="lAdd">Add</button></div>
+      <div class="hint" id="lNote">Google Docs, or a Word / PDF / text file kept in Drive. Only reading is allowed; nothing is changed in Drive.</div></div>`;
+  $('lUrl').focus();
+  $('lAdd').onclick = addLink;
+  $('lUrl').onkeydown = (e) => { if (e.key === 'Enter') addLink(); };
+}
+
+async function addLink() {
+  const note = $('lNote');
+  note.textContent = 'Reading…';
+  const res = await fetch('/api/gdoc', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: $('lUrl').value }) });
+  const data = await res.json().catch(() => ({}));
+  if (res.status === 409 && data.connect) {
+    note.innerHTML = 'Transcribe needs permission to read your Google Drive (once). <button id="lConnect">Connect Google Drive</button>';
+    $('lConnect').onclick = async () => {
+      try {
+        await post('/api/gdoc/connect');
+        note.textContent = 'Finish signing in on the Google page that opened, then press Add again.';
+      } catch (e) { note.textContent = e.message; }
+    };
+    return;
+  }
+  if (!res.ok) { note.textContent = data.error || 'That link could not be read.'; return; }
+  selected = data.id; renderedKey = ''; await refreshList(); renderMain();
 }
 
 function renderList() {
   $('list').innerHTML = sessions.map((m) => `
     <button class="item ${m.id === selected ? 'active' : ''}" data-id="${m.id}">
       <b>${esc(m.title)}</b>
-      <small>${clock(m.duration)} · ${STATUS[m.status] || m.status}${m.status === 'transcribing' && m.total_chunks ? ` ${Math.round(m.done_chunks / m.total_chunks * 100)}%` : ''}</small>
-    </button>`).join('') || '<div class="hint" style="padding:0 4px">Nothing yet</div>';
+      <small>${m.met} · ${m.kind === 'text' ? 'Notes' : clock(m.duration)}${m.status === 'done' ? '' : ` · ${STATUS[m.status] || m.status}`}${m.status === 'transcribing' && m.total_chunks ? ` ${Math.round(m.done_chunks / m.total_chunks * 100)}%` : ''}${m.has_minutes ? ' · Minutes' : ''}</small>
+    </button>`).join('') || `<div class="hint" style="padding:0 4px">${query ? 'Nothing matches' : 'Nothing yet'}</div>`;
   $('list').querySelectorAll('.item').forEach((el) => {
     el.onclick = () => { selected = el.dataset.id; renderedKey = ''; renderList(); renderMain(); };
   });
@@ -462,7 +552,8 @@ async function renderDetail() {
   try { m = await api(`/api/sessions/${sid}`); } catch (e) { selected = null; renderedKey = ''; return renderMain(); }
   if (sid !== selected) return;
   const key = [m.id, m.status, m.done_chunks, m.segments.length, m.failed_chunks.length, JSON.stringify(m.speakers),
-    m.segments.map((x) => x.spk || '').join('')].join('|');
+    m.segments.map((x) => x.spk || '').join(''), m.minutes_state, m.minutes ? m.minutes.at : '', m.minutes ? m.minutes.edited : '',
+    m.minutes ? m.minutes.actions.map((a) => a.taskId).join(',') : ''].join('|');
   if (key === renderedKey) return;
   // 編集中や再生中は描き直さない
   if (document.activeElement && document.activeElement.isContentEditable) return;
@@ -478,9 +569,11 @@ async function renderDetail() {
   const names = m.speakers || {};
   const hasSpk = m.segments.some((x) => x.spk);
   const canSplit = m.mode !== 'meeting' && ['done', 'partial'].includes(m.status) && hasText;
+  const isText = m.kind === 'text';
+  const SRC = { paste: 'Pasted', file: `From ${(m.src && m.src.name) || 'a file'}`, gdoc: 'From Google Docs' };
   $('view').innerHTML = `
     <input class="title" id="title" value="${esc(m.title)}" aria-label="Title">
-    <div class="sub">${new Date(m.created * 1000).toLocaleString('en-US')} · ${clock(m.duration)} · ${LANG[m.language] || m.language} · ${STATUS[m.status] || m.status}</div>
+    <div class="sub"><input type="date" id="met" value="${esc(m.met)}" aria-label="Meeting date"> · ${isText ? `Notes · ${SRC[m.source] || ''}` : `${clock(m.duration)} · ${LANG[m.language] || m.language} · ${STATUS[m.status] || m.status}`}</div>
     ${m.status === 'error' ? `<div class="notice">${esc(m.error || 'Something went wrong')}</div>` : ''}
     ${m.status === 'interrupted' ? '<div class="notice">The recording stopped early. Everything up to that point is saved.</div>' : ''}
     ${m.diar_error ? `<div class="notice">Couldn't tell the voices apart: ${esc(m.diar_error)}</div>` : ''}
@@ -501,18 +594,22 @@ async function renderDetail() {
       ${canSplit ? `<button id="split" ${status.diar_ready ? '' : 'disabled title="Run setup.sh once"'}>${m.mode === 'inperson' ? 'Split again' : 'Split into 2 speakers'}</button>` : ''}
       ${m.status === 'interrupted' ? '<button id="resume">Transcribe what was saved</button>' : ''}
       ${m.status === 'partial' || m.status === 'error' ? '<button id="retry">Retry failed parts</button>' : ''}
-      ${['done', 'partial', 'error'].includes(m.status) ? `<select id="redoLang" aria-label="Language for the redo">${Object.entries(LANG).map(([k, v]) => `<option value="${k}" ${k === m.language ? 'selected' : ''}>${v}</option>`).join('')}</select><button id="redo">Start over</button>` : ''}
+      ${!isText && ['done', 'partial', 'error'].includes(m.status) ? `<select id="redoLang" aria-label="Language for the redo">${Object.entries(LANG).map(([k, v]) => `<option value="${k}" ${k === m.language ? 'selected' : ''}>${v}</option>`).join('')}</select><button id="redo">Start over</button>` : ''}
       <span class="spacer"></span>
       ${isLiveRecording ? '' : '<button id="del" class="danger">Delete</button>'}
     </div>
+    ${minutesHtml(m, hasText || isText)}
+    ${isText ? `<details class="orig" ${m.minutes ? '' : 'open'}><summary>Original text (${m.text.length.toLocaleString('en-US')} characters)</summary><pre>${esc(m.text)}</pre></details>` : ''}
     <div id="segments">
       ${m.segments.map((s) => `<div class="segment"><time data-t="${s.start}">${clock(s.start)}</time><div class="line">${s.spk ? `<button class="who ${SPK_CLASS[s.spk] || ''}" data-spk="${esc(s.spk)}" data-key="${esc(s.key)}" aria-label="Speaker: ${esc(names[s.spk] || s.spk)}">${esc(names[s.spk] || s.spk)}</button>` : ''}<div contenteditable="plaintext-only" data-key="${esc(s.key)}" data-spk="${esc(s.spk || '')}">${esc(s.text)}</div></div></div>`).join('')}
-      ${m.status === 'done' && !hasText ? '<div class="hint">No speech was found in this recording.</div>' : ''}
+      ${m.status === 'done' && !hasText && !isText ? '<div class="hint">No speech was found in this recording.</div>' : ''}
     </div>`;
 
   const newPlayer = document.querySelector('audio');
   if (newPlayer && keepTime) newPlayer.addEventListener('loadedmetadata', () => { newPlayer.currentTime = keepTime; }, { once: true });
   $('title').onchange = async (e) => { await api(`/api/sessions/${m.id}`, { method: 'PATCH', body: JSON.stringify({ title: e.target.value }) }); refreshList(); };
+  $('met').onchange = async (e) => { await api(`/api/sessions/${m.id}`, { method: 'PATCH', body: JSON.stringify({ met: e.target.value }) }); refreshList(); };
+  wireMinutes(m);
   if ($('copy')) $('copy').onclick = async (e) => {
     // 話者があるときは「名前: 発言」。同じ人が続く行は1つにまとめる
     const sep = ['ja', 'zh'].includes(m.language) ? '' : ' ';
@@ -610,6 +707,92 @@ async function renderDetail() {
   });
 }
 
+/* ---------- 議事録 ---------- */
+const MIN_SECTIONS = [['summary', 'Summary'], ['decisions', 'Decisions'], ['actions', 'Actions'], ['next', 'Next']];
+
+function minutesHtml(m, ready) {
+  const mm = m.minutes;
+  const busy = m.minutes_state === 'running';
+  const head = `<div class="head"><b>Minutes</b>
+    ${mm && !busy ? '<button id="minCopy">Copy minutes</button>' : ''}
+    ${ready && !busy ? `<button id="minMake">${mm ? 'Make again' : 'Make minutes'}</button>` : ''}</div>`;
+  let body;
+  if (busy) body = '<div class="hint">Claude is writing the minutes. This takes about a minute; you can leave this page.</div>';
+  else if (!mm) body = `<div class="hint">${ready ? 'Press “Make minutes” to get a summary, decisions and actions. Only then is the text sent to Claude (Sonnet 5.5, a few yen per meeting). Audio is never sent.' : 'Minutes can be made once the text is ready.'}</div>`;
+  else {
+    body = MIN_SECTIONS.map(([k, label]) => {
+      const items = mm[k] || [];
+      if (!items.length) return '';
+      const lis = k === 'actions'
+        ? items.map((a, i) => `<li><div class="act"><span contenteditable="plaintext-only" data-f="what" data-i="${i}">${esc(a.what)}</span>
+            <small><span contenteditable="plaintext-only" data-f="who" data-i="${i}" aria-label="Who">${esc(a.who)}</span>${a.who && a.due ? ' · ' : ''}<span contenteditable="plaintext-only" data-f="due" data-i="${i}" aria-label="Due">${esc(a.due)}</span></small>
+            ${a.taskId ? '<span class="done">In Tasks</span>' : `<button data-task="${i}">Make it a task</button>`}</div></li>`).join('')
+        : items.map((t, i) => `<li contenteditable="plaintext-only" data-sec="${k}" data-i="${i}">${esc(t)}</li>`).join('');
+      return `<h3>${label}</h3><ul>${lis}</ul>`;
+    }).join('') || '<div class="hint">Nothing to note was found.</div>';
+  }
+  const err = m.minutes_state === 'error' ? `<div class="notice">${esc(m.minutes_error || 'The minutes could not be made')}</div>` : '';
+  return `<section class="minutes" id="minutes">${head}${err}${body}</section>`;
+}
+
+function readMinutes(m) {
+  const out = { summary: [], decisions: [], actions: [], next: [] };
+  document.querySelectorAll('#minutes li[data-sec]').forEach((el) => { const t = el.textContent.trim(); if (t) out[el.dataset.sec].push(t); });
+  (m.minutes.actions || []).forEach((a, i) => {
+    const f = (n) => { const el = document.querySelector(`#minutes [data-f="${n}"][data-i="${i}"]`); return el ? el.textContent.trim() : ''; };
+    if (f('what')) out.actions.push({ what: f('what'), who: f('who'), due: f('due'), taskId: a.taskId || '' });
+  });
+  return out;
+}
+
+function minutesText(m, mm) {
+  const lines = [`${m.title} (${m.met})`, ''];
+  MIN_SECTIONS.forEach(([k, label]) => {
+    if (!(mm[k] || []).length) return;
+    lines.push(label);
+    mm[k].forEach((x) => {
+      if (k !== 'actions') return lines.push(`- ${x}`);
+      const extra = [x.who, x.due].filter(Boolean).join(', ');
+      lines.push(`- ${x.what}${extra ? ` (${extra})` : ''}`);
+    });
+    lines.push('');
+  });
+  return lines.join('\n').trim();
+}
+
+function wireMinutes(m) {
+  if ($('minMake')) $('minMake').onclick = async () => {
+    if (m.minutes && !confirm('Make the minutes again? Your edits to the current minutes will be replaced.')) return;
+    renderedKey = '';
+    try { await post(`/api/sessions/${m.id}/minutes`); } catch (e) { alert(e.message); }
+    renderDetail();
+  };
+  if (!m.minutes) return;
+  const save = async () => {
+    const next = readMinutes(m);
+    await api(`/api/sessions/${m.id}/minutes`, { method: 'PUT', body: JSON.stringify({ minutes: next }) });
+    m.minutes = { ...m.minutes, ...next };
+  };
+  document.querySelectorAll('#minutes [contenteditable]').forEach((el) => {
+    el.dataset.saved = el.textContent;
+    el.onblur = () => { if (el.textContent !== el.dataset.saved) { el.dataset.saved = el.textContent; save(); } };
+  });
+  document.querySelectorAll('#minutes [data-task]').forEach((b) => {
+    b.onclick = async () => {
+      b.disabled = true;
+      try {
+        await post(`/api/sessions/${m.id}/minutes/task`, { index: Number(b.dataset.task) });
+        b.outerHTML = '<span class="done">In Tasks</span>';
+      } catch (e) { b.disabled = false; b.textContent = 'Try again'; b.title = e.message; }
+    };
+  });
+  if ($('minCopy')) $('minCopy').onclick = async (e) => {
+    const text = minutesText(m, readMinutes(m));
+    try { await navigator.clipboard.writeText(text); e.target.textContent = 'Copied'; } catch (err) { e.target.textContent = 'Could not copy'; }
+    setTimeout(() => { e.target.textContent = 'Copy minutes'; }, 1500);
+  };
+}
+
 function closeMenu() { const m = $('spkMenu'); if (m) m.remove(); }
 document.addEventListener('click', (e) => { if (!e.target.closest('#spkMenu')) closeMenu(); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMenu(); });
@@ -626,12 +809,17 @@ function renderMain() {
 
 async function refreshList() {
   try {
-    [sessions, status] = await Promise.all([api('/api/sessions'), api('/api/status')]);
+    [sessions, status] = await Promise.all([api(`/api/sessions${query ? `?q=${encodeURIComponent(query)}` : ''}`), api('/api/status')]);
     renderList();
   } catch (e) { /* サーバーが再起動中なら次の周期で回復する */ }
 }
 
 $('newBtn').onclick = () => { selected = null; renderedKey = ''; renderList(); renderHome(); };
+let searchTimer = null;
+$('search').oninput = (e) => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => { query = e.target.value.trim(); refreshList(); }, 250);
+};
 setInterval(async () => {
   await refreshList();
   if (selected !== null) renderDetail();
