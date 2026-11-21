@@ -11,7 +11,10 @@ Claude returns the sentences (copied as written) with their translations, and pa
 text of the translation it became). Claude never gives character positions: the code finds every piece in the text itself and
 drops what it cannot find, so a pair on the page always points at real words.
 
-A chapter file: {book, ch, lang, to, model, at, state running|done|partial|error, total, paras[]}.
+A chapter file: {book, ch, lang, to, model, at, state running|done|partial|error, total, paras[], usage}.
+usage = what Anthropic billed for this chapter, all calls added up (Translate again and Try again too, failed answers too):
+{in, out (thinking included), cacheRead, cacheWrite, calls, usd}. usd uses PRICES (USD per million tokens, checked 2026-11-21).
+The state also carries bookUsage, the same sum over every chapter of the book.
 A paragraph: {t (the whole translation), s [[a, b, c, d]] (sentence: source a-b, translation c-d),
 p [[a, b, c, d, idiom 0|1]] (pairs), err (true when this paragraph failed)}. Positions are characters inside the paragraph.
 
@@ -40,6 +43,7 @@ CHUNK_CHARS = 3000  # source characters per call
 CHUNK_PARAS = 12
 WORKERS = 3
 MAX_TOKENS = 16000
+PRICES = {"claude-haiku-5-5": {"in": 0.10, "out": 0.50, "cacheRead": 0.01, "cacheWrite": 0.125}}  # per 1M tokens, prompts under 100K
 LANG_NAMES = {"en": "English", "ja": "Japanese", "ru": "Russian", "es": "Spanish", "fr": "French", "de": "German", "vi": "Vietnamese",
               "zh": "Chinese", "ko": "Korean", "it": "Italian", "pt": "Portuguese", "sr": "Serbian", "eo": "Esperanto"}
 
@@ -73,7 +77,40 @@ For every paragraph return:
 
 
 class Unavailable(Exception):
-    """Claude could not answer now."""
+    """Claude could not answer now. usage: what the call was billed when Anthropic did answer (an unreadable answer)."""
+    usage = None
+
+
+def usage_of(res):
+    """Anthropic's usage block -> {in, out, cacheRead, cacheWrite, calls: 1, usd}."""
+    u = (res or {}).get("usage") or {}
+    rec = {"in": int(u.get("input_tokens") or 0), "out": int(u.get("output_tokens") or 0),
+           "cacheRead": int(u.get("cache_read_input_tokens") or 0), "cacheWrite": int(u.get("cache_creation_input_tokens") or 0), "calls": 1}
+    pr = PRICES.get((res or {}).get("model") or MODEL) or PRICES[MODEL]
+    rec["usd"] = round(sum(rec[k] * pr[k] for k in ("in", "out", "cacheRead", "cacheWrite")) / 1e6, 6)
+    return rec
+
+
+def add_usage(a, b):
+    out = dict(a or {})
+    for k, v in (b or {}).items():
+        out[k] = round((out.get(k) or 0) + v, 6) if k == "usd" else (out.get(k) or 0) + v
+    return out
+
+
+def book_usage(book_id):
+    """All chapters of a book added up."""
+    total = {}
+    d = os.path.join(DIR, book_id)
+    if re.fullmatch(r"[a-z0-9]+", book_id or "") and os.path.isdir(d):
+        for name in os.listdir(d):
+            if name.endswith(".json"):
+                try:
+                    with open(os.path.join(d, name), encoding="utf-8") as f:
+                        total = add_usage(total, json.load(f).get("usage"))
+                except (OSError, ValueError):
+                    pass
+    return total
 
 
 _lock = threading.Lock()
@@ -155,13 +192,17 @@ def ask_claude(items, src, dst, key=None, opener=None, timeout=180):
         raise Unavailable(f"Anthropic returned {e.code}") from None
     except (http.client.HTTPException, OSError, ValueError):
         raise Unavailable("Could not reach Anthropic") from None
-    out = next((b.get("text") for b in res.get("content", []) if b.get("type") == "text"), None)
+    used = usage_of(res) if isinstance(res, dict) else None
+    out = next((b.get("text") for b in res.get("content", []) if b.get("type") == "text"), None) if isinstance(res, dict) else None
     try:
         v = json.loads(out)
     except (TypeError, ValueError):
-        raise Unavailable("Could not read the answer") from None
+        v = None
     if not isinstance(v, dict) or not isinstance(v.get("paras"), list):
-        raise Unavailable("Could not read the answer")
+        e = Unavailable("Could not read the answer")
+        e.usage = used
+        raise e
+    v["_usage"] = used
     return v
 
 
@@ -225,10 +266,11 @@ def state(book_id, ch):
     with _lock:
         running = (book_id, ch) in _running
     if rec:
-        return 200, {**rec, "state": "running" if running else rec.get("state"), "to": rec.get("to") or target(b.get("lang"))}
+        return 200, {**rec, "state": "running" if running else rec.get("state"), "to": rec.get("to") or target(b.get("lang")),
+                     "bookUsage": book_usage(book_id)}
     words = sum(len(p.split()) for p in paras) if b.get("lang") not in ("ja", "zh", "th") else sum(len(p) for p in paras)
     return 200, {"book": book_id, "ch": ch, "state": "none", "total": len(paras), "words": words, "chars": sum(len(p) for p in paras),
-                 "lang": b.get("lang"), "to": target(b.get("lang"))}
+                 "lang": b.get("lang"), "to": target(b.get("lang")), "bookUsage": book_usage(book_id)}
 
 
 def start(book_id, ch, again=False, key=None, opener=None, wait=False):
@@ -248,9 +290,10 @@ def start(book_id, ch, again=False, key=None, opener=None, wait=False):
     if busy:
         return state(book_id, ch)
     lang = b.get("lang") or "en"
-    rec = None if again else read(book_id, ch)
+    old = read(book_id, ch)
+    rec = None if again else old
     if not rec or len(rec.get("paras") or []) != len(paras):
-        rec = {"book": book_id, "ch": ch, "lang": lang, "to": target(lang), "model": MODEL, "at": now_ms(), "paras": [None] * len(paras)}
+        rec = {"usage": (old or {}).get("usage") or {}, "book": book_id, "ch": ch, "lang": lang, "to": target(lang), "model": MODEL, "at": now_ms(), "paras": [None] * len(paras)}
     rec.update(state="running", total=len(paras))
     todo = [i for i, p in enumerate(rec["paras"]) if (p is None or p.get("err")) and paras[i].strip()]
     for i, p in enumerate(paras):
@@ -261,10 +304,13 @@ def start(book_id, ch, again=False, key=None, opener=None, wait=False):
     def one(group):
         try:
             ans = ask_claude([(i, paras[i]) for i in group], lang, rec["to"], key=key, opener=opener)
+            used = ans.pop("_usage", None)
             got = {a.get("id"): a for a in ans["paras"] if isinstance(a, dict)}
-        except Exception:  # Unavailable, or anything odd in the answer: these paragraphs get "Try again"
-            got = {}
+        except Exception as e:  # Unavailable, or anything odd in the answer: these paragraphs get "Try again"
+            got, used = {}, getattr(e, "usage", None)
         with _lock:
+            if used:
+                rec["usage"] = add_usage(rec.get("usage"), used)
             for i in group:
                 try:
                     v = align(paras[i], got[i], rec["to"]) if i in got else None

@@ -34,7 +34,8 @@ class Fake:
         self.calls.append(body)
         if self.fail:
             raise OSError("down")
-        return io.BytesIO(json.dumps({"content": [{"type": "text", "text": json.dumps(self.answer)}]}).encode())
+        return io.BytesIO(json.dumps({"model": "claude-haiku-5-5", "usage": {"input_tokens": 1000, "output_tokens": 4000},
+                                      "content": [{"type": "text", "text": json.dumps(self.answer)}]}).encode())
 
 
 def book():
@@ -78,8 +79,11 @@ class ChapterTest(unittest.TestCase):
         self.assertEqual(st["paras"][1]["t"], "時計が13時を打っていた。")
         code, st = rp.start(bid, 0, key="k", opener=fake, wait=True)  # nothing missing: no call
         self.assertEqual(len(fake.calls), 1)
+        self.assertEqual(st["usage"], {"in": 1000, "out": 4000, "cacheRead": 0, "cacheWrite": 0, "calls": 1, "usd": 0.0021})
         rp.start(bid, 0, again=True, key="k", opener=fake, wait=True)
         self.assertEqual(len(fake.calls), 2)
+        code, st = rp.state(bid, 0)  # Translate again is paid too: it adds up, it does not start over
+        self.assertEqual((st["usage"]["calls"], st["usage"]["out"], st["bookUsage"]["usd"]), (2, 8000, 0.0042))
 
     def test_failure_keeps_try_again(self):
         bid = book()

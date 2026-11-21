@@ -2028,6 +2028,7 @@ body.rdth-paper main .btn.primary:hover,body.rdth-sepia main .btn.primary:hover{
 .rdparbar{display:flex;gap:var(--s3);align-items:center;justify-content:space-between;flex-wrap:wrap}
 .rdparbar p{margin:0}
 .rdparhint{margin:0}
+.rdparuse{margin:4px 0 0;font-size:12px}
 .rdparli{cursor:default}
 .rdparli .row{gap:var(--s2);align-items:center;flex-wrap:wrap}
 @media (max-width:700px){.rdpp{grid-template-columns:minmax(0,1fr);gap:var(--s1)}.rdpt{padding-left:var(--s2);border-left:2px solid var(--line)}}
@@ -10508,15 +10509,24 @@ function rdParText(st,pi){
   if(d)return esc(d.t||"");
   return st.state==="running"?`<span class="sub">Translating…</span>`:"";
 }
+/* what Anthropic billed: tokens (thinking included) and USD, for this chapter and the whole book (reader_parallel.usage_of) */
+const rdUsd=v=>"$"+(v>=0.1?v.toFixed(2):v>=0.01?v.toFixed(3):v.toFixed(4));
+function rdParUsage(st){
+  const u=st?.usage,b=st?.bookUsage,n=x=>((x?.in||0)+(x?.out||0)+(x?.cacheRead||0)+(x?.cacheWrite||0));
+  const parts=[];
+  if(u&&u.calls)parts.push(`This chapter: ${n(u).toLocaleString("en-US")} tokens · ${rdUsd(u.usd||0)}`);
+  if(b&&b.calls&&(!u||b.calls!==u.calls))parts.push(`This book: ${n(b).toLocaleString("en-US")} tokens · ${rdUsd(b.usd||0)}`);
+  return parts.length?`<p class="sub rdparuse" title="${u&&u.calls?esc(`${(u.in||0).toLocaleString("en-US")} in · ${(u.out||0).toLocaleString("en-US")} out (thinking included) · ${u.calls} call${u.calls===1?"":"s"}`):""}">${parts.join(" · ")}</p>`:"";
+}
 function rdParBar(st){
   const to=RD_LANGS[st?.to]||"Japanese";
   if(!st)return `<p class="sub">Loading…</p>`;
-  if(st.state==="none")return `<section class="card rdparbar"><div><b>See this chapter in ${esc(to)}</b><p class="sub">About ${(st.words||0).toLocaleString("en-US")} words. The chapter's text goes to Claude once; the translation stays on this Mac.</p></div><button class="btn primary" id="rdParGo">Translate this chapter</button></section>`;
+  if(st.state==="none")return `<section class="card rdparbar"><div><b>See this chapter in ${esc(to)}</b><p class="sub">About ${(st.words||0).toLocaleString("en-US")} words. The chapter's text goes to Claude once; the translation stays on this Mac.</p>${rdParUsage(st)}</div><button class="btn primary" id="rdParGo">Translate this chapter</button></section>`;
   const ps=st.paras||[], ok=ps.filter(p=>p&&!p.err).length, bad=ps.filter(p=>p&&p.err).length;
   if(st.state==="running")return `<section class="card rdparbar"><p class="sub" role="status">Translating… ${ok} / ${st.total||ps.length} paragraphs</p></section>`;
   if(bad)return `<section class="card rdparbar"><p class="sub" role="status">${bad} paragraph${bad===1?"":"s"} could not be translated.</p><button class="btn sm" id="rdParRetry">Try again</button></section>`;
   if(st.error)return `<section class="card rdparbar"><p class="sub" role="status">${esc(st.error)}</p></section>`;
-  return `<p class="sub rdparhint">Tap a word on either side to see its pair. Words you tap in the book are kept under Translated.</p>`;
+  return `<p class="sub rdparhint">Tap a word on either side to see its pair. Words you tap in the book are kept under Translated.</p>${rdParUsage(st)}`;
 }
 function rdParWireBar(){const go=$("#rdParGo"),re=$("#rdParRetry");if(go)go.onclick=()=>rdParStart(false);if(re)re.onclick=()=>rdParStart(false)}
 async function rdParLoad(id,ch){
