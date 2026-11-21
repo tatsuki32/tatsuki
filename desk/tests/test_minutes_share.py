@@ -24,6 +24,7 @@ class Share(unittest.TestCase):
         self.assertEqual(minutes_share.names({'body': '## 会議の情報\n- 参加者：山田、佐藤、自分'}), ['山田', '佐藤'])
         self.assertEqual(minutes_share.names({'body': '- Who: Ken, Speaker A'}), ['Ken'])
         self.assertEqual(minutes_share.names({'body': '- 参加者：記録から分かりません'}), [])
+        self.assertEqual(minutes_share.names({'body': '- 参加者：愛（呼びかけによる。確実ではない）、田中さん、Ken (guest)'}), ['愛', '田中', 'Ken'])
 
     def test_raw_text_never_goes_to_google(self):
         self.assertFalse(minutes_share.shareable({'body': '## Summary\nNot made yet. Press "Make minutes".\n\n## Original notes\nsecret'}))

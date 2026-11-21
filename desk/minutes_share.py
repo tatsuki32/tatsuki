@@ -130,7 +130,9 @@ def names(m):
     found = PEOPLE_LINE.search(m.get('body') or '')
     if not found:
         return []
-    out = [x.strip() for x in re.split(r'[、,，/]', found.group(2)) if x.strip()]
+    line = re.sub(r'（[^）]*）|\([^)]*\)', '', found.group(2))  # notes like （確実ではない） are not part of a name
+    out = [re.sub(r'(さん|様|氏)$', '', x.strip()).strip() for x in re.split(r'[、,，/]', line) if x.strip()]
+    out = [x for x in out if x]
     return [x for x in out if not NOT_NAMES.search(x)][:10]
 
 
