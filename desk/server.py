@@ -40,6 +40,7 @@ import footprint
 import finder
 import transcribe_desk
 import meetcheck  # Should we meet?: the questions, Claude drafts and the pre-read Google Doc (desk/meetcheck.py)
+import minutes_share  # Minutes → a Google Doc anyone with the link can read, and a thank-you Gmail draft (never sent)
 import minutes  # 議事録: made from Transcribe recordings, linked to Calendar events (desk/minutes.py)
 import notify
 import checkin
@@ -1717,6 +1718,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(200, minutes.remove(p[1]))
             if len(p) == 3 and method == "POST" and p[2] == "calendar":
                 return self.send(200, minutes.write_calendar(p[1]))
+            if len(p) == 3 and method == "POST" and p[2] in ("gdoc", "people", "thanks", "thanks-text"):  # share: Google Doc, addresses, Gmail draft
+                return self.send(*minutes_share.handle(p[1], p[2], rec if isinstance(rec, dict) else {}))
             if len(p) == 3 and method == "POST" and p[2] == "make":  # a note from Transcribe: ask it for minutes (Claude, once)
                 return self.send(200, minutes.make_from_notes(p[1]))
             return self.send(405, {"error": "method not allowed"})

@@ -316,8 +316,12 @@ def guess_date(name):
 
 MINUTES_SCHEMA = {
     'type': 'object', 'additionalProperties': False,
-    'required': ['summary', 'decisions', 'actions', 'next'],
+    'required': ['purpose', 'summary', 'decisions', 'options', 'actions', 'next'],
     'properties': {
+        'purpose': {'type': 'string'},
+        'options': {'type': 'array', 'items': {
+            'type': 'object', 'additionalProperties': False, 'required': ['option', 'chosen', 'why'],
+            'properties': {'option': {'type': 'string'}, 'chosen': {'type': 'boolean'}, 'why': {'type': 'string'}}}},
         'summary': {'type': 'array', 'items': {'type': 'string'}},
         'decisions': {'type': 'array', 'items': {'type': 'string'}},
         'actions': {'type': 'array', 'items': {
@@ -329,11 +333,13 @@ MINUTES_SCHEMA = {
 
 MINUTES_SYSTEM = """You turn a meeting transcript or meeting notes into minutes for the owner, who took part in the meeting.
 Write in the same language as the material (Japanese material gets Japanese minutes).
+- purpose: one sentence: why the meeting was held or what it had to decide ("" if unclear).
 - summary: 3 to 7 short points: what the meeting was about and what was said that matters later.
 - decisions: what was agreed or decided. Only what the material shows was decided; leave it empty if nothing was.
 - actions: things someone has to do. what = the task as a short imperative; who = the person named in the material, "Me" if it is the
   owner (the speaker labeled Me, or the note-taker), or "" if unclear; due = the date or timing as written ("by Friday", "2026-12-01"), or "".
-- next: open questions and topics for the next meeting.
+- options: choices that were weighed: option, chosen (true for the one picked), why. Empty if none.
+- next: what was not decided, open questions and topics for the next meeting.
 Use only what is in the material. Do not invent names, numbers, dates or decisions. Keep each item to one sentence."""
 
 
@@ -397,7 +403,10 @@ def normalize_minutes(m):
         if isinstance(a, dict) and str(a.get('what', '')).strip():
             acts.append({'what': str(a['what']).strip()[:500], 'who': str(a.get('who') or '').strip()[:80],
                          'due': str(a.get('due') or '').strip()[:80], 'taskId': str(a.get('taskId') or '')[:40]})
-    return {'summary': strs(m.get('summary')), 'decisions': strs(m.get('decisions')), 'actions': acts, 'next': strs(m.get('next'))}
+    opts = [{'option': str(o['option']).strip()[:300], 'chosen': o.get('chosen') is True, 'why': str(o.get('why') or '').strip()[:300]}
+            for o in (m.get('options') or [])[:10] if isinstance(o, dict) and str(o.get('option', '')).strip()]
+    return {'purpose': str(m.get('purpose') or '').strip()[:400], 'summary': strs(m.get('summary')), 'decisions': strs(m.get('decisions')),
+            'options': opts, 'actions': acts, 'next': strs(m.get('next'))}
 
 
 def minutes_text(title, met, m):

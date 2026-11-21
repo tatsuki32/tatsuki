@@ -391,12 +391,35 @@ def _upload(name, page, parent):
     return _google('POST', UPLOAD + '?uploadType=multipart&fields=id,webViewLink', body, f'multipart/related; boundary={b}')
 
 
-def _own_folder():
-    q = urllib.parse.quote(f"name = '{OWN_FOLDER}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false")
+def _own_folder(name=OWN_FOLDER):
+    """A folder this app made (drive.file sees only those), made once."""
+    q = urllib.parse.quote(f"name = '{name}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false")
     found = _google('GET', f'{FILES}?q={q}&fields=files(id)').get('files') or []
     if found:
         return found[0]['id']
-    return _google('POST', FILES + '?fields=id', {'name': OWN_FOLDER, 'mimeType': 'application/vnd.google-apps.folder'})['id']
+    return _google('POST', FILES + '?fields=id', {'name': name, 'mimeType': 'application/vnd.google-apps.folder'})['id']
+
+
+def put_doc(name, page, folder_name, role='reader', file_id=''):
+    """Makes (or, with file_id, rewrites) a Google Doc from HTML in a folder this app made, readable by anyone
+    with the link (role reader) or commentable (commenter). Returns {id, url}. Used by Minutes too."""
+    if fake():
+        fid = file_id or 'FAKE' + hashlib.sha1(name.encode()).hexdigest()[:20]
+        return {'id': fid, 'url': f'https://docs.google.com/document/d/{fid}/edit?usp=sharing'}
+    if file_id:
+        b = 'desk' + secrets.token_hex(8)
+        body = (f'--{b}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n{json.dumps({"name": name})}\r\n'
+                f'--{b}\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n{page}\r\n--{b}--').encode()
+        try:
+            made = _google('PATCH', f'{UPLOAD}/{file_id}?uploadType=multipart&fields=id,webViewLink', body, f'multipart/related; boundary={b}')
+        except MeetError as e:
+            if len(e.args) < 2 or e.args[1] != 404:
+                raise
+            made = _upload(name, page, _own_folder(folder_name))  # the old doc was deleted: make a new one
+    else:
+        made = _upload(name, page, _own_folder(folder_name))
+    _google('POST', f'{FILES}/{made["id"]}/permissions?sendNotificationEmail=false', {'role': role, 'type': 'anyone'})
+    return {'id': made['id'], 'url': made.get('webViewLink') or f'https://docs.google.com/document/d/{made["id"]}/edit'}
 
 
 L = {

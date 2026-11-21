@@ -22,6 +22,9 @@ CREATED = 1795000000.0
 
 class Minutes(unittest.TestCase):
     def setUp(self):
+        # never the real folder: another test may have imported minutes before MINUTES_DIR was set
+        if "desk-minutes-test-" not in minutes.DIR:
+            raise RuntimeError("minutes.DIR is not a test folder; run this test on its own")
         shutil.rmtree(minutes.DIR, ignore_errors=True)
 
     def fake_sessions(self, status="done"):
@@ -34,10 +37,10 @@ class Minutes(unittest.TestCase):
             self.assertEqual(minutes.sync(), 0)  # the second pass finds it and makes nothing
         rows = minutes.view()["minutes"]
         self.assertEqual(len(rows), 1)
-        self.assertEqual(rows[0]["source"], {"kind": "transcribe", "sid": SID, "v": 2})
+        self.assertEqual(rows[0]["source"], {"kind": "transcribe", "sid": SID, "v": minutes.VERSION})
         self.assertEqual(rows[0]["status"], "draft")
         self.assertIn("## Summary", rows[0]["body"])
-        self.assertIn("- [ ] Check the test result", rows[0]["body"])
+        self.assertIn("| Check the test result | — | — |", rows[0]["body"])
 
     def test_recording_still_running_is_not_made_yet(self):
         with mock.patch.object(minutes, "_http_json", return_value=self.fake_sessions("transcribing")):
@@ -77,7 +80,7 @@ class Minutes(unittest.TestCase):
                                 "actions": [{"what": "Send the quote", "who": "Aki", "due": "2026-12-01"}]}
             self.assertEqual(minutes.sync(), 0)
             body = minutes.get(rec["id"])["body"]
-            self.assertIn("- [ ] Send the quote — Aki (due 2026-12-01)", body)
+            self.assertIn("| Send the quote | Aki | 2026-12-01 |", body)
             self.assertNotIn("Not made yet", body)
             # an edit here is kept, even when the minutes change again
             minutes.put(rec["id"], {"body": "My own text"})
@@ -136,7 +139,8 @@ class Minutes(unittest.TestCase):
         self.assertTrue(body.startswith("## 会議の情報"))
         self.assertIn("## 要点\n- 8週間の体験の説明", body)
         self.assertIn("## 決まったこと", body)
-        self.assertIn("- [ ] 資料を送る — Me (期限 2026-11-22)", body)
+        self.assertIn("| 資料を送る | Me | 2026-11-22 |", body)
+        self.assertIn("## 決まらなかったこと・確認すること", body)
         en = minutes.sanitize({"title": "Plan", "summary": ["We planned"], "decisions": [], "todos": [], "topics": []})
         self.assertIn("- Who: not clear from the recording", minutes._meeting_info({"created": 1795000000, "duration": 60}, en))
         self.assertTrue(minutes.build_body(en, "").startswith("## Summary"))
@@ -156,7 +160,7 @@ class Minutes(unittest.TestCase):
         rec = minutes.get("c" * 32)
         self.assertEqual(rec["title"], "New plan")
         self.assertTrue(rec["body"].startswith("## Meeting"))
-        self.assertEqual(rec["source"]["v"], 2)
+        self.assertEqual(rec["source"]["v"], minutes.VERSION)
 
     def test_a_failing_old_minute_is_tried_three_times_at_most(self):
         now = 1795000000.0

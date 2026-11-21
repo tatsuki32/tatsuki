@@ -42,6 +42,7 @@ CAL_DOC = os.environ.get("MINUTES_CAL_DOC") or os.path.join(ROOT, "data", "docs"
 TRANSCRIBE = os.environ.get("TRANSCRIBE_URL") or "http://127.0.0.1:8791"
 LINK_BASE = os.environ.get("MINUTES_LINK_BASE") or "http://localhost:4747"
 MODEL = "claude-haiku-5-5"
+VERSION = 3  # 3: the meeting-record format (purpose, decided, options, action table, not decided); older untouched ones are remade once
 TRANSCRIPT_MAX = 60000  # characters sent to Claude; a longer text is cut and says so
 PASTE_MAX = 20000       # characters kept in a minute made without a summary
 LINE_PREFIX = "Minutes (Desk): "
@@ -166,6 +167,19 @@ def put(mid, rec):
     return cur
 
 
+def set_share(mid, key, value):
+    """The Google Doc link (gdoc) and the thank-you draft (thanks) of a minute (desk/minutes_share.py). Not an edit of the text."""
+    if key not in ("gdoc", "thanks"):
+        raise MinutesError("Unknown field")
+    with LOCK:
+        cur = _read(mid)
+        if not cur or cur.get("deleted"):
+            raise MinutesError("Not found")
+        cur[key] = value
+        _write(cur)
+    return cur
+
+
 def remove(mid):
     with LOCK:
         cur = _read(mid)
@@ -232,7 +246,7 @@ def sync():
         title = _pick_title(s.get("title"), summary)
         rec = {"id": uuid.uuid4().hex, "title": title,
                "body": build_body(summary, text, _meeting_info(s, summary)), "status": "draft", "place": "",
-               "at": float(s.get("created") or now), "source": {"kind": "transcribe", "sid": sid, **({"v": 2} if summary else {})},
+               "at": float(s.get("created") or now), "source": {"kind": "transcribe", "sid": sid, **({"v": VERSION} if summary else {})},
                "event": None, "calendar": None, "created": now, "updated": now}
         with LOCK:
             _write(rec)
@@ -291,12 +305,12 @@ def _meeting_info(s, summary):
 
 
 def _redo_old_recordings(sessions):
-    """Minutes made by the first version (English only, the time as the title, or no summary) are made again once,
-    with the content's title and language, if nobody has touched them. Returns how many were remade."""
+    """Minutes made by an older version (English only, the time as the title, no summary, or before the meeting-record
+    format) are made again once, if nobody has touched them. Returns how many were remade."""
     by_sid = {x.get("id"): x for x in sessions if x.get("kind") != "text"}
     with LOCK:
         olds = [r for r in _all() if (r.get("source") or {}).get("kind") == "transcribe"
-                and (r.get("source") or {}).get("from") != "notes" and (r.get("source") or {}).get("v") != 2
+                and (r.get("source") or {}).get("from") != "notes" and (r.get("source") or {}).get("v") != VERSION
                 and r.get("updated") == r.get("created") and not r.get("event")
                 and (r.get("source") or {}).get("tries", 0) < 3]
     done = 0
@@ -322,7 +336,7 @@ def _redo_old_recordings(sessions):
             if not cur or cur.get("updated") != cur.get("created"):
                 continue
             cur.update(title=title, body=build_body(summary, text, _meeting_info(s, summary)))
-            cur["source"] = {**cur["source"], "v": 2}
+            cur["source"] = {**cur["source"], "v": VERSION, "tries": 0}
             _write(cur)
         _retitle_recording(s["id"], s.get("title"), title)
         done += 1
@@ -409,24 +423,16 @@ def notes_body(m, text):
     """Markdown for a note from Transcribe: its minutes when there are some, then the notes themselves."""
     parts = []
     if m:
-        if m.get("summary"):
-            parts.append("## Summary\n" + "\n".join("- " + x for x in m["summary"]))
-        if m.get("decisions"):
-            parts.append("## Decisions\n" + "\n".join("- " + x for x in m["decisions"]))
-        if m.get("actions"):
-            rows = []
-            for a in m["actions"]:
-                extra = " — " + a["who"] if a.get("who") else ""
-                extra += f" (due {a['due']})" if a.get("due") else ""
-                rows.append(f"- [ ] {a['what']}{extra}")
-            parts.append("## Next steps\n" + "\n".join(rows))
-        if m.get("next"):
-            parts.append("## For next time\n" + "\n".join("- " + x for x in m["next"]))
+        h = RECORD_JA if re.search(r"[\u3040-\u30ff\u4e00-\u9fff]", " ".join(m.get("summary") or []) + " ".join(m.get("decisions") or [])) else RECORD_EN
+        parts.append(record_body(h, purpose=m.get("purpose", ""), summary=m.get("summary") or [], decisions=m.get("decisions") or [],
+                                 options=[o for o in (m.get("options") or []) if isinstance(o, dict) and o.get("option")],
+                                 actions=[(a.get("what"), a.get("who"), a.get("due")) for a in (m.get("actions") or [])],
+                                 open_=m.get("next") or []))
     else:
         parts.append("## Summary\nNot made yet. Press \"Make minutes\" to get a summary, decisions and next steps.")
     body = text.strip()
     more = "\n..." if len(body) > PASTE_MAX else ""
-    parts.append("## Original notes\n" + body[:PASTE_MAX] + more)
+    parts.append(("## 元のメモ\n" if m and h is RECORD_JA else "## Original notes\n") + body[:PASTE_MAX] + more)
     return "\n\n".join(parts)
 
 
@@ -493,10 +499,14 @@ Do not invent facts. If something is not in the transcript, leave it out. Give n
 Return only one JSON object with these keys:
 - "title": a title that says what the meeting was about (at most 8 words, or 25 characters in Japanese); not a date
 - "participants": names of the people who took part, as said in the meeting (empty if no names are said; "Speaker A" labels are not names)
-- "summary": 3 to 6 short bullets of what was discussed
+- "purpose": one sentence: why the meeting was held, or what it had to decide (empty if unclear)
+- "decider": the one person who decides, if it is said (else empty)
+- "summary": 3 to 6 short bullets of the main points
 - "decisions": bullets of what was decided (may be empty)
+- "options": a list of {"option": "...", "chosen": true or false, "why": "..."} for choices that were weighed (may be empty)
 - "todos": a list of {"text": "...", "owner": "...", "due": "YYYY-MM-DD or empty"} for things someone agreed to do (may be empty)
-- "topics": a list of {"heading": "...", "points": ["..."]} for the main topics, at most 5
+- "open": bullets of what was not decided or still has to be checked (may be empty)
+- "topics": a list of {"heading": "...", "points": ["..."]} for the flow of the talk, at most 5
 
 Transcript:
 """
@@ -505,7 +515,7 @@ Transcript:
 def summarize(text, title=""):
     """Claude's summary as a dict, or None when there is no key, no network, or no usable answer."""
     if os.environ.get("MINUTES_FAKE") == "1":
-        return sanitize({"title": title, "summary": ["Test summary"], "decisions": [], "todos": [
+        return sanitize({"title": title, "purpose": "Test purpose", "summary": ["Test summary"], "decisions": [], "open": ["Test open point"], "todos": [
             {"text": "Check the test result", "owner": "", "due": ""}], "topics": []})
     key = _anthropic_key()
     if not key:
@@ -544,8 +554,13 @@ def sanitize(j):
     for t in (j.get("topics") if isinstance(j.get("topics"), list) else [])[:5]:
         if isinstance(t, dict) and _text(t.get("heading"), 120):
             topics.append({"heading": _text(t.get("heading"), 120), "points": lines(t.get("points"), 8)})
+    options = []
+    for o in (j.get("options") if isinstance(j.get("options"), list) else [])[:8]:
+        if isinstance(o, dict) and _text(o.get("option"), 200):
+            options.append({"option": _text(o.get("option"), 200), "chosen": o.get("chosen") is True, "why": _text(o.get("why"), 300)})
     return {"title": _text(j.get("title"), 200), "participants": lines(j.get("participants"), 12), "summary": lines(j.get("summary")),
-            "decisions": lines(j.get("decisions")), "todos": todos, "topics": topics}
+            "purpose": _text(j.get("purpose"), 300), "decider": _text(j.get("decider"), 80),
+            "decisions": lines(j.get("decisions")), "options": options, "todos": todos, "open": lines(j.get("open")), "topics": topics}
 
 
 def build_body(s, text, info=""):
@@ -556,23 +571,44 @@ def build_body(s, text, info=""):
         return ("## Summary\nNot made yet. Claude writes the summary when it can read the transcript.\n\n"
                 "## Transcript\n" + body[:PASTE_MAX] + more)
     ja = _is_ja(s)
-    h = ({"summary": "要点", "decisions": "決まったこと", "next": "次にやること", "due": "期限", "none": "要点を取り出せませんでした。"} if ja else
-         {"summary": "Summary", "decisions": "Decisions", "next": "Next steps", "due": "due", "none": "No summary came out of this transcript."})
+    h = RECORD_JA if ja else RECORD_EN
+    return record_body(h, info, purpose=s.get("purpose", ""), decider=s.get("decider", ""), summary=s["summary"],
+                       decisions=s["decisions"], options=s.get("options", []),
+                       actions=[(t["text"], t["owner"], t["due"]) for t in s["todos"]], open_=s.get("open", []),
+                       topics=s["topics"])
+
+
+# The meeting-record format (the same parts as the Should we meet? pre-read): every minute is written this way.
+RECORD_JA = {"purpose": "目的・決めること", "decider": "決める人", "summary": "要点", "decisions": "決まったこと", "options": "検討した案",
+             "chosen": "採用", "dropped": "見送り", "actions": "アクション", "what": "何を", "who": "誰が", "due": "いつまで",
+             "open": "決まらなかったこと・確認すること", "topics": "話の流れ", "none": "なし", "empty": "要点を取り出せませんでした。"}
+RECORD_EN = {"purpose": "Purpose", "decider": "Decider", "summary": "Summary", "decisions": "Decided", "options": "Options considered",
+             "chosen": "Chosen", "dropped": "Dropped", "actions": "Actions", "what": "What", "who": "Who", "due": "By when",
+             "open": "Not decided / to check", "topics": "How the talk went", "none": "None", "empty": "No summary came out of this transcript."}
+
+
+def _cell(v):
+    return str(v or "").replace("|", "／").replace("\n", " ").strip() or "—"
+
+
+def record_body(h, info="", purpose="", decider="", summary=(), decisions=(), options=(), actions=(), open_=(), topics=()):
+    """The minute in the page's markdown: ## headings, bullets and one table for the actions."""
     parts = [info] if info else []
-    if s["summary"]:
-        parts.append(f"## {h['summary']}\n" + "\n".join("- " + x for x in s["summary"]))
-    if s["decisions"]:
-        parts.append(f"## {h['decisions']}\n" + "\n".join("- " + x for x in s["decisions"]))
-    if s["todos"]:
-        rows = []
-        for t in s["todos"]:
-            extra = " — " + t["owner"] if t["owner"] else ""
-            extra += f" ({h['due']} {t['due']})" if t["due"] else ""
-            rows.append(f"- [ ] {t['text']}{extra}")
-        parts.append(f"## {h['next']}\n" + "\n".join(rows))
-    for t in s["topics"]:
-        parts.append(f"## {t['heading']}\n" + "\n".join("- " + p for p in t["points"]))
-    return "\n\n".join(parts) if len(parts) > (1 if info else 0) else (info + "\n\n" if info else "") + f"## {h['summary']}\n{h['none']}"
+    if purpose or decider:
+        parts.append(f"## {h['purpose']}\n" + "\n".join(x for x in [purpose and "- " + purpose, decider and f"- {h['decider']}：{decider}" if h is RECORD_JA else decider and f"- {h['decider']}: {decider}"] if x))
+    if summary:
+        parts.append(f"## {h['summary']}\n" + "\n".join("- " + x for x in summary))
+    parts.append(f"## {h['decisions']}\n" + ("\n".join("- " + x for x in decisions) if decisions else "- " + h["none"]))
+    if options:
+        parts.append(f"## {h['options']}\n" + "\n".join(f"- **{h['chosen'] if o['chosen'] else h['dropped']}**：{o['option']}" + (f"（{o['why']}）" if o['why'] else "")
+                                                     if h is RECORD_JA else f"- **{h['chosen'] if o['chosen'] else h['dropped']}**: {o['option']}" + (f" ({o['why']})" if o['why'] else "")
+                                                     for o in options))
+    rows = [f"| {_cell(a)} | {_cell(b)} | {_cell(c)} |" for a, b, c in actions]
+    parts.append(f"## {h['actions']}\n| {h['what']} | {h['who']} | {h['due']} |\n|---|---|---|\n" + ("\n".join(rows) if rows else f"| {h['none']} | — | — |"))
+    parts.append(f"## {h['open']}\n" + ("\n".join("- " + x for x in open_) if open_ else "- " + h["none"]))
+    if topics:
+        parts.append(f"## {h['topics']}\n" + "\n".join(f"- **{t['heading']}**" + "".join(f"\n  - {p}" for p in t.get("points", [])) for t in topics))
+    return "\n\n".join(parts)
 
 
 # ---------- the Google Calendar link (write, explicit) ----------

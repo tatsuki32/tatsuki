@@ -2082,6 +2082,11 @@ body.rdth-paper main .btn.primary:hover,body.rdth-sepia main .btn.primary:hover{
 .mns{display:block;color:var(--muted);font-size:var(--t1)}
 .mnlist{padding:0 var(--s3)}
 .mnsearch{width:100%;background:var(--surface-2);color:var(--ink);border:1px solid var(--line);border-radius:var(--r-s);padding:var(--s2) var(--s3);font:inherit;font-size:var(--t2);box-sizing:border-box}
+.mnshare{display:grid;gap:var(--s2)}
+.mnshm{display:grid;gap:var(--s2);border-top:1px solid var(--line);padding-top:var(--s3)}
+.mnppl{display:flex;flex-wrap:wrap;gap:var(--s2);align-items:center}
+.mnto{display:flex;gap:var(--s1);align-items:center;overflow-wrap:anywhere}
+.mnmail{min-height:160px}
 .mnback{display:inline-block;margin-bottom:var(--s2);color:var(--muted);text-decoration:none;font-size:var(--t1)}
 .mnhd{flex:1;min-width:0}
 .mntitle{width:100%;background:transparent;border:0;color:var(--ink);font:inherit;font-size:var(--t5);font-weight:700;padding:0}
@@ -6909,7 +6914,7 @@ function render(){
   if(viewId()==="wifi"){wfLoad();if(!$("#wfView")||!document.activeElement?.closest?.(".wffield"))wfDraw();return} // a redraw from elsewhere never takes the password being typed
   if(viewId()==="transcribe"){trLoad();$("#view").innerHTML=searchResults()+trView();wire();wireTr();return}
   if(viewId()==="meetcheck"){mtgLoad();if(!document.activeElement?.closest?.("#mtgView")||!$("#mtgView"))mtgDraw();return} // a redraw from elsewhere never takes the answer being typed
-  if(viewId()==="minutes"){mnLoad();$("#view").innerHTML=searchResults()+mnView();wire();wireMn();return}
+  if(viewId()==="minutes"){mnLoad();if(document.activeElement?.closest?.(".mnshare"))return;$("#view").innerHTML=searchResults()+mnView();wire();wireMn();return}
   if(viewId()==="post"){if(!ps().data&&!ps().loading)psLoad();if(!document.activeElement?.closest?.(".psedit")||!$("#psView"))psDraw();return} // a redraw from elsewhere never takes the text being typed
   if(viewId()==="forms"){fmSync();if(!document.activeElement?.closest?.(".fmed,.fmbox,.fmtitle")||!$("#fmView"))fmDraw();return} // a redraw from elsewhere never takes the text being typed
   if(viewId()==="book"){if(!bkg().data&&!bkg().loading)bkgLoad();if(!document.activeElement?.closest?.(".bkgedit")||!$("#bkgView"))bkgDraw();return} // a redraw from elsewhere never takes the rules being typed
@@ -7607,10 +7612,10 @@ function wireMtg(){
 /* ---------- 📝 Minutes (#minutes, #minutes/<id>): made from Transcribe recordings, linked to a Calendar event, and the link written into that event (desk/minutes.py) ---------- */
 const mn=()=>S.mn||(S.mn={data:null,err:"",loadedAt:0,loading:false,q:"",picker:false,edit:false,busy:false,msg:""});
 const mnId=()=>{const m=/^#minutes\/(.+)$/.exec(location.hash||"");return m?decodeURIComponent(m[1]):null};
-async function mnApi(method,path,body){const r=await fetch(path,{method,headers:{"Content-Type":"application/json"},body:body?JSON.stringify(body):undefined});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||("Error "+r.status));return j}
+async function mnApi(method,path,body){const r=await fetch(path,{method,headers:{"Content-Type":"application/json"},body:body?JSON.stringify(body):undefined});const j=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(j.error||("Error "+r.status));e.connect=!!j.connect;throw e}return j}
 async function mnLoad(force){const st=mn();if(st.loading||(!force&&Date.now()-st.loadedAt<8000))return;st.loading=true;
   try{st.data=await mnApi("GET","/api/minutes");st.err=""}catch(e){st.err="Minutes could not be read. Is the Desk server running?"}
-  st.loading=false;st.loadedAt=Date.now();if(viewId()==="minutes"&&!st.edit&&!st.picker&&!st.busy)render()}
+  st.loading=false;st.loadedAt=Date.now();if(viewId()==="minutes"&&!st.edit&&!st.picker&&!st.busy&&!document.activeElement?.closest?.(".mnshare"))render()}
 setInterval(()=>{if(viewId()==="minutes")mnLoad(true)},20000);
 async function mnDo(fn,msg){const st=mn();st.busy=true;st.msg="";try{await fn();st.msg=msg||""}catch(e){st.msg=e.message||"Failed."}finally{st.busy=false}await mnLoad(true);if(viewId()==="minutes")render()}
 const mnWhen=t=>t?new Date(t*1000).toLocaleString("en-US",{dateStyle:"medium",timeStyle:"short"}):"";
@@ -7654,10 +7659,48 @@ function mnDetail(id){
     ${st.picker?mnPicker():""}
     ${ev?`<div class="mnevrow"><button class="btn primary" type="button" data-mnwrite ${st.busy?"disabled":""}>Write link to Google Calendar</button></div>`:""}
     ${calLine}${st.msg?`<p class="sub" role="status">${esc(st.msg)}</p>`:""}</section>
+  ${mnShare(m)}
   <section class="card mnbody">${st.edit
     ?`<textarea class="mnedit" id="mnTa" aria-label="Minute text">${esc(m.body)}</textarea><div class="mnactions"><button class="btn primary" type="button" data-mnsave>Save text</button><button class="btn" type="button" data-mnedit>Done</button></div>`
     :`<div class="mndoc" data-noauto>${mnMd(m.body)}</div><div class="mnactions"><button class="btn" type="button" data-mnedit>Edit text</button></div>`}</section>
   <section class="mnfoot">${m.status==="ready"?`<button class="btn" type="button" data-mnstatus="draft">Back to draft</button>`:`<button class="btn" type="button" data-mnstatus="ready">Mark ready</button>`}<button class="btn" type="button" data-mndel>Delete</button></section>`;
+}
+/* Share a minute: a Google Doc anyone with the link can read, and a thank-you mail as a Gmail draft (desk/minutes_share.py). Nothing is sent. */
+const mnSh=()=>{const st=mn();return st.sh||(st.sh={id:"",busy:"",msg:"",connect:false,people:null,extra:"",to:{},subject:"",body:""})};
+function mnShare(m){
+  const sh=mnSh();if(sh.id!==m.id){Object.assign(sh,{id:m.id,busy:"",msg:"",connect:false,people:null,extra:"",to:{},subject:"",body:""})}
+  const g=m.gdoc,t=m.thanks,b=k=>sh.busy===k?"disabled":"";
+  const doc=g?`<div class="mnevrow"><a class="btn primary" href="${esc(g.url)}" target="_blank" rel="noopener">Open Google Doc ↗</a><button class="btn" type="button" data-mnsh="copy">Copy link</button><button class="btn" type="button" data-mnsh="gdoc" ${b("gdoc")}>${sh.busy==="gdoc"?"Updating…":"Update the doc"}</button></div><p class="hint">Anyone with the link can view it. Send the link to the people who were there. “Update the doc” puts in your latest edits; the link stays the same.</p>`
+    :sh.connect?`<div class="mnevrow"><button class="btn primary" type="button" data-mnsh="connect" ${b("connect")}>Connect Google Docs</button></div><p class="hint">Opens Google in the browser once. Press Allow there. The Desk can only see the files it makes itself.</p>`
+    :`<div class="mnevrow"><button class="btn primary" type="button" data-mnsh="gdoc" ${b("gdoc")}>${sh.busy==="gdoc"?"Making…":"Make Google Doc"}</button></div><p class="hint">Puts these minutes in Google Drive › 議事録 (Desk). Anyone with the link can view it.</p>`;
+  const ppl=sh.people?(sh.people.length?sh.people.map(p=>`<div class="mnppl"><span>${esc(p.name)}</span>${p.emails.length?p.emails.map(e=>`<label class="mnto"><input type="checkbox" data-mnto="${esc(e)}" ${sh.to[e]?"checked":""}> ${esc(e)}</label>`).join(""):`<span class="sub">No address found in your mail</span>`}</div>`).join("")
+      :`<p class="sub">No names on the Who line of these minutes.</p>`):"";
+  const mail=!g?"":`<div class="mnshm"><div class="section-title">Thank-you mail</div>
+    ${t?`<p class="sub">A draft to ${esc(t.to.join(", "))} is in Gmail. <a href="https://mail.google.com/mail/u/0/#drafts" target="_blank" rel="noopener">Open drafts ↗</a></p>`:""}
+    <div class="mnevrow"><button class="btn" type="button" data-mnsh="people" ${b("people")}>${sh.busy==="people"?"Looking in Gmail…":"Find their addresses in Gmail"}</button></div>
+    ${ppl}
+    <label class="sub" for="mnExtra">Other addresses (comma separated)</label><input class="mnsearch" id="mnExtra" value="${esc(sh.extra)}" placeholder="name@example.com">
+    <label class="sub" for="mnSubj">Subject</label><input class="mnsearch" id="mnSubj" value="${esc(sh.subject)}">
+    <label class="sub" for="mnMail">Text</label><textarea class="mnedit mnmail" id="mnMail">${esc(sh.body)}</textarea>
+    <div class="mnevrow"><button class="btn primary" type="button" data-mnsh="thanks" ${b("thanks")}>${sh.busy==="thanks"?"Making…":"Make Gmail draft"}</button></div>
+    <p class="hint">The Desk never sends it. Check the draft in Gmail and press Send there.</p></div>`;
+  return `<section class="card mnshare"><div class="section-title">Share</div>${doc}${mail}${sh.msg?`<p class="sub" role="status">${esc(sh.msg)}</p>`:""}</section>`}
+async function mnShareText(m){const sh=mnSh();if(!m.gdoc||sh.subject||sh.body||sh.asked===m.gdoc.at)return;sh.asked=m.gdoc.at;
+  try{const d=await mnApi("POST",`/api/minutes/${m.id}/thanks-text`,{});if(!sh.subject&&!sh.body){sh.subject=d.subject;sh.body=d.body;const su=$("#mnSubj"),bo=$("#mnMail");if(su&&bo){su.value=d.subject;bo.value=d.body}}}catch(e){}}
+function wireMnShare(m){
+  const sh=mnSh(),keep=()=>{const x=$("#mnExtra"),su=$("#mnSubj"),bo=$("#mnMail");if(x)sh.extra=x.value;if(su)sh.subject=su.value;if(bo)sh.body=bo.value};
+  ["#mnExtra","#mnSubj","#mnMail"].forEach(q=>{const el=$(q);if(el)el.oninput=keep});
+  document.querySelectorAll("[data-mnto]").forEach(c=>c.onchange=()=>{sh.to[c.dataset.mnto]=c.checked});
+  const run=async(k,fn)=>{keep();document.activeElement?.blur?.();sh.busy=k;sh.msg="";render();try{await fn()}catch(e){sh.msg=e.message;if(e.connect)sh.connect=true}finally{sh.busy=""}await mnLoad(true);render()};
+  document.querySelectorAll("[data-mnsh]").forEach(btn=>btn.onclick=()=>{const k=btn.dataset.mnsh;
+    if(k==="copy") return copyText(m.gdoc.url).then(ok=>toast(ok?"Link copied":"Could not copy"));
+    if(k==="gdoc") return run(k,async()=>{const r=await mnApi("POST",`/api/minutes/${m.id}/gdoc`,{});sh.connect=false;sh.msg=r.again?"The Google Doc has your latest text.":"The Google Doc is ready. Copy the link and send it.";sh.subject="";sh.body=""});
+    if(k==="connect") return run(k,async()=>{await mnApi("POST","/api/meetcheck/connect",{});sh.msg="Press Allow on the Google page in the browser, then press Make Google Doc again.";sh.connect=false});
+    if(k==="people") return run(k,async()=>{const r=await mnApi("POST",`/api/minutes/${m.id}/people`,{});sh.people=r.people||[];sh.people.forEach(p=>{if(p.emails[0]&&sh.to[p.emails[0]]===undefined)sh.to[p.emails[0]]=true})});
+    if(k==="thanks") return run(k,async()=>{const to=[...Object.keys(sh.to).filter(e=>sh.to[e]),...sh.extra.split(/[,、\s]+/).filter(Boolean)];
+      const r=await mnApi("POST",`/api/minutes/${m.id}/thanks`,{to,subject:sh.subject,body:sh.body});sh.msg="The draft is in Gmail. Check it and press Send there.";window.open(r.url,"_blank","noopener")});
+  });
+  mnShareText(m);
 }
 function mnView(){
   const st=mn();
@@ -7692,6 +7735,7 @@ function wireMn(){
     mnDo(()=>mnApi("PUT",`/api/minutes/${m.id}`,{body}),"")});
   document.querySelectorAll("[data-mnmake]").forEach(b=>b.onclick=()=>{if(!m)return;if(!mnPending(m)&&!confirm("Make the minutes again? The text here will be replaced by the new minutes."))return;
     mnDo(()=>mnApi("POST",`/api/minutes/${m.id}/make`,{}),"Claude is writing the minutes. They appear here in a minute or two.")});
+  if(m) wireMnShare(m);
   document.querySelectorAll("[data-mndel]").forEach(b=>b.onclick=()=>{if(m&&confirm("Delete this minute? Its text is erased."))mnDo(async()=>{await mnApi("POST",`/api/minutes/${m.id}/remove`,{});location.hash="#minutes"},"")});
 }
 /* Transcribe: long recordings turned into text on this Mac. The recorder is its own server (desk/transcribe/, 8791) and opens in the default browser,

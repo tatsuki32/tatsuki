@@ -130,7 +130,7 @@
     {
       "name": "desk-meetcheck-test",
       "runtimeExecutable": "/bin/sh",
-      "runtimeArgs": ["-c", "cd desk && MEETCHECK_FAKE=1 DESK_DATA_DIR=/tmp/claude/mtg-test DESK_PORT=${PORT:-4783} exec python3 server.py"],
+      "runtimeArgs": ["-c", "cd desk && MEETCHECK_FAKE=1 DESK_DATA_DIR=/tmp/claude/mtg-test MINUTES_DIR=/tmp/claude/mtg-test/minutes TRANSCRIBE_URL=http://127.0.0.1:9 DESK_PORT=${PORT:-4783} exec python3 server.py"],
       "port": 4783
     },
     {
