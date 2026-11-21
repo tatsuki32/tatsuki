@@ -2087,6 +2087,11 @@ body.rdth-paper main .btn.primary:hover,body.rdth-sepia main .btn.primary:hover{
 .mnppl{display:flex;flex-wrap:wrap;gap:var(--s2);align-items:center}
 .mnto{display:flex;gap:var(--s1);align-items:center;overflow-wrap:anywhere}
 .mnmail{min-height:160px}
+.mntabs{display:flex;gap:var(--s2);margin:0 0 var(--s2)}
+.mntab{background:none;border:1px solid var(--line);color:var(--muted);border-radius:var(--r-s);padding:var(--s1) var(--s3);font:inherit;font-size:var(--t2);cursor:pointer}
+.mntab.on{border-color:var(--accent);color:var(--accent);font-weight:700}
+.mngdoc{display:grid;gap:var(--s2)}
+.mnframe{width:100%;height:70vh;min-height:420px;border:0;border-radius:var(--r-s);background:#fff}
 .mnback{display:inline-block;margin-bottom:var(--s2);color:var(--muted);text-decoration:none;font-size:var(--t1)}
 .mnhd{flex:1;min-width:0}
 .mntitle{width:100%;background:transparent;border:0;color:var(--ink);font:inherit;font-size:var(--t5);font-weight:700;padding:0}
@@ -7641,7 +7646,7 @@ function mnMd(src){
   return out.join("")}
 const mnNotes=m=>(m.source||{}).from==="notes";
 const mnPending=m=>mnNotes(m)&&/^## Summary\nNot made yet\./.test(m.body||"");
-const mnRow=m=>`<a class="mnrow" href="#minutes/${esc(m.id)}" data-noauto><span class="mnt">${esc(m.title)}</span><span class="mns">${mnNotes(m)?esc(mnDay(m.at)):esc(mnWhen(m.at))}${mnNotes(m)?" · Notes":""}${mnPending(m)?" · No summary yet":""}${m.status==="draft"?" · Draft":""} · ${m.event?"📅 "+esc(m.event.title):"Not linked to an event"}</span></a>`;
+const mnRow=m=>`<a class="mnrow" href="#minutes/${esc(m.id)}" data-noauto><span class="mnt">${esc(m.title)}</span><span class="mns">${mnNotes(m)?esc(mnDay(m.at)):esc(mnWhen(m.at))}${mnNotes(m)?" · Notes":""}${mnPending(m)?" · No summary yet":""}${m.status==="draft"?" · Draft":""}${(m.gdoc||{}).url?" · Google Doc":""} · ${m.event?"📅 "+esc(m.event.title):"Not linked to an event"}</span></a>`;
 const mnDay=t=>t?new Date(t*1000).toLocaleDateString("en-US",{dateStyle:"medium"}):"";
 function mnPicker(){const now=Date.now(),xs=(S.cal?.events||[]).filter(e=>{const t=Date.parse(e.start);return isFinite(t)&&t>=now-86400000&&t<=now+21*86400000}).sort((a,b)=>Date.parse(a.start)-Date.parse(b.start)).slice(0,60);
   return `<div class="mnpick">${xs.length?xs.map(e=>`<button type="button" class="mnpk" data-mnlink="${esc(e.id)}">${esc(e.title)}<span class="sub">${esc(mnRange(e))}</span></button>`).join(""):`<div class="empty">No events from yesterday to three weeks ahead. The Calendar view has them, once it has loaded.</div>`}</div>`}
@@ -7659,10 +7664,11 @@ function mnDetail(id){
     ${st.picker?mnPicker():""}
     ${ev?`<div class="mnevrow"><button class="btn primary" type="button" data-mnwrite ${st.busy?"disabled":""}>Write link to Google Calendar</button></div>`:""}
     ${calLine}${st.msg?`<p class="sub" role="status">${esc(st.msg)}</p>`:""}</section>
-  ${mnShare(m)}
-  <section class="card mnbody">${st.edit
+  ${mnDocTabs(m)}
+  ${mnDocView(m)?mnDocView(m):`<section class="card mnbody">${st.edit
     ?`<textarea class="mnedit" id="mnTa" aria-label="Minute text">${esc(m.body)}</textarea><div class="mnactions"><button class="btn primary" type="button" data-mnsave>Save text</button><button class="btn" type="button" data-mnedit>Done</button></div>`
-    :`<div class="mndoc" data-noauto>${mnMd(m.body)}</div><div class="mnactions"><button class="btn" type="button" data-mnedit>Edit text</button></div>`}</section>
+    :`<div class="mndoc" data-noauto>${mnMd(m.body)}</div><div class="mnactions"><button class="btn" type="button" data-mnedit>Edit text</button></div>`}</section>`}
+  ${mnShare(m)}
   <section class="mnfoot">${m.status==="ready"?`<button class="btn" type="button" data-mnstatus="draft">Back to draft</button>`:`<button class="btn" type="button" data-mnstatus="ready">Mark ready</button>`}<button class="btn" type="button" data-mndel>Delete</button></section>`;
 }
 /* Share a minute: a Google Doc anyone with the link can read, and a thank-you mail as a Gmail draft (desk/minutes_share.py). Nothing is sent. */
@@ -7702,6 +7708,12 @@ function wireMnShare(m){
   });
   mnShareText(m);
 }
+/* The minute's Google Doc, shown inside the Desk (Google's read-only preview). The text above stays the one in the Desk. */
+const mnDocId=m=>{const id=(m.gdoc||{}).id||"";return /^[\w-]{20,}$/.test(id)?id:""};
+const mnDocTabs=m=>{if(!mnDocId(m))return "";const v=mn().docView===m.id;
+  return `<div class="mntabs" role="tablist"><button type="button" role="tab" class="mntab${v?"":" on"}" aria-selected="${!v}" data-mnview="text">Text</button><button type="button" role="tab" class="mntab${v?" on":""}" aria-selected="${v}" data-mnview="doc">Google Doc</button></div>`};
+const mnDocView=m=>{const id=mnDocId(m);if(!id||mn().docView!==m.id)return "";
+  return `<section class="card mngdoc"><iframe class="mnframe" title="Google Doc" loading="lazy" src="https://docs.google.com/document/d/${encodeURIComponent(id)}/preview"></iframe><p class="hint">This is the Google Doc your link opens. Edits made here in the Desk reach it a few minutes later. <a href="${esc(m.gdoc.url)}" target="_blank" rel="noopener">Open in Google Docs ↗</a></p></section>`};
 function mnView(){
   const st=mn();
   const head=`<header class="head"><div><p class="eyebrow">Write</p><h1>Minutes</h1></div><button class="btn primary" type="button" data-mnnew ${st.busy?"disabled":""}>New minute</button></header>`;
@@ -7736,6 +7748,7 @@ function wireMn(){
   document.querySelectorAll("[data-mnmake]").forEach(b=>b.onclick=()=>{if(!m)return;if(!mnPending(m)&&!confirm("Make the minutes again? The text here will be replaced by the new minutes."))return;
     mnDo(()=>mnApi("POST",`/api/minutes/${m.id}/make`,{}),"Claude is writing the minutes. They appear here in a minute or two.")});
   if(m) wireMnShare(m);
+  document.querySelectorAll("[data-mnview]").forEach(b=>b.onclick=()=>{st.docView=b.dataset.mnview==="doc"?m.id:"";st.edit=false;render()});
   document.querySelectorAll("[data-mndel]").forEach(b=>b.onclick=()=>{if(m&&confirm("Delete this minute? Its text is erased."))mnDo(async()=>{await mnApi("POST",`/api/minutes/${m.id}/remove`,{});location.hash="#minutes"},"")});
 }
 /* Transcribe: long recordings turned into text on this Mac. The recorder is its own server (desk/transcribe/, 8791) and opens in the default browser,
