@@ -1564,7 +1564,7 @@ async function route() {
     if (v === 'images') return renderImages();
     if (v === 'graph') return renderGraph();
     if (v === 'storage' && OWNER && !S.visitor) return renderStorage();
-    if (v === 'login') return renderLogin();
+    if (v === 'code' || v === 'login') return renderCode();
     if (v === 'new') { const p = byId(S.newId); if (p && OWNER) return renderPage(p); return nav('/', true); }
     return renderMissing();
   }
@@ -1599,7 +1599,7 @@ function renderBanner() {
   const parts = [];
   if (OWNER && S.visitor) parts.push(`<div class="banner"><span>Viewing as a visitor. This is what search engines see: private pages and links to them are hidden.</span><button id="backMe">Back to my view</button></div>`);
   if (S.notice === 'offline') parts.push(`<div class="notice warn"><span>Not saved yet. Your changes are kept on this device and will be sent when the connection is back.</span><button id="retryNow">Try now</button></div>`);
-  if (S.notice === 'signedout') parts.push(`<div class="notice warn"><span>You are signed out, so changes are only kept on this device.</span><a href="/_/login" data-nav="/_/login">Sign in again</a></div>`);
+  if (S.notice === 'signedout') parts.push(`<div class="notice warn"><span>You are signed out, so changes are only kept on this device.</span><a href="/_/code" data-nav="/_/code">Enter a code</a></div>`);
   if (S.conflict) { const p = byId(S.conflict.id); parts.push(`<div class="notice warn"><span>“${esc(p ? title(p) : '')}” was also changed on another device.</span><button id="keepMine">Keep my version</button><button id="useTheirs">Use the other version</button></div>`); }
   $('#banner').innerHTML = parts.join('');
   const b = $('#backMe'); if (b) b.onclick = () => setVisitor(false);
@@ -1608,37 +1608,42 @@ function renderBanner() {
   const ut = $('#useTheirs'); if (ut) ut.onclick = () => { const c = S.conflict, p = byId(c.id); S.conflict = null; if (p) { snapshot(p); p.lines = c.theirs.lines; p.rev = c.theirs.rev; p.pub = c.theirs.pub; dirty.delete(p.id); dropPending(p.id); if (S.cur === p.id) { S.edit = -1; renderPage(p); } } renderBanner(); };
 }
 
-/* Sign in with a code sent to the owner's email */
-function renderLogin() {
+/* The owner's way in. It is called "Code", not "Sign in", so visitors do not think they need an account. */
+function renderCode() {
   dropGraph(); S.cur = null;
-  if (OWNER) { $('#main').innerHTML = `<div class="login"><h1>You are signed in</h1><p>You can write and see private pages on this device.</p><a class="btn primary" href="/" data-nav="/" style="display:inline-flex;align-items:center;justify-content:center">Go to my pages</a></div>`; return; }
-  $('#main').innerHTML = `<form class="login" id="loginForm" novalidate>
-    <h1>Sign in</h1>
-    <p>Rhizome Box has one writer. Enter your address and a 6-digit code arrives by email.</p>
-    <label for="em" class="eb">Email</label>
-    <input id="em" type="email" autocomplete="email" required>
-    <button class="btn primary" type="submit">Send the code</button>
-    <p class="err" id="lerr" hidden></p></form>`;
-  const f = $('#loginForm'), err = $('#lerr');
-  f.onsubmit = async ev => {
-    ev.preventDefault(); err.hidden = true;
-    const email = $('#em').value.trim();
-    if (!/^\S+@\S+\.\S+$/.test(email)) { err.textContent = 'Enter an email address.'; err.hidden = false; return; }
+  if (OWNER) { $('#main').innerHTML = `<div class="login"><h1>You are in</h1><p>You can write and see private pages on this device for 90 days.</p><a class="btn primary" href="/" data-nav="/">Go to my pages</a><button class="btn" id="codeOut" type="button">Sign out on this device</button></div>`; $('#codeOut').onclick = async () => { await flush(); await api('POST', '/_/api/logout').catch(() => null); location.href = '/'; }; return; }
+  $('#main').innerHTML = `<div class="login">
+    <h1>Code</h1>
+    <p>For the writer of this notebook only. Visitors need no code: every public page is open to read.</p>
+    <form id="askForm" novalidate><label for="em" class="eb">1. Writer's email</label>
+      <div class="codeline"><input id="em" type="email" autocomplete="email" autocapitalize="none" required><button class="btn" type="submit">Send code</button></div>
+      <p class="say" id="askSay" role="status" hidden></p></form>
+    <form id="codeForm" novalidate><label for="code" class="eb">2. 6-digit code from the email</label>
+      <div class="codeline"><input id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="8" required><button class="btn primary" type="submit">Open</button></div>
+      <p class="say" id="codeSay" role="status" hidden></p></form></div>`;
+  const tell = (id, text, bad) => { const p = $(id); p.textContent = text; p.classList.toggle('err', !!bad); p.hidden = false; };
+  $('#askForm').onsubmit = async ev => {
+    ev.preventDefault();
+    const email = $('#em').value.trim(), btn = $('#askForm button');
+    if (!/^\S+@\S+\.\S+$/.test(email)) return tell('#askSay', 'Enter an email address.', true);
+    btn.disabled = true;
     const r = await api('POST', '/_/api/login', { email }).catch(() => null);
-    if (!r || !r.ok) { err.textContent = r && r.status === 429 ? 'Too many tries. Wait 10 minutes and try again.' : 'The code could not be sent. Check the connection and try again.'; err.hidden = false; return; }
-    f.innerHTML = `<h1>Check your email</h1><p>If this is the writer's address, a 6-digit code is on its way. It works for 10 minutes.</p>
-      <label for="code" class="eb">Code</label><input id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required>
-      <button class="btn primary" type="submit">Sign in</button><p class="err" id="lerr2" hidden></p>`;
-    $('#code').focus();
-    f.onsubmit = async ev2 => {
-      ev2.preventDefault();
-      const e2 = $('#lerr2'); e2.hidden = true;
-      const v = await api('POST', '/_/api/verify', { code: $('#code').value }).catch(() => null);
-      if (v && v.ok) { location.href = '/'; return; }
-      e2.textContent = v && v.data.error === 'no_code' ? 'This code has run out. Go back and send a new one.' : v && v.status === 429 ? 'Too many tries. Wait 10 minutes.' : 'That code is not right. Check the email and try again.';
-      e2.hidden = false;
-    };
+    btn.disabled = false;
+    if (!r || !r.ok) return tell('#askSay', r && r.status === 429 ? 'Too many tries. Wait 10 minutes and try again.' : 'The code could not be sent. Check the connection and try again.', true);
+    tell('#askSay', "If this is the writer's address, a code is on its way. It works for 10 minutes, in this browser.");
+    $('#code').value = ''; $('#code').focus();
   };
+  let busy = false;
+  const enter = async () => {
+    const code = $('#code').value.replace(/\D/g, '');
+    if (code.length !== 6) return tell('#codeSay', 'Enter the 6 digits from the email.', true);
+    if (busy) return; busy = true;
+    const v = await api('POST', '/_/api/verify', { code }).catch(() => null);
+    busy = false;
+    if (v && v.ok) { location.href = '/'; return; }
+    tell('#codeSay', !v ? 'The code could not be checked. Check the connection and try again.' : v.status === 429 ? 'Too many tries. Wait 10 minutes and try again.' : v.data.error === 'no_code' ? 'Send a code first, with step 1.' : 'That code does not work. It may have run out: send a new one with step 1.', true);
+  };
+  $('#codeForm').onsubmit = ev => { ev.preventDefault(); enter(); };
   $('#em').focus();
 }
 

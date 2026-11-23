@@ -51,7 +51,7 @@ function header(owner) {
 <a class="brand" href="/" data-nav="/" aria-label="Rhizome Box home"><svg class="mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h7v2.2a2 2 0 1 0 4 0V3h7v7h-2.2a2 2 0 1 0 0 4H21v7h-7v-2.2a2 2 0 1 0-4 0V21H3v-7h2.2a2 2 0 1 0 0-4H3z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg><b>Rhizome Box</b><small>by Tatsuki Mitsuhashi</small></a>
 <label class="search"><input id="q" type="search" placeholder="Search pages  /" aria-label="Search pages" autocomplete="off"></label>
 ${owner ? `<div class="seg" role="group" aria-label="View as"><button id="asMe" aria-pressed="true">Me</button><button id="asVisitor" aria-pressed="false">Visitor</button></div>
-<button class="btn primary new" id="newPage"><span>New page</span></button>` : ''}
+<button class="btn primary new" id="newPage"><span>New page</span></button>` : '<a class="btn codebtn" href="/_/code" data-nav="/_/code" rel="nofollow">Code</a>'}
 <button class="btn icon lookbtn" id="lookBtn" aria-pressed="false" aria-label="Switch to the dark look"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36A5.5 5.5 0 0 1 13.36 3.1 9.3 9.3 0 0 0 12 3z"/></svg></button>
 <button class="btn icon" id="helpBtn" aria-label="Notation and keys" aria-expanded="false">?</button>
 </div></header>
@@ -159,7 +159,7 @@ ${related.length ? `<section class="conn" aria-label="Connections"><div class="c
 }
 
 export function shellHtml({ owner, stage, base, css, me, view, newTitle }) {
-  const names = { links: 'Links', web: 'Web links', images: 'Images', graph: 'Graph', storage: 'Storage', login: 'Sign in', new: newTitle };
+  const names = { links: 'Links', web: 'Web links', images: 'Images', graph: 'Graph', storage: 'Storage', code: 'Code', new: newTitle };
   return head({ title: names[view] || '', path: view === 'new' ? pageUrl(newTitle) : '/_/' + view, base, stage, noindex: true, css })
     + header(owner) + `<main class="wrap" id="main"><p class="empty-note">Loading…</p></main>`
     + footer(base, '') + help(owner) + tail({ owner, stage, base, me, view, newTitle: newTitle || '' });

@@ -597,3 +597,13 @@ span.sthumb{display:grid;place-items:center;color:#fff;font-size:11px;font-weigh
 .sdel:hover{color:var(--sec)}
 .sask{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px;font-size:13px}
 .btn.danger{color:var(--sec);border-color:var(--sec)}
+
+/* The owner's way in (/_/code) */
+.login form{display:grid;gap:8px}
+.login a.btn,.codebtn{display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
+.codeline{display:flex;gap:8px}
+.codeline input{flex:1;min-width:0}
+.codeline .btn{height:44px;flex:none}
+.login .say.err{color:#b3261e}
+[data-look="ink"] .login .say.err{color:#ff8a80}
+#code{letter-spacing:.2em;font-family:var(--mono)}

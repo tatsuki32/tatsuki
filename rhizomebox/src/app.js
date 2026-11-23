@@ -181,31 +181,47 @@ async function throttled(env, key, limit, windowMs) {
   await env.DB.prepare('INSERT INTO throttle (key, at) VALUES (?, ?)').bind(key, t).run();
   return false;
 }
-async function login(req, env, deps) {
+/* The code page is in plain sight, so strangers will try it. Limits are per address and per visitor (never one
+   shared counter), and a code works only in the browser that asked for it: nobody else can use it or burn it. */
+async function visitorKey(req, env) {
+  return (await sha256('ip:' + (env.BACKUP_KEY || '') + ':' + (req.headers.get('CF-Connecting-IP') || ''))).slice(0, 32);
+}
+const askCookie = (v, age) => `rbq=${v}; Path=/_/api/; HttpOnly; Secure; SameSite=Strict; Max-Age=${age}`;
+async function login(req, env, ctx, deps) {
   const b = await req.json().catch(() => ({}));
-  const email = String(b.email || '').trim().toLowerCase();
-  if (await throttled(env, 'login', 5, 10 * MIN) || await throttled(env, 'login-day', 20, DAY)) return json({ error: 'slow_down' }, 429);
+  const email = String(b.email || '').trim().toLowerCase().slice(0, 254);
+  const who = await visitorKey(req, env), addr = (await sha256('mail:' + (env.BACKUP_KEY || '') + ':' + email)).slice(0, 32);
+  if (await throttled(env, 'ask-' + who, 10, 10 * MIN)) return json({ error: 'slow_down' }, 429);
+  if (await throttled(env, 'to-' + addr, 5, 10 * MIN) || await throttled(env, 'day-' + addr, 20, DAY)) return json({ error: 'slow_down' }, 429);
+  const ask = randHex(32);
   // Same answer whether or not the address is the owner's, so the address cannot be guessed from here.
   if (env.OWNER_EMAIL && email && email === String(env.OWNER_EMAIL).trim().toLowerCase()) {
     const code = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1e6).padStart(6, '0');
-    await env.DB.prepare('DELETE FROM codes').run();
-    await env.DB.prepare('INSERT INTO codes (hash, expires) VALUES (?, ?)').bind(await sha256('code:' + code), now() + CODE_MINUTES * MIN).run();
-    await deps.sendMail(env, {
+    const askHash = await sha256('ask:' + ask);
+    await env.DB.prepare('DELETE FROM codes WHERE expires < ?').bind(now()).run();
+    await env.DB.prepare('INSERT INTO codes (hash, expires) VALUES (?, ?)').bind(askHash + ':' + await sha256('code:' + ask + ':' + code), now() + CODE_MINUTES * MIN).run();
+    // sent after the answer, so the time it takes does not tell either
+    ctx.waitUntil(deps.sendMail(env, {
       to: env.OWNER_EMAIL,
       subject: `Rhizome Box sign-in code: ${code}`,
-      text: `Your sign-in code is ${code}\n\nIt works for ${CODE_MINUTES} minutes, once.\nIf you did not ask for it, you can ignore this email.`,
-    });
+      text: `Your sign-in code is ${code}\n\nIt works for ${CODE_MINUTES} minutes, once, in the browser that asked for it.\nIf you did not ask for it, you can ignore this email.`,
+    }).catch((e) => console.error('sign-in mail', e && e.message)));
   }
-  return json({ ok: true });
+  return json({ ok: true }, 200, { 'Set-Cookie': askCookie(ask, CODE_MINUTES * 60) });
 }
 async function verify(req, env) {
   const b = await req.json().catch(() => ({}));
   const code = String(b.code || '').replace(/\D/g, '');
-  if (await throttled(env, 'verify', 10, 10 * MIN)) return json({ error: 'slow_down' }, 429);
-  const row = await env.DB.prepare('SELECT * FROM codes LIMIT 1').first();
-  if (!row || row.expires < now()) return json({ error: 'no_code' }, 400);
-  if (code.length !== 6 || !safeEq(await sha256('code:' + code), row.hash)) {
-    if (row.tries + 1 >= 5) await env.DB.prepare('DELETE FROM codes').run();
+  if (await throttled(env, 'try-' + await visitorKey(req, env), 10, 10 * MIN)) return json({ error: 'slow_down' }, 429);
+  const ask = cookie(req, 'rbq');
+  if (!/^[0-9a-f]{64}$/.test(ask)) return json({ error: 'no_code' }, 400);
+  const askHash = await sha256('ask:' + ask);
+  const row = await env.DB.prepare('SELECT * FROM codes WHERE hash >= ? AND hash < ?').bind(askHash + ':', askHash + ';').first();
+  // A stranger who asked for a code has no row; the answer is the same as for a wrong code.
+  if (!row) return json({ error: 'wrong_code' }, 400);
+  if (row.expires < now()) return json({ error: 'wrong_code' }, 400);
+  if (code.length !== 6 || !safeEq(askHash + ':' + await sha256('code:' + ask + ':' + code), row.hash)) {
+    if (row.tries + 1 >= 5) await env.DB.prepare('DELETE FROM codes WHERE hash = ?').bind(row.hash).run();
     else await env.DB.prepare('UPDATE codes SET tries = tries + 1 WHERE hash = ?').bind(row.hash).run();
     return json({ error: 'wrong_code' }, 400);
   }
@@ -213,7 +229,9 @@ async function verify(req, env) {
   const tok = randHex(32);
   await env.DB.prepare('DELETE FROM sessions WHERE expires < ?').bind(now()).run();
   await env.DB.prepare('INSERT INTO sessions (hash, created, expires) VALUES (?, ?, ?)').bind(await sha256(tok), now(), now() + SESSION_DAYS * DAY).run();
-  return json({ ok: true }, 200, { 'Set-Cookie': `rb=${tok}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${SESSION_DAYS * 86400}` });
+  const res = json({ ok: true }, 200, { 'Set-Cookie': `rb=${tok}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${SESSION_DAYS * 86400}` });
+  res.headers.append('Set-Cookie', askCookie('', 0));
+  return res;
 }
 async function logout(req, env) {
   const tok = cookie(req, 'rb');
@@ -534,7 +552,7 @@ export async function handle(req, env, ctx, deps) {
     const write = method !== 'GET' && method !== 'HEAD';
     // Writes need the custom header: a form or image tag on another site cannot send it.
     if (write && req.headers.get('X-RB') !== '1') return json({ error: 'header' }, 403);
-    if (api === 'login' && method === 'POST') return login(req, env, deps);
+    if (api === 'login' && method === 'POST') return login(req, env, ctx, deps);
     if (api === 'verify' && method === 'POST') return verify(req, env);
     if (api === 'logout' && method === 'POST') return logout(req, env);
     if (api === 'me') return json({ owner });
@@ -607,9 +625,10 @@ export async function handle(req, env, ctx, deps) {
     const { results } = await env.DB.prepare(`SELECT id, title, pub, pin, updated, image, descr FROM pages WHERE ${visibleSql(owner)} ORDER BY (pin > 0) DESC, CASE WHEN pin > 0 THEN pin END, updated DESC LIMIT 300`).all();
     return html(homeHtml({ ...common, pages: results }));
   }
+  if (path === '/_/login') return Response.redirect(base + '/_/code', 302); // the address before 2026-11-24
   if (path.startsWith('/_/')) {
     const view = path.slice(3);
-    if (!['links', 'web', 'images', 'graph', 'login', 'new', ...(owner ? ['storage'] : [])].includes(view)) return html(notFoundHtml(common), 404);
+    if (!['links', 'web', 'images', 'graph', 'code', 'new', ...(owner ? ['storage'] : [])].includes(view)) return html(notFoundHtml(common), 404);
     return html(shellHtml({ ...common, view }));
   }
   const raw = decodePath(path);

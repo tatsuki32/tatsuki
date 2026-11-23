@@ -51,20 +51,22 @@ export function makeEnv(extra = {}) {
   const deps = { sendMail: async (e, m) => { mails.push(m); } };
   const waits = [];
   const ctx = { waitUntil: (p) => waits.push(p) };
-  const call = async (method, path, { body, cookie, headers = {}, raw } = {}) => {
+  const call = async (method, path, { body, cookie, ask, headers = {}, raw } = {}) => {
     const h = new Headers(headers);
     if (cookie) h.set('Cookie', 'rb=' + cookie);
+    if (ask) h.set('Cookie', 'rbq=' + ask);
     if (body !== undefined && !raw) h.set('Content-Type', 'application/json');
     if (raw && body !== undefined && !h.has('Content-Length')) h.set('Content-Length', String(body.length)); // as the network would
     const req = new Request('https://rb.test' + path, { method, headers: h, body: body === undefined ? undefined : raw ? body : JSON.stringify(body) });
     return handle(req, env, ctx, deps);
   };
   const W = { 'X-RB': '1' };
+  const askOf = (r) => r.headers.get('Set-Cookie').match(/rbq=([0-9a-f]{64})/)[1];
   async function signIn() {
-    await call('POST', '/_/api/login', { body: { email: 'Owner@Example.com' }, headers: W });
+    const a = await call('POST', '/_/api/login', { body: { email: 'Owner@Example.com' }, headers: W });
     const code = mails.at(-1).subject.match(/(\d{6})/)[1];
-    const r = await call('POST', '/_/api/verify', { body: { code }, headers: W });
+    const r = await call('POST', '/_/api/verify', { body: { code }, ask: askOf(a), headers: W });
     return r.headers.get('Set-Cookie').match(/rb=([0-9a-f]{64})/)[1];
   }
-  return { env, mails, call, signIn, W, waits };
+  return { env, mails, call, signIn, askOf, W, waits };
 }

@@ -22,17 +22,60 @@ test('sign-in: code only to the owner, wrong codes run out, session cookie', asy
   const r1 = await t.call('POST', '/_/api/login', { body: { email: 'stranger@example.com' }, headers: t.W });
   assert.equal(r1.status, 200);
   assert.equal(t.mails.length, 0, 'no mail for a stranger, same answer');
-  await t.call('POST', '/_/api/login', { body: { email: 'owner@example.com' }, headers: t.W });
+  const r2 = await t.call('POST', '/_/api/login', { body: { email: 'owner@example.com' }, headers: t.W });
   assert.equal(t.mails.length, 1);
+  assert.equal(await r2.text(), await r1.text());
+  assert.equal(r2.headers.get('Set-Cookie').replace(/rbq=[0-9a-f]+/, ''), r1.headers.get('Set-Cookie').replace(/rbq=[0-9a-f]+/, ''), 'the cookie looks the same too');
   const code = t.mails[0].subject.match(/(\d{6})/)[1];
   const wrong = code === '000000' ? '111111' : '000000';
-  for (let i = 0; i < 5; i++) assert.equal((await t.call('POST', '/_/api/verify', { body: { code: wrong }, headers: t.W })).status, 400);
-  const late = await t.call('POST', '/_/api/verify', { body: { code }, headers: t.W });
+  const ask = t.askOf(r2);
+  for (let i = 0; i < 5; i++) assert.equal((await t.call('POST', '/_/api/verify', { body: { code: wrong }, ask, headers: t.W })).status, 400);
+  const late = await t.call('POST', '/_/api/verify', { body: { code }, ask, headers: t.W });
   assert.equal(late.status, 400, 'the right code no longer works after 5 wrong tries');
   const tok = await t.signIn();
   assert.match(tok, /^[0-9a-f]{64}$/);
   const me = await (await t.call('GET', '/_/api/me', { cookie: tok })).json();
   assert.equal(me.owner, true);
+});
+
+test('sign-in: a stranger can neither use, burn nor block the owner\'s code', async () => {
+  const t = makeEnv();
+  const ip = (n) => ({ ...t.W, 'CF-Connecting-IP': n });
+  const a = await t.call('POST', '/_/api/login', { body: { email: 'owner@example.com' }, headers: ip('1.1.1.1') });
+  const code = t.mails[0].subject.match(/(\d{6})/)[1];
+  const st = await t.call('POST', '/_/api/login', { body: { email: 'x@example.com' }, headers: ip('2.2.2.2') });
+  assert.equal((await t.call('POST', '/_/api/verify', { body: { code }, headers: ip('2.2.2.2') })).status, 400, 'no browser mark');
+  for (let i = 0; i < 8; i++) assert.equal((await t.call('POST', '/_/api/verify', { body: { code }, ask: t.askOf(st), headers: ip('2.2.2.2') })).status, 400, 'the right code in another browser');
+  let last; for (let i = 0; i < 12; i++) last = await t.call('POST', '/_/api/login', { body: { email: `s${i}@example.com` }, headers: ip('2.2.2.2') });
+  assert.equal(last.status, 429, 'the stranger is slowed down');
+  const ok = await t.call('POST', '/_/api/verify', { body: { code }, ask: t.askOf(a), headers: ip('1.1.1.1') });
+  assert.equal(ok.status, 200, 'the owner still gets in');
+  assert.equal((await t.call('POST', '/_/api/verify', { body: { code }, ask: t.askOf(a), headers: ip('1.1.1.1') })).status, 400, 'a code works once');
+  assert.ok(!JSON.stringify(t.env.DB.raw.prepare('SELECT * FROM throttle').all()).includes('2.2.2.2'), 'no address is kept');
+});
+
+test('sign-in: an old code runs out, and the same address can only ask 5 times', async () => {
+  const t = makeEnv();
+  const a = await t.call('POST', '/_/api/login', { body: { email: 'owner@example.com' }, headers: t.W });
+  const code = t.mails[0].subject.match(/(\d{6})/)[1];
+  t.env.DB.raw.prepare('UPDATE codes SET expires = 1').run();
+  assert.equal((await t.call('POST', '/_/api/verify', { body: { code }, ask: t.askOf(a), headers: t.W })).status, 400);
+  const tries = async (email) => { const o = []; for (let i = 0; i < 6; i++) o.push((await t.call('POST', '/_/api/login', { body: { email }, headers: { ...t.W, 'CF-Connecting-IP': '9.9.9.' + i } })).status); return o; };
+  assert.deepEqual((await tries('owner@example.com')).slice(-2), [429, 429]);
+  assert.deepEqual((await tries('nobody@example.com')).slice(-1), [429], 'a stranger address meets the same limit');
+});
+
+test('the way in: a Code link for visitors, not for the owner; the old address moves', async () => {
+  const t = makeEnv();
+  assert.ok((await (await t.call('GET', '/')).text()).includes('href="/_/code"'));
+  const page = await t.call('GET', '/_/code');
+  assert.equal(page.status, 200);
+  assert.ok((await page.text()).includes('noindex'));
+  const old = await t.call('GET', '/_/login');
+  assert.equal(old.status, 302);
+  assert.ok(old.headers.get('Location').endsWith('/_/code'));
+  const tok = await t.signIn();
+  assert.ok(!(await (await t.call('GET', '/', { cookie: tok })).text()).includes('href="/_/code"'));
 });
 
 test('writes need the header and a session', async () => {
