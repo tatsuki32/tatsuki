@@ -1630,6 +1630,7 @@ function renderCode() {
     const r = await api('POST', '/_/api/login', { email }).catch(() => null);
     btn.disabled = false;
     if (!r || !r.ok) return tell('#askSay', r && r.status === 429 ? 'Too many tries. Wait 10 minutes and try again.' : 'The code could not be sent. Check the connection and try again.', true);
+    $('#codeSay').hidden = true;
     tell('#askSay', "If this is the writer's address, a code is on its way. It works for 10 minutes, in this browser.");
     $('#code').value = ''; $('#code').focus();
   };

@@ -601,6 +601,7 @@ span.sthumb{display:grid;place-items:center;color:#fff;font-size:11px;font-weigh
 /* The owner's way in (/_/code) */
 .login form{display:grid;gap:8px}
 .login a.btn,.codebtn{display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
+.codebtn,.codebtn:visited{color:var(--fg)}
 .codeline{display:flex;gap:8px}
 .codeline input{flex:1;min-width:0}
 .codeline .btn{height:44px;flex:none}
