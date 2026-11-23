@@ -43,12 +43,14 @@ CREATE TABLE IF NOT EXISTS sessions (
   created INTEGER NOT NULL,
   expires INTEGER NOT NULL
 );
--- How many codes were asked for, to slow down guessing and mail floods.
-CREATE TABLE IF NOT EXISTS throttle (
-  key TEXT NOT NULL,
-  at INTEGER NOT NULL
+-- Limits on asking for and trying codes: one counter row per visitor (a salted hash, gone after a day).
+-- (The table "throttle" from before 2026-11-24 is no longer used.)
+CREATE TABLE IF NOT EXISTS limits (
+  key TEXT PRIMARY KEY,
+  start INTEGER NOT NULL,
+  n INTEGER NOT NULL
 );
-CREATE INDEX IF NOT EXISTS throttle_key ON throttle (key, at);
+CREATE INDEX IF NOT EXISTS limits_start ON limits (start);
 
 -- Titles and thumbnails of outside links, fetched once and kept 30 days.
 CREATE TABLE IF NOT EXISTS linkmeta (

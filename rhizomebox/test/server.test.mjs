@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeEnv } from './helpers.mjs';
-import { safeTarget, readMeta } from '../src/app.js';
+import { safeTarget, readMeta, visitorNet } from '../src/app.js';
 
 const PRIV = 'secret plan 2027';
 async function setup() {
@@ -51,18 +51,60 @@ test('sign-in: a stranger can neither use, burn nor block the owner\'s code', as
   const ok = await t.call('POST', '/_/api/verify', { body: { code }, ask: t.askOf(a), headers: ip('1.1.1.1') });
   assert.equal(ok.status, 200, 'the owner still gets in');
   assert.equal((await t.call('POST', '/_/api/verify', { body: { code }, ask: t.askOf(a), headers: ip('1.1.1.1') })).status, 400, 'a code works once');
-  assert.ok(!JSON.stringify(t.env.DB.raw.prepare('SELECT * FROM throttle').all()).includes('2.2.2.2'), 'no address is kept');
+  assert.ok(!JSON.stringify(t.env.DB.raw.prepare('SELECT * FROM limits').all()).includes('2.2.2.2'), 'no address is kept');
 });
 
-test('sign-in: an old code runs out, and the same address can only ask 5 times', async () => {
+test('sign-in: an old code runs out; every address meets the same limit', async () => {
   const t = makeEnv();
   const a = await t.call('POST', '/_/api/login', { body: { email: 'owner@example.com' }, headers: t.W });
   const code = t.mails[0].subject.match(/(\d{6})/)[1];
   t.env.DB.raw.prepare('UPDATE codes SET expires = 1').run();
   assert.equal((await t.call('POST', '/_/api/verify', { body: { code }, ask: t.askOf(a), headers: t.W })).status, 400);
-  const tries = async (email) => { const o = []; for (let i = 0; i < 6; i++) o.push((await t.call('POST', '/_/api/login', { body: { email }, headers: { ...t.W, 'CF-Connecting-IP': '9.9.9.' + i } })).status); return o; };
-  assert.deepEqual((await tries('owner@example.com')).slice(-2), [429, 429]);
-  assert.deepEqual((await tries('nobody@example.com')).slice(-1), [429], 'a stranger address meets the same limit');
+  const tries = async (email, ip) => { const o = []; for (let i = 0; i < 6; i++) o.push((await t.call('POST', '/_/api/login', { body: { email }, headers: { ...t.W, 'CF-Connecting-IP': ip } })).status); return o; };
+  const want = [200, 200, 200, 200, 200, 429];
+  assert.deepEqual(await tries('owner@example.com', '3.3.3.3'), want);
+  assert.deepEqual(await tries('nobody@example.com', '4.4.4.4'), want);
+});
+
+test('sign-in: tries sent at the same moment all count, and a code opens one session', async () => {
+  const t = makeEnv();
+  const a = await t.call('POST', '/_/api/login', { body: { email: 'owner@example.com' }, headers: t.W });
+  const code = t.mails[0].subject.match(/(\d{6})/)[1], wrong = code === '000000' ? '111111' : '000000', ask = t.askOf(a);
+  await Promise.all(Array.from({ length: 40 }, (_, i) => t.call('POST', '/_/api/verify', { body: { code: wrong }, ask, headers: { ...t.W, 'CF-Connecting-IP': '5.5.5.' + i } })));
+  assert.equal(t.env.DB.raw.prepare('SELECT tries FROM codes').get().tries, 5);
+  assert.equal((await t.call('POST', '/_/api/verify', { body: { code }, ask, headers: t.W })).status, 400);
+  const a2 = await t.call('POST', '/_/api/login', { body: { email: 'owner@example.com' }, headers: t.W });
+  const c2 = t.mails.at(-1).subject.match(/(\d{6})/)[1];
+  const two = await Promise.all([1, 2, 3].map((i) => t.call('POST', '/_/api/verify', { body: { code: c2 }, ask: t.askOf(a2), headers: { ...t.W, 'CF-Connecting-IP': '6.6.6.' + i } })));
+  assert.equal(two.filter((r) => r.status === 200).length, 1);
+  const many = await Promise.all(Array.from({ length: 20 }, () => t.call('POST', '/_/api/login', { body: { email: 'x@example.com' }, headers: { ...t.W, 'CF-Connecting-IP': '7.7.7.7' } })));
+  assert.equal(many.filter((r) => r.status === 200).length, 5, 'the limit holds for requests sent together');
+});
+
+test('sign-in: strangers who know the address cannot use up the owner\'s codes', async () => {
+  const t = makeEnv();
+  const a = await t.call('POST', '/_/api/login', { body: { email: 'owner@example.com' }, headers: t.W });
+  const ok = await t.call('POST', '/_/api/verify', { body: { code: t.mails[0].subject.match(/(\d{6})/)[1] }, ask: t.askOf(a), headers: t.W });
+  const device = ok.headers.get('Set-Cookie').match(/rbd=([0-9a-f.]+)/)[1];
+  for (let i = 0; i < 60; i++) assert.equal((await t.call('POST', '/_/api/login', { body: { email: 'owner@example.com' }, headers: { ...t.W, 'CF-Connecting-IP': '8.8.1.' + i } })).status, 200);
+  assert.equal(t.mails.length, 30, 'the mailbox is not flooded');
+  const forged = await t.call('POST', '/_/api/login', { body: { email: 'owner@example.com' }, device: 'a'.repeat(32) + '.' + 'b'.repeat(64), headers: { ...t.W, 'CF-Connecting-IP': '8.8.9.1' } });
+  assert.equal(forged.status, 200);
+  assert.equal(t.mails.length, 30, 'a made-up mark gets no code');
+  const mine = await t.call('POST', '/_/api/login', { body: { email: 'owner@example.com' }, device, headers: { ...t.W, 'CF-Connecting-IP': '8.8.9.2' } });
+  assert.equal(t.mails.length, 31, 'a browser that signed in before still gets one');
+  assert.equal((await t.call('POST', '/_/api/verify', { body: { code: t.mails.at(-1).subject.match(/(\d{6})/)[1] }, ask: t.askOf(mine), device, headers: t.W })).status, 200);
+  assert.equal((await (await t.call('GET', '/_/api/me', { device })).json()).owner, false, 'the mark alone opens nothing');
+});
+
+test('sign-in: an IPv6 visitor is one /64; addresses typed leave no rows', async () => {
+  assert.equal(visitorNet('2001:db8:1:2:aaaa::1'), visitorNet('2001:0db8:1:2:ffff:ffff:ffff:ffff'));
+  assert.equal(visitorNet('2001:db8::1'), '2001:db8:0:0::/64');
+  assert.notEqual(visitorNet('2001:db8:1:2::1'), visitorNet('2001:db8:1:3::1'));
+  assert.equal(visitorNet('::ffff:1.2.3.4'), '1.2.3.4');
+  const t = makeEnv();
+  for (let i = 0; i < 20; i++) await t.call('POST', '/_/api/login', { body: { email: `p${i}@example.com` }, headers: { ...t.W, 'CF-Connecting-IP': '2001:db8:1:2::' + i } });
+  assert.equal(t.env.DB.raw.prepare('SELECT COUNT(*) AS n FROM limits').get().n, 1);
 });
 
 test('the way in: a Code link for visitors, not for the owner; the old address moves', async () => {

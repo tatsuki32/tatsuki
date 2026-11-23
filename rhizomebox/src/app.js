@@ -173,64 +173,88 @@ async function savePage(env, ctx, id, body) {
 }
 
 /* ---------- sign-in ---------- */
-async function throttled(env, key, limit, windowMs) {
+/* One statement counts and answers, so many requests at once cannot slip past. True = over the limit. */
+async function over(env, key, limit, windowMs) {
   const t = now();
-  await env.DB.prepare('DELETE FROM throttle WHERE at < ?').bind(t - DAY).run();
-  const r = await env.DB.prepare('SELECT COUNT(*) AS n FROM throttle WHERE key = ? AND at > ?').bind(key, t - windowMs).first();
-  if (r.n >= limit) return true;
-  await env.DB.prepare('INSERT INTO throttle (key, at) VALUES (?, ?)').bind(key, t).run();
-  return false;
+  const r = await env.DB.prepare(`INSERT INTO limits (key, start, n) VALUES (?, ?, 1) ON CONFLICT(key) DO UPDATE SET
+    n = CASE WHEN start <= ? THEN 1 ELSE n + 1 END, start = CASE WHEN start <= ? THEN excluded.start ELSE start END RETURNING n`)
+    .bind(key, t, t - windowMs, t - windowMs).first();
+  return r.n > limit;
 }
-/* The code page is in plain sight, so strangers will try it. Limits are per address and per visitor (never one
-   shared counter), and a code works only in the browser that asked for it: nobody else can use it or burn it. */
-async function visitorKey(req, env) {
-  return (await sha256('ip:' + (env.BACKUP_KEY || '') + ':' + (req.headers.get('CF-Connecting-IP') || ''))).slice(0, 32);
+const sweep = (env, ctx) => { if (Math.random() < 0.05) ctx.waitUntil(env.DB.prepare('DELETE FROM limits WHERE start < ?').bind(now() - DAY).run().catch(() => {})); };
+/* An IPv6 visitor owns a whole /64, so that is what counts as one visitor. */
+export function visitorNet(ip) {
+  ip = String(ip || '').toLowerCase();
+  const v4 = ip.match(/(\d+\.\d+\.\d+\.\d+)$/);
+  if (v4) return v4[1];
+  if (!ip.includes(':')) return ip;
+  const [h, t] = ip.split('::'), head = h ? h.split(':') : [], tail = t ? t.split(':') : [];
+  const all = t === undefined ? head : [...head, ...Array(Math.max(0, 8 - head.length - tail.length)).fill('0'), ...tail];
+  return all.slice(0, 4).map((x) => (parseInt(x, 16) || 0).toString(16)).join(':') + '::/64';
 }
+async function hmac(env, s) {
+  const k = await crypto.subtle.importKey('raw', enc.encode('rb-signin:' + env.BACKUP_KEY), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  return [...new Uint8Array(await crypto.subtle.sign('HMAC', k, enc.encode(s)))].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+const visitorKey = async (req, env) => (await hmac(env, 'net:' + visitorNet(req.headers.get('CF-Connecting-IP')))).slice(0, 32);
+/* A browser that has signed in before carries a signed mark. It opens nothing; it only keeps a share of the day's
+   codes for the owner, so strangers who know the address cannot use them all up. */
+async function knownDevice(req, env) {
+  const m = cookie(req, 'rbd').match(/^([0-9a-f]{32})\.([0-9a-f]{64})$/);
+  return !!m && !!env.BACKUP_KEY && safeEq(m[2], await hmac(env, 'device:' + m[1]));
+}
+async function deviceCookie(env) {
+  const id = randHex(16);
+  return `rbd=${id}.${await hmac(env, 'device:' + id)}; Path=/_/api/; HttpOnly; Secure; SameSite=Lax; Max-Age=${400 * 86400}`;
+}
+/* The code page is in plain sight, so strangers will try it. A code works only in the browser that asked for it:
+   nobody else can use it or burn it. */
 const askCookie = (v, age) => `rbq=${v}; Path=/_/api/; HttpOnly; Secure; SameSite=Strict; Max-Age=${age}`;
+const CODES_A_DAY = 30, CODES_A_DAY_KNOWN = 20, TRIES = 5;
 async function login(req, env, ctx, deps) {
   const b = await req.json().catch(() => ({}));
   const email = String(b.email || '').trim().toLowerCase().slice(0, 254);
-  const who = await visitorKey(req, env), addr = (await sha256('mail:' + (env.BACKUP_KEY || '') + ':' + email)).slice(0, 32);
-  if (await throttled(env, 'ask-' + who, 10, 10 * MIN)) return json({ error: 'slow_down' }, 429);
-  if (await throttled(env, 'to-' + addr, 5, 10 * MIN) || await throttled(env, 'day-' + addr, 20, DAY)) return json({ error: 'slow_down' }, 429);
+  sweep(env, ctx);
+  if (await over(env, 'ask-' + await visitorKey(req, env), 5, 10 * MIN)) return json({ error: 'slow_down' }, 429);
   const ask = randHex(32);
-  // Same answer whether or not the address is the owner's, so the address cannot be guessed from here.
-  if (env.OWNER_EMAIL && email && email === String(env.OWNER_EMAIL).trim().toLowerCase()) {
-    const code = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1e6).padStart(6, '0');
-    const askHash = await sha256('ask:' + ask);
-    await env.DB.prepare('DELETE FROM codes WHERE expires < ?').bind(now()).run();
-    await env.DB.prepare('INSERT INTO codes (hash, expires) VALUES (?, ?)').bind(askHash + ':' + await sha256('code:' + ask + ':' + code), now() + CODE_MINUTES * MIN).run();
-    // sent after the answer, so the time it takes does not tell either
-    ctx.waitUntil(deps.sendMail(env, {
-      to: env.OWNER_EMAIL,
-      subject: `Rhizome Box sign-in code: ${code}`,
-      text: `Your sign-in code is ${code}\n\nIt works for ${CODE_MINUTES} minutes, once, in the browser that asked for it.\nIf you did not ask for it, you can ignore this email.`,
-    }).catch((e) => console.error('sign-in mail', e && e.message)));
-  }
+  // The answer never depends on the address: not its text, its limit or the time it takes.
+  if (env.OWNER_EMAIL && email && email === String(env.OWNER_EMAIL).trim().toLowerCase()) ctx.waitUntil(sendCode(req, env, deps, ask).catch((e) => console.error('sign-in code', e && e.message)));
   return json({ ok: true }, 200, { 'Set-Cookie': askCookie(ask, CODE_MINUTES * 60) });
 }
-async function verify(req, env) {
+async function sendCode(req, env, deps, ask) {
+  const known = await knownDevice(req, env);
+  if (await over(env, known ? 'codes-known' : 'codes-new', known ? CODES_A_DAY_KNOWN : CODES_A_DAY, DAY)) return;
+  const n = crypto.getRandomValues(new Uint32Array(1))[0] % 1e6;
+  const code = String(n).padStart(6, '0');
+  await env.DB.prepare('DELETE FROM codes WHERE expires < ?').bind(now()).run();
+  await env.DB.prepare('INSERT INTO codes (hash, expires) VALUES (?, ?)').bind(await sha256('ask:' + ask) + ':' + await sha256('code:' + ask + ':' + code), now() + CODE_MINUTES * MIN).run();
+  await deps.sendMail(env, {
+    to: env.OWNER_EMAIL,
+    subject: `Rhizome Box sign-in code: ${code}`,
+    text: `Your sign-in code is ${code}\n\nIt works for ${CODE_MINUTES} minutes, once, in the browser that asked for it.\nIf you did not ask for it, you can ignore this email.`,
+  });
+}
+async function verify(req, env, ctx) {
   const b = await req.json().catch(() => ({}));
   const code = String(b.code || '').replace(/\D/g, '');
-  if (await throttled(env, 'try-' + await visitorKey(req, env), 10, 10 * MIN)) return json({ error: 'slow_down' }, 429);
+  sweep(env, ctx);
+  if (await over(env, 'try-' + await visitorKey(req, env), 10, 10 * MIN)) return json({ error: 'slow_down' }, 429);
   const ask = cookie(req, 'rbq');
   if (!/^[0-9a-f]{64}$/.test(ask)) return json({ error: 'no_code' }, 400);
   const askHash = await sha256('ask:' + ask);
-  const row = await env.DB.prepare('SELECT * FROM codes WHERE hash >= ? AND hash < ?').bind(askHash + ':', askHash + ';').first();
+  // A try is spent before the code is looked at, so tries sent at the same moment all count.
+  const row = await env.DB.prepare(`UPDATE codes SET tries = tries + 1 WHERE hash >= ? AND hash < ? AND tries < ${TRIES} AND expires > ? RETURNING hash`).bind(askHash + ':', askHash + ';', now()).first();
   // A stranger who asked for a code has no row; the answer is the same as for a wrong code.
-  if (!row) return json({ error: 'wrong_code' }, 400);
-  if (row.expires < now()) return json({ error: 'wrong_code' }, 400);
-  if (code.length !== 6 || !safeEq(askHash + ':' + await sha256('code:' + ask + ':' + code), row.hash)) {
-    if (row.tries + 1 >= 5) await env.DB.prepare('DELETE FROM codes WHERE hash = ?').bind(row.hash).run();
-    else await env.DB.prepare('UPDATE codes SET tries = tries + 1 WHERE hash = ?').bind(row.hash).run();
-    return json({ error: 'wrong_code' }, 400);
-  }
+  if (!row || code.length !== 6 || !safeEq(askHash + ':' + await sha256('code:' + ask + ':' + code), row.hash)) return json({ error: 'wrong_code' }, 400);
+  const used = await env.DB.prepare('DELETE FROM codes WHERE hash = ? RETURNING hash').bind(row.hash).first();
+  if (!used) return json({ error: 'wrong_code' }, 400);
   await env.DB.prepare('DELETE FROM codes').run();
   const tok = randHex(32);
   await env.DB.prepare('DELETE FROM sessions WHERE expires < ?').bind(now()).run();
   await env.DB.prepare('INSERT INTO sessions (hash, created, expires) VALUES (?, ?, ?)').bind(await sha256(tok), now(), now() + SESSION_DAYS * DAY).run();
   const res = json({ ok: true }, 200, { 'Set-Cookie': `rb=${tok}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${SESSION_DAYS * 86400}` });
   res.headers.append('Set-Cookie', askCookie('', 0));
+  if (env.BACKUP_KEY) res.headers.append('Set-Cookie', await deviceCookie(env));
   return res;
 }
 async function logout(req, env) {
@@ -553,7 +577,7 @@ export async function handle(req, env, ctx, deps) {
     // Writes need the custom header: a form or image tag on another site cannot send it.
     if (write && req.headers.get('X-RB') !== '1') return json({ error: 'header' }, 403);
     if (api === 'login' && method === 'POST') return login(req, env, ctx, deps);
-    if (api === 'verify' && method === 'POST') return verify(req, env);
+    if (api === 'verify' && method === 'POST') return verify(req, env, ctx);
     if (api === 'logout' && method === 'POST') return logout(req, env);
     if (api === 'me') return json({ owner });
     if (api === 'export' && method === 'GET') {
@@ -566,7 +590,10 @@ export async function handle(req, env, ctx, deps) {
       if (!wordsKeyOk(req, env)) return json({ error: 'auth' }, 401);
       return saveWords(env, ctx, await req.json().catch(() => ({})));
     }
-    if (api === 'index' && method === 'GET') return json({ pages: await listPages(env, owner), owner });
+    if (api === 'index' && method === 'GET') {
+      const mark = owner && env.BACKUP_KEY && !(await knownDevice(req, env)) ? { 'Set-Cookie': await deviceCookie(env) } : {};
+      return json({ pages: await listPages(env, owner), owner }, 200, mark);
+    }
     if (api === 'search' && method === 'GET') {
       const q = (url.searchParams.get('q') || '').trim().slice(0, 100);
       if (!q) return json({ ids: [] });

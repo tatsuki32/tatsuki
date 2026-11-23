@@ -51,14 +51,16 @@ export function makeEnv(extra = {}) {
   const deps = { sendMail: async (e, m) => { mails.push(m); } };
   const waits = [];
   const ctx = { waitUntil: (p) => waits.push(p) };
-  const call = async (method, path, { body, cookie, ask, headers = {}, raw } = {}) => {
+  const call = async (method, path, { body, cookie, ask, device, headers = {}, raw } = {}) => {
     const h = new Headers(headers);
-    if (cookie) h.set('Cookie', 'rb=' + cookie);
-    if (ask) h.set('Cookie', 'rbq=' + ask);
+    const jar = [cookie && 'rb=' + cookie, ask && 'rbq=' + ask, device && 'rbd=' + device].filter(Boolean);
+    if (jar.length) h.set('Cookie', jar.join('; '));
     if (body !== undefined && !raw) h.set('Content-Type', 'application/json');
     if (raw && body !== undefined && !h.has('Content-Length')) h.set('Content-Length', String(body.length)); // as the network would
     const req = new Request('https://rb.test' + path, { method, headers: h, body: body === undefined ? undefined : raw ? body : JSON.stringify(body) });
-    return handle(req, env, ctx, deps);
+    const res = await handle(req, env, ctx, deps);
+    await Promise.allSettled(waits);
+    return res;
   };
   const W = { 'X-RB': '1' };
   const askOf = (r) => r.headers.get('Set-Cookie').match(/rbq=([0-9a-f]{64})/)[1];
