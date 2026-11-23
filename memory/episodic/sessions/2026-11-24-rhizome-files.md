@@ -10,7 +10,8 @@
 - サーバー：分割アップロード（16 MB ずつ、R2 multipart）、上限（1個 500 MB・合計 9 GB。1文の INSERT…SELECT で確かめて場所を取る）、一覧・削除・Recount、Range、種類は拡張子だけで決める。
 - 画面：Add file、進み具合と Cancel・Try again、PDF・動画・音声をその場で表示、Storage のメーター。
 - Desk：ツール画面の Rhizome Box のタイルに使用量、写しは流しながら保存、`rhizomebox/files/` を GitHub の保管から外す。
-- 試験は24件（`cd rhizomebox && npm test`）。手元のブラウザで 375px と 1200px、120 MB、取り消し、削除、訪問者の表示、位置情報の消去を確かめた。
+- 自動の安全確認の指摘2件を直した：訪問者に出すファイルは表示と同じ規則で求める、位置情報を消せない写真は確認を出す（`picture.js`）。
+- 試験は29件（`cd rhizomebox && npm test`）。手元のブラウザで 375px と 1200px、120 MB、取り消し、削除、訪問者の表示、位置情報の消去を確かめた。
 
 ## 決めたこと
 - 4つの答え：何でも入る／9 GB で止める／PDF は最初から中身／メーターは両方。

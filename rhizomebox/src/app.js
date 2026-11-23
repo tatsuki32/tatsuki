@@ -2,7 +2,7 @@
 // Privacy rule: anything a visitor can receive is read through visibleSql(owner), so a private page,
 // its title, its images and its links never leave the server unless the owner is signed in.
 
-import { derive, renderStatic, esc, filesOf, kindOfFile, FILE_PATH } from '../public/app/notation.js';
+import { derive, renderStatic, esc, filesOf, kindOfFile, resolveFile, FILE_PATH } from '../public/app/notation.js';
 import { pageHtml, homeHtml, shellHtml, notFoundHtml } from './html.js';
 
 const DAY = 864e5, MIN = 6e4;
@@ -482,10 +482,10 @@ function staticCtx(map, owner) {
     if (p) return `<a class="page-link${p.pub ? '' : ' priv'}" href="${esc(pageUrl(p.title))}">${esc(label)}</a>`;
     return owner ? `<a class="page-link empty-page-link" href="${esc(pageUrl(t))}">${esc(label)}</a>` : `<span class="hid">${esc(label)}</span>`;
   };
-  const img = (u, cls) => `<img class="image ${esc(cls || '')}" src="${esc(u.replace(/^https?:\/\/[^/]+(\/files\/)/, '$1'))}" alt="" loading="lazy">`;
+  const img = (u, cls) => `<img class="image ${esc(cls || '')}" src="${esc(resolveFile(u))}" alt="" loading="lazy">`;
   const icon = (name, n) => {
     const p = map.get(name.toLowerCase());
-    if (p && p.image) return `<a class="page-link icon-link" href="${esc(pageUrl(p.title))}">${`<img class="icon" src="${esc(p.image.replace(/^https?:\/\/[^/]+(\/files\/)/, '$1'))}" alt="${esc(name)}">`.repeat(n)}</a>`;
+    if (p && p.image) return `<a class="page-link icon-link" href="${esc(pageUrl(p.title))}">${`<img class="icon" src="${esc(resolveFile(p.image))}" alt="${esc(name)}">`.repeat(n)}</a>`;
     return link(name, name);
   };
   return { link, img, icon };

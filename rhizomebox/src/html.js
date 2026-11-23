@@ -1,7 +1,7 @@
 // HTML the server sends. Every page is complete before any script runs (search engines, share previews,
 // slow phones); the script in /app/app.js then takes over the same markup.
 
-import { esc } from '../public/app/notation.js';
+import { esc, resolveFile } from '../public/app/notation.js';
 
 const SITE_NAME = 'Rhizome Box';
 const AUTHOR = 'Tatsuki Mitsuhashi';
@@ -128,7 +128,7 @@ function tail(boot) {
 </body></html>`;
 }
 
-const fileSrc = (u) => String(u || '').replace(/^https?:\/\/[^/]+(\/files\/)/, '$1');
+const fileSrc = resolveFile;
 function card(p) {
   return `<li class="${p.pin ? 'pinned' : ''}"><a class="card${p.pub ? '' : ' priv'}${p.pin ? ' pin' : ''}" href="${esc(pageUrl(p.title))}"><span class="t">${esc(p.title)}</span>${p.image ? `<span class="thumb"><img src="${esc(fileSrc(p.image))}" alt="" loading="lazy"></span>` : `<span class="s">${esc(p.descr || '')}</span>`}</a></li>`;
 }

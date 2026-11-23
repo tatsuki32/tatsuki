@@ -8,12 +8,12 @@ export const FILE_PATH = '/files/';
 // What the browser may show in place. Anything else (Word, zip, HTML, SVG …) is only ever downloaded.
 const KINDS = { image: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'avif'], pdf: ['pdf'], video: ['mp4', 'm4v', 'mov', 'webm'], audio: ['mp3', 'm4a', 'aac', 'wav', 'ogg', 'oga', 'flac'] };
 export const kindOfFile = (name) => { const e = (String(name).match(/\.([a-z0-9]+)$/i) || [])[1]; if (!e) return 'image'; return Object.keys(KINDS).find((k) => KINDS[k].includes(e.toLowerCase())) || 'other'; };
-// A file stored in this notebook: its name, or ''. Files other than pictures count only on this notebook's own address.
-const fileName = (u) => (String(u).match(/^(?:https?:\/\/[^/\s]+)?\/files\/([\w.-]+)$/) || [])[1] || '';
+// A file stored in this notebook: its name, or ''. The same address on another site is an ordinary web address.
 export const ownFile = (u) => (String(u).match(/^(?:https:\/\/rhizomebox\.tany\.im)?\/files\/([\w.-]+)$/) || [])[1] || '';
+export const resolveFile = (u) => (ownFile(u) ? FILE_PATH + ownFile(u) : String(u || ''));
 const isDoc = (u) => { const n = ownFile(u); return !!n && kindOfFile(n) !== 'image'; };
 // An image: a URL ending in a picture type, or a picture stored in this notebook.
-export const isImg = (u) => /^https?:\/\/\S+\.(png|jpe?g|gif|webp|svg|avif)(\?\S*)?$/i.test(u) || (!!fileName(u) && kindOfFile(fileName(u)) === 'image');
+export const isImg = (u) => /^https?:\/\/\S+\.(png|jpe?g|gif|webp|svg|avif)(\?\S*)?$/i.test(u) || (!!ownFile(u) && kindOfFile(ownFile(u)) === 'image');
 // [/files/name.pdf Title]: a stored file with its title.
 export function fileRef(c) {
   const m = c.trim().match(/^(\S+)(?:\s+(.+))?$/);
@@ -83,16 +83,11 @@ export function imagesOf(lines) {
   return out;
 }
 
-/* Every file of this notebook the page shows (pictures, PDFs, …), also inside tables. A visitor may open exactly these. */
+/* Every file of this notebook the page shows (pictures, PDFs, …): drawn by the same code as the page itself, so a
+   visitor may open exactly what the page puts on the screen and nothing more. */
 export function filesOf(lines) {
-  const out = new Set(); let blk = -1;
-  for (let i = 1; i < lines.length; i++) {
-    const raw = lines[i] || '', ind = indOf(raw), t = raw.slice(ind);
-    if (blk >= 0 && ind > blk && raw.trim()) continue;
-    blk = -1;
-    if (/^code:/.test(t)) { blk = ind; continue; }
-    for (const m of t.replace(/`[^`]*`/g, '').matchAll(/\[\[?([^\[\]]+)\]?\]/g)) m[1].trim().split(/\s+/).forEach((u) => { const n = fileName(u); if (n) out.add(n); });
-  }
+  const out = new Set(), none = () => '', add = (u) => { const n = ownFile(u); if (n) out.add(n); return ''; };
+  renderStatic(lines, { link: none, icon: none, ext: none, img: add, file: (f) => add(f.url) });
   return [...out];
 }
 
@@ -162,7 +157,7 @@ export function makeInline(ctx) {
   const ext = ctx.ext || ((u, l) => `<a class="ext" href="${esc(u)}" target="_blank" rel="noopener">${esc(l)}</a>`);
   function bracket(c) {
     let d;
-    if ((d = fileRef(c))) return fileHtml(d);
+    if ((d = fileRef(c))) return (ctx.file || fileHtml)(d);
     if ((d = c.match(/^\$\s+(.+)$/))) return `<span class="formula">${esc(d[1])}</span>`;
     if ((d = c.match(/^([!"#%&'()*+,\-./{|}<>_~]+)\s+(.+)$/))) {
       const sy = d[1], lv = (sy.match(/\*/g) || []).length;

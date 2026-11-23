@@ -1,7 +1,8 @@
 
 // Rhizome Box in the browser: the editor, the views and the graph. Ported from the mockup (version 13).
 // The server holds the pages; this file keeps a light index of all pages and the full text of the open one.
-import { esc, indOf, isUrl, isImg, linksOf as linksOfLines, webLinksOf as webOfLines, imagesOf, textLines as textOfLines, codeBlocks as codeOfLines, makeInline, ytLine, plain, kindOfFile } from './notation.js';
+import { esc, indOf, isUrl, isImg, linksOf as linksOfLines, webLinksOf as webOfLines, imagesOf, textLines as textOfLines, codeBlocks as codeOfLines, makeInline, ytLine, plain, kindOfFile, resolveFile } from './notation.js';
+import { pictureKind, cleanPicture } from './picture.js';
 
 (() => {
 const BOOT = JSON.parse((document.getElementById('boot') || {}).textContent || '{}');
@@ -126,7 +127,7 @@ window.addEventListener('beforeunload', e => {
 
 /* Files and images */
 
-function resolve(u) { return String(u).replace(/^https?:\/\/[^/]+(\/files\/)/, '$1'); }
+const resolve = resolveFile;
 function imgHtml(u, cls) {
   const src = resolve(u);
   if (!src) return `<span class="img-miss">image not found</span>`;
@@ -1019,49 +1020,31 @@ function placeFile(u, d) {
 window.addEventListener('beforeunload', e => { if (ups.some(u => u.state === 'send' || u.state === 'wait')) { e.preventDefault(); e.returnValue = ''; } });
 window.addEventListener('pagehide', () => { for (const u of ups) if (u.state === 'send' && u.key) { try { fetch('/_/api/files/upload/' + u.key, { method: 'DELETE', keepalive: true, credentials: 'same-origin', headers: { 'X-RB': '1' } }); } catch (e) {} } });
 
-/* Pictures before they leave the device: HEIC (iPhone) becomes JPEG where the browser can read it, and the place a JPEG was taken is wiped. */
-async function preparePicture(f) {
-  try {
-    if (/\.hei[cf]$/i.test(f.name) || /^image\/hei[cf]/.test(f.type)) {
-      const bm = await createImageBitmap(f);
-      const k = Math.min(1, 4096 / Math.max(bm.width, bm.height));
-      const c = document.createElement('canvas'); c.width = Math.round(bm.width * k); c.height = Math.round(bm.height * k);
-      c.getContext('2d').drawImage(bm, 0, 0, c.width, c.height);
-      const b = await new Promise(z => c.toBlob(z, 'image/jpeg', .9));
-      if (b) return new File([b], f.name.replace(/\.\w+$/, '') + '.jpg', { type: 'image/jpeg' });
-    } else if (/\.jpe?g$/i.test(f.name) || f.type === 'image/jpeg') {
-      const buf = new Uint8Array(await f.slice(0, 1024 * 1024).arrayBuffer());
-      const n = wipeGps(buf);
-      const name = /\.jpe?g$/i.test(f.name) ? f.name : (f.name || 'picture') + '.jpg';
-      if (n || name !== f.name) return new File([buf, f.slice(buf.length)], name, { type: 'image/jpeg' });
-    } else if (/^image\/(png|gif|webp|avif)$/.test(f.type) && !/\.\w+$/.test(f.name)) return new File([f], (f.name || 'picture') + '.' + f.type.slice(6), { type: f.type });
-  } catch (e) {}
-  return f;
+/* Pictures before they leave the device: the place they were taken is wiped, HEIC (iPhone) becomes JPEG where the
+   browser can read it. A picture that cannot be cleaned is never sent without asking. */
+async function redraw(f, type, ext) {
+  const bm = await createImageBitmap(f);
+  const k = type === 'image/png' ? 1 : Math.min(1, 4096 / Math.max(bm.width, bm.height));
+  const c = document.createElement('canvas'); c.width = Math.round(bm.width * k); c.height = Math.round(bm.height * k);
+  c.getContext('2d').drawImage(bm, 0, 0, c.width, c.height); bm.close();
+  const b = await new Promise(z => c.toBlob(z, type, .92));
+  if (!b || b.type !== type) throw new Error('draw');
+  return new File([b], (f.name || 'picture').replace(/\.\w+$/, '') + ext, { type });
 }
-/* Zero the GPS block of a JPEG's EXIF in place (the rest, such as which way is up, stays). Returns how many were wiped. */
-function wipeGps(b) {
-  let i = 2, n = 0;
-  if (b[0] !== 0xff || b[1] !== 0xd8) return 0;
-  while (i + 4 < b.length && b[i] === 0xff && b[i + 1] !== 0xda) {
-    const len = b[i + 2] << 8 | b[i + 3];
-    if (b[i + 1] === 0xe1 && String.fromCharCode(...b.slice(i + 4, i + 8)) === 'Exif') {
-      const t = i + 10, end = Math.min(i + 2 + len, b.length), v = new DataView(b.buffer, t, end - t), le = v.getUint16(0) === 0x4949;
-      const ifd = v.getUint32(4, le), count = v.getUint16(ifd, le);
-      for (let k = 0; k < count; k++) {
-        const e = ifd + 2 + k * 12;
-        if (v.getUint16(e, le) !== 0x8825) continue;
-        const g = v.getUint32(e + 8, le), m = v.getUint16(g, le), size = [0, 1, 1, 2, 4, 8, 1, 1, 2, 4, 8, 4, 8];
-        for (let q = 0; q < m; q++) {
-          const x = g + 2 + q * 12, bytes = (size[v.getUint16(x + 2, le)] || 1) * v.getUint32(x + 4, le);
-          if (bytes > 4) { const at = v.getUint32(x + 8, le); for (let z = 0; z < bytes; z++) v.setUint8(at + z, 0); }
-          for (let z = 0; z < 12; z++) v.setUint8(x + z, 0);
-        }
-        v.setUint16(g, 0, le); n++;
-      }
-    }
-    i += 2 + len;
+async function preparePicture(f) {
+  const kind = pictureKind(new Uint8Array(await f.slice(0, 32).arrayBuffer()));
+  if (!kind && !/\.(jpe?g|png|webp|avif|hei[cf])$/i.test(f.name) && !/^image\/(jpeg|png|webp|avif|hei[cf])$/.test(f.type)) return f;
+  try {
+    if (!kind) throw new Error('unknown');
+    const ext = { jpeg: '.jpg', png: '.png', webp: '.webp', avif: '.avif', heic: '.heic' }[kind];
+    const buf = new Uint8Array(await f.arrayBuffer());
+    if (cleanPicture(buf, kind) === 'redraw') return kind === 'png' ? await redraw(f, 'image/png', '.png') : await redraw(f, 'image/jpeg', '.jpg');
+    const right = kind === 'jpeg' ? /\.jpe?g$/i : new RegExp('\\' + ext + '$', 'i');
+    return new File([buf], right.test(f.name) ? f.name : (f.name || 'picture').replace(/\.\w{1,5}$/, '') + ext, { type: 'image/' + kind });
+  } catch (e) {
+    if (confirm(`The place where “${f.name}” was taken could not be removed from the picture. Anyone who can open its page could find it. Add it anyway?`)) return f;
+    throw upErr('Not added: its location data could not be removed.');
   }
-  return n;
 }
 function onPaste(e) {
   const ta = e.target, p = byId(S.cur), cd = e.clipboardData; if (!cd) return;

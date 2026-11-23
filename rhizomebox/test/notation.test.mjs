@@ -70,3 +70,13 @@ test('stored files: title kept, not an image, not a page link, not a web link', 
   const h = makeInline({ link: (a, b) => b, icon: (n) => n, img: (u) => u })('[/files/x.zip "><script>]');
   assert.ok(h.includes('download') && !h.includes('<script>'));
 });
+
+test('a visitor may open exactly the files the page draws', async () => {
+  const { filesOf, isImg, resolveFile } = await import('../public/app/notation.js');
+  const hidden = ['[/files/t.pdf title line]', '$ [/files/a.pdf x]', '% [/files/b.png]', '[$ /files/c.pdf]', '[note /files/d.pdf]', '[https://other.example/files/e.png]', '[https://other.example/files/f.pdf x]', '`[/files/g.pdf]`', '/files/h.pdf', 'code:z', ' [/files/i.pdf x]', '', '[* /files/j.pdf]'];
+  assert.deepEqual(filesOf(hidden), []);
+  assert.deepEqual(filesOf(['t', '> [/files/k.pdf q]', '[[/files/l.png]]', '[https://rhizomebox.tany.im/files/m.png]']), ['k.pdf', 'l.png', 'm.png']);
+  assert.equal(resolveFile('https://other.example/files/e.png'), 'https://other.example/files/e.png');
+  assert.equal(resolveFile('https://rhizomebox.tany.im/files/m.png'), '/files/m.png');
+  assert.ok(isImg('https://other.example/files/e.png'));
+});
