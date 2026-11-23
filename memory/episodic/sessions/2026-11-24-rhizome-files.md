@@ -1,9 +1,9 @@
 # 2026-11-24 Rhizome Box のファイルと容量メーター
 
 ## ひとこと
-- いま：手元で全部動いた。main に入れた
-- 次：本番のサイトに出す
-- 待ち：公開の OK
+- いま：本番に公開した
+- 次：本物の写真と PDF を入れてみる
+- 待ち：iPhone での確認
 
 ## やったこと
 - 要件定義（https://claude.ai/artifact/LwmXbeKMNe7CnjJ2czmDHd ）→ 本人の「進めて」で実装。
@@ -25,4 +25,4 @@
 - 長い行を含む Python を標準入力で渡すと文字コードのエラーになる。ファイルに書いて渡す。
 
 ## 次の一手
-- `cd rhizomebox && npx wrangler d1 execute rhizomebox --remote --file schema.sql` → `npx wrangler deploy` → 本番で小さいファイルを1つ → Desk のサーバーを再起動。
+- 公開済み（schema → deploy、前の版は c284bd4d）。Desk のサーバーも再起動し、使用量が読めた。残りは本人のログインでの本番のアップロードと iPhone 実機（HEIC）。
