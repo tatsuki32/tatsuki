@@ -2,7 +2,7 @@
 // Rhizome Box in the browser: the editor, the views and the graph. Ported from the mockup (version 13).
 // The server holds the pages; this file keeps a light index of all pages and the full text of the open one.
 import { esc, indOf, isUrl, isImg, linksOf as linksOfLines, webLinksOf as webOfLines, imagesOf, textLines as textOfLines, codeBlocks as codeOfLines, makeInline, ytLine, plain, kindOfFile, resolveFile } from './notation.js';
-import { pictureKind, cleanPicture } from './picture.js';
+import { pictureKind, looksLikePicture, cleanPicture } from './picture.js';
 
 (() => {
 const BOOT = JSON.parse((document.getElementById('boot') || {}).textContent || '{}');
@@ -1020,27 +1020,28 @@ function placeFile(u, d) {
 window.addEventListener('beforeunload', e => { if (ups.some(u => u.state === 'send' || u.state === 'wait')) { e.preventDefault(); e.returnValue = ''; } });
 window.addEventListener('pagehide', () => { for (const u of ups) if (u.state === 'send' && u.key) { try { fetch('/_/api/files/upload/' + u.key, { method: 'DELETE', keepalive: true, credentials: 'same-origin', headers: { 'X-RB': '1' } }); } catch (e) {} } });
 
-/* Pictures before they leave the device: the place they were taken is wiped, HEIC (iPhone) becomes JPEG where the
-   browser can read it. A picture that cannot be cleaned is never sent without asking. */
-async function redraw(f, type, ext) {
+/* Pictures before they leave the device: rebuilt from what is needed to draw them (picture.js), so the place they were
+   taken stays behind. HEIC and AVIF are drawn again as JPEG where the browser can read them. A picture that cannot be
+   rebuilt, or a kind this page does not know, is never sent without asking. */
+async function redraw(f) {
   const bm = await createImageBitmap(f);
-  const k = type === 'image/png' ? 1 : Math.min(1, 4096 / Math.max(bm.width, bm.height));
+  const k = Math.min(1, 4096 / Math.max(bm.width, bm.height));
   const c = document.createElement('canvas'); c.width = Math.round(bm.width * k); c.height = Math.round(bm.height * k);
-  c.getContext('2d').drawImage(bm, 0, 0, c.width, c.height); bm.close();
-  const b = await new Promise(z => c.toBlob(z, type, .92));
-  if (!b || b.type !== type) throw new Error('draw');
-  return new File([b], (f.name || 'picture').replace(/\.\w+$/, '') + ext, { type });
+  const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(bm, 0, 0, c.width, c.height); bm.close();
+  const b = await new Promise(z => c.toBlob(z, 'image/jpeg', .92));
+  if (!b || b.type !== 'image/jpeg') throw new Error('draw');
+  return new File([b], (f.name || 'picture').replace(/\.\w{1,5}$/, '') + '.jpg', { type: 'image/jpeg' });
 }
 async function preparePicture(f) {
-  const kind = pictureKind(new Uint8Array(await f.slice(0, 32).arrayBuffer()));
-  if (!kind && !/\.(jpe?g|png|webp|avif|hei[cf])$/i.test(f.name) && !/^image\/(jpeg|png|webp|avif|hei[cf])$/.test(f.type)) return f;
+  const start = new Uint8Array(await f.slice(0, 32).arrayBuffer());
+  if (!looksLikePicture(f.name, f.type, start)) return f;
+  if (f.size > MAX_FILE) throw upErr(upFail.size);
   try {
-    if (!kind) throw new Error('unknown');
-    const ext = { jpeg: '.jpg', png: '.png', webp: '.webp', avif: '.avif', heic: '.heic' }[kind];
-    const buf = new Uint8Array(await f.arrayBuffer());
-    if (cleanPicture(buf, kind) === 'redraw') return kind === 'png' ? await redraw(f, 'image/png', '.png') : await redraw(f, 'image/jpeg', '.jpg');
-    const right = kind === 'jpeg' ? /\.jpe?g$/i : new RegExp('\\' + ext + '$', 'i');
-    return new File([buf], right.test(f.name) ? f.name : (f.name || 'picture').replace(/\.\w{1,5}$/, '') + ext, { type: 'image/' + kind });
+    const kind = pictureKind(start);
+    const bytes = cleanPicture(new Uint8Array(await f.arrayBuffer()), kind);
+    if (!bytes) return await redraw(f);
+    const ext = kind === 'jpeg' ? '.jpg' : '.' + kind, right = kind === 'jpeg' ? /\.jpe?g$/i : new RegExp('\\' + ext + '$', 'i');
+    return new File([bytes], right.test(f.name) ? f.name : (f.name || 'picture').replace(/\.\w{1,5}$/, '') + ext, { type: 'image/' + kind });
   } catch (e) {
     if (confirm(`The place where “${f.name}” was taken could not be removed from the picture. Anyone who can open its page could find it. Add it anyway?`)) return f;
     throw upErr('Not added: its location data could not be removed.');
