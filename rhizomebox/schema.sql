@@ -60,10 +60,24 @@ CREATE TABLE IF NOT EXISTS linkmeta (
   ok INTEGER NOT NULL DEFAULT 1
 );
 
--- Pictures pasted into pages (the files themselves are in R2).
+-- Files added to pages: pictures, PDFs, anything (the files themselves are in R2).
 CREATE TABLE IF NOT EXISTS files (
   name TEXT PRIMARY KEY,
   type TEXT NOT NULL,
   size INTEGER NOT NULL,
+  created INTEGER NOT NULL
+);
+
+-- The name a file had on the owner's device (shown in Storage, used for downloads).
+CREATE TABLE IF NOT EXISTS fileinfo (
+  name TEXT PRIMARY KEY,
+  orig TEXT NOT NULL DEFAULT ''
+);
+-- Uploads under way: their room is held until they finish or are dropped.
+CREATE TABLE IF NOT EXISTS uploads (
+  name TEXT PRIMARY KEY,
+  orig TEXT NOT NULL DEFAULT '',
+  size INTEGER NOT NULL,
+  upload TEXT NOT NULL DEFAULT '',
   created INTEGER NOT NULL
 );

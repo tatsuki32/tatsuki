@@ -5,8 +5,22 @@ export const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&am
 export const indOf = (l) => l.match(/^\s*/)[0].length;
 export const isUrl = (u) => /^https?:\/\/[^\s<>"]+$/.test(u);
 export const FILE_PATH = '/files/';
-// An image: a URL ending in a picture type, or a file stored in this notebook.
-export const isImg = (u) => /^https?:\/\/\S+\.(png|jpe?g|gif|webp|svg|avif)(\?\S*)?$/i.test(u) || /^(https?:\/\/[^/\s]+)?\/files\/[\w.-]+$/.test(u);
+// What the browser may show in place. Anything else (Word, zip, HTML, SVG …) is only ever downloaded.
+const KINDS = { image: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'avif'], pdf: ['pdf'], video: ['mp4', 'm4v', 'mov', 'webm'], audio: ['mp3', 'm4a', 'aac', 'wav', 'ogg', 'oga', 'flac'] };
+export const kindOfFile = (name) => { const e = (String(name).match(/\.([a-z0-9]+)$/i) || [])[1]; if (!e) return 'image'; return Object.keys(KINDS).find((k) => KINDS[k].includes(e.toLowerCase())) || 'other'; };
+// A file stored in this notebook: its name, or ''. Files other than pictures count only on this notebook's own address.
+const fileName = (u) => (String(u).match(/^(?:https?:\/\/[^/\s]+)?\/files\/([\w.-]+)$/) || [])[1] || '';
+export const ownFile = (u) => (String(u).match(/^(?:https:\/\/rhizomebox\.tany\.im)?\/files\/([\w.-]+)$/) || [])[1] || '';
+const isDoc = (u) => { const n = ownFile(u); return !!n && kindOfFile(n) !== 'image'; };
+// An image: a URL ending in a picture type, or a picture stored in this notebook.
+export const isImg = (u) => /^https?:\/\/\S+\.(png|jpe?g|gif|webp|svg|avif)(\?\S*)?$/i.test(u) || (!!fileName(u) && kindOfFile(fileName(u)) === 'image');
+// [/files/name.pdf Title]: a stored file with its title.
+export function fileRef(c) {
+  const m = c.trim().match(/^(\S+)(?:\s+(.+))?$/);
+  if (!m || !isDoc(m[1])) return null;
+  const name = ownFile(m[1]);
+  return { name, url: FILE_PATH + name, kind: kindOfFile(name), label: (m[2] || name).trim() };
+}
 const DECO = /^[!"#%&'()*+,\-./{|}<>_~$]+\s/;
 
 /* Walk the body lines (title excluded), skipping the inside of code and table blocks. */
@@ -50,12 +64,12 @@ export function webLinksOf(lines) {
       const c = m[1].trim();
       if (DECO.test(c)) continue;
       const parts = c.split(/\s+/);
-      const urls = parts.filter(isUrl).filter((u) => !isImg(u));
+      const urls = parts.filter(isUrl).filter((u) => !isImg(u) && !isDoc(u));
       if (!urls.length) continue;
       const label = parts.filter((x) => !isUrl(x)).join(' ');
       urls.forEach((url) => out.push({ url, label }));
     }
-    for (const m of rest.matchAll(/https?:\/\/[^\s\]<>"]+/g)) if (!isImg(m[0])) out.push({ url: m[0], label: '' });
+    for (const m of rest.matchAll(/https?:\/\/[^\s\]<>"]+/g)) if (!isImg(m[0]) && !isDoc(m[0])) out.push({ url: m[0], label: '' });
   });
   return out;
 }
@@ -69,9 +83,22 @@ export function imagesOf(lines) {
   return out;
 }
 
+/* Every file of this notebook the page shows (pictures, PDFs, …), also inside tables. A visitor may open exactly these. */
+export function filesOf(lines) {
+  const out = new Set(); let blk = -1;
+  for (let i = 1; i < lines.length; i++) {
+    const raw = lines[i] || '', ind = indOf(raw), t = raw.slice(ind);
+    if (blk >= 0 && ind > blk && raw.trim()) continue;
+    blk = -1;
+    if (/^code:/.test(t)) { blk = ind; continue; }
+    for (const m of t.replace(/`[^`]*`/g, '').matchAll(/\[\[?([^\[\]]+)\]?\]/g)) m[1].trim().split(/\s+/).forEach((u) => { const n = fileName(u); if (n) out.add(n); });
+  }
+  return [...out];
+}
+
 export const plain = (s) => s
   .replace(/\[\[([^\[\]]+)\]\]/g, '$1')
-  .replace(/\[([!"#%&'()*+,\-./{|}<>_~$]+\s+)?([^\[\]]+)\]/g, (a, b, c) => (isUrl(c.trim()) || /\.icon(\*\d+)?$/.test(c) || isImg(c.trim()) ? '' : c))
+  .replace(/\[([!"#%&'()*+,\-./{|}<>_~$]+\s+)?([^\[\]]+)\]/g, (a, b, c) => (fileRef(c) ? fileRef(c).label : isUrl(c.trim()) || /\.icon(\*\d+)?$/.test(c) || isImg(c.trim()) ? '' : c))
   .replace(/`/g, '');
 
 /* Readable lines of a page, without code and table blocks. */
@@ -118,12 +145,24 @@ export function ytLine(t) {
   try { const h = new URL(m[1]).hostname.replace(/^www\./, ''); return /(^|\.)youtube\.com$|^youtu\.be$/.test(h) ? m[1] : ''; } catch (e) { return ''; }
 }
 
+/* A stored file in the page: a bar with its name, and the PDF, video or sound itself. */
+export function fileHtml(f) {
+  const u = esc(f.url), name = esc(f.label), kind = { pdf: 'PDF', video: 'Video', audio: 'Audio' }[f.kind] || esc((f.name.split('.').pop() || 'file').toUpperCase());
+  const bar = `<span class="fbar"><b>${name}</b><small>${kind}<i data-fsize="${esc(f.name)}"></i></small><a href="${u}" ${f.kind === 'other' ? 'download' : 'target="_blank" rel="noopener"'}>${f.kind === 'other' ? 'Download' : f.kind === 'pdf' ? 'Open PDF ↗' : 'Open ↗'}</a></span>`;
+  // Phones show only the first page of an embedded PDF: there the bar with "Open PDF" stands alone (app.css).
+  const show = f.kind === 'pdf' ? `<iframe src="${u}#view=FitH&amp;navpanes=0" loading="lazy" title="${name}"></iframe>`
+    : f.kind === 'video' ? `<video src="${u}" controls playsinline preload="metadata"></video>`
+    : f.kind === 'audio' ? `<audio src="${u}" controls preload="metadata"></audio>` : '';
+  return `<span class="fbox f-${f.kind}" contenteditable="false">${bar}${show}</span>`;
+}
+
 /* Inline notation → HTML. ctx decides how page links, icons, images and web links look:
    ctx.link(title, label), ctx.icon(name, count), ctx.img(url, cls), ctx.ext(url, label). */
 export function makeInline(ctx) {
   const ext = ctx.ext || ((u, l) => `<a class="ext" href="${esc(u)}" target="_blank" rel="noopener">${esc(l)}</a>`);
   function bracket(c) {
     let d;
+    if ((d = fileRef(c))) return fileHtml(d);
     if ((d = c.match(/^\$\s+(.+)$/))) return `<span class="formula">${esc(d[1])}</span>`;
     if ((d = c.match(/^([!"#%&'()*+,\-./{|}<>_~]+)\s+(.+)$/))) {
       const sy = d[1], lv = (sy.match(/\*/g) || []).length;

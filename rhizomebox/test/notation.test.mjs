@@ -55,3 +55,18 @@ test('rendering escapes everything a page author types', () => {
   assert.match(h, /sandbox=""/);
   assert.doesNotMatch(h, /<script>x/);
 });
+
+test('stored files: title kept, not an image, not a page link, not a web link', async () => {
+  const { filesOf, fileRef, kindOfFile, isImg } = await import('../public/app/notation.js');
+  const L = ['t', '[/files/a1.pdf Yearly report.icon]', '[https://rhizomebox.tany.im/files/b2.zip]', '[/files/c3.png]', '`[/files/no.pdf x]`', 'table:x', ' [/files/d4.mp4 v]\tb', 'code:z', ' [/files/no2.pdf x]'];
+  assert.deepEqual(filesOf(L), ['a1.pdf', 'b2.zip', 'c3.png', 'd4.mp4']);
+  assert.deepEqual(imagesOf(L), ['/files/c3.png']);
+  assert.deepEqual(linksOf(L), []);
+  assert.deepEqual(webLinksOf(L), []);
+  assert.equal(textLines(L)[0], 'Yearly report.icon');
+  assert.equal(fileRef('/files/c3.png a'), null);
+  assert.equal(fileRef('https://other.example/files/x.pdf a'), null, 'other sites are links, as before');
+  assert.equal(kindOfFile('x.SVG'), 'other'); assert.ok(!isImg('/files/a1.pdf'));
+  const h = makeInline({ link: (a, b) => b, icon: (n) => n, img: (u) => u })('[/files/x.zip "><script>]');
+  assert.ok(h.includes('download') && !h.includes('<script>'));
+});

@@ -1,7 +1,7 @@
 
 // Rhizome Box in the browser: the editor, the views and the graph. Ported from the mockup (version 13).
 // The server holds the pages; this file keeps a light index of all pages and the full text of the open one.
-import { esc, indOf, isUrl, isImg, linksOf as linksOfLines, webLinksOf as webOfLines, imagesOf, textLines as textOfLines, codeBlocks as codeOfLines, makeInline, ytLine, plain } from './notation.js';
+import { esc, indOf, isUrl, isImg, linksOf as linksOfLines, webLinksOf as webOfLines, imagesOf, textLines as textOfLines, codeBlocks as codeOfLines, makeInline, ytLine, plain, kindOfFile } from './notation.js';
 
 (() => {
 const BOOT = JSON.parse((document.getElementById('boot') || {}).textContent || '{}');
@@ -237,6 +237,38 @@ function bodyHtml(p) {
   });
   flush();
   return h;
+}
+/* Redraw only the lines that changed, so an open PDF or a playing video is not reloaded by every click. */
+const lineKey = new WeakMap();
+const keyOf = el => el.outerHTML.replace(/ data-i="\d+"/, '').replace(/^(<div class="line[^"]*?) tel\b/, '$1');
+function markBody() { const b = $('#body'); if (b) { for (const el of b.children) if (!lineKey.has(el)) lineKey.set(el, keyOf(el)); fileSizes(); } }
+function setBody(p) {
+  const b = $('#body'); if (!b) return;
+  const t = document.createElement('template'); t.innerHTML = bodyHtml(p);
+  const next = [...t.content.children], old = [...b.children].filter(el => lineKey.has(el) || (el.remove(), false));
+  const nk = next.map(keyOf), ok = old.map(el => el.querySelector('#ed') ? '' : lineKey.get(el));
+  const same = (i, j) => nk[i] === ok[j] && !next[i].querySelector('#ed');
+  const keep = (i, j) => { if (old[j].dataset.i !== undefined) old[j].dataset.i = next[i].dataset.i; if (old[j].className !== next[i].className) old[j].className = next[i].className; };
+  const put = (i, before) => { lineKey.set(next[i], nk[i]); b.insertBefore(next[i], before); };
+  let a = 0; while (a < next.length && a < old.length && same(a, a)) { keep(a, a); a++; }
+  let z = 0; while (z < next.length - a && z < old.length - a && same(next.length - 1 - z, old.length - 1 - z)) { keep(next.length - 1 - z, old.length - 1 - z); z++; }
+  const nEnd = next.length - z, oEnd = old.length - z;
+  if (nEnd - a === oEnd - a) for (let i = a; i < nEnd; i++) { if (same(i, i)) keep(i, i); else { put(i, old[i]); old[i].remove(); } }
+  else { for (let i = a; i < nEnd; i++) put(i, old[a] || null); for (let j = a; j < oEnd; j++) old[j].remove(); }
+  fileSizes();
+}
+/* The size of each file on the page, asked once. */
+const sizeOf = new Map();
+const fmtSize = n => n >= 1e9 ? (n / 1e9).toFixed(n >= 1e10 ? 0 : 2).replace(/\.?0+$/, '') + ' GB' : n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 0 : 1).replace(/\.0$/, '') + ' MB' : n >= 1e3 ? Math.round(n / 1e3) + ' KB' : n + ' B';
+function fileSizes() {
+  document.querySelectorAll('#body [data-fsize]:empty').forEach(async el => {
+    const n = el.dataset.fsize;
+    if (!sizeOf.has(n)) sizeOf.set(n, fetch('/files/' + n, { method: 'HEAD', credentials: 'same-origin' }).then(r => r.ok ? +r.headers.get('Content-Length') : -1).catch(() => 0));
+    const v = await sizeOf.get(n);
+    if (!v) { sizeOf.delete(n); return; }
+    if (v < 0) { sizeOf.delete(n); const box = el.closest('.fbox'); if (box) box.classList.add('gone'); el.textContent = ' · not found'; return; }
+    el.textContent = ' · ' + fmtSize(v);
+  });
 }
 function applyUserCss() {
   let css = '';
@@ -546,7 +578,9 @@ function strayHtml(p) {
 }
 
 /* Views */
-const tabsHtml = which => `<nav class="tabs" aria-label="Views">${[['home', 'Pages'], ['links', 'Links'], ['web', 'Web links'], ['images', 'Images'], ['graph', 'Graph']].map(([k, l]) => `<a href="${k === 'home' ? '/' : '/_/' + k}" ${which === k ? 'aria-current="page"' : ''}>${l}</a>`).join('')}</nav>`;
+const tabsHtml = which => `<nav class="tabs" aria-label="Views">${[['home', 'Pages'], ['links', 'Links'], ['web', 'Web links'], ['images', 'Images'], ['graph', 'Graph'], ...(OWNER && !S.visitor ? [['storage', 'Storage']] : [])].map(([k, l]) => `<a href="${k === 'home' ? '/' : '/_/' + k}" ${which === k ? 'aria-current="page"' : ''}>${l}</a>`).join('')}</nav>`;
+/* On a phone the tabs scroll sideways: bring the current one into view. */
+const showTab = () => { const c = $('.tabs a[aria-current]'); if (c) { const t = c.parentNode; t.scrollLeft = Math.max(0, c.getBoundingClientRect().right + t.scrollLeft - t.getBoundingClientRect().right); } };
 const dropGraph = () => { if (S.graph) { S.graph.destroy(); S.graph = null; } S.graphSig = ''; };
 function renderHome() {
   dropGraph();
@@ -631,6 +665,7 @@ function renderPage(p) {
       </div>
       ${title(p) === ME ? profileHero(p) : ''}
       <div id="body">${bodyHtml(p)}</div>
+      ${S.visitor ? '' : `<div class="addfile"><button class="btn sm" id="addFile" type="button">Add file</button><input id="filePick" type="file" multiple hidden aria-label="Choose files"></div>`}
       <div class="pfoot" id="pfoot">${pfootHtml(p)}</div>
     </article>
     <section class="conn" aria-label="Connections">
@@ -642,7 +677,9 @@ function renderPage(p) {
       <div id="newLinks"></div>
       ${strayHtml(p)}
     </div>`;
+  markBody();
   renderRelated(p);
+  const af = $('#addFile'); if (af) { af.onclick = () => $('#filePick').click(); $('#filePick').onchange = e => { addFiles([...e.target.files], p); e.target.value = ''; }; }
   const v = $('#vis'); if (v) v.onclick = () => toggleVis(p);
   const pb = $('#pinBtn'); if (pb) pb.onclick = () => togglePin(p);
   const hb = $('#histBtn'); if (hb) hb.onclick = () => openHistory(p);
@@ -697,7 +734,7 @@ function renderRelated(p) {
 function rerenderBody() {
   const p = byId(S.cur); if (!p) return;
   computeHeat(); applyUserCss();
-  $('#body').innerHTML = bodyHtml(p);
+  setBody(p);
   if (S.edit >= 0) mountEditor(p);
   if (S.range) drawRangeBar();
 }
@@ -730,7 +767,7 @@ function startEdit(i, caret) {
   snapshot(p);
   S.edit = i;
   S.edInd = i === 0 ? 0 : indOf(p.lines[i]);
-  $('#body').innerHTML = bodyHtml(p);
+  setBody(p);
   mountEditor(p, caret);
 }
 function mountEditor(p, caret) {
@@ -755,7 +792,7 @@ function commit() {
   if (p.lines[S.edit] !== v) { p.lines[S.edit] = v; p.updated = Date.now(); S.touched.add(p.id + ':' + S.edit); save(); }
 }
 function stopEdit() {
-  commit(); S.edit = -1; hideAc(); hideSel();
+  commit(); S.last = { id: S.cur, line: S.edit }; S.edit = -1; hideAc(); hideSel();
   const p = byId(S.cur); if (p) { rerenderBody(); renderRelated(p, false); }
 }
 function onInput(e) {
@@ -870,21 +907,166 @@ function caretRow(ta) {
   return 'mid';
 }
 
-/* Paste and drop: images become files on this notebook's domain; several lines become several lines. */
-function addImage(file, cb) {
-  if (!file || !/^image\/(png|jpeg|gif|webp|avif)$/.test(file.type)) { if (file) toast('Only PNG, JPEG, GIF, WebP and AVIF pictures can be added.'); return false; }
-  if (file.size > 10 * 1024 * 1024) { toast('Pictures can be up to 10 MB.'); return false; }
-  toast('Uploading the picture…');
-  api('POST', '/_/api/files', file, true).then(r => {
-    if (r.ok) { cb('[' + r.data.url + ']'); toast('Picture added.'); }
-    else toast(r.status === 401 ? 'Sign in again to add pictures.' : 'The picture could not be uploaded.');
-  }).catch(() => toast('The picture could not be uploaded. Check the connection.'));
-  return true;
+/* Add files: the button, paste and drop all come here. Pieces of 16 MB, one file at a time, with a progress row each. */
+const MAX_FILE = 500e6, ups = [];
+let upBusy = false;
+const upFail = { size: 'Files can be up to 500 MB each.', empty: 'This file is empty.', full: 'There is no room for this file. Free some in Storage.', 401: 'Sign in again to add files.' };
+function addFiles(files, p, o = {}) {
+  if (!OWNER || S.visitor || !p || !files.length) return;
+  const batch = { p, caret: o.caret, after: S.edit >= 0 && S.cur === p.id ? S.edit : S.last && S.last.id === p.id ? S.last.line : -1, last: null };
+  for (const f of files) ups.push({ f, name: f.name || 'file', size: f.size, batch, done: 0, state: 'wait', xhr: null });
+  drawUps(); runUps();
+}
+async function runUps() {
+  if (upBusy) return;
+  upBusy = true;
+  try { for (let u; (u = ups.find(x => x.state === 'wait'));) await sendUp(u); }
+  finally { upBusy = false; }
+}
+const upErr = m => Object.assign(new Error(m), { say: m });
+async function sendUp(u) {
+  u.state = 'send'; drawUps();
+  let key = '';
+  try {
+    let f = await preparePicture(u.f);
+    if (f.name) u.name = f.name;
+    u.size = f.size;
+    if (!f.size) throw upErr(upFail.empty);
+    if (f.size > MAX_FILE) throw upErr(upFail.size);
+    const r = await api('POST', '/_/api/files/start', { name: u.name, size: f.size });
+    if (!r.ok) throw upErr(upFail[r.data.error] || upFail[r.status] || 'The upload could not start. Try again.');
+    key = u.key = r.data.name;
+    const parts = [];
+    for (let n = 1; n <= r.data.parts; n++) {
+      const blob = f.slice((n - 1) * r.data.part, n * r.data.part);
+      for (let tries = 0; ; tries++) {
+        if (u.state === 'stop') throw upErr('');
+        try { parts.push(await putPart(u, key, n, blob, (n - 1) * r.data.part)); break; }
+        catch (e) { if (u.state === 'stop' || e.final || tries >= 3) throw e; await new Promise(z => setTimeout(z, 1500 * (tries + 1))); }
+      }
+    }
+    let d;
+    for (let tries = 0; ; tries++) {
+      d = await api('POST', '/_/api/files/done/' + key, { parts }).catch(() => null);
+      if ((d && d.status < 500) || tries >= 3) break;
+      await new Promise(z => setTimeout(z, 1500 * (tries + 1)));
+    }
+    if (!d || !d.ok) throw upErr('');
+    key = '';
+    u.done = u.size; u.state = 'ok';
+    placeFile(u, d.data);
+    setTimeout(() => { ups.splice(ups.indexOf(u), 1); drawUps(); }, 1600);
+  } catch (e) {
+    if (key) api('DELETE', '/_/api/files/upload/' + key).catch(() => {});
+    if (u.state === 'stop') ups.splice(ups.indexOf(u), 1);
+    else { u.state = 'bad'; u.err = e.say || 'The upload stopped. Check the connection and try again.'; }
+  }
+  drawUps();
+}
+// XMLHttpRequest because fetch cannot tell how much has been sent
+function putPart(u, key, n, blob, before) {
+  return new Promise((ok, no) => {
+    const x = u.xhr = new XMLHttpRequest();
+    x.open('PUT', `/_/api/files/part/${key}/${n}`);
+    x.setRequestHeader('X-RB', '1'); x.setRequestHeader('Content-Type', 'application/octet-stream');
+    x.upload.onprogress = e => { u.done = before + e.loaded; drawUps(); };
+    x.onload = () => { if (x.status === 200) { try { return ok(JSON.parse(x.responseText)); } catch (e) { return no(e); } } const e = x.status === 401 ? upErr(upFail[401]) : new Error('part'); e.final = x.status >= 400 && x.status < 500; no(e); };
+    x.onerror = x.onabort = () => no(new Error('net'));
+    x.send(blob);
+  });
+}
+function drawUps() {
+  let box = $('#ups');
+  if (!ups.length) { if (box) box.remove(); return; }
+  if (!box) {
+    box = document.createElement('div'); box.id = 'ups'; box.setAttribute('role', 'status'); box.setAttribute('aria-label', 'Uploads'); document.body.appendChild(box);
+    box.addEventListener('click', e => {
+      const b = e.target.closest('[data-up]'); if (!b) return; e.stopPropagation();
+      const u = ups[+b.dataset.up]; if (!u) return;
+      if (b.dataset.act === 'retry') { u.state = 'wait'; u.err = ''; u.done = 0; drawUps(); return runUps(); }
+      if (u.state === 'send') { u.state = 'stop'; if (u.xhr) u.xhr.abort(); drawUps(); }
+      else { ups.splice(ups.indexOf(u), 1); drawUps(); }
+    });
+  }
+  box.innerHTML = ups.map((u, i) => {
+    const pc = u.size ? Math.min(100, Math.floor(u.done / u.size * 100)) : 0;
+    const say = u.state === 'bad' ? u.err : u.state === 'wait' ? 'Waiting' : u.state === 'ok' ? 'Added' : u.state === 'stop' ? 'Stopping' : `${pc}% of ${fmtSize(u.size)}`;
+    return `<div class="up ${u.state}"><b>${esc(u.name)}</b><span>${esc(say)}</span>${u.state === 'ok' || u.state === 'stop' ? '' : `<span class="act">${u.state === 'bad' ? `<button type="button" data-up="${i}" data-act="retry">Try again</button>` : ''}<button type="button" data-up="${i}" data-act="x">${u.state === 'bad' ? 'Dismiss' : 'Cancel'}</button></span>`}<i class="bar"><i style="width:${u.state === 'bad' ? 0 : pc}%"></i></i></div>`;
+  }).join('');
+}
+/* Write the new file into the page it was meant for: at the caret for a pasted picture, else on its own line. */
+function placeFile(u, d) {
+  const p = byId(u.batch.p.id);
+  if (!p || !p.lines) return toast('The file is in Storage. Its page is no longer open.');
+  const label = u.name.replace(/[\[\]`]/g, ' ').replace(/\s+/g, ' ').trim();
+  const ref = d.kind === 'image' ? `[${d.url}]` : `[${d.url} ${label}]`;
+  const here = S.cur === p.id, ta = $('#ed');
+  if (u.batch.caret && here && ta && S.edit === u.batch.caret.line && d.kind === 'image') { insertAtCaret(ta, ref); return; }
+  const caret = here && ta ? ta.selectionStart : 0;
+  if (here) commit();
+  snapshot(p);
+  let at = u.batch.last ? p.lines.indexOf(u.batch.last) + 1 : 0;
+  if (!at) at = u.batch.after > 0 ? Math.min(u.batch.after + 1, p.lines.length) : p.lines.length;
+  if (at < 1) at = 1;
+  // never in the middle of a code or table block
+  for (let k = 1, blk = -1; k < p.lines.length; k++) { const ind = indOf(p.lines[k]); if (blk >= 0 && ind > blk && p.lines[k].trim()) { if (k === at) at = k + 1; continue; } blk = /^(code|table):/.test(p.lines[k].slice(ind)) ? ind : -1; }
+  if (at === p.lines.length && at > 1 && !p.lines[at - 1].trim() && !(here && S.edit === at - 1)) at--;
+  p.lines.splice(at, 0, ref); u.batch.last = ref;
+  if (here && S.edit >= at) S.edit++;
+  S.touched.add(p.id + ':' + at); p.updated = Date.now(); save(p);
+  if (here) { setBody(p); if (S.edit >= 0) mountEditor(p, caret); renderRelated(p, false); }
+}
+window.addEventListener('beforeunload', e => { if (ups.some(u => u.state === 'send' || u.state === 'wait')) { e.preventDefault(); e.returnValue = ''; } });
+window.addEventListener('pagehide', () => { for (const u of ups) if (u.state === 'send' && u.key) { try { fetch('/_/api/files/upload/' + u.key, { method: 'DELETE', keepalive: true, credentials: 'same-origin', headers: { 'X-RB': '1' } }); } catch (e) {} } });
+
+/* Pictures before they leave the device: HEIC (iPhone) becomes JPEG where the browser can read it, and the place a JPEG was taken is wiped. */
+async function preparePicture(f) {
+  try {
+    if (/\.hei[cf]$/i.test(f.name) || /^image\/hei[cf]/.test(f.type)) {
+      const bm = await createImageBitmap(f);
+      const k = Math.min(1, 4096 / Math.max(bm.width, bm.height));
+      const c = document.createElement('canvas'); c.width = Math.round(bm.width * k); c.height = Math.round(bm.height * k);
+      c.getContext('2d').drawImage(bm, 0, 0, c.width, c.height);
+      const b = await new Promise(z => c.toBlob(z, 'image/jpeg', .9));
+      if (b) return new File([b], f.name.replace(/\.\w+$/, '') + '.jpg', { type: 'image/jpeg' });
+    } else if (/\.jpe?g$/i.test(f.name) || f.type === 'image/jpeg') {
+      const buf = new Uint8Array(await f.slice(0, 1024 * 1024).arrayBuffer());
+      const n = wipeGps(buf);
+      const name = /\.jpe?g$/i.test(f.name) ? f.name : (f.name || 'picture') + '.jpg';
+      if (n || name !== f.name) return new File([buf, f.slice(buf.length)], name, { type: 'image/jpeg' });
+    } else if (/^image\/(png|gif|webp|avif)$/.test(f.type) && !/\.\w+$/.test(f.name)) return new File([f], (f.name || 'picture') + '.' + f.type.slice(6), { type: f.type });
+  } catch (e) {}
+  return f;
+}
+/* Zero the GPS block of a JPEG's EXIF in place (the rest, such as which way is up, stays). Returns how many were wiped. */
+function wipeGps(b) {
+  let i = 2, n = 0;
+  if (b[0] !== 0xff || b[1] !== 0xd8) return 0;
+  while (i + 4 < b.length && b[i] === 0xff && b[i + 1] !== 0xda) {
+    const len = b[i + 2] << 8 | b[i + 3];
+    if (b[i + 1] === 0xe1 && String.fromCharCode(...b.slice(i + 4, i + 8)) === 'Exif') {
+      const t = i + 10, end = Math.min(i + 2 + len, b.length), v = new DataView(b.buffer, t, end - t), le = v.getUint16(0) === 0x4949;
+      const ifd = v.getUint32(4, le), count = v.getUint16(ifd, le);
+      for (let k = 0; k < count; k++) {
+        const e = ifd + 2 + k * 12;
+        if (v.getUint16(e, le) !== 0x8825) continue;
+        const g = v.getUint32(e + 8, le), m = v.getUint16(g, le), size = [0, 1, 1, 2, 4, 8, 1, 1, 2, 4, 8, 4, 8];
+        for (let q = 0; q < m; q++) {
+          const x = g + 2 + q * 12, bytes = (size[v.getUint16(x + 2, le)] || 1) * v.getUint32(x + 4, le);
+          if (bytes > 4) { const at = v.getUint32(x + 8, le); for (let z = 0; z < bytes; z++) v.setUint8(at + z, 0); }
+          for (let z = 0; z < 12; z++) v.setUint8(x + z, 0);
+        }
+        v.setUint16(g, 0, le); n++;
+      }
+    }
+    i += 2 + len;
+  }
+  return n;
 }
 function onPaste(e) {
   const ta = e.target, p = byId(S.cur), cd = e.clipboardData; if (!cd) return;
-  const f = [...(cd.files || [])].find(x => /^image\//.test(x.type));
-  if (f) { e.preventDefault(); addImage(f, t => { const el = $('#ed'); if (el) insertAtCaret(el, t); }); return; }
+  const fs = [...(cd.files || [])];
+  if (fs.length) { e.preventDefault(); addFiles(fs, p, fs.length === 1 ? { caret: { line: S.edit } } : {}); return; }
   const text = cd.getData('text/plain');
   if (!text) return;
   if (isImg(text.trim()) && !text.includes('\n')) { e.preventDefault(); insertAtCaret(ta, '[' + text.trim() + ']'); return; }
@@ -907,9 +1089,7 @@ document.addEventListener('dragleave', e => { const pg = e.target.closest && e.t
 document.addEventListener('drop', e => {
   const pg = e.target.closest && e.target.closest('.page'); if (!pg || !S.cur || S.visitor) return;
   e.preventDefault(); pg.classList.remove('drop');
-  const f = [...(e.dataTransfer.files || [])].find(x => /^image\//.test(x.type)); if (!f) return;
-  const p = byId(S.cur);
-  addImage(f, t => { commit(); snapshot(p); const at = S.edit >= 0 ? S.edit + 1 : p.lines.length; p.lines.splice(at, 0, t); S.touched.add(p.id + ':' + at); p.updated = Date.now(); save(); S.edit = -1; rerenderBody(); renderRelated(p, false); toast('Image added.'); });
+  addFiles([...(e.dataTransfer.files || [])], byId(S.cur));
 });
 
 /* Selection menu inside a line */
@@ -978,7 +1158,7 @@ function setRange(a, b) {
   if (S.edit >= 0) commit();
   S.edit = -1; hideAc(); hideSel();
   S.range = [Math.max(1, Math.min(a, b)), Math.max(a, b)];
-  $('#body').innerHTML = bodyHtml(p);
+  setBody(p);
   drawRangeBar();
 }
 function drawRangeBar() {
@@ -1251,7 +1431,63 @@ function renderImages() {
   $('#main').innerHTML = `
     ${tabsHtml('images')}
     <div class="home-head"><span>Every picture in the notebook. Press one to open its page.</span><span>${imgs.length} image${imgs.length === 1 ? '' : 's'}</span></div>
-    <ul class="igrid">${imgs.map((x, i) => `<li class="rin" style="--i:${i}"><a class="icard" data-go="${x.p.id}" role="link" tabindex="0"><span class="iframe"><img src="${esc(x.src)}" alt="" loading="lazy"></span><span class="ititle">${esc(title(x.p))}</span></a></li>`).join('') || '<li class="empty-note">No images yet. Paste or drop one into a page.</li>'}</ul>`;
+    <ul class="igrid">${imgs.map((x, i) => `<li class="rin" style="--i:${i}"><a class="icard" data-go="${x.p.id}" role="link" tabindex="0"><span class="iframe"><img src="${esc(x.src)}" alt="" loading="lazy"></span><span class="ititle">${esc(title(x.p))}</span></a></li>`).join('') || '<li class="empty-note">No images yet. Add one to a page.</li>'}</ul>`;
+}
+/* Storage: how much room is used and what uses it. Owner only. */
+const KIND_LABEL = { image: 'Pictures', pdf: 'PDF', video: 'Video', audio: 'Audio', other: 'Other' };
+async function renderStorage() {
+  dropGraph(); S.cur = null; S.edit = -1; S.range = null;
+  const st = S.store || (S.store = { data: null, kind: 'all', ask: '' });
+  if (!st.data) $('#main').innerHTML = `${tabsHtml('storage')}<p class="empty-note">Loading…</p>`;
+  else drawStorage();
+  const r = await api('GET', '/_/api/storage').catch(() => null);
+  if (location.pathname !== '/_/storage' || S.visitor) return;
+  if (!r || !r.ok) { if (!st.data) $('#main').innerHTML = `${tabsHtml('storage')}<p class="empty-note">${r && r.status === 401 ? 'Sign in again to see Storage.' : 'Storage could not be loaded. Check the connection and reload.'}</p>`; return; }
+  st.data = r.data; drawStorage();
+}
+function drawStorage() {
+  const st = S.store, d = st.data, left = Math.max(0, d.cap - d.used - d.uploading), pc = (d.used + d.uploading) / d.cap * 100;
+  const kinds = Object.keys(KIND_LABEL).filter(k => d.kinds[k]);
+  const unused = d.files.filter(f => !f.pages.length && !f.keep);
+  const list = st.kind === 'all' ? d.files : st.kind === 'unused' ? unused : d.files.filter(f => f.kind === st.kind);
+  const name = f => f.orig || (f.keep ? 'Profile picture' : f.name);
+  const warn = pc >= 95 ? 'Almost full. New uploads stop at ' + fmtSize(d.cap) + '.' : pc >= 80 ? 'Getting full. Delete large or unused files to make room.' : '';
+  $('#main').innerHTML = `
+    ${tabsHtml('storage')}
+    <section class="meter" aria-label="Storage used">
+      <p class="mnum"><b>${fmtSize(d.used)}</b> of ${fmtSize(d.cap)} used</p>
+      <div class="mbar" role="meter" aria-valuemin="0" aria-valuemax="${d.cap}" aria-valuenow="${d.used}" aria-valuetext="${fmtSize(d.used)} of ${fmtSize(d.cap)}">${kinds.map(k => `<i class="mk-${k}" style="width:${d.kinds[k].size / d.cap * 100}%" title="${KIND_LABEL[k]} ${fmtSize(d.kinds[k].size)}"></i>`).join('')}</div>
+      <p class="mleft"><b>${fmtSize(left)} left</b><span>${pc > 0 && pc < .1 ? 'under 0.1' : pc.toFixed(1)}%</span>${d.uploading ? `<span>${fmtSize(d.uploading)} held by uploads under way</span>` : ''}</p>
+      ${warn ? `<p class="mwarn">${warn}</p>` : ''}
+      <ul class="mkinds">${kinds.map(k => `<li><i class="mk-${k}"></i>${KIND_LABEL[k]} <b>${fmtSize(d.kinds[k].size)}</b><span>${d.kinds[k].n}</span></li>`).join('')}</ul>
+      <p class="hint">Up to ${fmtSize(d.maxFile)} per file. ${fmtSize(d.cap)} stays inside the free plan.</p>
+    </section>
+    <div class="links-tools"><div class="seg" role="group" aria-label="Filter files">${[['all', 'All', d.files.length], ...kinds.map(k => [k, KIND_LABEL[k], d.kinds[k].n]), ['unused', 'Not used', unused.length]].map(([k, l, n]) => `<button data-sk="${k}" aria-pressed="${st.kind === k}">${l} ${n}</button>`).join('')}</div>
+      <button class="btn sm" id="recount" type="button">Recount</button></div>
+    <ul class="slist">${list.map(f => `<li class="srow">
+      ${f.kind === 'image' ? `<img class="sthumb" src="/files/${esc(f.name)}" alt="" loading="lazy">` : `<span class="sthumb mk-${f.kind}">${esc(f.kind === 'other' ? (f.name.split('.').pop() || '').slice(0, 4).toUpperCase() : KIND_LABEL[f.kind])}</span>`}
+      <div class="wmain"><a class="wtitle" href="/files/${esc(f.name)}" target="_blank" rel="noopener">${esc(name(f))}</a>
+        <div class="wsub"><span>${fmtSize(f.size)}</span><span class="dot-sep">·</span><span>${new Date(f.created).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>${f.pages.length ? '' : `<span class="dot-sep">·</span><span>${f.keep ? 'Used by the site' : 'Not used on any page'}</span>`}</div>
+        ${f.pages.length ? `<div class="wpages">${f.pages.map(p => `<a class="wpage" data-go="${esc(p.id)}">${esc(p.title)}${p.pub ? '' : ' · private'}</a>`).join('')}</div>` : ''}
+        ${st.ask === f.name ? `<div class="sask"><span>${f.pages.length ? `Still on ${f.pages.length} page${f.pages.length === 1 ? '' : 's'}. It will disappear there, also from earlier versions.` : 'It cannot be brought back.'}</span><button class="btn sm danger" data-sdel="${esc(f.name)}" type="button">Delete ${fmtSize(f.size)}</button><button class="btn sm" data-sno type="button">Keep</button></div>` : ''}
+      </div>
+      ${f.keep || st.ask === f.name ? '' : `<button class="sdel" data-sask="${esc(f.name)}" type="button" aria-label="Delete ${esc(name(f))}">Delete</button>`}</li>`).join('') || '<li class="empty-note">No files here.</li>'}</ul>`;
+  showTab();
+  document.querySelectorAll('[data-sk]').forEach(b => b.onclick = () => { st.kind = b.dataset.sk; drawStorage(); });
+  document.querySelectorAll('[data-sask]').forEach(b => b.onclick = () => { st.ask = b.dataset.sask; drawStorage(); });
+  document.querySelectorAll('[data-sno]').forEach(b => b.onclick = () => { st.ask = ''; drawStorage(); });
+  document.querySelectorAll('[data-sdel]').forEach(b => b.onclick = async () => {
+    b.disabled = true;
+    const r = await api('DELETE', '/_/api/files/' + b.dataset.sdel).catch(() => null);
+    if (!r || !r.ok) { b.disabled = false; return toast('It could not be deleted. Check the connection and try again.'); }
+    st.ask = ''; sizeOf.delete(b.dataset.sdel); toast('Deleted.'); renderStorage();
+  });
+  $('#recount').onclick = async () => {
+    const r = await api('POST', '/_/api/storage/recount', {}).catch(() => null);
+    if (!r || !r.ok) return toast('The recount did not work. Try again.');
+    const n = r.data.added + r.data.removed + r.data.fixed;
+    toast(n ? `Corrected ${n} file${n === 1 ? '' : 's'}.` : 'The numbers match the stored files.'); renderStorage();
+  };
 }
 /* Hover a web link in a page to see what it is and where else it is used */
 function peekLink(a) {
@@ -1334,7 +1570,7 @@ function renderMissing() {
 async function route() {
   dropGraph(); hidePeek(); closeShare(); renderBanner(); computeHeat(); applyUserCss();
   const m = $('#main'); m.classList.remove('fade'); void m.offsetWidth; m.classList.add('fade');
-  setTimeout(updateFoot, 0);
+  setTimeout(() => { updateFoot(); showTab(); }, 0);
   const path = location.pathname;
   if (path === '/') return renderHome();
   if (path.startsWith('/_/')) {
@@ -1343,6 +1579,7 @@ async function route() {
     if (v === 'web') return renderWeb();
     if (v === 'images') return renderImages();
     if (v === 'graph') return renderGraph();
+    if (v === 'storage' && OWNER && !S.visitor) return renderStorage();
     if (v === 'login') return renderLogin();
     if (v === 'new') { const p = byId(S.newId); if (p && OWNER) return renderPage(p); return nav('/', true); }
     return renderMissing();
@@ -1516,7 +1753,7 @@ document.addEventListener('click', e => {
     if (a.dataset.new) { if (S.visitor) return; return newPage(a.dataset.new); }
     return;
   }
-  if (e.target.closest('a[href]') || e.target.closest('.html-prev')) return;
+  if (e.target.closest('a[href]') || e.target.closest('.html-prev') || e.target.closest('.fbox')) return;
   const line = e.target.closest('#body .line');
   if (line && !e.target.closest('#ed') && !S.visitor) {
     const i = +line.dataset.i;

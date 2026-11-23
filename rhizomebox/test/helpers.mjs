@@ -20,11 +20,25 @@ export function fakeD1() {
   };
 }
 export function fakeR2() {
-  const m = new Map();
+  const m = new Map(), ups = new Map(); let n = 0;
+  const read = async (v) => (v instanceof ReadableStream ? Buffer.from(await new Response(v).arrayBuffer()) : Buffer.from(v));
+  const obj = (k) => { const o = m.get(k); return { key: k, size: o.body.length, body: o.body, httpMetadata: o.httpMetadata, uploaded: new Date() }; };
   return {
-    m,
-    async put(k, v, o) { m.set(k, { body: Buffer.from(v), httpMetadata: o?.httpMetadata || {} }); },
-    async get(k) { const o = m.get(k); return o ? { body: o.body, httpMetadata: o.httpMetadata } : null; },
+    m, ups,
+    async put(k, v, o) { m.set(k, { body: await read(v), httpMetadata: o?.httpMetadata || {} }); },
+    async head(k) { return m.has(k) ? obj(k) : null; },
+    async get(k, o) { if (!m.has(k)) return null; const x = obj(k); if (o?.range) x.body = x.body.subarray(o.range.offset, o.range.offset + o.range.length); return x; },
+    async delete(k) { m.delete(k); },
+    async list() { return { objects: [...m.keys()].map(obj), truncated: false }; },
+    async createMultipartUpload(k, o) { const id = 'up' + (++n); ups.set(id, { k, o, parts: new Map() }); return { uploadId: id }; },
+    resumeMultipartUpload(k, id) {
+      const u = () => { const x = ups.get(id); if (!x || x.k !== k) throw new Error('no such upload'); return x; };
+      return {
+        async uploadPart(i, v) { const b = await read(v); u().parts.set(i, b); return { partNumber: i, etag: 'e' + i }; },
+        async complete(parts) { const x = u(); const body = Buffer.concat(parts.map((p) => { if (p.etag !== 'e' + p.partNumber) throw new Error('etag'); return x.parts.get(p.partNumber); })); m.set(k, { body, httpMetadata: x.o?.httpMetadata || {} }); ups.delete(id); return { size: body.length }; },
+        async abort() { u(); ups.delete(id); },
+      };
+    },
   };
 }
 
@@ -41,6 +55,7 @@ export function makeEnv(extra = {}) {
     const h = new Headers(headers);
     if (cookie) h.set('Cookie', 'rb=' + cookie);
     if (body !== undefined && !raw) h.set('Content-Type', 'application/json');
+    if (raw && body !== undefined && !h.has('Content-Length')) h.set('Content-Length', String(body.length)); // as the network would
     const req = new Request('https://rb.test' + path, { method, headers: h, body: body === undefined ? undefined : raw ? body : JSON.stringify(body) });
     return handle(req, env, ctx, deps);
   };

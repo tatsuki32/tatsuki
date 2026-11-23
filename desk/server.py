@@ -1096,6 +1096,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(200, {"voices": eo_tts.voices(lang), "error": str(e), **gtts.status()})
         if path == "/api/reader/voices":
             return self.send(200, reader.voices_for(parse_qs(urlsplit(self.path).query).get("lang", ["en"])[0]))
+        if path == "/api/rhizomebox":  # how much of Rhizome Box's room is used (numbers only)
+            return self.send(200, rhizomebox_backup.usage() if PORT == 4747 else {})
         if path == "/api/words":  # every word looked up or put in Anki, per language (desk/words.py)
             return self.send(200, words.state(load_locked))
         if path.split("?")[0] == "/api/words/preview":  # what the Rhizome Box pages would say

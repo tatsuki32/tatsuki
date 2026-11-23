@@ -2,7 +2,7 @@
 // Privacy rule: anything a visitor can receive is read through visibleSql(owner), so a private page,
 // its title, its images and its links never leave the server unless the owner is signed in.
 
-import { derive, renderStatic, esc, isImg, FILE_PATH } from '../public/app/notation.js';
+import { derive, renderStatic, esc, filesOf, kindOfFile, FILE_PATH } from '../public/app/notation.js';
 import { pageHtml, homeHtml, shellHtml, notFoundHtml } from './html.js';
 
 const DAY = 864e5, MIN = 6e4;
@@ -11,7 +11,12 @@ const CODE_MINUTES = 10;
 const VERSION_GAP = 5 * MIN;
 const KEEP_VERSIONS = 100;
 const MAX_LINES = 5000, MAX_LINE = 10000, MAX_BYTES = 1_000_000;
-const MAX_FILE = 10 * 1024 * 1024;
+const MAX_PICTURE = 10 * 1024 * 1024; // the older one-request picture upload
+const MAX_FILE = 500e6;               // one file
+export const CAP = 9e9;               // everything together: 9 GB, inside R2's free 10 GB (Post Studio's videos share it)
+const PART = 16 * 1024 * 1024;        // big files arrive in pieces (R2 wants equal pieces of 5 MiB or more; a request may be 100 MB)
+const UPLOAD_HOURS = 6;               // an upload that never finished is dropped after this
+const KEEP_FILES = ['avatar.jpg'];    // used by the site itself
 const META_DAYS = 30;
 export const ME = 'tatsuki';
 
@@ -217,27 +222,172 @@ async function logout(req, env) {
 }
 
 /* ---------- files ---------- */
-const TYPES = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/gif': 'gif', 'image/webp': 'webp', 'image/avif': 'avif' };
+// The type comes from the ending, never from what the sender claims. Types missing here are served as a download.
+const TYPES = {
+  png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp', avif: 'image/avif', pdf: 'application/pdf',
+  mp4: 'video/mp4', m4v: 'video/mp4', mov: 'video/quicktime', webm: 'video/webm',
+  mp3: 'audio/mpeg', m4a: 'audio/mp4', aac: 'audio/aac', wav: 'audio/wav', ogg: 'audio/ogg', oga: 'audio/ogg', flac: 'audio/flac',
+};
+const extOf = (n) => (String(n).match(/\.([A-Za-z0-9]{1,8})$/) || ['', 'bin'])[1].toLowerCase();
+const typeOf = (n) => TYPES[extOf(n)] || 'application/octet-stream';
+const newName = (ext) => `${now().toString(36)}${randHex(4)}.${ext}`;
+const cleanName = (n) => String(n || '').replace(/[\u0000-\u001f\u007f]/g, '').split(/[\\/]/).pop().trim().slice(0, 150);
+const SUMS = '(SELECT COALESCE(SUM(size), 0) FROM files) + (SELECT COALESCE(SUM(size), 0) FROM uploads)';
+
 async function upload(req, env) {
   const type = (req.headers.get('Content-Type') || '').split(';')[0].trim().toLowerCase();
-  const ext = TYPES[type];
+  const ext = Object.keys(TYPES).find((k) => TYPES[k] === type && type.startsWith('image/'));
   if (!ext) return json({ error: 'type' }, 415);
   const buf = await req.arrayBuffer();
-  if (!buf.byteLength || buf.byteLength > MAX_FILE) return json({ error: 'size' }, 413);
-  const name = `${now().toString(36)}${randHex(4)}.${ext}`;
-  await env.FILES.put(name, buf, { httpMetadata: { contentType: type } });
-  await env.DB.prepare('INSERT INTO files (name, type, size, created) VALUES (?, ?, ?, ?)').bind(name, type, buf.byteLength, now()).run();
+  if (!buf.byteLength || buf.byteLength > MAX_PICTURE) return json({ error: 'size' }, 413);
+  const name = newName(ext);
+  await env.DB.prepare(`INSERT INTO files (name, type, size, created) SELECT ?, ?, ?, ? WHERE ${SUMS} + ? <= ?`).bind(name, type, buf.byteLength, now(), buf.byteLength, CAP).run();
+  if (!await env.DB.prepare('SELECT 1 AS ok FROM files WHERE name = ?').bind(name).first()) return json({ error: 'full' }, 507);
+  try { await env.FILES.put(name, buf, { httpMetadata: { contentType: type } }); }
+  catch (e) { await env.DB.prepare('DELETE FROM files WHERE name = ?').bind(name).run(); throw e; }
   return json({ url: FILE_PATH + name, name });
 }
-async function serveFile(req, env, name, owner) {
-  if (!/^[\w.-]+$/.test(name)) return new Response('Not found', { status: 404 });
-  if (!owner && !bearerOk(req, env)) {
-    const used = await env.DB.prepare("SELECT 1 AS ok FROM pages WHERE deleted = 0 AND pub = 1 AND images LIKE ? ESCAPE '\\' LIMIT 1").bind('%' + likeEsc('/files/' + name) + '"%').first();
-    if (!used) return new Response('Not found', { status: 404 });
+
+/* Any file, in pieces: start (the room is checked and held), part 1…n, done. Nothing counts until done. */
+async function dropUpload(env, u) {
+  if (u.upload) { try { await env.FILES.resumeMultipartUpload(u.name, u.upload).abort(); } catch (e) {} }
+  await env.DB.prepare('DELETE FROM uploads WHERE name = ?').bind(u.name).run();
+}
+async function dropStale(env) {
+  const { results } = await env.DB.prepare('SELECT * FROM uploads WHERE created < ?').bind(now() - UPLOAD_HOURS * 36e5).all();
+  for (const u of results) await dropUpload(env, u);
+}
+async function startUpload(env, b) {
+  const orig = cleanName(b.name) || 'file';
+  const size = Number(b.size);
+  if (!Number.isInteger(size) || size < 1) return json({ error: 'empty' }, 400);
+  if (size > MAX_FILE) return json({ error: 'size', max: MAX_FILE }, 413);
+  await dropStale(env);
+  const name = newName(extOf(orig)), type = typeOf(name);
+  // checked and held in one statement, so two uploads at once cannot both take the last room
+  await env.DB.prepare(`INSERT INTO uploads (name, orig, size, upload, created) SELECT ?, ?, ?, '', ? WHERE ${SUMS} + ? <= ?`).bind(name, orig, size, now(), size, CAP).run();
+  if (!await env.DB.prepare('SELECT 1 AS ok FROM uploads WHERE name = ?').bind(name).first()) return json({ error: 'full', ...(await sums(env)) }, 507);
+  try {
+    const up = await env.FILES.createMultipartUpload(name, { httpMetadata: { contentType: type } });
+    await env.DB.prepare('UPDATE uploads SET upload = ? WHERE name = ?').bind(up.uploadId, name).run();
+  } catch (e) { await env.DB.prepare('DELETE FROM uploads WHERE name = ?').bind(name).run(); throw e; }
+  return json({ name, part: PART, parts: Math.ceil(size / PART) });
+}
+const uploadRow = (env, name) => env.DB.prepare('SELECT * FROM uploads WHERE name = ?').bind(name).first();
+async function putPart(req, env, name, n) {
+  const u = await uploadRow(env, name);
+  if (!u) return json({ error: 'not_found' }, 404);
+  const total = Math.ceil(u.size / PART);
+  if (n < 1 || n > total) return json({ error: 'part' }, 400);
+  const want = n < total ? PART : u.size - (total - 1) * PART;
+  if (Number(req.headers.get('Content-Length')) !== want || !req.body) return json({ error: 'size' }, 400);
+  const part = await env.FILES.resumeMultipartUpload(name, u.upload).uploadPart(n, req.body);
+  return json({ n, etag: part.etag });
+}
+async function finishUpload(env, name, b) {
+  const u = await uploadRow(env, name);
+  if (!u) {
+    // the answer to an earlier "done" got lost on the way
+    const f = await env.DB.prepare('SELECT 1 AS ok FROM files WHERE name = ?').bind(name).first();
+    return f ? json({ url: FILE_PATH + name, name, kind: kindOfFile(name) }) : json({ error: 'not_found' }, 404);
   }
-  const obj = await env.FILES.get(name);
-  if (!obj) return new Response('Not found', { status: 404 });
-  return new Response(obj.body, { headers: { 'Content-Type': obj.httpMetadata?.contentType || 'application/octet-stream', 'Cache-Control': owner ? 'private, max-age=3600' : 'public, max-age=86400', 'X-Content-Type-Options': 'nosniff' } });
+  const total = Math.ceil(u.size / PART);
+  const parts = Array.isArray(b.parts) ? b.parts.map((p) => ({ partNumber: Number(p.n), etag: String(p.etag) })).sort((x, y) => x.partNumber - y.partNumber) : [];
+  if (parts.length !== total || parts.some((p, i) => p.partNumber !== i + 1)) return json({ error: 'parts' }, 400);
+  let size = 0;
+  const there = await env.FILES.head(name); // joined earlier, but the row was not written
+  if (there) size = there.size;
+  else size = (await env.FILES.resumeMultipartUpload(name, u.upload).complete(parts)).size;
+  if (size !== u.size) { await env.FILES.delete(name); await dropUpload(env, { name }); return json({ error: 'size' }, 400); }
+  await env.DB.batch([
+    env.DB.prepare('INSERT OR REPLACE INTO files (name, type, size, created) VALUES (?, ?, ?, ?)').bind(name, typeOf(name), size, now()),
+    env.DB.prepare('INSERT OR REPLACE INTO fileinfo (name, orig) VALUES (?, ?)').bind(name, u.orig),
+    env.DB.prepare('DELETE FROM uploads WHERE name = ?').bind(name),
+  ]);
+  return json({ url: FILE_PATH + name, name, kind: kindOfFile(name) });
+}
+
+/* How much room is used. The Desk (backup key) gets the numbers only; the list of files is for the owner. */
+async function sums(env) {
+  const f = await env.DB.prepare('SELECT COALESCE(SUM(size), 0) AS used, COUNT(*) AS count FROM files').first();
+  const u = await env.DB.prepare('SELECT COALESCE(SUM(size), 0) AS uploading FROM uploads').first();
+  return { cap: CAP, maxFile: MAX_FILE, used: f.used, count: f.count, uploading: u.uploading };
+}
+async function storage(env, withFiles) {
+  await dropStale(env);
+  const out = await sums(env);
+  const { results } = await env.DB.prepare('SELECT f.name, f.size, f.created, i.orig FROM files f LEFT JOIN fileinfo i ON i.name = f.name ORDER BY f.size DESC').all();
+  out.kinds = {};
+  for (const r of results) { const k = kindOfFile(r.name), e = out.kinds[k] || (out.kinds[k] = { n: 0, size: 0 }); e.n++; e.size += r.size; }
+  if (!withFiles) return json(out);
+  const use = await pagesUsing(env);
+  out.files = results.map((r) => ({ name: r.name, orig: r.orig || '', kind: kindOfFile(r.name), size: r.size, created: r.created, keep: KEEP_FILES.includes(r.name), pages: use.get(r.name) || [] }));
+  return json(out);
+}
+async function pagesUsing(env) {
+  const { results } = await env.DB.prepare("SELECT id, title, pub, lines FROM pages WHERE deleted = 0 AND lines LIKE '%/files/%' ORDER BY updated DESC").all();
+  const use = new Map();
+  for (const r of results) for (const n of filesOf(parseJSON(r.lines, []))) { if (!use.has(n)) use.set(n, []); use.get(n).push({ id: r.id, title: r.title, pub: !!r.pub }); }
+  return use;
+}
+async function deleteFile(env, name) {
+  if (KEEP_FILES.includes(name)) return json({ error: 'keep' }, 409);
+  await env.FILES.delete(name);
+  await env.DB.batch([env.DB.prepare('DELETE FROM files WHERE name = ?').bind(name), env.DB.prepare('DELETE FROM fileinfo WHERE name = ?').bind(name)]);
+  return json({ ok: true, ...(await sums(env)) });
+}
+/* Make the list match what is really in R2. */
+async function recount(env) {
+  const real = new Map(); let cursor;
+  do { const l = await env.FILES.list({ cursor, limit: 1000 }); l.objects.forEach((o) => real.set(o.key, o)); cursor = l.truncated ? l.cursor : undefined; } while (cursor);
+  const { results } = await env.DB.prepare('SELECT name, size, created FROM files').all();
+  const { results: going } = await env.DB.prepare('SELECT name FROM uploads').all();
+  const known = new Map(results.map((r) => [r.name, r])), busy = new Set(going.map((r) => r.name));
+  let added = 0, removed = 0, fixed = 0;
+  for (const [n, o] of real) {
+    const r = known.get(n);
+    if (!r && !busy.has(n)) { added++; await env.DB.prepare('INSERT OR IGNORE INTO files (name, type, size, created) VALUES (?, ?, ?, ?)').bind(n, typeOf(n), o.size, +new Date(o.uploaded || now())).run(); }
+    else if (r && r.size !== o.size) { fixed++; await env.DB.prepare('UPDATE files SET size = ? WHERE name = ?').bind(o.size, n).run(); }
+  }
+  for (const r of results) if (!real.has(r.name) && r.created < now() - 10 * MIN) { removed++; await env.DB.prepare('DELETE FROM files WHERE name = ?').bind(r.name).run(); }
+  return json({ added, removed, fixed, ...(await sums(env)) });
+}
+
+/* bytes=a-b, a-, -n → { offset, length }; null = the whole file; false = not satisfiable. Videos on iPhone need this. */
+function rangeOf(h, size) {
+  const m = String(h || '').match(/^bytes=(\d*)-(\d*)$/);
+  if (!m || (!m[1] && !m[2])) return null;
+  let a, b;
+  if (!m[1]) { if (!+m[2]) return false; a = Math.max(0, size - +m[2]); b = size - 1; }
+  else { a = +m[1]; b = m[2] ? Math.min(+m[2], size - 1) : size - 1; }
+  return a >= size || a > b ? false : { offset: a, length: b - a + 1 };
+}
+async function serveFile(req, env, name, owner) {
+  const none = () => new Response('Not found', { status: 404 });
+  if (!/^[\w.-]+$/.test(name)) return none();
+  if (!owner && !bearerOk(req, env) && !await onPublicPage(env, name)) return none();
+  const head = await env.FILES.head(name);
+  if (!head) return none();
+  const type = TYPES[extOf(name)];
+  const h = { 'Content-Type': type || 'application/octet-stream', 'Cache-Control': owner ? 'private, max-age=3600' : 'public, max-age=86400', 'X-Content-Type-Options': 'nosniff', 'Accept-Ranges': 'bytes' };
+  if (!type) h['Content-Security-Policy'] = "default-src 'none'; sandbox";
+  if (kindOfFile(name) !== 'image') {
+    const i = await env.DB.prepare('SELECT orig FROM fileinfo WHERE name = ?').bind(name).first();
+    const fn = encodeURIComponent((i && i.orig) || name).replace(/['()*]/g, (c) => '%' + c.charCodeAt(0).toString(16).toUpperCase());
+    h['Content-Disposition'] = `${type ? 'inline' : 'attachment'}; filename*=UTF-8''${fn}`;
+  }
+  const r = rangeOf(req.headers.get('Range'), head.size);
+  if (r === false) return new Response(null, { status: 416, headers: { 'Content-Range': `bytes */${head.size}` } });
+  h['Content-Length'] = String(r ? r.length : head.size);
+  if (r) h['Content-Range'] = `bytes ${r.offset}-${r.offset + r.length - 1}/${head.size}`;
+  if (req.method === 'HEAD') return new Response(null, { status: r ? 206 : 200, headers: h });
+  const obj = await env.FILES.get(name, r ? { range: r } : undefined);
+  if (!obj) return none();
+  return new Response(obj.body, { status: r ? 206 : 200, headers: h });
+}
+async function onPublicPage(env, name) {
+  const { results } = await env.DB.prepare("SELECT lines FROM pages WHERE deleted = 0 AND pub = 1 AND lines LIKE ? ESCAPE '\\' LIMIT 50").bind('%/files/' + likeEsc(name) + '%').all();
+  return results.some((r) => filesOf(parseJSON(r.lines, [])).includes(name));
 }
 
 /* ---------- titles of outside links ---------- */
@@ -391,7 +541,7 @@ export async function handle(req, env, ctx, deps) {
     if (api === 'export' && method === 'GET') {
       if (!owner && !bearerOk(req, env)) return json({ error: 'auth' }, 401);
       const { results } = await env.DB.prepare('SELECT * FROM pages ORDER BY created').all();
-      const { results: files } = await env.DB.prepare('SELECT name, type, size, created FROM files ORDER BY created').all();
+      const { results: files } = await env.DB.prepare('SELECT f.name, f.type, f.size, f.created, i.orig FROM files f LEFT JOIN fileinfo i ON i.name = f.name ORDER BY f.created').all();
       return json({ at: now(), pages: results.map((r) => ({ ...entry(r, true), created: r.created, deleted: !!r.deleted })), files });
     }
     if (api === 'desk/words' && method === 'PUT') {
@@ -433,6 +583,19 @@ export async function handle(req, env, ctx, deps) {
       if (!owner) return json({ error: 'auth' }, 401);
       return upload(req, env);
     }
+    if (api === 'storage' && method === 'GET') {
+      if (!owner && !bearerOk(req, env)) return json({ error: 'auth' }, 401);
+      return storage(env, owner);
+    }
+    if (api.startsWith('files/') || api === 'storage/recount') {
+      if (!owner) return json({ error: 'auth' }, 401);
+      if (api === 'storage/recount' && method === 'POST') return recount(env);
+      if (api === 'files/start' && method === 'POST') return startUpload(env, await req.json().catch(() => ({})));
+      if ((m = api.match(/^files\/part\/([\w.-]+)\/(\d{1,4})$/)) && method === 'PUT') return putPart(req, env, m[1], Number(m[2]));
+      if ((m = api.match(/^files\/done\/([\w.-]+)$/)) && method === 'POST') return finishUpload(env, m[1], await req.json().catch(() => ({})));
+      if ((m = api.match(/^files\/upload\/([\w.-]+)$/)) && method === 'DELETE') { const u = await uploadRow(env, m[1]); if (u) await dropUpload(env, u); return json({ ok: true }); }
+      if ((m = api.match(/^files\/([\w.-]+)$/)) && method === 'DELETE') return deleteFile(env, m[1]);
+    }
     return json({ error: 'not_found' }, 404);
   }
 
@@ -446,7 +609,7 @@ export async function handle(req, env, ctx, deps) {
   }
   if (path.startsWith('/_/')) {
     const view = path.slice(3);
-    if (!['links', 'web', 'images', 'graph', 'login', 'new'].includes(view)) return html(notFoundHtml(common), 404);
+    if (!['links', 'web', 'images', 'graph', 'login', 'new', ...(owner ? ['storage'] : [])].includes(view)) return html(notFoundHtml(common), 404);
     return html(shellHtml({ ...common, view }));
   }
   const raw = decodePath(path);

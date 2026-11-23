@@ -176,3 +176,116 @@ test('the Desk word lists: own key, "<Language> words" pages only, the owner\'s 
   assert.equal((await send({ title: 'Russian words', lines: ['2026-11', ' ягода — ベリー'], setPub: true })).status, 200);
   assert.equal((await t.call('GET', '/_/api/page/' + id)).status, 200);
 });
+
+/* ---------- files and storage ---------- */
+const PART = 16 * 1024 * 1024;
+async function send(t, name, buf) {
+  const C = { cookie: t.tok, headers: t.W };
+  const s = await t.call('POST', '/_/api/files/start', { ...C, body: { name, size: buf.length } });
+  if (s.status !== 200) return { status: s.status, ...(await s.json()) };
+  const { name: key, parts } = await s.json();
+  const tags = [];
+  for (let n = 1; n <= parts; n++) tags.push(await (await t.call('PUT', `/_/api/files/part/${key}/${n}`, { ...C, body: buf.subarray((n - 1) * PART, n * PART), raw: true })).json());
+  const d = await t.call('POST', '/_/api/files/done/' + key, { ...C, body: { parts: tags } });
+  return { status: d.status, ...(await d.json()) };
+}
+const storageOf = async (t) => (await t.call('GET', '/_/api/storage', { cookie: t.tok })).json();
+
+test('any file, in pieces: the bytes arrive whole, and the room counts', async () => {
+  const t = await setup();
+  const before = (await storageOf(t)).used;
+  const big = Buffer.alloc(PART * 2 + 7, 1); big[PART] = 9; big[big.length - 1] = 5;
+  const r = await send(t, 'clip.MP4', big);
+  assert.equal(r.status, 200); assert.equal(r.kind, 'video'); assert.match(r.url, /^\/files\/[a-z0-9]+\.mp4$/);
+  assert.ok(Buffer.compare(t.env.FILES.m.get(r.name).body, big) === 0);
+  const st = await storageOf(t);
+  assert.equal(st.used, before + big.length); assert.equal(st.uploading, 0); assert.equal(st.kinds.video.n, 1);
+  assert.equal(st.files[0].orig, 'clip.MP4'); assert.deepEqual(st.files[0].pages, []);
+});
+
+test('a piece of the wrong size, a missing piece and a stranger are refused', async () => {
+  const t = await setup(); const C = { cookie: t.tok, headers: t.W };
+  const { name } = await (await t.call('POST', '/_/api/files/start', { ...C, body: { name: 'a.pdf', size: 10 } })).json();
+  assert.equal((await t.call('PUT', `/_/api/files/part/${name}/1`, { ...C, raw: true, body: Buffer.alloc(11) })).status, 400);
+  assert.equal((await t.call('PUT', `/_/api/files/part/${name}/2`, { ...C, raw: true, body: Buffer.alloc(10) })).status, 400);
+  assert.equal((await t.call('POST', `/_/api/files/done/${name}`, { ...C, body: { parts: [] } })).status, 400);
+  assert.equal((await storageOf(t)).uploading, 10, 'its room is held');
+  assert.equal((await t.call('DELETE', `/_/api/files/upload/${name}`, C)).status, 200);
+  assert.equal((await storageOf(t)).uploading, 0); assert.equal(t.env.FILES.ups.size, 0);
+  for (const [m, p] of [['POST', 'files/start'], ['PUT', 'files/part/a.pdf/1'], ['POST', 'files/done/a.pdf'], ['DELETE', 'files/a.pdf'], ['DELETE', 'files/upload/a.pdf'], ['POST', 'storage/recount'], ['GET', 'storage']]) {
+    assert.equal((await t.call(m, '/_/api/' + p, { headers: t.W, ...(m === 'GET' ? {} : { body: {} }) })).status, 401, m + ' ' + p);
+  }
+  assert.equal((await t.call('GET', '/_/storage')).status, 404);
+  assert.equal((await t.call('GET', '/_/storage', { cookie: t.tok })).status, 200);
+});
+
+test('500 MB a file and 9 GB together: refused before anything is sent; abandoned uploads free their room', async () => {
+  const t = await setup(); const C = { cookie: t.tok, headers: t.W };
+  const start = (size) => t.call('POST', '/_/api/files/start', { ...C, body: { name: 'x.bin', size } });
+  assert.equal((await start(500e6 + 1)).status, 413);
+  assert.equal((await start(0)).status, 400);
+  for (let i = 0; i < 18; i++) assert.equal((await start(500e6)).status, 200);
+  const full = await start(1);
+  assert.equal(full.status, 507); assert.equal((await full.json()).error, 'full');
+  assert.equal((await t.call('POST', '/_/api/files', { ...C, raw: true, body: Buffer.from('x'), headers: { ...t.W, 'Content-Type': 'image/png' } })).status, 507, 'the older picture upload too');
+  t.env.DB.raw.prepare('UPDATE uploads SET created = created - ?').run(7 * 36e5);
+  assert.equal((await start(500e6)).status, 200);
+  assert.equal((await storageOf(t)).uploading, 500e6); assert.equal(t.env.FILES.ups.size, 1);
+});
+
+test('files follow their page: private 404, public open; code blocks do not publish a file', async () => {
+  const t = await setup();
+  const { name } = await send(t, '報告書 (1).pdf', Buffer.from('%PDF'));
+  const get = () => t.call('GET', '/files/' + name);
+  assert.equal((await get()).status, 404);
+  await t.put('priv0002', ['notes', `[/files/${name} Report]`]);
+  assert.equal((await get()).status, 404);
+  await t.put('pub00003', ['shown as code', 'code:a.txt', ` [/files/${name} Report]`], { pub: true });
+  assert.equal((await get()).status, 404);
+  await t.put('priv0002', ['notes', `[/files/${name} Report]`], { pub: true });
+  const r = await get();
+  assert.equal(r.status, 200); assert.equal(r.headers.get('Content-Type'), 'application/pdf');
+  assert.match(r.headers.get('Content-Disposition'), /^inline; filename\*=UTF-8''%E5%A0%B1%E5%91%8A%E6%9B%B8%20%281%29\.pdf$/);
+  const page = await (await t.call('GET', '/notes')).text();
+  assert.ok(page.includes(`<iframe src="/files/${name}#view=FitH&amp;navpanes=0"`));
+  assert.ok(!page.includes('class="image'));
+  const f = (await storageOf(t)).files.find((x) => x.name === name);
+  assert.deepEqual(f.pages.map((p) => p.title), ['notes']);
+});
+
+test('web pages and SVGs never run here: always a download', async () => {
+  const t = await setup();
+  for (const n of ['evil.html', 'evil.svg', 'a.js', 'noending', 'x.png.htm']) {
+    const { name } = await send(t, n, Buffer.from('<script>1</script>'));
+    const r = await t.call('GET', '/files/' + name, { cookie: t.tok });
+    assert.equal(r.headers.get('Content-Type'), 'application/octet-stream', n);
+    assert.match(r.headers.get('Content-Disposition'), /^attachment;/);
+    assert.match(r.headers.get('Content-Security-Policy'), /sandbox/);
+    assert.equal(r.headers.get('X-Content-Type-Options'), 'nosniff');
+  }
+});
+
+test('parts of a file can be asked for (videos on iPhone)', async () => {
+  const t = await setup();
+  const { name } = await send(t, 'a.mp4', Buffer.from('0123456789'));
+  const get = (Range, m = 'GET') => t.call(m, '/files/' + name, { cookie: t.tok, headers: Range ? { Range } : {} });
+  for (const [h, want, cr] of [['bytes=0-1', '01', 'bytes 0-1/10'], ['bytes=7-', '789', 'bytes 7-9/10'], ['bytes=-2', '89', 'bytes 8-9/10'], ['bytes=5-99', '56789', 'bytes 5-9/10']]) {
+    const r = await get(h); assert.equal(r.status, 206); assert.equal(r.headers.get('Content-Range'), cr); assert.equal(await r.text(), want);
+  }
+  assert.equal((await get('bytes=10-')).status, 416);
+  assert.equal((await get()).status, 200);
+  const h = await get('', 'HEAD'); assert.equal(h.headers.get('Content-Length'), '10'); assert.equal(await h.text(), '');
+});
+
+test('deleting frees the room; the site picture stays; recount matches the real files; the Desk sees numbers only', async () => {
+  const t = await setup(); const C = { cookie: t.tok, headers: t.W };
+  const { name } = await send(t, 'a.zip', Buffer.alloc(100));
+  assert.equal((await (await t.call('DELETE', '/_/api/files/' + name, C)).json()).used, 0);
+  assert.ok(!t.env.FILES.m.has(name));
+  assert.equal((await t.call('DELETE', '/_/api/files/avatar.jpg', C)).status, 409);
+  t.env.DB.raw.prepare("INSERT INTO files VALUES ('gone.png', 'image/png', 50, 1)").run();
+  const rc = await (await t.call('POST', '/_/api/storage/recount', { ...C, body: {} })).json();
+  assert.deepEqual([rc.added, rc.removed, rc.used], [2, 1, 2], 'priv.png and pub.png were only in R2');
+  const d = await (await t.call('GET', '/_/api/storage', { headers: { Authorization: 'Bearer ' + 'k'.repeat(40) } })).json();
+  assert.equal(d.used, 2); assert.equal(d.cap, 9e9); assert.equal(d.files, undefined);
+});

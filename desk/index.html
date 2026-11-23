@@ -5883,6 +5883,7 @@ function inflow(){
   </div></section>`;
 }
 function toolsView(){
+  rbLoad();
   const tools=S.tools.filter(t=>!t.deleted), groups=GROUPS.filter(([g])=>tools.some(t=>t.group===g));
   return `<header class="head"><div><p class="eyebrow">Tools</p><h1>Tools & folders</h1></div></header>
   ${notesHere("tools")}
@@ -5914,6 +5915,10 @@ function openToolUrl(id){
   $("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};
   inp.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();$("#turlSave").click()}if(e.key==="Escape")close()};
 }
+/* Rhizome Box: how much of its 9 GB is used, on its tile (desk/rhizomebox_backup.py usage) */
+const rbGb=n=>n>=1e9?(n/1e9).toFixed(1)+" GB":n>=1e6?Math.round(n/1e6)+" MB":Math.max(1,Math.round(n/1e3))+" KB";
+const rbLine=()=>{const u=S.rbUse;return u&&u.cap?`<br><span id="rbUse">${esc(rbGb(u.used))} of ${esc(rbGb(u.cap).replace(".0",""))} used · ${u.count} file${u.count===1?"":"s"}</span>`:`<span id="rbUse"></span>`};
+async function rbLoad(){if(!LOCALAPI||S.rbAsked)return;S.rbAsked=true;try{S.rbUse=await api("GET","/api/rhizomebox");const el=$("#rbUse");if(el&&S.rbUse.cap){const t=document.createElement("div");t.innerHTML=rbLine();el.replaceWith(...t.childNodes)}}catch(e){}setTimeout(()=>{S.rbAsked=false},6e5)}
 function tileBody(t){
   const href=S.local&&t.local?t.local:(t.url||t.local||"");
   const ext=/^https?:/.test(href);
@@ -5922,7 +5927,7 @@ function tileBody(t){
   const links=(t.links||[]).filter(l=>okUrl(l.url));
   if(links.length){ // a tile with more than one place to go: the title opens the main one, small links open the rest
     const a=(u,txt,cls)=>`<a class="${cls}" href="${esc(u)}"${/^https?:/.test(u)?' target="_blank" rel="noopener"':""}>${txt}</a>`;
-    return `<div class="tile"><span class="ico">${esc(t.emoji||"🧩")}</span>${okUrl(href)?a(href,esc(t.name),"t"):`<span class="t">${esc(t.name)}</span>`}<span class="d">${esc(t.desc)}</span><span class="meta">${links.map(l=>a(l.url,esc(l.label)+" ↗","pill")).join("")}</span></div>`;
+    return `<div class="tile"><span class="ico">${esc(t.emoji||"🧩")}</span>${okUrl(href)?a(href,esc(t.name),"t"):`<span class="t">${esc(t.name)}</span>`}<span class="d">${esc(t.desc)}${t.id==="rhizomebox"&&LOCALAPI?rbLine():""}</span><span class="meta">${links.map(l=>a(l.url,esc(l.label)+" ↗","pill")).join("")}</span></div>`;
   }
   return okUrl(href)?`<a class="tile" href="${esc(href)}"${ext?' target="_blank" rel="noopener"':""}>${inner}</a>`:`<div class="tile">${inner}</div>`;
 }

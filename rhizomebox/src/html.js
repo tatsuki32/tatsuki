@@ -92,6 +92,7 @@ function help(owner) {
 <dt>[/notebook/page]</dt><dd>A page in another notebook</dd>
 <dt>[tatsuki.icon]</dt><dd>That page's picture at text size. [tatsuki.icon*3] repeats it</dd>
 <dt>[https://….png]</dt><dd>Image. [[image]] shows it full width. The first image is the page's picture</dd>
+<dt>[/files/a.pdf title]</dt><dd>A file. PDFs, videos and sound show in the page; others are a download</dd>
 </dl>
 <h3>Text</h3><dl>
 <dt>[* bold]</dt><dd>[** ] to [***** ] grow bigger. [** ] at line start is a numbered heading</dd>
@@ -136,7 +137,7 @@ export function homeHtml({ owner, stage, base, css, me, pages }) {
   return head({ path: '/', base, stage, css, description: 'Notes that grow like roots: thinking in Japanese, English, Spanish and Russian, linked page to page.',
     ld: { '@context': 'https://schema.org', '@type': 'WebSite', name: SITE_NAME, url: base + '/', author: { '@type': 'Person', name: AUTHOR, url: PROFILE } } })
     + header(owner)
-    + `<main class="wrap" id="main"><nav class="tabs" aria-label="Views"><a href="/" aria-current="page">Pages</a><a href="/_/links">Links</a><a href="/_/web">Web links</a><a href="/_/images">Images</a><a href="/_/graph">Graph</a></nav>
+    + `<main class="wrap" id="main"><nav class="tabs" aria-label="Views"><a href="/" aria-current="page">Pages</a><a href="/_/links">Links</a><a href="/_/web">Web links</a><a href="/_/images">Images</a><a href="/_/graph">Graph</a>${owner ? '<a href="/_/storage">Storage</a>' : ''}</nav>
 <ul class="grid">${pages.map(card).join('')}</ul></main>`
     + footer(base, '') + help(owner) + tail({ owner, stage, base, me, view: 'home' });
 }
@@ -158,7 +159,7 @@ ${related.length ? `<section class="conn" aria-label="Connections"><div class="c
 }
 
 export function shellHtml({ owner, stage, base, css, me, view, newTitle }) {
-  const names = { links: 'Links', web: 'Web links', images: 'Images', graph: 'Graph', login: 'Sign in', new: newTitle };
+  const names = { links: 'Links', web: 'Web links', images: 'Images', graph: 'Graph', storage: 'Storage', login: 'Sign in', new: newTitle };
   return head({ title: names[view] || '', path: view === 'new' ? pageUrl(newTitle) : '/_/' + view, base, stage, noindex: true, css })
     + header(owner) + `<main class="wrap" id="main"><p class="empty-note">Loading…</p></main>`
     + footer(base, '') + help(owner) + tail({ owner, stage, base, me, view, newTitle: newTitle || '' });

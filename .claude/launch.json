@@ -2,6 +2,12 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "rhizomebox-test",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "cd rhizomebox && D=/tmp/claude/rhizomebox-test && npx wrangler d1 execute rhizomebox --local --persist-to $D --file schema.sql -y >/dev/null && exec npx wrangler dev --local --persist-to $D --port ${PORT:-8794} --var BASE_URL:http://localhost:${PORT:-8794}"],
+      "port": 8794
+    },
+    {
       "name": "transcribe-test",
       "runtimeExecutable": "bash",
       "runtimeArgs": ["-c", "PORT=${PORT:-8792} TRANSCRIBE_DIR=/tmp/claude/transcribe-test TRANSCRIBE_TAP_CMD=/usr/bin/true exec python3 desk/transcribe/server.py"],
