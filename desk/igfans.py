@@ -71,9 +71,7 @@ def _dir(account=None):
         pass
     if not account:
         return DATA
-    d = os.path.join(DATA, "accounts", account)
-    os.makedirs(os.path.join(d, "imports"), mode=0o700, exist_ok=True)
-    return d
+    return os.path.join(DATA, "accounts", account)
 
 
 def _read(path, default):
@@ -85,6 +83,7 @@ def _read(path, default):
 
 
 def _write(path, data):
+    os.makedirs(os.path.dirname(path), mode=0o700, exist_ok=True)
     tmp = "%s.%s.tmp" % (path, secrets.token_hex(4))
     fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
     with os.fdopen(fd, "w", encoding="utf-8") as f:
@@ -154,10 +153,10 @@ def accounts():
 
 def current(wanted=""):
     """The account on screen: the one asked for, the last one used, the language page, or the first."""
-    a = clean(wanted) or clean(settings()["current"])
-    if a:
-        return a
     all_ = accounts()
+    for a in (clean(wanted), clean(settings()["current"])):
+        if a in all_:
+            return a
     return next((x for x in all_ if "lang" in x), all_[0] if all_ else "")
 
 
@@ -188,10 +187,16 @@ def ask(account, what, **params):
         _log(account, what, False, 0, {}, t, str(e))
         raise ApiError(str(e), 0)
     meter = r.get("meter") if isinstance(r.get("meter"), dict) else {}
-    _log(account, what, bool(r.get("ok")), int(r.get("code") or 0), meter, t, "" if r.get("ok") else str(r.get("error") or ""))
+    _log(account, what, bool(r.get("ok")), int(r.get("code") or 0), meter, t, "" if r.get("ok") else _no_id(str(r.get("error") or ""), params))
     if not r.get("ok"):
-        raise ApiError(str(r.get("error") or "Meta did not answer")[:300], int(r.get("code") or 0), meter)
+        raise ApiError(_no_id(str(r.get("error") or "Meta did not answer"), params)[:300], int(r.get("code") or 0), meter)
     return r
+
+
+def _no_id(text, params):
+    """The measurements hold no names: an error that repeats the ID asked about loses it."""
+    u = params.get("u")
+    return re.sub(r"(?i)(?<![a-z0-9._])%s(?![a-z0-9_])" % re.escape(u), "this ID", text) if u else text
 
 
 def _log(account, what, ok, code, meter, started, error):
@@ -262,7 +267,11 @@ def usage(account, followers):
 
 def imports(account):
     d = os.path.join(_dir(account), "imports")
-    out = [_read(os.path.join(d, n), None) for n in sorted(os.listdir(d)) if n.endswith(".json")]
+    try:
+        names = sorted(os.listdir(d))
+    except OSError:
+        names = []
+    out = [_read(os.path.join(d, n), None) for n in names if n.endswith(".json")]
     return sorted([x for x in out if x], key=lambda x: x["at"])
 
 
@@ -325,10 +334,11 @@ def change_import(account, import_id, what):
 
 
 def use(account):
-    path = os.path.join(_dir(), "settings.json")
-    s = _read(path, {})
-    s["current"] = account
-    _write(path, s)
+    with _lock:  # the same file holds the erasure list
+        path = os.path.join(_dir(), "settings.json")
+        s = _read(path, {})
+        s["current"] = account
+        _write(path, s)
 
 
 # --- reactions ------------------------------------------------------------------------------------------------------
@@ -517,6 +527,8 @@ def enrich(account, count):
             with _lock:
                 if not (_read(_f(account, "state.json"), {}).get("enrich") or {}).get("left"):
                     break  # stopped from the page
+                if _hidden()(name):
+                    continue  # erased since this run started: not asked about, not written
             try:
                 r = ask(account, "discover", u=name)
             except ApiError as err:
@@ -526,9 +538,10 @@ def enrich(account, count):
                     pause = pause or 15 * 60000
                     break
                 with _lock:  # an odd answer about one ID does not hold up the rest
-                    p = profiles(account)
-                    p[name] = {"found": False, "at": now_ms(), "error": problem[:120]}
-                    _write(_f(account, "people.json"), p)
+                    if not _hidden()(name):
+                        p = profiles(account)
+                        p[name] = {"found": False, "at": now_ms(), "error": problem[:120]}
+                        _write(_f(account, "people.json"), p)
                 _left(account, 1)
                 done += 1
                 continue
@@ -593,9 +606,9 @@ def discover(account, name):
         r = ask(via, "discover", u=n, media="1")
     except ApiError as err:
         return 502, {"error": _plain(err)}
-    if account and r.get("found") is not None and not _hidden()(n):
+    if account and r.get("found") is not None:
         with _lock:
-            p = profiles(account)
+            p = {} if _hidden()(n) else profiles(account)
             if n in p:
                 p[n] = _profile(r)
                 _write(_f(account, "people.json"), p)

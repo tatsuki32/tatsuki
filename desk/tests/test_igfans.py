@@ -5,6 +5,7 @@ import shutil
 import stat
 import sys
 import tempfile
+import threading
 import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
@@ -160,6 +161,45 @@ class Forget(Base):
         self.assertNotIn('"user1"', blob)
         self.assertIn('"user2"', blob)
         self.assertNotIn('user1', [e['u'] for e in igfans.flat(A)] + igfans.waiting(A))
+
+
+    def test_erased_during_a_run_is_neither_asked_about_nor_written(self):
+        imp({'a': 9, 'b': 8, 'c': 7})
+        asked = []
+
+        def odd(i, w, p):
+            asked.append(p['u'])
+            if p['u'] == 'a':
+                igfans.forget('b')  # waits its turn in this run
+            if p['u'] == 'c':
+                igfans.forget('c')  # while its own check is under way
+            return {'ok': False, 'error': 'odd thing about ' + p['u'] + '.', 'code': 999, 'meter': {'calls': 1}}
+        igfans._transport = odd
+        igfans.set_enrich(A, 3)
+        igfans.enrich(A, 3)
+        self.assertEqual(asked, ['a', 'c'])
+        self.assertEqual(list(igfans.profiles(A)), ['a'])
+        self.assertNotIn('about c', json.dumps([igfans._usage_rows(0), igfans.status(A)]))
+
+    def test_choosing_an_account_waits_for_the_erasure_list(self):
+        imp({'a': 1})
+        t = threading.Thread(target=igfans.use, args=(A,))
+        with igfans._lock:
+            t.start()
+            t.join(0.2)
+            self.assertTrue(t.is_alive())
+            igfans.forget('a')
+        t.join(5)
+        self.assertEqual(len(igfans.settings()['forgotten']), 1)
+
+
+class ReadOnlyGets(Base):
+    def test_reading_makes_nothing_and_only_known_accounts_are_read(self):
+        for name in ('nobody', '..', '../../x', ''):
+            self.assertEqual(igfans.view(name)['account'], A)
+            self.assertEqual(igfans.status(name)['account'], A)
+        self.assertFalse(os.path.exists(os.path.join(TMP, 'accounts')))
+        self.assertEqual(igfans.accounts(), [A])
 
 
 class Usage(Base):
