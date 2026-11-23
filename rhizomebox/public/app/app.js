@@ -1,7 +1,7 @@
 
 // Rhizome Box in the browser: the editor, the views and the graph. Ported from the mockup (version 13).
 // The server holds the pages; this file keeps a light index of all pages and the full text of the open one.
-import { esc, indOf, isUrl, isImg, linksOf as linksOfLines, webLinksOf as webOfLines, imagesOf, textLines as textOfLines, codeBlocks as codeOfLines, makeInline, ytLine, plain, kindOfFile, resolveFile } from './notation.js';
+import { esc, indOf, isUrl, isImg, linksOf as linksOfLines, webLinksOf as webOfLines, imagesOf, textLines as textOfLines, codeBlocks as codeOfLines, makeInline, ytLine, plain, kindOfFile, resolveFile, plainText } from './notation.js';
 import { pictureKind, looksLikePicture, cleanPicture } from './picture.js';
 
 (() => {
@@ -661,7 +661,7 @@ function renderPage(p) {
     <div class="crumb"><a data-home>← All pages</a></div>
     <article class="page${title(p) === ME ? ' profile' : ''}">
       <div class="ph-bar">
-        ${S.visitor ? '' : `<button class="pinbtn" id="pinBtn" type="button" aria-pressed="${!!p.pin}"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M15 3l6 6-3 1-4 4 1 5-2 2-4-4-5 5-1-1 5-5-4-4 2-2 5 1 4-4z"/></svg><span>${p.pin ? 'Pinned' : 'Pin'}</span></button><button class="vis" id="vis" role="switch" aria-checked="${p.pub}"><span class="knob"></span><b>${p.pub ? 'Public' : 'Private'}</b></button><span class="pagetools" id="pagetools"><button id="histBtn" type="button">History</button><button id="delBtn" class="danger" type="button">Delete</button></span>`}
+        ${S.visitor ? '' : `<button class="pinbtn" id="pinBtn" type="button" aria-pressed="${!!p.pin}"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M15 3l6 6-3 1-4 4 1 5-2 2-4-4-5 5-1-1 5-5-4-4 2-2 5 1 4-4z"/></svg><span>${p.pin ? 'Pinned' : 'Pin'}</span></button><button class="vis" id="vis" role="switch" aria-checked="${p.pub}"><span class="knob"></span><b>${p.pub ? 'Public' : 'Private'}</b></button><span class="pagetools" id="pagetools"><button id="copyBtn" type="button">Copy text</button><button id="histBtn" type="button">History</button><button id="delBtn" class="danger" type="button">Delete</button></span>`}
         <span>Edited ${new Date(p.updated).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' })}</span>
       </div>
       ${title(p) === ME ? profileHero(p) : ''}
@@ -683,6 +683,7 @@ function renderPage(p) {
   const af = $('#addFile'); if (af) { af.onclick = () => $('#filePick').click(); $('#filePick').onchange = e => { addFiles([...e.target.files], p); e.target.value = ''; }; }
   const v = $('#vis'); if (v) v.onclick = () => toggleVis(p);
   const pb = $('#pinBtn'); if (pb) pb.onclick = () => togglePin(p);
+  const cb = $('#copyBtn'); if (cb) cb.onclick = () => copyText(p);
   const hb = $('#histBtn'); if (hb) hb.onclick = () => openHistory(p);
   const db = $('#delBtn'); if (db) db.onclick = () => askDelete(p);
   if (S.edit >= 0) mountEditor(p);
@@ -1590,6 +1591,18 @@ async function route() {
     return renderPage(np);
   }
   renderMissing();
+}
+/* Copy text: the whole page with its title, as plain words. */
+async function copyText(p) {
+  if (S.edit >= 0) commit();
+  const text = plainText(p.lines);
+  let ok = false;
+  try { await navigator.clipboard.writeText(text); ok = true; } catch (e) {
+    const t = document.createElement('textarea'); t.value = text; t.style.cssText = 'position:fixed;top:0;opacity:0'; document.body.appendChild(t); t.select();
+    try { ok = document.execCommand('copy'); } catch (e2) {}
+    t.remove();
+  }
+  toast(ok ? `Copied. ${[...text.trim()].length.toLocaleString('en-US')} characters.` : 'Copy did not work here. Select the text and copy it.');
 }
 let toastT;
 function toast(msg) { const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 2600); }

@@ -229,3 +229,25 @@ export function renderStatic(lines, ctx) {
   flush();
   return h;
 }
+
+/* The whole page as plain words, title first: what the eye reads, without any notation. Links and decorations become their
+   words, pictures and icons are left out, an indented line gets "• " (the dot on the page). For pasting into a chat or a translator. */
+export function plainText(lines) {
+  const word = (u, l) => esc(l);
+  const inl = makeInline({ link: word, ext: word, icon: () => '', img: () => '', file: (f) => esc(f.label) });
+  const un = { '&lt;': '<', '&gt;': '>', '&quot;': '"', '&amp;': '&' };
+  const say = (t) => inl(t).replace(/<[^>]*>/g, '').replace(/&(?:lt|gt|quot|amp);/g, (m) => un[m]);
+  const out = [(lines[0] || '').trim(), '']; let blk = null;
+  for (const raw0 of lines.slice(1)) {
+    const raw = raw0 || '', ind = indOf(raw), t = raw.slice(ind);
+    if (!raw.trim()) { blk = null; out.push(''); continue; }
+    if (blk && ind > blk.ind) { const c = raw.slice(blk.ind + 1); out.push(blk.k === 'code' ? c : c.split('\t').map(say).join('\t')); continue; }
+    blk = null;
+    if (t.startsWith('code:')) { blk = { k: 'code', ind }; continue; }
+    if (t.startsWith('table:')) { blk = { k: 'table', ind }; const n = t.slice(6).trim(); if (n) out.push(n); continue; }
+    const w = /^[$%]\s/.test(t) ? t.slice(2) : say(t.startsWith('>') ? t.replace(/^>\s?/, '') : t);
+    const clean = w.replace(/[ 　]{2,}/g, ' ').trim();
+    if (clean) out.push((ind ? '  '.repeat(ind - 1) + '• ' : '') + clean); // a line that was only a picture leaves nothing behind
+  }
+  return out.join('\n').replace(/\n{3,}/g, '\n\n').trim() + '\n';
+}

@@ -80,3 +80,10 @@ test('a visitor may open exactly the files the page draws', async () => {
   assert.equal(resolveFile('https://rhizomebox.tany.im/files/m.png'), '/files/m.png');
   assert.ok(isImg('https://other.example/files/e.png'));
 });
+
+test('plain text: what the eye reads, title first, no notation', async () => {
+  const { plainText } = await import('../public/app/notation.js');
+  const L = ['誤配 & <題>', '[** 見出し]', 'これは[リゾーム]と[* 大事]な[/ 話]、[[太字]]と`code`。 #哲学', '[tatsuki.icon]から [Wiki https://en.wikipedia.org/wiki/X] と [https://example.com/a 例] と https://example.com/b', '[/files/a.png]', '', '', '', ' 点1 [$ x^2]', '  点2', '> 引用[言葉]', '[/files/b.pdf 報告書]', 'code:a.js', ' const a = [1];', '  b()', 'table:表', ' [左]\t右', '$ ls', 'a < b && "c"'];
+  assert.equal(plainText(L), ['誤配 & <題>', '', '見出し', 'これはリゾームと大事な話、太字とcode。 #哲学', 'から Wiki と 例 と https://example.com/b', '', '• 点1 x^2', '  • 点2', '引用言葉', '報告書', 'const a = [1];', ' b()', '表', '左\t右', 'ls', 'a < b && "c"', ''].join('\n'));
+  assert.equal(plainText(['only']), 'only\n');
+});
