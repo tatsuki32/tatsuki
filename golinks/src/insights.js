@@ -85,7 +85,7 @@ const READS = {
     const tok = page ? page.access_token : token, root = page ? page.id : id;
     // asking for chats and their messages in one go is refused ("reduce the amount of data"): first the list, then each chat
     let v, last;
-    for (const n of [10, 5, 2]) {
+    for (const n of [5, 1]) {
       try {
         v = await get(`${root}/conversations`, { platform: "instagram", fields: "id,updated_time", limit: String(n), after: q.after }, tok, m);
         break;
