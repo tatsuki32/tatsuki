@@ -53,6 +53,7 @@ API_VERSION = "2026-10-21"
 FALLBACK_BETA = "server-side-fallback-2026-07-01"
 PRICES = {"claude-haiku-5-5": (0.10, 0.50), "claude-sonnet-5-5": (2.0, 10.0), "claude-opus-5-5": (4.0, 20.0)}  # USD per million tokens, read 2026-11-05
 MODELS = tuple(PRICES)
+APP_VERSION = 2  # `version` in desk/app/glance.swift: an app that answers with less is missing rules and is not used
 MIN = 60
 DAY = 86400
 KEEP_SHOTS = DAY
@@ -70,7 +71,7 @@ SKIP = ["jp.naver.line.mac", "com.1password", "com.agilebits.onepassword", "com.
 DEFAULTS = {"on": False, "camera": True, "mic": True, "every": 15, "from": 6 * 60, "to": 22 * 60, "skip": SKIP, "model": "claude-haiku-5-5",
             "monthlyLimitUsd": 3.0, "lang": "ja", "notify": "all", "pauseUntil": 0}
 WHY = {"locked": "Screen locked", "app": "A never-capture app was in front", "private": "A private browser window was open",
-       "call": "A camera or microphone was in use (a call or a recording)"}
+       "call": "A camera or microphone was in use"}
 SCHEMA = {"type": "object", "additionalProperties": False, "required": ["kind", "text", "activity"],
           "properties": {"kind": {"type": "string", "enum": ["doing", "drift", "body"]}, "text": {"type": "string"}, "activity": {"type": "string"}}}
 LANG = {"ja": ("Write the remark in natural, friendly Japanese (です・ます).", "80 characters at most"),
@@ -257,9 +258,43 @@ def binary():
     return os.path.join(APP, "Contents", "MacOS", "TatsukiGlance")
 
 
-def build():
-    """Builds TatsukiGlance.app once. Returns "" or what went wrong. Never rebuilds: that would lose its permissions."""
-    if os.path.exists(binary()):
+def app_version():
+    """The `version` the built app answers with, 0 when it gives none. Asked once per build (the answer is kept with the
+    binary's modification time), so an app built from an older glance.swift is never asked to take a picture."""
+    try:
+        mtime = int(os.path.getmtime(binary()))
+    except OSError:
+        return 0
+    known = read_json("state.json", {}).get("app") or {}
+    if known.get("mtime") == mtime and isinstance(known.get("v"), int):
+        return known["v"]
+    res, work = run_app("status", timeout=30)
+    shutil.rmtree(work, ignore_errors=True)
+    if res.get("error"):
+        return 0  # no answer this time: ask again next time, use nothing now
+    v = res.get("v") if isinstance(res.get("v"), int) and not isinstance(res.get("v"), bool) else 0
+    remember_permissions(res)
+    with LOCK:
+        st = read_json("state.json", {})
+        st["app"] = {"mtime": mtime, "v": v}
+        write_json("state.json", st)
+    return v
+
+
+def stale():
+    """True when an app is there but is older than this file needs. Looks only at what is already known."""
+    try:
+        mtime = int(os.path.getmtime(binary()))
+    except OSError:
+        return False
+    known = read_json("state.json", {}).get("app") or {}
+    return known.get("mtime") == mtime and isinstance(known.get("v"), int) and known["v"] < APP_VERSION
+
+
+def build(replace=False):
+    """Builds TatsukiGlance.app. Returns "" or what went wrong. An app that is there is left alone (a rebuild loses its
+    permissions) unless `replace`: an out-of-date app is replaced, and macOS asks for the permissions again."""
+    if os.path.exists(binary()) and not replace:
         return ""
     swiftc = shutil.which("swiftc") or "/usr/bin/swiftc"
     work = tempfile.mkdtemp(prefix="glanceapp.")
@@ -274,6 +309,8 @@ def build():
         shutil.copy(PLIST, os.path.join(app, "Contents", "Info.plist"))
         subprocess.run(["/usr/bin/codesign", "--force", "--sign", "-", app], capture_output=True, timeout=120)
         os.makedirs(os.path.dirname(APP), exist_ok=True)
+        if os.path.isdir(APP) and os.path.basename(APP) == "TatsukiGlance.app":  # only ever this one bundle
+            shutil.rmtree(APP)
         shutil.move(app, APP)
     except (OSError, subprocess.SubprocessError) as e:
         return f"Could not build the capture app ({type(e).__name__})."
@@ -316,11 +353,14 @@ def remember_permissions(res, now=None):
 def check(cmd="status"):
     """`status` only looks; `setup` builds the app if needed and lets macOS ask for Camera and Screen Recording."""
     if cmd == "setup":
-        problem = build()
+        app_version()  # learn what is there; an app that merely did not answer is not replaced
+        problem = build(replace=stale())
         if problem:
             return 503, {"error": problem}
     if not os.path.exists(binary()):
         return 200, view()
+    if app_version() < APP_VERSION:
+        return 200, view()  # out of date: nothing is asked of it; the page offers Set up again
     res, work = run_app(cmd, timeout=130 if cmd == "setup" else 30)
     shutil.rmtree(work, ignore_errors=True)
     remember_permissions(res)
@@ -328,8 +368,17 @@ def check(cmd="status"):
 
 
 def shoot(s):
+    """Asks the app for the pictures. An out-of-date app is not asked; and should one answer anyway, its pictures are
+    deleted here, unread and unsent."""
+    if app_version() < APP_VERSION:
+        return {"error": "old app"}, None
     extra = ["--skip", ",".join(s["skip"])] if s["skip"] else []
-    return run_app("shoot", extra + ([] if s["camera"] else ["--no-face"]) + ([] if s["mic"] else ["--allow-mic"]))
+    res, work = run_app("shoot", extra + ([] if s["camera"] else ["--no-face"]) + ([] if s["mic"] else ["--allow-mic"]))
+    v = res.get("v")
+    if not isinstance(v, int) or isinstance(v, bool) or v < APP_VERSION:
+        shutil.rmtree(work, ignore_errors=True)
+        return {"error": "old app"}, None
+    return res, work
 
 
 # ---------- reading the pictures ----------
@@ -483,12 +532,17 @@ def take(now=None, manual=False, shoot=shoot, ask=ask_claude, show=show_mac, key
         shot, work = shoot(s)
         remember_permissions(shot, now)
         if shot.get("skipped"):
-            return add_log({"at": now, "status": "skipped", "why": WHY.get(shot["skipped"], "Not taken"), "front": (shot.get("front") or {}).get("name", "")}, now)
-        screen = os.path.join(work, str(shot.get("screen") or ""))
-        if not shot.get("ok") or not os.path.isfile(screen):
-            err = shot.get("error") or "no picture"
+            why = WHY.get(shot["skipped"], "Not taken")
+            by = [clean_text(n, 40) for n in shot.get("by") or [] if isinstance(n, str)][:3]
+            if shot["skipped"] == "call" and by:
+                why += ": " + ", ".join(by)  # which program, so a wrong guess can be seen and the rule switched off
+            return add_log({"at": now, "status": "skipped", "why": why, "front": clean_text((shot.get("front") or {}).get("name"), 60)}, now)
+        screen = os.path.join(work, "screen.jpg") if work and shot.get("ok") else ""
+        if not screen or not os.path.isfile(screen):
+            err = clean_text(shot.get("error") or "no picture", 40)
             return failed({"screen permission": "Screen Recording is not allowed for TatsukiGlance", "timeout": "The capture app did not answer",
-                           "could not start": "The capture app is missing. Press Set up"}.get(err, f"Could not take the picture ({err})"))
+                           "could not start": "The capture app is missing. Press Set up",
+                           "old app": "The capture app is out of date. Press Set up again"}.get(err, f"Could not take the picture ({err})"))
         face = os.path.join(work, "face.jpg") if shot.get("face") and os.path.isfile(os.path.join(work, "face.jpg")) else None
         recent = [e for e in read_log(now) if e.get("status") == "ok" and now - e.get("at", 0) < 2 * 3600][-RECENT:]
         try:
@@ -577,7 +631,7 @@ def view(now=None):
         problem = f"This month's limit (${s['monthlyLimitUsd']:.2f}) is reached. Glance rests until next month, or raise the limit below."
     return {"settings": s, "bedtime": bedtime.view(now), "log": log, "now": int(now), "paused": now < s["pauseUntil"],
             "next": int(max(now, st.get("last", 0) + s["every"] * MIN)) if s["on"] and now >= s["pauseUntil"] else 0,
-            "built": os.path.exists(binary()), "permissions": st.get("permissions") or {}, "month": spent, "problem": problem,
+            "built": os.path.exists(binary()), "stale": stale(), "permissions": st.get("permissions") or {}, "month": spent, "problem": problem,
             "apps": running_apps(), "locked": SKIP, "models": [{"id": m, "in": PRICES[m][0], "out": PRICES[m][1]} for m in MODELS],
             "every": list(EVERY), "clock": datetime.fromtimestamp(now).strftime("%-I:%M %p")}
 

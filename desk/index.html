@@ -8987,6 +8987,7 @@ function glView(){
   if(w==="now"){talk="Taking one now. This takes about 15 seconds; the camera light comes on briefly.";go=""}
   else if(w){talk="Waiting for macOS. If it asks about the camera or Screen Recording, answer there.";go=""}
   else if(!d.built){talk=what+" Set up builds a small capture app and lets macOS ask for Camera and Screen Recording.";go=`<button class="btn primary" data-glrun="setup">Set up</button>`}
+  else if(d.stale){talk="The capture app is older than this version of the Desk needs, so nothing is taken. Set up again replaces it. macOS will ask for Camera and Screen Recording once more.";go=`<button class="btn primary" data-glrun="setup">Set up again</button>`}
   else if(!ready){talk=`Almost there. Camera: ${GLPERM[p.camera]||"not asked yet"}. Screen Recording: ${p.screen?"allowed":"off"}. Turn on TatsukiGlance in System Settings › Privacy & Security › Screen Recording, then press Check again.`;go=`<button class="btn primary" data-glrun="check">Check again</button><button class="btn" data-glrun="setup">Ask macOS again</button>`}
   else if(!s.on){talk="Ready, and off. Try one first, then turn it on.";go=`<button class="btn primary" data-glon>Turn on</button><button class="btn" data-glrun="now">Take one now</button>`}
   else if(d.paused){talk=`Paused until ${glWhen(s.pauseUntil)}.`;go=`<button class="btn primary" data-glpause="0">Resume</button>`}
@@ -9005,7 +9006,7 @@ function glView(){
   const appBox=(b,name,on)=>`<label class="mcheck"><input type="checkbox" data-glskip="${esc(b)}" ${on?"checked":""} ${fixed(b)?"disabled":""}><span>${esc(name)}${fixed(b)?" (always)":""}</span></label>`;
   const apps=[...extra.map(q=>appBox(q,GLAPPS[q]||q,true)),...d.apps.map(a=>appBox(a.bundle,a.name,glHit(s.skip,a.bundle)))].join("");
   const set=mpanel("Settings","Changes save right away",
-    `<div class="mchecks">${chk("data-glflag","on","Glance is on",s.on)}${chk("data-glflag","camera","Use the camera (off: the screen only)",s.camera)}${chk("data-glflag","mic","Take nothing while a microphone is in use (calls, recordings)",s.mic)}</div>`+
+    `<div class="mchecks">${chk("data-glflag","on","Glance is on",s.on)}${chk("data-glflag","camera","Use the camera (off: the screen only)",s.camera)}${chk("data-glflag","mic","Take nothing while any app is listening to a microphone (calls, recordings)",s.mic)}</div>`+
     `<p class="ntgrp">When (Mac clock)</p><div class="mform nttimes">${sel("data-glsel","every","Every",d.every.map(m=>[m,m+" minutes"]),s.every)}${time("data-gltime","from","From",s.from)}${time("data-gltime","to","To",s.to)}</div>`+
     `<p class="ntgrp">Remarks</p><div class="mform nttimes">${sel("data-glsel","notify","Notify",[["all","Every remark"],["some","Only drift and body"]],s.notify)}${sel("data-glsel","lang","Language",[["ja","Japanese"],["en","English"]],s.lang)}</div>`+
     `<p class="ntgrp">Reading the pictures (Claude API)</p><div class="mform nttimes">${sel("data-glsel","model","Model",d.models.map(m=>[m.id,`${glModel(m.id)} · $${m.in.toFixed(2)} in / $${m.out.toFixed(2)} out per million tokens`]),s.model)}<label>Monthly limit (USD)<input type="number" min="0" max="100" step="0.5" data-gllimit value="${esc(s.monthlyLimitUsd)}"></label></div>`+

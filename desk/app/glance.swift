@@ -39,9 +39,13 @@ let faceMax = min(max(Int(option("--face") ?? "") ?? 640, 160), 640)
 let screenMax = min(max(Int(option("--screen") ?? "") ?? 1568, 320), 1568)
 let privateMarks = ["Incognito", "シークレット", "Private Browsing", "プライベートブラウズ", "InPrivate"]
 
+// Goes up whenever a rule in this file changes. glance.py (APP_VERSION) refuses an app that answers with a lower number,
+// because an app built from an older copy of this file would be missing the newer rules.
+let version = 2
+
 func finish(_ value: [String: Any], code: Int32 = 0) -> Never {
     // written last and read by glance.py only after this program has ended, so a plain write is enough
-    let data = try! JSONSerialization.data(withJSONObject: value, options: [.sortedKeys])
+    let data = try! JSONSerialization.data(withJSONObject: value.merging(["v": version]) { a, _ in a }, options: [.sortedKeys])
     try? data.write(to: folder.appendingPathComponent("result.json"))
     exit(code)
 }
@@ -79,35 +83,58 @@ func cameraBusy() -> Bool {
         .contains { $0.isInUseByAnotherApplication }
 }
 
-func audioFlag(_ id: AudioObjectID, _ selector: AudioObjectPropertySelector) -> Bool {
+// Core Audio, read only. Each returns nil when Core Audio will not answer; the callers count that as "in use".
+func audioNumber(_ id: AudioObjectID, _ selector: AudioObjectPropertySelector) -> UInt32? {
     var addr = AudioObjectPropertyAddress(mSelector: selector, mScope: kAudioObjectPropertyScopeGlobal, mElement: kAudioObjectPropertyElementMain)
     var value = UInt32(0), size = UInt32(MemoryLayout<UInt32>.size)
-    return AudioObjectGetPropertyData(id, &addr, 0, nil, &size, &value) == noErr && value != 0
+    return AudioObjectGetPropertyData(id, &addr, 0, nil, &size, &value) == noErr ? value : nil
 }
-func audioSize(_ id: AudioObjectID, _ selector: AudioObjectPropertySelector, _ scope: AudioObjectPropertyScope) -> UInt32 {
+func audioObjects(_ id: AudioObjectID, _ selector: AudioObjectPropertySelector, _ scope: AudioObjectPropertyScope = kAudioObjectPropertyScopeGlobal) -> [AudioObjectID]? {
     var addr = AudioObjectPropertyAddress(mSelector: selector, mScope: scope, mElement: kAudioObjectPropertyElementMain)
     var size = UInt32(0)
-    return AudioObjectGetPropertyDataSize(id, &addr, 0, nil, &size) == noErr ? size : 0
+    guard AudioObjectGetPropertyDataSize(id, &addr, 0, nil, &size) == noErr else { return nil }
+    var ids = [AudioObjectID](repeating: 0, count: Int(size) / MemoryLayout<AudioObjectID>.size)
+    if ids.isEmpty { return [] }
+    guard AudioObjectGetPropertyData(id, &addr, 0, nil, &size, &ids) == noErr else { return nil }
+    return ids
 }
 
-// A microphone that some program is listening to. Only devices that are microphones and nothing else (the Mac's own,
-// AirPods, a USB microphone): a headset that is one device for both directions is also "running" while it only plays music.
-func microphoneBusy() -> Bool {
+// The programs listening to a microphone right now, other than this one; nil when Core Audio will not say.
+// macOS 14.2 and later tells it per program, whatever kind of device the sound comes in through. Before that, any device
+// that can take sound in and is running counts (a headset playing music too: better to skip one than to take a call).
+func microphoneUsers() -> [String]? {
     let system = AudioObjectID(kAudioObjectSystemObject)
-    let bytes = audioSize(system, kAudioHardwarePropertyDevices, kAudioObjectPropertyScopeGlobal)
-    var ids = [AudioDeviceID](repeating: 0, count: Int(bytes) / MemoryLayout<AudioDeviceID>.size)
-    guard !ids.isEmpty else { return false }
-    var addr = AudioObjectPropertyAddress(mSelector: kAudioHardwarePropertyDevices, mScope: kAudioObjectPropertyScopeGlobal, mElement: kAudioObjectPropertyElementMain)
-    var size = bytes
-    guard AudioObjectGetPropertyData(system, &addr, 0, nil, &size, &ids) == noErr else { return false }
-    return ids.contains { id in
-        audioSize(id, kAudioDevicePropertyStreams, kAudioObjectPropertyScopeInput) > 0
-            && audioSize(id, kAudioDevicePropertyStreams, kAudioObjectPropertyScopeOutput) == 0
-            && audioFlag(id, kAudioDevicePropertyDeviceIsRunningSomewhere)
+    if #available(macOS 14.2, *) {
+        guard let programs = audioObjects(system, kAudioHardwarePropertyProcessObjectList) else { return nil }
+        var users: [String] = []
+        for p in programs {
+            guard let listening = audioNumber(p, kAudioProcessPropertyIsRunningInput) else { return nil }
+            if listening == 0 { continue }
+            guard let pid = audioNumber(p, kAudioProcessPropertyPID) else { return nil }
+            if pid_t(bitPattern: pid) == getpid() { continue }
+            users.append(NSRunningApplication(processIdentifier: pid_t(bitPattern: pid))?.localizedName ?? "another program")
+        }
+        return users
     }
+    guard let devices = audioObjects(system, kAudioHardwarePropertyDevices) else { return nil }
+    for d in devices {
+        guard let inputs = audioObjects(d, kAudioDevicePropertyStreams, kAudioObjectPropertyScopeInput) else { return nil }
+        if inputs.isEmpty { continue }
+        guard let running = audioNumber(d, kAudioDevicePropertyDeviceIsRunningSomewhere) else { return nil }
+        if running != 0 { return ["a microphone"] }
+    }
+    return []
 }
 
-func onCall() -> Bool { cameraBusy() || (micCounts && microphoneBusy()) }
+// Who makes this a call or a recording: [] when nobody does.
+func callers() -> [String] {
+    var who: [String] = cameraBusy() ? ["a camera in use"] : []
+    if micCounts {
+        if let users = microphoneUsers() { who += users } else { who.append("microphone state unknown") }
+    }
+    return who
+}
+func onCall() -> Bool { !callers().isEmpty }
 
 // A private browser window anywhere on screen, in front or behind. Browsers that do not say so in the window's title
 // (Safari) cannot be told apart.
@@ -173,7 +200,8 @@ func shoot() async -> Never {
     let front = NSWorkspace.shared.frontmostApplication
     let frontInfo: [String: Any] = ["bundle": front?.bundleIdentifier ?? "", "name": front?.localizedName ?? ""]
     if skipped(front?.bundleIdentifier) { finish(["skipped": "app", "front": frontInfo]) }
-    if onCall() { finish(["skipped": "call", "front": frontInfo]) }
+    let who = callers()
+    if !who.isEmpty { finish(["skipped": "call", "front": frontInfo, "by": who]) }
     guard CGPreflightScreenCaptureAccess() else { finish(["error": "screen permission", "permissions": permissions()], code: 1) }
 
     let content: SCShareableContent
@@ -211,7 +239,8 @@ func shoot() async -> Never {
     // to the front): look at everything once more, and write nothing if any of it is true now.
     if isLocked() { finish(["skipped": "locked"]) }
     if skipped(NSWorkspace.shared.frontmostApplication?.bundleIdentifier) { finish(["skipped": "app", "front": frontInfo]) }
-    if onCall() { finish(["skipped": "call", "front": frontInfo]) }
+    let whoNow = callers()
+    if !whoNow.isEmpty { finish(["skipped": "call", "front": frontInfo, "by": whoNow]) }
     guard let after = try? await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true) else {
         finish(["error": "screen list", "permissions": permissions()], code: 1)
     }
@@ -248,7 +277,7 @@ func setup() async -> Never {
         let limit: Double = args[1] == "setup" ? 110 : 25
         DispatchQueue.global().asyncAfter(deadline: .now() + limit) { finish(["error": "timeout", "permissions": permissions()], code: 1) }
         switch args[1] {
-        case "status": finish(permissions().merging(["call": onCall()]) { a, _ in a })  // "call": a camera or microphone is in use right now
+        case "status": finish(permissions().merging(["call": callers()]) { a, _ in a })  // "call": who is using a camera or microphone right now
         case "setup": await setup()
         default: await shoot()
         }

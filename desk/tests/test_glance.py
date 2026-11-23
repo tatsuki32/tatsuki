@@ -311,11 +311,78 @@ class Shown(unittest.TestCase):
 
 class App(Case):
     def test_the_microphone_rule_and_the_camera_are_passed_on(self):
-        with mock.patch.object(gl, "run_app", return_value=({}, "")) as run:
+        with mock.patch.object(gl, "run_app", return_value=({"v": gl.APP_VERSION}, "")) as run, \
+                mock.patch.object(gl, "app_version", return_value=gl.APP_VERSION):
             gl.shoot({**gl.DEFAULTS, "skip": ["a.b.c"]})
             gl.shoot({**gl.DEFAULTS, "skip": [], "camera": False, "mic": False})
         self.assertEqual(run.call_args_list[0][0], ("shoot", ["--skip", "a.b.c"]))  # the app adds its own list to this
         self.assertEqual(run.call_args_list[1][0], ("shoot", ["--no-face", "--allow-mic"]))
+
+    def fake_binary(self):
+        app = os.path.join(self.tmp.name, "TatsukiGlance.app")
+        os.makedirs(os.path.join(app, "Contents", "MacOS"))
+        with open(os.path.join(app, "Contents", "MacOS", "TatsukiGlance"), "w"):
+            pass
+        p = mock.patch.object(gl, "APP", app)
+        p.start()
+        self.addCleanup(p.stop)
+
+    def answers(self, *results):
+        """run_app that hands out `results` in turn, each with a real work folder holding a picture."""
+        calls, left = [], list(results)
+
+        def run_app(cmd, extra=(), timeout=45):
+            calls.append(cmd)
+            work = tempfile.mkdtemp(dir=gl.DIR, prefix=".shot-")
+            with open(os.path.join(work, "screen.jpg"), "wb") as f:
+                f.write(b"screen")
+            return left.pop(0), work
+        return calls, mock.patch.object(gl, "run_app", run_app)
+
+    def test_an_app_built_from_an_older_file_is_never_asked_for_a_picture(self):
+        self.fake_binary()
+        calls, patched = self.answers({"camera": "allowed", "screen": True})  # an old app: no version in its answer
+        with patched:
+            res, work = gl.shoot(ON)
+            again, _ = gl.shoot(ON)
+        self.assertEqual((res, work, again), ({"error": "old app"}, None, {"error": "old app"}))
+        self.assertEqual(calls, ["status"])  # asked once what it is, never to shoot
+        self.assertTrue(gl.stale())
+        self.assertTrue(gl.view(at(14, 0))["stale"])
+        e = self.take(at(14, 0), shoot=gl.shoot)
+        self.assertEqual((e["status"], e["why"]), ("failed", "The capture app is out of date. Press Set up again"))
+        self.assertEqual(self.asked, [])
+
+    def test_a_current_app_is_asked_once_what_it_is_then_used(self):
+        self.fake_binary()
+        ok = {"ok": True, "screen": "screen.jpg", "v": gl.APP_VERSION, "front": {"name": "Figma"}}
+        calls, patched = self.answers({"camera": "allowed", "screen": True, "v": gl.APP_VERSION}, ok, ok)
+        with patched:
+            first, work = gl.shoot(ON)
+            second, _ = gl.shoot(ON)
+        self.assertEqual((first["ok"], second["ok"], calls), (True, True, ["status", "shoot", "shoot"]))
+        self.assertFalse(gl.stale())
+        self.assertTrue(os.path.isfile(os.path.join(work, "screen.jpg")))
+
+    def test_pictures_from_an_answer_without_the_version_are_deleted_unread(self):
+        self.fake_binary()
+        calls, patched = self.answers({"camera": "allowed", "screen": True, "v": gl.APP_VERSION}, {"ok": True, "screen": "screen.jpg"})
+        with patched:
+            res, work = gl.shoot(ON)
+        self.assertEqual((res, work), ({"error": "old app"}, None))
+        self.assertEqual([n for n in os.listdir(gl.DIR) if n.startswith(".shot-")], [])
+
+    def test_an_app_that_did_not_answer_is_not_called_out_of_date(self):
+        self.fake_binary()
+        calls, patched = self.answers({"error": "timeout"})
+        with patched:
+            self.assertEqual(gl.app_version(), 0)
+        self.assertFalse(gl.stale())  # so Set up does not replace it and lose its permissions
+
+    def test_a_call_says_which_program(self):
+        res = {"skipped": "call", "front": {"name": "Google Chrome"}, "by": ["zoom.us", "-e x"]}
+        e = self.take(at(14, 0), shoot=self.fake_shoot(res))
+        self.assertEqual(e["why"], "A camera or microphone was in use: zoom.us, e x")
 
     def test_the_data_folder_is_private(self):
         gl.write_json("settings.json", ON)
