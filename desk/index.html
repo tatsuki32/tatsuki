@@ -1055,6 +1055,19 @@ body.cpfocus .cp{grid-template-columns:minmax(0,1fr)}
 .ntgrp:first-of-type{margin-top:0}
 .nttimes{display:flex;flex-wrap:wrap;gap:var(--s2) var(--s3);padding:0}
 .nttimes input{width:auto}
+.glrow{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:var(--s1) var(--s2);align-items:baseline;padding:var(--s2) 0;border-top:1px solid var(--line)}
+.mpanelh+.glrow{border-top:0}
+.glw{font-size:var(--t1);color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.glt{overflow-wrap:anywhere;line-height:1.6}
+.glrow.off .glt{font-size:var(--t1);color:var(--muted)}
+.glk{font-size:var(--t1);color:var(--muted);white-space:nowrap}
+.glk.drift,.glk.body{color:var(--accent)}
+.glm{grid-column:2/-1;font-size:var(--t1);color:var(--muted);overflow-wrap:anywhere}
+.glshots{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:var(--s2);align-items:flex-start}
+.glshots img{display:block;max-width:100%;height:auto;border:1px solid var(--line);border-radius:var(--r-s)}
+.glshots .glface{max-width:200px}
+.glapps{grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
+.glline{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
 .stbar{grid-column:1/-1;height:4px;background:var(--line)}
 .stbar i{display:block;height:100%;background:var(--v3)}
 .webrow{align-items:baseline;padding:var(--s2) 0}
@@ -2274,6 +2287,7 @@ VIEWS.splice(VIEWS.findIndex(v=>v.id==="replies")+1,0,{id:"timelog",e:"⏱️",l
 if(LOCALAPI) VIEWS.splice(4,0,{id:"focus",e:"🎯",label:"Focus",g:"today"}); // blocks apps on this Mac, so the Mac version only
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="focus")+1,0,{id:"study",e:"🌲",label:"Study Focus",g:"today"}); // Pomodoro in a forest, a plant of my own, a food jar for study hours (studylog, wallet)
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="focus")+1,0,{id:"notices",e:"🔔",label:"Notifications",g:"today"}); // Mac notifications: desk/notify.py decides, this page lists and sets
+if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="notices")+1,0,{id:"glance",e:"👀",label:"Glance",g:"today"}); // camera + screen every 15 minutes with one remark, and the bedtime reminder (desk/glance.py, desk/bedtime.py)
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="calendar")+1,0,{id:"book",e:"🗓️",label:"Bookings",g:"today"}); // the rules and the list behind tany.im/book; the page runs in the tany.im Worker (desk/book.py)
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="calendar")+1,0,{id:"meetcheck",e:"🤝",label:"Should we meet?",g:"today"}); // four questions decide whether a meeting earns its place (desk/meetcheck.py)
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="memolink")+1,0,{id:"money",e:"💰",label:"Money",g:"write"}); // statements stay on this Mac
@@ -5842,7 +5856,7 @@ const notesHere=()=>""; // notes pinned to a page ended with the memos; the view
 function home(){
   const d=new Date();const h=d.getHours();const greet=h<11?"Good morning":h<18?"Good afternoon":"Good evening";
   const tools=S.tools.filter(t=>!t.deleted), daily=tools.filter(t=>t.group==="Daily").sort((a,b)=>(a.order??99)-(b.order??99));
-  const cards={focus:focusHomeCard(),pc:LOCALAPI?`<a class="sub pcline" id="pcLine" href="#pc">${pcLineText()}</a>`:"",site:LOCALAPI?siteHomeLine():"",book:bkgHomeLine(),footprint:LOCALAPI?fpHomeLine():"",body:homeBodyStrip(),
+  const cards={focus:focusHomeCard(),pc:LOCALAPI?`<a class="sub pcline" id="pcLine" href="#pc">${pcLineText()}</a>`:"",site:LOCALAPI?siteHomeLine():"",book:bkgHomeLine(),footprint:LOCALAPI?fpHomeLine():"",glance:glHomeLine(),body:homeBodyStrip(),
     today:`<div class="duo">${todayEvents()}${habitStrip()||`<section class="card"><div class="dhead"><h2><span class="e">🌱</span>Today's habits</h2><a class="more" href="#habits">Add →</a></div><div class="empty">Add things you want to keep up in Habits.</div></section>`}</div>`,
     heritage:heritageCard(),ideas:ideasCard(),claude:ccCard(),inflow:inflow(),notes:notesHere("home"),
     tools:daily.length?`<section><div class="section-title"><span class="e">☀️</span>Daily tools<a href="#tools">All tools →</a></div><div class="tiles mini">${daily.map(tile).join("")}</div></section>`:`<p class="sub" style="margin:0"><a href="#tools" class="more">Open tools →</a></p>`};
@@ -6928,6 +6942,7 @@ function render(){
   if(viewId()==="campus"){if(!cp().data&&!cp().loading)cpLoad();if(!document.activeElement?.closest?.(".cpedit,.cpbox")||!$("#cpView"))cpDraw();return} // a redraw from elsewhere never takes the text being typed
   if(viewId()==="utilities"){if(!document.activeElement?.closest?.(".utfield")||!$("#utView"))utDraw();return} // a redraw from elsewhere never takes the text being typed
   if(viewId()==="notices"){ntLoad();$("#view").innerHTML=searchResults()+ntView();wire();wireNt();return}
+  if(viewId()==="glance"){glLoad();$("#view").innerHTML=searchResults()+glView();wire();wireGl();return}
   if(viewId()==="accounts"){acLoad();$("#view").innerHTML=searchResults()+acView();wire();wireAc();return}
   if(viewId()==="bank"){bkLoad();$("#view").innerHTML=searchResults()+bkView();wire();wireBk();return}
   if(viewId()==="showcase"){scLoad();$("#view").innerHTML=searchResults()+scView();wire();wireSc();return}
@@ -8923,6 +8938,113 @@ function wireNt(){
   const tt=$("#tgTest");if(tt)tt.onclick=async()=>{try{await api("POST","/api/notify/tgtest",{});toast("Sent a test to Telegram")}catch(e){toast("Could not send. See the line above.");ntLoad(true)}};
   const tc=$("#tgConnect");if(tc)tc.onclick=async()=>{try{await api("POST","/api/notify/tgconnect",{});toast("Connected");ntLoad(true)}catch(e){toast("Could not connect yet.");ntLoad(true)}};
 }
+/* Glance: a camera photo and a screen picture every 15 minutes with one remark each (desk/glance.py), and Bedtime
+   (desk/bedtime.py). The page decides nothing: it lists, sets, and asks the server to take one. Pictures stay on this Mac
+   for 24 hours and are loaded only when "Show pictures" is pressed. */
+const GLKIND={doing:"Doing",drift:"Drift",body:"Body"};
+const GLPERM={allowed:"allowed",denied:"off",ask:"not asked yet"};
+const GLAPPS={"jp.naver.line.mac":"LINE","com.1password":"1Password","com.agilebits.onepassword":"1Password (older)","com.apple.Passwords":"Passwords","com.apple.keychainaccess":"Keychain Access","com.bitwarden.desktop":"Bitwarden","com.apple.systempreferences":"System Settings"};
+const glModel=id=>id.replace(/^claude-/,"").replace(/-(\d+)-(\d+)$/," $1.$2").replace(/^./,c=>c.toUpperCase());
+const glHit=(skip,b)=>skip.some(p=>b===p||b.startsWith(p));
+const glWhen=sec=>(sec-Date.now()/1000>12*3600?ntDay(sec)+" ":"")+ntClock(sec);
+async function glLoad(force){
+  if(!LOCALAPI||S.glBusy||(!force&&S.gl&&Date.now()-(S.glAt||0)<30000))return;
+  S.glBusy=true;S.glAt=Date.now();
+  const key=v=>JSON.stringify({...(v||{}),now:0,clock:"",next:0});
+  try{const v=await api("GET","/api/glance"),same=key(v)===key(S.gl);S.gl=v;S.glErr=false;S.glBusy=false;
+    const typing=document.activeElement&&document.activeElement.closest&&document.activeElement.closest(".glset input,.glset select");
+    if(!same&&!typing&&viewId()==="glance")render();glHomeFill()}
+  catch(e){const was=S.glErr;S.glErr=true;S.glBusy=false;if(!was&&viewId()==="glance")render()}
+}
+async function glSend(method,path,body,done){
+  try{const v=await api(method,path,body);if(v&&v.settings){S.gl=v;S.glAt=Date.now()}if(done)toast(done);render();return v}
+  catch(e){toast("Could not save");glLoad(true)}
+}
+/* Set up, Check again and Take one now wait for the Mac (a system prompt, or the camera): one at a time, with a word on the card. */
+async function glRun(what){
+  if(S.glWork)return;
+  S.glWork=what;render();
+  try{const v=await api("POST","/api/glance/"+what,{});S.gl=v;S.glAt=Date.now();
+    if(what==="now"){const t=v.took||{};toast(t.status==="ok"?"Took one":t.status==="skipped"?"Not taken: "+(t.why||""):"Could not finish: "+(t.why||""))}}
+  catch(e){toast(what==="now"?"Could not take one":"Could not finish. Try again.");await glLoad(true)}
+  S.glWork="";render();
+}
+function glRow(e,withDay){
+  const when=`${withDay?esc(ntDay(e.at))+" ":""}${esc(ntClock(e.at))}`;
+  if(e.status!=="ok")return `<div class="glrow off"><span class="glw">${when}</span><span class="glt">${e.status==="skipped"?"Not taken":"Could not finish"}: ${esc(e.why||"")}${e.front?` (${esc(e.front)})`:""}${e.times>1?` ×${e.times}`:""}</span><span></span></div>`;
+  const open=S.glOpen===e.at,pics=e.screen||e.face;
+  const meta=[esc(e.activity||""),esc(e.front||""),e.shown===false?"not notified":"",pics?`<button class="linkbtn" data-glopen="${e.at}">${open?"Hide pictures":"Show pictures"}</button>`:"",`<button class="linkbtn" data-glforget="${e.at}">Delete</button>`].filter(Boolean).join(" · ");
+  const shots=open&&pics?`<div class="glshots">${e.face?`<img class="glface" src="/glance-shots/${esc(e.face)}" alt="Camera photo">`:""}${e.screen?`<img src="/glance-shots/${esc(e.screen)}" alt="Picture of the screen">`:""}</div>`:"";
+  return `<div class="glrow"><span class="glw">${when}</span><span class="glt">${esc(e.text)}</span><span class="glk ${esc(e.kind)}">${GLKIND[e.kind]||""}</span><span class="glm">${meta}</span>${shots}</div>`;
+}
+function glView(){
+  const d=S.gl,head=`<h1>Glance</h1>`;
+  if(S.glErr)return `<div class="money">${head}<p class="due">Could not load. Restarting the server may help.</p></div>`;
+  if(!d)return `<div class="money">${head}<p class="due">Loading…</p></div>`;
+  const s=d.settings,p=d.permissions||{},ready=d.built&&p.screen===true,w=S.glWork,dis=w?"disabled":"";
+  const what="Every 15 minutes or so, Glance takes one photo with this Mac's camera and one picture of the screen, and tells you in one line what it sees. The two pictures go to the Claude API to be read, then stay on this Mac for 24 hours.";
+  let talk,go;
+  if(w==="now"){talk="Taking one now. This takes about 15 seconds; the camera light comes on briefly.";go=""}
+  else if(w){talk="Waiting for macOS. If it asks about the camera or Screen Recording, answer there.";go=""}
+  else if(!d.built){talk=what+" Set up builds a small capture app and lets macOS ask for Camera and Screen Recording.";go=`<button class="btn primary" data-glrun="setup">Set up</button>`}
+  else if(!ready){talk=`Almost there. Camera: ${GLPERM[p.camera]||"not asked yet"}. Screen Recording: ${p.screen?"allowed":"off"}. Turn on TatsukiGlance in System Settings › Privacy & Security › Screen Recording, then press Check again.`;go=`<button class="btn primary" data-glrun="check">Check again</button><button class="btn" data-glrun="setup">Ask macOS again</button>`}
+  else if(!s.on){talk="Ready, and off. Try one first, then turn it on.";go=`<button class="btn primary" data-glon>Turn on</button><button class="btn" data-glrun="now">Take one now</button>`}
+  else if(d.paused){talk=`Paused until ${glWhen(s.pauseUntil)}.`;go=`<button class="btn primary" data-glpause="0">Resume</button>`}
+  else{talk=`On, ${ntHM(s.from)}–${ntHM(s.to)} by the Mac's clock. Next one around ${ntClock(d.next)}, if you are at the Mac.`;go=`<button class="btn" data-glpause="60">Pause 1 hour</button><button class="btn" data-glpause="tomorrow">Pause until tomorrow</button><button class="btn" data-glrun="now">Take one now</button>`}
+  const camNote=ready&&s.camera&&p.camera&&p.camera!=="allowed"?`<p class="due">The camera is off for TatsukiGlance, so remarks use the screen only. Turn it on in System Settings › Privacy & Security › Camera.</p>`:"";
+  const main=`<section class="card mfocus" aria-label="Current status"><p class="mtalk">${esc(talk)}</p>${go?`<div class="nsgo">${go}</div>`:""}${camNote}${d.problem?`<p class="due" role="status">${esc(d.problem)}</p>`:""}</section>`;
+  const start=new Date();start.setHours(0,0,0,0);const cut=start.getTime()/1000;
+  const today=d.log.filter(e=>e.at>=cut),past=d.log.filter(e=>e.at<cut);
+  const now=mpanel("Today",today.length?`${today.filter(e=>e.status==="ok").length} remarks`:"",today.length?today.map(e=>glRow(e)).join(""):`<p class="due">No remarks yet today.</p>`);
+  const old=past.length?mpanel("Earlier","Pictures are gone after 24 hours; the remarks stay 90 days",past.map(e=>glRow(e,true)).join("")):"";
+  const chk=(attr,key,label,on)=>`<label class="mcheck"><input type="checkbox" ${attr}="${key}" ${on?"checked":""}><span>${label}</span></label>`;
+  const sel=(attr,key,label,opts,val)=>`<label>${label}<select ${attr}="${key}">${opts.map(([v,t])=>`<option value="${esc(v)}" ${String(v)===String(val)?"selected":""}>${esc(t)}</option>`).join("")}</select></label>`;
+  const time=(attr,key,label,v)=>`<label>${label}<input type="time" ${attr}="${key}" value="${ntHM(Math.min(v,1439))}"></label>`;
+  const known=d.apps.map(a=>a.bundle),extra=s.skip.filter(q=>!known.some(b=>b===q||b.startsWith(q)));
+  const appBox=(b,name,on)=>`<label class="mcheck"><input type="checkbox" data-glskip="${esc(b)}" ${on?"checked":""}><span>${esc(name)}</span></label>`;
+  const apps=[...extra.map(q=>appBox(q,GLAPPS[q]||q,true)),...d.apps.map(a=>appBox(a.bundle,a.name,glHit(s.skip,a.bundle)))].join("");
+  const set=mpanel("Settings","Changes save right away",
+    `<div class="mchecks">${chk("data-glflag","on","Glance is on",s.on)}${chk("data-glflag","camera","Use the camera (off: the screen only)",s.camera)}</div>`+
+    `<p class="ntgrp">When (Mac clock)</p><div class="mform nttimes">${sel("data-glsel","every","Every",d.every.map(m=>[m,m+" minutes"]),s.every)}${time("data-gltime","from","From",s.from)}${time("data-gltime","to","To",s.to)}</div>`+
+    `<p class="ntgrp">Remarks</p><div class="mform nttimes">${sel("data-glsel","notify","Notify",[["all","Every remark"],["some","Only drift and body"]],s.notify)}${sel("data-glsel","lang","Language",[["ja","Japanese"],["en","English"]],s.lang)}</div>`+
+    `<p class="ntgrp">Reading the pictures (Claude API)</p><div class="mform nttimes">${sel("data-glsel","model","Model",d.models.map(m=>[m.id,`${glModel(m.id)} · $${m.in.toFixed(2)} in / $${m.out.toFixed(2)} out per million tokens`]),s.model)}<label>Monthly limit (USD)<input type="number" min="0" max="100" step="0.5" data-gllimit value="${esc(s.monthlyLimitUsd)}"></label></div>`+
+    `<p class="due">This month: $${d.month.usd.toFixed(d.month.usd<1?3:2)} for ${d.month.count} remark${d.month.count===1?"":"s"}.</p>`+
+    `<p class="ntgrp">Never capture (apps open now, and the ones already set)</p><p class="due">Nothing is taken while one of these is in front, and their windows are left out of the picture. Private browser windows and calls are skipped too.</p><div class="mchecks glapps">${apps}</div>`+
+    `<div class="nsgo"><button class="btn" id="glWipe">Delete all pictures now</button></div>`);
+  const b=d.bedtime,bs=b.settings;
+  const bed=mpanel("Bedtime","Works without Glance",
+    `<p class="mtalk">${esc(`From ${ntHM(bs.at)}, while you are still at the Mac: one notification with sound, then a silent one every ${bs.every} minutes, until 04:00. Nothing is closed or locked.`)}${b.told?esc(` Told ${b.told} time${b.told>1?"s":""} tonight.`):""}</p>`+
+    `<div class="mchecks">${chk("data-glbed","on","Bedtime reminders are on",bs.on)}</div>`+
+    `<div class="mform nttimes">${time("data-glbedtime","at","Bedtime",bs.at)}${sel("data-glbedsel","every","Repeat every",b.every.map(m=>[m,m+" minutes"]),bs.every)}</div>`+
+    `<div class="nsgo"><button class="btn" id="glBedTest">Send a test</button></div>`);
+  return `<div class="money nsp glset" data-noauto>${head}${main}${now}${old}${set}${bed}</div>`;
+}
+function wireGl(){
+  const each=(q,fn)=>document.querySelectorAll(q).forEach(fn),d=S.gl;
+  if(!d)return;
+  each("[data-glrun]",b=>{b.disabled=!!S.glWork;b.onclick=()=>glRun(b.dataset.glrun)});
+  each("[data-glon]",b=>b.onclick=()=>glSend("PUT","/api/glance/settings",{on:true},"Glance is on"));
+  each("[data-glpause]",b=>b.onclick=()=>{const v=b.dataset.glpause;glSend("POST","/api/glance/pause",v==="tomorrow"?{tomorrow:true}:{minutes:+v},v==="0"?"Resumed":"Paused")});
+  each("[data-glflag]",c=>c.onchange=()=>glSend("PUT","/api/glance/settings",{[c.dataset.glflag]:c.checked}));
+  each("[data-glsel]",c=>c.onchange=()=>{const k=c.dataset.glsel;glSend("PUT","/api/glance/settings",{[k]:k==="every"?+c.value:c.value})});
+  each("[data-gltime]",i=>i.onchange=()=>{if(!i.value)return;const [h,m]=i.value.split(":").map(Number);glSend("PUT","/api/glance/settings",{[i.dataset.gltime]:h*60+m})});
+  each("[data-gllimit]",i=>i.onchange=()=>{const v=parseFloat(i.value);if(!(v>=0&&v<=100)){toast("Between 0 and 100");return}glSend("PUT","/api/glance/settings",{monthlyLimitUsd:v})});
+  each("[data-glskip]",c=>c.onchange=()=>{const b=c.dataset.glskip,cur=d.settings.skip;glSend("PUT","/api/glance/settings",{skip:c.checked?[...cur,b]:cur.filter(q=>!(b===q||b.startsWith(q)))})});
+  each("[data-glopen]",b=>b.onclick=()=>{const at=+b.dataset.glopen;S.glOpen=S.glOpen===at?null:at;render()});
+  each("[data-glforget]",b=>b.onclick=()=>glSend("POST","/api/glance/forget",{at:+b.dataset.glforget},"Deleted"));
+  const wipe=$("#glWipe");if(wipe)wipe.onclick=()=>glSend("POST","/api/glance/forget",{pictures:true},"Deleted all pictures");
+  each("[data-glbed]",c=>c.onchange=()=>glSend("PUT","/api/glance/bedtime",{[c.dataset.glbed]:c.checked}));
+  each("[data-glbedtime]",i=>i.onchange=()=>{if(!i.value)return;const [h,m]=i.value.split(":").map(Number);glSend("PUT","/api/glance/bedtime",{at:h*60+m})});
+  each("[data-glbedsel]",c=>c.onchange=()=>glSend("PUT","/api/glance/bedtime",{every:+c.value}));
+  const bt=$("#glBedTest");if(bt)bt.onclick=async()=>{try{await api("POST","/api/glance/bedtest",{});toast("Sent one notification")}catch(e){toast("Could not send a notification")}};
+}
+/* Home: the latest remark in one line. */
+const glHomeText=()=>{const d=S.gl;if(!d)return "Glance: a remark on what you are doing";const e=d.log.find(x=>x.status==="ok");
+  if(!d.settings.on)return e?`Glance (off) ${ntClock(e.at)} — ${e.text}`:"Glance: off. Open to set up";
+  return e?`Glance ${ntClock(e.at)} — ${e.text}`:"Glance: on, no remark yet"};
+const glHomeLine=()=>LOCALAPI?`<a class="sub pcline glline" id="glLine" href="#glance">${esc(glHomeText())}</a>`:"";
+function glHomeFill(){const el=$("#glLine");if(el)el.textContent=glHomeText()}
+if(LOCALAPI){glLoad();setInterval(()=>{if((viewId()==="glance"||viewId()==="home")&&!document.hidden)glLoad(true)},60000)}
 /* Bank Accounts: details for people who send money. S.bk holds hidden fields as their last four characters only, and is
    not part of search. A copy goes from the server to the clipboard (desk/bank.py); the whole number reaches the page only for Show and Edit. */
 const BKROWS=[["holder","Account holder"],["bank","Bank"],["branch","Branch"],["kind","Account type"],["number","Account number"],["iban","IBAN"],["swift","SWIFT"],["routing","Routing number"],["address","Address"]];
@@ -10058,6 +10180,7 @@ const FDESC={ // what each screen is for, in plain words (English and Japanese k
   focus:"block apps and websites to focus (FocusBlock) 集中 ブロック",
   study:"Pomodoro study session in a forest, a plant that grows, noise, food money jar 勉強 集中タイム ポモドーロ 貯金箱",
   notices:"Mac notification settings, pause, test お知らせ 通知",
+  glance:"camera and screen every 15 minutes, a remark on what I am doing, drift, posture, bedtime reminder 見守り カメラ 就寝 寝る",
   habits:"habits, morning and night routines, reward cards 習慣 ルーティン",
   body:"body summary: sleep, meals, weight, steps, workouts 身体 体",
   bodysleep:"sleep hours and sleep coach 睡眠",bodymeal:"meals and calories left 食事 カロリー",bodyweight:"weight trend 体重",
@@ -11063,7 +11186,7 @@ async function rdSay(text,lang){
    Seconds are added only while the window is showing and something was touched in the last two minutes.
    The arrangement is two lists of screen ids and an order of card ids; every screen and card is drawn whatever they say. ---------- */
 S.layout=window.LAYOUT||null;
-const HOMECARDS=[["focus","Focus"],["pc","PC status line"],["site","Site line"],["book","Bookings line"],["footprint","Footprint line"],["body","Body summary"],["heritage","Daily World Heritage"],["ideas","This week's ideas"],["claude","Ask Claude"],["wins","Today's wins"],["inflow","Incoming"],["notes","Home notes"],["tools","Daily tools"]];
+const HOMECARDS=[["focus","Focus"],["pc","PC status line"],["site","Site line"],["book","Bookings line"],["footprint","Footprint line"],["glance","Glance line"],["body","Body summary"],["heritage","Daily World Heritage"],["ideas","This week's ideas"],["claude","Ask Claude"],["wins","Today's wins"],["inflow","Incoming"],["notes","Home notes"],["tools","Daily tools"]];
 function homeOrder(){
   const all=HOMECARDS.map(c=>c[0]), out=(S.layout?.home||[]).filter((id,i,xs)=>all.includes(id)&&xs.indexOf(id)===i);
   all.forEach((id,k)=>{if(out.includes(id))return;const prev=all.slice(0,k).filter(x=>out.includes(x)).pop();out.splice(prev?out.indexOf(prev)+1:0,0,id)});

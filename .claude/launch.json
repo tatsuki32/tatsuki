@@ -138,6 +138,12 @@
       "runtimeExecutable": "/bin/sh",
       "runtimeArgs": ["-c", "python3 desk/tests/fake_gtts.py 8796 & cd desk && GTTS_URL=http://127.0.0.1:8796 GTTS_KEY=test-key DESK_READER_DIR=/tmp/claude/desk-reader-test DESK_PORT=${PORT:-4784} exec python3 server.py"],
       "port": 4784
+    },
+    {
+      "name": "desk-glance-test",
+      "runtimeExecutable": "/bin/sh",
+      "runtimeArgs": ["-c", "mkdir -p /tmp/claude/desk-glance-test && cd desk && DESK_DATA_DIR=/tmp/claude/desk-glance-test GLANCE_DIR=/tmp/claude/desk-glance-test/glance NOTIFY_DIR=/tmp/claude/desk-glance-test/notify GLANCE_APP=/tmp/claude/desk-glance-test/TatsukiGlance.app DESK_PORT=${PORT:-4782} exec python3 server.py"],
+      "port": 4782
     }
   ]
 }

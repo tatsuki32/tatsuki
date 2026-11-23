@@ -43,6 +43,8 @@ import meetcheck  # Should we meet?: the questions, Claude drafts and the pre-re
 import minutes_share  # Minutes → a Google Doc anyone with the link can read, and a thank-you Gmail draft (never sent)
 import minutes  # 議事録: made from Transcribe recordings, linked to Calendar events (desk/minutes.py)
 import notify
+import bedtime  # Bedtime: a gentle word to stop for the day once the set hour has passed (desk/bedtime.py)
+import glance  # Glance: a camera photo and a screen picture every 15 minutes, one remark each (desk/glance.py)
 import checkin
 import tg_notify
 import gcal_ics
@@ -958,6 +960,22 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(*posts.news_unpublish(pid))
         return self.send(404, {"error": "not found"})
 
+    def glance_shot(self, name):
+        """A Glance picture, kept 24 hours. Only this page may load it: another site cannot embed or read it."""
+        p = glance.shot_path(name)
+        if not p:
+            return self.send(404, {"error": "not found"})
+        with open(p, "rb") as f:
+            data = f.read()
+        self.send_response(200)
+        self.send_header("Content-Type", "image/jpeg")
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("Cross-Origin-Resource-Policy", "same-origin")
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(data)
+
     def lifelog_photo(self, name):
         p = lifelog.photo_path(name)
         if not p:
@@ -1132,6 +1150,10 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, lifelog.receipts_view(parse_qs(urlsplit(self.path).query).get("month", [None])[0]))
         if path.startswith("/lifelog-photos/"):
             return self.lifelog_photo(path.rsplit("/", 1)[1])
+        if path == "/api/glance":
+            return self.send(200, glance.view())
+        if path.startswith("/glance-shots/"):
+            return self.glance_shot(path.rsplit("/", 1)[1])
         if path == "/api/notify":
             return self.send(200, {**notify.view(), "telegram": tg_notify.view()})
         if path == "/api/pc":
@@ -1496,6 +1518,29 @@ class Handler(BaseHTTPRequestHandler):
             if not (self.headers.get("Content-Type") or "").startswith("application/json"):
                 return self.send(415, {"error": "json only"})
             return self.send(*lifelog_put(urlsplit(self.path).path.split("/")[2:], rec))
+        if urlsplit(self.path).path.startswith("/api/glance/"):
+            # same protection as claude(): Host/Origin checked, and JSON from another origin needs a preflight
+            if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+                return self.send(415, {"error": "json only"})
+            step = (method, urlsplit(self.path).path.rsplit("/", 1)[1])
+            if step == ("PUT", "settings"):
+                return self.send(*glance.put_settings(rec))
+            if step == ("PUT", "bedtime"):
+                bedtime.put_settings(rec)
+                return self.send(200, glance.view())
+            if step == ("POST", "pause"):
+                return self.send(*glance.pause(rec))
+            if step == ("POST", "setup"):  # builds the capture app once and lets macOS ask for Camera and Screen Recording
+                return self.send(*glance.check("setup"))
+            if step == ("POST", "check"):
+                return self.send(*glance.check("status"))
+            if step == ("POST", "now"):  # the person pressed "Take one now"
+                return self.send(*glance.take_now())
+            if step == ("POST", "forget"):
+                return self.send(*glance.forget(rec))
+            if step == ("POST", "bedtest"):
+                return self.send(*bedtime.test())
+            return self.send(404, {"error": "not found"})
         if urlsplit(self.path).path.startswith("/api/notify/"):
             # same protection as claude(): Host/Origin checked, and JSON from another origin needs a preflight
             if not (self.headers.get("Content-Type") or "").startswith("application/json"):
@@ -1822,6 +1867,8 @@ if __name__ == "__main__":
         threading.Thread(target=anki.watch, args=(cards.Store(load_locked, upsert),), daemon=True).start()
     if PORT == 4747:  # a test server on another port shows nothing
         threading.Thread(target=notify.watch, daemon=True).start()
+        threading.Thread(target=bedtime.watch, daemon=True).start()  # after 22:00, while the Mac is in use: time for bed
+        threading.Thread(target=glance.watch, daemon=True).start()  # camera + screen every 15 minutes, once turned on in the Desk
         threading.Thread(target=checkin.watch, args=(load, save, LOCK), daemon=True).start()  # in-progress timers: ask every 10 minutes
         threading.Thread(target=tg_notify.watch, daemon=True).start()  # tasks and events to Telegram
         threading.Thread(target=gcal_ics.watch, args=(calendar_from_ical,), daemon=True).start()  # Calendar view: Google's secret iCal every 5 minutes
