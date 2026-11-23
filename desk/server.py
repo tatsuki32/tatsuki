@@ -44,6 +44,7 @@ import minutes_share  # Minutes → a Google Doc anyone with the link can read, 
 import minutes  # 議事録: made from Transcribe recordings, linked to Calendar events (desk/minutes.py)
 import notify
 import bedtime  # Bedtime: a gentle word to stop for the day once the set hour has passed (desk/bedtime.py)
+import igfans  # Followers: who follows an Instagram account, who the fans are, what a lookup costs (desk/igfans.py)
 import glance  # Glance: a camera photo and a screen picture every 15 minutes, one remark each (desk/glance.py)
 import checkin
 import tg_notify
@@ -1152,6 +1153,13 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, lifelog.receipts_view(parse_qs(urlsplit(self.path).query).get("month", [None])[0]))
         if path.startswith("/lifelog-photos/"):
             return self.lifelog_photo(path.rsplit("/", 1)[1])
+        if path == "/api/igfans":  # Followers: other people's data, only to this page
+            return self.send(200, igfans.view(parse_qs(urlsplit(self.path).query).get("account", [""])[0]))
+        if path == "/api/igfans/status":
+            return self.send(200, igfans.status(parse_qs(urlsplit(self.path).query).get("account", [""])[0]))
+        if path == "/igfans/core.js":  # the analysis itself, shared with a page outside the Desk later
+            with open(igfans.CORE, encoding="utf-8") as f:
+                return self.send(200, f.read(), "text/javascript; charset=utf-8")
         if path == "/api/glance":
             return self.send(200, glance.view())
         if path.startswith("/glance-shots/"):
@@ -1520,6 +1528,11 @@ class Handler(BaseHTTPRequestHandler):
             if not (self.headers.get("Content-Type") or "").startswith("application/json"):
                 return self.send(415, {"error": "json only"})
             return self.send(*lifelog_put(urlsplit(self.path).path.split("/")[2:], rec))
+        if urlsplit(self.path).path.startswith("/api/igfans/"):
+            # same protection as claude(): Host/Origin checked, and JSON from another origin needs a preflight
+            if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+                return self.send(415, {"error": "json only"})
+            return self.send(*igfans.handle(method, urlsplit(self.path).path.split("/")[3:], rec))
         if urlsplit(self.path).path.startswith("/api/glance/"):
             # same protection as claude(): Host/Origin checked, and JSON from another origin needs a preflight
             if not (self.headers.get("Content-Type") or "").startswith("application/json"):
@@ -1876,6 +1889,7 @@ if __name__ == "__main__":
         threading.Thread(target=gcal_ics.watch, args=(calendar_from_ical,), daemon=True).start()  # Calendar view: Google's secret iCal every 5 minutes
         threading.Thread(target=event_alarm.watch, daemon=True).start()  # alarm 3 minutes before each calendar event
         threading.Thread(target=instagram_dm.watch, daemon=True).start()  # Instagram DMs to Replies, every 5 minutes
+        threading.Thread(target=igfans.watch, daemon=True).start()  # Followers: comments, tags and messages once a day, profile checks the owner asked for
         threading.Thread(target=posts.watch, daemon=True).start()  # Post Studio: company-site news scheduled for later
         threading.Thread(target=routine_alarm.watch, daemon=True).start()  # routine start alarm (quiet 22:00-07:00)
         threading.Thread(target=minutes.watch, daemon=True).start()  # 議事録: a minute for each ready recording, every minute

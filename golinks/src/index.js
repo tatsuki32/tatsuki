@@ -4,6 +4,7 @@
 
 import * as accounts from "./accounts.js";
 import * as dm from "./dm.js";
+import * as insights from "./insights.js";
 import * as legal from "./legal.js";
 import * as publish from "./publish.js";
 
@@ -97,6 +98,8 @@ async function api(request, env, url) {
       if (request.method === "POST" && dmm[2]) { const rec = await request.json().catch(() => ({})); const r = await dm.send(env, dmm[1], String(rec.to || ""), rec.text); return json(r, r.error ? 400 : 200); }
     } catch (e) { return json({ error: String(e.message || e) }, 400); }
   }
+  const igm = path.match(/^ig\/(\d{5,30})\/([a-z]{2,20})$/);
+  if (igm && request.method === "GET") return json(await insights.handle(env, igm[1], igm[2], url.searchParams));
   if (request.method === "POST" && path === "x/connect") { const r = await accounts.connectX(env); return json(r, r.error ? 400 : 200); }
   if (request.method === "POST" && path === "media/video") { const r = await publish.videoStart(env); return json(r, r.error ? 400 : 200); }
   const vp = path.match(/^media\/video\/([0-9a-f]{48}\.mp4)\/([^/]{1,1000})\/(\d{1,3}|done)$/);

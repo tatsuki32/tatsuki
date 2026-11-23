@@ -1714,6 +1714,31 @@ a.shelfbtn{text-decoration:none;display:inline-flex;align-items:center}
   .wcard.wnc .wb{min-height:140px}
   .wk-add input{min-width:0;flex-basis:100%}
 }
+/* Followers (#followers): Instagram followers, fans, changes and measured API use (desk/igfans.py). No red for people who left. */
+.igfdrop{border:1px dashed var(--line-2);border-radius:var(--r);padding:var(--s4) var(--s3);display:grid;gap:var(--s2);justify-items:start}
+.igfdrop.over{border-color:var(--accent);background:var(--accent-soft)}
+.igfsteps{margin:0;padding-left:1.4em;display:grid;gap:var(--s1);color:var(--ink-2)}
+.igfbar{display:flex;flex-wrap:wrap;gap:var(--s2);align-items:center}
+.igfbar input[type=search],.igfbar input[type=text]{flex:1 1 200px;min-width:0;max-width:360px}
+.igfview input,.igfview select{min-height:36px;padding:0 12px;border-radius:var(--r-s);border:1px solid var(--line-2);background:var(--surface);color:var(--ink);font:inherit;font-size:16px}
+.igfview input[type=number]{width:88px}
+.igfp{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px var(--s3);width:100%;padding:var(--s2) 0;border:0;border-top:1px solid var(--line);background:none;text-align:left;cursor:pointer}
+.igfp:first-child{border-top:0}
+.igfp:hover .igfid{text-decoration:underline}
+.igfid{font-weight:700;overflow-wrap:anywhere}
+.igfp .igfn{text-align:right;white-space:nowrap}
+.igfp .igfm{grid-column:1/-1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.igfcard{display:grid;gap:var(--s2);padding:var(--s2) 0 var(--s3)}
+.igfcard p{margin:0;white-space:pre-line;overflow-wrap:anywhere}
+.igfcard dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:var(--s1) var(--s3);margin:0}
+.igfcard dt{color:var(--muted);font-size:var(--t1)}
+.igfcard dd{margin:0;overflow-wrap:anywhere}
+.igfview{min-width:0;grid-template-columns:minmax(0,1fr);overflow-wrap:anywhere}
+.igfview .igfp{overflow-wrap:normal}
+.igfcard .btn{justify-self:start}
+.igfview .stgrid{align-items:start}
+.igfscroll{overflow-x:auto;min-width:0}
+@media(max-width:700px){.igfview .stgrid{grid-template-columns:repeat(2,minmax(0,1fr))}.igfview .stduo{grid-template-columns:minmax(0,1fr)}}
 /* Footprint (#footprint): a rough CO2e estimate. Part colours come from TL_COLORS; no gold except the main button, no red. */
 .fpp{max-width:720px}
 .fpp .sub a,.fpsrc a{color:var(--accent)}
@@ -2281,6 +2306,7 @@ if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="translate")+1,0,{id:"words"
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="translate")+1,0,{id:"langmap",e:"🗺️",label:"Language Map",g:"read"}); // every country and its languages, regions and peoples, with my learned words (desk/langmap.py)
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="presents")+1,0,{id:"ideas",e:"💡",label:"Ideas",g:"in"});
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="presents")+1,0,{id:"site",e:"📈",label:"Site",g:"in"}); // tany.im analytics (desk/site_sync.py)
+if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="site")+1,0,{id:"followers",e:"👥",label:"Followers",g:"in"}); // Instagram followers, fans and one-ID lookup (desk/igfans.py, analysis in /igfans/core.js)
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="ideas")+1,0,{id:"aidone",e:"🤝",label:"Done by Claude",g:"in"}); // work Claude does on its own (tasks with by:"claude", JOINS application drafts); never on your task list // once a week, from what was already written (desk/ideas.py)
 VIEWS.splice(VIEWS.findIndex(v=>v.id==="replies")+1,0,{id:"notdoing",e:"🍃",label:"Not doing",g:"today"},{id:"genres",e:"🏷️",label:"Genres",g:"today"});
 VIEWS.splice(VIEWS.findIndex(v=>v.id==="replies")+1,0,{id:"timelog",e:"⏱️",label:"Time",g:"today"}); // 4th in Today (Home, Tasks, Replies, Time)
@@ -6954,6 +6980,7 @@ function render(){
   if(viewId()==="aidone"){aiLoad();$("#view").innerHTML=searchResults()+aiView();wire();wireAi();return}
   if(viewId()==="ideas"){ideasLoad();$("#view").innerHTML=searchResults()+ideasView();wire();wireIdeas();return}
   if(viewId()==="usage"){uLoad();$("#view").innerHTML=searchResults()+usageView();wire();return}
+  if(viewId()==="followers"){if(!igf().data&&!igf().loading)igfLoad();if(!document.activeElement?.closest?.("#igfView input,#igfView select")||!$("#igfView"))igfDraw();return} // a redraw from elsewhere never takes the text being typed
   if(viewId()==="site"){siteLoad();$("#view").innerHTML=searchResults()+siteView();wire();return}
   if(viewId()==="claudeusage"){cuLoad();$("#view").innerHTML=searchResults()+cuView();wire();return}
   const v=viewId();
@@ -10204,7 +10231,7 @@ const FDESC={ // what each screen is for, in plain words (English and Japanese k
   news:"World Desk news edition, predictions ニュース",watch:"Minor Countries watch マイナー国",heritage:"Daily World Heritage, 3 countries a day 世界遺産",
   notes:"Scrapbox-style notes, daily notes ノート メモ",memolink:"import memos from other apps メモ連携",
   money:"Wise payments: overview, charts, budget, trips, savings, advice, receipts, subscriptions お金 家計 予算",
-  site:"tany.im company site visitors, inquiries, search, SEO, heat map アクセス解析 サイト 計測",
+  followers:"Instagram followers, fans, who does not follow back, unfollowers, CSV, look up an ID インスタ フォロワー 管理 ファン 片思い",site:"tany.im company site visitors, inquiries, search, SEO, heat map アクセス解析 サイト 計測",
   screentime:"time spent in apps and sites スクリーンタイム",pc:"running apps, memory and CPU, close apps PC メモリ",
   reader:"read a book or pasted text with read-aloud, tap a word for its meaning and add it to Anki 読む 本 リーダー 読み上げ 洋書 epub",cards:"words on their way to Anki, Anki status, send to Anki, flashcards 暗記カード 単語 Anki アンキ 単語帳 復習",
   netspeed:"measure internet speed 回線 速度 Wi-Fi",wifi:"QR code to join this Wi-Fi, share the Wi-Fi password with a guest 共有 接続 パスワード QR",webhistory:"Chrome history, search terms, time on sites Web履歴",
@@ -11315,6 +11342,134 @@ async function cuLoad(force){
   try{const v=await api("GET","/api/claude-usage"),same=JSON.stringify(v)===JSON.stringify(S.cu);S.cu=v;S.cuErr=false;S.cuBusy=false;if(!same&&viewId()==="claudeusage")render()}
   catch(e){const was=S.cuErr;S.cuErr=true;S.cuBusy=false;if(!was&&viewId()==="claudeusage")render()}
 }
+/* Followers (#followers): Instagram's own export is read here in the page (/igfans/core.js, the same file a public page can use later);
+   desk/igfans.py keeps the lists and asks Meta through go.tany.im. Read only: nothing follows, unfollows, likes or sends. */
+S.igf={data:null,core:null,tab:"fans",sort:"score",q:"",n:100,open:"",look:null,lookq:"",busy:"",msg:"",imp:false,gone:0};
+const igf=()=>S.igf;
+const IGFTABS=[["fans","Fans"],["all","All"],["mutual","Mutual"],["notback","Not following back"],["youdont","You don't follow"],["changes","Changes"],["audience","Audience"],["usage","Usage"]];
+const IGFSORT=[["score","Fan score"],["newest","Newest follower"],["oldest","Oldest follower"],["followers","Most followers"],["name","A to Z"]];
+const IGFREL={mutual:"Mutual",fan:"Follows you",idol:"You follow",none:"Not a follower",unknown:""};
+const igfNum=n=>n==null?"—":Math.round(n).toLocaleString("en-US");
+const igfDay=t=>t?new Date(t).toLocaleDateString("en-US",{year:"numeric",month:"short",day:"numeric"}):"";
+const igfAt=t=>t?new Date(t).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}):"";
+const igfS=(n,w)=>`${igfNum(n)} ${w}${n===1?"":"s"}`;
+const igfUrl=u=>`https://www.instagram.com/${encodeURIComponent(u)}/`;
+const igfWeb=u=>/^https?:\/\//i.test(u||"")?`<a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(u.replace(/^https?:\/\/(www\.)?/i,""))}</a>`:"";
+async function igfApi(method,path,body){const r=await fetch(path,{method,headers:{"Content-Type":"application/json"},body:body?JSON.stringify(body):undefined}),v=await r.json().catch(()=>({}));if(!r.ok)throw new Error(v.error||"Please check the Desk server");return v}
+async function igfLoad(account){
+  if(!LOCALAPI)return;const st=igf();st.loading=true;
+  try{if(!st.core)st.core=await import("/igfans/core.js");
+    const a=account||st.data?.account||"";st.data=await igfApi("GET","/api/igfans"+(a?"?account="+encodeURIComponent(a):""));st.err="";igfCount()}
+  catch(e){st.err=e.message}
+  st.loading=false;if(viewId()==="followers")igfDraw();igfPoll()}
+function igfCount(){const st=igf(),d=st.data;if(!d||d.empty){st.t=null;return}
+  st.t=st.core.table({imports:d.imports,events:d.events,profiles:d.profiles,now:Date.now(),weights:d.weights,own:d.account});st.h=st.core.history(d.imports);
+  st.count=Object.fromEntries(Object.keys(st.core.TABS).map(k=>[k,st.t.rows.filter(st.core.TABS[k]).length]))}
+function igfPoll(){const st=igf();clearTimeout(st.poll);const d=st.data;if(!d||!(d.busy||(d.enrich?.left&&d.connected)))return;
+  st.poll=setTimeout(async()=>{if(viewId()!=="followers")return;
+    try{const s=await igfApi("GET","/api/igfans/status?account="+encodeURIComponent(d.account));
+      if(s.account===igf().data?.account&&(s.busy!==d.busy||s.syncedAt!==d.syncedAt||(s.enrich.done||0)!==(d.enrich.done||0)||(s.enrich.left||0)!==(d.enrich.left||0)||(s.enrich.pauseUntil||0)!==(d.enrich.pauseUntil||0)))return igfLoad()}catch(e){}
+    igfPoll()},4000)}
+function igfDraw(){if(viewId()!=="followers")return;$("#view").innerHTML=searchResults()+igfView();wire();wireIgf()}
+function igfView(){
+  const st=igf(),d=st.data,wrap=h=>`<div class="money igfview" id="igfView" data-noauto>${h}</div>`,head=(t,sub)=>`<div><p class="eyebrow">Followers · Instagram</p><h1>${t}</h1>${sub?`<p class="sub" style="margin:var(--s1) 0 0">${sub}</p>`:""}</div>`;
+  if(st.err&&!d)return wrap(head("Could not load",esc(st.err)));
+  if(!d)return wrap(head("Loading…"));
+  const latest=st.t?.latest,n=latest?Object.keys(latest.followers).length:d.profile?.followers;
+  let h=head(d.empty?"No account yet":`${n!=null?igfS(n,"follower"):"@"+esc(d.account)}`,d.empty?"":[`@${esc(d.account)}`,latest?`export of ${igfDay(latest.at)}`:"no export yet",d.syncedAt?`reactions read ${igfAt(d.syncedAt)}`:""].filter(Boolean).join(" · "));
+  if(d.accounts.length>1)h+=`<div class="chips" role="group" aria-label="Account">${d.accounts.map(a=>`<button class="chip" data-igfacc="${esc(a.handle)}" aria-pressed="${a.handle===d.account}">@${esc(a.handle)}</button>`).join("")}</div>`;
+  h+=`<form class="igfbar" id="igfLook"><input type="text" id="igfLookQ" value="${esc(st.lookq)}" placeholder="Check an ID" aria-label="Check an Instagram ID" autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="40"><button class="btn" ${st.busy==="look"?"disabled":""}>${st.busy==="look"?"Checking…":"Check"}</button></form>`;
+  if(st.look)h+=igfLookCard();
+  h+=`<div class="igfbar"><button class="btn${latest?"":" primary"}" data-igfimp>${st.imp?"Close import":"Import followers"}</button>${d.connected?`<button class="btn" data-igfsync ${d.busy||st.busy?"disabled":""}>${d.busy==="sync"?"Reading…":"Read reactions now"}</button>`:""}${latest?`<button class="btn" data-igfcsv>Save CSV of all ${igfNum(n)}</button>`:""}</div>`;
+  if(st.msg)h+=`<p class="cunote sub" role="status">${esc(st.msg)}</p>`;
+  if(st.imp||(!latest&&!(d.imports||[]).length))h+=igfImport();
+  for(const x of (d.imports||[]).filter(x=>x.partial))h+=`<section class="card mpanel"><b>The export of ${igfDay(x.at)} was not used</b><span class="sub">${esc(x.partial)}</span><div class="igfbar"><button class="btn sm" data-igftrust="${esc(x.id)}">It is complete, use it</button><button class="btn sm" data-igfrm="${esc(x.id)}">Remove it</button></div></section>`;
+  if(latest?.warnings?.length)h+=`<p class="cunote sub">${latest.warnings.map(esc).join(" · ")}</p>`;
+  if(latest&&d.profile?.followers!=null){const diff=n-d.profile.followers;if(diff)h+=`<p class="cunote sub">The profile says ${igfNum(d.profile.followers)} now (${diff>0?"+":""}${igfNum(diff)} in the export).</p>`}
+  for(const [k,v] of Object.entries(d.problems||{}))h+=`<p class="cunote sub"><b>${esc(k[0].toUpperCase()+k.slice(1))}</b> were not read: ${esc(v)}</p>`;
+  if(!d.empty){
+    h+=`<div class="chips stabs" role="tablist" aria-label="Followers sections">${IGFTABS.map(([k,l])=>`<button class="chip" role="tab" data-igftab="${k}" aria-pressed="${st.tab===k}" aria-selected="${st.tab===k}">${l}${st.count&&k in st.count?` <span class="n">${igfNum(st.count[k])}</span>`:""}</button>`).join("")}</div>`;
+    h+=st.tab==="changes"?igfChanges():st.tab==="audience"?igfAudience():st.tab==="usage"?igfUsage():igfPeople()}
+  return wrap(h)}
+function igfImport(){const st=igf(),d=st.data;return `<section class="card mpanel"><div class="mpanelh"><h2>Import followers</h2><span class="sub">The ZIP is read in this window and never stored</span></div>
+  <ol class="igfsteps"><li>Open <a href="https://accountscenter.instagram.com/info_and_permissions/dyi/" target="_blank" rel="noopener">Export your information</a> and pick the account</li><li>Export to device, then customize: only <b>Followers and following</b></li><li>Date range <b>All time</b>, format <b>JSON</b></li><li>Instagram emails you when it is ready. Drop the ZIP here</li></ol>
+  <div class="igfdrop" id="igfDrop"><b>Drop the ZIP here</b><label class="igfbar"><span class="sub">If the ZIP has no account name, it belongs to</span><input type="text" id="igfFor" value="${esc(st.impFor??d.account??"")}" placeholder="ID" aria-label="Account this export belongs to" autocapitalize="none" spellcheck="false"></label><button class="btn" data-igffile ${st.busy==="import"?"disabled":""}>${st.busy==="import"?"Reading…":"Choose a file"}</button><input type="file" id="igfFile" accept=".zip,.json" multiple hidden></div>
+  ${(d.imports||[]).length?`<div class="strows">${d.imports.slice().reverse().map(x=>`<div class="strow"><span class="uname">${igfAt(x.at)}<small class="sub cumeta">${igfNum(Object.keys(x.followers).length)} followers · ${igfNum(Object.keys(x.following).length)} following${x.partial?" · not used":""}</small></span><button class="btn sm" data-igfrm="${esc(x.id)}">Remove</button></div>`).join("")}</div>`:""}</section>`}
+function igfLookCard(){const r=igf().look;if(r.error)return `<p class="cunote sub" role="status">${esc(r.error)}</p>`;
+  const row=igf().t?.rows.find(x=>x.u===r.u),open=`<a class="btn sm" href="${igfUrl(r.u)}" target="_blank" rel="noopener">Open on Instagram</a>`;
+  const rel=row?`${IGFREL[row.rel]}${row.since?` since ${igfDay(row.since)}`:""}${row.score?` · fan score ${row.score}`:""}`:"";
+  if(!r.found)return `<section class="card mpanel"><b>@${esc(r.u)}</b><span class="sub">Meta shows no numbers for this ID. It is a personal, private or age-limited account, or it does not exist.</span>${rel?`<span class="sub">${rel}</span>`:""}<div class="igfbar">${open}</div></section>`;
+  const m=(r.media||[]).filter(x=>x.likes!=null||x.comments!=null),avg=k=>{const v=m.map(x=>x[k]).filter(x=>x!=null);return v.length?v.reduce((a,b)=>a+b,0)/v.length:null},l=avg("likes"),c=avg("comments"),rate=r.followers&&(l!=null||c!=null)?((l||0)+(c||0))/r.followers*100:null;
+  return `<section class="card mpanel igfcard" style="padding:var(--s3)"><div class="mpanelh"><h2>@${esc(r.u)}</h2><span class="sub">${esc(r.name||"")}</span></div>${r.bio?`<p>${esc(r.bio)}</p>`:""}${r.web?`<p>${igfWeb(r.web)}</p>`:""}
+    <div class="stgrid">${[["Followers",igfNum(r.followers)],["Following",igfNum(r.following)],["Posts",igfNum(r.posts)],["Reaction rate",rate==null?"—":rate.toFixed(1)+"%"],["Likes per post",igfNum(l)],["Comments per post",igfNum(c)]].map(([k,v])=>`<div class="custat"><span class="sub">${k}</span><b>${v}</b></div>`).join("")}</div>
+    <span class="sub">Averages of the last ${igfS((r.media||[]).length,"post")}.${rel?" "+rel+".":""} Meta does not show who follows this account.</span><div class="igfbar">${open}</div></section>`}
+function igfPeople(){const st=igf();
+  return `<section class="card mpanel">${st.tab==="notback"&&st.t.latest&&!st.t.hasFollowing?`<span class="sub">The export has no following list.</span>`:""}<div class="igfbar"><input type="search" id="igfQ" value="${esc(st.q)}" placeholder="Find a person" aria-label="Find a person" autocapitalize="none" spellcheck="false"><select id="igfSort" aria-label="Sort by">${IGFSORT.map(([k,l])=>`<option value="${k}" ${st.sort===k?"selected":""}>${l}</option>`).join("")}</select><button class="btn sm" data-igfcsv="tab">Save this list</button></div><div id="igfList">${igfList()}</div></section>${st.tab==="fans"?igfWeights():""}`}
+function igfList(){const st=igf(),list=st.core.pick(st.t.rows,st.tab,st.sort,st.q),empty=st.q?"Nobody matches.":st.tab==="fans"?(st.data.syncedAt?"No comments, messages or tags in the last year.":st.data.connected?"Press Read reactions now to count comments, messages and tags.":"Reactions need this account connected in Post Studio."):st.t.latest?"Nobody here.":"Import followers to see this list.";
+  if(!list.length)return `<p class="sub">${empty}</p>`;
+  return list.slice(0,st.n).map(r=>{const why=[r.comment?igfS(r.comment,"comment"):"",r.dm?igfS(r.dm,"message"):"",r.tag?igfS(r.tag,"tag"):""].filter(Boolean).join(", ");
+    const meta=[r.name,IGFREL[r.rel],r.since?`since ${igfDay(r.since)}`:"",why,r.followers!=null?`${igfS(r.followers,"follower")}`:""].filter(Boolean).map(esc).join(" · ");
+    const right=st.sort==="followers"&&r.followers!=null?igfNum(r.followers):r.score?r.score:"";
+    return `<button class="igfp" data-igfp="${esc(r.u)}" aria-expanded="${st.open===r.u}"><span class="igfid">@${esc(r.u)}</span><span class="igfn">${right}</span><span class="sub igfm">${meta}</span></button>${st.open===r.u?igfPerson(r,why):""}`}).join("")+(list.length>st.n?`<button class="btn sm" data-igfmore style="margin-top:var(--s2)">Show ${igfNum(Math.min(200,list.length-st.n))} more of ${igfNum(list.length)}</button>`:"")}
+function igfPerson(r,why){const dl=[["Relation",IGFREL[r.rel]],["Followed you on",igfDay(r.since)],["Reactions",why?`${why} in the last year`:""],["Last reaction",igfDay(r.last)],["Fan score",r.score||""],["Followers",r.followers!=null?igfNum(r.followers):""],["Posts",r.posts!=null?igfNum(r.posts):""]].filter(x=>x[1]!==""&&x[1]!=null);
+  return `<div class="igfcard">${r.bio?`<p>${esc(r.bio)}</p>`:""}${r.web?`<p>${igfWeb(r.web)}</p>`:""}<dl>${dl.map(([k,v])=>`<dt>${k}</dt><dd>${esc(v)}</dd>`).join("")}</dl>${r.checked&&!r.found?`<span class="sub">Meta shows no profile for this ID (checked ${igfDay(r.checked)}).</span>`:""}<div class="igfbar"><a class="btn sm" href="${igfUrl(r.u)}" target="_blank" rel="noopener">Open on Instagram</a><button class="btn sm" data-igfone="${esc(r.u)}">Check profile</button><button class="btn sm" data-igfforget="${esc(r.u)}">${igf().sure===r.u?"Erase for good":"Erase this person's records"}</button></div></div>`}
+function igfWeights(){const w=igf().data.weights;return mpanel("How the score works","Reactions of the last 365 days; a point is worth half after 90 days",`<form class="igfbar" id="igfW">${[["comment","Comment"],["dm","Message"],["tag","Tag in a post"]].map(([k,l])=>`<label class="igfbar"><span class="sub">${l}</span><input type="number" min="0" max="100" step="0.5" name="${k}" value="${w[k]}"></label>`).join("")}<button class="btn sm">Save</button></form><span class="sub">Likes, views and story viewers are not counted: Meta gives their number, not the IDs.</span>`)}
+function igfChanges(){const st=igf();if(!st.h?.length)return mpanel("Changes","","<p class=\"sub\">Import a second export to see who came and who left.</p>");
+  const names=l=>l.length?`<div class="chips">${l.slice(0,300).map(u=>`<a class="chip" href="${igfUrl(u)}" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center">@${esc(u)}</a>`).join("")}${l.length>300?`<span class="sub">and ${igfNum(l.length-300)} more</span>`:""}</div>`:`<p class="sub">Nobody</p>`;
+  return st.h.map(x=>mpanel(`${igfDay(x.from)} – ${igfDay(x.to)}`,`${igfNum(x.added.length)} new · ${igfNum(x.gone.length)} gone${x.renamed.length?` · ${igfNum(x.renamed.length)} changed ID`:""}`,`<b>New</b>${names(x.added)}<b>Gone</b>${names(x.gone)}${x.renamed.length?`<b>Changed ID</b><p class="sub">${x.renamed.map(r=>`@${esc(r.from)} → @${esc(r.to)}`).join("<br>")}</p>`:""}<span class="sub">Gone means unfollowed, deactivated, deleted or blocked. Instagram does not say which.</span>`)).join("")}
+function igfAudience(){const a=igf().data.audience;if(!a)return mpanel("Audience","",`<p class="sub">Counts by country, city, age and gender appear after reactions are read. Meta shows them from 100 followers.</p>`);
+  const name=k=>{try{return /^[A-Z]{2}$/.test(k)?new Intl.DisplayNames(["en"],{type:"region"}).of(k):k}catch(e){return k}},gen={F:"Women",M:"Men",U:"Not stated"};
+  const rows=(l,f)=>{const s=(l||[]).slice().sort((x,y)=>y.n-x.n).slice(0,12),top=Math.max(1,...s.map(x=>x.n));return s.length?`<div class="strows">${s.map(x=>`<div class="strow"><span class="uname">${esc(f(x.k))}<i class="stbar" style="width:${Math.max(2,x.n/top*100)}%"></i></span><span class="n">${igfNum(x.n)}</span></div>`).join("")}</div>`:`<p class="sub">No numbers.</p>`};
+  return `<div class="stduo">${mpanel("Countries","",rows(a.country,name))}${mpanel("Cities","",rows(a.city,k=>k))}</div><div class="stduo">${mpanel("Age","",rows(a.age,k=>k))}${mpanel("Gender","",rows(a.gender,k=>gen[k]||k))}</div><p class="sub">Followers only, as Meta counted them on ${igfDay(a.at)}.</p>`}
+function igfUsage(){const d=igf().data,u=d.usage,e=d.enrich||{},stat=(l,v,s)=>`<div class="custat"><span class="sub">${l}</span><b>${v}</b>${s?`<span class="sub">${s}</span>`:""}</div>`,pct=x=>x==null?"—":x+"%";
+  const left=e.waiting||0,mins=Math.ceil(left*3/60),paused=e.pauseUntil>Date.now();
+  let h=mpanel("What this account costs","Last 30 days · every call Meta answered, failed ones too",`<div class="stgrid">${stat("Calls today",igfNum(u.day))}${stat("Calls in 30 days",igfNum(u.month))}${stat("First daily read",igfNum(u.first),"calls")}${stat("Latest daily read",u.normal==null?"—":igfNum(u.normal),u.normal==null?"needs a second day":"calls")}${stat("Per 1,000 followers",u.perThousand==null?"—":u.perThousand,"calls a day, without profiles")}${stat("Meta's limit used",pct(u.app),u.buc!=null?`this account ${u.buc}%`:"")}${stat("Highest seen",pct(u.peakApp),u.peakBuc!=null?`this account ${u.peakBuc}%`:"")}${stat("Calls per hour",u.limitGuess?"about "+igfNum(u.limitGuess):"—",u.limitGuess?"worked out from the percent":"not enough calls yet")}</div><span class="sub">A profile check is one call per ID. Checks pause at ${u.stopAt}%. Money: $0, the API has no price.</span>`);
+  h+=mpanel("Profiles",`${igfS(left,"ID")} to check · fans first, then the newest followers`,d.connected?`<span class="sub">${e.left?(paused?`Paused until ${igfAt(e.pauseUntil)}. ${esc(e.problem||"")}`:`Checking: ${igfNum(e.done||0)} done, ${igfNum(e.left)} to go`):e.problem?esc(e.problem):e.done?`Last run: ${igfS(e.done,"ID")} checked`:"Names, bios and follower counts of professional accounts. Personal accounts stay empty."}</span><div class="igfbar">${e.left?`<button class="btn sm" data-igfenrich="0">Stop</button>`:`<button class="btn sm" data-igfenrich="50" ${left?"":"disabled"}>Check 50 and measure</button><button class="btn sm" data-igfenrich="${left}" ${left?"":"disabled"}>Check all ${igfNum(left)} (${mins<60?mins+" min":(mins/60).toFixed(1)+" hours"} or more)</button>`}</div>`:`<p class="sub">Connect this account in Post Studio first.</p>`);
+  h+=mpanel("Calls by kind","",u.kinds.length?`<div class="igfscroll"><table><tr><th>Kind</th><th class="n">Today</th><th class="n">30 days</th><th class="n">Failed</th><th class="n">Average time</th></tr>${u.kinds.map(k=>`<tr><td>${esc({discover:"Profile check",dms:"Messages",media:"Post list",profile:"Own profile"}[k.kind]||k.kind[0].toUpperCase()+k.kind.slice(1))}</td><td class="n">${igfNum(k.day)}</td><td class="n">${igfNum(k.month)}</td><td class="n">${igfNum(k.failed)}</td><td class="n">${(k.ms/1000).toFixed(1)} s</td></tr>`).join("")}</table></div>`:`<p class="sub">No calls yet.</p>`);
+  if(u.errors.length)h+=mpanel("Latest problems","",`<div class="strows">${u.errors.map(x=>`<div class="strow"><span class="uname">${esc(x.error)}</span><span class="n sub">${igfAt(x.at)}</span></div>`).join("")}</div>`);
+  return h}
+async function igfTake(files){const st=igf();if(st.busy||!files?.length)return;st.busy="import";st.msg="";igfDraw();
+  try{const typed=st.impFor??st.data.account??"",r=await st.core.readDrop(files),account=r.account||st.core.cleanName(typed);
+    if(!account)throw new Error("Type the ID this export belongs to, then drop it again");
+    const d=account===st.data.account?st.data:(st.data.accounts.some(a=>a.handle===account)?await igfApi("GET","/api/igfans?account="+encodeURIComponent(account)):{imports:[]});
+    const good=(d.imports||[]).filter(x=>!x.partial),prev=good.length?good[good.length-1].followers:null;
+    const partial=st.core.looksPartial(r.followers,prev,d.profile?.followers);
+    const v=await igfApi("POST","/api/igfans/import",{account,followers:r.followers,following:r.following,hasFollowing:r.hasFollowing,warnings:r.warnings,partial,mark:st.core.fingerprint(r.followers,r.following)});
+    const n=igfNum(Object.keys(r.followers).length);
+    st.msg=v.same?`This export is already here (${n} followers). Nothing changed.`:partial?"":`${n} followers of @${account} imported.`;
+    st.imp=!!partial;st.impFor=null;st.q="";if(!st.data.events?.length&&st.tab==="fans")st.tab="all",st.sort="newest";st.busy="";document.activeElement?.blur?.();return igfLoad(account)}
+  catch(e){st.msg=e.message||"This file could not be read"}
+  st.busy="";document.activeElement?.blur?.();igfDraw()}
+async function igfRun(key,work){const st=igf();if(st.busy)return;st.busy=key;st.msg="";igfDraw();try{await work()}catch(e){st.msg=e.message}st.busy="";await igfLoad()}
+async function igfCsv(tabOnly){const st=igf(),rows=tabOnly?st.core.pick(st.t.rows,st.tab,st.sort,st.q):st.core.pick(st.t.rows,"all","newest","");
+  try{const name=`instagram-${st.data.account}-${tabOnly?st.tab:"followers"}-${hcmcDate()}`,r=await igfApi("POST","/api/igfans/csv",{name,text:st.core.csv(rows,st.t.hasFollowing)});const a=document.createElement("a");a.href="/api/utilities/file/"+r.file;a.download=name+".csv";document.body.append(a);a.click();a.remove();toast(`Saving ${igfS(rows.length,"person").replace("persons","people")}`)}catch(e){toast("Could not save. Please try again")}}
+async function igfLook(u){const st=igf();if(st.busy||!u.trim())return;st.busy="look";st.lookq=u;document.activeElement?.blur?.();igfDraw();
+  try{st.look=await igfApi("POST","/api/igfans/discover",{account:st.data.account,u})}catch(e){st.look={error:e.message}}
+  st.busy="";await igfLoad()}
+function wireIgf(){const st=igf(),on=(q,f)=>document.querySelectorAll("#igfView "+q).forEach(b=>b.onclick=()=>f(b)),a=()=>st.data.account;
+  const lf=$("#igfLook");if(lf)lf.onsubmit=e=>{e.preventDefault();igfLook($("#igfLookQ").value)};
+  on("[data-igfacc]",b=>{Object.assign(st,{open:"",q:"",n:100,msg:"",look:null,impFor:null});igfApi("POST","/api/igfans/use",{account:b.dataset.igfacc}).catch(()=>{});igfLoad(b.dataset.igfacc)});
+  on("[data-igfimp]",()=>{st.imp=!st.imp;igfDraw()});
+  on("[data-igfsync]",()=>igfRun("sync",()=>igfApi("POST","/api/igfans/sync",{account:a()})));
+  on("[data-igftab]",b=>{st.tab=b.dataset.igftab;st.n=100;st.open="";st.sort=st.tab==="fans"?"score":"newest";igfDraw()});
+  on("[data-igfcsv]",b=>igfCsv(b.dataset.igfcsv==="tab"));
+  on("[data-igftrust]",b=>igfRun("trust",()=>igfApi("POST",`/api/igfans/imports/${b.dataset.igftrust}/trust`,{account:a()})));
+  on("[data-igfrm]",b=>{if(confirm("Remove this import? The file on Instagram is not touched."))igfRun("rm",()=>igfApi("POST",`/api/igfans/imports/${b.dataset.igfrm}/remove`,{account:a()}))});
+  on("[data-igfenrich]",b=>igfRun("enrich",()=>igfApi("POST","/api/igfans/enrich",{account:a(),count:Number(b.dataset.igfenrich)})));
+  const q=$("#igfQ");if(q)q.oninput=()=>{st.q=q.value;st.n=100;igfRelist()};
+  const so=$("#igfSort");if(so)so.onchange=()=>{st.sort=so.value;st.n=100;igfRelist()};
+  const w=$("#igfW");if(w)w.onsubmit=async e=>{e.preventDefault();const weights=Object.fromEntries(["comment","dm","tag"].map(k=>[k,Number(w.elements[k].value)]));try{await igfApi("PUT","/api/igfans/settings",{weights});document.activeElement?.blur?.();toast("Saved");igfLoad()}catch(x){toast(x.message)}};
+  const f=$("#igfFor");if(f)f.oninput=()=>{st.impFor=f.value};
+  const file=$("#igfFile");on("[data-igffile]",()=>file.click());if(file)file.onchange=()=>igfTake([...file.files]);
+  const z=$("#igfDrop");if(z){z.ondragover=e=>{e.preventDefault();z.classList.add("over")};z.ondragleave=()=>z.classList.remove("over");z.ondrop=e=>{e.preventDefault();e.stopPropagation();z.classList.remove("over");igfTake([...e.dataTransfer.files])}}
+  igfWireList()}
+function igfRelist(){const el=$("#igfList");if(el){el.innerHTML=igfList();igfWireList()}}
+function igfWireList(){const st=igf(),on=(q,f)=>document.querySelectorAll("#igfList "+q).forEach(b=>b.onclick=()=>f(b));
+  on("[data-igfp]",b=>{st.open=st.open===b.dataset.igfp?"":b.dataset.igfp;st.sure="";igfRelist();document.querySelector(`[data-igfp="${CSS.escape(b.dataset.igfp)}"]`)?.focus()});
+  on("[data-igfmore]",()=>{st.n+=200;igfRelist()});
+  on("[data-igfone]",b=>{window.scrollTo(0,0);igfLook(b.dataset.igfone)});
+  on("[data-igfforget]",async b=>{if(st.sure!==b.dataset.igfforget){st.sure=b.dataset.igfforget;return igfRelist()}
+    try{await igfApi("POST","/api/igfans/forget",{u:b.dataset.igfforget});st.open="";st.sure="";toast("Erased");igfLoad()}catch(e){toast("Could not erase")}})}
 /* Site: tany.im analytics. The tag on the site and its Worker store events on Cloudflare; desk/site_sync.py pulls them every 15 minutes
    and does all the counting. This page only shows the numbers. Search Console is read with Tatsuki's own Google sign-in (read only). */
 S.site=null;S.siteP="7";S.siteTab="overview";S.siteBusy="";S.siteHome=null;

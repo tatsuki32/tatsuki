@@ -56,6 +56,12 @@
       "port": 4796
     },
     {
+      "name": "desk-igfans-test",
+      "runtimeExecutable": "/bin/sh",
+      "runtimeArgs": ["-c", "cd desk && IGFANS_FAKE=1 IGFANS_DIR=/tmp/claude/igfans-test DESK_DATA_DIR=/tmp/claude/igfans-desk DESK_PORT=${PORT:-4781} exec python3 server.py"],
+      "port": 4781
+    },
+    {
       "name": "desk-footprint-test",
       "runtimeExecutable": "/bin/sh",
       "runtimeArgs": ["-c", "cd desk && FOOTPRINT_DIR=/tmp/claude/footprint-test DESK_PORT=${PORT:-4794} exec python3 server.py"],
