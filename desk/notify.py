@@ -527,7 +527,8 @@ def show_mac(n, sound=True):
     cmd = ["/usr/bin/osascript"]
     for line in SCRIPT:
         cmd += ["-e", line]
-    cmd += [n.get("body") or "", "Desk", n.get("title") or "", SOUNDS.get(n.get("tier"), "") if sound else ""]
+    # "--" ends osascript's own options: without it a body that starts with "-e" would be run as a script
+    cmd += ["--", n.get("body") or "", "Desk", n.get("title") or "", SOUNDS.get(n.get("tier"), "") if sound else ""]
     try:
         return subprocess.run(cmd, capture_output=True, timeout=10).returncode == 0
     except (OSError, subprocess.SubprocessError):

@@ -10,6 +10,7 @@
   <key>CFBundleVersion</key><string>1</string>
   <key>LSMinimumSystemVersion</key><string>14.0</string>
   <key>LSUIElement</key><true/>
+  <key>NSCameraUseContinuityCameraDeviceType</key><true/>
   <key>NSCameraUsageDescription</key><string>Glance on Tatsuki's Desk takes one photo every 15 minutes or so, to tell you how you look at the Mac. Photos stay on this Mac for 24 hours.</string>
   <key>NSScreenCaptureUsageDescription</key><string>Glance on Tatsuki's Desk takes one picture of the screen every 15 minutes or so, to tell you what you are doing. Pictures stay on this Mac for 24 hours.</string>
 </dict></plist>

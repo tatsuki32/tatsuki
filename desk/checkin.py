@@ -87,7 +87,7 @@ def ask_mac(title, minutes):
     cmd = ["/usr/bin/osascript"]
     for line in SCRIPT:
         cmd += ["-e", line]
-    cmd += [body, "Desk"]
+    cmd += ["--", body, "Desk"]
     try:
         out = subprocess.run(cmd, capture_output=True, text=True, timeout=GIVE_UP_SECONDS + 30)
     except (OSError, subprocess.SubprocessError):

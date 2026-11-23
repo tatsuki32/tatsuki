@@ -71,7 +71,7 @@ def _osa(lines, args, wait=False):
     cmd = ["/usr/bin/osascript"]
     for line in lines:
         cmd += ["-e", line]
-    cmd += [str(a) for a in args]
+    cmd += ["--"] + [str(a) for a in args]  # "--": an event title that starts with "-e" must not be run as a script
     try:
         if wait:
             return subprocess.run(cmd, capture_output=True, timeout=15).returncode == 0

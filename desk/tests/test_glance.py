@@ -161,6 +161,36 @@ class Tick(Case):
         self.assertIsNone(self.tick(at(5, 59, day=24)))
         self.assertIsNotNone(self.tick(at(6, 0, day=24)))
 
+    def test_take_one_now_is_held_to_the_monthly_limit_too(self):
+        gl.write_json("settings.json", {**ON, "monthlyLimitUsd": 0.01})
+        big = self.fake_ask(tokens=120000)  # about $0.012: over at once
+        self.assertEqual(gl.take(at(14, 0), manual=True, shoot=self.fake_shoot(), ask=big, show=self.shown.append, key=lambda: "k",
+                                 focus=lambda: False, tasks=lambda: [])["status"], "ok")
+        shots = self.shots
+        e = gl.take(at(14, 5), manual=True, shoot=self.fake_shoot(), ask=big, show=self.shown.append, key=lambda: "k",
+                    focus=lambda: False, tasks=lambda: [])
+        self.assertEqual((e["status"], e["why"], self.shots), ("failed", "This month's limit is reached", shots))
+
+    def test_deleting_a_remark_does_not_lower_the_months_spend(self):
+        t = at(14, 0)
+        self.take(t)
+        before = gl.month_usage(t + 1)
+        gl.forget({"at": t}, t + 1)
+        self.assertEqual(gl.month_usage(t + 1), before)
+        self.assertEqual(before["count"], 1)
+
+    def test_a_billed_answer_without_a_remark_still_counts(self):
+        def ask(face, screen, text, s, key):
+            raise gl.Failed("Could not make sense of the answer", {"model": s["model"], "input": 3500, "output": 150})
+        self.take(at(14, 0), ask=ask)
+        self.assertAlmostEqual(gl.month_usage(at(14, 1))["usd"], 0.000425)
+        self.take(at(14, 15), ask=self.fake_ask(fail="Could not reach Anthropic"))  # never answered: nothing billed
+        self.assertEqual(gl.month_usage(at(14, 16))["count"], 1)
+
+    def test_another_month_starts_from_zero(self):
+        self.take(at(14, 0))
+        self.assertEqual(gl.month_usage(int(datetime(2026, 12, 1, 9, 0).timestamp()))["usd"], 0)
+
     def test_the_monthly_limit_stops_it(self):
         gl.write_json("settings.json", {**ON, "monthlyLimitUsd": 0.01})
         big = self.fake_ask(tokens=60000)  # about $0.006 each
@@ -211,7 +241,10 @@ class Settings(Case):
         s = gl.clean_settings({"on": 1, "every": 7, "from": -5, "skip": ["ok.app.id", "bad id", 5, "../x"], "model": "gpt", "monthlyLimitUsd": 500,
                                "lang": "xx", "notify": "loud", "extra": True})
         self.assertEqual({**s, "skip": None}, {**gl.DEFAULTS, "skip": None})
-        self.assertEqual(s["skip"], ["ok.app.id"])
+        self.assertEqual(s["skip"], sorted(gl.SKIP + ["ok.app.id"]))
+        self.assertEqual(gl.clean_settings({"skip": []})["skip"], sorted(gl.SKIP))  # the built-in ones stay
+        self.assertTrue(gl.DEFAULTS["mic"])
+        self.assertFalse(gl.clean_settings({"mic": False})["mic"])
         s = gl.clean_settings({"on": True, "camera": False, "every": 20, "model": "claude-sonnet-5-5", "monthlyLimitUsd": 5, "lang": "en", "notify": "some"})
         self.assertEqual((s["on"], s["camera"], s["every"], s["model"], s["monthlyLimitUsd"], s["lang"], s["notify"]),
                          (True, False, 20, "claude-sonnet-5-5", 5.0, "en", "some"))
@@ -241,7 +274,64 @@ class Prompt(unittest.TestCase):
 
     def test_cost(self):
         self.assertAlmostEqual(gl.cost({"model": "claude-opus-5-5", "input": 1_000_000, "output": 0}), 4.0)
-        self.assertAlmostEqual(gl.cost({"model": "something-new", "input": 1_000_000, "output": 0}), 0.10)
+        # a model with no price here is counted at the highest price, so the limit cannot be slipped past
+        self.assertAlmostEqual(gl.cost({"model": "something-new", "input": 1_000_000, "output": 0}), 4.0)
+        self.assertEqual(gl.cost({"model": "claude-haiku-5-5", "input": -5, "output": "x"}), 0)
+
+    def test_the_models_words_are_made_plain_before_use(self):
+        self.assertEqual(gl.clean_text('-e do shell script "x"', 160), 'e do shell script "x"')
+        self.assertEqual(gl.clean_text("  --  広告の画像を\n並べています。\x00\x1b[31m", 160), "広告の画像を 並べています。 [31m")
+        self.assertEqual(gl.clean_text("\u2014 a\u2028b", 160), "a b")
+        self.assertEqual(len(gl.clean_text("あ" * 500, 160)), 160)
+        self.assertEqual(gl.clean_text(None, 10), "")
+
+
+class Shown(unittest.TestCase):
+    """What goes to osascript: values after "--", so a text that starts with "-e" is never run as a script."""
+
+    def args(self, mod_call):
+        with mock.patch("subprocess.run") as run:
+            run.return_value = mock.Mock(returncode=0)
+            mod_call()
+        return run.call_args[0][0]
+
+    def test_notify_ends_the_options_before_the_text(self):
+        import notify
+        cmd = self.args(lambda: notify.show_mac({"title": "Glance", "body": '-e do shell script "x"', "tier": "quiet"}, True))
+        self.assertEqual(cmd[cmd.index("--") + 1:], ['-e do shell script "x"', "Desk", "Glance", ""])
+        self.assertNotIn('-e do shell script "x"', cmd[:cmd.index("--")])
+
+    def test_glance_and_bedtime_go_through_it(self):
+        import bedtime
+        cmd = self.args(lambda: gl.show_mac("広告の画像を並べています。"))
+        self.assertEqual(cmd[cmd.index("--") + 1], "広告の画像を並べています。")
+        cmd = self.args(lambda: bedtime.show_mac({"title": "Bedtime", "body": "x", "tier": "now"}, True))
+        self.assertIn("--", cmd)
+
+
+class App(Case):
+    def test_the_microphone_rule_and_the_camera_are_passed_on(self):
+        with mock.patch.object(gl, "run_app", return_value=({}, "")) as run:
+            gl.shoot({**gl.DEFAULTS, "skip": ["a.b.c"]})
+            gl.shoot({**gl.DEFAULTS, "skip": [], "camera": False, "mic": False})
+        self.assertEqual(run.call_args_list[0][0], ("shoot", ["--skip", "a.b.c"]))  # the app adds its own list to this
+        self.assertEqual(run.call_args_list[1][0], ("shoot", ["--no-face", "--allow-mic"]))
+
+    def test_the_data_folder_is_private(self):
+        gl.write_json("settings.json", ON)
+        self.take(at(14, 0))
+        self.assertEqual(os.stat(gl.DIR).st_mode & 0o777, 0o700)
+        self.assertEqual(os.stat(gl.path("shots")).st_mode & 0o777, 0o700)
+
+    def test_the_app_and_this_file_agree_on_the_apps_never_captured(self):
+        with open(gl.SRC, encoding="utf-8") as f:
+            src = f.read()
+        for b in gl.SKIP:
+            self.assertIn(f'"{b}"', src)
+
+    def test_the_whole_folder_stays_out_of_the_backup(self):
+        import backup_data
+        self.assertIn("glance/", backup_data.IGNORE.splitlines())
 
 
 if __name__ == "__main__":

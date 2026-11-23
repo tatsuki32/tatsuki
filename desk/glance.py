@@ -7,15 +7,20 @@ server.py runs watch() every 60 seconds, on 4747 only. Off until it is turned on
 - When: 6:00-22:00 by this Mac's own clock (after that, desk/bedtime.py speaks instead), only while the Mac is in use
   (a key or the mouse in the last 10 minutes, or a video playing; screen not locked), not while paused.
 - Taking the pictures: ~/Applications/TatsukiGlance.app (desk/app/glance.swift), started with `open` so Camera and
-  Screen Recording belong to that app alone. It takes nothing while one of the "never capture" apps is in front, in a
-  private browser window, or during a call, and leaves those apps' windows out of the picture. Built once, on Set up.
+  Screen Recording belong to that app alone. It takes nothing while one of the "never capture" apps is in front, while
+  a private browser window is on screen, or while another app uses a camera or a microphone (a call or a recording),
+  and leaves the never-capture apps' windows out of the picture. Built once, on Set up.
 - Reading them: one request to the Claude API with the two small pictures, the titles of today's tasks and the last
   few remarks. The key is the keychain item the photo import uses (lifelog.py). Nothing else leaves this Mac.
+- The remark is the model's text about a screen that anyone's web page or message can put words on, so it is treated
+  as untrusted: cleaned to one plain line (clean_text) and handed to the notification as a value, never as code.
 - The remark goes out as a silent Mac notification and into log.json (kept 90 days). During a FocusBlock session only
   a drift remark is shown; the rest is only logged.
 - The pictures stay in desk/data/glance/shots/ for 24 hours, then they are deleted (also on the first run after the
-  server was down). A request that failed keeps no picture. The folder is outside the GitHub copy and the private backup.
-- A monthly limit in dollars stops it for the rest of the month.
+  server was down). A request that failed keeps no picture. All of desk/data/glance/ is outside the GitHub copy and
+  the private backup, and only this Mac's user can open it.
+- A monthly limit in dollars stops it for the rest of the month, "Take one now" included. The month's spend is counted
+  in state.json apart from the log, so deleting a remark does not lower it.
 
   python3 desk/glance.py plan     whether it would take one now, and why not (takes nothing)
   python3 desk/glance.py sweep    delete pictures older than 24 hours now
@@ -62,9 +67,10 @@ BUNDLE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{2,119}$")
 # LINE, password managers, Keychain Access, System Settings. A prefix covers an app's versions and helpers.
 SKIP = ["jp.naver.line.mac", "com.1password", "com.agilebits.onepassword", "com.apple.Passwords", "com.apple.keychainaccess",
         "com.bitwarden.desktop", "com.apple.systempreferences"]
-DEFAULTS = {"on": False, "camera": True, "every": 15, "from": 6 * 60, "to": 22 * 60, "skip": SKIP, "model": "claude-haiku-5-5",
+DEFAULTS = {"on": False, "camera": True, "mic": True, "every": 15, "from": 6 * 60, "to": 22 * 60, "skip": SKIP, "model": "claude-haiku-5-5",
             "monthlyLimitUsd": 3.0, "lang": "ja", "notify": "all", "pauseUntil": 0}
-WHY = {"locked": "Screen locked", "app": "A never-capture app was in front", "private": "Private browser window", "call": "Camera in use (a call)"}
+WHY = {"locked": "Screen locked", "app": "A never-capture app was in front", "private": "A private browser window was open",
+       "call": "A camera or microphone was in use (a call or a recording)"}
 SCHEMA = {"type": "object", "additionalProperties": False, "required": ["kind", "text", "activity"],
           "properties": {"kind": {"type": "string", "enum": ["doing", "drift", "body"]}, "text": {"type": "string"}, "activity": {"type": "string"}}}
 LANG = {"ja": ("Write the remark in natural, friendly Japanese (です・ます).", "80 characters at most"),
@@ -93,13 +99,34 @@ RUN = threading.Lock()  # one picture at a time
 
 
 class Failed(Exception):
-    """This Glance gives no remark. The text is shown on the Glance screen."""
+    """This Glance gives no remark. The text is shown on the Glance screen. `usage` is set when Anthropic answered
+    and the request was billed anyway."""
+
+    def __init__(self, why, usage=None):
+        super().__init__(why)
+        self.usage = usage
+
+
+def clean_text(text, limit):
+    """The model's words, made safe to show and to store: one line, no control characters, never starting with "-"
+    (a value that starts with "-" could be read as an option by a command it is handed to)."""
+    text = "".join(c if c.isprintable() else " " for c in str(text or ""))
+    return " ".join(text.split()).lstrip("-–— ")[:limit]
 
 
 # ---------- files ----------
 
 def path(*parts):
     return os.path.join(DIR, *parts)
+
+
+def private_dir(p):
+    """A folder only this Mac's user can open: the remarks and the pictures say what was on the screen."""
+    os.makedirs(p, mode=0o700, exist_ok=True)
+    try:
+        os.chmod(p, 0o700)
+    except OSError:
+        pass
 
 
 def read_json(name, default):
@@ -112,7 +139,7 @@ def read_json(name, default):
 
 
 def write_json(name, value):
-    os.makedirs(DIR, exist_ok=True)
+    private_dir(DIR)
     fd, tmp = tempfile.mkstemp(dir=DIR, prefix=".", suffix=".tmp")
     with os.fdopen(fd, "w", encoding="utf-8") as f:
         json.dump(value, f, ensure_ascii=False, indent=1)
@@ -124,7 +151,7 @@ def clean_settings(raw, base=None):
     out = json.loads(json.dumps(base or DEFAULTS))
     raw = raw if isinstance(raw, dict) else {}
     num = lambda v: isinstance(v, (int, float)) and not isinstance(v, bool)
-    for k in ("on", "camera"):
+    for k in ("on", "camera", "mic"):
         if isinstance(raw.get(k), bool):
             out[k] = raw[k]
     if num(raw.get("every")) and raw["every"] in EVERY:
@@ -134,6 +161,7 @@ def clean_settings(raw, base=None):
             out[k] = raw[k]
     if isinstance(raw.get("skip"), list):
         out["skip"] = sorted({b for b in raw["skip"] if isinstance(b, str) and BUNDLE.match(b)})[:80]
+    out["skip"] = sorted(set(out["skip"]) | set(SKIP))  # the built-in ones cannot be taken off: the app refuses them anyway
     if raw.get("model") in MODELS:
         out["model"] = raw["model"]
     if num(raw.get("monthlyLimitUsd")) and 0 <= raw["monthlyLimitUsd"] <= 100:
@@ -204,10 +232,23 @@ def sweep(now=None):
     return gone
 
 
-def month_usage(log, now):
+def month_usage(now):
+    """What this month has cost so far: {"usd", "count"}. Kept in state.json apart from the log, so deleting a remark
+    does not lower it, and a billed answer that gave no remark still counts."""
+    m = (read_json("state.json", {}).get("spend") or {}).get(datetime.fromtimestamp(now).strftime("%Y-%m")) or {}
+    num = lambda v: v if isinstance(v, (int, float)) and not isinstance(v, bool) and v > 0 else 0
+    return {"usd": round(num(m.get("usd")), 6), "count": int(num(m.get("count")))}
+
+
+def add_spend(now, usd):
     month = datetime.fromtimestamp(now).strftime("%Y-%m")
-    mine = [e for e in log if e.get("usd") and datetime.fromtimestamp(e.get("at", 0)).strftime("%Y-%m") == month]
-    return {"usd": round(sum(e["usd"] for e in mine), 4), "count": len(mine)}
+    with LOCK:
+        st = read_json("state.json", {})
+        spend = st.get("spend") if isinstance(st.get("spend"), dict) else {}
+        cur = spend.get(month) if isinstance(spend.get(month), dict) else {}
+        spend[month] = {"usd": round((cur.get("usd") or 0) + usd, 6), "count": (cur.get("count") or 0) + 1}
+        st["spend"] = {k: spend[k] for k in sorted(spend)[-12:]}
+        write_json("state.json", st)
 
 
 # ---------- the app that takes the pictures ----------
@@ -226,7 +267,7 @@ def build():
         app = os.path.join(work, "TatsukiGlance.app")
         os.makedirs(os.path.join(app, "Contents", "MacOS"))
         r = subprocess.run([swiftc, "-O", "-parse-as-library", "-framework", "AppKit", "-framework", "AVFoundation", "-framework", "ScreenCaptureKit",
-                            "-framework", "CoreMedia", SRC, "-o", os.path.join(app, "Contents", "MacOS", "TatsukiGlance")],
+                            "-framework", "CoreMedia", "-framework", "CoreAudio", SRC, "-o", os.path.join(app, "Contents", "MacOS", "TatsukiGlance")],
                            capture_output=True, text=True, timeout=600)
         if r.returncode != 0:
             return "Could not build the capture app. Run xcode-select --install in Terminal, then try again."
@@ -244,7 +285,7 @@ def build():
 def run_app(cmd, extra=(), timeout=45):
     """Starts the app through `open` and waits for it. Returns (its result.json, the folder it wrote into).
     The caller removes the folder."""
-    os.makedirs(DIR, exist_ok=True)
+    private_dir(DIR)
     work = tempfile.mkdtemp(dir=DIR, prefix=".shot-")
     try:
         subprocess.run(["/usr/bin/open", "-W", "-g", "-n", "-a", APP, "--args", cmd, work, *extra], capture_output=True, timeout=timeout)
@@ -288,7 +329,7 @@ def check(cmd="status"):
 
 def shoot(s):
     extra = ["--skip", ",".join(s["skip"])] if s["skip"] else []
-    return run_app("shoot", extra + ([] if s["camera"] else ["--no-face"]))
+    return run_app("shoot", extra + ([] if s["camera"] else ["--no-face"]) + ([] if s["mic"] else ["--allow-mic"]))
 
 
 # ---------- reading the pictures ----------
@@ -364,24 +405,27 @@ def ask_claude(face, screen, text, s, key):
         raise Failed(f"Anthropic returned an error ({e.code})") from None
     except (http.client.HTTPException, OSError, ValueError):
         raise Failed("Could not reach Anthropic") from None
+    u = res.get("usage") if isinstance(res.get("usage"), dict) else {}
+    usage = {"model": res.get("model") or model, "input": u.get("input_tokens", 0), "output": u.get("output_tokens", 0)}
     if res.get("stop_reason") == "refusal":
-        raise Failed("Reading these pictures was declined")
+        raise Failed("Reading these pictures was declined", usage)
     out = next((b.get("text") for b in res.get("content", []) if b.get("type") == "text"), None)
     try:
         rec = json.loads(out)
-        kind, remark = rec["kind"], " ".join(str(rec["text"]).split())
+        kind, remark = rec["kind"], clean_text(rec["text"], TEXT_MAX)
     except (TypeError, ValueError, KeyError):
-        raise Failed("Could not make sense of the answer") from None
+        raise Failed("Could not make sense of the answer", usage) from None
     if kind not in ("doing", "drift", "body") or not remark:
-        raise Failed("Could not make sense of the answer")
-    u = res.get("usage") or {}
-    return ({"kind": kind, "text": remark[:TEXT_MAX], "activity": " ".join(str(rec.get("activity") or "").split())[:40]},
-            {"model": res.get("model") or model, "input": u.get("input_tokens", 0), "output": u.get("output_tokens", 0)})
+        raise Failed("Could not make sense of the answer", usage)
+    return {"kind": kind, "text": remark, "activity": clean_text(rec.get("activity"), 40)}, usage
 
 
 def cost(usage):
-    price = PRICES.get(usage["model"]) or next((v for k, v in PRICES.items() if str(usage["model"]).startswith(k)), PRICES[MODELS[0]])
-    return round((usage["input"] * price[0] + usage["output"] * price[1]) / 1e6, 6)
+    """Dollars for one answer. A model this file has no price for is counted at the highest price, never the lowest."""
+    name = str(usage.get("model") or "")
+    price = PRICES.get(name) or next((v for k, v in PRICES.items() if name.startswith(k)), max(PRICES.values()))
+    tokens = lambda k: usage.get(k) if isinstance(usage.get(k), (int, float)) and not isinstance(usage.get(k), bool) and usage.get(k) > 0 else 0
+    return round((tokens("input") * price[0] + tokens("output") * price[1]) / 1e6, 6)
 
 
 # ---------- deciding ----------
@@ -431,6 +475,8 @@ def take(now=None, manual=False, shoot=shoot, ask=ask_claude, show=show_mac, key
             st["last"] = now  # before the pictures: a run that dies must not start again a minute later
             write_json("state.json", st)
         failed = lambda why: add_log({"at": now, "status": "failed", "why": why}, now)
+        if month_usage(now)["usd"] >= s["monthlyLimitUsd"]:  # "Take one now" is held to the limit too
+            return failed("This month's limit is reached")
         k = key()
         if not k:
             return failed("No Anthropic API key in the keychain")  # no picture is taken that nobody could read
@@ -448,10 +494,14 @@ def take(now=None, manual=False, shoot=shoot, ask=ask_claude, show=show_mac, key
         try:
             remark, usage = ask(face, screen, context_text(now, shot, tasks(), recent, bool(face)), s, k)
         except Failed as e:
+            if e.usage:
+                add_spend(now, cost(e.usage))  # answered and billed, though it gave no remark
             return failed(str(e))  # the pictures go with the work folder, below
-        os.makedirs(path("shots"), exist_ok=True)
-        entry = {"at": now, "status": "ok", **remark, "front": (shot.get("front") or {}).get("name", ""), "screen": f"{now}-screen.jpg",
-                 "model": usage["model"], "in": usage["input"], "out": usage["output"], "usd": cost(usage)}
+        usd = cost(usage)
+        add_spend(now, usd)
+        private_dir(path("shots"))
+        entry = {"at": now, "status": "ok", **remark, "front": clean_text((shot.get("front") or {}).get("name"), 60), "screen": f"{now}-screen.jpg",
+                 "model": clean_text(usage["model"], 60), "in": usage["input"], "out": usage["output"], "usd": usd}
         os.replace(screen, path("shots", entry["screen"]))
         if face:
             entry["face"] = f"{now}-face.jpg"
@@ -482,7 +532,7 @@ def tick(now=None, using=None, **fakes):
         return None  # off, paused, night or not due: do not even ask macOS about the keyboard
     if using is None:
         using = bedtime.in_use(bedtime.idle_seconds(), bedtime.screen_locked(), bedtime.display_kept_awake(), IN_USE)
-    if why_not(now, s, st, using, month_usage(read_log(now), now)["usd"]):
+    if why_not(now, s, st, using, month_usage(now)["usd"]):
         return None
     return take(now, **fakes)
 
@@ -516,7 +566,7 @@ def view(now=None):
     now = now or time.time()
     s, st = settings(), read_json("state.json", {})
     every = read_log(now)
-    spent = month_usage(every, now)
+    spent = month_usage(now)
     log = sorted(every, key=lambda e: -e.get("at", 0))[:300]
     for e in log:  # a picture is offered only while its file is still there
         for k in ("face", "screen"):
@@ -528,7 +578,7 @@ def view(now=None):
     return {"settings": s, "bedtime": bedtime.view(now), "log": log, "now": int(now), "paused": now < s["pauseUntil"],
             "next": int(max(now, st.get("last", 0) + s["every"] * MIN)) if s["on"] and now >= s["pauseUntil"] else 0,
             "built": os.path.exists(binary()), "permissions": st.get("permissions") or {}, "month": spent, "problem": problem,
-            "apps": running_apps(), "models": [{"id": m, "in": PRICES[m][0], "out": PRICES[m][1]} for m in MODELS],
+            "apps": running_apps(), "locked": SKIP, "models": [{"id": m, "in": PRICES[m][0], "out": PRICES[m][1]} for m in MODELS],
             "every": list(EVERY), "clock": datetime.fromtimestamp(now).strftime("%-I:%M %p")}
 
 
@@ -592,7 +642,7 @@ if __name__ == "__main__":
         t = time.time()
         idle, locked, watching = bedtime.idle_seconds(), bedtime.screen_locked(), bedtime.display_kept_awake()
         s, st = settings(), read_json("state.json", {})
-        why = why_not(t, s, st, bedtime.in_use(idle, locked, watching, IN_USE), month_usage(read_log(t), t)["usd"])
+        why = why_not(t, s, st, bedtime.in_use(idle, locked, watching, IN_USE), month_usage(t)["usd"])
         print(json.dumps({"take": not why, "why": why, "idle": idle, "locked": locked, "watching": watching, "built": os.path.exists(binary())}, indent=1))
     elif cmd == "sweep":
         print(sweep(), "pictures deleted")

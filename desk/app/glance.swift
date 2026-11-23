@@ -4,28 +4,39 @@
 //
 //   TatsukiGlance status <folder>     writes <folder>/result.json: {camera: allowed|denied|ask, screen: true|false}
 //   TatsukiGlance setup <folder>      lets macOS ask for both permissions (its own prompts), then the same as status
-//   TatsukiGlance shoot <folder> [--skip id,id] [--no-face] [--face 640] [--screen 1568]
+//   TatsukiGlance shoot <folder> [--skip id,id] [--no-face] [--allow-mic] [--face 640] [--screen 1568]
 //     writes <folder>/screen.jpg, <folder>/face.jpg (when there is one) and <folder>/result.json
 //
-// It takes nothing while the screen is locked, while one of the --skip apps is in front, while the window in front is a
-// private browser window, or while another app is using the camera (a call: other people would be in the picture).
-// Windows of the --skip apps are left out of the picture even when they sit behind. Pictures are made small before they
-// are written. It sends nothing anywhere and keeps nothing: the folder belongs to glance.py.
+// What it refuses, whoever starts it and with whatever arguments:
+// - <folder> must be a ".shot-…" folder inside a folder named "glance" (the Desk's own work folder): it writes nowhere else.
+// - Nothing is taken while the screen is locked, while a never-capture app is in front, while a private browser window
+//   is on screen, or while another app is using a camera or a microphone (a call or a recording: other people would be
+//   in the picture). All of it is checked before the pictures and again after them, before anything is written.
+// - The never-capture apps in `alwaysSkip` cannot be switched off from outside; --skip only adds to them. Their windows
+//   are left out of the picture even when they sit behind.
+// Pictures are made small before they are written. It sends nothing anywhere and keeps nothing.
+// What it cannot do: tell apart the programs of this Mac's own user. Any of them could start it, as with every app that
+// holds a permission; the rules above are what such a program would still get.
 import AppKit
 import AVFoundation
+import CoreAudio
 import ScreenCaptureKit
 
 let args = CommandLine.arguments
-let folder = URL(fileURLWithPath: args[2], isDirectory: true)  // read only after main() has checked the arguments
+let folder = URL(fileURLWithPath: args[2], isDirectory: true).standardizedFileURL  // read only after main() has checked the arguments
 
 func option(_ name: String) -> String? {
     guard let i = args.firstIndex(of: name), i + 1 < args.count else { return nil }
     return args[i + 1]
 }
-let skip = (option("--skip") ?? "").split(separator: ",").map(String.init).filter { !$0.isEmpty }
+// LINE, password managers, Keychain Access, System Settings. The same list as SKIP in glance.py; a prefix covers versions and helpers.
+let alwaysSkip = ["jp.naver.line.mac", "com.1password", "com.agilebits.onepassword", "com.apple.Passwords", "com.apple.keychainaccess",
+                  "com.bitwarden.desktop", "com.apple.systempreferences"]
+let skip = alwaysSkip + (option("--skip") ?? "").split(separator: ",").map(String.init).filter { !$0.isEmpty }
 let wantFace = !args.contains("--no-face")
-let faceMax = Int(option("--face") ?? "") ?? 640
-let screenMax = Int(option("--screen") ?? "") ?? 1568
+let micCounts = !args.contains("--allow-mic")
+let faceMax = min(max(Int(option("--face") ?? "") ?? 640, 160), 640)
+let screenMax = min(max(Int(option("--screen") ?? "") ?? 1568, 320), 1568)
 let privateMarks = ["Incognito", "シークレット", "Private Browsing", "プライベートブラウズ", "InPrivate"]
 
 func finish(_ value: [String: Any], code: Int32 = 0) -> Never {
@@ -59,6 +70,49 @@ func skipped(_ bundle: String?) -> Bool {
 func builtInCamera() -> AVCaptureDevice? {
     let found = AVCaptureDevice.DiscoverySession(deviceTypes: [.builtInWideAngleCamera], mediaType: .video, position: .unspecified).devices
     return found.first { !$0.isContinuityCamera }
+}
+
+// Any camera at all, in use by another app: built-in, external, or an iPhone.
+func cameraBusy() -> Bool {
+    let kinds: [AVCaptureDevice.DeviceType] = [.builtInWideAngleCamera, .external, .continuityCamera, .deskViewCamera]
+    return AVCaptureDevice.DiscoverySession(deviceTypes: kinds, mediaType: .video, position: .unspecified).devices
+        .contains { $0.isInUseByAnotherApplication }
+}
+
+func audioFlag(_ id: AudioObjectID, _ selector: AudioObjectPropertySelector) -> Bool {
+    var addr = AudioObjectPropertyAddress(mSelector: selector, mScope: kAudioObjectPropertyScopeGlobal, mElement: kAudioObjectPropertyElementMain)
+    var value = UInt32(0), size = UInt32(MemoryLayout<UInt32>.size)
+    return AudioObjectGetPropertyData(id, &addr, 0, nil, &size, &value) == noErr && value != 0
+}
+func audioSize(_ id: AudioObjectID, _ selector: AudioObjectPropertySelector, _ scope: AudioObjectPropertyScope) -> UInt32 {
+    var addr = AudioObjectPropertyAddress(mSelector: selector, mScope: scope, mElement: kAudioObjectPropertyElementMain)
+    var size = UInt32(0)
+    return AudioObjectGetPropertyDataSize(id, &addr, 0, nil, &size) == noErr ? size : 0
+}
+
+// A microphone that some program is listening to. Only devices that are microphones and nothing else (the Mac's own,
+// AirPods, a USB microphone): a headset that is one device for both directions is also "running" while it only plays music.
+func microphoneBusy() -> Bool {
+    let system = AudioObjectID(kAudioObjectSystemObject)
+    let bytes = audioSize(system, kAudioHardwarePropertyDevices, kAudioObjectPropertyScopeGlobal)
+    var ids = [AudioDeviceID](repeating: 0, count: Int(bytes) / MemoryLayout<AudioDeviceID>.size)
+    guard !ids.isEmpty else { return false }
+    var addr = AudioObjectPropertyAddress(mSelector: kAudioHardwarePropertyDevices, mScope: kAudioObjectPropertyScopeGlobal, mElement: kAudioObjectPropertyElementMain)
+    var size = bytes
+    guard AudioObjectGetPropertyData(system, &addr, 0, nil, &size, &ids) == noErr else { return false }
+    return ids.contains { id in
+        audioSize(id, kAudioDevicePropertyStreams, kAudioObjectPropertyScopeInput) > 0
+            && audioSize(id, kAudioDevicePropertyStreams, kAudioObjectPropertyScopeOutput) == 0
+            && audioFlag(id, kAudioDevicePropertyDeviceIsRunningSomewhere)
+    }
+}
+
+func onCall() -> Bool { cameraBusy() || (micCounts && microphoneBusy()) }
+
+// A private browser window anywhere on screen, in front or behind. Browsers that do not say so in the window's title
+// (Safari) cannot be told apart.
+func privateWindow(in content: SCShareableContent) -> Bool {
+    content.windows.contains { w in w.isOnScreen && w.windowLayer == 0 && privateMarks.contains { (w.title ?? "").contains($0) } }
 }
 
 func jpeg(_ image: CGImage, maxSide: Int, quality: Double) -> Data? {
@@ -119,17 +173,13 @@ func shoot() async -> Never {
     let front = NSWorkspace.shared.frontmostApplication
     let frontInfo: [String: Any] = ["bundle": front?.bundleIdentifier ?? "", "name": front?.localizedName ?? ""]
     if skipped(front?.bundleIdentifier) { finish(["skipped": "app", "front": frontInfo]) }
-    let cam = builtInCamera()
-    if cam?.isInUseByAnotherApplication == true { finish(["skipped": "call", "front": frontInfo]) }
+    if onCall() { finish(["skipped": "call", "front": frontInfo]) }
     guard CGPreflightScreenCaptureAccess() else { finish(["error": "screen permission", "permissions": permissions()], code: 1) }
 
     let content: SCShareableContent
     do { content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true) }
     catch { finish(["error": "screen list", "permissions": permissions()], code: 1) }
-    let frontWindows = content.windows.filter { $0.owningApplication?.processID == front?.processIdentifier && $0.windowLayer == 0 && $0.isOnScreen }
-    if frontWindows.contains(where: { w in privateMarks.contains { (w.title ?? "").contains($0) } }) {
-        finish(["skipped": "private", "front": frontInfo])
-    }
+    if privateWindow(in: content) { finish(["skipped": "private", "front": frontInfo]) }
     guard let disp = display(for: front, in: content) else { finish(["error": "no display"], code: 1) }
     let hide = content.applications.filter { skipped($0.bundleIdentifier) }
     let hidden = Set(content.windows.filter { $0.isOnScreen && $0.windowLayer == 0 && skipped($0.owningApplication?.bundleIdentifier) }
@@ -149,6 +199,7 @@ func shoot() async -> Never {
 
     var result: [String: Any] = ["ok": true, "front": frontInfo, "screen": "screen.jpg", "hidden": hidden.sorted(), "permissions": permissions()]
     var faceData: Data?
+    let cam = builtInCamera()
     if !wantFace { result["faceWhy"] = "off" }
     else if cameraState() != "allowed" { result["faceWhy"] = "permission" }
     else if cam == nil { result["faceWhy"] = "no camera" }  // lid closed, or a Mac without one
@@ -156,8 +207,15 @@ func shoot() async -> Never {
         faceData = await takeFace(cam!)
         if faceData == nil { result["faceWhy"] = "failed" }
     }
-    // the app in front may have changed while the camera warmed up: look once more before anything is written
-    if skipped(NSWorkspace.shared.frontmostApplication?.bundleIdentifier) || isLocked() { finish(["skipped": "app", "front": frontInfo]) }
+    // The screen may have changed while the pictures were taken (a call began, a private window opened, another app came
+    // to the front): look at everything once more, and write nothing if any of it is true now.
+    if isLocked() { finish(["skipped": "locked"]) }
+    if skipped(NSWorkspace.shared.frontmostApplication?.bundleIdentifier) { finish(["skipped": "app", "front": frontInfo]) }
+    if onCall() { finish(["skipped": "call", "front": frontInfo]) }
+    guard let after = try? await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true) else {
+        finish(["error": "screen list", "permissions": permissions()], code: 1)
+    }
+    if privateWindow(in: after) { finish(["skipped": "private", "front": frontInfo]) }
     do {
         try screenData.write(to: folder.appendingPathComponent("screen.jpg"))
         if let f = faceData {
@@ -177,15 +235,20 @@ func setup() async -> Never {
 @main struct Main {
     static func main() async {
         guard args.count >= 3, ["status", "setup", "shoot"].contains(args[1]) else {
-            FileHandle.standardError.write("usage: TatsukiGlance status|setup|shoot <folder> [--skip id,id] [--no-face]\n".data(using: .utf8)!)
+            FileHandle.standardError.write("usage: TatsukiGlance status|setup|shoot <folder> [--skip id,id] [--no-face] [--allow-mic]\n".data(using: .utf8)!)
             exit(2)
         }
-        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        // only the Desk's own work folder: <…>/glance/.shot-<something>
+        guard folder.lastPathComponent.hasPrefix(".shot-"), folder.deletingLastPathComponent().lastPathComponent == "glance" else {
+            FileHandle.standardError.write("TatsukiGlance writes only into a .shot- folder inside a folder named glance\n".data(using: .utf8)!)
+            exit(2)
+        }
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o700])
         // never hang: glance.py waits for this program, and a camera that does not answer must not hold it
         let limit: Double = args[1] == "setup" ? 110 : 25
         DispatchQueue.global().asyncAfter(deadline: .now() + limit) { finish(["error": "timeout", "permissions": permissions()], code: 1) }
         switch args[1] {
-        case "status": finish(permissions())
+        case "status": finish(permissions().merging(["call": onCall()]) { a, _ in a })  // "call": a camera or microphone is in use right now
         case "setup": await setup()
         default: await shoot()
         }

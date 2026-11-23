@@ -147,7 +147,7 @@ def remind(g, period, s, now=None):
     cmd = ["/usr/bin/osascript"]
     for line in NOTE:
         cmd += ["-e", line]
-    subprocess.run(cmd + [text, "Routine"], capture_output=True, timeout=10)  # the words go in as arguments, never into the script
+    subprocess.run(cmd + ["--", text, "Routine"], capture_output=True, timeout=10)  # the words go in as arguments after "--", never into the script
     if quiet(now):
         return
     subprocess.run(["/usr/bin/afplay", SOUND], capture_output=True, timeout=10)

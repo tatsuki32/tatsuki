@@ -154,7 +154,7 @@ def notify(n):
     body = f"Closed {n} app{'s' if n != 1 else ''} at startup. Reopen them from Desk Home."
     script = ["-e", "on run argv", "-e", "display notification (item 1 of argv) with title \"Desk\"", "-e", "end run"]
     try:
-        subprocess.run(["/usr/bin/osascript", *script, body], capture_output=True, timeout=10)
+        subprocess.run(["/usr/bin/osascript", *script, "--", body], capture_output=True, timeout=10)
     except (OSError, subprocess.SubprocessError):
         pass
 

@@ -322,7 +322,7 @@ def say(v):
     script = ['on run argv', 'display dialog (item 2 of argv) with title (item 1 of argv) buttons {"OK"} default button 1 giving up after 12',
               'end run']
     try:
-        subprocess.run(["/usr/bin/osascript"] + [x for line in script for x in ("-e", line)] + [v["headline"], text],
+        subprocess.run(["/usr/bin/osascript"] + [x for line in script for x in ("-e", line)] + ["--", v["headline"], text],
                        capture_output=True, timeout=30)
     except (OSError, subprocess.SubprocessError):
         pass
