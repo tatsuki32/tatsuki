@@ -51,6 +51,7 @@ async function tokenOf(env, igId) {
   return open(env, row.token);
 }
 
+const TOO_MUCH = /reduce the amount of data|unknown error/i;
 const after = (v) => (v.paging && v.paging.next && v.paging.cursors && v.paging.cursors.after) || "";
 const who = (c) => c.username || (c.from && c.from.username) || "";
 const when = (t) => Date.parse(t) || 0;
@@ -81,22 +82,34 @@ const READS = {
   async dms(id, q, token, m) {
     const pages = await get("me/accounts", { fields: "id,access_token,instagram_business_account", limit: "100" }, token, m);
     const page = (pages.data || []).find((p) => p.instagram_business_account && p.instagram_business_account.id === id);
+    const tok = page ? page.access_token : token, root = page ? page.id : id;
+    // asking for chats and their messages in one go is refused ("reduce the amount of data"): first the list, then each chat
     let v, last;
-    for (const [chats, each] of [[25, 20], [10, 10], [5, 5]]) {
+    for (const n of [10, 5, 2]) {
       try {
-        v = await get(`${page ? page.id : id}/conversations`, { platform: "instagram", fields: `id,updated_time,participants,messages.limit(${each}){id,from,created_time}`, limit: String(chats), after: q.after }, page ? page.access_token : token, m);
+        v = await get(`${root}/conversations`, { platform: "instagram", fields: "id,updated_time", limit: String(n), after: q.after }, tok, m);
         break;
       } catch (e) {
         last = e;
-        if (!/reduce the amount of data|unknown error/i.test(e.message)) throw e;
+        if (!TOO_MUCH.test(e.message)) throw e;
       }
     }
     if (!v) throw last;
-    const items = (v.data || []).map((c) => {
-      const people = Object.fromEntries(((c.participants && c.participants.data) || []).map((p) => [p.id, p.username || ""]));
-      return { id: c.id, updated: when(c.updated_time), items: ((c.messages && c.messages.data) || [])
-        .filter((x) => x.from && x.from.id !== id).map((x) => ({ id: x.id, u: x.from.username || people[x.from.id] || "", at: when(x.created_time) })) };
-    });
+    const items = await Promise.all((v.data || []).map(async (c) => {
+      const updated = when(c.updated_time);
+      if (updated && updated < Number(q.since || 0)) return { id: c.id, updated, items: [] }; // nothing new: not asked for
+      for (const n of [20, 5, 1]) {
+        try {
+          const t = await get(c.id, { fields: `participants,messages.limit(${n}){id,from,created_time}` }, tok, m);
+          const people = Object.fromEntries(((t.participants && t.participants.data) || []).map((p) => [p.id, p.username || ""]));
+          return { id: c.id, updated, items: ((t.messages && t.messages.data) || []).filter((x) => x.from && x.from.id !== id)
+            .map((x) => ({ id: x.id, u: x.from.username || people[x.from.id] || "", at: when(x.created_time) })) };
+        } catch (e) {
+          if (!TOO_MUCH.test(e.message)) throw e;
+        }
+      }
+      return { id: c.id, updated, items: [], skipped: true };
+    }));
     return { items, after: after(v) };
   },
   async audience(id, q, token, m) {
@@ -122,14 +135,14 @@ const READS = {
 };
 
 const OK = {
-  after: /^[A-Za-z0-9_=-]{0,600}$/, media: /^\d{0,30}$/, u: /^[A-Za-z0-9._]{1,30}$/, by: /^(country|city|age|gender)$/,
+  after: /^[A-Za-z0-9_=-]{0,600}$/, media: /^\d{0,30}$/, u: /^[A-Za-z0-9._]{1,30}$/, by: /^(country|city|age|gender)$/, since: /^\d{0,14}$/,
 };
 
 // always 200 with ok: true or false, so the Desk also gets the rate-limit numbers of a call that failed
 export async function handle(env, igId, what, params) {
   const run = Object.hasOwn(READS, what) ? READS[what] : null;
-  const q = { after: params.get("after") || "", media: params.get("media") || "", u: params.get("u") || "", by: params.get("by") || "" };
-  if (!run || !OK.after.test(q.after) || !OK.media.test(q.media) || (what === "comments" && !q.media) || (what === "discover" && !OK.u.test(q.u)) || (what === "audience" && !OK.by.test(q.by))) {
+  const q = { after: params.get("after") || "", media: params.get("media") || "", u: params.get("u") || "", by: params.get("by") || "", since: params.get("since") || "" };
+  if (!run || !OK.after.test(q.after) || !OK.media.test(q.media) || !OK.since.test(q.since) || (what === "comments" && !q.media) || (what === "discover" && !OK.u.test(q.u)) || (what === "audience" && !OK.by.test(q.by))) {
     return { ok: false, error: "Not a question this Worker can ask", code: 1000, meter: { calls: 0 } };
   }
   const meter = { calls: 0, app: null, buc: null, wait: 0 };

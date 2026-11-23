@@ -86,6 +86,33 @@ class Reactions(Base):
         self.assertEqual(list(r['problems']), ['comments'])
         self.assertEqual(sum(1 for e in igfans.flat(A) if e['k'] == 'comment'), 12)
 
+    def test_comments_without_names_are_read_again_once_allowed(self):
+        bare = [True]
+
+        def answer(i, w, p):
+            if w == 'comments' and bare[0]:
+                return {'ok': True, 'meter': {'calls': 1}, 'after': '', 'items': [{'id': 'c1', 'u': '', 'at': igfans.now_ms()}]}
+            return igfans._fake(w, p)
+        igfans._transport = answer
+        igfans.sync(A)
+        self.assertEqual(sum(1 for x in igfans.flat(A) if x['k'] == 'comment'), 0)
+        bare[0] = False
+        igfans.sync(A)
+        self.assertEqual(sum(1 for x in igfans.flat(A) if x['k'] == 'comment'), 12)
+
+    def test_one_post_that_fails_does_not_hold_up_the_rest(self):
+        def answer(i, w, p):
+            r = igfans._fake(w, p)
+            if w == 'media':
+                r['items'] = [{**r['items'][0], 'id': str(n)} for n in (1, 2, 3)]
+            if w == 'comments' and p['media'] == '2':
+                return {'ok': False, 'error': 'odd', 'code': 1, 'meter': {'calls': 1}}
+            return r
+        igfans._transport = answer
+        r = igfans.sync(A)
+        self.assertEqual(sum(1 for x in igfans.flat(A) if x['k'] == 'comment'), 24)
+        self.assertIn('1 posts', r['problems']['comments'])
+
     def test_stops_before_the_limit(self):
         def near(i, w, p):
             return {**igfans._fake(w, p), 'meter': {'calls': 1, 'app': 71, 'buc': 1, 'wait': 0}}

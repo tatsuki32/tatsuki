@@ -420,22 +420,43 @@ def _sync(account):
             cursor = r.get("after") or ""
             if not cursor or (r["items"] and r["items"][-1]["at"] < floor):
                 break
+        failed, empty = [], [0]
         for m in media:
             if m["at"] < floor:
                 continue
             old = e["media"].get(m["id"]) or {}
             if not m.get("comments"):
                 e["comments"].pop(m["id"], None)
-            elif old.get("comments") != m["comments"]:
-                rows, done = pages("comments", 60, media=m["id"])
+            elif old.get("comments") != m["comments"] or not old.get("read"):
+                try:
+                    rows, done = pages("comments", 60, media=m["id"])
+                except ApiError as err:
+                    if err.code == -1 or err.code in RATE_CODES or err.code in PERMISSION_CODES:
+                        raise
+                    failed.append(str(err))  # one post that cannot be read does not hold up the others
+                    if len(failed) >= 5:
+                        raise
+                    continue
+                # without the permission Meta answers with nothing, or without names: not a post that was read
+                nameless = not any(clean(x.get("u")) for x in rows)
+                empty[0] = empty[0] + 1 if nameless else 0
+                if nameless:
+                    if empty[0] >= 8:
+                        raise ApiError("Meta gave the comments without the IDs. The permission instagram_manage_comments is needed", 10)
+                    continue
                 e["comments"][m["id"]] = [k for k in map(keep, rows) if k]
+                m = {**m, "read": len(rows)}
                 if not done:  # an unusually long thread: keep what came and ask again next time
-                    m = {**m, "comments": None}
-            e["media"][m["id"]] = {k: m.get(k) for k in ("at", "link", "type", "likes", "comments")}
+                    m["comments"] = None
+            else:
+                m = {**m, "read": old["read"]}
+            e["media"][m["id"]] = {k: m.get(k) for k in ("at", "link", "type", "likes", "comments", "read")}
         live = {m["id"] for m in media if m["at"] >= floor}
         for old_id in [k for k in e["media"] if k not in live]:
             e["media"].pop(old_id, None)
             e["comments"].pop(old_id, None)
+        if failed:
+            problems["comments"] = "%d posts could not be read: %s" % (len(failed), failed[0])
 
     def tags():
         rows, _ = pages("tags", 20)
@@ -446,7 +467,7 @@ def _sync(account):
         since = floor if first else state["dmsAt"] - 2 * DAY
         started = now_ms()
         for _ in range(40):
-            r = call("dms", after=cursor)
+            r = call("dms", after=cursor, since=since)
             for c in r["items"]:
                 box = e["dms"].setdefault(c["id"], {})
                 for x in c["items"]:

@@ -20,12 +20,16 @@ test("comments and replies come back without their text", async () => {
   assert.equal(r.after, "ZZ");
   assert.ok(!JSON.stringify(r).includes("PRIVATE"));
 });
-test("messages: only theirs, only who and when", async () => {
-  const { r, seen } = await ask("dms", {}, (u) => u.pathname.endsWith("/me/accounts") ? { data: [{ id: "9", access_token: "P", instagram_business_account: { id: "111" } }] }
-    : { data: [{ id: "c", participants: { data: [{ id: "111", username: "me" }, { id: "7", username: "a" }] }, messages: { data: [{ id: "m1", from: { id: "7" }, created_time: "2026-11-01T00:00:00+0000" }, { id: "m2", from: { id: "111" }, created_time: "2026-11-01T00:00:00+0000" }] } }] });
-  assert.deepEqual(r.items[0].items.map((x) => [x.id, x.u]), [["m1", "a"]]);
-  assert.ok(!/message[,}]|text|attachments/.test(seen[1].u.searchParams.get("fields")));
-  assert.equal(r.meter.calls, 2);
+test("messages: only theirs, only who and when, and quiet chats are not asked for", async () => {
+  const { r, seen } = await ask("dms", { since: "1790000000000" }, (u) => {
+    if (u.pathname.endsWith("/me/accounts")) return { data: [{ id: "9", access_token: "P", instagram_business_account: { id: "111" } }] };
+    if (u.pathname.endsWith("/conversations")) return { data: [{ id: "new", updated_time: "2026-11-20T00:00:00+0000" }, { id: "old", updated_time: "2026-01-01T00:00:00+0000" }] };
+    if (/limit\(20\)/.test(u.searchParams.get("fields"))) return { error: { message: "Please reduce the amount of data you're asking for", code: 1 } };
+    return { participants: { data: [{ id: "111", username: "me" }, { id: "7", username: "a" }] }, messages: { data: [{ id: "m1", from: { id: "7" }, created_time: "2026-11-01T00:00:00+0000" }, { id: "m2", from: { id: "111" }, created_time: "2026-11-01T00:00:00+0000" }] } };
+  });
+  assert.deepEqual(r.items.map((c) => c.items.map((x) => [x.id, x.u])), [[["m1", "a"]], []]);
+  for (const s of seen) assert.ok(!/message[,}]|text|attachments/.test(s.u.searchParams.get("fields")));
+  assert.equal(r.meter.calls, 4);
 });
 test("the rate-limit numbers come through, also on failure", async () => {
   const h = { "x-app-usage": '{"call_count":12,"total_time":30,"total_cputime":1}', "x-business-use-case-usage": '{"1":[{"call_count":4,"estimated_time_to_regain_access":7}]}' };
@@ -43,7 +47,7 @@ test("a looked-up account", async () => {
   assert.match(seen[0].u.searchParams.get("fields"), /^business_discovery\.username\(a\.b_c\)/);
 });
 test("nothing odd reaches Meta", async () => {
-  for (const [w, q] of [["discover", { u: "a){x}" }], ["discover", { u: "" }], ["comments", { media: "1/../2" }], ["comments", {}], ["audience", { by: "x" }], ["constructor", {}], ["media", { after: "a&b" }]]) {
+  for (const [w, q] of [["discover", { u: "a){x}" }], ["discover", { u: "" }], ["comments", { media: "1/../2" }], ["comments", {}], ["audience", { by: "x" }], ["constructor", {}], ["media", { after: "a&b" }], ["dms", { since: "x" }]]) {
     const { r, seen } = await ask(w, q, {});
     assert.deepEqual([r.ok, seen.length], [false, 0], w);
   }
