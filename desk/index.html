@@ -2120,7 +2120,7 @@ body.rdth-paper main .btn.primary:hover,body.rdth-sepia main .btn.primary:hover{
 .mns{display:block;color:var(--muted);font-size:var(--t1)}
 .mnlist{padding:0 var(--s3)}
 .mnsearch{width:100%;background:var(--surface-2);color:var(--ink);border:1px solid var(--line);border-radius:var(--r-s);padding:var(--s2) var(--s3);font:inherit;font-size:var(--t2);box-sizing:border-box}
-.mnshare{display:grid;gap:var(--s2)}
+.mnshare{display:grid;gap:var(--s2);padding:var(--s3);margin-top:var(--s3)}
 .mnshm{display:grid;gap:var(--s2);border-top:1px solid var(--line);padding-top:var(--s3)}
 .mnppl{display:flex;flex-wrap:wrap;gap:var(--s2);align-items:center}
 .mnto{display:flex;gap:var(--s1);align-items:center;overflow-wrap:anywhere}
@@ -7738,7 +7738,8 @@ function mnShare(m){
     <label class="sub" for="mnMail">Text</label><textarea class="mnedit mnmail" id="mnMail">${esc(sh.body)}</textarea>
     <div class="mnevrow"><button class="btn primary" type="button" data-mnsh="thanks" ${b("thanks")}>${sh.busy==="thanks"?"Making…":"Make Gmail draft"}</button></div>
     <p class="hint">The Desk never sends it. Check the draft in Gmail and press Send there.</p></div>`;
-  return `<section class="card mnshare"><div class="section-title">Share</div>${doc}${mail}${sh.msg?`<p class="sub" role="status">${esc(sh.msg)}</p>`:""}</section>`}
+  const sm=m.selfmail||{},own=!g?"":`<div class="mnshm"><div class="section-title">Mail to you</div><div class="mnevrow"><span>${sm.at?"Emailed to you · "+esc(mnWhen(sm.at)):"Not emailed to you"}</span><button class="btn" type="button" data-mnsh="selfmail" ${b("selfmail")}>${sh.busy==="selfmail"?"Emailing…":sm.at?"Email me again":"Email me this"}</button></div><p class="hint">A short version with the link to the Google Doc, in your own inbox only.</p></div>`;
+  return `<section class="card mnshare"><div class="section-title">Share</div>${doc}${own}${mail}${sh.msg?`<p class="sub" role="status">${esc(sh.msg)}</p>`:""}</section>`}
 async function mnShareText(m){const sh=mnSh();if(!m.gdoc||sh.subject||sh.body||sh.asked===m.gdoc.at)return;sh.asked=m.gdoc.at;
   try{const d=await mnApi("POST",`/api/minutes/${m.id}/thanks-text`,{});if(!sh.subject&&!sh.body){sh.subject=d.subject;sh.body=d.body;const su=$("#mnSubj"),bo=$("#mnMail");if(su&&bo){su.value=d.subject;bo.value=d.body}}}catch(e){}}
 function wireMnShare(m){
@@ -7750,6 +7751,7 @@ function wireMnShare(m){
     if(k==="copy") return copyText(m.gdoc.url).then(ok=>toast(ok?"Link copied":"Could not copy"));
     if(k==="gdoc") return run(k,async()=>{const r=await mnApi("POST",`/api/minutes/${m.id}/gdoc`,{});sh.connect=false;sh.msg=r.again?"The Google Doc has your latest text.":"The Google Doc is ready. Copy the link and send it.";sh.subject="";sh.body=""});
     if(k==="connect") return run(k,async()=>{await mnApi("POST","/api/meetcheck/connect",{});sh.msg="Press Allow on the Google page in the browser, then press Make Google Doc again.";sh.connect=false});
+    if(k==="selfmail") return run(k,async()=>{await mnApi("POST",`/api/minutes/${m.id}/selfmail`,{});sh.msg="It is in your inbox."});
     if(k==="people") return run(k,async()=>{const r=await mnApi("POST",`/api/minutes/${m.id}/people`,{});sh.people=r.people||[];sh.people.forEach(p=>{if(p.emails[0]&&sh.to[p.emails[0]]===undefined)sh.to[p.emails[0]]=true})});
     if(k==="thanks") return run(k,async()=>{const to=[...Object.keys(sh.to).filter(e=>sh.to[e]),...sh.extra.split(/[,、\s]+/).filter(Boolean)];
       const r=await mnApi("POST",`/api/minutes/${m.id}/thanks`,{to,subject:sh.subject,body:sh.body});sh.msg="The draft is in Gmail. Check it and press Send there.";window.open(r.url,"_blank","noopener")});
@@ -7770,8 +7772,14 @@ function mnView(){
   const all=st.data?.minutes||[];
   return head+(st.data&&!st.data.transcriber?`<p class="sub">Transcribe is not running. A recording becomes a minute when it has been turned into text.</p>`:"")+
     `<section class="card"><input class="mnsearch" type="search" placeholder="Search minutes" value="${esc(st.q)}" data-mnq aria-label="Search minutes"></section>
-    <div id="mnList">${mnList()}</div>`;
+    <div id="mnList">${mnList()}</div>${mnMailSet()}`;
 }
+/* Mail to the owner's own inbox when a minute's Google Doc is ready (desk/minutes_mail.py). */
+function mnMailSet(){const s=mn().data?.mail;if(!s)return "";
+  return `<section class="card mnshare"><div class="section-title">When minutes are ready</div>${s.problem?`<p class="due" role="alert">${esc(s.problem)}</p>`:""}
+    <label class="mnto"><input type="checkbox" data-mnmail="on" ${s.on?"checked":""}> Email me a short version with the Google Doc link</label>
+    <label class="mnto"><input type="checkbox" data-mnmail="thanks" ${s.thanks?"checked":""} ${s.on?"":"disabled"}> Draft a thank-you to the guests of the calendar event</label>
+    <p class="hint">One mail per meeting, to your own inbox only. The thank-you stays a Gmail draft until you send it.</p></section>`}
 function mnList(){const st=mn();const all=st.data?.minutes||[];const q=st.q.trim().toLowerCase();
   const rows=all.filter(m=>!q||(m.title+" "+(m.body||"")).toLowerCase().includes(q));
   return rows.length?`<section class="card mnlist">${rows.map(mnRow).join("")}</section>`
@@ -7796,6 +7804,7 @@ function wireMn(){
   document.querySelectorAll("[data-mnmake]").forEach(b=>b.onclick=()=>{if(!m)return;if(!mnPending(m)&&!confirm("Make the minutes again? The text here will be replaced by the new minutes."))return;
     mnDo(()=>mnApi("POST",`/api/minutes/${m.id}/make`,{}),"Claude is writing the minutes. They appear here in a minute or two.")});
   if(m) wireMnShare(m);
+  document.querySelectorAll("[data-mnmail]").forEach(c=>c.onchange=()=>mnDo(()=>mnApi("PUT","/api/minutes/mail",{[c.dataset.mnmail]:c.checked}),""));
   document.querySelectorAll("[data-mnview]").forEach(b=>b.onclick=()=>{st.docView=b.dataset.mnview==="doc"?m.id:"";st.edit=false;render()});
   document.querySelectorAll("[data-mndel]").forEach(b=>b.onclick=()=>{if(m&&confirm("Delete this minute? Its text is erased."))mnDo(async()=>{await mnApi("POST",`/api/minutes/${m.id}/remove`,{});location.hash="#minutes"},"")});
 }

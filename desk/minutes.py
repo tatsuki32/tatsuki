@@ -168,8 +168,9 @@ def put(mid, rec):
 
 
 def set_share(mid, key, value):
-    """The Google Doc link (gdoc) and the thank-you draft (thanks) of a minute (desk/minutes_share.py). Not an edit of the text."""
-    if key not in ("gdoc", "thanks"):
+    """The Google Doc link (gdoc), the thank-you draft (thanks) and the mail to the owner (selfmail) of a minute
+    (desk/minutes_share.py, desk/minutes_mail.py). Not an edit of the text."""
+    if key not in ("gdoc", "thanks", "selfmail"):
         raise MinutesError("Unknown field")
     with LOCK:
         cur = _read(mid)

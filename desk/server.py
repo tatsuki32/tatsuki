@@ -41,6 +41,7 @@ import finder
 import transcribe_desk
 import meetcheck  # Should we meet?: the questions, Claude drafts and the pre-read Google Doc (desk/meetcheck.py)
 import minutes_share  # Minutes → a Google Doc anyone with the link can read, and a thank-you Gmail draft (never sent)
+import minutes_mail  # Minutes → one mail to the owner's own inbox, and the thank-you draft made by itself
 import minutes  # 議事録: made from Transcribe recordings, linked to Calendar events (desk/minutes.py)
 import notify
 import bedtime  # Bedtime: a gentle word to stop for the day once the set hour has passed (desk/bedtime.py)
@@ -1062,7 +1063,7 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/meetcheck/status":
             return self.send(200, meetcheck.status())
         if path == "/api/minutes":
-            return self.send(200, minutes.view())
+            return self.send(200, {**minutes.view(), "mail": minutes_mail.status()})
         if path.startswith("/api/minutes/") and path.count("/") == 3:
             try:
                 return self.send(200, minutes.get(path.split("/")[3]))
@@ -1777,6 +1778,8 @@ class Handler(BaseHTTPRequestHandler):
         try:
             if p == ["minutes"] and method == "POST":
                 return self.send(200, minutes.create(rec))
+            if p == ["minutes", "mail"] and method == "PUT":  # the mail to the owner: on/off
+                return self.send(200, minutes_mail.put_settings(rec if isinstance(rec, dict) else {}))
             if len(p) == 2 and method == "PUT":
                 return self.send(200, minutes.put(p[1], rec))
             if len(p) == 3 and method == "POST" and p[2] == "remove":
@@ -1785,7 +1788,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(200, minutes.remove(p[1]))
             if len(p) == 3 and method == "POST" and p[2] == "calendar":
                 return self.send(200, minutes.write_calendar(p[1]))
-            if len(p) == 3 and method == "POST" and p[2] in ("gdoc", "people", "thanks", "thanks-text"):  # share: Google Doc, addresses, Gmail draft
+            if len(p) == 3 and method == "POST" and p[2] in ("gdoc", "people", "thanks", "thanks-text", "selfmail"):  # share: Google Doc, addresses, Gmail draft
                 return self.send(*minutes_share.handle(p[1], p[2], rec if isinstance(rec, dict) else {}))
             if len(p) == 3 and method == "POST" and p[2] == "make":  # a note from Transcribe: ask it for minutes (Claude, once)
                 return self.send(200, minutes.make_from_notes(p[1]))

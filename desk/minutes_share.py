@@ -177,12 +177,14 @@ def draft_text(mid):
     m = _minute(mid)
     link = (m.get('gdoc') or {}).get('url', '')
     title = m.get('title') or ''
+    today = time.strftime('%Y%m%d') == time.strftime('%Y%m%d', time.localtime(m.get('at') or time.time()))
+    day, what = ('本日', '今日の') if today else ('先日', '')
     if _ja(m):
-        return {'subject': f'本日はありがとうございました（{title}）',
-                'body': f'本日はお時間をいただき、ありがとうございました。\n\n今日の議事録です。リンクを知っている人は誰でも見られます。\n{link}\n\n'
+        return {'subject': f'{day}はありがとうございました（{title}）',
+                'body': f'{day}はお時間をいただき、ありがとうございました。\n\n{what or "その時の"}議事録です。リンクを知っている人は誰でも見られます。\n{link}\n\n'
                         '内容に違いや足りないところがあれば、このメールに返信していただけると助かります。\n引き続きよろしくお願いいたします。\n'}
-    return {'subject': f'Thank you for today ({title})',
-            'body': f'Thank you for your time today.\n\nHere are the minutes from our meeting. Anyone with the link can view them.\n{link}\n\n'
+    return {'subject': f'Thank you for {"today" if today else "your time"} ({title})',
+            'body': f'Thank you for your time{" today" if today else ""}.\n\nHere are the minutes from our meeting. Anyone with the link can view them.\n{link}\n\n'
                     'If anything is wrong or missing, just reply to this email.\nBest regards,\n'}
 
 
@@ -280,6 +282,11 @@ def watch():
             auto()
         except Exception as e:  # keep the loop alive; the message names no content
             print(f'[minutes] doc pass failed: {type(e).__name__}', flush=True)
+        try:
+            import minutes_mail  # one mail to the owner for each new doc (it imports this module)
+            minutes_mail.auto()
+        except Exception as e:
+            print(f'[minutes] mail pass failed: {type(e).__name__}', flush=True)
         time.sleep(60)
 
 
@@ -294,6 +301,9 @@ def handle(mid, action, rec):
             return 200, thanks(mid, rec)
         if action == 'thanks-text':
             return 200, draft_text(mid)
+        if action == 'selfmail':
+            import minutes_mail
+            return 200, minutes_mail.again(mid)
         return 404, {'error': 'not found'}
     except meetcheck.NotConnected as e:
         return 409, {'error': str(e), 'connect': True}

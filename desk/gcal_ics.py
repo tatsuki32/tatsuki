@@ -11,6 +11,7 @@ If one address fails, the last good calendar stays and the reason is kept in mem
   python3 desk/gcal_ics.py status   is an address saved, when it was last read, and the last error
 """
 import json
+import re
 import sys
 import threading
 import time
@@ -24,8 +25,12 @@ DAYS = 8  # today + the next 7 days, like the old hourly import
 _state = {"at": 0, "ok": 0, "error": "", "count": 0}
 
 
-def parse(text):
-    """VEVENTs with what the calendar shows: uid, summary, start, end, all_day, location, rrule, exdates, rid, cancelled."""
+GUEST = re.compile(r"mailto:([^\s;,:]+@[^\s;,:]+)\s*$", re.I)
+
+
+def parse(text, guests=False):
+    """VEVENTs with what the calendar shows: uid, summary, start, end, all_day, location, rrule, exdates, rid, cancelled.
+    guests=True (minutes_mail only, in memory) adds the invited addresses; the Desk's calendar never keeps them."""
     out, cur = [], None
     for line in ics.unfold(text):
         if line == "BEGIN:VEVENT":
@@ -39,6 +44,13 @@ def parse(text):
             name, *ps = head.split(";")
             params = dict(p.split("=", 1) for p in ps if "=" in p)
             text_value = value.replace("\\,", ",").replace("\\;", ";").replace("\\n", " ").replace("\\\\", "\\")
+            if guests and name in ("ATTENDEE", "ORGANIZER"):
+                g = GUEST.search(line)
+                if g:
+                    up = line[:g.start()].upper()
+                    cur.setdefault("guests", []).append({"email": g.group(1).lower(), "status": "DECLINED" if "PARTSTAT=DECLINED" in up else "",
+                                                         "room": bool(re.search(r"CUTYPE=(RESOURCE|ROOM|GROUP)", up))})
+                continue
             try:
                 if name == "UID":
                     cur["uid"] = value
@@ -65,6 +77,11 @@ def parse(text):
 
 
 def _row(e, ts):
+    row = _plain_row(e, ts)
+    return {**row, "guests": e["guests"]} if e.get("guests") else row
+
+
+def _plain_row(e, ts):
     start = datetime.fromtimestamp(ts, e["start"].tzinfo)
     length = (e["end"] - e["start"]) if e.get("end") else timedelta(0)
     end = start + length
