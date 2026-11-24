@@ -126,6 +126,19 @@ async function save(op, u) {
   } catch (e) { stop = e.message; draw(); return false; }
 }
 
+// The people you ticked go into the same line as single presses, in the order of the list.
+function unfollowTicked() {
+  if (Date.now() < pause) return;
+  for (const p of view.queue) if (ticked.has(p.u) && p.u !== busy && !waiting.includes(p.u) && left() > 0) { waiting.push(p.u); ticked.delete(p.u); }
+  stop = ""; draw(); pump();
+}
+
+function tickFirst(n) {
+  ticked.clear();
+  for (const p of shown()) { if (ticked.size >= n) break; if (p.u !== busy && !waiting.includes(p.u)) ticked.add(p.u); }
+  draw();
+}
+
 async function keepTicked() {
   for (const u of [...ticked]) await save("keep", u);
   ticked.clear(); draw();
@@ -167,7 +180,15 @@ function draw() {
   }
   const tools = el("div", {className: "tools"});
   if (waiting.length) { const b = el("button", {className: "primary", textContent: "Stop, drop the " + num(waiting.length) + " waiting"}); b.onclick = () => { waiting.length = 0; draw(); }; tools.append(b); }
-  if (ticked.size) { const b = el("button", {className: "primary", textContent: "Keep the " + num(ticked.size) + " ticked"}); b.onclick = keepTicked; tools.append(b); }
+  if (ticked.size) {
+    const go = el("button", {className: "primary", disabled: left() <= 0, textContent: "Unfollow the " + num(Math.min(ticked.size, Math.max(left(), 0)) || ticked.size) + " ticked"}); go.onclick = unfollowTicked;
+    const keep = el("button", {textContent: "Keep the " + num(ticked.size) + " ticked"}); keep.onclick = keepTicked;
+    const none = el("button", {textContent: "Clear ticks"}); none.onclick = () => { ticked.clear(); draw(); };
+    tools.append(go, keep, none);
+  } else if (view.ready && view.queue.length && left() > 0 && Date.now() >= pause && !limit()) {
+    const n = Math.min(left(), shown().length);
+    if (n > 0) { const b = el("button", {textContent: "Tick the first " + num(n)}); b.onclick = () => tickFirst(left()); tools.append(b); }
+  }
   if (undo.length) { const b = button("undo", "Back to @" + undo[undo.length - 1], "", "", !!busy || waiting.length > 0); b.title = "Changes the list only. It does not follow anyone again."; tools.append(b); }
   if (tools.children.length) m.append(tools);
   const list = shown();
@@ -179,6 +200,9 @@ function draw() {
   else if (limit()) m.append(el("p", {textContent: "That is today’s number. The next people are here tomorrow."}));
   else if (!list.length) m.append(el("p", {textContent: "Nobody matches."}));
   else m.append(el("ul", {}, ...list.slice(0, 100).map(row)), ...(list.length > 100 ? [el("p", {className: "sub", textContent: `${num(list.length - 100)} more after these`})] : []));
+  // the number still free this hour, on the icon
+  const free = view.ready && view.queue.length && Date.now() >= pause && !limit() ? Math.max(left(), 0) : 0;
+  chrome.action.setBadgeText({text: free ? String(free) : ""}).catch(() => {});
   document.scrollingElement.scrollTop = top;
 }
 

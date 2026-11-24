@@ -696,7 +696,7 @@ def forget(name):
 # Only the owner's decisions are kept here.
 
 EXTENSION_ORIGIN = "chrome-extension://imhmpgkkncfaijppfnicokaicaodklki"  # from the "key" in chrome-followers/manifest.json
-PER_DAY = 20              # a small number on purpose; the owner can choose 5 to 50
+PER_DAY = 20              # a small number on purpose; the owner can choose 5 to 100
 PER_HOUR = 20             # 5 to 20; at the number the panel stops and waits for the owner to press again
 HOUR = 3600000
 OVER_DAYS = (0, 90, 365)  # only people followed at least this long ago
@@ -769,7 +769,7 @@ def put_cleanup(rec):
         c = _cleanup(account)
         if op == "settings":
             p, h, o, which = rec.get("perDay"), rec.get("perHour", c["perHour"]), rec.get("over"), rec.get("list", c["list"])
-            if isinstance(p, bool) or not isinstance(p, int) or not 5 <= p <= 50 or isinstance(h, bool) or not isinstance(h, int) or not 5 <= h <= 20 or isinstance(o, bool) or o not in OVER_DAYS or which not in LISTS:
+            if isinstance(p, bool) or not isinstance(p, int) or not 5 <= p <= 100 or isinstance(h, bool) or not isinstance(h, int) or not 5 <= h <= 20 or isinstance(o, bool) or o not in OVER_DAYS or which not in LISTS:
                 return 400, {"error": "settings"}
             c.update(perDay=p, perHour=h, over=o, list=which)
         elif op in ("keep", "done", "later", "undo"):
