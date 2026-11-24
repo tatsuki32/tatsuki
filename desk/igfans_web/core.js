@@ -221,7 +221,9 @@ export function scores(events, now, weights) {
 /* ---------- the table ---------- */
 
 // imports, events, profiles {u: {found, name, bio, followers, …}} → one row per person
-export function table({ imports, events, profiles, now, weights, own }) {
+// gone: people unfollowed since the export was made. They are not shown as followed any more.
+export function table({ imports, events, profiles, now, weights, own, gone }) {
+  const away = new Set(gone || []);
   const good = (imports || []).filter((x) => !x.partial).slice().sort((a, b) => a.at - b.at);
   const latest = good[good.length - 1] || null;
   const F = latest ? latest.followers : {}, G = latest ? latest.following : {}, s = scores(events, now, weights), P = profiles || {};
@@ -229,7 +231,7 @@ export function table({ imports, events, profiles, now, weights, own }) {
   names.delete(cleanName(own));
   const rows = [];
   for (const u of names) {
-    const f = has(F, u), g = has(G, u), x = s.get(u), pr = has(P, u) ? P[u] : null, p = pr && pr.found ? pr : null;
+    const f = has(F, u), g = has(G, u) && !away.has(u), x = s.get(u), pr = has(P, u) ? P[u] : null, p = pr && pr.found ? pr : null;
     rows.push({
       u, follower: f, following: g, rel: !latest ? "unknown" : f && g ? "mutual" : f ? "fan" : g ? "idol" : "none",
       since: f ? F[u] || 0 : 0, score: x ? Math.round(x.score * 10) / 10 : 0, comment: x ? x.comment : 0, dm: x ? x.dm : 0, tag: x ? x.tag : 0, last: x ? x.last : 0,

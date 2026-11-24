@@ -703,7 +703,6 @@ OVER_DAYS = (0, 90, 365)  # only people followed at least this long ago
 REMIND_HOURS = (8, 22)    # by the Mac's clock
 LISTS = ("notback", "left", "new")  # does not follow back · stopped following in the last 30 days · followed in the last 30 days, not back yet
 LATER = 7 * DAY
-EXPORT_AGE = 4 * DAY      # an export can be downloaded up to 4 days after Instagram made it, so it may be older than the decision
 
 
 def _cleanup(account):
@@ -723,9 +722,10 @@ def _stopped(good, since):
 
 
 def cleanup(wanted=""):
-    """Who comes next. A person marked Unfollowed who is still followed in a newer export comes back with again=True."""
+    """Who comes next. A person marked Unfollowed never comes back, also when an export still lists them, unless the owner
+    followed them again after that."""
     a = current(wanted)
-    out = {"account": a, "accounts": accounts(), "queue": [], "left": 0, "today": 0, "perDay": PER_DAY, "hour": 0, "perHour": PER_HOUR, "hourFrom": 0, "remind": True, "pausedUntil": 0, "over": 365, "keep": [], "done": 0, "later": 0, "ready": False, "list": "notback", "exports": 0}
+    out = {"account": a, "accounts": accounts(), "queue": [], "left": 0, "today": 0, "perDay": PER_DAY, "hour": 0, "perHour": PER_HOUR, "hourFrom": 0, "panel": _read(os.path.join(ROOT, "chrome-followers", "manifest.json"), {}).get("version", ""), "gone": [], "remind": True, "pausedUntil": 0, "over": 365, "keep": [], "done": 0, "later": 0, "ready": False, "list": "notback", "exports": 0}
     if not a:
         return out
     c = _cleanup(a)
@@ -740,6 +740,8 @@ def cleanup(wanted=""):
     if len(recent) >= c["perHour"]:
         out["hourFrom"] = recent[len(recent) - c["perHour"]] + HOUR  # when the next one fits
     out["done"] = sum(1 for m in marks.values() if m["s"] == "done")
+    newest = good[-1]["following"] if good else {}
+    out["gone"] = sorted(n for n, m in marks.items() if m["s"] == "done" and newest.get(n, 0) <= m["at"])
     out["keep"] = sorted(n for n, m in marks.items() if m["s"] == "keep")
     if not good or not good[-1].get("hasFollowing"):
         return out
@@ -750,14 +752,14 @@ def cleanup(wanted=""):
         if n in x["followers"] or n in mine or hidden(n):
             continue
         m = marks.get(n)
-        if m and (m["s"] == "keep" or m["s"] == "done" and x["at"] <= m["at"] + EXPORT_AGE or m["s"] == "later" and now - m["at"] < LATER):
+        if m and (m["s"] == "keep" or m["s"] == "done" and since <= m["at"] or m["s"] == "later" and now - m["at"] < LATER):
             out["later"] += m["s"] == "later"
             continue
         if c["list"] == "left" and n not in stopped or c["list"] == "new" and now - since > 30 * DAY:
             continue
         if c["list"] == "notback" and c["over"] and now - since < c["over"] * DAY:
             continue
-        rows.append({"u": n, "since": since, "again": bool(m and m["s"] == "done")})
+        rows.append({"u": n, "since": since})
     rows.sort(key=lambda r: (r["since"], r["u"]))
     out.update(ready=True, queue=rows[:500], left=len(rows), exportAt=x["at"])
     return out
@@ -841,6 +843,9 @@ def put_cleanup(rec):
             good = [x for x in imports(account) if not x.get("partial")]
             if not n or not good or n not in good[-1]["following"] or _hidden()(n):
                 return 404, {"error": "That person is not in the list"}
+            m = c["people"].get(n)
+            if m and m["s"] == "done" and good[-1]["following"][n] <= m["at"]:
+                return 200, cleanup(account)  # unfollowed is final: no second press, Keep, Later or Back changes it
             if op == "undo":
                 c["people"].pop(n, None)
             else:

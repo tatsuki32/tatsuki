@@ -11417,7 +11417,7 @@ async function igfLoad(account){
   catch(e){st.err=e.message}
   st.loading=false;if(viewId()==="followers")igfDraw();igfPoll()}
 function igfCount(){const st=igf(),d=st.data;if(!d||d.empty){st.t=null;return}
-  st.t=st.core.table({imports:d.imports,events:d.events,profiles:d.profiles,now:Date.now(),weights:d.weights,own:d.account});st.h=st.core.history(d.imports);
+  st.t=st.core.table({imports:d.imports,events:d.events,profiles:d.profiles,now:Date.now(),weights:d.weights,own:d.account,gone:d.cleanup?.gone});st.h=st.core.history(d.imports);
   st.count=Object.fromEntries(Object.keys(st.core.TABS).map(k=>[k,st.t.rows.filter(st.core.TABS[k]).length]))}
 function igfPoll(){const st=igf();clearTimeout(st.poll);const d=st.data;if(!d||!(d.busy||(d.enrich?.left&&d.connected)))return;
   st.poll=setTimeout(async()=>{if(viewId()!=="followers")return;

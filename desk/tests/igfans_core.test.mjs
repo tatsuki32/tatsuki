@@ -101,3 +101,10 @@ test("an ID that is also a JavaScript word", () => {
   const t = C.table({ imports: [snap("1", 1, { a: 1 })], events: [{ u: "constructor", k: "dm", at: 5 }], profiles: {}, now: 9 });
   assert.equal(t.rows.find((r) => r.u === "constructor").follower, false);
 });
+
+test("people unfollowed since the export leave the lists", () => {
+  const imports = [{ at: 1, followers: { m: 1 }, following: { m: 1, idol: 1, other: 1 }, hasFollowing: true }];
+  const t = C.table({ imports, events: [], profiles: {}, now: 2, gone: ["idol", "m"] });
+  assert.deepEqual(C.pick(t.rows, "notback", "az", "").map((r) => r.u), ["other"]);
+  assert.deepEqual(C.pick(t.rows, "youdont", "az", "").map((r) => r.u), ["m"]);
+});

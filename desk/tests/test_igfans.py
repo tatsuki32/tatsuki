@@ -149,19 +149,25 @@ class Cleanup(Base):
         self.assertEqual(self.names(), ['mid'])
         v = igfans.put_cleanup({'account': A, 'op': 'done', 'u': 'mid'})[1]
         self.assertEqual((v['today'], v['done'], v['left']), (1, 1, 0))
-        igfans.put_cleanup({'account': A, 'op': 'undo', 'u': 'mid'})
-        self.assertEqual(self.names(), ['mid'])
-        igfans.put_cleanup({'account': A, 'op': 'later', 'u': 'mid'})
+        igfans.put_cleanup({'account': A, 'op': 'undo', 'u': 'old'})
+        self.assertEqual(self.names(), ['old'])
+        igfans.put_cleanup({'account': A, 'op': 'later', 'u': 'old'})
         self.assertEqual((self.names(), igfans.cleanup(A)['later']), ([], 1))
+        for op in ('undo', 'keep', 'later', 'done'):  # an unfollowed person never comes back
+            v = igfans.put_cleanup({'account': A, 'op': op, 'u': 'mid'})[1]
+            self.assertEqual((v['gone'], v['done'], 'mid' in v['keep']), (['mid'], 1, False))
 
-    def test_still_followed_in_a_newer_export_comes_back(self):
+    def test_unfollowed_stays_away_from_a_newer_export(self):
         self.bring()
         igfans.put_cleanup({'account': A, 'op': 'done', 'u': 'old'})
         path = igfans._f(A, 'cleanup.json')
         c = igfans._read(path, {})
         c['people']['old']['at'] -= 5 * igfans.DAY
         igfans._write(path, c)
-        self.assertEqual([(r['u'], r['again']) for r in igfans.cleanup(A)['queue']][0], ('old', True))
+        self.assertEqual(self.names(), ['mid'])
+        c['people']['old']['at'] = igfans.now_ms() - 2000 * igfans.DAY  # followed again after that: a new follow
+        igfans._write(path, c)
+        self.assertEqual(self.names(), ['old', 'mid'])
 
     def test_the_reminder(self):
         now = int(time.mktime((2026, 11, 24, 12, 30, 0, 0, 0, -1)) * 1000)

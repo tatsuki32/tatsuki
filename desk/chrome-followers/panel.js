@@ -18,6 +18,7 @@ const WHY = {
 const day = t => t ? new Date(t).toLocaleDateString("en-US", {year: "numeric", month: "short", day: "numeric"}) : "";
 const good = u => /^[a-z0-9._]{1,30}$/.test(u);
 let view = null, busy = "", pumping = false, pause = 0, account = "", undo = [], stop = "", failed = "", behind = true, query = "";
+const gone = new Set();  // unfollowed while this panel is open: never drawn or pressed again, whatever an older answer says
 const ticked = new Set(), waiting = [];  // waiting: pressed, not done yet; kept nowhere else
 
 const el = (tag, props = {}, ...kids) => { const e = Object.assign(document.createElement(tag), props); e.append(...kids); return e; };
@@ -75,7 +76,7 @@ const left = () => Math.min(view.perDay - view.today, view.perHour - view.hour) 
 async function act(name, u) {
   if (!view || !name) return;
   if (name === "undo") { if (busy || waiting.length || !undo.length) return; return save("undo", undo.pop()); }
-  const person = u ? view.queue.find(r => r.u === u) : shown().find(r => r.u !== busy && !waiting.includes(r.u));
+  const person = u ? view.queue.find(r => r.u === u && !gone.has(u)) : shown().find(r => r.u !== busy && !waiting.includes(r.u));
   if (!person || !good(person.u) || busy === person.u) return;
   if (name === "done") { if (!limit()) await save("done", person.u); return; }
   if (name !== "unfollow") return save(name, person.u);  // Keep and Later also work while others are being unfollowed
@@ -93,9 +94,11 @@ async function pump() {
     if (!lock) { stop = "Another window of this panel is working."; waiting.length = 0; return; }
     while (waiting.length && !limit() && Date.now() >= pause) {
       const u = busy = waiting.shift();
+      if (gone.has(u)) { busy = ""; continue; }
       draw();
       let r;
       try { r = await unfollow(u); } catch { r = "not-sure"; }
+      if (r === "ok" || r === "already") gone.add(u);
       if (r === "ok" || r === "already") { if (!await save("done", u)) { waiting.length = 0; } }
       else {
         stop = "@" + u + ": " + (WHY[r] || WHY["not-sure"]); failed = u;
@@ -117,7 +120,8 @@ async function save(op, u) {
   try {
     const v = await call({account, op, u});
     view = v;
-    if (op !== "undo") undo.push(u);
+    if (op === "done") gone.add(u);
+    else if (op !== "undo") undo.push(u);
     if (failed === u) { failed = ""; stop = ""; }
     ticked.delete(u);
     if (op !== "undo" && waiting.includes(u)) waiting.splice(waiting.indexOf(u), 1);
@@ -129,7 +133,7 @@ async function save(op, u) {
 // The people you ticked go into the same line as single presses, in the order of the list.
 function unfollowTicked() {
   if (Date.now() < pause) return;
-  for (const p of view.queue) if (ticked.has(p.u) && p.u !== busy && !waiting.includes(p.u) && left() > 0) { waiting.push(p.u); ticked.delete(p.u); }
+  for (const p of shown()) if (ticked.has(p.u) && p.u !== busy && !waiting.includes(p.u) && left() > 0) { waiting.push(p.u); ticked.delete(p.u); }
   stop = ""; draw(); pump();
 }
 
@@ -144,7 +148,7 @@ async function keepTicked() {
   ticked.clear(); draw();
 }
 
-const shown = () => view.queue.filter(r => r.u.includes(query));
+const shown = () => view.queue.filter(r => !gone.has(r.u) && r.u.includes(query));
 
 function button(name, label, u, cls = "", off = false) {
   const b = el("button", {className: cls, disabled: off, textContent: label});
@@ -157,7 +161,7 @@ function row(p) {
   const working = busy === p.u, at = waiting.indexOf(p.u), tick = el("input", {type: "checkbox", checked: ticked.has(p.u), ariaLabel: "Tick @" + p.u});
   tick.onchange = () => { tick.checked ? ticked.add(p.u) : ticked.delete(p.u); draw(); };
   const name = el("a", {href: "https://www.instagram.com/" + p.u + "/", target: "_blank", textContent: "@" + p.u, title: "Look at the profile"});
-  const who = el("label", {className: "who"}, tick, el("span", {}, name, el("span", {className: "sub", textContent: day(p.since) + (p.again ? " · marked before" : "")})));
+  const who = el("label", {className: "who"}, tick, el("span", {}, name, el("span", {className: "sub", textContent: day(p.since)})));
   const li = el("li", {className: working ? "working" : ""}, who, button("unfollow", working ? "Working…" : at >= 0 ? "Waiting " + (at + 1) : "Unfollow", p.u, at >= 0 ? "wide on" : "wide", working || at < 0 && left() <= 0), button("later", "Later", p.u, "", working));
   if (failed === p.u) li.append(button("done", "I unfollowed by hand", p.u, "full"));
   return li;
@@ -177,6 +181,11 @@ function draw() {
     const n = el("p", {className: "note", role: "status", textContent: stop + " "});
     if (failed) { const a = el("a", {href: "#", textContent: "Show the page"}); a.onclick = async e => { e.preventDefault(); const {tab} = await chrome.storage.session.get("tab"); chrome.tabs.update(tab, {active: true}).catch(() => {}); }; n.append(a); }
     m.append(n);
+  }
+  if (view.panel && view.panel !== chrome.runtime.getManifest().version && !busy && !waiting.length) {
+    const n = el("p", {className: "note", textContent: "A newer panel is ready. "}), a = el("a", {href: "#", textContent: "Update"});
+    a.onclick = e => { e.preventDefault(); chrome.runtime.reload(); };  // reads the folder again; open the panel after that
+    n.append(a); m.append(n);
   }
   const tools = el("div", {className: "tools"});
   if (waiting.length) { const b = el("button", {className: "primary", textContent: "Stop, drop the " + num(waiting.length) + " waiting"}); b.onclick = () => { waiting.length = 0; draw(); }; tools.append(b); }
@@ -223,7 +232,7 @@ async function saveSettings() {
   draw();
 }
 
-$("account").onchange = () => { account = $("account").value; undo = []; ticked.clear(); stop = failed = ""; chrome.storage.local.set({account}); load(); };
+$("account").onchange = () => { account = $("account").value; undo = []; ticked.clear(); gone.clear(); stop = failed = ""; chrome.storage.local.set({account}); load(); };
 $("perDay").onchange = saveSettings;
 $("over").onchange = saveSettings;
 $("perHour").onchange = saveSettings;
