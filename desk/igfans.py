@@ -250,15 +250,21 @@ def usage(account, followers):
             days[d] = days.get(d, 0) + r["calls"]
     daily = [days[d] for d in sorted(days)]
     last = next((r for r in reversed(rows) if r.get("app") is not None or r.get("buc") is not None), None)
+    app_row = next((r for r in reversed(rows) if r.get("app") is not None), None)
+    buc_row = next((r for r in reversed(rows) if r.get("buc") is not None), None)
     hour = sum(r["calls"] for r in rows if r["at"] >= now - 3600000)
     peak_app = max([r["app"] for r in rows if r.get("app") is not None] or [None], key=lambda v: -1 if v is None else v)
     peak_buc = max([r["buc"] for r in rows if r.get("buc") is not None] or [None], key=lambda v: -1 if v is None else v)
-    app = last.get("app") if last else None
-    per_hour = round(hour / app * 100) if app and hour >= 20 else None  # only a guess, and only from real numbers
+    app = app_row["app"] if app_row else None
+    # Profile checks fill the app's limit and reads of the account fill another, so only the calls that reported this
+    # limit count, in the hour before its highest reading. Only a guess, and only from real numbers.
+    top = next((r for r in reversed(rows) if peak_app and r.get("app") == peak_app), None)
+    counted = sum(r["calls"] for r in rows if top and r.get("app") is not None and top["at"] - 3600000 <= r["at"] <= top["at"])
+    per_hour = round(counted / peak_app * 100) if peak_app and counted >= 20 else None
     return {"kinds": sorted(kinds.values(), key=lambda k: -k["month"]), "day": sum(k["day"] for k in kinds.values()), "month": sum(k["month"] for k in kinds.values()),
             "first": daily[0] if daily else 0, "normal": daily[-1] if len(daily) > 1 else None,
             "followers": followers, "perThousand": round((daily[-1] if daily else 0) / followers * 1000, 1) if followers else None,
-            "app": app, "buc": last.get("buc") if last else None, "peakApp": peak_app, "peakBuc": peak_buc, "hour": hour, "limitGuess": per_hour,
+            "app": app, "buc": buc_row["buc"] if buc_row else None, "peakApp": peak_app, "peakBuc": peak_buc, "hour": hour, "limitGuess": per_hour,
             "stopAt": STOP_AT, "lastAt": last["at"] if last else 0,
             "errors": [{"at": r["at"], "kind": r["kind"], "code": r["code"], "error": r.get("error", "")} for r in reversed(mine) if not r["ok"]][:5]}
 

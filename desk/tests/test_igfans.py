@@ -244,6 +244,17 @@ class Usage(Base):
         u = igfans.usage(A, 10)
         self.assertEqual((u['month'], u['kinds'][0]['failed'], u['peakApp']), (1, 1, 99))
 
+    def test_hourly_guess_counts_only_calls_of_that_limit(self):
+        now = igfans.now_ms()
+        os.makedirs(igfans._dir(), exist_ok=True)
+        with open(os.path.join(igfans._dir(), 'usage.jsonl'), 'a', encoding='utf-8') as f:
+            for i in range(40):  # reads of the account: another limit
+                f.write(json.dumps({'at': now - 900000 + i, 'account': A, 'kind': 'comments', 'ok': True, 'code': 0, 'calls': 1, 'app': None, 'buc': 1, 'wait': 0, 'ms': 1}) + '\n')
+            for i in range(50):
+                f.write(json.dumps({'at': now - 600000 + i, 'account': A, 'kind': 'discover', 'ok': True, 'code': 0, 'calls': 1, 'app': (i + 1) * 2 // 5, 'buc': None, 'wait': 0, 'ms': 1}) + '\n')
+        u = igfans.usage(A, 1000)
+        self.assertEqual((u['app'], u['buc'], u['limitGuess']), (20, 1, 250))
+
     def test_settings_and_csv(self):
         self.assertEqual(igfans.handle('PUT', ['settings'], {'weights': {'comment': 1, 'dm': 1, 'tag': -1}})[0], 400)
         self.assertEqual(igfans.handle('PUT', ['settings'], {'weights': {'comment': 1, 'dm': 0, 'tag': 2.5}})[0], 200)
