@@ -7,7 +7,9 @@ Three sources, all official and all read only:
   2. Meta's API through go.tany.im (golinks/src/insights.js) for accounts connected in Post Studio: who commented, wrote or
      tagged (never the text), audience counts.
   3. Meta's Business Discovery: the public numbers of one professional account, by ID. Personal accounts are not shown by Meta.
-Nothing here follows, unfollows, likes, posts or sends, and no page of Instagram is read by a machine.
+This server never follows, unfollows, likes, posts or sends, and reads no page of Instagram. The unfollow list (cleanup) only
+says who is next and keeps the owner's decisions; the Chrome side panel (chrome-followers/) presses Unfollow for the one person
+on screen, once per press of the owner.
 
 Every API call is written to usage.jsonl (kind, time, worked or not, the percentages Meta returns) so one account's cost can be
 measured. desk/data/igfans/ is other people's data: mode 700, out of the GitHub copy (backup_data.py IGNORE).
@@ -683,7 +685,87 @@ def forget(name):
             p = profiles(a)
             if p.pop(n, None):
                 _write(_f(a, "people.json"), p)
+            c = _cleanup(a)
+            if c["people"].pop(n, None):
+                _write(_f(a, "cleanup.json"), c)
     return 200, {"ok": True}
+
+
+# --- going through the people who do not follow back, one by one ----------------------------------------------------------
+# The Chrome side panel (chrome-followers/) shows one person at a time and unfollows that one when the owner presses the button.
+# Only the owner's decisions are kept here.
+
+EXTENSION_ORIGIN = "chrome-extension://imhmpgkkncfaijppfnicokaicaodklki"  # from the "key" in chrome-followers/manifest.json
+PER_DAY = 20              # a small number on purpose; the owner can choose 5 to 50
+OVER_DAYS = (0, 90, 365)  # only people followed at least this long ago
+LATER = 7 * DAY
+EXPORT_AGE = 4 * DAY      # an export can be downloaded up to 4 days after Instagram made it, so it may be older than the decision
+
+
+def _cleanup(account):
+    c = _read(_f(account, "cleanup.json"), {})
+    people = c.get("people") if isinstance(c.get("people"), dict) else {}
+    return {"people": people, "perDay": c.get("perDay", PER_DAY), "over": c.get("over", 365)}
+
+
+def cleanup(wanted=""):
+    """Who comes next. A person marked Unfollowed who is still followed in a newer export comes back with again=True."""
+    a = current(wanted)
+    out = {"account": a, "accounts": accounts(), "queue": [], "left": 0, "today": 0, "perDay": PER_DAY, "over": 365, "keep": [], "done": 0, "later": 0, "ready": False}
+    if not a:
+        return out
+    c = _cleanup(a)
+    out.update(perDay=c["perDay"], over=c["over"])
+    good = [x for x in imports(a) if not x.get("partial")]
+    now = now_ms()
+    day = time.strftime("%Y-%m-%d", time.localtime(now / 1000))
+    marks = c["people"]
+    out["today"] = sum(1 for m in marks.values() if m["s"] == "done" and time.strftime("%Y-%m-%d", time.localtime(m["at"] / 1000)) == day)
+    out["done"] = sum(1 for m in marks.values() if m["s"] == "done")
+    out["keep"] = sorted(n for n, m in marks.items() if m["s"] == "keep")
+    if not good or not good[-1].get("hasFollowing"):
+        return out
+    x, hidden, mine = good[-1], _hidden(), set(accounts())
+    rows = []
+    for n, since in x["following"].items():
+        if n in x["followers"] or n in mine or hidden(n):
+            continue
+        m = marks.get(n)
+        if m and (m["s"] == "keep" or m["s"] == "done" and x["at"] <= m["at"] + EXPORT_AGE or m["s"] == "later" and now - m["at"] < LATER):
+            out["later"] += m["s"] == "later"
+            continue
+        if c["over"] and now - since < c["over"] * DAY:
+            continue
+        rows.append({"u": n, "since": since, "again": bool(m and m["s"] == "done")})
+    rows.sort(key=lambda r: (r["since"], r["u"]))
+    out.update(ready=True, queue=rows[:30], left=len(rows), exportAt=x["at"])
+    return out
+
+
+def put_cleanup(rec):
+    account, op = clean(rec.get("account")), rec.get("op")
+    if not account or account not in accounts():
+        return 404, {"error": "That account is not here"}
+    with _lock:
+        c = _cleanup(account)
+        if op == "settings":
+            p, o = rec.get("perDay"), rec.get("over")
+            if isinstance(p, bool) or not isinstance(p, int) or not 5 <= p <= 50 or isinstance(o, bool) or o not in OVER_DAYS:
+                return 400, {"error": "settings"}
+            c.update(perDay=p, over=o)
+        elif op in ("keep", "done", "later", "undo"):
+            n = clean(rec.get("u"))
+            good = [x for x in imports(account) if not x.get("partial")]
+            if not n or not good or n not in good[-1]["following"] or _hidden()(n):
+                return 404, {"error": "That person is not in the list"}
+            if op == "undo":
+                c["people"].pop(n, None)
+            else:
+                c["people"][n] = {"s": op, "at": now_ms()}
+        else:
+            return 400, {"error": "op"}
+        _write(_f(account, "cleanup.json"), c)
+    return 200, cleanup(account)
 
 
 # --- for the page -------------------------------------------------------------------------------------------------------
@@ -701,7 +783,7 @@ def view(wanted=""):
     n = len(good[-1]["followers"]) if good else (st.get("profile") or {}).get("followers")
     return {**base, "connected": a in conn, "imports": imp, "events": flat(a), "profiles": profiles(a), "profile": st.get("profile"), "audience": st.get("audience"),
             "syncedAt": st.get("syncedAt") or 0, "problems": {k: v for k, v in (st.get("problems") or {}).items()}, "busy": _busy.get(a) or "",
-            "enrich": {**(st.get("enrich") or {}), "waiting": len(waiting(a))}, "usage": usage(a, n)}
+            "enrich": {**(st.get("enrich") or {}), "waiting": len(waiting(a))}, "usage": usage(a, n), "cleanup": cleanup(a)}
 
 
 def status(wanted=""):
@@ -751,6 +833,8 @@ def handle(method, step, rec):
         return csv_file(rec)
     if step == ["forget"]:
         return forget(rec.get("u"))
+    if step == ["cleanup"]:
+        return put_cleanup(rec)
     if step == ["discover"]:
         return discover(account, rec.get("u"))
     if not account or account not in accounts():

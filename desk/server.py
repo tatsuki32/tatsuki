@@ -780,6 +780,9 @@ class Handler(BaseHTTPRequestHandler):
                 # the Task Desk Chrome extension may only save tasks, add memos and log the time it measured
                 p = urlsplit(self.path).path
                 return (self.command == "PUT" and p.startswith(("/api/tasks/", "/api/timelog/"))) or (self.command == "POST" and p == "/api/memos")
+            if origin == igfans.EXTENSION_ORIGIN:
+                # the Followers side panel may only save the owner's decisions about who to keep
+                return self.command == "POST" and urlsplit(self.path).path == "/api/igfans/cleanup"
             return urlsplit(origin).hostname in ("localhost", "127.0.0.1")
         return True
 
@@ -1155,6 +1158,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.lifelog_photo(path.rsplit("/", 1)[1])
         if path == "/api/igfans":  # Followers: other people's data, only to this page
             return self.send(200, igfans.view(parse_qs(urlsplit(self.path).query).get("account", [""])[0]))
+        if path == "/api/igfans/cleanup":  # the unfollow list, also for the Chrome side panel (chrome-followers/)
+            return self.send(200, igfans.cleanup(parse_qs(urlsplit(self.path).query).get("account", [""])[0]))
         if path == "/api/igfans/status":
             return self.send(200, igfans.status(parse_qs(urlsplit(self.path).query).get("account", [""])[0]))
         if path == "/igfans/core.js":  # the analysis itself, shared with a page outside the Desk later

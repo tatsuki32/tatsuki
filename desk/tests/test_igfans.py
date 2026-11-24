@@ -1,4 +1,6 @@
 """Followers: imports, reactions, profile checks, forgetting a person, and the measured calls (no Meta, no go.tany.im)."""
+import base64
+import hashlib
 import json
 import os
 import shutil
@@ -120,6 +122,67 @@ class Reactions(Base):
         r = igfans.sync(A)
         self.assertEqual(sum(x['calls'] for x in igfans._usage_rows(0)), 1)
         self.assertIn('comments', r['problems'])
+
+
+class Cleanup(Base):
+    DAYS = {'old': 900, 'mid': 400, 'young': 30, 'mutual': 500}
+
+    def bring(self, following=None, mark='a1'):
+        now = igfans.now_ms()
+        f = {n: now - d * igfans.DAY for n, d in self.DAYS.items()} if following is None else following
+        code, v = igfans.add_import({'account': A, 'followers': {'mutual': now - igfans.DAY, 'fan': now}, 'following': f, 'hasFollowing': True, 'warnings': [], 'partial': '', 'mark': mark * 8})
+        self.assertEqual(code, 200, v)
+
+    def names(self):
+        return [r['u'] for r in igfans.cleanup(A)['queue']]
+
+    def test_oldest_first_and_only_not_following_back(self):
+        self.bring()
+        self.assertEqual(self.names(), ['old', 'mid'])
+        self.assertEqual(igfans.put_cleanup({'account': A, 'op': 'settings', 'perDay': 10, 'over': 0})[0], 200)
+        self.assertEqual(self.names(), ['old', 'mid', 'young'])
+
+    def test_decisions_and_undo(self):
+        self.bring()
+        self.assertEqual(igfans.put_cleanup({'account': A, 'op': 'keep', 'u': 'old'})[1]['keep'], ['old'])
+        self.assertEqual(self.names(), ['mid'])
+        v = igfans.put_cleanup({'account': A, 'op': 'done', 'u': 'mid'})[1]
+        self.assertEqual((v['today'], v['done'], v['left']), (1, 1, 0))
+        igfans.put_cleanup({'account': A, 'op': 'undo', 'u': 'mid'})
+        self.assertEqual(self.names(), ['mid'])
+        igfans.put_cleanup({'account': A, 'op': 'later', 'u': 'mid'})
+        self.assertEqual((self.names(), igfans.cleanup(A)['later']), ([], 1))
+
+    def test_still_followed_in_a_newer_export_comes_back(self):
+        self.bring()
+        igfans.put_cleanup({'account': A, 'op': 'done', 'u': 'old'})
+        path = igfans._f(A, 'cleanup.json')
+        c = igfans._read(path, {})
+        c['people']['old']['at'] -= 5 * igfans.DAY
+        igfans._write(path, c)
+        self.assertEqual([(r['u'], r['again']) for r in igfans.cleanup(A)['queue']][0], ('old', True))
+
+    def test_bad_input_is_refused(self):
+        self.bring()
+        for rec in ({'op': 'keep', 'u': 'stranger'}, {'op': 'keep', 'u': '../x'}, {'op': 'unfollow', 'u': 'old'}, {'op': 'settings', 'perDay': 500, 'over': 365},
+                    {'op': 'settings', 'perDay': True, 'over': 365}, {'op': 'settings', 'perDay': 20, 'over': 7}, {}):
+            self.assertIn(igfans.put_cleanup({'account': A, **rec})[0], (400, 404), rec)
+        self.assertEqual(igfans.put_cleanup({'account': 'nobody.here', 'op': 'keep', 'u': 'old'})[0], 404)
+
+    def test_erased_person_leaves_the_list(self):
+        self.bring()
+        igfans.put_cleanup({'account': A, 'op': 'keep', 'u': 'old'})
+        igfans.forget('old')
+        self.assertEqual((self.names(), igfans.cleanup(A)['keep']), (['mid'], []))
+
+    def test_the_extension_can_only_save_decisions(self):
+        with open(os.path.join(igfans.ROOT, 'chrome-followers', 'manifest.json'), encoding='utf-8') as f:
+            m = json.load(f)
+        der = hashlib.sha256(base64.b64decode(m['key'])).hexdigest()[:32]
+        self.assertEqual(igfans.EXTENSION_ORIGIN, 'chrome-extension://' + ''.join(chr(97 + int(c, 16)) for c in der))
+        self.assertEqual(m['host_permissions'], ['http://localhost:4747/*', 'https://www.instagram.com/*'])
+        self.assertNotIn('content_scripts', m)
+        self.assertEqual(sorted(m['permissions']), ['scripting', 'sidePanel', 'storage'])  # no cookies, no web requests, no other tabs
 
 
 class Profiles(Base):

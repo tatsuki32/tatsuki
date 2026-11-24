@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Panel test</title><link rel="stylesheet" href="panel.css"></head>
+<body></body>
+<script>
+// The side panel with a pretend Chrome, Desk and Instagram (.claude/launch.json "followers-panel-test"). window.answer is what the press returns.
+window.log = []; window.answer = "ok";
+const store = {}, area = {get: async k => Object.fromEntries([].concat(k).map(x => [x, store[x]])), set: async o => Object.assign(store, o)};
+window.chrome = {storage: {local: area, session: area}, runtime: {onMessage: {addListener: f => window.shortcut = f}},
+  tabs: {create: async o => { log.push("open " + o.url); return {id: 7}; }, update: async (i, o) => { log.push("go " + o.url); }},
+  scripting: {executeScript: async o => { log.push("press " + o.args[0]); return [{result: window.answer}]; }}};
+let people = Array.from({length: 24}, (_, i) => ({u: "person." + i, since: Date.UTC(2024, 10, 29 + i), again: i === 1})), marks = {}, set = {perDay: 5, over: 365};
+const state = () => ({account: "demo.page", accounts: ["demo.page", "second.page"], ready: true, queue: people.filter(p => !marks[p.u]), left: people.filter(p => !marks[p.u]).length,
+  today: Object.values(marks).filter(m => m === "done").length, done: Object.values(marks).filter(m => m === "done").length, keep: Object.keys(marks).filter(u => marks[u] === "keep"), ...set});
+window.fetch = async (u, o) => { const b = o && o.body ? JSON.parse(o.body) : null; if (b) { log.push(b.op + " " + (b.u || "")); if (b.op === "settings") set = {perDay: b.perDay, over: b.over}; else if (b.op === "undo") delete marks[b.u]; else marks[b.u] = b.op; } return {ok: true, json: async () => state()}; };
+</script>
+<script>
+// the real panel.html body, so the test follows the panel
+const x = new XMLHttpRequest(); x.open("GET", "panel.html", false); x.send();
+const doc = new DOMParser().parseFromString(x.responseText, "text/html");
+doc.querySelectorAll("script").forEach(s => s.remove()); document.body.innerHTML = doc.body.innerHTML;
+for (const src of ["press.js", "panel.js"]) { const s = document.createElement("script"); s.src = src; s.async = false; document.body.append(s); }
+</script>
+</html>

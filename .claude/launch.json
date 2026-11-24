@@ -62,6 +62,12 @@
       "port": 4781
     },
     {
+      "name": "followers-panel-test",
+      "runtimeExecutable": "/bin/sh",
+      "runtimeArgs": ["-c", "D=/tmp/claude/followers-panel && rm -rf $D && mkdir -p $D && cp desk/chrome-followers/* desk/tests/followers_panel.html $D && cd $D && exec python3 -m http.server ${PORT:-4780} --bind 127.0.0.1"],
+      "port": 4780
+    },
+    {
       "name": "desk-footprint-test",
       "runtimeExecutable": "/bin/sh",
       "runtimeArgs": ["-c", "cd desk && FOOTPRINT_DIR=/tmp/claude/footprint-test DESK_PORT=${PORT:-4794} exec python3 server.py"],

@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Desk Followers</title>
+<link rel="stylesheet" href="panel.css">
+</head>
+<body>
+<header>
+  <select id="account" aria-label="Account"></select>
+  <p class="sub" id="count"></p>
+  <div class="bar" role="progressbar" aria-label="Today" aria-valuemin="0"><i id="fill"></i></div>
+</header>
+<main id="main" aria-live="polite"></main>
+<footer>
+  <label>Per day <select id="perDay"><option>5</option><option>10</option><option>15</option><option>20</option><option>30</option><option>40</option><option>50</option></select></label>
+  <label>Followed <select id="over"><option value="365">over a year ago</option><option value="90">over 90 days ago</option><option value="0">any time</option></select></label>
+  <p class="sub">One press, one person. If Instagram asks to slow down, the panel stops for a day.</p>
+</footer>
+<script src="press.js"></script>
+<script src="panel.js"></script>
+</body>
+</html>
