@@ -698,6 +698,7 @@ def forget(name):
 EXTENSION_ORIGIN = "chrome-extension://imhmpgkkncfaijppfnicokaicaodklki"  # from the "key" in chrome-followers/manifest.json
 PER_DAY = 20              # a small number on purpose; the owner can choose 5 to 50
 OVER_DAYS = (0, 90, 365)  # only people followed at least this long ago
+LISTS = ("notback", "left", "new")  # does not follow back · stopped following in the last 30 days · followed in the last 30 days, not back yet
 LATER = 7 * DAY
 EXPORT_AGE = 4 * DAY      # an export can be downloaded up to 4 days after Instagram made it, so it may be older than the decision
 
@@ -705,18 +706,27 @@ EXPORT_AGE = 4 * DAY      # an export can be downloaded up to 4 days after Insta
 def _cleanup(account):
     c = _read(_f(account, "cleanup.json"), {})
     people = c.get("people") if isinstance(c.get("people"), dict) else {}
-    return {"people": people, "perDay": c.get("perDay", PER_DAY), "over": c.get("over", 365)}
+    return {"people": people, "perDay": c.get("perDay", PER_DAY), "over": c.get("over", 365), "list": c.get("list") if c.get("list") in LISTS else "notback"}
+
+
+def _stopped(good, since):
+    """People an export shows as gone, when that export is not older than since."""
+    out = set()
+    for a, b in zip(good, good[1:]):
+        if b["at"] >= since:
+            out |= set(a["followers"]) - set(b["followers"])
+    return out - set(good[-1]["followers"])
 
 
 def cleanup(wanted=""):
     """Who comes next. A person marked Unfollowed who is still followed in a newer export comes back with again=True."""
     a = current(wanted)
-    out = {"account": a, "accounts": accounts(), "queue": [], "left": 0, "today": 0, "perDay": PER_DAY, "over": 365, "keep": [], "done": 0, "later": 0, "ready": False}
+    out = {"account": a, "accounts": accounts(), "queue": [], "left": 0, "today": 0, "perDay": PER_DAY, "over": 365, "keep": [], "done": 0, "later": 0, "ready": False, "list": "notback", "exports": 0}
     if not a:
         return out
     c = _cleanup(a)
-    out.update(perDay=c["perDay"], over=c["over"])
     good = [x for x in imports(a) if not x.get("partial")]
+    out.update(perDay=c["perDay"], over=c["over"], list=c["list"], exports=len(good))
     now = now_ms()
     day = time.strftime("%Y-%m-%d", time.localtime(now / 1000))
     marks = c["people"]
@@ -726,6 +736,7 @@ def cleanup(wanted=""):
     if not good or not good[-1].get("hasFollowing"):
         return out
     x, hidden, mine = good[-1], _hidden(), set(accounts())
+    stopped = _stopped(good, now - 30 * DAY) if c["list"] == "left" else set()
     rows = []
     for n, since in x["following"].items():
         if n in x["followers"] or n in mine or hidden(n):
@@ -734,7 +745,9 @@ def cleanup(wanted=""):
         if m and (m["s"] == "keep" or m["s"] == "done" and x["at"] <= m["at"] + EXPORT_AGE or m["s"] == "later" and now - m["at"] < LATER):
             out["later"] += m["s"] == "later"
             continue
-        if c["over"] and now - since < c["over"] * DAY:
+        if c["list"] == "left" and n not in stopped or c["list"] == "new" and now - since > 30 * DAY:
+            continue
+        if c["list"] == "notback" and c["over"] and now - since < c["over"] * DAY:
             continue
         rows.append({"u": n, "since": since, "again": bool(m and m["s"] == "done")})
     rows.sort(key=lambda r: (r["since"], r["u"]))
@@ -749,10 +762,10 @@ def put_cleanup(rec):
     with _lock:
         c = _cleanup(account)
         if op == "settings":
-            p, o = rec.get("perDay"), rec.get("over")
-            if isinstance(p, bool) or not isinstance(p, int) or not 5 <= p <= 50 or isinstance(o, bool) or o not in OVER_DAYS:
+            p, o, which = rec.get("perDay"), rec.get("over"), rec.get("list", c["list"])
+            if isinstance(p, bool) or not isinstance(p, int) or not 5 <= p <= 50 or isinstance(o, bool) or o not in OVER_DAYS or which not in LISTS:
                 return 400, {"error": "settings"}
-            c.update(perDay=p, over=o)
+            c.update(perDay=p, over=o, list=which)
         elif op in ("keep", "done", "later", "undo"):
             n = clean(rec.get("u"))
             good = [x for x in imports(account) if not x.get("partial")]

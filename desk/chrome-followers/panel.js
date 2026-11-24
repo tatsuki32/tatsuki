@@ -97,14 +97,16 @@ function draw() {
   $("fill").style.width = Math.min(100, view.today / view.perDay * 100) + "%";
   const bar = $("fill").parentElement; bar.ariaValueMax = view.perDay; bar.ariaValueNow = view.today;
   $("perDay").value = String(view.perDay); $("over").value = String(view.over);
+  $("list").value = view.list; $("overRow").hidden = view.list !== "notback";
   const p = view.queue[0];
   if (stop) m.append(el("p", {className: "sub", role: "status", textContent: stop}));
   if (!view.ready) m.append(el("p", {textContent: "Import followers on the Desk first."}), retry());
+  else if (!p && view.list === "left" && view.exports < 2) m.append(el("p", {textContent: "This list needs two exports. Import a newer one on the Desk."}));
   else if (!p) m.append(el("p", {textContent: "Nobody left in this list."}), el("p", {className: "sub", textContent: `${num(view.done)} unfollowed · ${num(view.keep.length)} kept`}));
   else if (Date.now() < pause) m.append(el("p", {textContent: "Stopped until " + new Date(pause).toLocaleString("en-US", {month: "short", day: "numeric", hour: "numeric", minute: "2-digit"}) + ", because Instagram asked to slow down."}));
   else if (limit()) m.append(el("p", {textContent: "That is today’s number. The next person is here tomorrow."}));
   else {
-    const card = el("div", {className: "card"}, el("h1", {textContent: "@" + p.u}), el("p", {className: "sub", textContent: "You followed on " + day(p.since) + " · does not follow back"}));
+    const card = el("div", {className: "card"}, el("h1", {textContent: "@" + p.u}), el("p", {className: "sub", textContent: "You followed on " + day(p.since) + (view.list === "left" ? " · stopped following you" : " · does not follow back")}));
     if (p.again) card.append(el("p", {className: "sub", textContent: "You marked this one before, but the newest export still lists it."}));
     m.append(card);
     if (opened !== p.u) {
@@ -131,12 +133,13 @@ async function load() {
 }
 
 async function saveSettings() {
-  try { view = await call({account, op: "settings", perDay: Number($("perDay").value), over: Number($("over").value)}); opened = ""; stop = ""; } catch (e) { stop = e.message; }
+  try { view = await call({account, op: "settings", perDay: Number($("perDay").value), over: Number($("over").value), list: $("list").value}); opened = ""; stop = ""; } catch (e) { stop = e.message; }
   draw();
 }
 
 $("account").onchange = () => { account = $("account").value; undo = []; opened = ""; chrome.storage.local.set({account}); load(); };
 $("perDay").onchange = saveSettings;
 $("over").onchange = saveSettings;
+$("list").onchange = saveSettings;
 chrome.runtime.onMessage.addListener(m => { if (m && m.name) act(m.name === "done" ? "unfollow" : KEYS[m.name] ? m.name : ""); });
 chrome.storage.local.get(["account", "pause"]).then(s => { account = s.account || ""; pause = s.pause || 0; load(); });

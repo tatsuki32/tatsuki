@@ -16,6 +16,7 @@ button:disabled{opacity:.5;cursor:default}
 button.primary{background:var(--gold);border-color:var(--gold);color:#1c1d21;font-weight:700}
 button kbd{font:12px/1 ui-monospace,monospace;color:inherit;opacity:.75;white-space:nowrap}
 :focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+footer label[hidden]{display:none}
 .card{background:var(--surface);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:8px}
 .acts{display:flex;flex-direction:column;gap:8px}
 .bar{height:4px;border-radius:2px;background:var(--surface-2);overflow:hidden}

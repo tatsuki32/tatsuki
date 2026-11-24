@@ -13,8 +13,9 @@
 </header>
 <main id="main" aria-live="polite"></main>
 <footer>
+  <label>List <select id="list"><option value="notback">Does not follow back</option><option value="left">Stopped following you, 30 days</option><option value="new">You followed, 30 days, not back</option></select></label>
   <label>Per day <select id="perDay"><option>5</option><option>10</option><option>15</option><option>20</option><option>30</option><option>40</option><option>50</option></select></label>
-  <label>Followed <select id="over"><option value="365">over a year ago</option><option value="90">over 90 days ago</option><option value="0">any time</option></select></label>
+  <label id="overRow">Followed <select id="over"><option value="365">over a year ago</option><option value="90">over 90 days ago</option><option value="0">any time</option></select></label>
   <p class="sub">One press, one person. If Instagram asks to slow down, the panel stops for a day.</p>
 </footer>
 <script src="press.js"></script>

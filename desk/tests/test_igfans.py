@@ -125,7 +125,7 @@ class Reactions(Base):
 
 
 class Cleanup(Base):
-    DAYS = {'old': 900, 'mid': 400, 'young': 30, 'mutual': 500}
+    DAYS = {'old': 900, 'mid': 400, 'young': 20, 'mutual': 500}
 
     def bring(self, following=None, mark='a1'):
         now = igfans.now_ms()
@@ -161,6 +161,19 @@ class Cleanup(Base):
         c['people']['old']['at'] -= 5 * igfans.DAY
         igfans._write(path, c)
         self.assertEqual([(r['u'], r['again']) for r in igfans.cleanup(A)['queue']][0], ('old', True))
+
+    def test_the_other_lists(self):
+        self.bring()
+        put = lambda which: igfans.put_cleanup({'account': A, 'op': 'settings', 'perDay': 20, 'over': 365, 'list': which})
+        put('new')
+        self.assertEqual(self.names(), ['young'])
+        put('left')
+        self.assertEqual((self.names(), igfans.cleanup(A)['exports']), ([], 1))
+        now = igfans.now_ms()
+        f = {n: now - d * igfans.DAY for n, d in self.DAYS.items()}
+        igfans.add_import({'account': A, 'followers': {'fan': now}, 'following': f, 'hasFollowing': True, 'warnings': [], 'partial': '', 'mark': 'b2' * 8})
+        self.assertEqual(self.names(), ['mutual'])  # was there before, is gone now, and is still followed
+        self.assertEqual(put('everyone')[0], 400)
 
     def test_bad_input_is_refused(self):
         self.bring()

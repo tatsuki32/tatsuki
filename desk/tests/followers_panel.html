@@ -8,10 +8,10 @@ const store = {}, area = {get: async k => Object.fromEntries([].concat(k).map(x 
 window.chrome = {storage: {local: area, session: area}, runtime: {onMessage: {addListener: f => window.shortcut = f}},
   tabs: {create: async o => { log.push("open " + o.url); return {id: 7}; }, update: async (i, o) => { log.push("go " + o.url); }},
   scripting: {executeScript: async o => { log.push("press " + o.args[0]); return [{result: window.answer}]; }}};
-let people = Array.from({length: 24}, (_, i) => ({u: "person." + i, since: Date.UTC(2024, 10, 29 + i), again: i === 1})), marks = {}, set = {perDay: 5, over: 365};
+let people = Array.from({length: 24}, (_, i) => ({u: "person." + i, since: Date.UTC(2024, 10, 29 + i), again: i === 1})), marks = {}, set = {perDay: 5, over: 365, list: "notback", exports: 1};
 const state = () => ({account: "demo.page", accounts: ["demo.page", "second.page"], ready: true, queue: people.filter(p => !marks[p.u]), left: people.filter(p => !marks[p.u]).length,
   today: Object.values(marks).filter(m => m === "done").length, done: Object.values(marks).filter(m => m === "done").length, keep: Object.keys(marks).filter(u => marks[u] === "keep"), ...set});
-window.fetch = async (u, o) => { const b = o && o.body ? JSON.parse(o.body) : null; if (b) { log.push(b.op + " " + (b.u || "")); if (b.op === "settings") set = {perDay: b.perDay, over: b.over}; else if (b.op === "undo") delete marks[b.u]; else marks[b.u] = b.op; } return {ok: true, json: async () => state()}; };
+window.fetch = async (u, o) => { const b = o && o.body ? JSON.parse(o.body) : null; if (b) { log.push(b.op + " " + (b.u || "")); if (b.op === "settings") set = {...set, perDay: b.perDay, over: b.over, list: b.list}; else if (b.op === "undo") delete marks[b.u]; else marks[b.u] = b.op; } return {ok: true, json: async () => state()}; };
 </script>
 <script>
 // the real panel.html body, so the test follows the panel
