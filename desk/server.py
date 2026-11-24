@@ -45,6 +45,7 @@ import minutes_mail  # Minutes → one mail to the owner's own inbox, and the th
 import minutes  # 議事録: made from Transcribe recordings, linked to Calendar events (desk/minutes.py)
 import notify
 import bedtime  # Bedtime: a gentle word to stop for the day once the set hour has passed (desk/bedtime.py)
+import once  # one-time changes to the Mac's data (desk/once.py)
 import igfans  # Followers: who follows an Instagram account, who the fans are, what a lookup costs (desk/igfans.py)
 import glance  # Glance: a camera photo and a screen picture every 15 minutes, one remark each (desk/glance.py)
 import checkin
@@ -1895,8 +1896,12 @@ if __name__ == "__main__":
     if PORT != 4747 and os.environ.get("ANKI_URL"):  # a test server sends to a fake AnkiConnect only (desk/tests/fake_ankiconnect.py)
         threading.Thread(target=anki.watch, args=(cards.Store(load_locked, upsert),), daemon=True).start()
     if PORT == 4747:  # a test server on another port shows nothing
+        try:
+            print("once:", once.run(load, save, LOCK), flush=True)  # one-time data changes (desk/once.py)
+        except Exception as e:  # never stop the server for it
+            print("once failed:", e, flush=True)
         threading.Thread(target=notify.watch, daemon=True).start()
-        threading.Thread(target=bedtime.watch, daemon=True).start()  # after 22:00, while the Mac is in use: time for bed
+        threading.Thread(target=bedtime.watch, daemon=True).start()  # after 21:30, while the Mac is in use: time for bed
         threading.Thread(target=glance.watch, daemon=True).start()  # camera + screen every 15 minutes, once turned on in the Desk
         threading.Thread(target=checkin.watch, args=(load, save, LOCK), daemon=True).start()  # in-progress timers: ask every 10 minutes
         threading.Thread(target=tg_notify.watch, daemon=True).start()  # tasks and events to Telegram
