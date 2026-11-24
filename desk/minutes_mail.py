@@ -404,12 +404,15 @@ def guests(m, rows, own):
     """(addresses, '') or ([], why) for the one event this minute is about."""
     own = {x.lower() for x in own}
 
-    def others(r):
+    def others(r, linked):
         gs = r.get('guests') or []
-        if any(g['email'] in own and g['status'] == 'DECLINED' for g in gs):
+        mine = {g['status'] for g in gs if g['email'] in own}
+        # an invitation nobody accepted is not a meeting: anyone can put one on a calendar
+        if not linked and ('DECLINED' in mine or not mine & {'ACCEPTED', 'ORGANIZER'}):
             return []
-        return sorted({g['email'] for g in gs if g['email'] not in own and g['status'] != 'DECLINED' and not g['room']
-                       and share.EMAIL.match(g['email']) and not g['email'].endswith('calendar.google.com')})
+        no = {g['email'] for g in gs if g['status'] == 'DECLINED'}
+        return sorted({g['email'] for g in gs if g['email'] not in own and g['email'] not in no and not g['room']
+                       and g['email'].isascii() and share.EMAIL.match(g['email']) and not g['email'].endswith('calendar.google.com')})
 
     ev, sp = m.get('event') or {}, span(m)
     hit = []
@@ -421,12 +424,14 @@ def guests(m, rows, own):
             if r['allDay'] or a is None or b is None:
                 continue
             over = min(b, sp[1]) - max(a, sp[0])
-            if over >= max(60, 0.5 * min(b - a, sp[1] - sp[0])):
+            # half of the shorter one, and a real part of the event: a day-long event does not match every recording
+            if over >= max(60, 0.5 * min(b - a, sp[1] - sp[0]), 0.2 * (b - a)):
                 hit.append(r)
     found = {}
     for r in hit:
-        if others(r):
-            found[r['id']] = others(r)
+        to = others(r, bool(ev.get('id')))
+        if to:
+            found[r['id']] = to
     if not found:
         return [], 'no-event'
     if len(found) > 1:
@@ -448,14 +453,14 @@ def auto_thanks(m):
     try:
         lo = min(start, sp[0] if sp else start) - 6 * 3600
         to, why = guests(m, calendar_rows(lo, max(start, sp[1] if sp else start) + 6 * 3600), own_addresses())
-    except (MailError, OSError):
+    except Exception:  # a strange event must not stop the mail
         return {'why': 'no-calendar'}
     if why:
         return {'why': why}
     try:
         d = share.draft_text(m['id'])
-        share.thanks(m['id'], {'to': to, 'subject': d['subject'], 'body': d['body']})
-    except (share.ShareError, OSError):
+        share.thanks(m['id'], {'to': to, 'subject': re.sub(r'\s+', ' ', d['subject']), 'body': d['body']})
+    except Exception:
         return {'why': 'failed'}
     return {'to': to}
 
@@ -478,33 +483,37 @@ def waiting(rows, s):
 
 
 def auto():
-    """One mail for each minute whose doc is ready. Returns how many were put into the inbox."""
+    """One mail for each minute whose doc is ready, 3 tries a pass. Returns how many were put into the inbox."""
     s = settings()
     if not s['on']:
         _problem['text'] = ''
         return 0
     with minutes.LOCK:
         rows = minutes._all()
-    done = 0
+    done = sent = 0
     for m in waiting(rows, s):
         if done >= PER_PASS:
             break
         with SEND:
-            m = share._minute(m['id'])
-            if (m.get('selfmail') or {}).get('at'):
-                continue
             try:
+                m = share._minute(m['id'])
+                if (m.get('selfmail') or {}).get('at'):
+                    continue
                 own_addresses()  # Gmail must answer before a draft is made
                 thanks = auto_thanks(m) if s['thanks'] else None
                 deliver(share._minute(m['id']), thanks)
                 done += 1
+                sent += 1
                 _problem['text'] = ''
-            except (share.ShareError, OSError) as e:
+            except Exception as e:  # one minute that fails waits an hour; it never blocks the others
                 _problem['text'] = str(e) if isinstance(e, MailError) else "Couldn't put the mail into your inbox. Trying again in an hour"
-                minutes.set_share(m['id'], 'selfmail', {**(m.get('selfmail') or {}), 'failedAt': time.time()})
-                print('[minutes] a mail to the owner could not be made', flush=True)
-                return done
-    return done
+                print(f'[minutes] a mail to the owner could not be made: {type(e).__name__}', flush=True)
+                try:
+                    minutes.set_share(m['id'], 'selfmail', {**(m.get('selfmail') or {}), 'failedAt': time.time()})
+                except minutes.MinutesError:  # deleted meanwhile
+                    pass
+                done += 1  # it counts as tried, so a dead connection is not asked for every minute
+    return sent
 
 
 if __name__ == '__main__':

@@ -13,7 +13,7 @@
 - Share のカードの余白を直した（文字が枠に付いていた）。
 
 ## 確かめたこと
-- `desk/tests/test_minutes_mail.py`（21件）と、minutes・share・gcal_ics・meetcheck の試験。
+- `desk/tests/test_minutes_mail.py`（23件）と、minutes・share・gcal_ics・meetcheck の試験。
 - 偽のサーバー（4783）で「Email me this」とオンオフ。375px と 1200px で横スクロールなし。
 - 本番のサーバーを再起動。今ある13件は「届けない」に入った。
 

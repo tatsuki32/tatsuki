@@ -47,8 +47,9 @@ def parse(text, guests=False):
             if guests and name in ("ATTENDEE", "ORGANIZER"):
                 g = GUEST.search(line)
                 if g:
-                    up = line[:g.start()].upper()
-                    cur.setdefault("guests", []).append({"email": g.group(1).lower(), "status": "DECLINED" if "PARTSTAT=DECLINED" in up else "",
+                    up = re.sub(r'"[^"]*"', "", line[:g.start()]).upper()  # a name in quotes cannot pretend to be an answer
+                    st = re.search(r"PARTSTAT=([A-Z-]+)", up)
+                    cur.setdefault("guests", []).append({"email": g.group(1).lower(), "status": "ORGANIZER" if name == "ORGANIZER" else st.group(1) if st else "",
                                                          "room": bool(re.search(r"CUTYPE=(RESOURCE|ROOM|GROUP)", up))})
                 continue
             try:

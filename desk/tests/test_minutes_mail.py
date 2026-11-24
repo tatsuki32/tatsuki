@@ -254,7 +254,7 @@ class Thanks(Base):
         self.assertNotIn('example.com', json.dumps(gcal_ics.events(gcal_ics.parse(ICS), t - 86400, t + 86400)))
 
     def test_two_events_make_no_draft_unless_one_is_linked(self):
-        rows = self.rows('BEGIN:VEVENT\nUID:e2\nSUMMARY:Other\nDTSTART:20261124T010000Z\nDTEND:20261124T014500Z\nATTENDEE:mailto:x@example.com\nEND:VEVENT\n')
+        rows = self.rows('BEGIN:VEVENT\nUID:e2\nSUMMARY:Other\nDTSTART:20261124T010000Z\nDTEND:20261124T014500Z\nORGANIZER:mailto:owner@example.com\nATTENDEE:mailto:x@example.com\nEND:VEVENT\n')
         self.assertEqual(mail.guests(minute(at=self.start), rows, self.own), ([], 'two'))
         m = minute(at=self.start, event={'id': f'e2_{int(self.start)}', 'uid': 'e2'})
         self.assertEqual(mail.guests(m, rows, self.own), (['x@example.com'], ''))
@@ -263,12 +263,30 @@ class Thanks(Base):
         rows = self.rows()
         for r in rows:
             for g in r.get('guests') or []:
-                if g['email'] == 'owner@example.com':
+                if g['email'] in self.own:
                     g['status'] = 'DECLINED'
         self.assertEqual(mail.guests(minute(at=self.start), rows, self.own), ([], 'no-event'))
 
+    def test_an_unaccepted_invitation_or_a_day_long_one_is_not_the_meeting(self):
+        ev = lambda a, b, st: (f'BEGIN:VEVENT\nUID:z\nSUMMARY:Z\nDTSTART:{a}\nDTEND:{b}\nORGANIZER;CN="PARTSTAT=ACCEPTED":mailto:evil@example.com\n'
+                               f'ATTENDEE;PARTSTAT={st};CN="PARTSTAT=ACCEPTED":mailto:owner@example.com\nEND:VEVENT\n')
+        for a, b, st, want in (('20261124T010000Z', '20261124T014500Z', 'NEEDS-ACTION', 'no-event'), ('20261124T010000Z', '20261124T014500Z', 'ACCEPTED', ''),
+                               ('20261123T150000Z', '20261124T143000Z', 'ACCEPTED', 'no-event')):
+            rows = [r for r in self.rows(ev(a, b, st)) if r['id'].startswith('z')]
+            self.assertEqual(mail.guests(minute(at=self.start), rows, self.own)[1], want)
+
+    def test_one_broken_minute_waits_and_the_next_is_mailed(self):
+        mail.settings()
+        minute('a', at=time.time() - 7200)
+        minute('b')
+        real = mail.compose
+        with mock.patch.object(mail, 'compose', side_effect=lambda m, *a: 1 / 0 if m['id'][0] == 'a' else real(m, *a)):
+            self.assertEqual(mail.auto(), 1)
+        self.assertTrue(minutes.get('a' * 32)['selfmail']['failedAt'])
+        self.assertTrue(minutes.get('b' * 32)['selfmail']['at'])
+
     def test_a_crowd_gets_no_draft(self):
-        rows = self.rows('BEGIN:VEVENT\nUID:big\nSUMMARY:Big\nDTSTART:20261124T010000Z\nDTEND:20261124T014500Z\n'
+        rows = self.rows('BEGIN:VEVENT\nUID:big\nSUMMARY:Big\nDTSTART:20261124T010000Z\nDTEND:20261124T014500Z\nORGANIZER:mailto:owner@example.com\n'
                          + ''.join(f'ATTENDEE:mailto:p{i}@example.com\n' for i in range(12)) + 'END:VEVENT\n')
         rows = [r for r in rows if r['id'].startswith('big')]
         self.assertEqual(mail.guests(minute(at=self.start), rows, self.own), ([], 'many'))
@@ -276,7 +294,7 @@ class Thanks(Base):
     def test_the_draft_is_made_once_and_named_in_the_mail(self):
         mail.settings()
         rows = [{'id': 'e1_1', 'allDay': False, 'start': datetime.fromtimestamp(time.time() - 3600).astimezone().isoformat(),
-                 'end': datetime.fromtimestamp(time.time() - 600).astimezone().isoformat(), 'guests': [{'email': 't@example.com', 'status': '', 'room': False}]}]
+                 'end': datetime.fromtimestamp(time.time() - 600).astimezone().isoformat(), 'guests': [{'email': 'owner@example.com', 'status': 'ORGANIZER', 'room': False}, {'email': 't@example.com', 'status': 'NEEDS-ACTION', 'room': False}]}]
         m = minute()
 
         def fake_thanks(mid, rec):
