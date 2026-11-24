@@ -387,7 +387,8 @@ def _ts(v):
 
 def calendar_rows(lo, hi):
     import gcal_ics
-    urls = gcal_ics.urls()
+    me = own_addresses()[0].lower()
+    urls = [u for u in gcal_ics.urls() if gcal_ics.owner_of(u) == me]  # never another calendar's word about who was invited
     if not urls:
         raise MailError('no calendar')
     evs = []

@@ -1,6 +1,7 @@
 """Minutes → the mail to the owner's own inbox and the automatic thank-you draft. Gmail, Claude and the calendar are replaced."""
 import base64
 import email
+import io
 import json
 import os
 import shutil
@@ -235,6 +236,9 @@ END:VCALENDAR
 '''
 
 
+REAL_ROWS = mail.calendar_rows
+
+
 class Thanks(Base):
     own = ['owner@example.com', 'work@example.com']
 
@@ -259,6 +263,21 @@ class Thanks(Base):
         self.assertEqual(mail.guests(minute(at=self.start), rows, self.own), ([], 'two'))
         m = minute(at=self.start, event={'id': f'e2_{int(self.start)}', 'uid': 'e2'})
         self.assertEqual(mail.guests(m, rows, self.own), (['x@example.com'], ''))
+
+    def test_only_the_connected_address_own_calendar_is_read(self):
+        ours = 'https://calendar.google.com/calendar/ical/owner%40example.com/private-a/basic.ics'
+        seen = []
+
+        def opened(u, timeout=0):
+            seen.append(u)
+            return io.BytesIO(ICS.encode())
+        with mock.patch.object(gcal_ics, 'urls', return_value=[ours.replace('owner', 'stranger'), 'https://evil.example/x.ics', ours]), \
+                mock.patch.object(mail.urllib.request, 'urlopen', side_effect=opened):
+            rows = REAL_ROWS(0, 4e9)
+        self.assertEqual(seen, [ours])
+        self.assertTrue(all(r.get('owner', 'owner@example.com') == 'owner@example.com' for r in rows))
+        with mock.patch.object(gcal_ics, 'urls', return_value=['https://evil.example/x.ics']), self.assertRaises(mail.MailError):
+            REAL_ROWS(0, 4e9)
 
     def test_one_event_in_two_calendars_with_different_guests_is_unclear(self):
         rows = self.rows()
