@@ -408,7 +408,7 @@ def guests(m, rows, own):
         gs = r.get('guests') or []
         mine = {g['status'] for g in gs if g['email'] == me}  # the connected address only; an alias cannot say yes for it
         # an invitation nobody accepted is not a meeting: anyone can put one on a calendar
-        if not linked and ('DECLINED' in mine or not mine & {'ACCEPTED', 'ORGANIZER'}
+        if not linked and (not mine or not mine <= {'ACCEPTED', 'ORGANIZER'}
                            or sum(g['status'] == 'ORGANIZER' for g in gs) > 1):
             return []
         no = {g['email'] for g in gs if g['status'] == 'DECLINED'}

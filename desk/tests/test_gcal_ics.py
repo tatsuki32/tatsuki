@@ -133,6 +133,7 @@ class MeetingMarks(unittest.TestCase):
                "made here": org % "me@example.com" + att % ("NEEDS-ACTION", "a@example.com")}
         no = {"unanswered": org % "a@example.com" + att % ("NEEDS-ACTION", "me@example.com"), "declined": org % "a@example.com" + att % ("DECLINED", "me@example.com"),
               "maybe": att % ("TENTATIVE", "me@example.com"), "someone else said yes": org % "a@example.com" + att % ("ACCEPTED", "b@example.com"),
+              "two answers": org % "a@example.com" + att % ("ACCEPTED", "me@example.com") + att % ("NEEDS-ACTION", "me@example.com"),
               "two organizers": org % "a@example.com" + org % "me@example.com",
               "a yes in a name": org % "a@example.com" + 'ATTENDEE;CN="PARTSTAT=ACCEPTED":mailto:me@example.com\r\n'}
         for name, body in yes.items():
@@ -140,6 +141,7 @@ class MeetingMarks(unittest.TestCase):
         for name, body in no.items():
             self.assertNotIn("mine", self.rows(body), name)
         self.assertNotIn("mine", self.rows(att % ("ACCEPTED", "me@example.com"), name="Work"))  # whose calendar is not known
+        self.assertNotIn("mine", self.rows("", name="Work"))
 
 
 if __name__ == "__main__":

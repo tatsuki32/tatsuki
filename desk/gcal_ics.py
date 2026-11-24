@@ -5,7 +5,7 @@ The address(es) live in the keychain (service tatsuki-desk-gcal-ics, one or more
 ones tg_notify.py uses. The server (4747 only) reads them every 5 minutes and writes docs/calendar/upcoming.json,
 in the same shape write_feed.py makes: today and the next 7 days, title, start, end, all-day, location.
 No description and no guests are kept: from them only two marks come out, `meet` (there is a Meet, Zoom, Teams or Webex link)
-and `mine` (the calendar's own address made the event or said yes to it, or it has no guests), for Transcribe's auto-recording:
+and `mine` (the calendar's own address made the event or said yes to it, or it has no guests on that same calendar), for Transcribe's auto-recording:
 anyone can put an invitation on a calendar, so one nobody answered never starts anything. Without an address nothing is written and the last calendar stays.
 If one address fails, the last good calendar stays and the reason is kept in memory only (the URL is a secret).
 
@@ -40,7 +40,7 @@ def parse(text, guests=False):
     out, cur, owner = [], None, ""
     for line in ics.unfold(text):
         if line == "BEGIN:VEVENT":
-            cur = {"exdates": set()}
+            cur = {"exdates": set(), "own": "@" in owner}
         elif line == "END:VEVENT":
             if cur and cur.get("start"):
                 out.append(cur)
@@ -98,9 +98,11 @@ def parse(text, guests=False):
 def _mine(e):
     """Made or accepted by the calendar's own address, or an event with no one else on it. Anything unclear is a no."""
     said = e.get("answers") or set()
+    if not e.get("own"):  # a shared or subscribed calendar: whose answers these are is not known
+        return False
     if not e.get("people"):
         return True
-    return "DECLINED" not in said and bool(said & {"ACCEPTED", "ORGANIZER"}) and e.get("organizers", 0) <= 1
+    return bool(said) and said <= {"ACCEPTED", "ORGANIZER"} and e.get("organizers", 0) <= 1  # every answer is a yes
 
 
 def _row(e, ts):
