@@ -260,6 +260,14 @@ class Thanks(Base):
         m = minute(at=self.start, event={'id': f'e2_{int(self.start)}', 'uid': 'e2'})
         self.assertEqual(mail.guests(m, rows, self.own), (['x@example.com'], ''))
 
+    def test_one_event_in_two_calendars_with_different_guests_is_unclear(self):
+        rows = self.rows()
+        other = [{**r, 'owner': '', 'guests': [{'email': 'stranger@example.com', 'status': 'ACCEPTED', 'room': False}]} for r in rows if r['id'].startswith('e1_')]
+        m = minute(at=self.start, event={'id': f'e1_{int(self.start)}', 'uid': 'e1'})
+        self.assertEqual(mail.guests(m, rows + rows, self.own), (['tanaka@example.com'], ''))
+        for both in (rows + other, other + rows):
+            self.assertEqual(mail.guests(m, both, self.own), ([], 'two'))
+
     def test_an_event_an_auto_recording_picked_still_has_to_be_accepted(self):
         rows = self.rows('BEGIN:VEVENT\nUID:spam\nSUMMARY:Spam\nDTSTART:20261124T010000Z\nDTEND:20261124T014500Z\nORGANIZER:mailto:stranger@example.com\n'
                          'ATTENDEE;PARTSTAT=NEEDS-ACTION:mailto:owner@example.com\nEND:VEVENT\n')

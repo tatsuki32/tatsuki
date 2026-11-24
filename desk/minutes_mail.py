@@ -433,8 +433,8 @@ def guests(m, rows, own):
     found = {}
     for r in hit:
         to = others(r, linked)
-        if to:
-            found[r['id']] = to
+        if to and found.setdefault(r['id'], to) != to:
+            return [], 'two'  # the same event in two calendars with different guests: not clear who was there
     if not found:
         return [], 'no-event'
     if len(found) > 1:
