@@ -58,20 +58,14 @@ async function arrived(id, u) {
   return seen;
 }
 
-// Opens this one person and unfollows. Returns "ok", or the reason nothing (more) was pressed.
+// Opens this one person behind and unfollows. Returns "ok", or the reason nothing (more) was pressed. The page never comes to the front.
 async function unfollow(u) {
-  const id = await open(u), press = async () => {
-    const bad = await arrived(id, u);
-    if (bad) return bad;
-    try {
-      const [r] = await chrome.scripting.executeScript({target: {tabId: id}, func: pressUnfollow, args: [u, account]});
-      return (r && r.result) || "not-sure";
-    } catch { return "other-page"; }
-  };
-  const r = await press();
-  if (!behind || r !== "no-menu" && r !== "no-button") return r;
-  await chrome.tabs.update(id, {active: true}).catch(() => {});  // a page behind can be too sleepy to answer: once more in front
-  return press();
+  const id = await open(u), bad = await arrived(id, u);
+  if (bad) return bad;
+  try {
+    const [r] = await chrome.scripting.executeScript({target: {tabId: id}, func: pressUnfollow, args: [u, account]});
+    return (r && r.result) || "not-sure";
+  } catch { return "other-page"; }
 }
 
 const limit = () => view.today >= view.perDay;
