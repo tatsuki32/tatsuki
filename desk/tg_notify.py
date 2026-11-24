@@ -284,7 +284,8 @@ def digest_msg(today, over, due0, due1, stuck):
 # ---------- events ----------
 
 def unfold(text):
-    return re.sub(r"\r?\n[ \t]", "", text).splitlines()
+    # only real iCal line ends: a form feed or U+2028 inside a title must not start a new line
+    return re.split(r"\r?\n", re.sub(r"\r?\n[ \t]", "", text))
 
 
 def parse_dt(value, params):

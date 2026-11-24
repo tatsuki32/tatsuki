@@ -402,13 +402,14 @@ def calendar_rows(lo, hi):
 
 def guests(m, rows, own):
     """(addresses, '') or ([], why) for the one event this minute is about."""
-    own = {x.lower() for x in own}
+    me, own = own[0].lower(), {x.lower() for x in own}
 
     def others(r, linked):
         gs = r.get('guests') or []
-        mine = {g['status'] for g in gs if g['email'] in own}
+        mine = {g['status'] for g in gs if g['email'] == me}  # the connected address only; an alias cannot say yes for it
         # an invitation nobody accepted is not a meeting: anyone can put one on a calendar
-        if not linked and ('DECLINED' in mine or not mine & {'ACCEPTED', 'ORGANIZER'}):
+        if not linked and ('DECLINED' in mine or not mine & {'ACCEPTED', 'ORGANIZER'}
+                           or sum(g['status'] == 'ORGANIZER' for g in gs) > 1):
             return []
         no = {g['email'] for g in gs if g['status'] == 'DECLINED'}
         return sorted({g['email'] for g in gs if g['email'] not in own and g['email'] not in no and not g['room']

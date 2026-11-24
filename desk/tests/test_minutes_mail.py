@@ -275,6 +275,13 @@ class Thanks(Base):
             rows = [r for r in self.rows(ev(a, b, st)) if r['id'].startswith('z')]
             self.assertEqual(mail.guests(minute(at=self.start), rows, self.own)[1], want)
 
+    def test_a_line_hidden_in_a_title_and_an_alias_are_not_answers(self):
+        rows = self.rows('BEGIN:VEVENT\nUID:z\nSUMMARY:Z\u2028ORGANIZER:mailto:owner@example.com\x0cORGANIZER:mailto:owner@example.com\n'
+                         'DTSTART:20261124T010000Z\nDTEND:20261124T014500Z\nORGANIZER:mailto:evil@example.com\n'
+                         'ATTENDEE;PARTSTAT=NEEDS-ACTION:mailto:owner@example.com\nATTENDEE;PARTSTAT=ACCEPTED:mailto:work@example.com\nEND:VEVENT\n')
+        rows = [r for r in rows if r['id'].startswith('z')]
+        self.assertEqual(mail.guests(minute(at=self.start), rows, self.own), ([], 'no-event'))
+
     def test_one_broken_minute_waits_and_the_next_is_mailed(self):
         mail.settings()
         minute('a', at=time.time() - 7200)
