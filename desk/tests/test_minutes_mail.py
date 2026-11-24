@@ -265,6 +265,10 @@ class Thanks(Base):
         ev = {'id': f'spam_{int(self.start)}', 'uid': 'spam'}
         self.assertEqual(mail.guests(minute(at=self.start, event={**ev, 'auto': True}), rows, self.own), ([], 'no-event'))
         self.assertEqual(mail.guests(minute(at=self.start, event=ev), rows, self.own), (['stranger@example.com'], ''))  # chosen by the person
+        mine = {'id': f'e1_{int(self.start)}', 'uid': 'e1', 'auto': True}
+        self.assertEqual(mail.guests(minute(at=self.start, event=mine), rows, self.own), (['tanaka@example.com'], ''))
+        rows = self.rows('BEGIN:VEVENT\nUID:e2\nSUMMARY:Other\nDTSTART:20261124T010000Z\nDTEND:20261124T014500Z\nORGANIZER:mailto:owner@example.com\nATTENDEE:mailto:x@example.com\nEND:VEVENT\n')
+        self.assertEqual(mail.guests(minute(at=self.start, event=mine), rows, self.own), ([], 'two'))  # as unclear as without a link
 
     def test_an_event_the_owner_declined_is_not_the_meeting(self):
         rows = self.rows()

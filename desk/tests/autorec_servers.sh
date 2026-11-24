@@ -10,7 +10,7 @@ t = sys.argv[1]
 body = re.search(r"FAKE_APP = r'''(.*?)'''", open('tests/test_auto_record.py').read(), re.S).group(1)
 open(t + '/app.py', 'w').write(body)
 iso = lambda m: (datetime.datetime.now().astimezone() + datetime.timedelta(minutes=m)).isoformat(timespec='seconds')
-json.dump({'events': [{'id': 'test_1', 'title': 'Test meeting', 'start': iso(-2), 'end': iso(60), 'allDay': False, 'meet': True, 'location': '', 'url': ''}]},
+json.dump({'events': [{'id': 'test_1', 'title': 'Test meeting', 'start': iso(-2), 'end': iso(60), 'allDay': False, 'meet': True, 'mine': True, 'location': '', 'url': ''}]},
           open(t + '/data/docs/calendar/upcoming.json', 'w'))
 json.dump({'ok': True, 'locked': False, 'users': []}, open(t + '/who.json', 'w'))
 PY

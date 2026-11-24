@@ -126,13 +126,20 @@ class MeetingMarks(unittest.TestCase):
                      "DESCRIPTION:https://meet.google.com.evil.example/abc-defg-hij\r\n"):
             self.assertNotIn("meet", self.rows(line), line)
 
-    def test_declined_by_this_calendar_only(self):
+    def test_mine_is_made_or_accepted_here(self):
         att = "ATTENDEE;PARTSTAT=%s;CN=x:mailto:%s\r\n"
-        self.assertTrue(self.rows(att % ("DECLINED", "me@example.com")).get("declined"))
-        self.assertNotIn("declined", self.rows(att % ("DECLINED", "other@example.com")))
-        self.assertNotIn("declined", self.rows(att % ("ACCEPTED", "me@example.com")))
-        self.assertNotIn("declined", self.rows(att % ("DECLINED", "me@example.com"), name="Work"))
-        self.assertNotIn("declined", self.rows('ATTENDEE;CN="PARTSTAT=DECLINED":mailto:me@example.com\r\n'))
+        org = "ORGANIZER:mailto:%s\r\n"
+        yes = {"no guests": "", "accepted": org % "a@example.com" + att % ("ACCEPTED", "me@example.com"),
+               "made here": org % "me@example.com" + att % ("NEEDS-ACTION", "a@example.com")}
+        no = {"unanswered": org % "a@example.com" + att % ("NEEDS-ACTION", "me@example.com"), "declined": org % "a@example.com" + att % ("DECLINED", "me@example.com"),
+              "maybe": att % ("TENTATIVE", "me@example.com"), "someone else said yes": org % "a@example.com" + att % ("ACCEPTED", "b@example.com"),
+              "two organizers": org % "a@example.com" + org % "me@example.com",
+              "a yes in a name": org % "a@example.com" + 'ATTENDEE;CN="PARTSTAT=ACCEPTED":mailto:me@example.com\r\n'}
+        for name, body in yes.items():
+            self.assertTrue(self.rows(body).get("mine"), name)
+        for name, body in no.items():
+            self.assertNotIn("mine", self.rows(body), name)
+        self.assertNotIn("mine", self.rows(att % ("ACCEPTED", "me@example.com"), name="Work"))  # whose calendar is not known
 
 
 if __name__ == "__main__":

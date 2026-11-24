@@ -8,7 +8,7 @@
 ## やったこと
 - `desk/transcribe/auto.py`：始める・止めるの判断。予定（リンク付き）＋マイクの使用で始め、2分で終える
 - `desk/app/meetwatch.swift`：マイクを使うアプリを答える `who`（許可が要らない）と、マイクを録る `record`
-- `desk/gcal_ics.py`：予定に `meet`・`declined` の印だけ足した
+- `desk/gcal_ics.py`：予定に `meet`・`mine` の印だけ足した（招待は誰でも送れるので、返事をしていない予定では始めない）
 - Desk：上の1行（Stop・Discard）、Transcribe のスイッチ
 - 議事録を予定につなぐ。`event.auto` は本人が選んだものと区別する（承諾していない招待のゲストにお礼の下書きを作らない）
 

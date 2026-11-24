@@ -1175,8 +1175,10 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send_obj(public_meta(update_meta(sid, **fields) if fields else meta))
             if method == 'DELETE':
                 if meta.get('auto') and meta['status'] == 'recording':  # erase it, and do not start again for this meeting
-                    auto.act({'op': 'discard', 'id': sid})
-                    return self.send_obj({'ok': True})
+                    code, _ = auto.act({'op': 'discard', 'id': sid})
+                    if code == 200 and not os.path.exists(sdir(sid)):
+                        return self.send_obj({'ok': True})
+                    # it ended in the meantime: erase it the usual way
                 stop_tap(sid, wait=False)
                 with lock:
                     update_meta(sid, status='deleted')

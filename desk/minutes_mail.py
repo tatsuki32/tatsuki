@@ -416,8 +416,9 @@ def guests(m, rows, own):
                        and g['email'].isascii() and share.EMAIL.match(g['email']) and not g['email'].endswith('calendar.google.com')})
 
     ev, sp = m.get('event') or {}, span(m)
+    linked = bool(ev.get('id')) and not ev.get('auto')  # an auto-recording picked its event itself: no person chose it
     hit = []
-    if ev.get('id'):
+    if linked:
         hit = [r for r in rows if r['id'] == ev['id']]
     elif sp:
         for r in rows:
@@ -430,13 +431,15 @@ def guests(m, rows, own):
                 hit.append(r)
     found = {}
     for r in hit:
-        to = others(r, bool(ev.get('id')) and not ev.get('auto'))  # an auto-recording picked the event itself: no person chose it
+        to = others(r, linked)
         if to:
             found[r['id']] = to
     if not found:
         return [], 'no-event'
     if len(found) > 1:
         return [], 'two'
+    if ev.get('auto') and ev.get('id') not in found:  # the recording was made for another event than the one it overlaps
+        return [], 'no-event'
     to = next(iter(found.values()))
     return ([], 'many') if len(to) > MAX_GUESTS else (to, '')
 

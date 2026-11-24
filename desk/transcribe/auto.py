@@ -2,7 +2,7 @@
 
 - Off until it is switched on (desk/data/transcribe/auto.json). It only runs on the real recorder (8791), or in tests.
 - Calendar: desk/data/docs/calendar/upcoming.json, which the Desk already reads every 5 minutes. An event counts when it has a
-  meeting link (`meet`), is not all day and was not declined. From 5 minutes before it starts until 30 minutes after it ends.
+  meeting link (`meet`), is not all day, and the owner made it or said yes to it (`mine`; an unanswered invitation never counts). From 5 minutes before it starts until 30 minutes after it ends.
 - Microphone: `TatsukiMeetWatch who` says which programs are listening. Only browsers and meeting apps count, never dictation,
   Fathom, or this recorder. 10 seconds of that starts a recording (mode `meeting`: mic = Me, the Mac's sound = Them).
 - It ends when no call has used the microphone for 2 minutes, after 4 hours, or with Stop. Discard stops and erases it.
@@ -89,7 +89,7 @@ def meetings():
     """Events on the calendar that are calls: [{id, title, start, end (epoch), raw}], in order."""
     out = []
     for e in (S.read_json(calendar_file(), None) or {}).get('events') or []:
-        if not isinstance(e, dict) or e.get('allDay') or e.get('declined') or not e.get('meet'):
+        if not isinstance(e, dict) or e.get('allDay') or e.get('mine') is not True or e.get('meet') is not True:
             continue
         a, b = ts(e.get('start')), ts(e.get('end'))
         if a is None or not e.get('id'):
@@ -272,9 +272,6 @@ def tend(meta, now):
         S.update_meta(sid, last_chunk=now)
     mic, tap = mic_state(sid), S.tap_state(sid)
     age = now - meta['created']
-    if mic['state'] == 'lost' and now - meta.get('mic_started_at', 0) > 30:
-        print(f'[{sid[:8]}] the microphone app stopped; starting it again', flush=True)
-        start_mic(sid)
     mic_bad, tap_bad = mic['state'] == 'error', tap.get('state') == 'error'
     now_state['problem'] = ('microphone' if mic.get('error') == 'permission' else 'mic') if mic_bad else \
         ('screen' if tap.get('error') == 'permission' else 'tap') if tap_bad else ''
@@ -288,6 +285,11 @@ def tend(meta, now):
     heard = who()
     if heard is None or heard[0]:  # when the Mac will not say, a call is never cut off
         now_state['last_mic'] = now
+    # the microphone is opened again only for a call that is really going on, with the screen unlocked
+    if mic['state'] == 'lost' and now - meta.get('mic_started_at', 0) > 30 and age <= MAX and heard and heard[0] and not heard[1]:
+        print(f'[{sid[:8]}] the microphone app stopped; starting it again', flush=True)
+        start_mic(sid)
+        notify('Still recording. Tell the others.', meta['title'])
     if age > MAX:
         skip_event((meta.get('event') or {}).get('id'))
         return end(sid, 'four hours')
@@ -367,6 +369,10 @@ def act(data):
             fields['language'] = data['language']
         save(**fields)
         if not fields.get('on', True):
+            with lock:
+                going = active()
+                if going:  # switched off means off now: what was recorded is kept
+                    end(going['id'], 'switched off')
             now_state.update(next=None, event=None, since=None)
         return 200, view()
     if op == 'setup':

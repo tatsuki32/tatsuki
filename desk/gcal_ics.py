@@ -5,7 +5,8 @@ The address(es) live in the keychain (service tatsuki-desk-gcal-ics, one or more
 ones tg_notify.py uses. The server (4747 only) reads them every 5 minutes and writes docs/calendar/upcoming.json,
 in the same shape write_feed.py makes: today and the next 7 days, title, start, end, all-day, location.
 No description and no guests are kept: from them only two marks come out, `meet` (there is a Meet, Zoom, Teams or Webex link)
-and `declined` (the calendar's own address said no), for Transcribe's auto-recording. Without an address nothing is written and the last calendar stays.
+and `mine` (the calendar's own address made the event or said yes to it, or it has no guests), for Transcribe's auto-recording:
+anyone can put an invitation on a calendar, so one nobody answered never starts anything. Without an address nothing is written and the last calendar stays.
 If one address fails, the last good calendar stays and the reason is kept in memory only (the URL is a secret).
 
   python3 desk/gcal_ics.py once     read now and write the Desk's calendar
@@ -51,10 +52,14 @@ def parse(text, guests=False):
             name, *ps = head.split(";")
             if name in MEET_FIELDS and MEET.search(value):
                 cur["meet"] = True
-            if name == "ATTENDEE" and "@" in owner and "PARTSTAT=DECLINED" in re.sub(r'"[^"]*"', "", line).upper():
+            if name in ("ATTENDEE", "ORGANIZER"):
+                cur["people"] = True
                 g = GUEST.search(line)
-                if g and g.group(1).lower() == owner:
-                    cur["declined"] = True
+                if g and "@" in owner and g.group(1).lower() == owner:
+                    up = re.sub(r'"[^"]*"', "", line[:g.start()]).upper()
+                    st = re.search(r"PARTSTAT=([A-Z-]+)", up)
+                    cur.setdefault("answers", set()).add("ORGANIZER" if name == "ORGANIZER" else st.group(1) if st else "")
+                cur["organizers"] = cur.get("organizers", 0) + (name == "ORGANIZER")
             params = dict(p.split("=", 1) for p in ps if "=" in p)
             text_value = value.replace("\\,", ",").replace("\\;", ";").replace("\\n", " ").replace("\\\\", "\\")
             if guests and name in ("ATTENDEE", "ORGANIZER"):
@@ -90,6 +95,14 @@ def parse(text, guests=False):
     return out
 
 
+def _mine(e):
+    """Made or accepted by the calendar's own address, or an event with no one else on it. Anything unclear is a no."""
+    said = e.get("answers") or set()
+    if not e.get("people"):
+        return True
+    return "DECLINED" not in said and bool(said & {"ACCEPTED", "ORGANIZER"}) and e.get("organizers", 0) <= 1
+
+
 def _row(e, ts):
     row = _plain_row(e, ts)
     return {**row, "guests": e["guests"]} if e.get("guests") else row
@@ -105,7 +118,7 @@ def _plain_row(e, ts):
         return {"id": f"{uid}_{s}", "title": e.get("summary") or "(No title)", "start": s, "end": en or s,
                 "allDay": True, "location": e.get("location", ""), "url": ""}
     s, en = start.astimezone(), end.astimezone()  # the Mac's own time zone, like the rest of the Desk
-    marks = {k: True for k in ("meet", "declined") if e.get(k)}
+    marks = {k: True for k, v in (("meet", e.get("meet")), ("mine", _mine(e))) if v}
     return {"id": f"{uid}_{int(ts)}", "title": e.get("summary") or "(No title)", "start": s.isoformat(timespec="seconds"),
             "end": en.isoformat(timespec="seconds"), "allDay": False, "location": e.get("location", ""), "url": "", **marks}
 

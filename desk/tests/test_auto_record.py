@@ -82,7 +82,7 @@ class AutoRecord(unittest.TestCase):
 
     def event(self, start=-60, end=1800, eid='u_1', **more):
         iso = lambda t: datetime.datetime.fromtimestamp(time.time() + t).astimezone().isoformat(timespec='seconds')
-        return {'id': eid, 'title': 'Call with Ura', 'start': iso(start), 'end': iso(end), 'allDay': False, 'meet': True, **more}
+        return {'id': eid, 'title': 'Call with Ura', 'start': iso(start), 'end': iso(end), 'allDay': False, 'meet': True, 'mine': True, **more}
 
     def calendar(self, *events):
         with open(os.path.join(self.tmp, 'upcoming.json'), 'w') as f:
@@ -125,7 +125,7 @@ class AutoRecord(unittest.TestCase):
 
     def test_what_must_not_start(self):
         self.mic('com.google.Chrome.helper')
-        cases = {'no calendar': [], 'no link': [self.event(meet=False)], 'all day': [self.event(allDay=True)], 'declined': [self.event(declined=True)],
+        cases = {'no calendar': [], 'no link': [self.event(meet=False)], 'all day': [self.event(allDay=True)], 'an invitation nobody answered': [self.event(mine=False)],
                  'too early': [self.event(start=600, end=1200)], 'long over': [self.event(start=-9000, end=-2400)]}
         for name, evs in cases.items():
             self.calendar(*evs)
@@ -257,6 +257,38 @@ class AutoRecord(unittest.TestCase):
         self.mic()
         self.assertEqual(self.a.look(), 'recording')
         self.assertEqual(self.a.active()['id'], sid)
+
+    def test_the_microphone_is_not_opened_again_without_a_call(self):
+        self.calendar(self.event())
+        self.mic('us.zoom.xos')
+        self.run_until_started()
+        sid = self.a.active()['id']
+        self.wait_mic(sid)
+        mic = os.path.join(self.s.sdir(sid), 'mic.json')
+        self.s.write_json(mic, {'state': 'recording', 'updated': 0, 'started': time.time()})  # the app is gone
+        self.s.update_meta(sid, mic_started_at=0)
+        opened = []
+        real, self.a.start_mic = self.a.start_mic, opened.append
+        try:
+            for kw in ({'b': []}, {'b': ['us.zoom.xos'], 'locked': True}, {'b': ['us.zoom.xos'], 'ok': False}):
+                self.mic(*kw.pop('b'), **kw)
+                self.a.look()
+            self.assertEqual(opened, [])
+            self.mic('us.zoom.xos')
+            self.a.look()
+            self.assertEqual(opened, [sid])
+            self.assertEqual(self.told[-1], 'Still recording. Tell the others.')
+        finally:
+            self.a.start_mic = real
+
+    def test_switching_off_ends_the_recording_and_keeps_it(self):
+        self.calendar(self.event())
+        self.mic('us.zoom.xos')
+        self.run_until_started()
+        sid = self.a.active()['id']
+        self.wait_mic(sid)
+        self.a.act({'op': 'set', 'on': False})
+        self.assertEqual((self.s.load_meta(sid)['status'], self.s.load_meta(sid)['auto_end']), ('queued', 'switched off'))
 
     def test_the_meeting_going_on_wins_over_the_next_one(self):
         self.calendar(self.event(start=-1800, end=120, eid='now'), self.event(start=120, end=3600, eid='next'))
