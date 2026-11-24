@@ -6,7 +6,8 @@
 window.log = []; window.answer = "ok";
 const store = {}, area = {get: async k => Object.fromEntries([].concat(k).map(x => [x, store[x]])), set: async o => Object.assign(store, o)};
 window.chrome = {storage: {local: area, session: area}, runtime: {onMessage: {addListener: f => window.shortcut = f}},
-  tabs: {create: async o => { log.push("open " + o.url); return {id: 7}; }, update: async (i, o) => { log.push("go " + o.url); }},
+  tabs: {create: async o => { log.push("open " + o.url); window.at = o.url; return {id: 7}; }, update: async (i, o) => { log.push("go " + o.url); window.at = o.url; },
+    get: async () => ({status: "complete", url: window.landed || window.at})},
   scripting: {executeScript: async o => { log.push("press " + o.args[0]); return [{result: window.answer}]; }}};
 let people = Array.from({length: 24}, (_, i) => ({u: "person." + i, since: Date.UTC(2024, 10, 29 + i), again: i === 1})), marks = {}, set = {perDay: 5, over: 365, list: "notback", exports: 1};
 const state = () => ({account: "demo.page", accounts: ["demo.page", "second.page"], ready: true, queue: people.filter(p => !marks[p.u]), left: people.filter(p => !marks[p.u]).length,

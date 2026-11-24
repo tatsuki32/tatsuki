@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Desk Followers",
   "version": "1.0.0",
-  "description": "Shows the people who do not follow back, one at a time. One press of yours unfollows the one on screen.",
+  "description": "Lists the people who do not follow back. One press of yours unfollows that one person.",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtE3qT88JAP+KwG835g/6LEDguW2qBkiJTsS6uXZwNVQXAzEDdcEy7nGkNDh/yB9j0hjVRoFHMm+FbFPUsZw5vDGcTrH2zdd98iov2xR3ctlTTe2LuaLYDsjmvTtO0tHXI+ehdB3neVvGNXnP0Kn8/b1H7P7+V+NC2RHHJKbFRXXmnLRUm5esb9QlB4nCOyo4RI2BNY2f1jOG6r3ty62bfTq6jjj9MOVwkRn5B+DdJs0Zad0vV76yKIM4Jg4ufOoNwSTmgsCkiCSKkPfwcIynRb77kDOWevl1Kovoel0BMEfAqBP2ec11vzl/t8Ob8+9G+TBXGFBWmr2WbqHMKi5K0wIDAQAB",
   "minimum_chrome_version": "116",
   "action": {
@@ -28,7 +28,7 @@
       "suggested_key": {
         "default": "Alt+N"
       },
-      "description": "Unfollow this person, open the next"
+      "description": "Unfollow the first person in the list"
     },
     "keep": {
       "suggested_key": {
