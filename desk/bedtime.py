@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Tatsuki's Desk — Bedtime: a gentle word to stop for the day, once the set hour has passed.
 
-server.py runs watch() every 60 seconds, on 4747 only. From bedtime (22:00 by default) until 4:00, while the Mac is
+server.py runs watch() every 60 seconds, on 4747 only. From bedtime (21:30 by default) until 4:30, while the Mac is
 in use (a key or the mouse in the last 5 minutes, or a video playing; screen not locked), it shows one Mac notification with sound, then
 one without sound every 15 minutes for as long as the Mac stays in use. A Mac opened later in the night gets its
 first one within a minute or two.
@@ -28,12 +28,12 @@ from datetime import datetime, timedelta
 ROOT = os.path.dirname(os.path.abspath(__file__))
 DATA = os.environ.get("DESK_DATA") or os.environ.get("DESK_DATA_DIR") or os.path.join(ROOT, "data")
 DIR = os.environ.get("NOTIFY_DIR") or os.path.join(DATA, "notify")
-UNTIL = 4 * 60  # the night ends at 4:00, when the Desk's morning begins
+UNTIL = 4 * 60 + 30  # the night ends at 4:30, when Tatsuki gets up (2026-11-24)
 IN_USE = 5 * 60  # a key or the mouse this recently counts as using the Mac
 WATCHING = 60 * 60  # with a video keeping the display awake, this long without touching anything still counts
 SLACK = 45  # the watch wakes about once a minute: a repeat is due this many seconds early rather than a minute late
 EVERY = (5, 10, 15, 20, 30)
-DEFAULTS = {"on": True, "at": 22 * 60, "every": 15}  # minutes after midnight, minutes between repeats
+DEFAULTS = {"on": True, "at": 21 * 60 + 30, "every": 15}  # minutes after midnight, minutes between repeats
 FIRST = "It's {clock}. A good time to close the Mac and get ready for bed."
 LATE = "It's {clock}, {past} past bedtime. A good time to close the Mac."
 REPEATS = (
@@ -122,13 +122,20 @@ def clean_settings(raw, base=None):
 
 
 def settings():
-    return clean_settings(read_json("bedtime.json", {}))
+    raw = read_json("bedtime.json", {})
+    if raw.get("at") == 22 * 60 and not raw.get("v"):  # the old default: bed at 21:30 from 2026-11-24
+        raw = {**raw, "at": DEFAULTS["at"], "v": 2}
+        try:
+            write_json("bedtime.json", raw)
+        except OSError:
+            pass
+    return clean_settings(raw)
 
 
 # ---------- deciding ----------
 
 def night(dt, at):
-    """(the date this night began on, minutes past bedtime), or None outside bedtime-4:00."""
+    """(the date this night began on, minutes past bedtime), or None outside bedtime-4:30."""
     minute = dt.hour * 60 + dt.minute
     if at > UNTIL:  # the usual case: an evening bedtime, the night runs past midnight
         if minute >= at:
@@ -214,7 +221,7 @@ def view(now=None):
 def put_settings(rec):
     with LOCK:
         s = clean_settings(rec, settings())
-        write_json("bedtime.json", s)
+        write_json("bedtime.json", {**s, "v": 2})
     return 200, view()
 
 

@@ -10,7 +10,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import bedtime as bt  # noqa: E402
 
 TZ = timezone(timedelta(hours=9))
-S = dict(bt.DEFAULTS)
+S = {**bt.DEFAULTS, "at": 22 * 60}  # the tests walk a 22:00 bedtime; the default is 21:30 (test below)
 
 
 def at(hour, minute=0, day=23):
@@ -42,7 +42,20 @@ class Plan(unittest.TestCase):
 
     def test_nothing_before_bedtime_or_after_four(self):
         self.assertEqual(run(every_minute(at(20, 0), 119)), [])
-        self.assertEqual(run(every_minute(at(4, 0, day=24), 120)), [])
+        self.assertEqual(run(every_minute(at(4, 30, day=24), 120)), [])
+
+    def test_default_is_21_30_to_4_30(self):
+        shown = run(every_minute(at(21, 25), 10), s=dict(bt.DEFAULTS))
+        self.assertEqual([c for c, _ in shown], ["21:30"])
+        self.assertTrue(run(every_minute(at(4, 20, day=24), 5), s=dict(bt.DEFAULTS)))
+        self.assertEqual(run(every_minute(at(4, 31, day=24), 30), s=dict(bt.DEFAULTS)), [])
+
+    def test_old_saved_22_00_moves_to_21_30_once(self):
+        with tempfile.TemporaryDirectory() as d, mock.patch.object(bt, "DIR", d):
+            bt.write_json("bedtime.json", {"on": True, "at": 22 * 60, "every": 15})
+            self.assertEqual(bt.settings()["at"], 21 * 60 + 30)
+            bt.put_settings({"at": 22 * 60})  # chosen again by hand: kept
+            self.assertEqual(bt.settings()["at"], 22 * 60)
 
     def test_a_closed_mac_gets_nothing_and_an_opened_one_hears_at_once(self):
         away = lambda t: not (at(22, 5) <= t < at(23, 10))
