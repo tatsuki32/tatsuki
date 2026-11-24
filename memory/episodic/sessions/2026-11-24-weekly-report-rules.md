@@ -13,3 +13,6 @@
 
 ## 残り
 - FocusBlock の夜のスケジュール（21:30〜4:30、Instagram・Brave・Yandex・LINE・WhatsApp）は、1日中のスケジュールが動いているため設定の変更にパスワードが要る。本人が FocusBlock の設定画面で直す。
+
+## 続き（同じ日）
+- `once.py` に2つ目の1回だけの処理：今日のタスク「Reply to Takahashi (Helpfeel)」を足す。新しい処理だけでは pull.sh がサーバーを再起動しないので、`server.py` のコメントも変えた。
