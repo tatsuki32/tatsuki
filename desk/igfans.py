@@ -700,6 +700,7 @@ PER_DAY = 20              # a small number on purpose; the owner can choose 5 to
 PER_HOUR = 20             # 5 to 20; at the number the panel stops and waits for the owner to press again
 HOUR = 3600000
 OVER_DAYS = (0, 90, 365)  # only people followed at least this long ago
+REMIND_HOURS = (8, 22)    # by the Mac's clock
 LISTS = ("notback", "left", "new")  # does not follow back · stopped following in the last 30 days · followed in the last 30 days, not back yet
 LATER = 7 * DAY
 EXPORT_AGE = 4 * DAY      # an export can be downloaded up to 4 days after Instagram made it, so it may be older than the decision
@@ -708,7 +709,8 @@ EXPORT_AGE = 4 * DAY      # an export can be downloaded up to 4 days after Insta
 def _cleanup(account):
     c = _read(_f(account, "cleanup.json"), {})
     people = c.get("people") if isinstance(c.get("people"), dict) else {}
-    return {"people": people, "perDay": c.get("perDay", PER_DAY), "perHour": c.get("perHour", PER_HOUR), "over": c.get("over", 365), "list": c.get("list") if c.get("list") in LISTS else "notback"}
+    return {"people": people, "perDay": c.get("perDay", PER_DAY), "perHour": c.get("perHour", PER_HOUR), "over": c.get("over", 365),
+            "remind": c.get("remind") is not False, "pausedUntil": c.get("pausedUntil") or 0, "told": c.get("told") or "", "list": c.get("list") if c.get("list") in LISTS else "notback"}
 
 
 def _stopped(good, since):
@@ -723,12 +725,12 @@ def _stopped(good, since):
 def cleanup(wanted=""):
     """Who comes next. A person marked Unfollowed who is still followed in a newer export comes back with again=True."""
     a = current(wanted)
-    out = {"account": a, "accounts": accounts(), "queue": [], "left": 0, "today": 0, "perDay": PER_DAY, "hour": 0, "perHour": PER_HOUR, "hourFrom": 0, "over": 365, "keep": [], "done": 0, "later": 0, "ready": False, "list": "notback", "exports": 0}
+    out = {"account": a, "accounts": accounts(), "queue": [], "left": 0, "today": 0, "perDay": PER_DAY, "hour": 0, "perHour": PER_HOUR, "hourFrom": 0, "remind": True, "pausedUntil": 0, "over": 365, "keep": [], "done": 0, "later": 0, "ready": False, "list": "notback", "exports": 0}
     if not a:
         return out
     c = _cleanup(a)
     good = [x for x in imports(a) if not x.get("partial")]
-    out.update(perDay=c["perDay"], perHour=c["perHour"], over=c["over"], list=c["list"], exports=len(good))
+    out.update(perDay=c["perDay"], perHour=c["perHour"], remind=c["remind"], pausedUntil=c["pausedUntil"], over=c["over"], list=c["list"], exports=len(good))
     now = now_ms()
     day = time.strftime("%Y-%m-%d", time.localtime(now / 1000))
     marks = c["people"]
@@ -761,6 +763,64 @@ def cleanup(wanted=""):
     return out
 
 
+def reminder(account, now=None):
+    """The line to show when a new hour is free and nobody was told yet, or None. Once per opening, and the owner presses."""
+    now = now or now_ms()
+    c = _cleanup(account)
+    t = time.localtime(now / 1000)
+    if not c["remind"] or now < c["pausedUntil"] or not REMIND_HOURS[0] <= t.tm_hour < REMIND_HOURS[1]:
+        return None
+    done = [m["at"] for m in c["people"].values() if m["s"] == "done"]
+    if not done:  # the owner has not started yet
+        return None
+    v = cleanup(account)
+    free = min(v["perHour"] - v["hour"], v["perDay"] - v["today"], v["left"])
+    if not v["ready"] or free <= 0 or v["hour"]:
+        return None  # the whole hour's number has to be free, not one person at a time
+    key = "%s %d" % (time.strftime("%Y-%m-%d", t), max(done))
+    if key == c["told"]:
+        return None
+    return {"key": key, "title": "Followers", "body": "%d ready to unfollow. Open the panel in Chrome and press. %d to go." % (free, v["left"])}
+
+
+def remind_once(show=None, send=None):
+    for a in accounts():
+        if not os.path.exists(_f(a, "cleanup.json")):
+            continue
+        n = reminder(a)
+        if not n:
+            continue
+        with _lock:
+            c = _cleanup(a)
+            c["told"] = n["key"]
+            _write(_f(a, "cleanup.json"), c)
+        for work in ((show or _show_mac), (send or _send_telegram)):  # one that fails does not stop the other
+            try:
+                work(n)
+            except Exception as err:  # noqa: BLE001
+                print("igfans reminder:", type(err).__name__, file=sys.stderr)
+
+
+def _show_mac(n):
+    import notify
+    notify.show_mac({"title": n["title"], "body": n["body"], "tier": "now"})
+
+
+def _send_telegram(n):
+    import tg_notify
+    if tg_notify.token() and tg_notify.chat_id():
+        tg_notify.send_telegram(n["title"] + ": " + n["body"])
+
+
+def _remind_loop():
+    while True:
+        try:
+            remind_once()
+        except Exception as err:  # noqa: BLE001 - the loop must go on
+            print("igfans reminder:", type(err).__name__, file=sys.stderr)
+        time.sleep(60)
+
+
 def put_cleanup(rec):
     account, op = clean(rec.get("account")), rec.get("op")
     if not account or account not in accounts():
@@ -771,7 +831,11 @@ def put_cleanup(rec):
             p, h, o, which = rec.get("perDay"), rec.get("perHour", c["perHour"]), rec.get("over"), rec.get("list", c["list"])
             if isinstance(p, bool) or not isinstance(p, int) or not 5 <= p <= 100 or isinstance(h, bool) or not isinstance(h, int) or not 5 <= h <= 20 or isinstance(o, bool) or o not in OVER_DAYS or which not in LISTS:
                 return 400, {"error": "settings"}
-            c.update(perDay=p, perHour=h, over=o, list=which)
+            if "remind" in rec and not isinstance(rec["remind"], bool):
+                return 400, {"error": "settings"}
+            c.update(perDay=p, perHour=h, over=o, list=which, remind=rec.get("remind", c["remind"]))
+        elif op == "pause":  # Instagram asked to slow down: the panel stops for a day, and so do the reminders
+            c["pausedUntil"] = now_ms() + DAY
         elif op in ("keep", "done", "later", "undo"):
             n = clean(rec.get("u"))
             good = [x for x in imports(account) if not x.get("partial")]
@@ -885,6 +949,7 @@ def handle(method, step, rec):
 
 def watch():
     """Once a day: read the accounts that have an import. Profile checks run only after the owner asked for them."""
+    threading.Thread(target=_remind_loop, daemon=True).start()  # a notice when a new hour is free; pressing is the owner's
     while True:
         try:
             for a in sorted(connected()):

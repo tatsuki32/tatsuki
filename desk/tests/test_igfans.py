@@ -8,6 +8,7 @@ import stat
 import sys
 import tempfile
 import threading
+import time
 import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
@@ -161,6 +162,34 @@ class Cleanup(Base):
         c['people']['old']['at'] -= 5 * igfans.DAY
         igfans._write(path, c)
         self.assertEqual([(r['u'], r['again']) for r in igfans.cleanup(A)['queue']][0], ('old', True))
+
+    def test_the_reminder(self):
+        now = int(time.mktime((2026, 11, 24, 12, 30, 0, 0, 0, -1)) * 1000)
+        real, igfans.now_ms = igfans.now_ms, lambda: now
+        self.addCleanup(setattr, igfans, 'now_ms', real)
+        self.bring({'p%d' % i: now - 500 * igfans.DAY for i in range(8)})
+        self.assertIsNone(igfans.reminder(A))  # not started
+        igfans.put_cleanup({'account': A, 'op': 'settings', 'perDay': 20, 'perHour': 5, 'over': 365})
+        igfans.put_cleanup({'account': A, 'op': 'done', 'u': 'p0'})
+        self.assertIsNone(igfans.reminder(A))  # the hour is not over
+        path = igfans._f(A, 'cleanup.json')
+        c = igfans._read(path, {})
+        c['people']['p0']['at'] -= igfans.HOUR + 1000
+        igfans._write(path, c)
+        seen = []
+        igfans.remind_once(show=seen.append, send=lambda n: 1 / 0)  # Telegram failing does not stop the notice
+        igfans.remind_once(show=seen.append, send=seen.append)
+        self.assertEqual([n['body'] for n in seen], ['5 ready to unfollow. Open the panel in Chrome and press. 7 to go.'])
+        c = igfans._read(path, {})
+        c['told'] = ''
+        igfans._write(path, c)
+        self.assertIsNone(igfans.reminder(A, now + 11 * igfans.HOUR))  # 23:30: quiet
+        self.assertTrue(igfans.reminder(A))
+        igfans.put_cleanup({'account': A, 'op': 'pause'})
+        self.assertIsNone(igfans.reminder(A))
+        self.assertGreater(igfans.cleanup(A)['pausedUntil'], now)
+        for v in ({'remind': 'no'}, {'remind': 1}):
+            self.assertEqual(igfans.put_cleanup({'account': A, 'op': 'settings', 'perDay': 20, 'over': 365, **v})[0], 400)
 
     def test_the_hour_number(self):
         now = igfans.now_ms()

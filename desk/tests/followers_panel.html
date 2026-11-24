@@ -10,10 +10,10 @@ window.chrome = {storage: {local: area, session: area}, runtime: {onMessage: {ad
     get: async () => ({status: "complete", url: window.landed || window.at})},
   action: {setBadgeText: async o => { window.badge = o.text; }},
   scripting: {executeScript: async o => { log.push("press " + o.args[0]); return [{result: window.answer}]; }}};
-let people = Array.from({length: 24}, (_, i) => ({u: "person." + i, since: Date.UTC(2024, 10, 29 + i), again: i === 1})), marks = {}, set = {perDay: 5, over: 365, list: "notback", exports: 1, perHour: 20};
+let people = Array.from({length: 24}, (_, i) => ({u: "person." + i, since: Date.UTC(2024, 10, 29 + i), again: i === 1})), marks = {}, set = {perDay: 5, over: 365, list: "notback", exports: 1, perHour: 20, remind: true};
 const state = () => ({account: "demo.page", accounts: ["demo.page", "second.page"], ready: true, queue: people.filter(p => !marks[p.u]), left: people.filter(p => !marks[p.u]).length,
   today: Object.values(marks).filter(m => m === "done").length, hour: Object.values(marks).filter(m => m === "done").length, hourFrom: Date.now() + 3000000, done: Object.values(marks).filter(m => m === "done").length, keep: Object.keys(marks).filter(u => marks[u] === "keep"), ...set});
-window.fetch = async (u, o) => { const b = o && o.body ? JSON.parse(o.body) : null; if (b) { log.push(b.op + " " + (b.u || "")); if (b.op === "settings") set = {...set, perDay: b.perDay, perHour: b.perHour, over: b.over, list: b.list}; else if (b.op === "undo") delete marks[b.u]; else marks[b.u] = b.op; } return {ok: true, json: async () => state()}; };
+window.fetch = async (u, o) => { const b = o && o.body ? JSON.parse(o.body) : null; if (b) { log.push(b.op + " " + (b.u || "")); if (b.op === "settings") set = {...set, perDay: b.perDay, perHour: b.perHour, remind: b.remind, over: b.over, list: b.list}; else if (b.op === "undo") delete marks[b.u]; else marks[b.u] = b.op; } return {ok: true, json: async () => state()}; };
 </script>
 <script>
 // the real panel.html body, so the test follows the panel

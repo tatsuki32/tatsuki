@@ -99,7 +99,7 @@ async function pump() {
       if (r === "ok" || r === "already") { if (!await save("done", u)) { waiting.length = 0; } }
       else {
         stop = "@" + u + ": " + (WHY[r] || WHY["not-sure"]); failed = u;
-        if (r === "blocked") { pause = Date.now() + DAY; await chrome.storage.local.set({pause}); }
+        if (r === "blocked") { pause = Date.now() + DAY; await chrome.storage.local.set({pause}); await call({account, op: "pause"}).catch(() => {}); }
         if (r !== "no-button" && r !== "no-menu") { if (waiting.length) stop += " The other " + num(waiting.length) + " were not started."; waiting.length = 0; }
       }
       busy = "";
@@ -170,7 +170,7 @@ function draw() {
   $("fill").style.width = Math.min(100, view.today / view.perDay * 100) + "%";
   const bar = $("fill").parentElement; bar.ariaValueMax = view.perDay; bar.ariaValueNow = view.today;
   $("perDay").value = String(view.perDay); $("perHour").value = String(view.perHour); $("over").value = String(view.over);
-  $("list").value = view.list; $("overRow").hidden = view.list !== "notback"; $("behind").checked = behind;
+  $("list").value = view.list; $("overRow").hidden = view.list !== "notback"; $("behind").checked = behind; $("remind").checked = view.remind; pause = Math.max(pause, view.pausedUntil || 0);
   for (const id of ["account", "perDay", "perHour", "over", "list"]) $(id).disabled = !!busy || waiting.length > 0;
   $("now").textContent = !busy && waiting.length ? num(waiting.length) + " waiting" : busy ? "Unfollowing @" + busy + (waiting.length ? " · " + num(waiting.length) + " waiting" : "") : "";
   if (stop) {
@@ -219,7 +219,7 @@ async function load() {
 }
 
 async function saveSettings() {
-  try { view = await call({account, op: "settings", perDay: Number($("perDay").value), perHour: Number($("perHour").value), over: Number($("over").value), list: $("list").value}); stop = ""; } catch (e) { stop = e.message; }
+  try { view = await call({account, op: "settings", perDay: Number($("perDay").value), perHour: Number($("perHour").value), over: Number($("over").value), list: $("list").value, remind: $("remind").checked}); stop = ""; } catch (e) { stop = e.message; }
   draw();
 }
 
@@ -227,6 +227,7 @@ $("account").onchange = () => { account = $("account").value; undo = []; ticked.
 $("perDay").onchange = saveSettings;
 $("over").onchange = saveSettings;
 $("perHour").onchange = saveSettings;
+$("remind").onchange = saveSettings;
 setInterval(() => { if (view && !busy && !waiting.length && view.hour) load(); }, 60000);  // only the numbers: the list and the counts
 $("list").onchange = saveSettings;
 chrome.runtime.onMessage.addListener(m => { if (m && Object.hasOwn(KEYS, m.name)) act(KEYS[m.name]); });
