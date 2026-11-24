@@ -751,7 +751,7 @@ def cleanup(wanted=""):
             continue
         rows.append({"u": n, "since": since, "again": bool(m and m["s"] == "done")})
     rows.sort(key=lambda r: (r["since"], r["u"]))
-    out.update(ready=True, queue=rows[:30], left=len(rows), exportAt=x["at"])
+    out.update(ready=True, queue=rows[:500], left=len(rows), exportAt=x["at"])
     return out
 
 

@@ -16,13 +16,22 @@ button:disabled,select:disabled{opacity:.5;cursor:default}
 button.primary{background:var(--gold);border-color:var(--gold);color:#1c1d21;font-weight:700}
 :focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 footer label[hidden]{display:none}
-ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
-li{background:var(--surface);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:8px}
-.who{display:flex;flex-direction:column}
-.who a{color:var(--ink);font-size:16px;font-weight:700;text-decoration:none;overflow-wrap:anywhere;width:fit-content}
+ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+li{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+li.working{opacity:.7}
+li button{min-height:32px}
+li .wide{min-width:96px}
+li .on{border-color:var(--gold);color:var(--gold)}
+li .full{grid-column:1/-1}
+.who{display:flex;align-items:center;gap:8px;min-width:0}
+.who>span{display:flex;flex-direction:column;min-width:0}
+.who a{color:var(--ink);font-weight:700;text-decoration:none;overflow-wrap:anywhere}
 .who a:hover{text-decoration:underline}
-.two{display:flex;flex-wrap:wrap;gap:8px}
-.two .wide{flex:1 1 auto}
+.note a{color:var(--gold)}
+input{accent-color:var(--gold);font:inherit}
+input[type=search]{color:var(--ink);background:var(--surface-2);border:1px solid var(--line);border-radius:8px;min-height:32px;padding:4px 12px;width:100%}
+#now:empty{display:none}
+.tools{display:flex;flex-wrap:wrap;gap:8px}
 .note{background:var(--surface-2);border-radius:8px;padding:8px 16px}
 .bar{height:4px;border-radius:2px;background:var(--surface-2);overflow:hidden}
 .bar i{display:block;height:100%;width:0;background:var(--gold)}
