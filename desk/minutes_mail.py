@@ -394,7 +394,7 @@ def calendar_rows(lo, hi):
     for u in urls:
         try:
             with urllib.request.urlopen(u, timeout=30) as r:
-                evs += gcal_ics.parse(r.read().decode('utf-8', 'replace'), guests=True)
+                evs += gcal_ics.parse(r.read().decode('utf-8', 'replace'), guests=True, owner=gcal_ics.owner_of(u))
         except (OSError, ValueError):
             raise MailError('no calendar') from None  # the address is a secret: never in a message
     return gcal_ics.events(evs, lo, hi)
@@ -408,7 +408,8 @@ def guests(m, rows, own):
         gs = r.get('guests') or []
         mine = {g['status'] for g in gs if g['email'] == me}  # the connected address only; an alias cannot say yes for it
         # an invitation nobody accepted is not a meeting: anyone can put one on a calendar
-        if not linked and (not mine or not mine <= {'ACCEPTED', 'ORGANIZER'}
+        # and the answers count only on the connected address's own calendar, not on another feed that names it
+        if not linked and (r.get('owner') != me or not mine or not mine <= {'ACCEPTED', 'ORGANIZER'}
                            or sum(g['status'] == 'ORGANIZER' for g in gs) > 1):
             return []
         no = {g['email'] for g in gs if g['status'] == 'DECLINED'}

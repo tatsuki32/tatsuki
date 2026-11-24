@@ -108,10 +108,10 @@ class Calendar(unittest.TestCase):
 
 
 class MeetingMarks(unittest.TestCase):
-    def rows(self, body, name="me@example.com"):
-        text = f"BEGIN:VCALENDAR\r\nX-WR-CALNAME:{name}\r\nBEGIN:VEVENT\r\nUID:x\r\nDTSTART:20261121T020000Z\r\nDTEND:20261121T030000Z\r\nSUMMARY:Call\r\n{body}END:VEVENT\r\n"
+    def rows(self, body, owner="me@example.com"):
+        text = f"BEGIN:VCALENDAR\r\nX-WR-CALNAME:me@example.com\r\nBEGIN:VEVENT\r\nUID:x\r\nDTSTART:20261121T020000Z\r\nDTEND:20261121T030000Z\r\nSUMMARY:Call\r\n{body}END:VEVENT\r\n"
         lo = datetime(2026, 11, 21, tzinfo=UTC).timestamp()
-        return g.events(g.parse(text), lo, lo + 86400)[0]
+        return g.events(g.parse(text, owner=owner), lo, lo + 86400)[0]
 
     def test_links_that_are_meetings(self):
         for line in ("X-GOOGLE-CONFERENCE:https://meet.google.com/abc-defg-hij\r\n", "LOCATION:https://us02web.zoom.us/j/123?pwd=x\r\n",
@@ -140,8 +140,16 @@ class MeetingMarks(unittest.TestCase):
             self.assertTrue(self.rows(body).get("mine"), name)
         for name, body in no.items():
             self.assertNotIn("mine", self.rows(body), name)
-        self.assertNotIn("mine", self.rows(att % ("ACCEPTED", "me@example.com"), name="Work"))  # whose calendar is not known
-        self.assertNotIn("mine", self.rows("", name="Work"))
+        self.assertNotIn("mine", self.rows(att % ("ACCEPTED", "me@example.com"), owner=""))  # whose calendar is not known
+        self.assertNotIn("mine", self.rows("", owner=""))
+
+    def test_whose_calendar_comes_from_the_address_only(self):
+        ok = "https://calendar.google.com/calendar/ical/me%40example.com/private-abc/basic.ics"
+        self.assertEqual(g.owner_of(ok), "me@example.com")
+        for u in (ok.replace("calendar.google.com", "calendar.google.com.evil.example"), ok.replace("calendar.google.com", "x@example.com"),
+                  ok.replace("private-abc", "public"), ok.replace("https", "http"), ok.replace("me%40example.com", "abc%40group.calendar.google.com"),
+                  ok.replace("me%40example.com", "holiday"), "https://evil.example/me.ics", ""):
+            self.assertEqual(g.owner_of(u), "", u)
 
 
 if __name__ == "__main__":

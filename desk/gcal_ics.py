@@ -17,6 +17,7 @@ import re
 import sys
 import threading
 import time
+import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta
 
@@ -34,19 +35,29 @@ MEET = re.compile(r"https?://(?:[\w-]+\.)*(?:meet\.google\.com/[a-z]{3}-|meet\.g
 MEET_FIELDS = ("LOCATION", "DESCRIPTION", "X-GOOGLE-CONFERENCE", "X-GOOGLE-HANGOUT", "URL")
 
 
-def parse(text, guests=False):
+OWN_URL = re.compile(r"^/calendar/ical/([^/]+)/private-[^/]+/basic\.ics$")
+
+
+def owner_of(url):
+    """Whose calendar a saved address is: Google writes it in the secret address itself. "" for anything else (another host,
+    a public or shared calendar). Never taken from the feed's own text, which whoever makes the feed can choose."""
+    u = urllib.parse.urlsplit(url)
+    m = OWN_URL.match(u.path)
+    who = urllib.parse.unquote(m.group(1)).lower() if m and u.scheme == "https" and u.netloc == "calendar.google.com" else ""
+    return who if re.fullmatch(r"[^@\s]+@[^@\s]+", who) and not who.endswith("calendar.google.com") else ""
+
+
+def parse(text, guests=False, owner=""):
     """VEVENTs with what the calendar shows: uid, summary, start, end, all_day, location, rrule, exdates, rid, cancelled.
-    guests=True (minutes_mail only, in memory) adds the invited addresses; the Desk's calendar never keeps them."""
-    out, cur, owner = [], None, ""
+    owner is owner_of(the address it came from). guests=True (minutes_mail only, in memory) adds the invited addresses; the Desk's calendar never keeps them."""
+    out, cur = [], None
     for line in ics.unfold(text):
         if line == "BEGIN:VEVENT":
-            cur = {"exdates": set(), "own": "@" in owner}
+            cur = {"exdates": set(), "own": owner}
         elif line == "END:VEVENT":
             if cur and cur.get("start"):
                 out.append(cur)
             cur = None
-        elif cur is None and line.upper().startswith("X-WR-CALNAME:"):
-            owner = line.split(":", 1)[1].strip().lower()  # a main Google calendar is named after its address
         elif cur is not None and ":" in line:
             head, value = line.split(":", 1)
             name, *ps = head.split(";")
@@ -55,7 +66,7 @@ def parse(text, guests=False):
             if name in ("ATTENDEE", "ORGANIZER"):
                 cur["people"] = True
                 g = GUEST.search(line)
-                if g and "@" in owner and g.group(1).lower() == owner:
+                if g and owner and g.group(1).lower() == owner:
                     up = re.sub(r'"[^"]*"', "", line[:g.start()]).upper()
                     st = re.search(r"PARTSTAT=([A-Z-]+)", up)
                     cur.setdefault("answers", set()).add("ORGANIZER" if name == "ORGANIZER" else st.group(1) if st else "")
@@ -107,7 +118,7 @@ def _mine(e):
 
 def _row(e, ts):
     row = _plain_row(e, ts)
-    return {**row, "guests": e["guests"]} if e.get("guests") else row
+    return {**row, "guests": e["guests"], "owner": e.get("own", "")} if e.get("guests") else row
 
 
 def _plain_row(e, ts):
@@ -170,7 +181,7 @@ def once(write):
     for u in found:
         try:
             with urllib.request.urlopen(u, timeout=30) as r:
-                evs += parse(r.read().decode("utf-8", "replace"))
+                evs += parse(r.read().decode("utf-8", "replace"), owner=owner_of(u))
         except (OSError, ValueError) as e:
             _state["error"] = f"Could not read the calendar ({type(e).__name__})"  # never the URL: it is the secret
             return None

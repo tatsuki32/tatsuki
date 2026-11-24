@@ -238,15 +238,16 @@ END:VCALENDAR
 class Thanks(Base):
     own = ['owner@example.com', 'work@example.com']
 
-    def rows(self, extra=''):
+    def rows(self, extra='', owner='owner@example.com'):
         t = datetime.fromisoformat('2026-11-24T01:00:00+00:00').timestamp()
         self.start = t
         text = ICS.replace('END:VCALENDAR', extra + 'END:VCALENDAR')
-        return gcal_ics.events(gcal_ics.parse(text, guests=True), t - 86400, t + 86400)
+        return gcal_ics.events(gcal_ics.parse(text, guests=True, owner=owner), t - 86400, t + 86400)
 
     def test_guests_of_the_one_event(self):
         rows = self.rows()
         self.assertEqual(mail.guests(minute(at=self.start + 120), rows, self.own), (['tanaka@example.com'], ''))
+        self.assertEqual(mail.guests(minute(at=self.start + 120), self.rows(owner=''), self.own), ([], 'no-event'))  # whose feed is not known
         self.assertEqual(mail.guests(minute(at=self.start + 7200), rows, self.own), ([], 'no-event'))
 
     def test_the_calendar_itself_keeps_no_guests(self):
@@ -312,7 +313,7 @@ class Thanks(Base):
     def test_the_draft_is_made_once_and_named_in_the_mail(self):
         mail.settings()
         rows = [{'id': 'e1_1', 'allDay': False, 'start': datetime.fromtimestamp(time.time() - 3600).astimezone().isoformat(),
-                 'end': datetime.fromtimestamp(time.time() - 600).astimezone().isoformat(), 'guests': [{'email': 'owner@example.com', 'status': 'ORGANIZER', 'room': False}, {'email': 't@example.com', 'status': 'NEEDS-ACTION', 'room': False}]}]
+                 'end': datetime.fromtimestamp(time.time() - 600).astimezone().isoformat(), 'owner': 'owner@example.com', 'guests': [{'email': 'owner@example.com', 'status': 'ORGANIZER', 'room': False}, {'email': 't@example.com', 'status': 'NEEDS-ACTION', 'room': False}]}]
         m = minute()
 
         def fake_thanks(mid, rec):
