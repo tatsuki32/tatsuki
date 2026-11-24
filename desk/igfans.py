@@ -697,6 +697,8 @@ def forget(name):
 
 EXTENSION_ORIGIN = "chrome-extension://imhmpgkkncfaijppfnicokaicaodklki"  # from the "key" in chrome-followers/manifest.json
 PER_DAY = 20              # a small number on purpose; the owner can choose 5 to 50
+PER_HOUR = 20             # 5 to 20; at the number the panel stops and waits for the owner to press again
+HOUR = 3600000
 OVER_DAYS = (0, 90, 365)  # only people followed at least this long ago
 LISTS = ("notback", "left", "new")  # does not follow back · stopped following in the last 30 days · followed in the last 30 days, not back yet
 LATER = 7 * DAY
@@ -706,7 +708,7 @@ EXPORT_AGE = 4 * DAY      # an export can be downloaded up to 4 days after Insta
 def _cleanup(account):
     c = _read(_f(account, "cleanup.json"), {})
     people = c.get("people") if isinstance(c.get("people"), dict) else {}
-    return {"people": people, "perDay": c.get("perDay", PER_DAY), "over": c.get("over", 365), "list": c.get("list") if c.get("list") in LISTS else "notback"}
+    return {"people": people, "perDay": c.get("perDay", PER_DAY), "perHour": c.get("perHour", PER_HOUR), "over": c.get("over", 365), "list": c.get("list") if c.get("list") in LISTS else "notback"}
 
 
 def _stopped(good, since):
@@ -721,16 +723,20 @@ def _stopped(good, since):
 def cleanup(wanted=""):
     """Who comes next. A person marked Unfollowed who is still followed in a newer export comes back with again=True."""
     a = current(wanted)
-    out = {"account": a, "accounts": accounts(), "queue": [], "left": 0, "today": 0, "perDay": PER_DAY, "over": 365, "keep": [], "done": 0, "later": 0, "ready": False, "list": "notback", "exports": 0}
+    out = {"account": a, "accounts": accounts(), "queue": [], "left": 0, "today": 0, "perDay": PER_DAY, "hour": 0, "perHour": PER_HOUR, "hourFrom": 0, "over": 365, "keep": [], "done": 0, "later": 0, "ready": False, "list": "notback", "exports": 0}
     if not a:
         return out
     c = _cleanup(a)
     good = [x for x in imports(a) if not x.get("partial")]
-    out.update(perDay=c["perDay"], over=c["over"], list=c["list"], exports=len(good))
+    out.update(perDay=c["perDay"], perHour=c["perHour"], over=c["over"], list=c["list"], exports=len(good))
     now = now_ms()
     day = time.strftime("%Y-%m-%d", time.localtime(now / 1000))
     marks = c["people"]
     out["today"] = sum(1 for m in marks.values() if m["s"] == "done" and time.strftime("%Y-%m-%d", time.localtime(m["at"] / 1000)) == day)
+    recent = sorted(m["at"] for m in marks.values() if m["s"] == "done" and now - m["at"] < HOUR)
+    out["hour"] = len(recent)
+    if len(recent) >= c["perHour"]:
+        out["hourFrom"] = recent[len(recent) - c["perHour"]] + HOUR  # when the next one fits
     out["done"] = sum(1 for m in marks.values() if m["s"] == "done")
     out["keep"] = sorted(n for n, m in marks.items() if m["s"] == "keep")
     if not good or not good[-1].get("hasFollowing"):
@@ -762,10 +768,10 @@ def put_cleanup(rec):
     with _lock:
         c = _cleanup(account)
         if op == "settings":
-            p, o, which = rec.get("perDay"), rec.get("over"), rec.get("list", c["list"])
-            if isinstance(p, bool) or not isinstance(p, int) or not 5 <= p <= 50 or isinstance(o, bool) or o not in OVER_DAYS or which not in LISTS:
+            p, h, o, which = rec.get("perDay"), rec.get("perHour", c["perHour"]), rec.get("over"), rec.get("list", c["list"])
+            if isinstance(p, bool) or not isinstance(p, int) or not 5 <= p <= 50 or isinstance(h, bool) or not isinstance(h, int) or not 5 <= h <= 20 or isinstance(o, bool) or o not in OVER_DAYS or which not in LISTS:
                 return 400, {"error": "settings"}
-            c.update(perDay=p, over=o, list=which)
+            c.update(perDay=p, perHour=h, over=o, list=which)
         elif op in ("keep", "done", "later", "undo"):
             n = clean(rec.get("u"))
             good = [x for x in imports(account) if not x.get("partial")]

@@ -68,8 +68,9 @@ async function unfollow(u) {
   } catch { return "other-page"; }
 }
 
-const limit = () => view.today >= view.perDay;
-const left = () => view.perDay - view.today - waiting.length - (busy ? 1 : 0);  // presses still free today
+const hourFull = () => view.hour >= view.perHour && Date.now() < view.hourFrom;  // looked at again when the Desk answers
+const limit = () => view.today >= view.perDay || hourFull();
+const left = () => Math.min(view.perDay - view.today, view.perHour - view.hour) - waiting.length - (busy ? 1 : 0);  // presses still free
 
 async function act(name, u) {
   if (!view || !name) return;
@@ -152,12 +153,12 @@ function row(p) {
 function draw() {
   const m = $("main"), top = document.scrollingElement.scrollTop; m.replaceChildren();
   if (!view) { m.append(el("p", {textContent: stop || "Loading…"})); if (stop) m.append(retry()); return; }
-  $("count").textContent = `${num(view.left)} to go · today ${num(view.today)} of ${num(view.perDay)}`;
+  $("count").textContent = `${num(view.left)} to go · this hour ${num(view.hour)} of ${num(view.perHour)} · today ${num(view.today)} of ${num(view.perDay)}`;
   $("fill").style.width = Math.min(100, view.today / view.perDay * 100) + "%";
   const bar = $("fill").parentElement; bar.ariaValueMax = view.perDay; bar.ariaValueNow = view.today;
-  $("perDay").value = String(view.perDay); $("over").value = String(view.over);
+  $("perDay").value = String(view.perDay); $("perHour").value = String(view.perHour); $("over").value = String(view.over);
   $("list").value = view.list; $("overRow").hidden = view.list !== "notback"; $("behind").checked = behind;
-  for (const id of ["account", "perDay", "over", "list"]) $(id).disabled = !!busy || waiting.length > 0;
+  for (const id of ["account", "perDay", "perHour", "over", "list"]) $(id).disabled = !!busy || waiting.length > 0;
   $("now").textContent = !busy && waiting.length ? num(waiting.length) + " waiting" : busy ? "Unfollowing @" + busy + (waiting.length ? " · " + num(waiting.length) + " waiting" : "") : "";
   if (stop) {
     const n = el("p", {className: "note", role: "status", textContent: stop + " "});
@@ -174,6 +175,7 @@ function draw() {
   else if (!view.queue.length && view.list === "left" && view.exports < 2) m.append(el("p", {textContent: "This list needs two exports. Import a newer one on the Desk."}));
   else if (!view.queue.length) m.append(el("p", {textContent: "Nobody left in this list."}), el("p", {className: "sub", textContent: `${num(view.done)} unfollowed · ${num(view.keep.length)} kept`}));
   else if (Date.now() < pause) m.append(el("p", {textContent: "Stopped until " + new Date(pause).toLocaleString("en-US", {month: "short", day: "numeric", hour: "numeric", minute: "2-digit"}) + ", because Instagram asked to slow down."}));
+  else if (view.today < view.perDay && hourFull()) m.append(el("p", {textContent: "That is this hour’s number. You can press again from " + new Date(view.hourFrom).toLocaleTimeString("en-US", {hour: "numeric", minute: "2-digit"}) + "."}), el("p", {className: "sub", textContent: "Nothing goes on by itself."}));
   else if (limit()) m.append(el("p", {textContent: "That is today’s number. The next people are here tomorrow."}));
   else if (!list.length) m.append(el("p", {textContent: "Nobody matches."}));
   else m.append(el("ul", {}, ...list.slice(0, 100).map(row)), ...(list.length > 100 ? [el("p", {className: "sub", textContent: `${num(list.length - 100)} more after these`})] : []));
@@ -193,13 +195,15 @@ async function load() {
 }
 
 async function saveSettings() {
-  try { view = await call({account, op: "settings", perDay: Number($("perDay").value), over: Number($("over").value), list: $("list").value}); stop = ""; } catch (e) { stop = e.message; }
+  try { view = await call({account, op: "settings", perDay: Number($("perDay").value), perHour: Number($("perHour").value), over: Number($("over").value), list: $("list").value}); stop = ""; } catch (e) { stop = e.message; }
   draw();
 }
 
 $("account").onchange = () => { account = $("account").value; undo = []; ticked.clear(); stop = failed = ""; chrome.storage.local.set({account}); load(); };
 $("perDay").onchange = saveSettings;
 $("over").onchange = saveSettings;
+$("perHour").onchange = saveSettings;
+setInterval(() => { if (view && !busy && !waiting.length && view.hour) load(); }, 60000);  // only the numbers: the list and the counts
 $("list").onchange = saveSettings;
 chrome.runtime.onMessage.addListener(m => { if (m && Object.hasOwn(KEYS, m.name)) act(KEYS[m.name]); });
 $("find").oninput = () => { query = $("find").value.trim().toLowerCase().replace(/^@/, ""); if (view) draw(); };

@@ -162,6 +162,23 @@ class Cleanup(Base):
         igfans._write(path, c)
         self.assertEqual([(r['u'], r['again']) for r in igfans.cleanup(A)['queue']][0], ('old', True))
 
+    def test_the_hour_number(self):
+        now = igfans.now_ms()
+        self.bring({'p%d' % i: now - 500 * igfans.DAY for i in range(8)})
+        igfans.put_cleanup({'account': A, 'op': 'settings', 'perDay': 20, 'perHour': 5, 'over': 365})
+        for i in range(5):
+            v = igfans.put_cleanup({'account': A, 'op': 'done', 'u': 'p%d' % i})[1]
+        self.assertEqual((v['hour'], v['perHour']), (5, 5))
+        self.assertTrue(now + igfans.HOUR <= v['hourFrom'] <= igfans.now_ms() + igfans.HOUR)
+        path = igfans._f(A, 'cleanup.json')
+        c = igfans._read(path, {})
+        c['people']['p0']['at'] -= igfans.HOUR + 1000
+        igfans._write(path, c)
+        v = igfans.cleanup(A)
+        self.assertEqual((v['hour'], v['hourFrom']), (4, 0))
+        for h in (0, 21, 500, True, '20'):
+            self.assertEqual(igfans.put_cleanup({'account': A, 'op': 'settings', 'perDay': 20, 'perHour': h, 'over': 365})[0], 400, h)
+
     def test_the_other_lists(self):
         self.bring()
         put = lambda which: igfans.put_cleanup({'account': A, 'op': 'settings', 'perDay': 20, 'over': 365, 'list': which})
