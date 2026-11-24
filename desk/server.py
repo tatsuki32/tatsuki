@@ -1897,7 +1897,7 @@ if __name__ == "__main__":
         threading.Thread(target=anki.watch, args=(cards.Store(load_locked, upsert),), daemon=True).start()
     if PORT == 4747:  # a test server on another port shows nothing
         try:
-            print("once:", once.run(load, save, LOCK), flush=True)  # one-time data changes (desk/once.py)
+            print("once:", once.run(load, save, LOCK), flush=True)  # one-time data changes (desk/once.py; a new step needs this file to change so pull.sh restarts the server)
         except Exception as e:  # never stop the server for it
             print("once failed:", e, flush=True)
         threading.Thread(target=notify.watch, daemon=True).start()

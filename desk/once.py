@@ -61,7 +61,21 @@ def drop_old_nudges(tasks, now_ms):
     return len(ids)
 
 
-STEPS = [("2026-11-24-drop-old-nudges", "tasks", drop_old_nudges)]
+def add_helpfeel_task(tasks, now_ms):
+    """Tatsuki asked on 2026-11-24 for a task for today: answer Helpfeel (pick a new meeting time himself)."""
+    tid = "t-once-helpfeel-20261124"
+    if any(t.get("id") == tid for t in tasks):
+        return 0
+    tasks.append({"id": tid, "title": "Reply to Takahashi (Helpfeel): book a new meeting time",
+                  "status": "notyet", "source": "manual", "sourceRef": "", "due": None,
+                  "note": "Use the scheduling link in his Nov 16 email (Gmail: Helpfeel 髙橋).",
+                  "planDate": time.strftime("%Y-%m-%d"), "createdAt": now_ms, "updatedAt": now_ms,
+                  "deleted": False})
+    return 1
+
+
+STEPS = [("2026-11-24-drop-old-nudges", "tasks", drop_old_nudges),
+         ("2026-11-24-helpfeel-task", "tasks", add_helpfeel_task)]
 
 
 def run(load, save, lock, plan=False):
@@ -75,7 +89,7 @@ def run(load, save, lock, plan=False):
         with lock:
             items = load(col)
             if plan:
-                out[name] = len(old_nudges(items, now))
+                out[name] = len(old_nudges(items, now)) if fn is drop_old_nudges else 1
                 continue
             n = fn(items, now)
             if n:
