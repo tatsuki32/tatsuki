@@ -30,6 +30,20 @@ class Minutes(unittest.TestCase):
     def fake_sessions(self, status="done"):
         return [{"id": SID, "title": "Meeting 2026-11-21 10:00", "status": status, "created": CREATED}]
 
+    def test_an_auto_recording_is_linked_to_its_event(self):
+        ev = {"id": "abc@example.com_1795000000", "title": "Call", "start": "2026-11-21T10:00:00+09:00", "end": "2026-11-21T11:00:00+09:00"}
+        for auto, want in ((True, "abc@example.com"), (False, None)):
+            shutil.rmtree(minutes.DIR, ignore_errors=True)
+            with mock.patch.object(minutes, "_http_json", return_value=[{**self.fake_sessions()[0], "auto": auto, "event": ev}]), \
+                    mock.patch.object(minutes, "_http_text", return_value="Me: hello\n"):
+                minutes.sync()
+            got = minutes.view()["minutes"][0]["event"]
+            self.assertEqual((got or {}).get("uid"), want)
+            if auto:
+                self.assertTrue(got["auto"])  # nobody chose it: minutes_mail still checks that it was accepted
+                saved = minutes.put(minutes.view()["minutes"][0]["id"], {"event": got})
+                self.assertNotIn("auto", saved["event"])  # chosen by the person now
+
     def test_sync_makes_one_minute_for_a_ready_recording(self):
         with mock.patch.object(minutes, "_http_json", return_value=self.fake_sessions()), \
                 mock.patch.object(minutes, "_http_text", return_value="Me: hello\nThem: a plan\n"):

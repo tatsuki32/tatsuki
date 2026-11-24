@@ -14,6 +14,7 @@ import subprocess
 import sys
 import threading
 import time
+import urllib.error
 import urllib.request
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -90,9 +91,26 @@ def sessions(limit=20):
             status = "interrupted"
         out.append({"id": m["id"], "title": m.get("title", ""), "created": m.get("created", 0),
                     "duration": size / 32000, "status": status, "done": m.get("done_chunks", 0),
-                    "total": m.get("total_chunks", 0), "failed": len(m.get("failed_chunks") or [])})
+                    "total": m.get("total_chunks", 0), "auto": bool(m.get("auto")), "failed": len(m.get("failed_chunks") or [])})
     out.sort(key=lambda x: x["created"], reverse=True)
     return out[:limit]
+
+
+def auto(body=None, check=False):
+    """Auto-recording (desk/transcribe/auto.py), passed on: (status, answer). The page talks only to the Desk server."""
+    url = f"http://127.0.0.1:{PORT}/api/auto" + ("?check=1" if check else "")
+    req = urllib.request.Request(url, data=None if body is None else json.dumps(body).encode(),
+                                 headers={"Content-Type": "application/json"}, method="GET" if body is None else "POST")
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            return r.status, json.load(r)
+    except urllib.error.HTTPError as e:
+        try:
+            return e.code, json.load(e)
+        except ValueError:
+            return e.code, {"error": "The recorder did not answer"}
+    except (OSError, ValueError):
+        return 503, {"error": "The recorder is not running", "off": True}
 
 
 def view():

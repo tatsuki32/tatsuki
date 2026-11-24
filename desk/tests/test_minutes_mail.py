@@ -259,6 +259,13 @@ class Thanks(Base):
         m = minute(at=self.start, event={'id': f'e2_{int(self.start)}', 'uid': 'e2'})
         self.assertEqual(mail.guests(m, rows, self.own), (['x@example.com'], ''))
 
+    def test_an_event_an_auto_recording_picked_still_has_to_be_accepted(self):
+        rows = self.rows('BEGIN:VEVENT\nUID:spam\nSUMMARY:Spam\nDTSTART:20261124T010000Z\nDTEND:20261124T014500Z\nORGANIZER:mailto:stranger@example.com\n'
+                         'ATTENDEE;PARTSTAT=NEEDS-ACTION:mailto:owner@example.com\nEND:VEVENT\n')
+        ev = {'id': f'spam_{int(self.start)}', 'uid': 'spam'}
+        self.assertEqual(mail.guests(minute(at=self.start, event={**ev, 'auto': True}), rows, self.own), ([], 'no-event'))
+        self.assertEqual(mail.guests(minute(at=self.start, event=ev), rows, self.own), (['stranger@example.com'], ''))  # chosen by the person
+
     def test_an_event_the_owner_declined_is_not_the_meeting(self):
         rows = self.rows()
         for r in rows:

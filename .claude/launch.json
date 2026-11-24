@@ -162,6 +162,12 @@
       "runtimeExecutable": "/bin/sh",
       "runtimeArgs": ["-c", "mkdir -p /tmp/claude/desk-glance-test && cd desk && DESK_DATA_DIR=/tmp/claude/desk-glance-test GLANCE_DIR=/tmp/claude/desk-glance-test/glance NOTIFY_DIR=/tmp/claude/desk-glance-test/notify GLANCE_APP=/tmp/claude/desk-glance-test/TatsukiGlance.app DESK_PORT=${PORT:-4782} exec python3 server.py"],
       "port": 4782
+    },
+    {
+      "name": "desk-autorec-test",
+      "runtimeExecutable": "/bin/bash",
+      "runtimeArgs": ["desk/tests/autorec_servers.sh"],
+      "port": 4779
     }
   ]
 }

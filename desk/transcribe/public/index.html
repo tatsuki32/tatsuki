@@ -540,7 +540,7 @@ function renderList() {
   $('list').innerHTML = sessions.map((m) => `
     <button class="item ${m.id === selected ? 'active' : ''}" data-id="${m.id}">
       <b>${esc(m.title)}</b>
-      <small>${m.met} · ${m.kind === 'text' ? 'Notes' : clock(m.duration)}${m.status === 'done' ? '' : ` · ${STATUS[m.status] || m.status}`}${m.status === 'transcribing' && m.total_chunks ? ` ${Math.round(m.done_chunks / m.total_chunks * 100)}%` : ''}${m.has_minutes ? ' · Minutes' : ''}</small>
+      <small>${m.met} · ${m.kind === 'text' ? 'Notes' : clock(m.duration)}${m.status === 'done' ? '' : ` · ${STATUS[m.status] || m.status}`}${m.status === 'transcribing' && m.total_chunks ? ` ${Math.round(m.done_chunks / m.total_chunks * 100)}%` : ''}${m.auto ? ' · Auto' : ''}${m.has_minutes ? ' · Minutes' : ''}</small>
     </button>`).join('') || `<div class="hint" style="padding:0 4px">${query ? 'Nothing matches' : 'Nothing yet'}</div>`;
   $('list').querySelectorAll('.item').forEach((el) => {
     el.onclick = () => { selected = el.dataset.id; renderedKey = ''; renderList(); renderMain(); };

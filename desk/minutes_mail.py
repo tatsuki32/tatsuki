@@ -430,7 +430,7 @@ def guests(m, rows, own):
                 hit.append(r)
     found = {}
     for r in hit:
-        to = others(r, bool(ev.get('id')))
+        to = others(r, bool(ev.get('id')) and not ev.get('auto'))  # an auto-recording picked the event itself: no person chose it
         if to:
             found[r['id']] = to
     if not found:

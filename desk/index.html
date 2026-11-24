@@ -1526,6 +1526,9 @@ a.shelfbtn{text-decoration:none;display:inline-flex;align-items:center}
 .tlbar{display:grid;grid-template-columns:minmax(90px,180px) 1fr minmax(56px,auto);align-items:center;gap:var(--s2);font-size:var(--t2)}
 .tltrack{height:8px;border-radius:4px;background:var(--line);overflow:hidden}
 .tltrack span{display:block;height:100%;border-radius:4px}
+.trdot{background:var(--red)}
+.trauto{display:flex;align-items:center;gap:var(--s2);cursor:pointer}
+.trperm{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s2) var(--s3)}
 .tldot{display:inline-block;flex:none;width:8px;height:8px;border-radius:50%;margin-right:var(--s2);vertical-align:middle}
 .tlname{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tlh{font-variant-numeric:tabular-nums;color:var(--ink-2);text-align:right}
@@ -2251,7 +2254,7 @@ body.sffull{overflow:hidden}
       <p class="hint"><kbd>T</kbd> Add a task · <kbd>/</kbd><kbd>/</kbd> Commands</p>
     </div>
   </aside>
-  <main><div class="tabbar" id="tabBar" hidden aria-label="Open tabs"></div><a class="pcalert" id="pcAlert" href="#pc" style="display:none">Memory is running low. Check the PC screen</a><p class="pcalert" id="lineAlert" style="display:none"></p><div class="wrap tlbarwrap" id="timerBar" hidden aria-label="Running timers"></div><div class="wrap" id="view"></div><a class="backbar" id="backBar" href="#home" hidden>← Back to Today <kbd>Esc</kbd></a></main>
+  <main><div class="tabbar" id="tabBar" hidden aria-label="Open tabs"></div><a class="pcalert" id="pcAlert" href="#pc" style="display:none">Memory is running low. Check the PC screen</a><p class="pcalert" id="lineAlert" style="display:none"></p><div class="wrap tlbarwrap" id="timerBar" hidden aria-label="Running timers"></div><div class="wrap tlbarwrap" id="trRecBar" hidden aria-label="Meeting recording"></div><div class="wrap" id="view"></div><a class="backbar" id="backBar" href="#home" hidden>← Back to Today <kbd>Esc</kbd></a></main>
 </div>
 <nav id="tabs" aria-label="Frequently used screens"></nav>
 <div id="modal"></div>
@@ -6962,7 +6965,7 @@ function render(){
   if(viewId()==="footprint"){fpLoad();$("#view").innerHTML=searchResults()+fpView();wire();wireFp();return}
   if(viewId()==="netspeed"){nsLoad();$("#view").innerHTML=searchResults()+nsView();wire();wireNs();return}
   if(viewId()==="wifi"){wfLoad();if(!$("#wfView")||!document.activeElement?.closest?.(".wffield"))wfDraw();return} // a redraw from elsewhere never takes the password being typed
-  if(viewId()==="transcribe"){trLoad();$("#view").innerHTML=searchResults()+trView();wire();wireTr();return}
+  if(viewId()==="transcribe"){trLoad();if(Date.now()-(S.traCheck||0)>60000){S.traCheck=Date.now();trAutoLoad(true)}$("#view").innerHTML=searchResults()+trView();wire();wireTr();return}
   if(viewId()==="meetcheck"){mtgLoad();if(!document.activeElement?.closest?.("#mtgView")||!$("#mtgView"))mtgDraw();return} // a redraw from elsewhere never takes the answer being typed
   if(viewId()==="minutes"){mnLoad();if(document.activeElement?.closest?.(".mnshare"))return;
     {const st=mn();if(!st.force&&st.docView&&st.docView===mnId()&&$(".mnframe"))return;st.force=false} /* the embedded Google Doc loads once: a redraw would reload it (a new visit in the browser each time) */$("#view").innerHTML=searchResults()+mnView();wire();wireMn();return}
@@ -7831,6 +7834,47 @@ async function trOpen(e){
   if(S.tr?.running)window.open(href,"_blank");else toast("Could not start the recorder. Restarting the Desk server may help");
   render();
 }
+/* Auto-record (desk/transcribe/auto.py): a meeting on the calendar is recorded by itself. The line above every screen shows the recording going on. */
+async function trAutoLoad(check){
+  if(!LOCALAPI||S.traBusy&&!check)return;S.traBusy=true;
+  try{const r=await fetch("/api/transcribe/auto"+(check?"?check=1":""));const v=await r.json();if(r.ok){v.at=Date.now();if(!v.permissions)v.permissions=S.tra?.permissions;const a=JSON.stringify({...v,at:0}),b=JSON.stringify({...S.tra,at:0});S.tra=v;trRecBar();if(a!==b&&viewId()==="transcribe")render()}else if(v.off&&S.tra){S.tra={...S.tra,recording:null};trRecBar()}}catch(e){}
+  S.traBusy=false;
+}
+async function trAutoDo(body){
+  try{const r=await fetch("/api/transcribe/auto",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});const v=await r.json();
+    if(!r.ok){toast(v.error||"Something went wrong");return trAutoLoad()}
+    S.tra={...v,permissions:v.permissions||S.tra?.permissions};trRecBar();if(viewId()==="transcribe")render();return true}catch(e){toast("The recorder did not answer. Please try again")}
+}
+const trProblem=p=>({microphone:"Your voice is not being recorded: allow the microphone",mic:"Your voice is not being recorded",screen:"Their voice is not being recorded: allow screen recording",tap:"Their voice is not being recorded"}[p]||"");
+function trRecBar(){const el=$("#trRecBar");if(!el)return;const r=S.tra?.recording;
+  if(!r){el.hidden=true;el.innerHTML="";S.traShown="";return}
+  const key=r.id+(S.tra.problem||"")+r.title;el.hidden=false;
+  if(S.traShown===key&&el.innerHTML)return trRecTick();S.traShown=key;
+  el.innerHTML=`<div class="tlrow" data-noauto><i class="tldot trdot" aria-hidden="true"></i><a class="tltitle" href="#transcribe">Recording: ${esc(r.title)}</a><span class="tlclock" id="trRecClock"></span>${trProblem(S.tra.problem)?`<a class="sub" href="#transcribe">${esc(trProblem(S.tra.problem))}</a>`:`<span class="sub">Tell the others</span>`}<button class="btn sm" type="button" id="trRecStop">Stop</button><button class="btn sm" type="button" id="trRecDrop">Discard</button></div>`;
+  $("#trRecStop").onclick=async()=>{if(await trAutoDo({op:"stop",id:r.id}))toast("Stopped. The text will be ready soon")};
+  $("#trRecDrop").onclick=async()=>{if(confirm("Stop and erase this recording? It cannot be brought back."))if(await trAutoDo({op:"discard",id:r.id}))toast("Erased")};
+  trRecTick()}
+function trRecTick(){const c=$("#trRecClock"),r=S.tra?.recording;if(c&&r)c.textContent=tlFmt(Math.max(0,Date.now()-r.created*1000))}
+function trAutoHtml(){
+  const a=S.tra;if(!a)return "";
+  const p=a.permissions||{},mic={allowed:"Allowed",denied:"Not allowed",ask:"Not asked yet",missing:"Needs setup"}[p.microphone]||"Checking…";
+  const langs=[["auto","Detect"],["ja","Japanese"],["en","English"],["vi","Vietnamese"],["zh","Chinese"],["ko","Korean"]];
+  const nx=a.next?`Next: ${a.next.title}, ${new Date(a.next.start*1000).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"})}`:"No meeting with a link in the next days";
+  return `<section class="card mfocus" aria-label="Auto-record" data-noauto><label class="trauto"><input type="checkbox" id="trAutoOn" ${a.on?"checked":""} ${a.ready?"":"disabled"}> <b>Auto-record meetings</b></label>
+    <p class="mtalk">Starts when you join a meeting on your calendar that has a Meet, Zoom, Teams or Webex link. Ends 2 minutes after you leave. The others cannot see it, so tell them each time.</p>
+    ${a.ready?"":`<p class="due" role="alert">One-time setup: run bash desk/transcribe/setup.sh</p>`}
+    ${a.on&&!a.recording?`<p class="sub">${esc(nx)}</p>`:""}
+    <div class="trperm"><span>Microphone: <b>${esc(mic)}</b></span>${a.ready&&["ask","denied"].includes(p.microphone)?`<button class="btn sm" type="button" id="trAutoMic">${p.microphone==="denied"?"Open settings":"Allow microphone"}</button>`:""}
+    <span>Screen recording: <b>${a.problem==="screen"?"Not allowed":"Asked at the first recording"}</b></span>${a.problem==="screen"?`<button class="btn sm" type="button" id="trAutoScreen">Open settings</button>`:""}
+    <label>Language <select id="trAutoLang">${langs.map(([k,w])=>`<option value="${k}" ${a.language===k?"selected":""}>${w}</option>`).join("")}</select></label></div></section>`;
+}
+function wireTrAuto(){
+  const on=$("#trAutoOn");if(on)on.onchange=()=>trAutoDo({op:"set",on:on.checked});
+  const lg=$("#trAutoLang");if(lg)lg.onchange=()=>trAutoDo({op:"set",language:lg.value});
+  const sc=$("#trAutoScreen");if(sc)sc.onclick=()=>trAutoDo({op:"settings",pane:"screen"});
+  const mic=$("#trAutoMic");if(mic)mic.onclick=async()=>{if(S.tra?.permissions?.microphone==="denied")return trAutoDo({op:"settings",pane:"microphone"});
+    await trAutoDo({op:"setup"});[3000,8000,15000].forEach(t=>setTimeout(()=>trAutoLoad(true),t))};
+}
 function trView(){
   const d=S.tr,head=`<h1>Transcribe</h1>`;
   if(S.trErr)return `<div class="money trp">${head}<p class="due">Could not load. Restarting the server may help.</p></div>`;
@@ -7838,11 +7882,11 @@ function trView(){
   const main=`<section class="card mfocus" aria-label="Record"><p class="mtalk">Record a meeting or import a voice memo. The text appears here when it's ready, and nothing leaves this Mac.</p>`
     +(d.engine?"":`<p class="due" role="alert">The speech engine isn't installed yet. Run desk/transcribe/setup.sh once (about 1.6 GB).</p>`)
     +`<div class="nsgo"><a class="btn primary trgo" href="${esc(d.url)}" target="_blank" rel="noopener">Record or import ↗</a><span class="due">Opens in your browser</span></div></section>`;
-  const rows=d.sessions.map(x=>`<a class="strow trrow trgo" href="${esc(d.url)}?id=${esc(x.id)}" target="_blank" rel="noopener"><span>${esc(x.title)}</span><span class="nsv">${esc(trLen(x.duration))}</span><span class="nsn">${esc(new Date(x.created*1000).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}))} · ${esc(trState(x))}</span></a>`).join("");
+  const rows=d.sessions.map(x=>`<a class="strow trrow trgo" href="${esc(d.url)}?id=${esc(x.id)}" target="_blank" rel="noopener"><span>${esc(x.title)}</span><span class="nsv">${esc(trLen(x.duration))}</span><span class="nsn">${esc(new Date(x.created*1000).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}))} · ${x.auto?"Auto · ":""}${esc(trState(x))}</span></a>`).join("");
   const list=d.sessions.length?mpanel("Recent",d.running?"":"Recorder is off. It starts when you open one.",rows):"";
-  return `<div class="money trp" data-noauto>${head}${main}${list}</div>`;
+  return `<div class="money trp" data-noauto>${head}${main}${trAutoHtml()}${list}</div>`;
 }
-function wireTr(){$("#view").querySelectorAll(".trgo").forEach(a=>a.onclick=trOpen)}
+function wireTr(){wireTrAuto();$("#view").querySelectorAll(".trgo").forEach(a=>a.onclick=trOpen)}
 /* Small Utilities: QR, character count, is.gd and PDF compression. Typed text is never saved; only Shorten sends anything out (desk/utilities.py). */
 const UTTABS=[["qr","QR code"],["count","Character count"],["short","URL shortener"],["pdf","PDF compression"]];
 const UTLEVELS=[["high","High quality","Looks good printed"],["standard","Standard","For email and sharing"],["small","Smallest","For on-screen reading"]];
@@ -9392,6 +9436,7 @@ function wirePc(){
   document.querySelectorAll("[data-pcclose]").forEach(b=>b.onclick=()=>{const it=find(b.dataset.pcclose);if(it)pcClose(it,!!b.dataset.pcforce)});
   document.querySelectorAll("[data-pcopen]").forEach(b=>b.onclick=()=>{const pid=Number(b.dataset.pcopen);S.pcOpen=S.pcOpen===pid?null:pid;render()});
 }
+if(LOCALAPI){trAutoLoad();setInterval(()=>{if(!document.hidden)trAutoLoad()},10000);setInterval(trRecTick,1000)}
 if(LOCALAPI){pcSum();setInterval(()=>{if(viewId()!=="pc")pcSum()},60000)}
 /* Web History: pages, search words and time from desk/chrome_web_sync.py. Time is shown as a fact and nothing here blames. */
 const webFmt=s=>!s?"—":s<60?"under 1 min":stFmt(s);

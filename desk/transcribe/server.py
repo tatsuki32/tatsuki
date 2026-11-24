@@ -19,6 +19,10 @@ Desk のサーバー(4747)が起動時に立ち上げる(desk/transcribe_desk.py
   - 会議の「相手の声」(meta の src_log): 'mac' は Mac の音を録る、'room' はマイクだけ(iPhone のスピーカー・対面)。
     録音中にも切り替えられ、'room' の間のマイクは声で2人に分けて Me / Them を推測する。
 
+自動録音(2026-11-24、auto.py):
+  - 会議リンク付きの予定の時間に、ブラウザか会議アプリがマイクを使い始めたら録り、2分使われなければ終える。初期値はオフ。
+  - マイクは ~/Applications/TatsukiMeetWatch.app が audio.pcm に書く(ブラウザの録音画面は使わない)。
+
 文の記録と議事録(2026-11-21、docs.py):
   - kind 'text': 貼り付け・Word・PDF・テキスト・Google Docs のリンクから。本文は text.txt、会議の日は met。
   - 「Make minutes」を押したときだけ、文(録音なら文字起こし)を Claude に送って minutes.json にする。
@@ -45,6 +49,7 @@ from urllib.parse import parse_qs, urlparse
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))  # repo root: lifeos.lib.tasks
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import auto  # noqa: E402  this folder: records a meeting on the calendar by itself
 import docs  # noqa: E402  this folder: text out of files, Google Docs, minutes
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -1090,6 +1095,11 @@ class Handler(BaseHTTPRequestHandler):
             free = shutil.disk_usage(ROOT).free
             return self.send_obj({'engine_ready': ready, 'free_bytes': free, 'diar_ready': diar_ready(),
                                   'tap_ready': bool(TAP_CMD) or os.path.exists(TAP_APP)})
+        if parts[1:] == ['auto'] and method == 'GET':
+            return self.send_obj(auto.view(check=query.get('check', ['0'])[0] == '1'))
+        if parts[1:] == ['auto'] and method == 'POST':
+            code, answer = auto.act(self.body_json())
+            return self.send_obj(answer, code)
         if parts[1:] == ['upload'] and method == 'POST':
             return self.handle_upload(query)
         if parts[1:] == ['texts'] and method == 'POST':
@@ -1164,6 +1174,9 @@ class Handler(BaseHTTPRequestHandler):
                     fields['room_swap'] = bool(data['room_swap'])
                 return self.send_obj(public_meta(update_meta(sid, **fields) if fields else meta))
             if method == 'DELETE':
+                if meta.get('auto') and meta['status'] == 'recording':  # erase it, and do not start again for this meeting
+                    auto.act({'op': 'discard', 'id': sid})
+                    return self.send_obj({'ok': True})
                 stop_tap(sid, wait=False)
                 with lock:
                     update_meta(sid, status='deleted')
@@ -1221,6 +1234,9 @@ class Handler(BaseHTTPRequestHandler):
             return self.send_obj(public_meta(switch_voice(sid, voice)))
         if action == 'tap' and method == 'GET':
             return self.send_obj(tap_state(sid))
+        if action in ('finish', 'transcribe') and method == 'POST' and meta.get('auto') and meta['status'] == 'recording':
+            auto.act({'op': 'stop', 'id': sid})
+            return self.send_obj(public_meta(load_meta(sid)))
         if action == 'finish' and method == 'POST':
             if meta.get('mode') == 'meeting':
                 stop_tap(sid, wait=False)
@@ -1387,6 +1403,18 @@ def wav_header(size):
             + le32(BYTES_PER_SEC) + le16(2) + le16(16) + b'data' + le32(size))
 
 
+class Here:
+    """このファイルの名前を auto.py から使えるようにする(起動の仕方によらない)。"""
+    def __getattr__(self, name):
+        try:
+            return globals()[name]
+        except KeyError:
+            raise AttributeError(name) from None
+
+
+auto.attach(Here())
+
+
 class Server(ThreadingHTTPServer):
     daemon_threads = True
     request_queue_size = 64
@@ -1400,6 +1428,8 @@ def main():
     server = Server(('127.0.0.1', PORT), Handler)  # このMacの中からだけ接続できる
     threading.Thread(target=worker, daemon=True).start()
     threading.Thread(target=keep_awake, daemon=True).start()
+    if PORT == 8791 or os.environ.get('TRANSCRIBE_AUTO'):  # a test copy never listens to this Mac by itself
+        threading.Thread(target=auto.watch, daemon=True).start()
     print(f'Transcribe: http://localhost:{PORT}/', flush=True)
     server.serve_forever()
 

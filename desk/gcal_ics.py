@@ -4,7 +4,8 @@
 The address(es) live in the keychain (service tatsuki-desk-gcal-ics, one or more https URLs separated by spaces), the same
 ones tg_notify.py uses. The server (4747 only) reads them every 5 minutes and writes docs/calendar/upcoming.json,
 in the same shape write_feed.py makes: today and the next 7 days, title, start, end, all-day, location.
-No description and no guests are kept. Without an address nothing is written and the last calendar stays.
+No description and no guests are kept: from them only two marks come out, `meet` (there is a Meet, Zoom, Teams or Webex link)
+and `declined` (the calendar's own address said no), for Transcribe's auto-recording. Without an address nothing is written and the last calendar stays.
 If one address fails, the last good calendar stays and the reason is kept in memory only (the URL is a secret).
 
   python3 desk/gcal_ics.py once     read now and write the Desk's calendar
@@ -26,12 +27,16 @@ _state = {"at": 0, "ok": 0, "error": "", "count": 0}
 
 
 GUEST = re.compile(r"mailto:([^\s;,:]+@[^\s;,:]+)\s*$", re.I)
+# a link to join, not a link about the service (a help page in an invitation is not a meeting)
+MEET = re.compile(r"https?://(?:[\w-]+\.)*(?:meet\.google\.com/[a-z]{3}-|meet\.google\.com/lookup/|zoom\.us/(?:j|my|w|s)/|teams\.microsoft\.com/(?:l/meetup-join|meet/)"
+                  r"|teams\.live\.com/meet/|webex\.com/(?:meet/|[\w./-]*j\.php))", re.I)
+MEET_FIELDS = ("LOCATION", "DESCRIPTION", "X-GOOGLE-CONFERENCE", "X-GOOGLE-HANGOUT", "URL")
 
 
 def parse(text, guests=False):
     """VEVENTs with what the calendar shows: uid, summary, start, end, all_day, location, rrule, exdates, rid, cancelled.
     guests=True (minutes_mail only, in memory) adds the invited addresses; the Desk's calendar never keeps them."""
-    out, cur = [], None
+    out, cur, owner = [], None, ""
     for line in ics.unfold(text):
         if line == "BEGIN:VEVENT":
             cur = {"exdates": set()}
@@ -39,9 +44,17 @@ def parse(text, guests=False):
             if cur and cur.get("start"):
                 out.append(cur)
             cur = None
+        elif cur is None and line.upper().startswith("X-WR-CALNAME:"):
+            owner = line.split(":", 1)[1].strip().lower()  # a main Google calendar is named after its address
         elif cur is not None and ":" in line:
             head, value = line.split(":", 1)
             name, *ps = head.split(";")
+            if name in MEET_FIELDS and MEET.search(value):
+                cur["meet"] = True
+            if name == "ATTENDEE" and "@" in owner and "PARTSTAT=DECLINED" in re.sub(r'"[^"]*"', "", line).upper():
+                g = GUEST.search(line)
+                if g and g.group(1).lower() == owner:
+                    cur["declined"] = True
             params = dict(p.split("=", 1) for p in ps if "=" in p)
             text_value = value.replace("\\,", ",").replace("\\;", ";").replace("\\n", " ").replace("\\\\", "\\")
             if guests and name in ("ATTENDEE", "ORGANIZER"):
@@ -92,8 +105,9 @@ def _plain_row(e, ts):
         return {"id": f"{uid}_{s}", "title": e.get("summary") or "(No title)", "start": s, "end": en or s,
                 "allDay": True, "location": e.get("location", ""), "url": ""}
     s, en = start.astimezone(), end.astimezone()  # the Mac's own time zone, like the rest of the Desk
+    marks = {k: True for k in ("meet", "declined") if e.get(k)}
     return {"id": f"{uid}_{int(ts)}", "title": e.get("summary") or "(No title)", "start": s.isoformat(timespec="seconds"),
-            "end": en.isoformat(timespec="seconds"), "allDay": False, "location": e.get("location", ""), "url": ""}
+            "end": en.isoformat(timespec="seconds"), "allDay": False, "location": e.get("location", ""), "url": "", **marks}
 
 
 def events(evs, lo, hi):

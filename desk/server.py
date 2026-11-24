@@ -1133,6 +1133,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, footprint.home())
         if path == "/api/transcribe":
             return self.send(200, transcribe_desk.view())
+        if path == "/api/transcribe/auto":  # auto-recording: on or off, and the one going on
+            return self.send(*transcribe_desk.auto(check="check=1" in urlsplit(self.path).query))
         if path.startswith("/api/utilities/file/"):
             return self.utility_file(path.rsplit("/", 1)[1])
         if path == "/api/posts" or path.startswith("/api/posts/"):
@@ -1499,6 +1501,10 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(415, {"error": "json only"})
             transcribe_desk.start()
             return self.send(200, transcribe_desk.view())
+        if method == "POST" and urlsplit(self.path).path == "/api/transcribe/auto":
+            if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+                return self.send(415, {"error": "json only"})
+            return self.send(*transcribe_desk.auto(rec if isinstance(rec, dict) else {}))
         if urlsplit(self.path).path.startswith("/api/campus/") and method in ("POST", "PUT"):
             if not (self.headers.get("Content-Type") or "").startswith("application/json"):
                 return self.send(415, {"error": "json only"})

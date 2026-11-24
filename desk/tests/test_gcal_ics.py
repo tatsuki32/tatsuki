@@ -107,5 +107,33 @@ class Calendar(unittest.TestCase):
         self.assertIn("No iCal address", g.status()["error"])
 
 
+class MeetingMarks(unittest.TestCase):
+    def rows(self, body, name="me@example.com"):
+        text = f"BEGIN:VCALENDAR\r\nX-WR-CALNAME:{name}\r\nBEGIN:VEVENT\r\nUID:x\r\nDTSTART:20261121T020000Z\r\nDTEND:20261121T030000Z\r\nSUMMARY:Call\r\n{body}END:VEVENT\r\n"
+        lo = datetime(2026, 11, 21, tzinfo=UTC).timestamp()
+        return g.events(g.parse(text), lo, lo + 86400)[0]
+
+    def test_links_that_are_meetings(self):
+        for line in ("X-GOOGLE-CONFERENCE:https://meet.google.com/abc-defg-hij\r\n", "LOCATION:https://us02web.zoom.us/j/123?pwd=x\r\n",
+                     "DESCRIPTION:Join: https://teams.microsoft.com/l/meetup-join/19\r\n", "DESCRIPTION:see https://meet.goo\r\n gle.com/abc-defg-hij\r\n"):
+            r = self.rows(line)
+            self.assertTrue(r.get("meet"), line)
+            self.assertNotIn("description", r)
+            self.assertNotIn("pwd", r["title"])
+
+    def test_links_that_are_not(self):
+        for line in ("LOCATION:Cafe\r\n", "DESCRIPTION:Help: https://support.google.com/meet\r\n", "DESCRIPTION:https://zoom.us/pricing\r\n",
+                     "DESCRIPTION:https://meet.google.com.evil.example/abc-defg-hij\r\n"):
+            self.assertNotIn("meet", self.rows(line), line)
+
+    def test_declined_by_this_calendar_only(self):
+        att = "ATTENDEE;PARTSTAT=%s;CN=x:mailto:%s\r\n"
+        self.assertTrue(self.rows(att % ("DECLINED", "me@example.com")).get("declined"))
+        self.assertNotIn("declined", self.rows(att % ("DECLINED", "other@example.com")))
+        self.assertNotIn("declined", self.rows(att % ("ACCEPTED", "me@example.com")))
+        self.assertNotIn("declined", self.rows(att % ("DECLINED", "me@example.com"), name="Work"))
+        self.assertNotIn("declined", self.rows('ATTENDEE;CN="PARTSTAT=DECLINED":mailto:me@example.com\r\n'))
+
+
 if __name__ == "__main__":
     unittest.main()

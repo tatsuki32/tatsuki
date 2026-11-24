@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>CFBundleName</key><string>TatsukiMeetWatch</string>
+  <key>CFBundleDisplayName</key><string>Tatsuki Meet Watch</string>
+  <key>CFBundleIdentifier</key><string>com.tatsuki.desk.meetwatch</string>
+  <key>CFBundleExecutable</key><string>TatsukiMeetWatch</string>
+  <key>CFBundlePackageType</key><string>APPL</string>
+  <key>CFBundleShortVersionString</key><string>1.0</string>
+  <key>CFBundleVersion</key><string>1</string>
+  <key>LSMinimumSystemVersion</key><string>14.2</string>
+  <key>LSUIElement</key><true/>
+  <key>NSMicrophoneUsageDescription</key><string>Records your own voice while Transcribe auto-records a meeting on your calendar. The recording stays on this Mac.</string>
+</dict></plist>

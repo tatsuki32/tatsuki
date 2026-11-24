@@ -112,6 +112,15 @@ def _event(v):
             "start": _text(v.get("start"), 40), "end": _text(v.get("end"), 40), "allDay": bool(v.get("allDay"))}
 
 
+def _auto_event(s):
+    """The calendar event an auto-recording was made for. `auto` marks that no person chose it: minutes_mail.py then still
+    asks whether the event was accepted before it drafts anything to its guests."""
+    ev = s.get("event") if s.get("auto") else None
+    if not isinstance(ev, dict) or not ev.get("id"):
+        return None
+    return {**_event({**ev, "uid": re.sub(r"_\d+$", "", str(ev["id"]))}), "auto": True}
+
+
 def view():
     with LOCK:
         rows = sorted(_all(), key=lambda r: r.get("at") or r.get("created") or 0, reverse=True)
@@ -248,7 +257,7 @@ def sync():
         rec = {"id": uuid.uuid4().hex, "title": title,
                "body": build_body(summary, text, _meeting_info(s, summary)), "status": "draft", "place": "",
                "at": float(s.get("created") or now), "source": {"kind": "transcribe", "sid": sid, **({"v": VERSION} if summary else {})},
-               "event": None, "calendar": None, "created": now, "updated": now}
+               "event": _auto_event(s), "calendar": None, "created": now, "updated": now}
         with LOCK:
             _write(rec)
         _retitle_recording(sid, s.get("title"), title)
@@ -312,7 +321,7 @@ def _redo_old_recordings(sessions):
     with LOCK:
         olds = [r for r in _all() if (r.get("source") or {}).get("kind") == "transcribe"
                 and (r.get("source") or {}).get("from") != "notes" and (r.get("source") or {}).get("v") != VERSION
-                and r.get("updated") == r.get("created") and not r.get("event")
+                and r.get("updated") == r.get("created") and (not r.get("event") or r["event"].get("auto"))
                 and (r.get("source") or {}).get("tries", 0) < 3]
     done = 0
     for r in olds[:3]:  # a few per pass, so a long list does not hold the loop

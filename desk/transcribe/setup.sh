@@ -65,4 +65,12 @@ if [ ! -x "$TAP/Contents/MacOS/TatsukiAudioTap" ]; then
   cp ../app/audiotap-info.plist "$TAP/Contents/Info.plist"
   codesign -f -s - -i com.tatsuki.desk.audiotap "$TAP"
 fi
+# 自動録音(予定の会議)の見張りとマイク。作り直すと「マイク」の許可が外れるので、無いときだけ作る
+WATCH="$HOME/Applications/TatsukiMeetWatch.app"
+if [ ! -x "$WATCH/Contents/MacOS/TatsukiMeetWatch" ]; then
+  mkdir -p "$WATCH/Contents/MacOS"
+  swiftc -O -framework AppKit -framework AVFoundation -framework CoreAudio "../app/meetwatch.swift" -o "$WATCH/Contents/MacOS/TatsukiMeetWatch"
+  cp ../app/meetwatch-info.plist "$WATCH/Contents/Info.plist"
+  codesign -f -s - -i com.tatsuki.desk.meetwatch "$WATCH"
+fi
 echo "セットアップ完了"
