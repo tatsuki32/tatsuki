@@ -27,3 +27,8 @@
 - `book.js` に `WRITE`（4言語）・`apiWrite`・相手の画面の型とプレビュー。本番に公開、BAD_BODY の返事まで確認（本物の送信はしていない）。
 - `desk/book_guide.py`：Drive の「会議の考え方」から相手向けに縮めた PDF（日本語の見本）。PDF は `wise_report.to_pdf`（サンドボックスの中では作れない）。
 - 残り：PDF の公開場所と、予約の確認メールにリンクを足すこと。英・露・越の版。
+
+## 続き：PDF を4言語で公開・テンプレート
+- `book_guide.py` に en・ru・vi。PDF は tany.im/guide/meetings-<言語>.pdf（Worker が先に動くので /book/ の下には置けない）。
+- 確認メール（booked・moved）と完了画面にリンク。
+- `book_templates.py` → Drive に6つの Google ドキュメント（HTML を text/html で上げると変換される）。フォルダをリンク共有（閲覧）。
