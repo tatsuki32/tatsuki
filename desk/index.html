@@ -1238,6 +1238,7 @@ button.mhbar[data-mdrillcat]{cursor:pointer}
 .mailbox{display:grid;gap:var(--s2);padding:12px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
 .mailbox p{margin:0}
 .msum{color:var(--ink-2);font-size:var(--t3);line-height:1.75}
+.uzen{display:inline-block;margin-left:4px;padding:0 6px;border:1px solid var(--line);border-radius:4px;font-size:var(--t1);color:var(--muted);vertical-align:middle;white-space:nowrap}
 .rabout{color:var(--ink-2);font-size:var(--t3);line-height:1.55;margin:2px 0}
 .mailbox details.draft{margin-top:0}
 /* a finished event can be ticked */
@@ -4140,7 +4141,7 @@ const clip=(x,n)=>{x=String(x||"").replace(/\s+/g," ").trim();return x.length>n?
 function replyRow(t){
   const r=replyInfo(t), src=RSRC.find(x=>x[0]===replyKind(t))||RSRC[0];
   return `<div class="drow reprow"><span class="e" aria-hidden="true">${src[1]}</span><div style="min-width:0">
-    <button class="tt" data-topen="${esc(t.id)}" data-noauto>${esc(t.title)}</button>
+    <button class="tt" data-topen="${esc(t.id)}" data-noauto>${esc(t.title)}</button>${t.source==="mail"&&mailItem(t)?.account==="zen"?` <span class="uzen" title="University Gmail">ZEN</span>`:""}
     ${r.about?`<div class="rabout" data-noauto>About: ${esc(clip(r.about,180))}</div>`:""}
     <div class="due">${[src[2],r.who,r.when,t.deadline!=null&&t.due!=null?"Due "+fmtDue(t.due):""].filter(Boolean).map(esc).join(" · ")}</div></div>
     <div class="dacts"><button class="btn" data-rdone="${esc(t.id)}" title="Mark this as answered">Done</button><button class="btn" data-rarch="${esc(t.id)}" title="Archive without answering">Archive</button><button class="btn" data-rtask="${esc(t.id)}" title="Move this to the task board">→ Make it a task</button></div></div>`;
@@ -4152,6 +4153,7 @@ function repliesView(){
   const groups=RSRC.map(([k,e,l])=>[e,l,xs.filter(t=>replyKind(t)===k)]).filter(g=>g[2].length);
   return `<header class="head"><div><p class="eyebrow">Today</p><h1>Replies</h1></div><button class="btn primary" id="rwDone">Replies done</button></header>
   <p class="sub">Email, WhatsApp, LINE and follow-ups that need an answer. They stay here, off your task board. Press “Done” when answered, “Archive” for one that needs no answer, or “Make it a task” for one that is real work. “Replies done” hides them until ${esc(rwTime(rwNext()))}.</p>
+  ${uniLine(false)}
   ${all.length?findBox("rFind",S.rq,"Search replies (email, name, subject)",xs.length):""}
   ${groups.length?groups.map(([e,l,ts])=>`<section class="card dpanel" aria-label="${l}"><div class="dhead"><h2><span class="e">${e}</span>${l}</h2><span class="sub">${ts.length}</span></div><div>${ts.map(replyRow).join("")}</div></section>`).join(""):`${S.rq&&all.length?`<div class="card empty"><b>Nothing matches “${esc(S.rq)}”</b>Try another word, or press Clear.</div>`:`<div class="card empty"><b>No replies waiting</b>New email, WhatsApp and LINE messages show up here after each import.</div>`}`}
   ${moved.length?`<p class="sub">Moved to Tasks: ${moved.map(t=>`<button class="tt" data-topen="${esc(t.id)}" data-noauto>${esc(clip(t.title,60))}</button> <button class="ibtn" data-rtask="${esc(t.id)}" data-back="1" title="Back to Replies" aria-label="Back to Replies">↩︎</button>`).join(" · ")}</p>`:""}`;
@@ -5930,6 +5932,7 @@ function home(){
   <header class="head"><div><p class="eyebrow">${d.toLocaleDateString("en-US",{month:"long",day:"numeric",weekday:"long"})} · ${greet}</p></div><button class="btn primary" data-stuck>Stuck? Start with Claude <kbd>G</kbd></button></header>
   ${uNotice()}
   ${scLine()}
+  ${uniLine(true)}
   ${todayBlock()}
   ${suggCard()}
   ${uTag(progressCard(),"wins")}
@@ -11501,6 +11504,24 @@ function scLine(){
   const pick=S.scPick?`<div class="scpick">${left.map(a=>`<label><input type="checkbox" value="${esc(scKey(a))}" checked> ${esc(a.name)}</label>`).join("")}<button class="btn sm primary" data-sc="some">Reopen selected</button></div>`:"";
   return `<div class="unote" id="scLine"><span>Closed ${left.length} app${left.length===1?"":"s"} at startup: ${names}.</span><span class="unacts"><button class="btn sm" data-sc="all">Reopen all</button><button class="btn sm" data-sc="choose" aria-expanded="${S.scPick}">Choose</button><button class="btn sm" data-sc="dismiss">Dismiss</button></span>${pick}</div>`;
 }
+/* University Gmail (desk/unimail.py): read at 4:30 and 15:30 with the personal Gmail. Home says so only when a connection that worked has stopped; Replies offers to connect. */
+S.uni=null;
+function uniLine(home){
+  const u=S.uni;if(!LOCALAPI||!u)return"";
+  const broken=u.email&&(!u.connected||u.error);
+  if(home&&!broken)return"";
+  if(u.connected&&!u.error)return"";
+  const msg=u.connecting?"Waiting for you to press Allow in the browser…":broken?"University Gmail is disconnected"+(u.error?": "+esc(u.error):"."):"University Gmail is not connected. Its replies will show here with a ZEN mark.";
+  return `<div class="unote"><span>${msg}</span>${u.connecting?"":`<span class="unacts"><button class="btn sm" data-uniconnect>Connect university Gmail</button></span>`}</div>`;
+}
+async function uniLoad(){if(!LOCALAPI)return;try{const v=await api("GET","/api/unimail"),same=JSON.stringify(v)===JSON.stringify(S.uni);S.uni=v;if(!same&&["home","replies"].includes(viewId()))render()}catch(e){}}
+document.addEventListener("click",async e=>{
+  const b=e.target.closest&&e.target.closest("[data-uniconnect]");if(!b)return;e.preventDefault();b.disabled=true;
+  try{S.uni=await api("POST","/api/unimail/connect",{});toast("Pick the university account in the browser and press Allow");render();
+    let n=0;const iv=setInterval(async()=>{await uniLoad();if(++n>60||!S.uni?.connecting)clearInterval(iv)},5000)}
+  catch(err){toast(err.message||"Couldn't start the connection");b.disabled=false}
+});
+if(LOCALAPI){uniLoad();setInterval(()=>{if(["home","replies"].includes(viewId())&&!document.hidden)uniLoad()},10*60000)}
 async function scLoad(){if(!LOCALAPI)return;try{const v=await api("GET","/api/startclean"),same=JSON.stringify(v)===JSON.stringify(S.sc);S.sc=v;if(!same&&viewId()==="home")render()}catch(e){}}
 document.addEventListener("click",async e=>{
   const b=e.target.closest&&e.target.closest("[data-sc]");if(!b)return;e.preventDefault();

@@ -72,6 +72,7 @@ import langmap  # Language Map: countries, languages, regions and peoples from p
 import translate  # Translate: lookups, concepts across languages, card candidates (desk/translate.py)
 import chrome_web_sync
 import gmail_clean
+import unimail  # the university Gmail in Replies (desk/unimail.py)
 import lifelog
 import utilities
 import posts
@@ -1157,6 +1158,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(*forms.handle("GET", [x for x in path.split("/")[3:] if x], {}))
         if path == "/api/mailclean":
             return self.send(200, gmail_clean.view())
+        if path == "/api/unimail":
+            return self.send(200, {k: v for k, v in unimail.status().items() if k != "url"})
         if path == "/api/body":
             return self.send(200, lifelog.view())
         if path == "/api/receipts":
@@ -1525,6 +1528,16 @@ class Handler(BaseHTTPRequestHandler):
             if not (self.headers.get("Content-Type") or "").startswith("application/json"):
                 return self.send(415, {"error": "json only"})
             return self.send(200, {"ok": showcase.open_local()})
+        if method == "POST" and urlsplit(self.path).path == "/api/unimail/connect":
+            if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+                return self.send(415, {"error": "json only"})
+            if PORT != 4747:
+                return self.send(400, {"error": "The test server does not connect to Google."})
+            try:
+                unimail.connect()
+            except unimail.MailError as e:
+                return self.send(400, {"error": str(e)})
+            return self.send(200, {k: v for k, v in unimail.status().items() if k != "url"})
         if method == "POST" and urlsplit(self.path).path.startswith("/api/mailclean/"):
             # same protection as claude(): Host/Origin checked, and JSON from another origin needs a preflight
             if not (self.headers.get("Content-Type") or "").startswith("application/json"):
