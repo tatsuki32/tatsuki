@@ -13,7 +13,11 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(os.environ.get("DESK_BOOK_DIR") or os.path.join(HERE, "data", "book"), "guide")
 BOOK_URL = "https://tany.im/book"
-TPL_URL = "https://drive.google.com/drive/folders/1r5ZSoa7IZPsqjobY6YyUCziyudtTzXVG"  # Meeting templates · Tany (anyone with the link can view)
+# Meeting templates · Tany: one Drive folder per language (anyone with the link can view)
+TPL_URLS = {"en": "https://drive.google.com/drive/folders/1OCdHuMDiNO6gO01LFJwmQvlvOR8ZpwFq",
+            "ja": "https://drive.google.com/drive/folders/18cqJZQ4h201K-ao1b8aEU9Ct16IJXdKU",
+            "ru": "https://drive.google.com/drive/folders/1spzAy6AvVSJ_BKOCTgVLIgOSogtaCu9L",
+            "vi": "https://drive.google.com/drive/folders/1PWHwo_Cgs4WVakTdbMKEG7APWWGgoB_x"}
 
 # The text. Each kind of meeting matches a purpose on tany.im/book (id, minutes).
 T = {
@@ -218,7 +222,7 @@ def page(t):
 <h2>{esc(t['h_day'])}</h2><ol>{li(t['day'])}</ol>
 <h2>{esc(t['h_after'])}</h2><ul class="plain">{li(t['after'])}</ul>
 <h2>{esc(t['h_check'])}</h2><ul class="check">{li(t['check'])}</ul>
-<h2>{esc(t['h_tpl'])}</h2><p>{esc(t['tpl'])} <a href="{TPL_URL}">{esc(t['tpl_link'])} →</a></p>
+<h2>{esc(t['h_tpl'])}</h2><p>{esc(t['tpl'])} <a href="{TPL_URLS[t['lang']]}">{esc(t['tpl_link'])} →</a></p>
 <div class="foot">{esc(t['src'])}
 <div class="made"><span>{esc(t['book'])}<a href="{BOOK_URL}">tany.im/book</a></span><b>Created by Tany LLC</b></div></div>
 </body></html>"""

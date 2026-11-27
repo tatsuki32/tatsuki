@@ -32,3 +32,7 @@
 - `book_guide.py` に en・ru・vi。PDF は tany.im/guide/meetings-<言語>.pdf（Worker が先に動くので /book/ の下には置けない）。
 - 確認メール（booked・moved）と完了画面にリンク。
 - `book_templates.py` → Drive に6つの Google ドキュメント（HTML を text/html で上げると変換される）。フォルダをリンク共有（閲覧）。
+
+## 続き：テンプレートを言語ごとに分けた・Google の接続切れ
+- 英日を混ぜた6つはゴミ箱へ。言語ごとのフォルダに6つずつ（24）。PDF のリンクも言語ごとのフォルダに。
+- 20時台に「いま予約の受付を止めています」：Google の許可が 17:11 に切れていた（11/20 に取った許可が7日で切れた。テスト中のアプリの許可の期限と同じ日数）。予約の瞬間に予定を作れず DOWN が返り、画面がその表示に変わる。Desk の Connect Google Calendar でつなぎ直しを始めた（本人の Allow 待ち）。

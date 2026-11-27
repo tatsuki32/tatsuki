@@ -1,9 +1,9 @@
 """Meeting templates for guests of tany.im/book, as Google Docs (Created by Tany LLC).
 
 Built from the owner's rules ("会議の考え方 — しない会議・やる会議の決め方", Drive), the four questions of Should we meet?
-(desk/meetcheck.py) and the review items of Minutes (desk/minutes_insight.py). Each template is English first, then Japanese.
+(desk/meetcheck.py) and the review items of Minutes (desk/minutes_insight.py). One Google Doc per template and language (en, ja, ru, vi), each language in its own Drive folder.
 
-    python3 desk/book_templates.py   -> desk/data/book/templates/<id>.html (uploaded to Drive as Google Docs by hand or by Claude)
+    python3 desk/book_templates.py   -> desk/data/book/templates/<lang>/<id>.html (uploaded to Drive as Google Docs by Claude)
 """
 import html
 import os
@@ -262,6 +262,276 @@ Try next time: ___
 """),
 ]
 
+# (id, title, body) in Russian and Vietnamese, the same fields as above.
+RU = [
+    ("decision", "Встреча для решения: материалы заранее", """
+> Отправьте вместе с приглашением. Если заполнить не получается, встречаться ещё рано. Первые 3 минуты встречи — чтение этого документа вместе.
+# Что решаем (одно предложение)
+Делаем ли ___ ? / A или B: ___
+# Кто решает (один человек)
+___
+# Предлагаемый ответ
+___
+# Почему (2–4 причины)
+- ___
+- ___
+# Другие варианты и почему не они
+| Вариант | Плюсы | Минусы |
+| ___ | ___ | ___ |
+# Кто участвует
+Обязательно (только те, кто нужен для решения): ___
+По желанию (получат протокол): ___
+# Время и стоимость
+Длительность: 15 / 25 / 50 минут (не больше 60)
+Стоимость: ставка в час × люди × часы = ___  Стоит ли ответ этого? ___
+# Ход встречи
+- 0–3 мин: читаем документ вместе
+- Зачитать решение: «Сегодня решаем ___. Решает ___.»
+- Обсуждаем только разногласия и решаем
+- Последние 2 мин: зачитать решения и задачи
+# Протокол (в конце)
+Решено: ___
+| Задача | Ответственный (один) | Срок | Готово, когда |
+| ___ | ___ | ___ | ___ |
+Не решено — кто и к какому сроку решит: ___
+"""),
+    ("advice", "Нужен совет: заметка до встречи", """
+> Отправьте до встречи. Контекст прочитаю заранее, и время уйдёт на ваши вопросы.
+# Контекст (3 строки)
+___
+# В чём сложность
+___
+# Что уже пробовали
+- ___
+# Вопросы (в форме вопросов)
+- Стоит ли мне ___ ?
+- Что бы вы сделали с ___ ?
+# Какой ответ поможет
+После встречи я смогу ___ .
+# Материалы (ссылки)
+___
+"""),
+    ("first", "Первая встреча: знакомство", """
+> Первая встреча — чтобы узнать друг друга, а не продавать. Каждый рассказывает о себе примерно 2 минуты.
+# Пара слов о себе
+___
+# О чём хочу поговорить
+- ___
+# Как я о вас узнал(а)
+___
+# Что хочу спросить у вас
+- ___
+# Один возможный следующий шаг
+___
+# После встречи
+[] Сообщение с благодарностью в течение 24 часов
+[] Обещанные материалы в течение недели
+[] Если подходит — одна конкретная идея о сотрудничестве в течение месяца
+"""),
+    ("proposal", "Предложение письмом (вместо встречи)", """
+> Поделиться материалами, рассказать о бизнесе или предложить сотрудничество обычно быстрее письмом. Используйте этот шаблон или форму «Написать вместо встречи» на tany.im/book.
+# Главное / предложение (одно предложение)
+___
+# Почему (2–4 причины)
+- ___
+- ___
+# Что это даст вам
+___
+# Чего я жду от вас
+Ответ / решение (да или нет) / мнение / знакомство с человеком / короткую встречу позже
+# К какому сроку
+___
+# Материалы (ссылки)
+___
+# Если встреча нужна
+Одно, что встреча должна решить: ___
+"""),
+    ("minutes", "Протокол встречи", """
+> Отправляется сразу после встречи. Задача — это задача, только если есть ответственный, суть и срок. Без любого из трёх это ещё предложение.
+# Итог (одна строка)
+___
+# Решено
+- ___ (решил(а) ___, потому что ___)
+# Задачи
+| Задача | Ответственный (один) | Срок | Готово, когда |
+| ___ | ___ | ___ | ___ |
+# Не решено
+- ___: ___ решит до ___
+# Встреча
+Дата: ___  Длительность: ___  Участники: ___
+# Ход разговора (под протоколом, не в нём)
+___
+"""),
+    ("review", "Разбор встречи: оценочный лист", """
+> Заполните в течение дня после встречи. Оцените каждую строку от 1 (совсем нет) до 5 (полностью).
+# До встречи
+| Пункт | Оценка 1–5 | Заметка |
+| Проверили, нельзя ли решить письменно | ___ | ___ |
+| Решение было одним предложением («делаем ли…», а не «о…») | ___ | ___ |
+| Решал один человек | ___ | ___ |
+| Материалы ушли вместе с приглашением | ___ | ___ |
+| Были только те, кто нужен | ___ | ___ |
+| Стоимость (ставка × люди × время) оправдалась | ___ | ___ |
+# Во время встречи
+| Пункт | Оценка 1–5 | Заметка |
+| Начали вовремя и зачитали решение | ___ | ___ |
+| О записи договорились в начале | ___ | ___ |
+| Закончили, когда решили, даже если время осталось | ___ | ___ |
+| Говорили все; никто не говорил слишком долго | ___ | ___ |
+# После встречи
+| Пункт | Оценка 1–5 | Заметка |
+| У каждой задачи есть ответственный, суть и срок | ___ | ___ |
+| Протокол ушёл в течение дня | ___ | ___ |
+| Задачи перенесены в список задач | ___ | ___ |
+# Как я говорил(а)
+Моя доля разговора: ___ %   Самый длинный монолог: ___ мин   Мои вопросы: ___   Слова-паразиты: ___
+# Три строки
+Можно было короче за счёт: ___
+Получилось хорошо: ___
+Попробовать в следующий раз: ___
+"""),
+]
+VI = [
+    ("decision", "Buổi họp cần quyết định: tài liệu đọc trước", """
+> Gửi kèm lời mời. Nếu chưa điền được, có nghĩa là còn quá sớm để họp. 3 phút đầu buổi họp dùng để cùng đọc tài liệu này.
+# Điều cần quyết định (một câu)
+Có nên ___ không? / A hay B: ___
+# Người quyết định (một người)
+___
+# Đề xuất
+___
+# Lý do (2–4 ý)
+- ___
+- ___
+# Phương án khác và lý do không chọn
+| Phương án | Điểm tốt | Điểm chưa tốt |
+| ___ | ___ | ___ |
+# Ai cần tham dự
+Bắt buộc (chỉ người cần cho quyết định): ___
+Không bắt buộc (sẽ nhận biên bản): ___
+# Thời gian và chi phí
+Thời lượng: 15 / 25 / 50 phút (tối đa 60)
+Chi phí: lương theo giờ × số người × số giờ = ___  Câu trả lời có đáng không? ___
+# Diễn biến
+- 0–3 phút: cùng đọc tài liệu
+- Đọc điều cần quyết định: "Hôm nay quyết định ___. Người quyết định là ___."
+- Chỉ bàn những điểm khác nhau, rồi quyết định
+- 2 phút cuối: đọc lại điều đã quyết định và việc cần làm
+# Biên bản (điền cuối buổi)
+Đã quyết định: ___
+| Việc cần làm | Người phụ trách (một người) | Hạn | Xong khi |
+| ___ | ___ | ___ | ___ |
+Chưa quyết định — ai quyết định trước ngày nào: ___
+"""),
+    ("advice", "Xin tư vấn: ghi chú trước buổi gặp", """
+> Gửi trước buổi gặp. Bối cảnh sẽ được đọc trước, để thời gian dành cho câu hỏi của bạn.
+# Bối cảnh (3 dòng)
+___
+# Điều đang vướng
+___
+# Đã thử những gì
+- ___
+# Câu hỏi (viết dạng câu hỏi)
+- Tôi có nên ___ không?
+- Nếu là bạn, bạn sẽ làm gì với ___ ?
+# Câu trả lời tốt trông như thế nào
+Sau buổi gặp, tôi sẽ có thể ___ .
+# Tài liệu (link)
+___
+"""),
+    ("first", "Lần đầu gặp: làm quen", """
+> Lần gặp đầu để hiểu nhau, không phải để bán hàng. Mỗi bên tự giới thiệu khoảng 2 phút.
+# Một dòng về tôi
+___
+# Điều tôi muốn nói
+- ___
+# Tôi biết đến bạn qua
+___
+# Điều tôi muốn hỏi bạn
+- ___
+# Một bước tiếp theo có thể
+___
+# Sau buổi gặp
+[] Lời cảm ơn trong vòng 24 giờ
+[] Tài liệu đã hứa trong vòng một tuần
+[] Nếu phù hợp, một ý tưởng hợp tác cụ thể trong vòng một tháng
+"""),
+    ("proposal", "Đề xuất bằng văn bản (thay vì họp)", """
+> Chia sẻ tài liệu, giới thiệu doanh nghiệp hay đề xuất hợp tác thường nhanh hơn khi viết. Dùng mẫu này, hoặc mục "Viết thay vì gặp" trên tany.im/book.
+# Ý chính / đề xuất (một câu)
+___
+# Lý do (2–4 ý)
+- ___
+- ___
+# Lợi ích cho bạn
+___
+# Điều tôi mong bạn làm
+Trả lời / quyết định (có hoặc không) / góp ý / giới thiệu người / một buổi gặp ngắn sau
+# Trước ngày nào
+___
+# Tài liệu (link)
+___
+# Nếu cần họp
+Một điều buổi họp cần quyết định: ___
+"""),
+    ("minutes", "Biên bản buổi họp", """
+> Gửi ngay sau buổi họp. Một việc chỉ là việc cần làm khi có người phụ trách, nội dung và hạn. Thiếu một trong ba thì vẫn là đề xuất.
+# Kết quả (một dòng)
+___
+# Đã quyết định
+- ___ (người quyết định ___, lý do ___)
+# Việc cần làm
+| Việc cần làm | Người phụ trách (một người) | Hạn | Xong khi |
+| ___ | ___ | ___ | ___ |
+# Chưa quyết định
+- ___: ___ quyết định trước ___
+# Thông tin buổi họp
+Ngày: ___  Thời lượng: ___  Người tham dự: ___
+# Diễn biến cuộc trao đổi (đặt dưới biên bản)
+___
+"""),
+    ("review", "Nhìn lại buổi họp: phiếu đánh giá", """
+> Điền trong vòng một ngày sau buổi họp. Chấm mỗi dòng từ 1 (chưa làm được) đến 5 (làm tốt).
+# Trước buổi họp
+| Mục | Điểm 1–5 | Ghi chú |
+| Đã xem liệu viết có giải quyết được không | ___ | ___ |
+| Điều cần quyết định là một câu ("có nên…", không phải "về…") | ___ | ___ |
+| Một người quyết định | ___ | ___ |
+| Tài liệu được gửi kèm lời mời | ___ | ___ |
+| Chỉ người cần thiết tham dự | ___ | ___ |
+| Chi phí (lương × người × thời gian) là xứng đáng | ___ | ___ |
+# Trong buổi họp
+| Mục | Điểm 1–5 | Ghi chú |
+| Bắt đầu đúng giờ và đọc điều cần quyết định | ___ | ___ |
+| Đã xin đồng ý ghi âm từ đầu | ___ | ___ |
+| Kết thúc khi đã quyết định, kể cả còn thời gian | ___ | ___ |
+| Ai cũng được nói; không ai nói quá lâu | ___ | ___ |
+# Sau buổi họp
+| Mục | Điểm 1–5 | Ghi chú |
+| Mỗi việc có người phụ trách, nội dung và hạn | ___ | ___ |
+| Biên bản được gửi trong một ngày | ___ | ___ |
+| Việc cần làm đã chuyển vào danh sách công việc | ___ | ___ |
+# Cách tôi nói
+Phần tôi nói: ___ %   Lần nói dài nhất: ___ phút   Số câu tôi hỏi: ___   Từ đệm: ___
+# Ba dòng
+Có thể ngắn hơn nhờ: ___
+Điều làm tốt: ___
+Lần sau thử: ___
+"""),
+]
+HOWTO = {"en": "To use it: File → Make a copy", "ja": "使い方：ファイル → コピーを作成", "ru": "Как использовать: Файл → Создать копию", "vi": "Cách dùng: Tệp → Tạo bản sao"}
+BASED = {"en": "Based on public write-ups of how Amazon, GitLab, Keyence, Apple and others run meetings.",
+         "ja": "Amazon・GitLab・キーエンス・Apple などの会議の進め方を紹介した公開の記事をもとにしています。",
+         "ru": "По открытым материалам о том, как проводят встречи Amazon, GitLab, Keyence, Apple и другие.",
+         "vi": "Dựa trên các bài viết công khai về cách Amazon, GitLab, Keyence, Apple và các công ty khác tổ chức họp."}
+FOLDER = {"en": "English", "ja": "日本語", "ru": "Русский", "vi": "Tiếng Việt"}
+
+
+def by_lang():
+    """{lang: [(id, title, body)]}"""
+    return {"en": [(i, et, eb) for i, et, jt, eb, jb in T], "ja": [(i, jt, jb) for i, et, jt, eb, jb in T], "ru": RU, "vi": VI}
+
+
 CSS = ("body{font-family:Arial,'Hiragino Sans',sans-serif;font-size:11pt;color:#1B1B18}h1{font-size:20pt}h2{font-size:13pt;color:#2C7A4B;margin-top:16pt}"
        "table{border-collapse:collapse;width:100%}td,th{border:1px solid #c9c7bd;padding:4pt 6pt;vertical-align:top}th{background:#efefeb;text-align:left}"
        ".note{background:#f6f5f0;padding:6pt 10pt}.by{color:#6d6d67;font-size:9pt}")
@@ -299,25 +569,26 @@ def body_html(text):
     return "".join(out)
 
 
-def page(tid, en_t, ja_t, en, ja):
-    return (f"<!doctype html><html><head><meta charset='utf-8'><style>{CSS}</style></head><body>"
-            f"<p class='by'>Created by Tany LLC · tany.im/book · To use it: File → Make a copy（ファイル → コピーを作成）</p>"
-            f"<h1>{html.escape(en_t)}</h1>{body_html(en)}<hr>"
-            f"<h1>{html.escape(ja_t)}</h1>{body_html(ja)}"
-            f"<hr><p class='by'>Created by Tany LLC — based on public write-ups of how Amazon, GitLab, Keyence, Apple and others run meetings.</p></body></html>")
+def page(lang, title, body):
+    return (f"<!doctype html><html lang='{lang}'><head><meta charset='utf-8'><style>{CSS}</style></head><body>"
+            f"<p class='by'>Created by Tany LLC · tany.im/book · {html.escape(HOWTO[lang])}</p>"
+            f"<h1>{html.escape(title)}</h1>{body_html(body)}"
+            f"<hr><p class='by'>Created by Tany LLC — {html.escape(BASED[lang])}</p></body></html>")
 
 
 def build():
-    os.makedirs(OUT, exist_ok=True)
-    paths = []
-    for tid, en_t, ja_t, en, ja in T:
-        p = os.path.join(OUT, tid + ".html")
-        with open(p, "w", encoding="utf-8") as f:
-            f.write(page(tid, en_t, ja_t, en, ja))
-        paths.append((tid, f"{en_t} / {ja_t} · Tany", p))
-    return paths
+    out = []
+    for lang, items in by_lang().items():
+        d = os.path.join(OUT, lang)
+        os.makedirs(d, exist_ok=True)
+        for tid, title, body in items:
+            p = os.path.join(d, tid + ".html")
+            with open(p, "w", encoding="utf-8") as f:
+                f.write(page(lang, title, body))
+            out.append((lang, tid, title + " · Tany", p))
+    return out
 
 
 if __name__ == "__main__":
-    for tid, title, p in build():
-        print(tid, title, p)
+    for lang, tid, title, p in build():
+        print(lang, tid, title, p)
