@@ -76,7 +76,9 @@ def _fake():
 
 
 def _claude(prompt, max_tokens=2000, timeout=180):
-    """One JSON object from Claude, or None (no key, no network, no usable answer)."""
+    """One JSON object from Claude, or None (no key, no network, no usable answer).
+    max_tokens is never small, even for a one-word answer: the model thinks before it answers, and a tight cap is
+    used up by the thinking, so no answer comes back (2026-11-27: half of the event questions failed at 100)."""
     key = minutes._anthropic_key()
     if not key:
         return None
@@ -233,7 +235,7 @@ def _ask_labels(r):
         return {"genre": "Test genre", "client": "Acme" if "acme" in (r.get("title", "") + text).lower() else ""}
     lab = labels()
     got = _claude(LABEL_PROMPT + "Existing genres: " + _names(lab["genres"]) + "\nExisting clients: " + _names(lab["clients"])
-                  + "\n\nTitle: " + (r.get("title") or "") + ("\nMinutes:\n" + text if text else ""), 300, 60)
+                  + "\n\nTitle: " + (r.get("title") or "") + ("\nMinutes:\n" + text if text else ""), timeout=90)
     return {k: _clean_name(got.get(k)) for k in KINDS} if got else None
 
 
@@ -244,14 +246,16 @@ def label_pass(limit=3):
         if done >= limit:
             break
         by = r.get("tagBy") or {}
-        if all(k in by for k in KINDS) or (r.get("tagTries") or 0) >= 3:
+        if all(k in by for k in KINDS):
             continue
+        if (r.get("tagTries") or 0) >= 3 and time.time() - (r.get("tagTriedAt") or 0) < 86400:
+            continue  # three failures in a row: once more a day later
         if (r.get("source") or {}).get("kind") == "manual" and len(r.get("body") or "") < 200:
             continue  # a minute the person is still writing
         hint = r.get("tagHint") if isinstance(r.get("tagHint"), dict) else _ask_labels(r)
         done += 1
         if hint is None:
-            minutes.patch(r["id"], lambda cur: cur.update(tagTries=(cur.get("tagTries") or 0) + 1))
+            minutes.patch(r["id"], lambda cur: cur.update(tagTries=(cur.get("tagTries") or 0) + 1, tagTriedAt=time.time()))
             continue
         ids = {k: label_id(k, hint.get(k)) for k in KINDS}
 
@@ -343,7 +347,8 @@ def candidates(r, events):
     span = _span(r)
     if not span:
         day = _day(float(r.get("at") or 0))
-        return [], sorted((e for e in timed if _day(_ts(e["start"])) == day), key=lambda e: not _meeting(e))[:8]
+        # only a day is known: time kept for oneself (a routine, a block of work) is not offered as the meeting
+        return [], [e for e in timed if _day(_ts(e["start"])) == day and _meeting(e)][:8]
     a, b = span
     hits = []
     for e in timed:
@@ -374,7 +379,7 @@ def _ask_event(r, cands):
         return next((i for i, e in enumerate(cands) if e["title"].casefold() in hay), -1)
     rows = "\n".join(f"{i + 1}. {e['title']} ({e['start'][:16].replace('T', ' ')} to {e['end'][11:16]})" for i, e in enumerate(cands))
     got = _claude(EVENT_PROMPT + "\nMinutes title: " + (r.get("title") or "") + ("\nMinutes:\n" + text if text else "")
-                  + "\n\nEvents:\n" + rows, 100, 60)
+                  + "\n\nEvents:\n" + rows, timeout=90)
     if got is None:
         return None
     try:
@@ -856,7 +861,7 @@ def focus_pass(now=None):
     else:
         notes = "\n".join("- " + "; ".join([x["point"] for x in v["advice"].get("spoke") or []] + [v["advice"].get("next") or ""])
                           for _, v in revs)[:6000]
-        got = _claude(FOCUS_PROMPT + notes, 300, 60)
+        got = _claude(FOCUS_PROMPT + notes, timeout=90)
         if got is None:
             return 0
         focus = minutes._text(got.get("focus"), 500)

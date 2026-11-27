@@ -166,6 +166,30 @@ class Insight(unittest.TestCase):
         mi.match_pass()
         self.assertEqual(minutes.get(r["id"])["event"]["uid"], "e1")  # the other one is on another day
 
+    def test_notes_are_not_offered_time_kept_for_oneself(self):
+        r = note("Some notes", at=datetime(2026, 11, 20, 12).timestamp())
+        history(event("e1", "Morning routine", 7, 8, meet=False, guests=False))
+        mi.match_pass()
+        self.assertNotIn("suggest", minutes.get(r["id"]))
+
+    def test_labels_are_tried_again_a_day_after_three_failures(self):
+        r = recording(tagTries=3)
+        self.assertEqual(mi.label_pass(), 1)  # failures from before the time was kept: tried again at once
+        self.assertEqual(minutes.get(r["id"])["tagBy"]["genre"], "claude")
+        r = recording(tagTries=3, tagTriedAt=time.time() - 3600)
+        self.assertEqual(mi.label_pass(), 0)
+        minutes.patch(r["id"], lambda cur: cur.update(tagTriedAt=time.time() - 90000))
+        self.assertEqual(mi.label_pass(), 1)
+
+    def test_small_questions_leave_room_for_the_answer(self):
+        r = recording("Weekly sync", length=50 * 60)
+        with mock.patch.object(mi, "_fake", return_value=False), mock.patch.object(minutes, "_anthropic_key", return_value=None):
+            with mock.patch.object(mi, "_claude", return_value={"pick": 1, "genre": "Sales", "client": ""}) as ask:
+                mi._ask_event(r, [event("e1", "Weekly sync", 10, 11)])
+                mi._ask_labels(r)
+        for call in ask.call_args_list:
+            self.assertGreaterEqual(call.kwargs.get("max_tokens", 2000) if len(call.args) < 2 else call.args[1], 2000)
+
     def test_not_this_meeting_is_remembered(self):
         r = recording(length=50 * 60)
         history(event("e1", "Call", 10, 11))
