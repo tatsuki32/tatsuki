@@ -248,7 +248,11 @@ def pull():
                 local = links.get(l["id"]) or {}
                 keep[l["id"]] = {**l, "key": local.get("key", ""), "url": local.get("url", "")}
         _write("links.json", keep)
-        st.update(lastPull=int(time.time() * 1000), error="", google=remote.get("google") or {}, mail=remote.get("mail"))
+        # open times picked by hand on tany.im/book/admin: when on, the weekly hours here are not what guests see
+        pk = remote.get("picked") if isinstance(remote.get("picked"), dict) else {}
+        now = int(time.time() * 1000)
+        ahead = [w for w in pk.get("windows") or [] if isinstance(w, dict) and isinstance(w.get("e"), (int, float)) and w["e"] > now]
+        st.update(lastPull=now, error="", google=remote.get("google") or {}, mail=remote.get("mail"), picked={"on": pk.get("on") is True, "ahead": len(ahead)})
         _write("state.json", st)
     return st
 
@@ -284,6 +288,7 @@ def view():
     return {
         "settings": s, "bookings": _read("bookings.json", []), "links": sorted((links if isinstance(links, dict) else {}).values(), key=lambda l: -(l.get("created") or 0)),
         "connected": k, "google": st.get("google") or {}, "mail": st.get("mail"), "lastPull": st.get("lastPull") or 0, "error": st.get("error") or "",
+        "picked": st.get("picked") or {"on": False, "ahead": 0},
         "shareUrl": PUBLIC + "/book", "macTz": mac_tz(), "auth": dict(_auth), "now": int(time.time() * 1000),
     }
 

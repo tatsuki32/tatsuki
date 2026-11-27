@@ -8393,6 +8393,8 @@ function bkgStatus(){
     else h+=`<p class="bkgstat">Google Calendar connected${d.mail===false?" · <b>confirmation emails are off</b> (RESEND_KEY or BOOK_FROM is missing on tany.im)":""}${d.lastPull?` · checked ${ago(d.lastPull)}`:""}</p>`;
     if(d.auth?.error&&!d.auth.running)h+=`<p class="bkgstat warn">${esc(d.auth.error)}</p>`;
   }
+  // open times picked by hand on the web (tany.im/book/admin > Open times): the weekly grid in Rules is not what guests see then
+  if(d.picked?.on)h+=`<p class="bkgstat">Guests see only the times picked by hand (${d.picked.ahead} ahead), not the weekly hours in Rules. <a href="https://tany.im/book/admin" target="_blank" rel="noopener">Pick times or switch back ↗</a></p>`;
   return h;
 }
 function bkgBooking(x,past){

@@ -49,6 +49,8 @@ class Pull(unittest.TestCase):
                   "links": [{"id": "l1", "note": "for A", "windows": [], "expires": None, "off": False, "created": 1, "used": 0}],
                   "google": {"connected": True, "ok": True, "error": ""}, "mail": True}
 
+        self.remote = remote
+
         def fake(method, path, body=None, timeout=30, auth=True):
             self.calls.append((method, path, body))
             if method == "PUT":
@@ -90,6 +92,13 @@ class Pull(unittest.TestCase):
         book.pull()  # the Worker stamped the web's save with a later time (5)
         self.assertEqual(book.settings()["ownerName"], "Remote")
         self.assertEqual([c[0] for c in self.calls], ["GET"])
+
+    def test_times_picked_by_hand_are_counted_not_copied(self):
+        self.assertEqual(book.view()["picked"], {"on": False, "ahead": 0})  # before any pull
+        self.remote["picked"] = {"on": True, "windows": [{"s": 1, "e": 2}, {"s": 4e15, "e": 4e15 + 1}], "at": 9}
+        book.pull()
+        self.assertEqual(book.view()["picked"], {"on": True, "ahead": 1})  # the one that is over is not counted
+        self.assertNotIn("picked", book.settings())  # they live on tany.im only: a rules save from here cannot wipe them
 
     def test_home_line_names_the_next_booking(self):
         book.pull()
