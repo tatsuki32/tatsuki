@@ -70,7 +70,7 @@ def watch():
         time.sleep(60)
 
 
-def sessions(limit=20):
+def sessions(limit=60):
     out = []
     base = os.path.join(DIR, "sessions")
     try:
@@ -93,7 +93,14 @@ def sessions(limit=20):
                     "duration": size / 32000, "status": status, "done": m.get("done_chunks", 0),
                     "total": m.get("total_chunks", 0), "auto": bool(m.get("auto")), "failed": len(m.get("failed_chunks") or [])})
     out.sort(key=lambda x: x["created"], reverse=True)
-    return out[:limit]
+    return out if limit is None else out[:limit]
+
+
+def month(now=None):
+    """This month's recordings (the Mac's own time): how many, and how long they are together."""
+    first = time.mktime(time.localtime(now or time.time())[:2] + (1, 0, 0, 0, 0, 0, -1))
+    mine = [s for s in sessions(None) if s["created"] >= first]
+    return {"n": len(mine), "secs": round(sum(s["duration"] for s in mine))}
 
 
 def auto(body=None, check=False):
@@ -114,7 +121,7 @@ def auto(body=None, check=False):
 
 
 def view():
-    return {"running": running(), "engine": engine_ready(), "url": URL, "sessions": sessions()}
+    return {"running": running(), "engine": engine_ready(), "url": URL, "sessions": sessions(), "month": month()}
 
 
 if __name__ == "__main__":

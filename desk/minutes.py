@@ -170,6 +170,10 @@ def put(mid, rec):
             old = cur.get("event") or {}
             if (old.get("id") or None) != (new or {}).get("id"):
                 cur["calendar"] = None  # a different event: the old link in Google is not this one any more
+                if old.get("id"):  # taken off by the person: minutes_insight never links this event again by itself
+                    cur["eventNo"] = [x for x in (cur.get("eventNo") or []) if x != old["id"]][-19:] + [old["id"]]
+            if new:
+                cur.pop("suggest", None)
             cur["event"] = new
         cur["updated"] = time.time()
         _write(cur)
@@ -186,6 +190,20 @@ def set_share(mid, key, value):
         if not cur or cur.get("deleted"):
             raise MinutesError("Not found")
         cur[key] = value
+        _write(cur)
+    return cur
+
+
+def patch(mid, fn):
+    """A change that is not an edit of the text (labels, the event found by itself, the review; desk/minutes_insight.py).
+    `updated` stays as it is, so "nobody touched it" and the Google Doc's quiet time still mean what they say.
+    fn(rec) changes the record in place; when it returns False nothing is written."""
+    with LOCK:
+        cur = _read(mid)
+        if not cur or cur.get("deleted"):
+            raise MinutesError("Not found")
+        if fn(cur) is False:
+            return cur
         _write(cur)
     return cur
 
@@ -257,7 +275,8 @@ def sync():
         rec = {"id": uuid.uuid4().hex, "title": title,
                "body": build_body(summary, text, _meeting_info(s, summary)), "status": "draft", "place": "",
                "at": float(s.get("created") or now), "source": {"kind": "transcribe", "sid": sid, **({"v": VERSION} if summary else {})},
-               "event": _auto_event(s), "calendar": None, "created": now, "updated": now}
+               "event": _auto_event(s), "calendar": None, "created": now, "updated": now,
+               "length": float(s.get("duration") or 0), **_tag_hint(summary)}
         with LOCK:
             _write(rec)
         _retitle_recording(sid, s.get("title"), title)
@@ -289,6 +308,12 @@ def _retitle_recording(sid, old, new):
         urllib.request.urlopen(req, timeout=5).read()
     except (OSError, ValueError):
         pass
+
+
+def _tag_hint(summary):
+    """The genre and client Claude named with the summary. minutes_insight turns the names into labels on its next pass."""
+    s = summary or {}
+    return {"tagHint": {"genre": s.get("genre", ""), "client": s.get("client", "")}} if s.get("genre") else {}
 
 
 def _is_ja(summary):
@@ -522,6 +547,16 @@ Transcript:
 """
 
 
+def _prompt():
+    """The summary prompt, with the two label keys and the labels there are now (no second request for them)."""
+    try:
+        import minutes_insight
+        extra = minutes_insight.prompt_keys()
+    except Exception:  # the labels are an extra: a summary is still made without them
+        extra = ""
+    return PROMPT.replace("\nTranscript:\n", extra + "\nTranscript:\n") if extra else PROMPT
+
+
 def summarize(text, title=""):
     """Claude's summary as a dict, or None when there is no key, no network, or no usable answer."""
     if os.environ.get("MINUTES_FAKE") == "1":
@@ -534,7 +569,7 @@ def summarize(text, title=""):
     if len(body) > TRANSCRIPT_MAX:
         body = body[:TRANSCRIPT_MAX] + "\n[The transcript is longer; the rest is not included.]"
     payload = {"model": MODEL, "max_tokens": 8000, "output_config": {"effort": "low"},
-               "messages": [{"role": "user", "content": PROMPT + body}]}
+               "messages": [{"role": "user", "content": _prompt() + body}]}
     req = urllib.request.Request("https://api.anthropic.com/v1/messages", data=json.dumps(payload).encode("utf-8"),
                                  headers={"x-api-key": key, "anthropic-version": "2023-06-01",
                                           "content-type": "application/json"})
@@ -569,6 +604,7 @@ def sanitize(j):
         if isinstance(o, dict) and _text(o.get("option"), 200):
             options.append({"option": _text(o.get("option"), 200), "chosen": o.get("chosen") is True, "why": _text(o.get("why"), 300)})
     return {"title": _text(j.get("title"), 200), "participants": lines(j.get("participants"), 12), "summary": lines(j.get("summary")),
+            "genre": _text(j.get("genre"), 60), "client": _text(j.get("client"), 60),
             "purpose": _text(j.get("purpose"), 300), "decider": _text(j.get("decider"), 80),
             "decisions": lines(j.get("decisions")), "options": options, "todos": todos, "open": lines(j.get("open")), "topics": topics}
 

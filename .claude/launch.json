@@ -146,6 +146,12 @@
       "port": 4785
     },
     {
+      "name": "desk-minutes-test",
+      "runtimeExecutable": "/bin/sh",
+      "runtimeArgs": ["-c", "cd desk && MEETCHECK_FAKE=1 MINUTES_FAKE=1 DESK_DATA_DIR=/tmp/claude/mn-test MINUTES_DIR=/tmp/claude/mn-test/minutes TRANSCRIBE_DIR=/tmp/claude/mn-test/transcribe TRANSCRIBE_PORT=9 TRANSCRIBE_URL=http://127.0.0.1:9 DESK_PORT=${PORT:-4774} exec python3 server.py"],
+      "port": 4774
+    },
+    {
       "name": "desk-meetcheck-test",
       "runtimeExecutable": "/bin/sh",
       "runtimeArgs": ["-c", "cd desk && MEETCHECK_FAKE=1 DESK_DATA_DIR=/tmp/claude/mtg-test MINUTES_DIR=/tmp/claude/mtg-test/minutes TRANSCRIBE_URL=http://127.0.0.1:9 DESK_PORT=${PORT:-4783} exec python3 server.py"],

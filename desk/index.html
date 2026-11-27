@@ -2156,6 +2156,43 @@ body.rdth-paper main .btn.primary:hover,body.rdth-sepia main .btn.primary:hover{
 .mnedit{width:100%;min-height:360px;background:var(--surface-2);color:var(--ink);border:1px solid var(--line);border-radius:var(--r-s);padding:var(--s2) var(--s3);font:inherit;font-size:var(--t2);line-height:1.6;box-sizing:border-box}
 .mnactions{display:flex;gap:var(--s2);flex-wrap:wrap;margin-top:var(--s2)}
 .mnfoot{display:flex;gap:var(--s2);margin-top:var(--s3)}
+.mntabs.mnviews{flex-wrap:wrap;margin:var(--s3) 0 var(--s2)}
+.mnline{display:block;margin:var(--s2) 0 0;color:var(--muted);font-size:var(--t2);text-decoration:none}
+.mnline b{color:var(--ink)}
+.mnchips{display:flex;flex-wrap:wrap;gap:var(--s1);margin-top:var(--s1)}
+.mnchip{display:inline-flex;align-items:center;max-width:100%;border:1px solid var(--line);border-radius:999px;padding:1px 10px;font-size:var(--t1);color:var(--ink-2);overflow-wrap:anywhere}
+.mnchip .tldot{margin-right:6px}
+.mnchip.mnsug{border-style:dashed;color:var(--muted)}
+.mnmonth{display:flex;flex-wrap:wrap;align-items:baseline;gap:var(--s2);font-size:var(--t3);margin:var(--s4) 0 0}
+.mnday{margin-top:var(--s3)}
+.mnday>h3{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s1) var(--s2);margin:0 0 var(--s1);font-size:var(--t2);color:var(--ink-2)}
+.mnday>h3 .tldot{margin-right:0}
+.mnday>h3 .btn{margin-left:auto}
+.mntags{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s2);margin:var(--s2) 0 var(--s3)}
+.mntag{display:grid;gap:var(--s1);min-width:0}
+.mnnav{display:flex;align-items:center;gap:var(--s2);margin:var(--s2) 0}
+.mnnav b{font-size:var(--t3);min-width:9em;text-align:center}
+.mnins{display:grid;gap:var(--s3)}
+.mnnums{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--s3)}
+.mnnum{display:grid;gap:2px;align-content:start;min-width:0}
+.mnnum b{font-size:var(--t4);line-height:1.2;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.mnrev{display:grid;gap:var(--s2);padding:var(--s3);margin-top:var(--s3)}
+.mnrev h3{font-size:var(--t2);margin:var(--s2) 0 0}
+.mnrev ul{margin:0;padding-left:var(--s3)}
+.mnrev li{margin:var(--s1) 0;line-height:1.6}
+.mnrev p{margin:0;line-height:1.6}
+.mnrev q{display:block;color:var(--muted);font-size:var(--t1)}
+.mnwho{display:inline-flex;align-items:center;gap:var(--s2)}
+.mnwho select{background:var(--surface-2);color:var(--ink);border:1px solid var(--line);border-radius:var(--r-s);padding:var(--s1) var(--s2);font:inherit;font-size:var(--t2)}
+.mnevt{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s1) var(--s2);padding:var(--s2) 0;border-bottom:1px solid var(--line)}
+.mnevt:last-child{border-bottom:0}
+.mnevt>span:first-child{flex:1;min-width:0;overflow-wrap:anywhere}
+.mnevt.off>span:first-child{color:var(--muted);text-decoration:line-through}
+.mnevt a{color:inherit}
+.mnrev .hint,.mnins .hint{margin:0;font-size:var(--t1);color:var(--muted)}
+.trday{margin:var(--s3) 0 0;font-size:var(--t1);color:var(--muted);font-weight:700}
+.trrow>a:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:560px){.mnnums{grid-template-columns:repeat(2,minmax(0,1fr))}.mntags{grid-template-columns:minmax(0,1fr)}.mntabs.mnviews{gap:var(--s1)}.mnviews .mntab{padding:var(--s1) var(--s2)}}
 /* tabs (2026-11-21): a Chrome-style strip at the top of the main column; the active tab is the screen on show */
 .tabbar{position:sticky;top:0;z-index:30;display:flex;align-items:flex-end;gap:4px;background:var(--rail);border-bottom:1px solid var(--line);padding:6px 8px 0;min-width:0}
 .tabbar[hidden]{display:none}
@@ -6965,9 +7002,9 @@ function render(){
   if(viewId()==="footprint"){fpLoad();$("#view").innerHTML=searchResults()+fpView();wire();wireFp();return}
   if(viewId()==="netspeed"){nsLoad();$("#view").innerHTML=searchResults()+nsView();wire();wireNs();return}
   if(viewId()==="wifi"){wfLoad();if(!$("#wfView")||!document.activeElement?.closest?.(".wffield"))wfDraw();return} // a redraw from elsewhere never takes the password being typed
-  if(viewId()==="transcribe"){trLoad();if(Date.now()-(S.traCheck||0)>60000){S.traCheck=Date.now();trAutoLoad(true)}$("#view").innerHTML=searchResults()+trView();wire();wireTr();return}
+  if(viewId()==="transcribe"){trLoad();mnLoad();if(Date.now()-(S.traCheck||0)>60000){S.traCheck=Date.now();trAutoLoad(true)}$("#view").innerHTML=searchResults()+trView();wire();wireTr();return}
   if(viewId()==="meetcheck"){mtgLoad();if(!document.activeElement?.closest?.("#mtgView")||!$("#mtgView"))mtgDraw();return} // a redraw from elsewhere never takes the answer being typed
-  if(viewId()==="minutes"){mnLoad();if(document.activeElement?.closest?.(".mnshare"))return;
+  if(viewId()==="minutes"){mnLoad();if(document.activeElement?.closest?.(".mnshare,.mntags"))return;
     {const st=mn();if(!st.force&&st.docView&&st.docView===mnId()&&$(".mnframe"))return;st.force=false} /* the embedded Google Doc loads once: a redraw would reload it (a new visit in the browser each time) */$("#view").innerHTML=searchResults()+mnView();wire();wireMn();return}
   if(viewId()==="post"){if(!ps().data&&!ps().loading)psLoad();if(!document.activeElement?.closest?.(".psedit")||!$("#psView"))psDraw();return} // a redraw from elsewhere never takes the text being typed
   if(viewId()==="forms"){fmSync();if(!document.activeElement?.closest?.(".fmed,.fmbox,.fmtitle")||!$("#fmView"))fmDraw();return} // a redraw from elsewhere never takes the text being typed
@@ -7671,7 +7708,9 @@ const mnId=()=>{const m=/^#minutes\/(.+)$/.exec(location.hash||"");return m?deco
 async function mnApi(method,path,body){const r=await fetch(path,{method,headers:{"Content-Type":"application/json"},body:body?JSON.stringify(body):undefined});const j=await r.json().catch(()=>({}));if(!r.ok){const e=new Error(j.error||("Error "+r.status));e.connect=!!j.connect;throw e}return j}
 async function mnLoad(force){const st=mn();if(st.loading||(!force&&Date.now()-st.loadedAt<8000))return;st.loading=true;
   try{st.data=await mnApi("GET","/api/minutes");st.err=""}catch(e){st.err="Minutes could not be read. Is the Desk server running?"}
-  st.loading=false;st.loadedAt=Date.now();if(viewId()==="minutes"&&!st.edit&&!st.picker&&!st.busy&&!document.activeElement?.closest?.(".mnshare"))render()}
+  const first=!st.loadedAt;st.loading=false;st.loadedAt=Date.now();
+  if(viewId()==="minutes"&&!st.edit&&!st.picker&&!st.busy&&!document.activeElement?.closest?.(".mnshare,.mntags,[data-mnq]"))render();
+  else if(viewId()==="transcribe"&&first)render()} // the Transcribe list links each recording to its minutes
 setInterval(()=>{if(viewId()==="minutes")mnLoad(true)},20000);
 async function mnDo(fn,msg){const st=mn();st.busy=true;st.msg="";try{await fn();st.msg=msg||""}catch(e){st.msg=e.message||"Failed."}finally{st.busy=false}await mnLoad(true);if(viewId()==="minutes"){st.force=true;render()}}
 const mnWhen=t=>t?new Date(t*1000).toLocaleString("en-US",{dateStyle:"medium",timeStyle:"short"}):"";
@@ -7697,21 +7736,89 @@ function mnMd(src){
   return out.join("")}
 const mnNotes=m=>(m.source||{}).from==="notes";
 const mnPending=m=>mnNotes(m)&&/^## Summary\nNot made yet\./.test(m.body||"");
-const mnRow=m=>`<a class="mnrow" href="#minutes/${esc(m.id)}" data-noauto><span class="mnt">${esc(m.title)}</span><span class="mns">${mnNotes(m)?esc(mnDay(m.at)):esc(mnWhen(m.at))}${mnNotes(m)?" · Notes":""}${mnPending(m)?" · No summary yet":""}${m.status==="draft"?" · Draft":""}${(m.gdoc||{}).url?" · Google Doc":""} · ${m.event?"📅 "+esc(m.event.title):"Not linked to an event"}</span></a>`;
 const mnDay=t=>t?new Date(t*1000).toLocaleDateString("en-US",{dateStyle:"medium"}):"";
-function mnPicker(){const now=Date.now(),xs=(S.cal?.events||[]).filter(e=>{const t=Date.parse(e.start);return isFinite(t)&&t>=now-86400000&&t<=now+21*86400000}).sort((a,b)=>Date.parse(a.start)-Date.parse(b.start)).slice(0,60);
-  return `<div class="mnpick">${xs.length?xs.map(e=>`<button type="button" class="mnpk" data-mnlink="${esc(e.id)}">${esc(e.title)}<span class="sub">${esc(mnRange(e))}</span></button>`).join(""):`<div class="empty">No events from yesterday to three weeks ahead. The Calendar view has them, once it has loaded.</div>`}</div>`}
+/* How the list is cut (by day, genre or client), the month's totals and the review of a recording (desk/minutes_insight.py). */
+const MNTABS=[["date","By date"],["genre","By genre"],["client","By client"],["insights","Insights"]];
+const mnTab=()=>{const st=mn();if(!st.tab){let v="";try{v=localStorage.getItem("desk-mntab")||""}catch(e){}st.tab=MNTABS.some(t=>t[0]===v)?v:"date"}return st.tab};
+const mnLab=(kind,id)=>((mn().data?.labels||{})[kind+"s"]||[]).find(x=>x.id===id)||null;
+const mnSecs=m=>m.length>0&&!mnNotes(m)?m.length:(m.event&&!m.event.allDay?Math.max(0,(Date.parse(m.event.end)-Date.parse(m.event.start))/1000)||0:0);
+const mnDur=s=>s>=60?trLen(Math.round(s/60)*60):"";
+const mnClock=s=>s>=60?`${Math.floor(s/60)} min ${Math.round(s%60)} sec`:`${Math.round(s||0)} sec`;
+const mnPct=v=>v==null?"—":Math.round(v*100)+"%";
+const mnTime=t=>new Date(t*1000).toLocaleTimeString("en-US",{timeStyle:"short"});
+const mnMonthName=k=>{const [y,m]=k.split("-").map(Number);return new Date(y,m-1,1).toLocaleDateString("en-US",{month:"long",year:"numeric"})};
+const mnDayName=k=>{const [y,m,d]=k.split("-").map(Number);return new Date(y,m-1,d).toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"})};
+const mnCount=(n,secs)=>`${n} meeting${n===1?"":"s"}${mnDur(secs)?" · "+mnDur(secs):""}`;
+const mnChip=(kind,m)=>{const l=mnLab(kind,m[kind]);return l?`<span class="mnchip"><i class="tldot" style="background:${genreColor(l)}"></i>${esc(l.name)}</span>`:""};
+const mnRow=(m,mode)=>{const when=mnNotes(m)?(mode==="date"?"Notes":mnDay(m.at)+" · Notes"):(mode==="date"?mnTime(m.at):mnWhen(m.at));
+  const bits=[when,mnDur(mnSecs(m)),mnPending(m)?"No summary yet":"",m.status==="draft"?"Draft":"",(m.gdoc||{}).url?"Google Doc":""].filter(Boolean).join(" · ");
+  const chips=mnChip("genre",m)+mnChip("client",m)+(m.event?`<span class="mnchip">📅 ${esc(m.event.title)}</span>`:(m.suggest||[]).length?`<span class="mnchip mnsug">📅 Suggested event</span>`:"");
+  return `<a class="mnrow" href="#minutes/${esc(m.id)}" data-noauto><span class="mnt">${esc(m.title)}</span><span class="mns">${esc(bits)}</span>${chips?`<span class="mnchips">${chips}</span>`:""}</a>`};
+const mnIns=()=>{const st=mn();return st.ins||(st.ins={month:dayKey(Date.now()).slice(0,7),data:{},loading:""})};
+async function mnInsLoad(month,force){const i=mnIns(),had=i.data[month];if(i.loading===month||(!force&&had&&Date.now()-had.at<60000))return;i.loading=month;
+  try{const d=await mnApi("GET","/api/minutes/insights?month="+encodeURIComponent(month));d.at=Date.now();i.data[month]=d}catch(e){i.data[month]={...(had||{}),error:had?"":"The month could not be read.",at:Date.now()}}
+  i.loading="";if(viewId()!=="minutes"||mnId())return;
+  const line=$("#mnLine");if(line)line.innerHTML=mnLine(); // only these two parts: a full redraw would take the search box's focus
+  if(mnTab()==="insights"&&i.month===month){const l=$("#mnList");if(l){l.innerHTML=mnInsights();wireMnList()}}}
+const mnLine=()=>{const k=dayKey(Date.now()).slice(0,7),d=mnIns().data[k],t=d&&d.totals;
+  return `<b>${esc(mnMonthName(k))}</b>${t?` · ${esc(mnCount(t.meetings,t.secs))} · ${t.recorded.n} recorded`:""}`};
+const mnBars=(gs,kind)=>{const max=Math.max(1,...gs.map(g=>g.secs||0)),maxn=Math.max(1,...gs.map(g=>g.n)),byN=!gs.some(g=>g.secs>0);
+  return `<div class="tlbars">${gs.map(g=>{const c=g.id?genreColor(g):TL_NONE;return `<div class="tlbar"><span class="tlname"><i class="tldot" style="background:${c}"></i>${esc(g.name||(kind==="genre"?"No genre":"No client"))}</span><span class="tltrack"><span style="width:${((byN?g.n/maxn:(g.secs||0)/max)*100).toFixed(1)}%;background:${c}"></span></span><span class="tlh">${g.n}${mnDur(g.secs)?" · "+esc(mnDur(g.secs)):""}</span></div>`}).join("")}</div>`};
+const mnNum=(label,value,note)=>`<div class="mnnum"><span class="sub">${esc(label)}</span><b>${esc(value)}</b>${note?`<span class="sub">${esc(note)}</span>`:""}</div>`;
+const mnFillers=fs=>(fs||[]).length?`<div class="mnchips">${fs.map(f=>`<span class="mnchip">${esc(f.w)} ×${f.n}</span>`).join("")}</div><p class="hint">Counted from the text. The speech engine drops some fillers, so the real numbers are higher.</p>`:"";
+function mnInsights(){
+  const i=mnIns(),now=dayKey(Date.now()).slice(0,7),d=i.data[i.month];mnInsLoad(i.month);
+  const nav=`<div class="mnnav"><button class="btn sm" type="button" data-mnmonth="-1" aria-label="Previous month">←</button><b>${esc(mnMonthName(i.month))}</b><button class="btn sm" type="button" data-mnmonth="1" aria-label="Next month" ${i.month>=now?"disabled":""}>→</button></div>`;
+  if(!d||!d.totals) return nav+`<div class="card empty">${esc((d&&d.error)||"Loading…")}</div>`;
+  const t=d.totals,p=d.prev,vs=(a,b,f)=>a===b?"Same as the month before":`${a>b?"+":"−"}${f(Math.abs(a-b))} vs the month before`;
+  const nums=`<section class="card mpanel"><div class="mnnums">${mnNum("Meetings",String(t.meetings),vs(t.meetings,p.meetings,String))}${mnNum("Time",mnDur(t.secs)||"0 min",vs(t.secs,p.secs,x=>mnDur(x)||"0 min"))}${mnNum("Recorded",String(t.recorded.n),mnDur(t.recorded.secs)+(t.recorded.untimed?`${mnDur(t.recorded.secs)?" · ":""}${t.recorded.untimed} without a time`:""))}${mnNum("Not recorded",String(t.notRecorded.n),mnDur(t.notRecorded.secs))}</div>
+    <p class="hint">${d.calendar.covered?"Not recorded: calendar events with a meeting link or guests that you made or accepted, and that have no minutes.":d.calendar.from?`The calendar history here starts on ${esc(mnDay(d.calendar.from))}. Before that, only meetings with minutes are counted.`:"The calendar's past has not been read yet, so only meetings with minutes are counted."}</p></section>`;
+  const bars=(title,gs,kind)=>gs.length?mpanel(title,"Meetings with minutes",mnBars(gs,kind)):"";
+  const sp=d.speaking,speak=mpanel("Your speaking",sp?`${sp.n} recording${sp.n===1?"":"s"}, averaged`:"",sp?`<div class="mnnums">${mnNum("Talk share",mnPct(sp.share))}${mnNum("Longest stretch",mnClock(sp.longest))}${mnNum("Questions",String(sp.questions),"per meeting")}${mnNum("Fillers",sp.fillerPerMin==null?"—":String(sp.fillerPerMin),"per minute you spoke")}</div>${mnFillers(sp.fillers)}${d.focus?`<p><span class="sub">This month, work on</span><br>${esc(d.focus)}</p>`:""}`:`<p class="sub">No recording with a review in this month.</p>`);
+  const rows=d.rows.map(r=>r.kind==="minute"?`<div class="mnevt"><span><a href="#minutes/${esc(r.id)}" data-noauto>${esc(r.title)}</a></span><span class="sub">${esc(mnDay(r.at))}${mnDur(r.secs)?" · "+esc(mnDur(r.secs)):""}</span></div>`
+    :`<div class="mnevt${r.skipped?" off":""}"><span>${esc(r.title)}</span><span class="sub">${esc(mnDay(r.at))}${mnDur(r.secs)?" · "+esc(mnDur(r.secs)):""} · Not recorded</span><button class="btn sm" type="button" data-mnskip="${esc(r.id)}" data-on="${r.skipped?"0":"1"}">${r.skipped?"Count it":"Didn't happen"}</button></div>`).join("");
+  return nav+`<div class="mnins">${nums}${bars("By genre",d.byGenre,"genre")}${bars("By client",d.byClient,"client")}${speak}${d.rows.length?mpanel("Meetings","",`<div>${rows}</div>`):""}</div>`;
+}
+const mnAuto=m=>{const ev=m.event,dis=mn().busy?"disabled":"";
+  if(ev&&ev.auto) return `<div class="mnevrow"><span class="sub">${ev.how==="content"?"Linked by content":ev.how==="time"?"Linked by time":"Linked by the auto-recording"}</span><button class="btn sm" type="button" data-mnnot="" ${dis}>Not this meeting</button></div>`;
+  if(!ev&&(m.suggest||[]).length) return m.suggest.map(e=>`<div class="mnevrow"><span>Suggested: 📅 ${esc(e.title)} · ${esc(mnRange(e))}</span><button class="btn sm primary" type="button" data-mnsug="${esc(e.id)}" ${dis}>Link</button><button class="btn sm" type="button" data-mnnot="${esc(e.id)}" ${dis}>Not this</button></div>`).join("");
+  return ""};
+const mnTags=m=>`<section class="mntags">${["genre","client"].map(k=>{const l=mnLab(k,m[k]),all=(mn().data?.labels||{})[k+"s"]||[];
+  return `<label class="mntag"><span class="sub">${k==="genre"?"Genre":"Client"}</span><input class="mnsearch" list="mnDl-${k}" data-mntag="${k}" value="${esc(l?l.name:"")}" placeholder="${k==="genre"?"No genre":"No client"}" autocomplete="off"><datalist id="mnDl-${k}">${all.map(x=>`<option value="${esc(x.name)}"></option>`).join("")}</datalist></label>`}).join("")}</section>`;
+function mnReview(m){
+  if((m.source||{}).kind!=="transcribe"||mnNotes(m)) return "";
+  const rv=m.review,box=x=>`<section class="card mnrev"><div class="section-title">Review</div>${x}</section>`;
+  if(!rv) return box(`<p class="sub">Being made. The numbers and the advice appear here a few minutes after the text is ready.</p>`);
+  if(rv.empty) return box(`<p class="sub">This recording has no text to review.</p>`);
+  const s=rv.stats||{},names=rv.names||{},keys=Object.keys(names),a=rv.advice;
+  const who=rv.meBy==="track"?`<p class="sub">You: your own microphone.</p>`
+    :keys.length>1?`<div class="mnevrow"><label class="mnwho">You: <select data-mnvoice aria-label="Your voice">${keys.map(k=>`<option value="${esc(k)}" ${k===rv.me?"selected":""}>${esc(names[k])}</option>`).join("")}</select></label><span class="sub">${rv.meBy==="me"?"Chosen by you.":"Guessed. Change it if this is not your voice."}</span></div>`
+    :!s.split?`<p class="sub">The voices were not told apart in this recording, so the numbers cover everyone who spoke.</p>`:"";
+  const nums=`<div class="mnnums">${mnNum("Talk share",mnPct(s.share),s.split?`${mnDur(s.mine)||mnClock(s.mine)} of ${mnDur(s.total)||mnClock(s.total)}`:"")}${mnNum("Longest stretch",mnClock(s.longest))}${mnNum("Questions",String(s.questions??"—"),"asked by you, roughly")}${mnNum("Fillers",s.fillerPerMin==null?"—":String(s.fillerPerMin),"per minute you spoke")}</div>${mnFillers(s.fillers)}`;
+  const list=(title,xs)=>(xs||[]).length?`<h3>${title}</h3><ul>${xs.map(x=>`<li>${esc(x.point)}${x.minutes?` <span class="sub">about ${x.minutes} min</span>`:""}${x.quote?`<q>${esc(x.quote)}</q>`:""}</li>`).join("")}</ul>`:"";
+  const adv=a?`${list("Could be shorter",a.shorter)}${list("How you ran it",a.ran)}${list("How you spoke",a.spoke)}${a.good?`<h3>Went well</h3><p>${esc(a.good)}</p>`:""}${a.next?`<h3>Try next time</h3><p>${esc(a.next)}</p>`:""}`
+    :rv.redo||(rv.tries||0)<3?`<p class="sub">Claude is writing the advice. It appears here in a minute or two.</p>`:`<p class="sub">The advice could not be written. Redo tries again.</p>`;
+  return box(`${who}${nums}${adv}<div class="mnactions"><button class="btn" type="button" data-mnredo ${mn().busy?"disabled":""}>Redo</button><span class="sub">Sends the transcript to Claude once. The review stays in the Desk: it is not in the Google Doc or the mails.</span></div>`);
+}
+const mnPickList=()=>{const now=Date.now(),near=(mn().near||{}).events||[],seen=new Set(near.map(e=>e.id));
+  return [...near,...(S.cal?.events||[]).filter(e=>{const t=Date.parse(e.start);return !seen.has(e.id)&&isFinite(t)&&t>=now-86400000&&t<=now+21*86400000}).sort((a,b)=>Date.parse(a.start)-Date.parse(b.start))].slice(0,60)};
+function mnPicker(){const xs=mnPickList();
+  return `<div class="mnpick">${xs.length?xs.map(e=>`<button type="button" class="mnpk" data-mnlink="${esc(e.id)}">${esc(e.title)}<span class="sub">${esc(mnRange(e))}</span></button>`).join(""):`<div class="empty">No events around this meeting's day, and none from yesterday to three weeks ahead.</div>`}</div>`}
+async function mnNear(m){const st=mn();if((st.near||{}).id===m.id)return;st.near={id:m.id,events:[]};
+  try{const d=await mnApi("GET","/api/minutes/events?day="+dayKey(m.at*1000));if((st.near||{}).id===m.id){st.near.events=d.events||[];if(st.picker&&mnId()===m.id)render()}}catch(e){}}
 function mnDetail(id){
   const st=mn();const m=(st.data?.minutes||[]).find(x=>x.id===id);
   if(!m) return `<a class="mnback" href="#minutes">← Minutes</a><div class="card empty">${st.data?"This minute is not here any more.":"Loading…"}</div>`;
   const ev=m.event,cal=m.calendar;
   const calLine=!ev?"":cal&&cal.ok?`<p class="sub">The link is in this Google Calendar event.</p>`:cal&&!cal.ok?`<p class="due" role="alert">${esc(cal.error||"The link was not written.")}</p>`:"";
   return `<a class="mnback" href="#minutes">← Minutes</a>
-  <header class="head mnhead"><div class="mnhd"><input class="mntitle" value="${esc(m.title)}" data-mnfield="title" aria-label="Title"><p class="sub">${esc(mnNotes(m)?mnDay(m.at):mnWhen(m.at))}${m.place?" · "+esc(m.place):""} · ${m.status==="ready"?"Ready":"Draft"}${mnNotes(m)?" · From notes":""}</p></div></header>
+  <header class="head mnhead"><div class="mnhd"><input class="mntitle" value="${esc(m.title)}" data-mnfield="title" aria-label="Title"><p class="sub">${esc(mnNotes(m)?mnDay(m.at):mnWhen(m.at))}${m.place?" · "+esc(m.place):""} · ${m.status==="ready"?"Ready":"Draft"}${mnNotes(m)?" · From notes":""}${mnDur(mnSecs(m))?" · "+esc(mnDur(mnSecs(m))):""}</p></div></header>
+  ${mnTags(m)}
   ${(m.source||{}).kind==="transcribe"?`<section class="card mnsrc"><div class="mnevrow">${mnNotes(m)?`<button class="btn${mnPending(m)?" primary":""}" type="button" data-mnmake ${st.busy?"disabled":""}>${mnPending(m)?"Make minutes":"Make again"}</button><span class="sub">Sends the notes to Claude (Sonnet 5.5, a few yen). The result appears here in a minute or two.</span>`:""}<a class="btn" href="http://localhost:8791/?id=${esc(m.source.sid)}" target="_blank" rel="noopener">Open in Transcribe ↗</a></div></section>`:""}
   <section class="card mnev"><div class="section-title">Calendar</div>
     ${ev?`<div class="mnevrow"><span>📅 ${esc(ev.title)} · ${esc(mnRange(ev))}</span><button class="btn" type="button" data-mnpick ${st.busy?"disabled":""}>Change</button><button class="btn" type="button" data-mnunlink ${st.busy?"disabled":""}>Unlink</button></div>`
           :`<div class="mnevrow"><span>Not linked to an event.</span><button class="btn" type="button" data-mnpick ${st.busy?"disabled":""}>Link to an event</button></div>`}
+    ${mnAuto(m)}
     ${st.picker?mnPicker():""}
     ${ev?`<div class="mnevrow"><button class="btn primary" type="button" data-mnwrite ${st.busy?"disabled":""}>Write link to Google Calendar</button></div>`:""}
     ${calLine}${st.msg?`<p class="sub" role="status">${esc(st.msg)}</p>`:""}</section>
@@ -7719,6 +7826,7 @@ function mnDetail(id){
   ${mnDocView(m)?mnDocView(m):`<section class="card mnbody">${st.edit
     ?`<textarea class="mnedit" id="mnTa" aria-label="Minute text">${esc(m.body)}</textarea><div class="mnactions"><button class="btn primary" type="button" data-mnsave>Save text</button><button class="btn" type="button" data-mnedit>Done</button></div>`
     :`<div class="mndoc" data-noauto>${mnMd(m.body)}</div><div class="mnactions"><button class="btn" type="button" data-mnedit>Edit text</button></div>`}</section>`}
+  ${mnReview(m)}
   ${mnShare(m)}
   <section class="mnfoot">${m.status==="ready"?`<button class="btn" type="button" data-mnstatus="draft">Back to draft</button>`:`<button class="btn" type="button" data-mnstatus="ready">Mark ready</button>`}<button class="btn" type="button" data-mndel>Delete</button></section>`;
 }
@@ -7774,8 +7882,10 @@ function mnView(){
   if(st.err&&!st.data) return head+`<div class="card empty">${esc(st.err)}</div>`;
   const all=st.data?.minutes||[];
   return head+(st.data&&!st.data.transcriber?`<p class="sub">Transcribe is not running. A recording becomes a minute when it has been turned into text.</p>`:"")+
-    `<section class="card"><input class="mnsearch" type="search" placeholder="Search minutes" value="${esc(st.q)}" data-mnq aria-label="Search minutes"></section>
-    <div id="mnList">${mnList()}</div>${mnMailSet()}`;
+    `<a class="mnline" id="mnLine" href="#minutes" data-mntab="insights" data-noauto>${mnLine()}</a>
+    <div class="mntabs mnviews" role="tablist">${MNTABS.map(([k,w])=>`<button type="button" role="tab" class="mntab${mnTab()===k?" on":""}" aria-selected="${mnTab()===k}" data-mntab="${k}">${w}</button>`).join("")}</div>
+    ${mnTab()==="insights"?"":`<section class="card"><input class="mnsearch" type="search" placeholder="Search minutes" value="${esc(st.q)}" data-mnq aria-label="Search minutes"></section>`}
+    <div id="mnList">${mnTab()==="insights"?mnInsights():mnList()}</div>${mnMailSet()}`;
 }
 /* Mail to the owner's own inbox when a minute's Google Doc is ready (desk/minutes_mail.py). */
 function mnMailSet(){const s=mn().data?.mail;if(!s)return "";
@@ -7783,16 +7893,41 @@ function mnMailSet(){const s=mn().data?.mail;if(!s)return "";
     <label class="mnto"><input type="checkbox" data-mnmail="on" ${s.on?"checked":""}> Email me a short version with the Google Doc link</label>
     <label class="mnto"><input type="checkbox" data-mnmail="thanks" ${s.thanks?"checked":""} ${s.on?"":"disabled"}> Draft a thank-you to the guests of the calendar event</label>
     <p class="hint">One mail per meeting, to your own inbox only. The thank-you stays a Gmail draft until you send it.</p></section>`}
-function mnList(){const st=mn();const all=st.data?.minutes||[];const q=st.q.trim().toLowerCase();
-  const rows=all.filter(m=>!q||(m.title+" "+(m.body||"")).toLowerCase().includes(q));
-  return rows.length?`<section class="card mnlist">${rows.map(mnRow).join("")}</section>`
-    :`<div class="card empty">${all.length?"No minutes match.":"No minutes yet. Record a meeting in Transcribe, and its minutes appear here."}</div>`}
+function mnList(){const st=mn(),tab=mnTab();const all=st.data?.minutes||[];const q=st.q.trim().toLowerCase();
+  const name=(k,m)=>(mnLab(k,m[k])||{}).name||"";
+  const rows=all.filter(m=>!q||(m.title+" "+(m.body||"")+" "+name("genre",m)+" "+name("client",m)).toLowerCase().includes(q));
+  if(!rows.length) return `<div class="card empty">${all.length?"No minutes match.":"No minutes yet. Record a meeting in Transcribe, and its minutes appear here."}</div>`;
+  const total=xs=>mnCount(xs.length,xs.reduce((a,m)=>a+mnSecs(m),0));
+  const group=(head,xs,mode)=>`<section class="mnday"><h3>${head}</h3><div class="card mnlist">${xs.map(m=>mnRow(m,mode)).join("")}</div></section>`;
+  if(tab==="date"){const by={};rows.forEach(m=>{const k=dayKey(m.at*1000);(by[k]=by[k]||[]).push(m)});let month="";
+    return Object.keys(by).sort().reverse().map(k=>{const mk=k.slice(0,7),first=mk!==month;month=mk;
+      return (first?`<h2 class="mnmonth">${esc(mnMonthName(mk))}<span class="sub">${esc(total(rows.filter(m=>dayKey(m.at*1000).slice(0,7)===mk)).replace(/ meetings?/," recorded"))}</span></h2>`:"")+group(esc(mnDayName(k)),by[k],"date")}).join("")}
+  const by=new Map();rows.forEach(m=>{const l=mnLab(tab,m[tab]),k=l?l.id:"";if(!by.has(k))by.set(k,{l,xs:[]});by.get(k).xs.push(m)});
+  return [...by.values()].sort((a,b)=>(!a.l-!b.l)||b.xs.length-a.xs.length||(a.l&&b.l?a.l.name.localeCompare(b.l.name):0)).map(g=>
+    group(`<i class="tldot" style="background:${g.l?genreColor(g.l):TL_NONE}"></i>${esc(g.l?g.l.name:tab==="genre"?"No genre":"No client")}<span class="sub">${esc(total(g.xs))}</span>${g.l?`<button class="btn sm" type="button" data-mnrename="${esc(g.l.id)}" data-kind="${tab}">Rename</button>`:""}`,g.xs,tab)).join("")}
+/* The parts inside #mnList are drawn again on their own (search, the month's numbers), so their buttons are wired here. */
+function wireMnList(){const st=mn();
+  document.querySelectorAll("[data-mnrename]").forEach(b=>b.onclick=()=>{const kind=b.dataset.kind,l=mnLab(kind,b.dataset.mnrename);if(!l)return;
+    const name=prompt(`Rename "${l.name}". A name another ${kind} already has merges the two.`,l.name);if(name==null||!name.trim()||name.trim()===l.name)return;
+    mnDo(()=>mnApi("PUT","/api/minutes/labels",{kind,id:l.id,name:name.trim()}),"")});
+  document.querySelectorAll("[data-mnmonth]").forEach(b=>b.onclick=()=>{const i=mnIns(),[y,m]=i.month.split("-").map(Number),d=new Date(y,m-1+(+b.dataset.mnmonth),1);
+    i.month=`${d.getFullYear()}-${pad(d.getMonth()+1)}`;const l=$("#mnList");if(l){l.innerHTML=mnInsights();wireMnList()}});
+  document.querySelectorAll("[data-mnskip]").forEach(b=>b.onclick=async()=>{b.disabled=true;try{await mnApi("PUT","/api/minutes/skip",{id:b.dataset.mnskip,on:b.dataset.on==="1"})}catch(e){toast(e.message||"Could not save")}
+    const i=mnIns();delete i.data[dayKey(Date.now()).slice(0,7)];mnInsLoad(i.month,true);if(i.month!==dayKey(Date.now()).slice(0,7))mnInsLoad(dayKey(Date.now()).slice(0,7),true)});
+}
 function wireMn(){
   const st=mn();const id=mnId();const m=id?(st.data?.minutes||[]).find(x=>x.id===id):null;
-  document.querySelectorAll("[data-mnq]").forEach(i=>i.oninput=()=>{st.q=i.value;const l=$("#mnList");if(l)l.innerHTML=mnList()});
+  document.querySelectorAll("[data-mnq]").forEach(i=>i.oninput=()=>{st.q=i.value;const l=$("#mnList");if(l){l.innerHTML=mnList();wireMnList()}});
+  if(!id){mnInsLoad(dayKey(Date.now()).slice(0,7));wireMnList()}
+  document.querySelectorAll("[data-mntab]").forEach(b=>b.onclick=e=>{e.preventDefault();st.tab=b.dataset.mntab;try{localStorage.setItem("desk-mntab",st.tab)}catch(err){}render()});
+  document.querySelectorAll("[data-mntag]").forEach(i=>i.onchange=()=>{if(!m)return;const kind=i.dataset.mntag;i.blur();mnDo(()=>mnApi("POST",`/api/minutes/${m.id}/tag`,{kind,name:i.value}),"")});
+  document.querySelectorAll("[data-mnnot]").forEach(b=>b.onclick=()=>m&&mnDo(()=>mnApi("POST",`/api/minutes/${m.id}/notthis`,b.dataset.mnnot?{id:b.dataset.mnnot}:{}),"This event will not be linked to these minutes again."));
+  document.querySelectorAll("[data-mnsug]").forEach(b=>b.onclick=()=>{const e=m&&(m.suggest||[]).find(x=>x.id===b.dataset.mnsug);if(e)mnDo(()=>mnApi("PUT",`/api/minutes/${m.id}`,{event:e}),"Linked to the event.")});
+  document.querySelectorAll("[data-mnvoice]").forEach(sel=>sel.onchange=()=>m&&mnDo(()=>mnApi("POST",`/api/minutes/${m.id}/voice`,{me:sel.value}),""));
+  document.querySelectorAll("[data-mnredo]").forEach(b=>b.onclick=()=>m&&mnDo(()=>mnApi("POST",`/api/minutes/${m.id}/review`,{}),""));
   document.querySelectorAll("[data-mnnew]").forEach(b=>b.onclick=()=>mnDo(async()=>{const r=await mnApi("POST","/api/minutes",{title:"Untitled meeting"});location.hash="#minutes/"+r.id},"")); 
-  document.querySelectorAll("[data-mnpick]").forEach(b=>b.onclick=()=>{st.picker=!st.picker;st.msg="";render()});
-  document.querySelectorAll("[data-mnlink]").forEach(b=>b.onclick=()=>{const e=(S.cal?.events||[]).find(x=>x.id===b.dataset.mnlink);if(!e||!m)return;st.picker=false;
+  document.querySelectorAll("[data-mnpick]").forEach(b=>b.onclick=()=>{st.picker=!st.picker;st.msg="";if(st.picker&&m)mnNear(m);render()});
+  document.querySelectorAll("[data-mnlink]").forEach(b=>b.onclick=()=>{const e=mnPickList().find(x=>x.id===b.dataset.mnlink);if(!e||!m)return;st.picker=false;
     const uid=e.id.slice(0,e.id.lastIndexOf("_"));
     mnDo(()=>mnApi("PUT",`/api/minutes/${m.id}`,{event:{id:e.id,uid,title:e.title,start:e.start,end:e.end||"",allDay:!!e.allDay}}),"Linked to the event.")});
   document.querySelectorAll("[data-mnunlink]").forEach(b=>b.onclick=()=>m&&mnDo(()=>mnApi("PUT",`/api/minutes/${m.id}`,{event:null}),"Unlinked."));
@@ -7882,8 +8017,12 @@ function trView(){
   const main=`<section class="card mfocus" aria-label="Record"><p class="mtalk">Record a meeting or import a voice memo. The text appears here when it's ready, and nothing leaves this Mac.</p>`
     +(d.engine?"":`<p class="due" role="alert">The speech engine isn't installed yet. Run desk/transcribe/setup.sh once (about 1.6 GB).</p>`)
     +`<div class="nsgo"><a class="btn primary trgo" href="${esc(d.url)}" target="_blank" rel="noopener">Record or import ↗</a><span class="due">Opens in your browser</span></div></section>`;
-  const rows=d.sessions.map(x=>`<a class="strow trrow trgo" href="${esc(d.url)}?id=${esc(x.id)}" target="_blank" rel="noopener"><span>${esc(x.title)}</span><span class="nsv">${esc(trLen(x.duration))}</span><span class="nsn">${esc(new Date(x.created*1000).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}))} · ${x.auto?"Auto · ":""}${esc(trState(x))}</span></a>`).join("");
-  const list=d.sessions.length?mpanel("Recent",d.running?"":"Recorder is off. It starts when you open one.",rows):"";
+  const mins=S.mn?.data?.minutes||[],days={};d.sessions.forEach(x=>{const k=dayKey(x.created*1000);(days[k]=days[k]||[]).push(x)});
+  const row=x=>{const mm=mins.find(m=>(m.source||{}).sid===x.id);
+    return `<div class="strow trrow"><a class="trgo" href="${esc(d.url)}?id=${esc(x.id)}" target="_blank" rel="noopener">${esc(x.title)}</a><span class="nsv">${esc(trLen(x.duration))}</span><span class="nsn">${esc(mnTime(x.created))} · ${x.auto?"Auto · ":""}${esc(trState(x))}${mm?` · <a href="#minutes/${esc(mm.id)}">Minutes →</a>`:""}</span></div>`};
+  const rows=Object.keys(days).sort().reverse().map(k=>`<h3 class="trday">${esc(mnDayName(k))}</h3>${days[k].map(row).join("")}`).join("");
+  const mo=d.month,sub=[mo?`This month: ${mo.n} recording${mo.n===1?"":"s"} · ${trLen(mo.secs)} transcribed`:"",d.running?"":"Recorder is off. It starts when you open one."].filter(Boolean).join(" · ");
+  const list=d.sessions.length?mpanel("Recordings",esc(sub),rows):"";
   return `<div class="money trp" data-noauto>${head}${main}${trAutoHtml()}${list}</div>`;
 }
 function wireTr(){wireTrAuto();$("#view").querySelectorAll(".trgo").forEach(a=>a.onclick=trOpen)}

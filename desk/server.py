@@ -43,6 +43,7 @@ import meetcheck  # Should we meet?: the questions, Claude drafts and the pre-re
 import minutes_share  # Minutes → a Google Doc anyone with the link can read, and a thank-you Gmail draft (never sent)
 import minutes_mail  # Minutes → one mail to the owner's own inbox, and the thank-you draft made by itself
 import minutes  # 議事録: made from Transcribe recordings, linked to Calendar events (desk/minutes.py)
+import minutes_insight  # Minutes: genre and client labels, the event found by itself, the month's totals, the speaking review
 import notify
 import bedtime  # Bedtime: a gentle word to stop for the day once the set hour has passed (desk/bedtime.py)
 import once  # one-time changes to the Mac's data (desk/once.py)
@@ -1064,7 +1065,9 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/meetcheck/status":
             return self.send(200, meetcheck.status())
         if path == "/api/minutes":
-            return self.send(200, {**minutes.view(), "mail": minutes_mail.status()})
+            return self.send(200, {**minutes_insight.decorate(minutes.view()), "mail": minutes_mail.status()})
+        if path in ("/api/minutes/insights", "/api/minutes/events"):  # the month's meetings and hours; past events around a day
+            return self.send(*minutes_insight.handle_get(path, parse_qs(urlsplit(self.path).query)))
         if path.startswith("/api/minutes/") and path.count("/") == 3:
             try:
                 return self.send(200, minutes.get(path.split("/")[3]))
@@ -1787,6 +1790,9 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(200, minutes.create(rec))
             if p == ["minutes", "mail"] and method == "PUT":  # the mail to the owner: on/off
                 return self.send(200, minutes_mail.put_settings(rec if isinstance(rec, dict) else {}))
+            extra = minutes_insight.handle(method, p, rec)  # labels, "not this meeting", "didn't happen", the review
+            if extra:
+                return self.send(*extra)
             if len(p) == 2 and method == "PUT":
                 return self.send(200, minutes.put(p[1], rec))
             if len(p) == 3 and method == "POST" and p[2] == "remove":
@@ -1912,6 +1918,7 @@ if __name__ == "__main__":
         threading.Thread(target=posts.watch, daemon=True).start()  # Post Studio: company-site news scheduled for later
         threading.Thread(target=routine_alarm.watch, daemon=True).start()  # routine start alarm (quiet 22:00-07:00)
         threading.Thread(target=minutes.watch, daemon=True).start()  # 議事録: a minute for each ready recording, every minute
+        threading.Thread(target=minutes_insight.watch, daemon=True).start()  # their labels, calendar events and reviews, every minute
         threading.Thread(target=minutes_share.watch, daemon=True).start()  # every minute gets its Google Doc (anyone with the link can view), kept in step with the text
         threading.Thread(target=routine_sync.watch, daemon=True).start()  # routines <-> the Routine app on the phone
         threading.Thread(target=cards_sync.watch, daemon=True).start()  # flashcards <-> the Cards app on the phone
