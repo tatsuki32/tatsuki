@@ -124,7 +124,7 @@
     {
       "name": "tany-book-worker",
       "runtimeExecutable": "/bin/sh",
-      "runtimeArgs": ["-c", "cd /tmp/claude/book-test/site && WRANGLER_SEND_METRICS=false WRANGLER_LOG_PATH=/tmp/claude/wl exec npx wrangler dev --local --test-scheduled --port ${PORT:-8790} --ip 127.0.0.1 --var BOOK_FAKE:1 --var BOOK_KEY:testkey --var TOKEN_KEY:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA= --var RESEND_KEY:fake"],
+      "runtimeArgs": ["-c", "cd /tmp/claude/book-test/site && WRANGLER_SEND_METRICS=false WRANGLER_LOG_PATH=/tmp/claude/wl exec npx wrangler dev --local --test-scheduled --port ${PORT:-8790} --ip 127.0.0.1 --var BOOK_FAKE:1 --var BOOK_KEY:testkey --var TOKEN_KEY:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA= --var RESEND_KEY:fake --var ADMIN_EMAIL:owner@example.com"],
       "port": 8790
     },
     {

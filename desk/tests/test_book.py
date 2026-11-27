@@ -80,6 +80,17 @@ class Pull(unittest.TestCase):
         book.pull()
         self.assertEqual(book.view()["links"][0]["url"], "https://tany.im/book/p/abc")
 
+    def test_link_made_on_the_web_has_no_address_here(self):
+        book.pull()  # tany.im/book/admin made l1: only the hash of its key exists, so this Mac never saw the address
+        link = book.view()["links"][0]
+        self.assertEqual((link["id"], link["key"], link["url"]), ("l1", "", ""))
+
+    def test_rules_saved_on_the_web_win_over_older_ones_here(self):
+        book._write("settings.json", {**book.DEFAULTS, "updatedAt": 3, "ownerName": "Local"})
+        book.pull()  # the Worker stamped the web's save with a later time (5)
+        self.assertEqual(book.settings()["ownerName"], "Remote")
+        self.assertEqual([c[0] for c in self.calls], ["GET"])
+
     def test_home_line_names_the_next_booking(self):
         book.pull()
         book._write("bookings.json", [{"id": "b2", "start": 4e15, "end": 4e15 + 1, "name": "B", "purposeName": "Need advice", "status": "booked"}])
