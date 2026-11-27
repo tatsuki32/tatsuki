@@ -16,7 +16,7 @@ class Settings(unittest.TestCase):
     def test_defaults_when_empty(self):
         s = book.clean_settings({})
         self.assertEqual(s["buffer"], 15)
-        self.assertEqual(len(s["purposes"]), 4)
+        self.assertEqual([p["min"] for p in s["purposes"]], [5, 10, 14, 19, 24])
         self.assertEqual(s["hours"]["1"], [["09:00", "18:00"]])
         self.assertEqual(s["hours"]["0"], [])
 

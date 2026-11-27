@@ -83,10 +83,12 @@ DEFAULTS = {
     "hours": {str(i): [["09:00", "18:00"]] if 1 <= i <= 5 else [] for i in range(7)},
     "special": {}, "buffer": 15, "daysAhead": 14, "noticeHours": 12, "maxPerDay": 3, "step": 30,
     "purposes": [
-        {"id": "first", "min": 30, "name": {"en": "First meeting", "ja": "はじめまして", "ru": "Знакомство", "vi": "Lần đầu gặp"}},
-        {"id": "advice", "min": 45, "name": {"en": "Need advice", "ja": "相談したい", "ru": "Нужен совет", "vi": "Cần tư vấn"}},
-        {"id": "decision", "min": 45, "name": {"en": "Need a decision", "ja": "決めたいことがある", "ru": "Нужно решение", "vi": "Cần quyết định"}},
-        {"id": "chat", "min": 30, "name": {"en": "Just chat", "ja": "ざっくばらんに", "ru": "Просто поболтать", "vi": "Trò chuyện thoải mái"}},
+        # short on purpose (the old Today Slots lengths); the page asks for topics and materials beforehand
+        {"id": "quick", "min": 5, "name": {"en": "Quick question", "ja": "ひとつ聞きたい", "ru": "Короткий вопрос", "vi": "Hỏi nhanh"}},
+        {"id": "chat", "min": 10, "name": {"en": "Just chat", "ja": "ざっくばらんに", "ru": "Просто поболтать", "vi": "Trò chuyện thoải mái"}},
+        {"id": "first", "min": 14, "name": {"en": "First meeting", "ja": "はじめまして", "ru": "Знакомство", "vi": "Lần đầu gặp"}},
+        {"id": "advice", "min": 19, "name": {"en": "Need advice", "ja": "相談したい", "ru": "Нужен совет", "vi": "Cần tư vấn"}},
+        {"id": "decision", "min": 24, "name": {"en": "Need a decision", "ja": "決めたいことがある", "ru": "Нужно решение", "vi": "Cần quyết định"}},
     ],
     "checkCals": ["primary"], "writeCal": "primary", "meet": True, "replyTo": "", "contact": "", "updatedAt": 0,
 }
