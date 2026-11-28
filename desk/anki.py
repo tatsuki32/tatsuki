@@ -116,7 +116,7 @@ def lang_name(card):
 
 
 def _part(s, n=60):
-    return " ".join(str(s or "").replace("::", " ").replace('"', "").split())[:n].strip() or "Untitled"
+    return " ".join(str(s or "").replace("::", " ").replace('"', "").replace("_", " ").split())[:n].strip() or "Untitled"
 
 
 def _chapter(ch):
