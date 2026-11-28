@@ -6829,8 +6829,8 @@ function wireWbk(){
     try{const r=await api("GET","/api/words/preview?lang="+encodeURIComponent(l));S.wbk.pre[l]=(r.pages[0]||{}).lines||[];render()}catch(e){toast("Could not make the preview")}});
   document.querySelectorAll("[data-wbkon]").forEach(b=>b.onclick=async()=>{const l=b.dataset.wbkon, on=b.dataset.on==="1";
     const name=(S.wbk.st.publish.langs.find(x=>x.lang===l)||{}).name||l;
-    if(on&&!confirm(`Publish "${name} words" on Rhizome Box? The page will be public, and new learned words will be added at the bottom by themselves.`))return;
-    if(!on&&!confirm(`Stop "${name} words"? The page becomes private. Its words stay on it.`))return;
+    if(on&&!await askYes(`Publish "${name} words" on Rhizome Box? The page will be public, and new learned words will be added at the bottom by themselves.`,"Publish"))return;
+    if(!on&&!await askYes(`Stop "${name} words"? The page becomes private. Its words stay on it.`,"Stop"))return;
     b.disabled=true;try{const r=await api("POST","/api/words/publish",{lang:l,on});await wbkLoad(true);toast(r.error||(on?"Published":"Now private"))}catch(e){b.disabled=false;toast("Could not save")}})}
 /* ---------- 🗺️ Language Map (#langmap, #langmap/<ISO2>, #language/<id>, #langmap?concept=<id>): every country, the languages
    spoken there, speakers, population, regions and peoples, from public data (desk/langmap_build.py, desk/langmap.py).
@@ -8022,7 +8022,7 @@ function wireMtg(){
     const wid=winId("meet-skip-"+r.id),had=S.wins.find(w=>w.id===wid&&!w.deleted);if(had)store.putWin({...had,deleted:true}).catch(()=>{});
     try{await mtgSave(r)}catch(e){toast("Could not save")}mtgDraw()});
   on("[data-mtgunover]",b=>b.onclick=()=>mtgDecide(r));
-  on("[data-mtgdel]",b=>b.onclick=async()=>{if(!confirm("Delete this check?"))return;r.deleted=true;try{await mtgSave(r)}catch(e){}location.hash="#meetcheck"});
+  on("[data-mtgdel]",b=>b.onclick=async()=>{if(!await askYes("Delete this check?","Delete"))return;r.deleted=true;try{await mtgSave(r)}catch(e){}location.hash="#meetcheck"});
 }
 /* ---------- 📝 Minutes (#minutes, #minutes/<id>): made from Transcribe recordings, linked to a Calendar event, and the link written into that event (desk/minutes.py) ---------- */
 const mn=()=>S.mn||(S.mn={data:null,err:"",loadedAt:0,loading:false,q:"",picker:false,edit:false,busy:false,msg:""});
@@ -8229,8 +8229,8 @@ function mnList(){const st=mn(),tab=mnTab();const all=st.data?.minutes||[];const
     group(`<i class="tldot" style="background:${g.l?genreColor(g.l):TL_NONE}"></i>${esc(g.l?g.l.name:tab==="genre"?"No genre":"No client")}<span class="sub">${esc(total(g.xs))}</span>${g.l?`<button class="btn sm" type="button" data-mnrename="${esc(g.l.id)}" data-kind="${tab}">Rename</button>`:""}`,g.xs,tab)).join("")}
 /* The parts inside #mnList are drawn again on their own (search, the month's numbers), so their buttons are wired here. */
 function wireMnList(){const st=mn();
-  document.querySelectorAll("[data-mnrename]").forEach(b=>b.onclick=()=>{const kind=b.dataset.kind,l=mnLab(kind,b.dataset.mnrename);if(!l)return;
-    const name=prompt(`Rename "${l.name}". A name another ${kind} already has merges the two.`,l.name);if(name==null||!name.trim()||name.trim()===l.name)return;
+  document.querySelectorAll("[data-mnrename]").forEach(b=>b.onclick=async()=>{const kind=b.dataset.kind,l=mnLab(kind,b.dataset.mnrename);if(!l)return;
+    const name=await askText("Rename",`New name for "${l.name}". A name another ${kind} already has merges the two.`,l.name,60);if(name==null||!name.trim()||name.trim()===l.name)return;
     mnDo(()=>mnApi("PUT","/api/minutes/labels",{kind,id:l.id,name:name.trim()}),"")});
   document.querySelectorAll("[data-mnmonth]").forEach(b=>b.onclick=()=>{const i=mnIns(),[y,m]=i.month.split("-").map(Number),d=new Date(y,m-1+(+b.dataset.mnmonth),1);
     i.month=`${d.getFullYear()}-${pad(d.getMonth()+1)}`;const l=$("#mnList");if(l){l.innerHTML=mnInsights();wireMnList()}});
@@ -8261,12 +8261,12 @@ function wireMn(){
   document.querySelectorAll("[data-mnck]").forEach(b=>b.onclick=()=>{if(!m)return;const n=+b.dataset.mnck;let k=-1;
     const body=m.body.split("\n").map(l=>{if(/^\s*- \[( |x)\] /.test(l)){k++;if(k===n)return l.replace(/^(\s*- \[)( |x)(\] )/,(_,a,c,d)=>a+(c==="x"?" ":"x")+d)}return l}).join("\n");
     mnDo(()=>mnApi("PUT",`/api/minutes/${m.id}`,{body}),"")});
-  document.querySelectorAll("[data-mnmake]").forEach(b=>b.onclick=()=>{if(!m)return;if(!mnPending(m)&&!confirm("Make the minutes again? The text here will be replaced by the new minutes."))return;
+  document.querySelectorAll("[data-mnmake]").forEach(b=>b.onclick=async()=>{if(!m)return;if(!mnPending(m)&&!await askYes("Make the minutes again? The text here will be replaced by the new minutes.","Make again"))return;
     mnDo(()=>mnApi("POST",`/api/minutes/${m.id}/make`,{}),"Claude is writing the minutes. They appear here in a minute or two.")});
   if(m) wireMnShare(m);
   document.querySelectorAll("[data-mnmail]").forEach(c=>c.onchange=()=>mnDo(()=>mnApi("PUT","/api/minutes/mail",{[c.dataset.mnmail]:c.checked}),""));
   document.querySelectorAll("[data-mnview]").forEach(b=>b.onclick=()=>{st.docView=b.dataset.mnview==="doc"?m.id:"";st.edit=false;render()});
-  document.querySelectorAll("[data-mndel]").forEach(b=>b.onclick=()=>{if(m&&confirm("Delete this minute? Its text is erased."))mnDo(async()=>{await mnApi("POST",`/api/minutes/${m.id}/remove`,{});location.hash="#minutes"},"")});
+  document.querySelectorAll("[data-mndel]").forEach(b=>b.onclick=async()=>{if(m&&await askYes("Delete this minute? Its text is erased.","Delete"))mnDo(async()=>{await mnApi("POST",`/api/minutes/${m.id}/remove`,{});location.hash="#minutes"},"")});
 }
 /* Transcribe: long recordings turned into text on this Mac. The recorder is its own server (desk/transcribe/, 8791) and opens in the default browser,
    which can use the microphone. This view only reads the sessions (desk/transcribe_desk.py) and starts the server when it is not running. */
@@ -8309,7 +8309,7 @@ function trRecBar(){const el=$("#trRecBar");if(!el)return;const r=S.tra?.recordi
   if(S.traShown===key&&el.innerHTML)return trRecTick();S.traShown=key;
   el.innerHTML=`<div class="tlrow" data-noauto><i class="tldot trdot" aria-hidden="true"></i><a class="tltitle" href="#transcribe">Recording: ${esc(r.title)}</a><span class="tlclock" id="trRecClock"></span>${trProblem(S.tra.problem)?`<a class="sub" href="#transcribe">${esc(trProblem(S.tra.problem))}</a>`:`<span class="sub">Tell the others</span>`}<button class="btn sm" type="button" id="trRecStop">Stop</button><button class="btn sm" type="button" id="trRecDrop">Discard</button></div>`;
   $("#trRecStop").onclick=async()=>{if(await trAutoDo({op:"stop",id:r.id}))toast("Stopped. The text will be ready soon")};
-  $("#trRecDrop").onclick=async()=>{if(confirm("Stop and erase this recording? It cannot be brought back."))if(await trAutoDo({op:"discard",id:r.id}))toast("Erased")};
+  $("#trRecDrop").onclick=async()=>{if(await askYes("Stop and erase this recording? It cannot be brought back.","Erase"))if(await trAutoDo({op:"discard",id:r.id}))toast("Erased")};
   trRecTick()}
 function trRecTick(){const c=$("#trRecClock"),r=S.tra?.recording;if(c&&r)c.textContent=tlFmt(Math.max(0,Date.now()-r.created*1000))}
 function trAutoHtml(){
@@ -11388,7 +11388,7 @@ function wireRd(){
   $("#rdRate").onchange=e=>{S.rd.rate=+e.target.value;try{localStorage.setItem("desk-rd-rate",S.rd.rate)}catch(e){}if(S.rd.playing){rdPause();rdPlay()}};
   $("#rdVoice").onchange=e=>{if(e.target.value==="__get"){e.target.value=rdVoicePick(b.lang);rdVoiceHelp(b.lang);return}try{localStorage.setItem("desk-rd-voice2-"+b.lang,e.target.value)}catch(e){}if(S.rd.playing){rdPause();rdPlay()}};
   document.querySelectorAll("[data-rdmode]").forEach(x=>x.onclick=()=>rdSetMode(x.dataset.rdmode));
-  on("#rdParAgain",()=>{if(confirm("Translate this chapter again? Its text goes to Claude once more."))rdParStart(true)});
+  on("#rdParAgain",async()=>{if(await askYes("Translate this chapter again? Its text goes to Claude once more.","Translate again"))rdParStart(true)});
   rdParWireBar();
   const body=$("#rdBody");
   body.onclick=e=>rdIsPar()?rdParTap(e):rdTap(e);
@@ -12094,7 +12094,7 @@ function wireIgf(){const st=igf(),on=(q,f)=>document.querySelectorAll("#igfView 
   on("[data-igftab]",b=>{st.tab=b.dataset.igftab;st.n=100;st.open="";st.sort=st.tab==="fans"?"score":"newest";igfDraw()});
   on("[data-igfcsv]",b=>igfCsv(b.dataset.igfcsv==="tab"));
   on("[data-igftrust]",b=>igfRun("trust",()=>igfApi("POST",`/api/igfans/imports/${b.dataset.igftrust}/trust`,{account:a()})));
-  on("[data-igfrm]",b=>{if(confirm("Remove this import? The file on Instagram is not touched."))igfRun("rm",()=>igfApi("POST",`/api/igfans/imports/${b.dataset.igfrm}/remove`,{account:a()}))});
+  on("[data-igfrm]",async b=>{if(await askYes("Remove this import? The file on Instagram is not touched.","Remove"))igfRun("rm",()=>igfApi("POST",`/api/igfans/imports/${b.dataset.igfrm}/remove`,{account:a()}))});
   on("[data-igfenrich]",b=>igfRun("enrich",()=>igfApi("POST","/api/igfans/enrich",{account:a(),count:Number(b.dataset.igfenrich)})));
   on("[data-igfback]",b=>igfRun("back",()=>igfApi("POST","/api/igfans/cleanup",{account:a(),op:"undo",u:b.dataset.igfback})));
   const q=$("#igfQ");if(q)q.oninput=()=>{st.q=q.value;st.n=100;igfRelist()};
