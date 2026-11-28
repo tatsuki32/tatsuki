@@ -3613,6 +3613,13 @@ async function bodyLoad(force){
   S.bodyBusy=true;S.bodyAt=Date.now();
   try{const v=await api("GET","/api/body"),same=JSON.stringify(v)===JSON.stringify(S.body);S.body=v;S.bodyErr=false;S.bodyBusy=false;if(!same&&(viewId().startsWith("body")||viewId()==="home"||(viewId()==="money"&&S.moneyTab==="receipts")))render()}
   catch(e){const was=S.bodyErr;S.bodyErr=true;S.bodyBusy=false;if(!was&&viewId().startsWith("body"))render()}
+  try{const m=await api("GET","/api/lifebots"),same=JSON.stringify(m)===JSON.stringify(S.mb);S.mb=m;if(!same&&viewId()==="body")render()}catch(e){}
+}
+function mbLine(){ // Morning Log Bots (lifeos/22-morning-bots): when the spreadsheet's rows last came in
+  const m=S.mb;if(!m)return"";
+  if(!m.setup)return`<p class="sub mbline">Morning bots: not connected. <a href="https://github.com/tatsuki32/tatsuki/blob/main/lifeos/22-morning-bots/README.md" target="_blank" rel="noopener">Set up</a></p>`;
+  const when=m.lastImport?new Date(m.lastImport*1000).toLocaleString("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}):"not yet";
+  return`<p class="sub mbline" role="status">Morning bots: last import ${esc(when)}${m.lastImport?` · ${m.lastAdded} new`:""}${m.tz?` · asks at 4:00 ${esc(m.tz)}`:""}${m.error?` · ${esc(m.error)}`:""} <button class="btn sm" id="mbNow">Import now</button></p>`;
 }
 const bdNum=v=>v==null?"–":Math.abs(v)>=1000?Math.round(v).toLocaleString("en-US"):String(Math.round(v*100)/100);
 const bdSigned=v=>v==null?"–":(v>0?"+":"")+bdNum(v);
@@ -3808,7 +3815,7 @@ function bodyView(){
   const review=mine.length?`<section class="bdsec"><h2>Needs review <span class="sub">${mine.length}</span></h2>${mine.map(r=>bdReview(r,d)).join("")}</section>`:"";
   const send=`<details class="bdhelp"><summary>Where to send and cost</summary><p>Send a photo or text to the Telegram bot, or drop a photo into Daily_Photos_Inbox on Drive. A short caption helps the reading. For older photos, add the date, like "dinner on 11/3". Telegram keeps photos for up to 24 hours, and the Drive import runs hourly while the Claude app is open.</p><p class="sub">This month: ${d.usage.photos} photos · about $${Number(d.usage.usd).toFixed(2)} · model ${esc(d.model)}</p><form id="bdLimit" class="bdtarget"><label>Monthly limit (USD)<input type="number" min="0" step="1" id="bdLimitV" value="${d.limit??""}" placeholder="none"></label><button class="btn sm">Save</button></form></details>`;
   const panel=tab==="overview"?bdOverview(d):tab==="meal"?bdMealTab(d,w):tab==="sleep"?bdSleepTab(d,w):tab==="workout"?bdWorkoutTab(d,w):tab==="weight"?bdWeightTab(d,w):tab==="activity"?bdStepsTab(d,w):bdGroupTab(d,"habits",w,"screen_min",bdHabitsExtra(d),"Send a screen time or study app screenshot and it shows up here.");
-  return head+`<div class="money bd">${info?`<p class="sub" role="status">${esc(info)}</p>`:""}${review}${panel}${send}</div>`;
+  return head+`<div class="money bd">${info?`<p class="sub" role="status">${esc(info)}</p>`:""}${tab==="overview"?mbLine():""}${review}${panel}${send}</div>`;
 }
 function bdWireTips(){
   const tip=document.getElementById("mTip")||Object.assign(document.body.appendChild(document.createElement("div")),{id:"mTip",className:"mtip"});
@@ -3830,6 +3837,7 @@ function bdWireReview(){
 function wireBody(){
   const put=async(path,rec,msg)=>{try{await api("PUT",path,rec);if(msg)toast(msg);bodyLoad(true);return true}catch(e){toast("Couldn't save. Check the values");return false}};
   document.querySelectorAll("[data-bdwin]").forEach(b=>b.onclick=()=>{S.bodyWin=b.dataset.bdwin;render()});
+  const mbNow=$("#mbNow");if(mbNow)mbNow.onclick=async()=>{mbNow.disabled=true;mbNow.textContent="Importing";try{S.mb=await api("POST","/api/lifebots/import",{});toast(S.mb.error?"Couldn't import":"Imported");bodyLoad(true)}catch(e){toast("Couldn't import")}render()};
   document.querySelectorAll("[data-bdtab]").forEach(b=>b.onclick=()=>{S.bodyPick=null;S.bodyOpen=null;location.hash=BDVIEW[b.dataset.bdtab];window.scrollTo(0,0)});
   document.querySelectorAll("[data-bdday]").forEach(b=>b.onclick=()=>{if(b.dataset.bdday){S.bodyDay=b.dataset.bdday;render()}});
   bdWireTips();

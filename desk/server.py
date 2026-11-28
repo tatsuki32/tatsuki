@@ -34,6 +34,7 @@ import bank
 import accounts
 import tabs  # the open tabs of Desk's tab bar (desk/tabs.py)
 import netspeed
+import lifebots  # Morning Log Bots: the spreadsheet's sleep, steps and meals, once a day (desk/lifebots.py)
 import nature  # real nature videos for Study Focus, fetched only when asked (desk/nature.py)
 import wifi_login
 import footprint
@@ -1191,6 +1192,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, nature.view())
         if path == "/api/netspeed":
             return self.send(200, netspeed.view())
+        if path == "/api/lifebots":
+            return self.send(200, lifebots.view())
         if path == "/api/startclean":  # the apps closed at startup (desk/startup_clean.py); names only
             return self.send(200, startup_clean.view())
         if path == "/api/wifi-login":  # what Wi-Fi this Mac is on and whether it needs a sign-in (desk/wifi_login.py); opens nothing
@@ -1577,6 +1580,11 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(200, nature.hide(str(rec.get("id") or "")))
             nature.start()
             return self.send(200, nature.view())
+        if method == "POST" and urlsplit(self.path).path == "/api/lifebots/import":
+            if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+                return self.send(415, {"error": "json only"})
+            lifebots.run(force=True)
+            return self.send(200, lifebots.view())
         if method == "POST" and urlsplit(self.path).path == "/api/netspeed/run":
             if not (self.headers.get("Content-Type") or "").startswith("application/json"):
                 return self.send(415, {"error": "json only"})
@@ -2039,6 +2047,7 @@ if __name__ == "__main__":
             lifelog.ensure_log_habits()  # "Log sleep" / "Log meals": tick themselves when a record arrives
         except Exception as e:
             print("log habits:", e, file=sys.stderr)
+        threading.Thread(target=lifebots.watch, daemon=True).start()  # Morning Log Bots: the spreadsheet's rows once a day after 5:00, the Mac's time zone to the bots
         threading.Thread(target=news_sync.watch, daemon=True).start()  # Sift Daily's "Make it a task" -> Desk tasks, every 5 minutes
         threading.Thread(target=rhizomebox_backup.watch, daemon=True).start()  # a daily copy of Rhizome Box (all pages and pictures)
         threading.Thread(target=transcribe_desk.watch, daemon=True).start()  # the transcriber on 8791, kept running

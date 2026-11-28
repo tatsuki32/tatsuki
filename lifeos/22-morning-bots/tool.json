@@ -1,0 +1,47 @@
+{
+  "no": "22",
+  "name": "朝の記録ボット",
+  "oneline": "毎朝4時に Telegram の2つのボットが睡眠・歩数と食事を聞き、スプレッドシート経由で Desk の体の画面に入る",
+  "status": "blocked",
+  "usage": [
+    "Sleep & Steps ボットに「7時間半 8200歩」かスクショを送る（すぐ保存、Undo あり）",
+    "Meals ボットに写真か文を送り、案を見て Save か直しの言葉を送る",
+    "国を移ったら位置を送るか /tz Asia/Tokyo（Mac の Desk も毎日時間帯を送る）"
+  ],
+  "howToCheck": [
+    "Sleep & Steps に「7h 8000 steps」と送り、シートに2行入ることを見る",
+    "Desk の Body → Summary で Import now を押し、数字が出ることを見る"
+  ],
+  "blockers": [
+    {
+      "what": "ボット2つの作成・Apps Script への貼り付け・鍵の入力・Web アプリの公開",
+      "why": "Telegram と Google のアカウントは本人のもの",
+      "needs": "本人が README の手順を1回（約10分）"
+    }
+  ],
+  "commands": [
+    "python3 desk/lifebots.py setup <URL>",
+    "python3 desk/lifebots.py once"
+  ],
+  "updated": "2026-11-28",
+  "_en": {
+    "name": "Morning log bots",
+    "oneline": "At 4:00 every morning two Telegram bots ask about sleep, steps and meals; answers go through a spreadsheet into the Desk body screen",
+    "usage": [
+      "Send \"7h30m 8200 steps\" or a screenshot to the Sleep & Steps bot (saved at once, with Undo)",
+      "Send a photo or text to the Meals bot, check the draft, then say Save or what to fix",
+      "After moving to another country, send your location or /tz Asia/Tokyo (the Desk also sends the Mac's time zone daily)"
+    ],
+    "howToCheck": [
+      "Send \"7h 8000 steps\" to Sleep & Steps and see two rows in the sheet",
+      "Press Import now on Desk → Body → Summary and see the numbers"
+    ],
+    "blockers": [
+      {
+        "what": "Making the two bots, pasting the script, entering the keys, deploying the web app",
+        "why": "The Telegram and Google accounts are the owner's",
+        "needs": "The owner follows the README once (about 10 minutes)"
+      }
+    ]
+  }
+}
