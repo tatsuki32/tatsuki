@@ -79,7 +79,7 @@ def mac_tz():
 # ---------- settings (the Worker cleans them again; this keeps the copy on the Mac sane) ----------
 
 DEFAULTS = {
-    "ownerName": "Tatsuki", "title": "{purpose} · {name}", "tz": "Asia/Ho_Chi_Minh",
+    "ownerName": "Tatsuki", "title": "{name} × {owner} MTG", "tz": "Asia/Ho_Chi_Minh",
     "hours": {str(i): [["09:00", "18:00"]] if 1 <= i <= 5 else [] for i in range(7)},
     "special": {}, "buffer": 15, "daysAhead": 14, "noticeHours": 12, "maxPerDay": 3, "step": 30,
     "purposes": [
