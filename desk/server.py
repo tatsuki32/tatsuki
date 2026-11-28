@@ -39,6 +39,7 @@ import wifi_login
 import footprint
 import finder
 import transcribe_desk
+import voice  # Speak into a text box: the mic app records, whisper.cpp writes the text (desk/voice.py)
 import reflect  # Reflections: late or missed things to reflect on, Claude's write-up, Rhizome Box (desk/reflect.py)
 import meetcheck  # Should we meet?: the questions, Claude drafts and the pre-read Google Doc (desk/meetcheck.py)
 import minutes_share  # Minutes → a Google Doc anyone with the link can read, and a thank-you Gmail draft (never sent)
@@ -1121,6 +1122,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(200, bank.view())
             except bank.BankError:
                 return self.send(500, {"error": "read"})
+        if path.startswith("/api/voice/"):
+            return self.send(*voice.handle("GET", path.split("/")[3:], {}))
         if path == "/api/reflect":
             return self.send(200, reflect.state(load, LOCK))
         if path == "/api/meetcheck/status":
@@ -1517,6 +1520,10 @@ class Handler(BaseHTTPRequestHandler):
             return self.bank_write(method, rec)
         if urlsplit(self.path).path.startswith("/api/accounts/"):
             return self.accounts_write(method, rec)
+        if urlsplit(self.path).path.startswith("/api/voice/"):  # speak into a text box (local whisper)
+            if method != "POST" or not (self.headers.get("Content-Type") or "").startswith("application/json"):
+                return self.send(415 if method == "POST" else 405, {"error": "json only" if method == "POST" else "method not allowed"})
+            return self.send(*voice.handle("POST", urlsplit(self.path).path.split("/")[3:], rec if isinstance(rec, dict) else {}))
         if urlsplit(self.path).path.startswith("/api/reflect/"):  # Reflections (the records are the reflections collection)
             if not (self.headers.get("Content-Type") or "").startswith("application/json"):
                 return self.send(415, {"error": "json only"})

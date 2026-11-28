@@ -24,3 +24,4 @@
 ## 追加（同じ日、本人の希望）
 - Home のいちばん上に出す、Desk を開いたときのポップアップで最初の問いを聞く（× で閉じる）、反省文ごとに Tasks に「Write a reflection: …」のタスク（書き終えると Done）。
 - カードの画面を作り直した（幅720px、事実のタイル、問いを見出しに、下に Back／Next、⌘Enter で次）。3枚目に Claude の見立て（仮説2〜3つ、根拠と確かめる問い、This fits／Not this、本人の意見）。材料は件の履歴と、Mac だけに置く `desk/data/reflect/context.md`。
+- Speak が Desk の窓で動かなかった（WKWebView に音声認識がない）。`desk/voice.py`：押すと TatsukiMeetWatch がマイクを録り、Stop で Mac の whisper-cli が文字にする。本物のマイクで録音、`say` の音声で文字になることを確認（約5秒）。

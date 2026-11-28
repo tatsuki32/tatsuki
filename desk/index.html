@@ -2300,6 +2300,10 @@ body.sffull{overflow:hidden}
 .mtgok{margin:0;color:var(--green);font-weight:700}
 .rflbox{display:grid;gap:var(--s2);min-width:0}
 .rflbox .btn{justify-self:start}
+.rflmic{display:flex;align-items:center;gap:var(--s2);flex-wrap:wrap;min-width:0}
+.rfllevel{display:none;width:80px;height:4px;border-radius:2px;background:var(--line);overflow:hidden}
+.rflmic.on .rfllevel{display:block}
+.rfllevel i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
 .rflwrap{max-width:720px;margin:0 auto;display:grid;gap:var(--s3)}
 .rflbar{display:flex;justify-content:space-between;align-items:center;gap:var(--s2)}
 .rflbar .mnback{margin:0}
@@ -7651,10 +7655,27 @@ function rflHome(){ // Home: everything waiting, the newest three shown
   return `<section class="card rflhome" aria-label="Reflections to write"><div class="sgtop"><h2>Reflections to write</h2><span class="sub">${o.length} waiting</span></div>
     ${o.slice(0,3).map(r=>`<a class="mnrow" href="#reflect/${encodeURIComponent(r.id)}" data-noauto><span class="mnt">${esc(r.title||"Untitled")}</span><span class="mns">${esc(RFL_KIND[r.kind]||"")} · ${rflFacts(r)}</span></a>`).join("")}
     <div class="row"><a class="btn primary" href="#reflect/${encodeURIComponent(o[0].id)}">Write a reflection</a>${o.length>3?`<a class="btn sm" href="#reflect">See all ${o.length}</a>`:""}</div></section>`}
-const rflMic=()=>("webkitSpeechRecognition" in window||"SpeechRecognition" in window);
+const rflMic=()=>LOCALAPI; // the Mac records and whisper.cpp writes the text (desk/voice.py): works in the Desk window too
 const rflBox=(r,key,ph,rows)=>`<div class="rflbox"><textarea class="mtgin" data-rflf="${key}" rows="${rows||4}" placeholder="${esc(ph||"")}">${esc((key==="spoken"?r.spoken:(r.answers||{})[key])||"")}</textarea>
-  ${rflMic()?`<button class="btn sm" type="button" data-rflmic="${key}">Speak</button>`:""}</div>`;
-const RFL_HINT=`<p class="hint">To talk: click the box and press fn twice. First time: System Settings → Keyboard → Dictation.</p>`;
+  ${rflMic()?`<div class="rflmic"><button class="btn sm" type="button" data-rflmic="${key}">Speak</button><span class="rfllevel" aria-hidden="true"><i></i></span><span class="sub rflmicst" role="status"></span></div>`:""}</div>`;
+/* Speak: press to record, press again to stop; the words are added to the box. Nothing leaves the Mac. */
+function voiceButton(b,box){
+  const wrap=b.closest(".rflmic"),st=wrap?.querySelector(".rflmicst"),lv=wrap?.querySelector(".rfllevel i");
+  let id=null,timer=0,busy=false;const say=t=>{if(st)st.textContent=t};
+  const reset=()=>{clearInterval(timer);id=null;b.textContent="Speak";b.classList.remove("primary");wrap?.classList.remove("on");if(lv)lv.style.width="0"};
+  b.onclick=async()=>{if(busy)return;
+    if(!id){busy=true;say("Starting the microphone…");
+      try{id=(await rflApi("POST","/api/voice/start",{})).id}catch(e){say(e.message);busy=false;return}
+      busy=false;b.textContent="Stop";b.classList.add("primary");wrap?.classList.add("on");say("Listening… press Stop when you finish.");
+      timer=setInterval(async()=>{try{const v=await rflApi("GET","/api/voice/"+id);if(lv)lv.style.width=Math.min(100,Math.round((v.level||0)*400))+"%";
+        say(v.error?v.error:`Listening… ${Math.floor(v.seconds/60)}:${String(v.seconds%60).padStart(2,"0")}`)}catch(e){}},1000);return}
+    const vid=id;clearInterval(timer);busy=true;b.disabled=true;say("Turning your voice into text…");
+    try{const {text}=await rflApi("POST","/api/voice/"+vid+"/stop",{lang:"auto"});
+      if(text){box.value+=(box.value&&!/\s$/.test(box.value)?" ":"")+text;box.dispatchEvent(new Event("input"));say("Added.")}else say("Nothing was heard. Try again a little closer.")}
+    catch(e){say(e.message)}
+    busy=false;b.disabled=false;reset()};
+  addEventListener("hashchange",()=>{if(id){rflApi("POST","/api/voice/"+id+"/cancel",{}).catch(()=>{});reset()}},{once:true})}
+const RFL_HINT=`<p class="hint">Press Speak, talk, then press Stop. Your words are written into the box on this Mac.</p>`;
 const RFL_IDEAS={estimate:"If I plan a task, I will give it 1.5 times what the last one like it really took.",late:"If a task is due this week, I will put its first 25 minutes on the calendar today.",
   unclear:"If I can't start, I will write the first 5-minute step before anything else.",energy:"If I am tired, I will do only the 5-minute version and stop.",
   interrupt:"If something interrupts, I will write where I stopped before switching.",priority:"If priorities change, I will move or drop the old task the same day.",
@@ -7749,13 +7770,13 @@ function rflPopup(tries=0){
     <p class="rflquote">${esc(r.title||"")}</p><p class="rflfact">${rflFacts(r)}</p>
     <label class="sub" for="rflPopIn">What happened? Tell it in your own words.</label>
     <textarea class="mtgin" id="rflPopIn" rows="4" placeholder="What was planned, what really happened.">${esc(r.spoken||"")}</textarea>
-    <p class="hint">To talk: press fn twice.</p>
+    <div class="rflmic"><button class="btn sm" type="button" id="rflPopMic">Speak</button><span class="rfllevel" aria-hidden="true"><i></i></span><span class="sub rflmicst" role="status"></span></div>
     <div class="row"><button class="btn primary" id="rflPopGo">Continue</button><button class="btn" id="rflPopLater">Later</button></div></div></div>`;
   const close=()=>{$("#modal").innerHTML=""};
   $("#xRfl").onclick=close;$("#rflPopLater").onclick=close;$("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};
   $("#rflPopGo").onclick=async()=>{const v=$("#rflPopIn").value.trim();if(v){r.spoken=v;r.status="draft"}r.step=2;
     try{await rflSave(r)}catch(e){toast("Could not save")}close();location.hash="reflect/"+encodeURIComponent(r.id)};
-  $("#rflPopIn").focus()}
+  voiceButton($("#rflPopMic"),$("#rflPopIn"));$("#rflPopIn").focus()}
 if(typeof LOCALAPI!=="undefined"&&LOCALAPI)setTimeout(()=>{rflLoad();setTimeout(()=>rflPopup(),1500)},2500); // the Desk just opened
 function wireRfl(){
   const st=rfl(),id=rflId(),r=id?(st.list||[]).find(x=>x.id===id):null,on=(q,f)=>document.querySelectorAll(q).forEach(f);
@@ -7781,10 +7802,7 @@ function wireRfl(){
   on("[data-rflstep]",b=>b.onclick=async()=>{r.step=+b.dataset.rflstep;st.msg="";try{await rflSave(r)}catch(e){toast("Could not save")}rflDraw();window.scrollTo(0,0)});
   on("[data-rflnotmiss]",b=>b.onclick=async()=>{const why=prompt("Why is this not a miss? (for example: the date was only a guess)");if(why==null)return;r.status="notmiss";r.notMissWhy=why.slice(0,300);
     try{await rflSave(r)}catch(e){toast("Could not save");return}rflApi("POST","/api/reflect/scan",{}).catch(()=>{});location.hash="#reflect"});
-  on("[data-rflmic]",b=>b.onclick=()=>{const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return;const box=b.parentNode.querySelector("textarea"),rec=new SR();
-    rec.lang=navigator.language||"ja-JP";rec.continuous=true;rec.interimResults=false;b.textContent="Listening… press to stop";
-    rec.onresult=e=>{for(let i=e.resultIndex;i<e.results.length;i++)if(e.results[i].isFinal)box.value+=(box.value?" ":"")+e.results[i][0].transcript;box.dispatchEvent(new Event("input"))};
-    rec.onend=()=>{b.textContent="Speak";b.onclick=null;wireRfl()};b.onclick=()=>rec.stop();rec.start()});
+  on("[data-rflmic]",b=>voiceButton(b,b.closest(".rflbox").querySelector("textarea")));
   const run=async(kind,fn)=>{st.busy=kind;st.msg="";rflDraw();try{await fn()}catch(e){st.msg=e.message}st.busy="";rflDraw()};
   on("[data-rfldraft]",b=>b.onclick=()=>run("draft",async()=>{await rflSave(r);const x=await rflApi("POST","/api/reflect/draft",{id:r.id});x.final=x.draft;rflPut(x);await rflSave(x)}));
   const finish=async x=>{x.doneAt=x.doneAt||Date.now();x.day=x.day||hcmcDate();if(x.status!=="published")x.status="done";await rflSave(x);
