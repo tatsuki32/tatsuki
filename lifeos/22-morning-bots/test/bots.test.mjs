@@ -144,7 +144,7 @@ test('a missed 4:00 still asks in the morning, never in the afternoon', () => {
 
 test('every sleep and step item from a screenshot is saved and shown', () => {
   const w = owned({ at: '2026-11-28T20:00:00Z' });
-  w.claudeAnswers.push({ sleep: { minutes: 420, bedtime: '22:30', wake_time: '05:30', date: '2026-11-29', night_min: 420, nap_min: null, deep_min: 84, light_min: 230, rem_min: 90,
+  w.claudeAnswers.push({ sleep: { minutes: 420, bedtime: '22:30', wake_time: '05:30', date: '2026-11-29', night_min: 420, nap_min: -1, deep_min: 84, light_min: 230, rem_min: 90,
     awake_min: 16, wake_count: 2, sleep_score: 81, deep_continuity: 70, breath_quality: 88, hr_avg: 57, hrv_avg: 46, spo2_avg: 96, breath_rate: 14.2 },
     steps: { steps: 9000, date: '2026-11-28', distance_km: 6.42, active_kcal: 310, active_min: 75, floors: 999999 } });
   w.send('sleep', { text: 'screenshot numbers' });
@@ -325,4 +325,10 @@ test('the Desk: a wrong key gets nothing; export then ack', () => {
   assert.equal(ex.sleep[0].deleted, false);
   JSON.parse(w.ctx.doGet({ parameter: { key: 'desk-secret', op: 'ack', ids: ex.sleep[0].id } }).text);
   assert.equal(JSON.parse(w.ctx.doGet({ parameter: { key: 'desk-secret', op: 'export' } }).text).sleep.length, 0);
+});
+
+test('the schemas stay within the API limit of 16 nullable fields', () => {
+  const w = world();
+  const count = o => { let n = 0; const walk = x => { if (!x || typeof x !== 'object') return; if (Array.isArray(x.type) || x.anyOf) n++; Object.values(x).forEach(walk); }; walk(o); return n; };
+  assert.ok(count(w.ctx.SLEEP_SCHEMA) <= 16); assert.ok(count(w.ctx.MEAL_SCHEMA) <= 16);
 });

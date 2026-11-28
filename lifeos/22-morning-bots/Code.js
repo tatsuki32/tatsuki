@@ -198,7 +198,8 @@ function claude(system, content, schema) {
   return JSON.parse(text);
 }
 function nullable(obj) { return { anyOf: [obj, { type: 'null' }] }; }
-function extra(list, p) { list.forEach(function (x) { p[x[0]] = { type: ['number', 'null'] }; }); return p; }
+// plain numbers, -1 when not shown: the API allows at most 16 nullable fields in a schema, and details() drops anything below its lowest value
+function extra(list, p) { list.forEach(function (x) { p[x[0]] = { type: 'number' }; }); return p; }
 // the extra items that are there and in range -> {col: value}, and the words for the reply
 function details(list, r, total) {
   var vals = {}, words = [];
@@ -239,7 +240,7 @@ function readSleep(text, image) {
   var t = localDate();
   var system = 'You read sleep and step records for one person. Return only what the message states or the screenshot shows; never guess.\n' +
     'sleep.minutes = total sleep in minutes ("7h30m", "7時間半" = 450). bedtime and wake_time as HH:MM (24h) when given, else null.\n' +
-    'Also return every other item the screenshot or message shows, else null: ' + SLP.concat(STP).map(function (x) { return x[0] + ' (' + x[1] + ', ' + x[2] + ')'; }).join(', ') + '.\n' +
+    'Also return every other item the screenshot or message shows, else -1: ' + SLP.concat(STP).map(function (x) { return x[0] + ' (' + x[1] + ', ' + x[2] + ')'; }).join(', ') + '.\n' +
     'night_min is the night sleep alone, nap_min the naps; deep/light/rem/awake are the stages in minutes. distance_km in km (convert miles). The first group goes in sleep, the last four in steps.\n' +
     'sleep.date = the day the person woke up: ' + t + ' unless the message names another day.\n' +
     'steps.date = ' + addDays(t, -1) + ' (yesterday) unless the message or screenshot names another day ("today" = ' + t + ').\n' +
