@@ -89,6 +89,15 @@ class LifebotsTest(unittest.TestCase):
         self.assertEqual(len(tz_calls), 1)  # sent once; the same targets the same day are not sent again
         self.assertEqual(json.loads(tz_calls[0]["targets"]), {"protein_g": [130, "above"], "steps": [15000, "above"]})
 
+    def test_sleep_stages_and_step_details_come_in(self):
+        sheet = Sheet(sleep=[{"id": "r1", "date": self.today, "kind": "sleep", "sleep_min": 420, "deep_min": 80, "rem_min": 95, "awake_min": "", "hrv_avg": 48, "spo2_avg": 96},
+                             {"id": "r2", "date": self.yday, "kind": "steps", "steps": 9000, "distance_km": 6.4, "floors": 3}])
+        with mock.patch.object(lifebots, "_get", sheet):
+            lifebots.run(force=True)
+        b = self.body()
+        self.assertEqual(b["mb-r1"]["values"], {"total_min": 420, "deep_min": 80, "rem_min": 95, "hrv_avg": 48, "spo2_avg": 96})
+        self.assertEqual(b["mb-r2"]["values"], {"steps": 9000, "distance_km": 6.4, "floors": 3})
+
     def test_undo_after_import_discards(self):
         sheet = Sheet(sleep=[{"id": "r1", "date": self.today, "kind": "sleep", "sleep_min": 420}])
         with mock.patch.object(lifebots, "_get", sheet):

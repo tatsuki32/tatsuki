@@ -3,7 +3,7 @@
 毎朝4時（いる場所の時計）に Telegram の2つのボットが聞く。答えは Google スプレッドシートに入り、Mac の Desk が1日1回取り込む。Mac が閉じていても記録できる。
 要件定義：https://claude.ai/artifact/7M9jcYFCYoaw5Wro11ps4t
 
-- **Sleep & Steps**：「7時間半 8200歩」かスクショを送ると、すぐ保存。返事に Undo。
+- **Sleep & Steps**：「7時間半 8200歩」かスクショを送ると、すぐ保存。返事に Undo。スクショに出ている睡眠の段階（深い・浅い・REM・覚醒）・夜と昼寝・目覚めた回数・スコア・深い睡眠の持続・呼吸の質・心拍・HRV・SpO2・呼吸数と、歩数の距離・活動カロリー・活動時間・階数も全部残す（Desk の `KINDS` と同じ項目）。
 - **Meals**：写真か文を送ると、すぐ保存（2026-11-28 から。前は案 → Save）。Desk と同じ17の栄養素を全部推定し、返事にこの食事の各栄養素が1日の目標の何％か、その日の合計／目標・残り・超えた分を出す。6時間以内の直し（「ご飯は半分」）は前の食事を置き換え、Undo・Cancel で消す。
 - 目標値：Mac の Desk が `body/targets.json`（17の栄養素・歩数・睡眠）を時間帯と一緒に送る（`op=tz` の `targets`、変わった日と毎日1回）。睡眠と歩数の返事にも目標の何％かが出る。
 - 時間帯：Mac の Desk が毎日 Mac の時間帯を送る。Telegram で位置を送るか `/tz Asia/Tokyo` でも変わる（位置は保存しない）。
@@ -11,7 +11,7 @@
 
 ## 仕組み
 - `Code.js` は Google Apps Script（スプレッドシートに付ける）。1分ごとに Telegram を見に行き（getUpdates）、4:00〜12:00 にまだなら問いを1回送る。読むのは Claude Haiku 5.5（構造化出力）。
-- シート：`Sleep & Steps`（id・date・kind sleep|steps・sleep_min・bedtime・wake_time・steps・text・saved_at・imported_at・deleted）、`Meals`（id・date・meal・items・kcal と17の栄養素・text・…。列は見出しの名前で探すので、前のシートには右端に足される）、`Settings`（今の時間帯）。
+- シート：`Sleep & Steps`（id・date・kind sleep|steps・sleep_min・bedtime・wake_time・steps・text・saved_at・imported_at・deleted と、右に night_min〜breath_rate・distance_km〜floors）、`Meals`（id・date・meal・items・kcal と17の栄養素・text・…。列は見出しの名前で探すので、前のシートには右端に足される）、`Settings`（今の時間帯）。
 - 答えるのは最初に `/start` した人だけ。ほかの人には何も返さない。
 - Desk 側は `desk/lifebots.py`（4747 のサーバーが10分ごと。取り込みは Mac の時計で 5:00 を過ぎた最初の回と「Import now」）。Web アプリの `?op=export|ack|tz`、合言葉は Script Properties の `DESK_KEY` と Mac のキーチェーン `tatsuki-desk-lifebots`。記録は体の `records.json` に `mb-<行id>`（source `morning-bots`）。
 

@@ -142,6 +142,22 @@ test('a missed 4:00 still asks in the morning, never in the afternoon', () => {
   assert.equal(v.said().length, 0);
 });
 
+test('every sleep and step item from a screenshot is saved and shown', () => {
+  const w = owned({ at: '2026-11-28T20:00:00Z' });
+  w.claudeAnswers.push({ sleep: { minutes: 420, bedtime: '22:30', wake_time: '05:30', date: '2026-11-29', night_min: 420, nap_min: null, deep_min: 84, light_min: 230, rem_min: 90,
+    awake_min: 16, wake_count: 2, sleep_score: 81, deep_continuity: 70, breath_quality: 88, hr_avg: 57, hrv_avg: 46, spo2_avg: 96, breath_rate: 14.2 },
+    steps: { steps: 9000, date: '2026-11-28', distance_km: 6.42, active_kcal: 310, active_min: 75, floors: 999999 } });
+  w.send('sleep', { text: 'screenshot numbers' });
+  w.tick();
+  const head = w.ctx.header('sleep'), rows = w.rows('Sleep & Steps');
+  const at = (r, c) => r[head.indexOf(c)];
+  assert.equal(at(rows[0], 'deep_min'), 84); assert.equal(at(rows[0], 'breath_rate'), 14.2); assert.equal(at(rows[0], 'nap_min'), '');
+  assert.equal(at(rows[1], 'distance_km'), 6.42); assert.equal(at(rows[1], 'floors'), '');
+  const said = w.said('sleep').at(-1);
+  assert.match(said, /Deep 1h 24m \(20%\)/); assert.match(said, /REM 1h 30m/); assert.match(said, /HRV 46 ms/); assert.match(said, /SpO2 96%/);
+  assert.match(said, /Distance 6\.42 km/); assert.doesNotMatch(said, /Floors/);
+});
+
 test('sleep and steps are saved at once, with their days, and Undo marks them deleted', () => {
   const w = owned({ at: '2026-11-28T20:00:00Z' }); // 5:00 Nov 29 in Tokyo
   w.claudeAnswers.push({ sleep: { minutes: 450, bedtime: '22:00', wake_time: '05:30', date: '2026-11-29' }, steps: { steps: 8200, date: '2026-11-28' } });
@@ -151,7 +167,7 @@ test('sleep and steps are saved at once, with their days, and Undo marks them de
   assert.equal(rows.length, 2);
   assert.deepEqual(rows.map(r => [r[1], r[2], r[3], r[6]]), [['2026-11-29', 'sleep', 450, ''], ['2026-11-28', 'steps', '', 8200]]);
   const msg = w.sent.find(s => s.method === 'sendMessage' && /Saved/.test(s.payload.text));
-  assert.match(msg.payload.text, /7h 30m.*today.*8,200 steps.*yesterday/);
+  assert.match(msg.payload.text, /7h 30m.*today[\s\S]*8,200 steps.*yesterday/);
   const undo = msg.payload.reply_markup.inline_keyboard[0][0].callback_data;
   assert.ok(undo.length <= 64);
   w.press('sleep', undo);

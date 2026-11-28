@@ -24,7 +24,9 @@ var ASK_UNTIL = '12:00'; // a missed minute (Google's own pause) still asks, but
 var BOTS = ['sleep', 'meals'];
 var TOKEN = { sleep: 'SLEEP_TOKEN', meals: 'MEALS_TOKEN' };
 var SHEETS = {
-  sleep: { name: 'Sleep & Steps', cols: ['id', 'date', 'kind', 'sleep_min', 'bedtime', 'wake_time', 'steps', 'text', 'saved_at', 'imported_at', 'deleted'] },
+  sleep: { name: 'Sleep & Steps', cols: ['id', 'date', 'kind', 'sleep_min', 'bedtime', 'wake_time', 'steps', 'text', 'saved_at', 'imported_at', 'deleted',
+    'night_min', 'nap_min', 'deep_min', 'light_min', 'rem_min', 'awake_min', 'wake_count', 'sleep_score', 'deep_continuity', 'breath_quality',
+    'hr_avg', 'hrv_avg', 'spo2_avg', 'breath_rate', 'distance_km', 'active_kcal', 'active_min', 'floors'] },
   // columns are found by their header name, so the nutrients added later sit after 'deleted' in older sheets
   meals: { name: 'Meals', cols: ['id', 'date', 'meal', 'items', 'kcal', 'protein_g', 'fat_g', 'carb_g', 'salt_g', 'text', 'saved_at', 'imported_at', 'deleted',
     'saturated_fat_g', 'fiber_g', 'calcium_mg', 'magnesium_mg', 'iron_mg', 'zinc_mg', 'vitamin_a_ug', 'vitamin_d_ug', 'vitamin_b1_mg', 'vitamin_b2_mg', 'vitamin_b6_mg', 'vitamin_c_mg'] },
@@ -39,6 +41,16 @@ var NUT = [
   ['vitamin_a_ug', 'Vitamin A', 'µg', 0, 20000], ['vitamin_d_ug', 'Vitamin D', 'µg', 1, 500], ['vitamin_b1_mg', 'Vitamin B1', 'mg', 2, 100],
   ['vitamin_b2_mg', 'Vitamin B2', 'mg', 2, 100], ['vitamin_b6_mg', 'Vitamin B6', 'mg', 2, 100], ['vitamin_c_mg', 'Vitamin C', 'mg', 0, 5000]
 ];
+// the rest of the Desk's sleep and step items (desk/lifelog.py KINDS, from the old life sheet): column = the Desk's key, label, unit, lowest, highest, decimals.
+// unit 'min' is shown as hours and minutes. A number outside the range is left out, not saved.
+var SLP = [
+  ['night_min', 'Night sleep', 'min', 0, 1200, 0], ['nap_min', 'Nap', 'min', 0, 600, 0], ['deep_min', 'Deep', 'min', 0, 900, 0], ['light_min', 'Light', 'min', 0, 1200, 0],
+  ['rem_min', 'REM', 'min', 0, 900, 0], ['awake_min', 'Awake', 'min', 0, 600, 0], ['wake_count', 'Wake-ups', 'times', 0, 100, 0], ['sleep_score', 'Sleep score', 'pts', 0, 100, 0],
+  ['deep_continuity', 'Deep sleep continuity', 'pts', 0, 100, 0], ['breath_quality', 'Breathing quality', 'pts', 0, 100, 0], ['hr_avg', 'Heart rate', 'bpm', 20, 200, 0],
+  ['hrv_avg', 'HRV', 'ms', 1, 400, 0], ['spo2_avg', 'SpO2', '%', 50, 100, 0], ['breath_rate', 'Breathing rate', 'brpm', 3, 60, 1]
+];
+var STP = [['distance_km', 'Distance', 'km', 0, 300, 2], ['active_kcal', 'Active calories', 'kcal', 0, 20000, 0], ['active_min', 'Active time', 'min', 0, 1440, 0], ['floors', 'Floors', 'floors', 0, 2000, 0]];
+var STAGES = ['deep_min', 'light_min', 'rem_min', 'awake_min'];
 function deskKey(n) { return n[5] || n[0]; }
 var FIX_HOURS = 6; // a message this soon after a meal may correct it
 var QUESTION = {
@@ -186,13 +198,27 @@ function claude(system, content, schema) {
   return JSON.parse(text);
 }
 function nullable(obj) { return { anyOf: [obj, { type: 'null' }] }; }
+function extra(list, p) { list.forEach(function (x) { p[x[0]] = { type: ['number', 'null'] }; }); return p; }
+// the extra items that are there and in range -> {col: value}, and the words for the reply
+function details(list, r, total) {
+  var vals = {}, words = [];
+  list.forEach(function (x) {
+    var v = r[x[0]];
+    if (typeof v !== 'number' || isNaN(v) || v < x[3] || v > x[4]) return;
+    v = round(v, x[5]); vals[x[0]] = v;
+    var w = x[2] === 'min' ? hm(Math.round(v)) : fmt(v, x[5]) + (x[2] === '%' ? '%' : ' ' + x[2]);
+    if (STAGES.indexOf(x[0]) >= 0 && total > 0) w += ' (' + pct(v, total) + ')';
+    words.push(x[1] + ' ' + w);
+  });
+  return { vals: vals, words: words };
+}
 var SLEEP_SCHEMA = {
   type: 'object', additionalProperties: false, required: ['sleep', 'steps'],
   properties: {
-    sleep: nullable({ type: 'object', additionalProperties: false, required: ['minutes', 'bedtime', 'wake_time', 'date'], properties: {
-      minutes: { type: 'integer' }, bedtime: { type: ['string', 'null'] }, wake_time: { type: ['string', 'null'] }, date: { type: 'string' } } }),
-    steps: nullable({ type: 'object', additionalProperties: false, required: ['steps', 'date'], properties: {
-      steps: { type: 'integer' }, date: { type: 'string' } } })
+    sleep: nullable({ type: 'object', additionalProperties: false, required: ['minutes', 'bedtime', 'wake_time', 'date'].concat(SLP.map(function (x) { return x[0]; })),
+      properties: extra(SLP, { minutes: { type: 'integer' }, bedtime: { type: ['string', 'null'] }, wake_time: { type: ['string', 'null'] }, date: { type: 'string' } }) }),
+    steps: nullable({ type: 'object', additionalProperties: false, required: ['steps', 'date'].concat(STP.map(function (x) { return x[0]; })),
+      properties: extra(STP, { steps: { type: 'integer' }, date: { type: 'string' } }) })
   }
 };
 var ITEM = (function () {
@@ -213,6 +239,8 @@ function readSleep(text, image) {
   var t = localDate();
   var system = 'You read sleep and step records for one person. Return only what the message states or the screenshot shows; never guess.\n' +
     'sleep.minutes = total sleep in minutes ("7h30m", "7時間半" = 450). bedtime and wake_time as HH:MM (24h) when given, else null.\n' +
+    'Also return every other item the screenshot or message shows, else null: ' + SLP.concat(STP).map(function (x) { return x[0] + ' (' + x[1] + ', ' + x[2] + ')'; }).join(', ') + '.\n' +
+    'night_min is the night sleep alone, nap_min the naps; deep/light/rem/awake are the stages in minutes. distance_km in km (convert miles). The first group goes in sleep, the last four in steps.\n' +
     'sleep.date = the day the person woke up: ' + t + ' unless the message names another day.\n' +
     'steps.date = ' + addDays(t, -1) + ' (yesterday) unless the message or screenshot names another day ("today" = ' + t + ').\n' +
     'Missing → null. Dates are YYYY-MM-DD.';
@@ -332,23 +360,25 @@ function onSleep(text, image) {
   if (r.sleep && r.sleep.minutes) {
     if (r.sleep.minutes < 1 || r.sleep.minutes > 1200 || !okDate(r.sleep.date)) doubt.push('sleep');
     else {
-      var sid = newId();
-      append('sleep', { id: sid, date: r.sleep.date, kind: 'sleep', sleep_min: r.sleep.minutes, bedtime: okClock(r.sleep.bedtime) ? r.sleep.bedtime : '',
-        wake_time: okClock(r.sleep.wake_time) ? r.sleep.wake_time : '', text: text.slice(0, 500), saved_at: at });
+      var sid = newId(), sd = details(SLP, r.sleep, r.sleep.minutes);
+      append('sleep', Object.assign({ id: sid, date: r.sleep.date, kind: 'sleep', sleep_min: r.sleep.minutes, bedtime: okClock(r.sleep.bedtime) ? r.sleep.bedtime : '',
+        wake_time: okClock(r.sleep.wake_time) ? r.sleep.wake_time : '', text: text.slice(0, 500), saved_at: at }, sd.vals));
       ids.push(sid); saved.push('sleep');
       var st = targets().total_min;
       parts.push('sleep ' + hm(r.sleep.minutes) + (r.sleep.bedtime && r.sleep.wake_time ? ' (' + r.sleep.bedtime + '–' + r.sleep.wake_time + ')' : '') + ' for ' + dayWord(r.sleep.date) +
-        (st && st.target > 0 ? ' — ' + pct(r.sleep.minutes, st.target) + ' of your ' + hm(Math.round(st.target)) + ' target' : ''));
+        (st && st.target > 0 ? ' — ' + pct(r.sleep.minutes, st.target) + ' of your ' + hm(Math.round(st.target)) + ' target' : '') +
+        (sd.words.length ? '\n  ' + sd.words.join(' · ') : ''));
     }
   }
   if (r.steps && r.steps.steps !== null && r.steps.steps !== undefined) {
     if (r.steps.steps < 0 || r.steps.steps > 200000 || !okDate(r.steps.date)) doubt.push('steps');
     else {
-      var tid = newId();
-      append('sleep', { id: tid, date: r.steps.date, kind: 'steps', steps: r.steps.steps, text: text.slice(0, 500), saved_at: at });
+      var tid = newId(), pd = details(STP, r.steps, 0);
+      append('sleep', Object.assign({ id: tid, date: r.steps.date, kind: 'steps', steps: r.steps.steps, text: text.slice(0, 500), saved_at: at }, pd.vals));
       ids.push(tid); saved.push('steps');
       var pt = targets().steps;
-      parts.push(num(r.steps.steps) + ' steps for ' + dayWord(r.steps.date) + (pt && pt.target > 0 ? ' — ' + pct(r.steps.steps, pt.target) + ' of your ' + num(pt.target) + ' target' : ''));
+      parts.push(num(r.steps.steps) + ' steps for ' + dayWord(r.steps.date) + (pt && pt.target > 0 ? ' — ' + pct(r.steps.steps, pt.target) + ' of your ' + num(pt.target) + ' target' : '') +
+        (pd.words.length ? '\n  ' + pd.words.join(' · ') : ''));
     }
   }
   if (!saved.length) {
@@ -356,7 +386,7 @@ function onSleep(text, image) {
   }
   var more = saved.length === 1 && !doubt.length ? (saved[0] === 'sleep' ? '\nSend your steps too when you have them.' : '\nSend your sleep too when you have it.') : '';
   if (doubt.length) more += '\nThe ' + doubt.join(' and ') + ' looked off, so I left it out.';
-  return say('sleep', 'Saved: ' + parts.join(', ') + '.' + more, [['Undo', 'undo:sleep:' + ids.join(',')]]);
+  return say('sleep', 'Saved: ' + parts.join(',\n') + '.' + more, [['Undo', 'undo:sleep:' + ids.join(',')]]);
 }
 
 // ---------- targets (sent by the Mac from body/targets.json) ----------

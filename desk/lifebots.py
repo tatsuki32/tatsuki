@@ -94,6 +94,18 @@ def _clock(v):
 MEAL_COLS = tuple((k, "kcal" if k == "energy_kcal" else k) for k in lifelog.NUTRIENTS)
 
 
+def _extra(kind, main):
+    """The kind's other number items (lifelog.KINDS, from the old life sheet). The sheet's column has the same name."""
+    return tuple(k for k, spec in lifelog.KINDS[kind]["values"].items() if k != main and "text" not in spec)
+
+
+SLEEP_EXTRA, STEPS_EXTRA = _extra("sleep", "total_min"), _extra("steps", "steps")
+
+
+def _nums(r, keys):
+    return [{"key": k, "number": r[k], "text": None} for k in keys if isinstance(r.get(k), (int, float)) and not isinstance(r.get(k), bool)]
+
+
 def targets_param():
     """body/targets.json -> {"protein_g": [130, "above"], ...} for the bots: the nutrients, steps and sleep only."""
     t = lifelog.read_json(lifelog.bp("targets.json"), {})
@@ -118,9 +130,10 @@ def records_for(export):
             for k in ("bedtime", "wake_time"):
                 if _clock(r.get(k)):
                     values.append({"key": k, "number": None, "text": _clock(r.get(k))})
+            values += _nums(r, SLEEP_EXTRA)
             raw = {"kind": "sleep", "date": d, "label": "", "values": values, "items": [], "sets": [], "uncertain": []}
         elif r.get("kind") == "steps":
-            raw = {"kind": "steps", "date": d, "label": "", "values": [{"key": "steps", "number": r.get("steps"), "text": None}], "items": [], "sets": [], "uncertain": []}
+            raw = {"kind": "steps", "date": d, "label": "", "values": [{"key": "steps", "number": r.get("steps"), "text": None}] + _nums(r, STEPS_EXTRA), "items": [], "sets": [], "uncertain": []}
         else:
             continue
         out.append((rid, raw, d, str(r.get("text") or "")[:300]))
