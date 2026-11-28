@@ -19,3 +19,9 @@
 
 ## 次の一手
 - New Express の第1〜2課（音声つき）と、Anki で新しい単語40。
+
+## 追記：教科書の巻末の単語をカードに
+- 教科書の PDF の巻末（単語リスト）は画像だけで、`reader.pdf_text` では文字が出ない。PDFKit で画像にし、Vision（ja-JP・en-US）で文字にした（作業フォルダの使い捨ての swift。サンドボックスの中では Vision が動かない）。
+- Vision はエスペラントの字上符（ĉ ĝ ĥ ĵ ŝ ŭ）を落とすので、綴りは手で直した。左右2段の「語・意味」は座標で組にした。
+- 課の本文ページ（第1課＝21ページ〜第20課＝127ページ）の文字と照らして、各語が最初に出る課を付けた。課の順に `cards` へ 1,086 枚（`book.title: New Express`、`chapter: Lesson N`）。表は `desk/data/reader/new-express-eo-words.tsv`（著作物なので git の外）。
+- Anki が閉じていたので、`Desk::Esperanto` への送信は Anki を開いたとき。
