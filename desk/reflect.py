@@ -407,7 +407,7 @@ def write_up(r, items, s=None):
     title = clean_title(d.get("title"))
     body = []
     for sec in d.get("sections") or []:
-        body += [f"[* {clean_title(sec.get('heading'))}]", *[x.strip() for x in str(sec.get("text") or "").splitlines() if x.strip()], ""]
+        body += [clean_title(sec.get("heading")), *[x.strip() for x in str(sec.get("text") or "").splitlines() if x.strip()], ""]
     return {"title": title, "text": "\n".join(body).strip(), "lang": lang}
 
 
@@ -510,11 +510,21 @@ def check_public(text):
     return ""
 
 
+HEADINGS = {"何があったか", "原因", "学んだこと", "次に試すこと", "What happened", "Causes", "What I learned", "What I will try next"}
+
+
+def plain_heading(line):
+    """A heading as the person sees it: "[* 原因]" -> "原因"."""
+    m = re.match(r"^\[\*+ (.+)\]$", line.strip())
+    return m.group(1).strip() if m else line
+
+
 def page_lines(r, s=None):
     s = s or settings()
     day = r.get("day") or day_of(r.get("doneAt") or now_ms()).isoformat()
     title = f"Reflection: {clean_title(r.get('pageTitle') or r.get('title'))} ({day})"
-    body = [x.rstrip() for x in str(r.get("final") or "").splitlines()]
+    # the editor shows plain headings; Rhizome Box gets them bold ([* ...]) only when published
+    body = [f"[* {plain_heading(x).strip()}]" if plain_heading(x).strip() in HEADINGS else x.rstrip() for x in str(r.get("final") or "").splitlines()]
     while body and not body[-1]:
         body.pop()
     lang = "ja" if is_ja(r.get("final") or "") else "en"

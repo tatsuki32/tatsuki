@@ -7740,13 +7740,13 @@ function rflDetail(r){
     return card("One thing to try","Write it as “If …, I will …”, so you know when to do it.",`${rflBox(r,"ifThen",idea||"If …, I will …",3)}
       ${idea&&!a.ifThen?`<button class="rfllink" type="button" data-rflidea>Use: ${esc(idea)}</button>`:""}
       ${mtgField("Try it on",`<input class="mtgin rfldate" type="date" data-rflf="tryDate" value="${esc(a.tryDate||"")}">`)}`,"Write it up")}
-  const s=st.state?.settings||{},text=r.final!=null?r.final:(r.draft||"");
+  const s=st.state?.settings||{},text=String(r.final!=null?r.final:(r.draft||"")).replace(/^\[\*+ (.+?)\]$/gm,"$1"); // headings shown plain; bold only on Rhizome Box
   const ja=/[぀-ヿ一-鿿]/.test(text),day=r.day||new Date(r.doneAt||Date.now()).toISOString().slice(0,10);
   return `<div id="rflwrap" class="rflwrap">${top}<section class="card rflcard">
     <div class="rflrow2"><h2 class="rflq">Write-up</h2><button class="btn${text?"":" primary"}" type="button" data-rfldraft ${st.busy?"disabled":""}>${st.busy==="draft"?"Writing…":text?"Write it up again":"Write it up with Claude"}</button></div>
     <p class="rflhelp">Claude (Sonnet) uses your answers and your view, in the language you used. Other people's names and money stay out unless you wrote them.</p>
     ${mtgField("Title",`<input class="mtgin" data-rflr="pageTitle" value="${esc(r.pageTitle||r.title||"")}">`)}
-    ${mtgField("Reflection",`<textarea class="mtgin rfltext" data-rflr="final" rows="14" placeholder="Write it up with Claude, or write it yourself.">${esc(text)}</textarea>`,"[* Heading] makes a heading on Rhizome Box.")}
+    ${mtgField("Reflection",`<textarea class="mtgin rfltext" data-rflr="final" rows="14" placeholder="Write it up with Claude, or write it yourself.">${esc(text)}</textarea>`)}
     <div class="rflsign"><p>${ja?"今後起こさないように誓います。":"I pledge not to let this happen again."}</p><p class="sub">${esc(s.sign||"")} — ${esc(day)}</p></div>
     ${a.ifThen?`<div class="rfltry"><span><span class="sub">Try</span> ${esc(a.ifThen)}${a.tryDate?` <span class="sub">· ${esc(a.tryDate)}</span>`:""}</span>${r.tryTaskId?`<a class="btn sm" href="#task/${encodeURIComponent(r.tryTaskId)}">Open the task</a>`:`<button class="btn sm" type="button" data-rfltry>Make it a task</button>`}</div>`:""}
     ${msg}</section>
@@ -7804,7 +7804,7 @@ function wireRfl(){
     try{await rflSave(r)}catch(e){toast("Could not save");return}rflApi("POST","/api/reflect/scan",{}).catch(()=>{});location.hash="#reflect"});
   on("[data-rflmic]",b=>voiceButton(b,b.closest(".rflbox").querySelector("textarea")));
   const run=async(kind,fn)=>{st.busy=kind;st.msg="";rflDraw();try{await fn()}catch(e){st.msg=e.message}st.busy="";rflDraw()};
-  on("[data-rfldraft]",b=>b.onclick=()=>run("draft",async()=>{await rflSave(r);const x=await rflApi("POST","/api/reflect/draft",{id:r.id});x.final=x.draft;rflPut(x);await rflSave(x)}));
+  on("[data-rfldraft]",b=>b.onclick=()=>run("draft",async()=>{await rflSave(r);const x=await rflApi("POST","/api/reflect/draft",{id:r.id});x.final=String(x.draft||"").replace(/^\[\*+ (.+?)\]$/gm,"$1");rflPut(x);await rflSave(x)}));
   const finish=async x=>{x.doneAt=x.doneAt||Date.now();x.day=x.day||hcmcDate();if(x.status!=="published")x.status="done";await rflSave(x);
     const wid=winId("reflect-"+x.id);if(!S.wins.some(w=>w.id===wid&&!w.deleted))await store.putWin({id:wid,kind:"reflect",title:"Reflected: "+(x.title||""),ref:x.id});
     rflApi("POST","/api/reflect/scan",{}).catch(()=>{})}; // its "Write a reflection" task is marked done

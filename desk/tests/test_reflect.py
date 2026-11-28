@@ -106,6 +106,13 @@ class Page(unittest.TestCase):
         r["final"] = "[* What happened]\nIt ran late."
         self.assertEqual(reflect.page_lines(r, S)[1][-2], "I pledge not to let this happen again.")
 
+    def test_headings_bold_only_on_the_page(self):
+        r = {"id": "x", "title": "T", "final": "原因\n疲れていた。\n[* 学んだこと]\n小さく始める。", "day": "2026-11-28"}
+        lines = reflect.page_lines(r, S)[1]
+        self.assertIn("[* 原因]", lines)
+        self.assertIn("[* 学んだこと]", lines)
+        self.assertIn("疲れていた。", lines)
+
     def test_titles_lose_brackets(self):
         self.assertEqual(reflect.clean_title("[a] b\nc"), "a b c")
 
@@ -137,7 +144,8 @@ class Page(unittest.TestCase):
         r = {"id": "late-a", "kind": "late", "title": "A", "facts": {"due": ms("2026-11-26"), "days": 2},
              "answers": {"causes": ["estimate", "late"], "ifThen": "If I plan, I add half again"}}
         d = reflect.write_up(r, [], S)
-        self.assertIn("[* What happened]", d["text"])
+        self.assertIn("What happened\n", d["text"])
+        self.assertNotIn("[*", d["text"])
         self.assertIn("Estimate too small", d["text"])
 
 
