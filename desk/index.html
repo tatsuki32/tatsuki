@@ -422,8 +422,8 @@ details.draft .sent-as summary{cursor:pointer;display:block;padding:var(--s2) 0;
 .okstrip{white-space:normal;min-width:0;max-width:100%;box-sizing:border-box;display:flex;flex-wrap:wrap;gap:var(--s2) var(--s4);align-items:center;width:100%;text-align:left;background:var(--accent-soft);border:1px solid var(--accent-2);border-radius:var(--r);padding:var(--s2) 12px;color:var(--ink);font:inherit;font-size:var(--t1);cursor:pointer;margin:0 0 var(--s3)}
 .okstrip:hover{border-color:var(--accent)}
 .okstrip.empty{background:transparent;border-style:dashed;border-color:var(--line-2);color:var(--muted)}
-.okstrip .oko{display:flex;flex-wrap:wrap;gap:var(--s1) var(--s4);align-items:center;min-width:0;max-width:100%}
-.okstrip .oko>b{color:var(--accent)}
+.okstrip .okobj{display:flex;flex-wrap:wrap;gap:var(--s1) var(--s4);align-items:center;min-width:0;max-width:100%}
+.okstrip .okobj>b{color:var(--accent)}
 .okk{display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px;min-width:0}
 .okk em{font-style:normal;color:var(--ink-2);font-variant-numeric:tabular-nums}
 .okbar{display:inline-block;width:72px;height:6px;border-radius:3px;background:var(--surface-2);overflow:hidden;flex:none;vertical-align:middle}
@@ -1474,7 +1474,13 @@ h1 .inedit{font-size:var(--t4);font-weight:700}
 .gtm{position:absolute;top:4px;height:34px;font-size:var(--t1);color:var(--ink);font-weight:700;padding-left:4px;border-left:1px solid var(--line-2);white-space:nowrap}
 .gtd{position:absolute;top:22px;font-size:10px;color:var(--muted);padding-left:3px;border-left:1px solid var(--line);height:14px}
 .gtb{position:absolute;top:8px;height:16px;border-radius:4px;opacity:.9}
-.gtb.dot{border-radius:50%;width:12px!important;height:12px;top:10px;margin-left:2px}
+.gtb{cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;min-width:16px}
+.gtb.sec{opacity:.45;height:10px;top:11px}
+.gtb.drag{cursor:grabbing;opacity:1;outline:2px solid var(--accent);z-index:3}
+.gte{position:absolute;top:-4px;bottom:-4px;width:8px;cursor:ew-resize}
+.gte.a{left:-4px}.gte.b{right:-4px}
+.gtb:hover .gte::after{content:"";position:absolute;top:4px;bottom:4px;left:3px;width:2px;border-radius:1px;background:var(--ink);opacity:.7}
+.gtdate{position:absolute;top:-18px;left:0;font-size:var(--t1);color:var(--ink);background:var(--surface-2);padding:0 4px;border-radius:4px;white-space:nowrap;pointer-events:none}
 .gtb.on{opacity:.3}
 .gtnow{position:absolute;top:0;bottom:0;width:2px;background:var(--accent);z-index:1;pointer-events:none}
 @media (max-width:560px){.gtr{grid-template-columns:120px auto}}
@@ -4503,12 +4509,39 @@ function projGanttView(p,all){
   const n=Math.round((dayMs(b0)-dayMs(a0))/DAY)+1, x=d=>Math.round((dayMs(d)-dayMs(a0))/DAY)*W;
   const marks=[];for(let i=0;i<n;i++){const d=addDays(a0,i),dd=+d.slice(8);if(i===0||dd===1)marks.push(`<span class="gtm" style="left:${i*W}px">${new Date(dayMs(d)).toLocaleDateString("en-US",{month:"short"})}${dd===1&&d.slice(5,7)==="01"||i===0?" "+d.slice(0,4):""}</span>`);else if((dd-1)%7===0)marks.push(`<span class="gtd" style="left:${i*W}px">${dd}</span>`)}
   const track=inner=>`<div class="gtt" style="width:${n*W}px">${inner||""}</div>`;
-  const row=(t,s)=>{const sp=spans.get(t.id), dot=sp.a===sp.b;
-    return `<div class="gtr"><div class="gtl"><button class="tt" data-topen="${esc(t.id)}">${esc(t.title)}</button></div>${track(`<span class="gtb ${dot?"dot":""} ${t.status==="done"?"on":""}" style="left:${x(sp.a)}px;width:${dot?W:x(sp.b)-x(sp.a)+W}px;background:${okColor(s.color)}" title="${esc(mdLabel(sp.a))}${dot?"":"–"+esc(mdLabel(sp.b))}"></span>`)}</div>`};
-  const grp=g=>`<div class="gtr gtg"><div class="gtl"><span class="dot" style="background:${okColor(g.s.color)}"></span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(g.s.name)}</span></div>${track()}</div>${g.xs.filter(t=>spans.has(t.id)).map(t=>row(t,g.s)).join("")}`;
-  return `<section class="card"><div class="dhead"><h2>Gantt</h2><span class="sub">${esc(mdLabel(a0))}–${esc(mdLabel(b0))} · Bars run from start date to due date. Without a start date, the box's period is used</span></div>
-    <div class="gtwrap"><div class="gt" style="width:${LW+n*W}px"><div class="gtr gth"><div class="gtl"></div>${track(marks.join(""))}</div>${groups.map(grp).join("")}<div class="gtnow" style="left:${LW+x(today)+Math.round(W/2)}px" title="Today"></div></div></div></section>${noneHtml}`;
+  const edges=`<i class="gte a" data-gedge="a" aria-hidden="true"></i><i class="gte b" data-gedge="b" aria-hidden="true"></i>`;
+  const bar=(a,b,attr,cls,color,label)=>`<span class="gtb ${cls}" ${attr} data-ga="${a}" data-gb="${b}" style="left:${x(a)}px;width:${x(b)-x(a)+W}px;background:${okColor(color)}" title="${esc(label)}${esc(mdLabel(a))}–${esc(mdLabel(b))} · Drag to move, drag an end to change">${edges}</span>`;
+  const row=(t,s)=>{const sp=spans.get(t.id);
+    return `<div class="gtr"><div class="gtl"><button class="tt" data-topen="${esc(t.id)}">${esc(t.title)}</button></div>${track(bar(sp.a,sp.b,`data-gtask="${esc(t.id)}"`,t.status==="done"?"on":"",s.color,""))}</div>`};
+  const grp=g=>{const wr=g.s.id?whenRange(g.s.when):null;
+    return `<div class="gtr gtg"><div class="gtl"><span class="dot" style="background:${okColor(g.s.color)}"></span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(g.s.name)}</span></div>${track(wr?bar(wr[0],wr[1],`data-gsec="${esc(g.s.id)}"`,"sec",g.s.color,"Box period "):"")}</div>${g.xs.filter(t=>spans.has(t.id)).map(t=>row(t,g.s)).join("")}`};
+  return `<section class="card"><div class="dhead"><h2>Gantt</h2><span class="sub">${esc(mdLabel(a0))}–${esc(mdLabel(b0))} · Drag a bar to move it, or drag its ends to change the start or due date. Box rows set the box's period</span></div>
+    <div class="gtwrap"><div class="gt" data-ga0="${a0}" data-gw="${W}" style="width:${LW+n*W}px"><div class="gtr gth"><div class="gtl"></div>${track(marks.join(""))}</div>${groups.map(grp).join("")}<div class="gtnow" style="left:${LW+x(today)+Math.round(W/2)}px" title="Today"></div></div></div></section>${noneHtml}`;
 }
+/* Gantt drag: move a bar (both dates), or drag an end (start or due). A press without moving opens the task.
+   Tasks save start (YYYY-MM-DD) and due (noon that day); box rows save the box's when as "M/D–M/D". */
+document.addEventListener("pointerdown",e=>{
+  const el=e.target.closest?.(".gtb[data-ga]"); if(!el||e.button>0)return;
+  const gt=el.closest(".gt"), W=+gt.dataset.gw||16, a=el.dataset.ga, b=el.dataset.gb, edge=e.target.dataset?.gedge||"";
+  const x0=e.clientX, left0=parseFloat(el.style.left), w0=parseFloat(el.style.width);
+  let na=a, nb=b, moved=false;
+  e.preventDefault(); el.setPointerCapture?.(e.pointerId);
+  const tag=document.createElement("span"); tag.className="gtdate";
+  const move=ev=>{const n=Math.round((ev.clientX-x0)/W); if(n&&!moved){moved=true;el.classList.add("drag");el.appendChild(tag)}
+    if(!moved)return;
+    if(edge==="a"){na=addDays(a,n);if(na>b)na=b;nb=b}else if(edge==="b"){nb=addDays(b,n);if(nb<a)nb=a;na=a}else{na=addDays(a,n);nb=addDays(b,n)}
+    const da=Math.round((dayMs(na)-dayMs(a))/DAY), db_=Math.round((dayMs(nb)-dayMs(b))/DAY);
+    el.style.left=(left0+da*W)+"px"; el.style.width=(w0+(db_-da)*W)+"px";
+    tag.textContent=na===nb?mdLabel(na):mdLabel(na)+"–"+mdLabel(nb)};
+  const up=async()=>{el.removeEventListener("pointermove",move);el.removeEventListener("pointerup",up);el.removeEventListener("pointercancel",up);
+    if(!moved){if(el.dataset.gtask)openTask(el.dataset.gtask);else if(el.dataset.gsec)editSection(secById(el.dataset.gsec));return}
+    if(na===a&&nb===b)return render();
+    try{
+      if(el.dataset.gtask){const t=findTask(el.dataset.gtask);if(!t)return render();await store.putTask({...t,start:na,due:dayMs(nb)});toast(`Moved to ${na===nb?mdLabel(na):mdLabel(na)+"–"+mdLabel(nb)}`)}
+      else{const s=secById(el.dataset.gsec);if(!s)return render();await store.putSection({...s,when:`${mdLabel(na)}–${mdLabel(nb)}`});toast(`Box period: ${mdLabel(na)}–${mdLabel(nb)}`)}
+    }catch(err){toast("Couldn't save. Please try again");render()}};
+  el.addEventListener("pointermove",move);el.addEventListener("pointerup",up);el.addEventListener("pointercancel",up);
+});
 /* ---------- Project OKRs (requirements: https://claude.ai/artifact/UYFk4gKbT1nqMckvK2FcM4).
    A project with okr:true gets an OKR tab: up to 3 objectives (O), up to 5 key results (KR) each, boxes as bets on a KR.
    Stored in "okrs" (Mac: data/okrs.json), one doc per objective with its KRs inside. A task counts toward a KR by its own
@@ -4535,7 +4568,7 @@ const krSpark=k=>{const v=(k.log||[]).map(x=>+x.value||0);if(v.length<2)return "
 /* the thin bar above Box / List / Board / Calendar / Gantt */
 function okrStrip(p){const os=okrList(p.id);
   if(!os.length)return `<button class="okstrip empty" data-pview="okr">Set the goal for this project →</button>`;
-  return `<button class="okstrip" data-pview="okr" aria-label="Open OKRs">${os.map(o=>`<span class="oko"><b>${esc(o.title)}</b>${krsOf(o).map(k=>`<span class="okk">${esc(k.title)} <em>${krVal(k)}</em>${okBar(krPct(k))}</span>`).join("")}</span>`).join("")}</button>`}
+  return `<button class="okstrip" data-pview="okr" aria-label="Open OKRs">${os.map(o=>`<span class="okobj"><b>${esc(o.title)}</b>${krsOf(o).map(k=>`<span class="okk">${esc(k.title)} <em>${krVal(k)}</em>${okBar(krPct(k))}</span>`).join("")}</span>`).join("")}</button>`}
 /* the OKR tab */
 function okrView(p){
   const os=okrList(p.id);
