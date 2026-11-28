@@ -2222,7 +2222,15 @@ body.sffull{overflow:hidden}
 .sfover{position:absolute;left:var(--s3);top:var(--s3);max-width:min(420px,calc(100% - 32px));padding:var(--s3);border-radius:var(--r);background:rgba(14,18,16,.55);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);color:#f4f6f2;display:grid;gap:var(--s2)}
 .sfover .eyebrow{color:#ecdfbd;margin:0}
 .sfover .sub{color:#d6dbd4}
-.sfclock{font-size:56px;font-weight:700;line-height:1.05}
+.sfclock{font-size:56px;font-weight:700;line-height:1.05;font-variant-numeric:tabular-nums}
+.sftimer{display:flex;align-items:center;gap:var(--s3)}
+.sfdial{width:136px;height:136px;flex:none}
+.sfdial .face{fill:#f4f1ea;stroke:rgba(0,0,0,.25);stroke-width:1}
+.sfdial .ticks line{stroke:#5b5a55;stroke-width:1.4;stroke-linecap:round}
+.sfdial .pie{fill:none;stroke:var(--accent);stroke-width:46;transition:stroke-dasharray 1s linear}
+.sfdial.brk .pie{stroke:#7fb48a}
+.sfdial .hub{fill:#3b3a36}
+@media (prefers-reduced-motion:reduce){.sfdial .pie{transition:none}}
 .sfsub{margin:0;font-size:var(--t2);color:#e6eae3}
 .sfdots{display:flex;gap:var(--s2);flex-wrap:wrap}
 .sfdots span{width:10px;height:10px;border-radius:50%;border:1px solid rgba(255,255,255,.55)}
@@ -2251,7 +2259,7 @@ body.sffull{overflow:hidden}
 .sflist li{display:flex;justify-content:space-between;gap:var(--s2);font-size:var(--t1);color:var(--ink-2);border-top:1px solid var(--line);padding-top:var(--s1)}
 .sflist li span:first-child{min-width:0;overflow-wrap:anywhere}
 .sflist li span:last-child{white-space:nowrap;display:inline-flex;align-items:center;gap:var(--s1)}
-@media (max-width:560px){.sfjarcard{grid-template-columns:1fr}.sfjar{width:96px;height:120px}.sfclock{font-size:var(--t5)}.sfover{left:var(--s2);top:var(--s2);max-width:calc(100% - 16px);padding:12px}.sfstage{min-height:440px}}
+@media (max-width:560px){.sfjarcard{grid-template-columns:1fr}.sfjar{width:96px;height:120px}.sfclock{font-size:var(--t5)}.sfdial{width:96px;height:96px}.sfover{left:var(--s2);top:var(--s2);max-width:calc(100% - 16px);padding:12px}.sfstage{min-height:440px}}
 .mtgintro{margin:0 0 var(--s3)}
 .mtgstats{margin-bottom:var(--s3)}
 .mtgrate{display:flex;align-items:center;gap:var(--s1)}
@@ -12427,12 +12435,23 @@ function sfSoundBar(){
   return `<label class="sfsnd"><span class="sub">Sound</span><select id="sfSound">${SF_SOUNDS.map(([k,l])=>`<option value="${k}" ${S.sf.sound===k?"selected":""}>${l}</option>`).join("")}</select></label>
     <label class="sfsnd"><span class="sub">Volume</span><input type="range" id="sfVol" min="0" max="1" step="0.05" value="${S.sf.vol}"></label>`;
 }
+/* a timer you can read at a glance: the colored part shrinks back to 12 o'clock as the minutes go */
+const SF_DIAL_C=2*Math.PI*23;
+const sfDialPart=(r,p)=>{const len=(p.mode==="break"?r.brk:r.work)*SF_MIN;return Math.max(0,Math.min(1,p.left/len))};
+function sfDial(r,p){
+  const ticks=Array.from({length:12},(_,i)=>{const a=i*Math.PI/6,x1=50+Math.sin(a)*44,y1=50-Math.cos(a)*44,k=i%3?40.5:38,x2=50+Math.sin(a)*k,y2=50-Math.cos(a)*k;
+    return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}"/>`}).join("");
+  return `<svg class="sfdial ${p.mode==="break"?"brk":""}" id="sfDial" viewBox="0 0 100 100" aria-hidden="true">
+    <circle class="face" cx="50" cy="50" r="47"/><g class="ticks">${ticks}</g>
+    <circle class="pie" id="sfPie" cx="50" cy="50" r="23" stroke-dasharray="${(sfDialPart(r,p)*SF_DIAL_C).toFixed(2)} ${SF_DIAL_C.toFixed(2)}" transform="rotate(-90 50 50)"/>
+    <circle class="hub" cx="50" cy="50" r="3.5"/></svg>`;
+}
 function sfRunView(r,st){
   const p=sfPhase(r);
   return `<section class="sfstage" id="sfStage">${sfVideoHtml()}<canvas id="sfCanvas" aria-hidden="true"></canvas>
     <div class="sfover" data-noauto>
       <p class="eyebrow" id="sfMode"></p>
-      <div class="sfclock" id="sfClock">${fbLeft(p.left)}</div>
+      <div class="sftimer">${sfDial(r,p)}<div class="sfclock" id="sfClock">${fbLeft(p.left)}</div></div>
       <p class="sfsub" id="sfSub"></p>
       <div class="sfdots" id="sfDots"></div>
       <div class="sfbar">${sfSoundBar()}</div>
@@ -12447,6 +12466,8 @@ function sfPanels(){
   const r=sfRunning();if(!r||!$("#sfClock"))return;
   const p=sfPhase(r),st=sfStats(),set=(id,v)=>{const el=$("#"+id);if(el&&el.innerHTML!==v)el.innerHTML=v};
   set("sfClock",fbLeft(p.left));
+  const pie=$("#sfPie");if(pie)pie.setAttribute("stroke-dasharray",`${(sfDialPart(r,p)*SF_DIAL_C).toFixed(2)} ${SF_DIAL_C.toFixed(2)}`);
+  $("#sfDial")?.classList.toggle("brk",p.mode==="break");
   set("sfMode",`${p.mode==="focus"?"Focus":"Break"} · Round ${p.round} of ${r.rounds}${r.blocked&&fbActive()?" · Blocking on":""}`);
   set("sfSub",esc(p.mode==="focus"?`${sfKindLabel(r.kind)}${r.title?": "+r.title:""}`:"Look at the trees. Stand up, stretch, drink some water."));
   set("sfDots",Array.from({length:r.rounds},(_,i)=>`<span class="${i+1<p.round||(i+1===p.round&&p.mode==="break")?"on":i+1===p.round?"now":""}"></span>`).join(""));

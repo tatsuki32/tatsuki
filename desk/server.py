@@ -51,6 +51,7 @@ import igfans  # Followers: who follows an Instagram account, who the fans are, 
 import glance  # Glance: a camera photo and a screen picture every 15 minutes, one remark each (desk/glance.py)
 import checkin
 import tg_notify
+import study_notify
 import gcal_ics
 import event_alarm
 import pc_monitor
@@ -1920,6 +1921,7 @@ if __name__ == "__main__":
         except Exception as e:  # never stop the server for it
             print("once failed:", e, flush=True)
         threading.Thread(target=notify.watch, daemon=True).start()
+        threading.Thread(target=study_notify.watch, daemon=True).start()  # Study Focus: a notification at each break and focus
         threading.Thread(target=bedtime.watch, daemon=True).start()  # after 21:30, while the Mac is in use: time for bed
         threading.Thread(target=glance.watch, daemon=True).start()  # camera + screen every 15 minutes, once turned on in the Desk
         threading.Thread(target=checkin.watch, args=(load, save, LOCK), daemon=True).start()  # in-progress timers: ask every 10 minutes
