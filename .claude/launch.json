@@ -26,6 +26,12 @@
       "port": 4787
     },
     {
+      "name": "desk-deadlines-test",
+      "runtimeExecutable": "/bin/sh",
+      "runtimeArgs": ["-c", "mkdir -p /tmp/claude/desk-deadlines-test && cd desk && DESK_DATA_DIR=/tmp/claude/desk-deadlines-test DEADLINES_DIR=/tmp/claude/desk-deadlines-test/deadlines DEADLINES_FAKE=1 DESK_PORT=${PORT:-4773} exec python3 server.py"],
+      "port": 4773
+    },
+    {
       "name": "desk-test",
       "runtimeExecutable": "/bin/sh",
       "runtimeArgs": ["-c", "cd desk && DESK_PORT=${PORT:-4791} exec python3 server.py"],

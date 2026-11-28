@@ -9,6 +9,8 @@ straight from the Gmail API, by the scheduled task desk-morning-mail (4:30 and 1
   python3 unimail.py pending [DAYS]       inbox threads (default 14 days) that may need an answer, as JSON on stdout
   python3 unimail.py draft FILE.json      makes a reply draft in the university Gmail; prints {"id","view_url"}
   python3 unimail.py replied THREAD...    {"<thread id>": true} when his own message is the newest in the thread
+  python3 unimail.py recent [HOURS]       inbox messages of the last hours (default 36), automated ones too, for the
+                                          deadlines (desk/deadlines.py) — as JSON on stdout
 
 Permissions: gmail.readonly and gmail.compose (drafts). Nothing here sends, deletes or changes labels.
 The OAuth client is the one of the mail cleanup ("tatsuki-desk-gmail" in the keychain); the refresh token lives in the
@@ -330,6 +332,32 @@ def pending(days=14):
     return {"account": ACCOUNT, "email": me, "items": out}
 
 
+RECENT_QUERY = "in:inbox newer_than:{days}d -category:promotions -category:social -in:chats"
+RECENT_MAX = 40
+
+
+def recent(hours=36):
+    """Every inbox message of the last hours, notices from the university's systems included (they carry most of the
+    deadlines). The scheduled task decides; nothing is kept here."""
+    me = (_load().get("email") or gmail("GET", "/profile").get("emailAddress", "")).lower()
+    days = max(1, -(-int(hours) // 24))
+    q = urllib.parse.quote(RECENT_QUERY.format(days=days))
+    found = gmail("GET", f"/messages?q={q}&maxResults={RECENT_MAX}").get("messages") or []
+    cut = time.time() - int(hours) * 3600
+    out = []
+    for m in found:
+        msg = gmail("GET", f"/messages/{m['id']}?format=full")
+        if int(msg.get("internalDate", "0")) / 1000 < cut or "DRAFT" in (msg.get("labelIds") or []):
+            continue
+        h = _headers(msg)
+        if parseaddr(h.get("from", ""))[1].lower() == me:
+            continue
+        out.append({"account": ACCOUNT, "thread": msg.get("threadId", ""), "gmail_url": thread_url(me, msg.get("threadId", "")),
+                    "messageId": h.get("message-id", ""), "from": h.get("from", ""), "subject": h.get("subject", ""),
+                    "receivedAt": _iso(h.get("date", "")), "text": _quote_cut(_text(msg.get("payload")))[:TEXT_MAX]})
+    return {"account": ACCOUNT, "email": me, "items": out}
+
+
 def replied(thread_ids):
     """{"<thread>": true} when the newest message in the thread is his own (he answered in the university Gmail)."""
     me = (_load().get("email") or gmail("GET", "/profile").get("emailAddress", "")).lower()
@@ -386,6 +414,9 @@ def main(argv):
             return 0
         if cmd == "pending":
             print(json.dumps(pending(int(argv[1]) if len(argv) > 1 else 14), ensure_ascii=False, indent=1))
+            return 0
+        if cmd == "recent":
+            print(json.dumps(recent(int(argv[1]) if len(argv) > 1 else 36), ensure_ascii=False, indent=1))
             return 0
         if cmd == "draft" and len(argv) == 2:
             with open(argv[1], encoding="utf-8") as f:

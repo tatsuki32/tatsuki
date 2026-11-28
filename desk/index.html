@@ -1140,6 +1140,13 @@ body.cpfocus .cp{grid-template-columns:minmax(0,1fr)}
 .unote>span:first-child{flex:1 1 20em;min-width:0}
 .scpick{flex:1 1 100%;display:flex;flex-wrap:wrap;align-items:center;gap:var(--s2) var(--s3)}.scpick label{display:flex;align-items:center;gap:var(--s1)}
 .unacts{display:flex;gap:var(--s2)}
+.mdlrow{display:flex;flex-wrap:wrap;align-items:baseline;gap:var(--s1) var(--s3);padding:var(--s2) 0;border-top:1px solid var(--line)}
+.mdlrow:first-child{border-top:0}
+.mdlwhen{min-width:132px;font-variant-numeric:tabular-nums}
+.mdlmain{flex:1 1 240px;min-width:0;overflow-wrap:anywhere}
+.mdlrow .unacts{margin-left:auto}
+.mdledit{display:flex;flex-wrap:wrap;gap:var(--s2);width:100%}
+.mdledit input{min-width:0;flex:1 1 160px}
 @media (max-width:760px){.urow{grid-template-columns:minmax(0,1fr) 3em 5em 4.5em}.urow .uw{display:none}.urow.ucards{grid-template-columns:minmax(0,1fr) 3em 5.5em 4.5em}.urow.ubtns{grid-template-columns:minmax(0,1fr) 3em 5.5em}}
 .pcline{justify-self:start;text-decoration:none}
 .pcline:hover{color:var(--ink)}
@@ -2364,6 +2371,7 @@ if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="focus")+1,0,{id:"study",e:"
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="focus")+1,0,{id:"notices",e:"🔔",label:"Notifications",g:"today"}); // Mac notifications: desk/notify.py decides, this page lists and sets
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="notices")+1,0,{id:"glance",e:"👀",label:"Glance",g:"today"}); // camera + screen every 15 minutes with one remark, and the bedtime reminder (desk/glance.py, desk/bedtime.py)
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="calendar")+1,0,{id:"book",e:"🗓️",label:"Bookings",g:"today"}); // the rules and the list behind tany.im/book; the page runs in the tany.im Worker (desk/book.py)
+if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="calendar")+1,0,{id:"deadlines",e:"📅",label:"Deadlines",g:"today"}); // deadlines found in mail, on the Google calendar "Deadlines" (desk/deadlines.py)
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="calendar")+1,0,{id:"meetcheck",e:"🤝",label:"Should we meet?",g:"today"}); // four questions decide whether a meeting earns its place (desk/meetcheck.py)
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="memolink")+1,0,{id:"money",e:"💰",label:"Money",g:"write"}); // statements stay on this Mac
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="money")+1,0,{id:"screentime",e:"📱",label:"Screen Time",g:"write"});
@@ -5941,6 +5949,7 @@ function home(){
   ${uNotice()}
   ${scLine()}
   ${uniLine(true)}
+  ${mdlLine()}
   ${todayBlock()}
   ${suggCard()}
   ${uTag(progressCard(),"wins")}
@@ -7019,6 +7028,7 @@ function render(){
     {const st=mn();if(!st.force&&st.docView&&st.docView===mnId()&&$(".mnframe"))return;st.force=false} /* the embedded Google Doc loads once: a redraw would reload it (a new visit in the browser each time) */$("#view").innerHTML=searchResults()+mnView();wire();wireMn();return}
   if(viewId()==="post"){if(!ps().data&&!ps().loading)psLoad();if(!document.activeElement?.closest?.(".psedit")||!$("#psView"))psDraw();return} // a redraw from elsewhere never takes the text being typed
   if(viewId()==="forms"){fmSync();if(!document.activeElement?.closest?.(".fmed,.fmbox,.fmtitle")||!$("#fmView"))fmDraw();return} // a redraw from elsewhere never takes the text being typed
+  if(viewId()==="deadlines"){mdlLoad();if(!document.activeElement?.closest?.(".mdledit")||!$("#mdlView")){$("#view").innerHTML=searchResults()+mdlView();wire();wireMdl()}return} // a redraw never takes a date being typed
   if(viewId()==="book"){if(!bkg().data&&!bkg().loading)bkgLoad();if(!document.activeElement?.closest?.(".bkgedit")||!$("#bkgView"))bkgDraw();return} // a redraw from elsewhere never takes the rules being typed
   if(viewId()!=="campus")document.body.classList.remove("cpfocus");
   if(viewId()==="campus"){if(!cp().data&&!cp().loading)cpLoad();if(!document.activeElement?.closest?.(".cpedit,.cpbox")||!$("#cpView"))cpDraw();return} // a redraw from elsewhere never takes the text being typed
@@ -9392,6 +9402,62 @@ function acOpen(a){
     try{S.ac=await api("POST",url+"/remove",{});close();render();toast("Deleted")}catch(e){toast("Could not delete")}};
 }
 /* Showcase: look only. Where to look is in desk/data/showcase.json; the list and the opening are in desk/showcase.py. */
+/* Deadlines (#deadlines, desk/deadlines.py): what desk-morning-mail found in both Gmails, on the Google calendar "Deadlines".
+   Remove takes the event away for good; Edit fixes the date (later mails never move a fixed one). */
+S.mdl=null;
+const MDLKIND={report:"Report",exam:"Exam",paperwork:"Paperwork",work:"Work",doby:"Do by"};
+async function mdlLoad(force){
+  if(!LOCALAPI||(!force&&S.mdlAt&&Date.now()-S.mdlAt<20000))return;S.mdlAt=Date.now();
+  try{const v=await api("GET","/api/deadlines"),same=JSON.stringify(v)===JSON.stringify(S.mdl);S.mdl=v;if(!same&&["home","deadlines"].includes(viewId()))render()}catch(e){}
+}
+function mdlWhen(r){
+  const d=r.allDay?new Date(r.due+"T12:00"):new Date(r.due);
+  const day=d.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"});
+  return r.allDay?day:day+", "+d.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});
+}
+function mdlLine(){
+  const v=S.mdl;if(!LOCALAPI||!v||!v.calendar||(!v.error&&v.connected))return"";
+  return `<div class="unote"><span>Deadlines calendar is disconnected${v.error?": "+esc(v.error):"."} Found deadlines wait until it is back.</span><span class="unacts"><button class="btn sm" data-mdlconnect>Connect Google Calendar</button></span></div>`;
+}
+function mdlRow(r){
+  const tag=[MDLKIND[r.kind]||r.kind,r.account==="zen"?"ZEN":"Gmail",r.waiting?"Waiting":"",r.fixed?"Fixed by you":""].filter(Boolean).join(" · ");
+  const from=[r.from,r.subject].filter(Boolean).join(" — ");
+  const edit=S.mdlEdit===r.id?`<form class="mdledit" data-mdlform="${esc(r.id)}"><input name="due" aria-label="Date or date and time" value="${esc(r.due.slice(0,16))}" placeholder="2026-12-04 or 2026-12-04T23:59"><input name="title" aria-label="Title" value="${esc(r.title)}"><button class="btn sm primary">Save</button><button class="btn sm" type="button" data-mdlcancel>Cancel</button></form>`:"";
+  return `<div class="mdlrow"><span class="mdlwhen"><b>${esc(mdlWhen(r))}</b></span><span class="mdlmain">${esc(r.title)}<br><span class="sub">${esc(tag)}${from?" · "+esc(from):""}</span>${r.summary?`<br><span class="due">${esc(r.summary)}</span>`:""}${r.error?`<br><span class="due" role="alert">${esc(r.error)}</span>`:""}</span>
+    <span class="unacts">${r.htmlLink?`<a class="btn sm" href="${esc(r.htmlLink)}" target="_blank" rel="noopener">Calendar</a>`:""}${r.gmail_url?`<a class="btn sm" href="${esc(r.gmail_url)}" target="_blank" rel="noopener">Mail</a>`:""}${r.past?"":`<button class="btn sm" data-mdledit="${esc(r.id)}">Edit</button>`}<button class="btn sm" data-mdlrm="${esc(r.id)}">Remove</button></span>${edit}</div>`;
+}
+function mdlView(){
+  const head=`<header class="head"><div><p class="eyebrow">Today</p><h1>Deadlines</h1></div></header>`;
+  const v=S.mdl;if(!v)return `<div id="mdlView" data-noauto>${head}<p class="due">Loading…</p></div>`;
+  const conn=v.connecting?`<div class="unote"><span>Waiting for you to press Allow in the browser…</span></div>`
+    :v.connected&&v.calendar&&!v.error?`<p class="sub">Connected to the Deadlines calendar. Your Gmail and university Gmail are read at 4:30 and 15:30.</p>`
+    :`<div class="unote"><span>${v.error?esc(v.error):"Connect Google Calendar once. The Desk makes a calendar named “Deadlines” and touches only that one."}</span><span class="unacts"><button class="btn sm primary" data-mdlconnect>Connect Google Calendar</button></span></div>`;
+  const live=v.items.filter(r=>r.state!=="removed"&&!r.past),past=v.items.filter(r=>r.state!=="removed"&&r.past).reverse().slice(0,20);
+  const soft=`<label class="trauto"><input type="checkbox" id="mdlSoft" ${v.soft?"checked":""}> Also add things with no deadline (a suggested “Do by” date, 5 at a time)</label>`;
+  return `<div id="mdlView" data-noauto>${head}
+  <p class="sub">Reports, exams, paperwork and work deadlines found in your mail go on the calendar by themselves, and one mail tells you what was added. Remove a wrong one here: it won't come back.</p>
+  ${conn}
+  ${mpanel("Coming up",String(live.length),live.length?live.map(mdlRow).join(""):`<p class="due">Nothing yet. New ones appear after the next mail check.</p>`)}
+  ${past.length?mpanel("Past","",past.map(mdlRow).join("")):""}
+  <section class="card mpanel">${soft}</section></div>`;
+}
+async function mdlPost(method,path,body){
+  try{S.mdl=await api(method,path,body||{});S.mdlAt=Date.now();render();return true}catch(e){toast(e.message||"Couldn't save");return false}
+}
+function wireMdl(){
+  const sw=$("#mdlSoft");if(sw)sw.onchange=()=>mdlPost("PUT","/api/deadlines/settings",{soft:sw.checked});
+  document.querySelectorAll("[data-mdlrm]").forEach(b=>b.onclick=async()=>{b.disabled=true;if(await mdlPost("POST","/api/deadlines/"+encodeURIComponent(b.dataset.mdlrm)+"/remove"))toast("Removed. It won't come back.");else b.disabled=false});
+  document.querySelectorAll("[data-mdledit]").forEach(b=>b.onclick=()=>{S.mdlEdit=b.dataset.mdledit;render();const i=$(".mdledit input");if(i)i.focus()});
+  document.querySelectorAll("[data-mdlcancel]").forEach(b=>b.onclick=()=>{S.mdlEdit=null;document.activeElement?.blur?.();render()});
+  document.querySelectorAll("[data-mdlform]").forEach(f=>f.onsubmit=async e=>{e.preventDefault();const fd=new FormData(f);
+    if(await mdlPost("PUT","/api/deadlines/"+encodeURIComponent(f.dataset.mdlform),{due:String(fd.get("due")||"").trim().replace(" ","T"),title:String(fd.get("title")||"").trim()})){S.mdlEdit=null;document.activeElement?.blur?.();render();toast("Saved. Later mails won't move it.")}});
+}
+document.addEventListener("click",async e=>{
+  const b=e.target.closest&&e.target.closest("[data-mdlconnect]");if(!b)return;e.preventDefault();b.disabled=true;
+  if(await mdlPost("POST","/api/deadlines/connect")){if(S.mdl?.connecting)toast("Pick your Google account in the browser and press Allow");
+    let n=0;const iv=setInterval(async()=>{await mdlLoad(true);if(++n>60||!S.mdl?.connecting)clearInterval(iv)},5000)}else b.disabled=false;
+});
+if(LOCALAPI){mdlLoad();setInterval(()=>{if(["home","deadlines"].includes(viewId())&&!document.hidden)mdlLoad()},10*60000)}
 async function scLoad(){
   if(!LOCALAPI||S.scBusy||(S.sc&&Date.now()-(S.scAt||0)<60000))return;
   S.scBusy=true;S.scAt=Date.now();
@@ -10416,6 +10482,7 @@ const FDESC={ // what each screen is for, in plain words (English and Japanese k
   notdoing:"tasks you decided not to do, bring them back やらないリスト",
   genres:"task genres: rename, merge, undo merges ジャンル",
   calendar:"Google Calendar events and task due dates カレンダー 予定",
+  deadlines:"deadlines found in mail: reports, exams, paperwork, put on the Deadlines calendar 締め切り 期限 レポート 課題 試験",
   meetcheck:"Should we meet? Check if a meeting is needed: decision, decider, cost; pre-read Google Doc or an alternative 会議 判定 事前資料 会議しない",
   focus:"block apps and websites to focus (FocusBlock) 集中 ブロック",
   study:"Pomodoro study session in a forest, a plant that grows, noise, food money jar 勉強 集中タイム ポモドーロ 貯金箱",

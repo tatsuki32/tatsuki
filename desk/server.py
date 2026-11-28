@@ -74,6 +74,7 @@ import translate  # Translate: lookups, concepts across languages, card candidat
 import chrome_web_sync
 import gmail_clean
 import unimail  # the university Gmail in Replies (desk/unimail.py)
+import deadlines  # deadlines found in mail -> the "Deadlines" Google calendar, one mail to his own inbox (desk/deadlines.py)
 import lifelog
 import utilities
 import posts
@@ -1159,6 +1160,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(*forms.handle("GET", [x for x in path.split("/")[3:] if x], {}))
         if path == "/api/mailclean":
             return self.send(200, gmail_clean.view())
+        if path == "/api/deadlines":
+            return self.send(*deadlines.handle("GET", [], {}))
         if path == "/api/unimail":
             return self.send(200, {k: v for k, v in unimail.status().items() if k != "url"})
         if path == "/api/body":
@@ -1517,6 +1520,13 @@ class Handler(BaseHTTPRequestHandler):
             if not (self.headers.get("Content-Type") or "").startswith("application/json"):
                 return self.send(415, {"error": "json only"})
             return self.send(*campus.handle(method, [x for x in urlsplit(self.path).path.split("/")[3:] if x], rec if isinstance(rec, dict) else {}))
+        if urlsplit(self.path).path.startswith("/api/deadlines/") and method in ("POST", "PUT"):
+            if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+                return self.send(415, {"error": "json only"})
+            parts = [x for x in urlsplit(self.path).path.split("/")[3:] if x]
+            if PORT != 4747 and not deadlines.fake() and parts != ["settings"]:
+                return self.send(400, {"error": "The test server does not touch Google."})
+            return self.send(*deadlines.handle(method, parts, rec if isinstance(rec, dict) else {}))
         if urlsplit(self.path).path.startswith("/api/book/") and method in ("POST", "PUT"):
             if not (self.headers.get("Content-Type") or "").startswith("application/json"):
                 return self.send(415, {"error": "json only"})
@@ -1949,6 +1959,7 @@ if __name__ == "__main__":
         threading.Thread(target=transcribe_desk.watch, daemon=True).start()  # the transcriber on 8791, kept running
         threading.Thread(target=claude_usage.watch, daemon=True).start()  # Claude usage counted again every 5 minutes
         threading.Thread(target=site_sync.watch, daemon=True).start()  # tany.im analytics pulled every 15 minutes
+        threading.Thread(target=deadlines.watch, daemon=True).start()  # Deadlines: retry what waits, notice events deleted in Google Calendar, every 30 minutes
         threading.Thread(target=book.watch, daemon=True).start()  # bookings from tany.im/book every 5 minutes (notify.py tells about new ones)
         forms.STORE.update(load=load, upsert=upsert)  # a form for yourself can write a line into the day's note
         threading.Thread(target=forms.watch, daemon=True).start()  # answers to tany.im forms pulled every 5 minutes
