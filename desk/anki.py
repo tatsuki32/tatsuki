@@ -191,12 +191,12 @@ def sendable(card):
         return False
     if not cards.has_meaning(card):
         return False
-    return (card.get("anki") or {}).get("state") not in ("sent", "exists")
+    return (card.get("anki") or {}).get("state") not in ("sent", "exists", "gone")
 
 
 def waiting(all_cards):
     return [c for c in all_cards if not c.get("deleted") and c.get("status", "active") == "active"
-            and (c.get("source") or {}).get("kind") != "anki" and (c.get("anki") or {}).get("state") not in ("sent", "exists")]
+            and (c.get("source") or {}).get("kind") != "anki" and (c.get("anki") or {}).get("state") not in ("sent", "exists", "gone")]
 
 
 # ---------- audio ----------
@@ -416,11 +416,17 @@ def follow(store, all_cards, known_decks):
     for deck, cs in groups.items():
         ensure_deck(deck, known_decks)
         ids = call("findCards", query="nid:" + ",".join(str(int(c["anki"]["noteId"])) for c in cs)) or []
+        alive = set()
         if ids:
             call("changeDeck", cards=ids, deck=deck)
+            alive = {x.get("note") for x in call("cardsInfo", cards=ids) or []}
         for c in cs:
-            store.put({**c, "anki": {**c["anki"], "deck": deck, "at": now_ms()}})
-            out["moved"] += 1
+            if int(c["anki"]["noteId"]) in alive:
+                store.put({**c, "anki": {**c["anki"], "deck": deck, "at": now_ms()}})
+                out["moved"] += 1
+            else:  # deleted in Anki by the person: say so, and never put it back on our own
+                store.put({**c, "anki": {**c["anki"], "state": "gone", "at": now_ms()}})
+                out["gone"] = out.get("gone", 0) + 1
     todo = [c for c in store.cards() if wants_media(c)][:MEDIA_BATCH]
     if not todo:
         return out

@@ -238,6 +238,19 @@ class AnkiTest(unittest.TestCase):
         anki.round_(s)
         self.assertEqual(self.fake.notes[nid]["fields"]["Image"]["value"], "")
 
+    def test_note_deleted_in_anki_is_marked_gone_and_not_sent_again(self):
+        s = MemStore([card("domo", lang="eo", book={"title": "New Express", "chapter": "Lesson 4"})])
+        anki.round_(s)
+        a = s.cards()[0]["anki"]
+        cid = self.fake.notes.pop(a["noteId"])["cards"][0]  # the person deleted the deck in Anki
+        self.fake.cards.pop(cid)
+        s.put({**s.cards()[0], "anki": {**a, "deck": "Desk::Esperanto"}})
+        out = anki.round_(s)
+        self.assertEqual((out.get("moved", 0), out.get("gone")), (0, 1))
+        self.assertEqual(s.cards()[0]["anki"]["state"], "gone")
+        self.assertEqual(anki.round_(s)["sent"], 0)
+        self.assertFalse(any(n["fields"].get("Term", {}).get("value") == "domo" for n in self.fake.notes.values()))
+
     def test_photo_field_edited_in_anki_is_left_alone(self):
         import card_media
         name = "fedcba9876543210.jpg"

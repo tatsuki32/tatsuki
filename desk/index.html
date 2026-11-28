@@ -11123,7 +11123,7 @@ const ANKI_ADDON="2055492159";
 async function ankiLoad(){if(!LOCALAPI)return;try{const v=await api("GET","/api/anki");const was=JSON.stringify(S.anki);S.anki=v;if(was!==JSON.stringify(v)&&["home","cards","reader","translate"].includes(viewId())&&!$("#modal").firstChild&&!document.activeElement?.closest?.("input,textarea"))render()}catch(e){}}
 function ankiSoon(){setTimeout(async()=>{await cdLoad();ankiLoad()},6000);setTimeout(async()=>{await cdLoad();ankiLoad()},20000)} // the server sends within seconds when Anki is open
 function ankiMark(c){const a=c.anki||{};if((c.source||{}).kind==="anki")return "From Anki";
-  if(a.state==="sent")return "In Anki";if(a.state==="exists")return `Already in Anki${a.deck?` (${a.deck})`:""}`;
+  if(a.state==="sent")return "In Anki";if(a.state==="gone")return "Removed in Anki";if(a.state==="exists")return `Already in Anki${a.deck?` (${a.deck})`:""}`;
   if(a.state==="error")return "Anki said no";if(!cdHasMeaning(c))return "Needs meaning";return "Waiting for Anki"}
 function ankiCls(c){const m=ankiMark(c);return m==="In Anki"||m.startsWith("Already")||m==="From Anki"?"cdin":"cdwait"}
 const cdHasMeaning=c=>!!(c.meaning?.ja||c.meaning?.en);
