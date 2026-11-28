@@ -10803,7 +10803,7 @@ const cdSrcOf=c=>c.book?.title&&!c.book?.id?"tb:"+c.book.title:c.book?.id?"rd:"+
 const cdSrcName=(k,list)=>k.startsWith("k:")?CD_KINDS[k.slice(2)]:k.startsWith("tb:")?k.slice(3):"Reader · "+(list.find(c=>c.book?.id===k.slice(3))?.book?.title||"Book");
 const cdChNum=ch=>{const m=/^lesson\s*(\d+)$/i.exec(ch||"");return m?+m[1]:999};
 const cdLangName=l=>RD_LANGS[l]||l;
-const cdLangOpts=cur=>{const o={...RD_LANGS};if(cur&&!o[cur])o[cur]=cur;return Object.entries(o)};
+const cdLangOpts=cur=>{const o={...RD_LANGS};if(cur&&!o[cur]&&/^[a-z]{2,3}(-[A-Za-z]{2,4})?$/.test(cur))o[cur]=cur;return Object.entries(o)};
 function cdCounts(list,key){const m=new Map();list.forEach(c=>{const k=key(c);m.set(k,(m.get(k)||0)+1)});return [...m].sort((a,b)=>b[1]-a[1])}
 function cdLangTabs(cur,counts,attr,total){
   return `<div class="cdlangs" role="tablist" aria-label="Language">${[["all","All",total],...counts.map(([l,n])=>[l,cdLangName(l),n])].map(([k,l,n])=>`<button class="chip ${cur===k?"on":""}" ${attr}="${esc(k)}" role="tab" aria-selected="${cur===k}">${esc(l)} <span class="count">${n}</span></button>`).join("")}</div>`}
@@ -10918,7 +10918,7 @@ function cdEdit(id){
   const c=findCard(id);if(!c||$("#modal").firstChild)return;
   const f=(k,label,v,multi)=>`<label class="cdf"><span class="sub">${label}</span>${multi?`<textarea class="wd-field" data-k="${k}" rows="2">${esc(v||"")}</textarea>`:`<input class="wd-field" data-k="${k}" value="${esc(v||"")}">`}</label>`;
   $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop cdpop" role="dialog" aria-modal="true" aria-label="Edit card"><div class="top"><h2>Card</h2><button class="ibtn" id="cdX" aria-label="Close">✕</button></div>
-    <div class="cdform" data-noauto>${f("term","Word",c.term)}${f("lemma","Base form",c.lemma)}<label class="cdf"><span class="sub">Language</span><select class="wd-field" data-k="lang">${cdLangOpts(c.lang||"en").map(([k,l])=>`<option value="${k}" ${(c.lang||"en")===k?"selected":""}>${l}</option>`).join("")}</select></label>
+    <div class="cdform" data-noauto>${f("term","Word",c.term)}${f("lemma","Base form",c.lemma)}<label class="cdf"><span class="sub">Language</span><select class="wd-field" data-k="lang">${cdLangOpts(c.lang||"en").map(([k,l])=>`<option value="${esc(k)}" ${(c.lang||"en")===k?"selected":""}>${esc(l)}</option>`).join("")}</select></label>
       ${f("ja","Meaning (Japanese)",c.meaning?.ja)}${f("en","Meaning (English)",c.meaning?.en)}${f("ipa","Pronunciation",c.ipa)}${f("example","Example",c.example,true)}${f("context","Sentence it came from",c.context,true)}</div>
     ${cdPhotoHtml(c)}
     <p class="sub">${c.book?.title?`From ${esc(c.book.title)}${c.book.chapter?" · "+esc(c.book.chapter):""}. `:""}${c.anki?.deck&&c.anki.state==="sent"?`In Anki: ${esc(c.anki.deck)}. `:""}${fsState(c.fsrs)==="new"?"Not reviewed yet.":`Reviewed ${c.fsrs.reps||0}×, next ${fsWhen(c.fsrs.due||0)}.`}${c.lookups>1?` Looked up ${c.lookups}×.`:""}</p>
