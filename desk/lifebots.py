@@ -89,6 +89,20 @@ def _clock(v):
     return v if len(v) in (4, 5) and ":" in v else None
 
 
+# the sheet's meal columns -> the Desk's nutrients (every key of lifelog.NUTRIENTS; the sheet calls energy "kcal").
+# An old row has these newer columns empty (""), which is skipped; a 0 the bot estimated is kept.
+MEAL_COLS = tuple((k, "kcal" if k == "energy_kcal" else k) for k in lifelog.NUTRIENTS)
+
+
+def targets_param():
+    """body/targets.json -> {"protein_g": [130, "above"], ...} for the bots: the nutrients, steps and sleep only."""
+    t = lifelog.read_json(lifelog.bp("targets.json"), {})
+    keep = set(lifelog.NUTRIENTS) | {"steps", "total_min"}
+    out = {k: [v["target"], v["dir"]] for k, v in sorted(t.items()) if k in keep and isinstance(v, dict)
+           and isinstance(v.get("target"), (int, float)) and v.get("dir") in ("above", "below", "near")}
+    return json.dumps(out, separators=(",", ":"))
+
+
 def records_for(export):
     """Rows -> (row id, raw record for lifelog.check, date, note). Deleted rows give raw None."""
     out = []
@@ -118,8 +132,7 @@ def records_for(export):
             out.append((rid, None, d, ""))
             continue
         items = [i.strip() for i in str(r.get("items") or "").split(";") if i.strip()]
-        values = [{"key": k, "number": r.get(src), "text": None} for k, src in
-                  (("energy_kcal", "kcal"), ("protein_g", "protein_g"), ("fat_g", "fat_g"), ("carb_g", "carb_g"), ("salt_g", "salt_g"))
+        values = [{"key": k, "number": r.get(src), "text": None} for k, src in MEAL_COLS
                   if isinstance(r.get(src), (int, float)) and not isinstance(r.get(src), bool)]
         meal = str(r.get("meal") or "").capitalize()
         raw = {"kind": "meal_photo", "date": d, "label": f"{meal}: {', '.join(items)}"[:120] if meal else ", ".join(items)[:120],
@@ -164,10 +177,10 @@ def run(force=False):
     with RUN:
         s, today = state(), datetime.now().date().isoformat()
         try:
-            tzname = mac_tz()
-            if tzname and (tzname != s.get("tzSent") or s.get("tzDay") != today):
-                got = _get(url, k, "tz", tz=tzname)
-                s = _save_state(tzSent=tzname, tzDay=today, botTz=got.get("tz"), botTzFrom=got.get("from"))
+            tzname, tg = mac_tz(), targets_param()
+            if tzname and (tzname != s.get("tzSent") or s.get("tzDay") != today or tg != s.get("targetsSent")):
+                got = _get(url, k, "tz", tz=tzname, targets=tg)  # the targets ride along, so replies compare with the Desk's
+                s = _save_state(tzSent=tzname, tzDay=today, targetsSent=tg, botTz=got.get("tz"), botTzFrom=got.get("from"))
             if not force and (s.get("lastDay") == today or datetime.now().hour < IMPORT_FROM_HOUR):
                 return _save_state(error="", setup=True)
             export = _get(url, k, "export")

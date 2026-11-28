@@ -73,6 +73,22 @@ class LifebotsTest(unittest.TestCase):
         self.assertIn(self.today, habits["log-sleep"]["done"])
         self.assertIn(self.yday, habits["log-meals"]["done"])
 
+    def test_all_nutrients_come_in_and_targets_go_out(self):
+        lifelog.write_json(lifelog.bp("targets.json"), {"protein_g": {"target": 130, "dir": "above"}, "steps": {"target": 15000, "dir": "above"},
+                                                       "weight_kg": {"target": 62, "dir": "near"}})
+        row = {"id": "r1", "date": self.yday, "meal": "dinner", "items": "Pho (1 bowl)", "kcal": 450, "protein_g": 25, "fat_g": 8, "carb_g": 60, "salt_g": 4,
+               "fiber_g": 2.5, "vitamin_d_ug": 0, "vitamin_b1_mg": 0.2, "iron_mg": "", "saturated_fat_g": 2}
+        sheet = Sheet(meals=[row])
+        with mock.patch.object(lifebots, "_get", sheet):
+            lifebots.run(force=True)
+            lifebots.run(force=True)
+        v = self.body()["mb-r1"]["values"]
+        self.assertEqual((v["fiber_g"], v["vitamin_d_ug"], v["vitamin_b1_mg"], v["saturated_fat_g"]), (2.5, 0, 0.2, 2))
+        self.assertNotIn("iron_mg", v)
+        tz_calls = [p for op, p in sheet.calls if op == "tz"]
+        self.assertEqual(len(tz_calls), 1)  # sent once; the same targets the same day are not sent again
+        self.assertEqual(json.loads(tz_calls[0]["targets"]), {"protein_g": [130, "above"], "steps": [15000, "above"]})
+
     def test_undo_after_import_discards(self):
         sheet = Sheet(sleep=[{"id": "r1", "date": self.today, "kind": "sleep", "sleep_min": 420}])
         with mock.patch.object(lifebots, "_get", sheet):
