@@ -23,3 +23,4 @@
 
 ## 追加（同じ日、本人の希望）
 - Home のいちばん上に出す、Desk を開いたときのポップアップで最初の問いを聞く（× で閉じる）、反省文ごとに Tasks に「Write a reflection: …」のタスク（書き終えると Done）。
+- カードの画面を作り直した（幅720px、事実のタイル、問いを見出しに、下に Back／Next、⌘Enter で次）。3枚目に Claude の見立て（仮説2〜3つ、根拠と確かめる問い、This fits／Not this、本人の意見）。材料は件の履歴と、Mac だけに置く `desk/data/reflect/context.md`。

@@ -121,6 +121,18 @@ class Page(unittest.TestCase):
                  {"id": "3", "rb": {"title": "Reflection: C (2026-11-03)", "pub": False, "at": 3}}]
         self.assertEqual(reflect.index_lines(items), [" [Reflection: B (2026-11-02)]", " [Reflection: A (2026-11-01)]"])
 
+    def test_fake_hypotheses_and_history(self):
+        tasks = [{"id": "a", "title": "A", "status": "notyet", "due": ms("2026-11-17"), "projectId": "eo", "createdAt": ms("2026-11-10"), "start": "2026-11-12",
+                  "dueMoves": [{"from": 1, "to": 2, "at": 3}]}, {"id": "b", "title": "B", "status": "done", "projectId": "eo"}]
+        r = {"id": "late-a", "kind": "late", "ref": "a", "title": "A", "facts": {"due": ms("2026-11-17"), "days": 11}}
+        hist = reflect.item_history(r, tasks, [{"taskId": "a", "start": 0, "end": 600000}], [{"id": "eo", "name": "Esperanto"}])
+        self.assertIn("due date moved 1 times", hist)
+        self.assertIn("time recorded 10 min", hist)
+        self.assertIn("project Esperanto", hist)
+        self.assertNotIn("B", hist.replace("B1", ""))  # other tasks' titles stay out
+        h = reflect.hypotheses(r, tasks, [], [])
+        self.assertEqual(h["items"][0]["causes"], ["estimate"])
+
     def test_fake_write_up(self):
         r = {"id": "late-a", "kind": "late", "title": "A", "facts": {"due": ms("2026-11-26"), "days": 2},
              "answers": {"causes": ["estimate", "late"], "ifThen": "If I plan, I add half again"}}

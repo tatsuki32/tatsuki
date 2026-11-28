@@ -2300,7 +2300,43 @@ body.sffull{overflow:hidden}
 .mtgok{margin:0;color:var(--green);font-weight:700}
 .rflbox{display:grid;gap:var(--s2);min-width:0}
 .rflbox .btn{justify-self:start}
-.rflquote{margin:0;font-size:var(--t3);font-weight:700}
+.rflwrap{max-width:720px;margin:0 auto;display:grid;gap:var(--s3)}
+.rflbar{display:flex;justify-content:space-between;align-items:center;gap:var(--s2)}
+.rflbar .mnback{margin:0}
+.rfldots{margin:0}
+.rflhead{display:grid;gap:var(--s1)}
+.rflkick{display:flex;align-items:center;gap:var(--s2);margin:0;flex-wrap:wrap}
+.rflchip{border:1px solid var(--line);border-radius:999px;padding:2px var(--s2);font-size:var(--t1);color:var(--muted)}
+.rfltitle{margin:0;font-size:var(--t4);line-height:1.35;overflow-wrap:anywhere}
+.rflcard{display:grid;gap:var(--s3);padding:var(--s4)}
+.rflq{margin:0;font-size:var(--t4)}
+.rflhelp{margin:0;color:var(--muted);font-size:var(--t2)}
+.rfltiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:var(--s2)}
+.rfltile{background:var(--surface-2);border-radius:var(--r-s);padding:var(--s2) var(--s3);display:grid;gap:2px;min-width:0}
+.rfltile span{font-size:var(--t1);color:var(--muted)}
+.rfltile b{font-size:var(--t3);overflow-wrap:anywhere}
+.rflfoot{display:flex;align-items:center;gap:var(--s2);flex-wrap:wrap}
+.rflgrow{flex:1}
+.rfllink{background:none;border:0;padding:var(--s1) 0;color:var(--muted);font:inherit;font-size:var(--t2);cursor:pointer;text-decoration:underline;text-underline-offset:3px;justify-self:start;text-align:left}
+.rfllink:hover{color:var(--ink)}
+.rflempty{display:grid;gap:var(--s3);justify-items:start}
+.rflhyps{list-style:none;margin:0;padding:0;display:grid;gap:var(--s2)}
+.rflhyp{border:1px solid var(--line);border-radius:var(--r-s);padding:var(--s3);display:grid;gap:var(--s2)}
+.rflhyp p{margin:0;font-size:var(--t2);line-height:1.6}
+.rflhyp.yes{border-color:var(--accent)}
+.rflhyp.no{opacity:.55}
+.rflhyptop{display:flex;gap:var(--s2);align-items:baseline}
+.rflnum{flex:none;width:24px;height:24px;border-radius:50%;background:var(--surface-2);display:grid;place-items:center;font-size:var(--t1);font-weight:700}
+.rflcheck{color:var(--muted)}
+.rflfit{display:flex;gap:var(--s2);flex-wrap:wrap}
+.rflpattern{margin:0;padding:var(--s2) var(--s3);border-left:2px solid var(--line);color:var(--muted);font-size:var(--t2)}
+.rflsub{display:grid;gap:var(--s2)}
+.rflsub h3{margin:0;font-size:var(--t3)}
+.rflrow2{display:flex;justify-content:space-between;align-items:center;gap:var(--s2);flex-wrap:wrap}
+.rfltry{display:flex;justify-content:space-between;align-items:center;gap:var(--s2);flex-wrap:wrap;background:var(--surface-2);border-radius:var(--r-s);padding:var(--s2) var(--s3);font-size:var(--t2)}
+.rflnote{font-size:var(--t1)}
+.rfldate{max-width:220px}
+.rflquote{margin:0;font-size:var(--t3);font-weight:700;border-left:2px solid var(--accent);padding-left:var(--s3)}
 .rflfact{margin:0;font-size:var(--t3)}
 .rflkind{margin:0;color:var(--muted)}
 .rfltext{min-height:280px;line-height:1.6}
@@ -7585,7 +7621,7 @@ const fpHomeLine=()=>{const h=S.fpHome;if(!LOCALAPI)return "";if(!h||!h.kg)retur
 /* ---------- 🪞 Reflections (#reflect, #reflect/<id>): what ran late or did not happen gets a reflection, card by card (desk/reflect.py).
    The Desk finds them; the person answers (Mac dictation works in every box), Claude writes it up in the language spoken,
    and only "Publish" sends the final text to Rhizome Box. Records: the reflections collection. Blame-free words only. */
-const RFL_STEPS=["Last time","What happened","How it feels","Causes","One level deeper","What went well","If–then","Write-up"];
+const RFL_STEPS=["Last time","What happened","Claude's read","How it feels","Causes","One level deeper","What went well","If–then","Write-up"];
 const RFL_KIND={late:"Past due",latedone:"Done late",moved:"Due date moved",reply:"Slow reply",promise:"Promise missed",money:"Money"};
 const rfl=()=>S.rfl||(S.rfl={list:null,state:null,busy:"",msg:"",loading:false,loadedAt:0});
 const rflId=()=>{const m=/^#reflect\/(.+)$/.exec(location.hash||"");return m?decodeURIComponent(m[1]):null};
@@ -7618,7 +7654,7 @@ function rflHome(){ // Home: everything waiting, the newest three shown
 const rflMic=()=>("webkitSpeechRecognition" in window||"SpeechRecognition" in window);
 const rflBox=(r,key,ph,rows)=>`<div class="rflbox"><textarea class="mtgin" data-rflf="${key}" rows="${rows||4}" placeholder="${esc(ph||"")}">${esc((key==="spoken"?r.spoken:(r.answers||{})[key])||"")}</textarea>
   ${rflMic()?`<button class="btn sm" type="button" data-rflmic="${key}">Speak</button>`:""}</div>`;
-const RFL_HINT=`<p class="hint">To talk instead of type: click in the box and press fn twice (Mac dictation). The first time, turn it on in System Settings → Keyboard → Dictation.</p>`;
+const RFL_HINT=`<p class="hint">To talk: click the box and press fn twice. First time: System Settings → Keyboard → Dictation.</p>`;
 const RFL_IDEAS={estimate:"If I plan a task, I will give it 1.5 times what the last one like it really took.",late:"If a task is due this week, I will put its first 25 minutes on the calendar today.",
   unclear:"If I can't start, I will write the first 5-minute step before anything else.",energy:"If I am tired, I will do only the 5-minute version and stop.",
   interrupt:"If something interrupts, I will write where I stopped before switching.",priority:"If priorities change, I will move or drop the old task the same day.",
@@ -7640,45 +7676,64 @@ function rflView(){
   <section class="card"><h2>Settings</h2><form class="rflset" data-rflset><label class="sub">Signature<input class="mtgin" name="sign" value="${esc(s.sign||"")}"></label>
     <label class="sub">A reply is slow after (hours)<input class="mtgin" name="replyHours" type="number" min="12" max="336" value="${esc(s.replyHours||72)}"></label><button class="btn sm primary">Save</button></form>
     ${st.state&&!st.state.hasKey?`<p class="hint">Publishing needs the Rhizome Box key once: run bash desk/reflect_setup.sh.</p>`:""}</section></div>`}
+function rflTiles(r){const f=r.facts||{},k=r.kind,d=ms=>ms?new Date(ms).toLocaleDateString("en-US",{month:"short",day:"numeric"}):"—",days=n=>`${n} day${n===1?"":"s"}`;
+  if(k==="late")return [["Planned",d(f.due)],["Now","Still open"],["Gap",days(f.days)]];
+  if(k==="latedone")return [["Planned",d(f.due)],["Done",d(f.done)],["Gap",days(f.days)]];
+  if(k==="moved")return f.count?[["Moved",`${f.count} dates`],["On",esc(f.day||"")],["Up to",days(f.days)]]:[["Was",d(f.from)],["Now",d(f.to)],["Moved by",days(f.days)]];
+  if(k==="reply")return [["Waited",`${f.hours} hours`],["Now",f.to?"Replied":"Still open"],["Line",`${rfl().state?.settings?.replyHours||72} hours`]];
+  if(k==="money")return f.what==="net"?[["In",`$${f.in}`],["Out",`$${f.out}`],["Net",`$${f.net}`]]:[["Limit",`$${f.limit}`],["Spent",`$${f.spent}`],["Over",`$${Math.round((f.spent-f.limit)*100)/100}`]];
+  if(k==="promise")return f.target==null?[["Day",esc(f.day||"")],["Done","No"]]:[["Target",f.target],["Done",f.count],["Period",`${esc(f.day||"")} – ${esc(f.end||"")}`]];
+  return []}
 function rflDetail(r){
-  const st=rfl(),lt=st.state?.lastTry&&st.state.lastTry.id!==r.id?st.state.lastTry:null,a=r.answers||{};
-  let step=r.step==null?(lt?0:1):r.step;if(step===0&&!lt)step=1;
-  const done=r.status==="done"||r.status==="published";
-  const top=`<a class="mnback" href="#reflect">← Reflections</a>
-  <header class="head mtghead"><div class="mnhd"><p class="eyebrow">${esc(RFL_KIND[r.kind]||"")} · ${step<7?`Card ${step+1} of 8 · ${RFL_STEPS[step]}`:"Write-up"}</p><h1 class="mtgtitle">${esc(r.title||"Untitled")}</h1></div></header>
-  <div class="mtgdots" aria-hidden="true">${RFL_STEPS.map((_,i)=>`<span class="${i<step?"done":i===step?"on":""}"></span>`).join("")}</div>`;
+  const st=rfl(),lt=st.state?.lastTry&&st.state.lastTry.id!==r.id?st.state.lastTry:null,a=r.answers||{},N=RFL_STEPS.length;
+  let step=r.step==null?(lt?0:1):Math.min(r.step,N-1);if(step===0&&!lt)step=1;
+  const done=r.status==="done"||r.status==="published",first=lt?0:1;
+  const top=`<div class="rflbar"><a class="mnback" href="#reflect">← Reflections</a><span class="sub">${step<N-1?`Card ${step-first+1} of ${N-first}`:"Write-up"}</span></div>
+  <div class="mtgdots rfldots" aria-hidden="true">${RFL_STEPS.slice(first).map((_,i)=>`<span class="${i+first<step?"done":i+first===step?"on":""}"></span>`).join("")}</div>
+  <header class="rflhead"><p class="rflkick"><span class="rflchip">${esc(RFL_KIND[r.kind]||"")}</span><span class="sub">${esc(RFL_STEPS[step])}</span></p><h1 class="rfltitle">${esc(r.title||"Untitled")}</h1></header>`;
   const msg=st.msg?`<p class="sub" role="status">${esc(st.msg)}</p>`:"";
-  const nav=(next="Next")=>`<div class="mtgnav">${step>(lt?0:1)?`<button class="btn" type="button" data-rflstep="${step-1}">Back</button>`:""}<button class="btn primary" type="button" data-rflstep="${step+1}">${next}</button>${step===1?`<button class="btn sm" type="button" data-rflnotmiss>Not a miss</button>`:""}</div>`;
-  const card=(inner,n)=>top+`<section class="card mtgcard">${inner}${nav(n)}${msg}</section>`;
-  if(step===0)return card(`<p class="mtgq">Last time you planned:</p><p class="rflquote">${esc(lt.ifThen)}</p><p class="sub">Did you do it?</p>
-    ${rflChoice(r,"kept",[["yes","Yes"],["partly","Partly"],["no","No"]])}`);
-  if(step===1)return card(`<p class="mtgq">What happened</p><p class="rflfact">${rflFacts(r)}</p>
-    ${r.kind==="moved"&&r.facts?.titles?`<p class="sub">${r.facts.titles.map(esc).join(" · ")}</p>`:""}
-    ${mtgField("Tell it in your own words. You can say everything here and skip the next cards.",rflBox(r,"spoken","What was planned, what really happened, in order.",6))}${RFL_HINT}`);
-  if(step===2)return card(`<p class="mtgq">How does it feel now?</p>${rflChoice(r,"feel",Object.entries(st.state?.feels||{}))}
-    ${a.feel?`<p class="rflkind">Delays happen to everyone. Systems can be fixed.</p>`:""}`);
-  if(step===3)return card(`<p class="mtgq">What got in the way? Pick all that fit.</p>${rflMulti(r,"causes",Object.entries(st.state?.causes||{}))}${mtgField("Anything else",rflBox(r,"causeNote","Optional",2))}`);
-  if(step===4){const c=(a.causes||[])[0],name=(st.state?.causes||{})[c]||"it";
-    return card(`<p class="mtgq">${a.causes?.length?`“${esc(name)}”: what was going on when that happened?`:"What was going on at the time?"}</p>${rflBox(r,"deeper","Where you were, what came up, what you were thinking.",4)}`)}
-  if(step===5)return card(`<p class="mtgq">What still went well?</p>${rflBox(r,"keep","Something that moved forward, or worth doing again. Can be empty.",3)}`);
-  if(step===6){const idea=(a.causes||[]).map(c=>RFL_IDEAS[c]).find(Boolean);
-    return card(`<p class="mtgq">One thing to try: “If …, I will …”</p>${rflBox(r,"ifThen",idea||"If …, I will …",3)}
-      ${idea&&!a.ifThen?`<button class="btn sm" type="button" data-rflidea>Use: ${esc(idea)}</button>`:""}
-      ${mtgField("Try it on",`<input class="mtgin" type="date" data-rflf="tryDate" value="${esc(a.tryDate||"")}">`)}`,"Write it up")}
-  // the write-up
+  const foot=(next="Next")=>`<div class="rflfoot">${step>first?`<button class="btn" type="button" data-rflstep="${step-1}">Back</button>`:"<span></span>"}<span class="rflgrow"></span>${step===1?`<button class="rfllink" type="button" data-rflnotmiss>Not a miss</button>`:""}<button class="btn primary" type="button" data-rflstep="${step+1}" data-rflnext>${next}</button></div>`;
+  const card=(q,help,inner,next)=>`<div id="rflwrap" class="rflwrap">${top}<section class="card rflcard"><h2 class="rflq">${q}</h2>${help?`<p class="rflhelp">${help}</p>`:""}${inner}${msg}</section>${foot(next)}</div>`;
+  if(step===0)return card("Did you do last time's plan?","",`<blockquote class="rflquote">${esc(lt.ifThen)}</blockquote>${rflChoice(r,"kept",[["yes","Yes"],["partly","Partly"],["no","No"]])}`);
+  if(step===1){const t=rflTiles(r);
+    return card("What happened?","Tell it in your own words, in order. You can say everything here and skip the next cards.",
+      `${t.length?`<div class="rfltiles">${t.map(([l,v])=>`<div class="rfltile"><span>${l}</span><b>${v}</b></div>`).join("")}</div>`:""}
+      ${r.kind==="moved"&&r.facts?.titles?`<p class="rflhelp">${r.facts.titles.map(esc).join(" · ")}</p>`:""}
+      ${rflBox(r,"spoken","What was planned, what really happened.",6)}${RFL_HINT}`)}
+  if(step===2){const h=r.hypo,ag=a.agree||{};
+    const body=!h?`<div class="rflempty"><p class="rflhelp">Claude reads this item's history, your last weekly review and what you said, and offers 2–3 guesses about why. You decide which fit.</p>
+        <button class="btn primary" type="button" data-rflhypo ${st.busy?"disabled":""}>${st.busy==="hypo"?"Thinking…":"Show Claude's read"}</button></div>`
+      :`<ol class="rflhyps">${h.items.map((x,i)=>`<li class="rflhyp${ag[i]==="yes"?" yes":ag[i]==="no"?" no":""}"><div class="rflhyptop"><span class="rflnum">${i+1}</span><b>${esc(x.title)}</b></div>
+          <p>${esc(x.why)}</p>${x.check?`<p class="rflcheck">Check: ${esc(x.check)}</p>`:""}
+          <div class="rflfit"><button type="button" class="mtgch${ag[i]==="yes"?" on":""}" data-rflagree="${i}" data-v="yes">This fits</button><button type="button" class="mtgch${ag[i]==="no"?" on":""}" data-rflagree="${i}" data-v="no">Not this</button></div></li>`).join("")}</ol>
+        ${h.pattern?`<p class="rflpattern">${esc(h.pattern)}</p>`:""}
+        <div class="rflsub"><h3>Your view</h3>${rflBox(r,"view",h.ask||"What do you think really happened?",4)}</div>
+        <button class="rfllink" type="button" data-rflhypo ${st.busy?"disabled":""}>${st.busy==="hypo"?"Thinking…":"Ask again"}</button>`;
+    return card("Claude's read","Guesses, not facts. Agree, disagree, then write your own view.",body)}
+  if(step===3)return card("How does it feel now?","",`${rflChoice(r,"feel",Object.entries(st.state?.feels||{}))}${a.feel?`<p class="rflkind">Delays happen to everyone. Systems can be fixed.</p>`:""}`);
+  if(step===4)return card("What got in the way?","Pick all that fit. Causes usually come together.",`${rflMulti(r,"causes",Object.entries(st.state?.causes||{}))}${mtgField("Anything else",rflBox(r,"causeNote","Optional",2))}`);
+  if(step===5){const c=(a.causes||[])[0],name=(st.state?.causes||{})[c];
+    return card(name?`“${esc(name)}”: what was going on?`:"What was going on at the time?","Where you were, what came up, what you were thinking.",rflBox(r,"deeper","",4))}
+  if(step===6)return card("What still went well?","Something that moved forward, or worth doing again. Can be empty.",rflBox(r,"keep","",3));
+  if(step===7){const idea=(a.causes||[]).map(c=>RFL_IDEAS[c]).find(Boolean);
+    return card("One thing to try","Write it as “If …, I will …”, so you know when to do it.",`${rflBox(r,"ifThen",idea||"If …, I will …",3)}
+      ${idea&&!a.ifThen?`<button class="rfllink" type="button" data-rflidea>Use: ${esc(idea)}</button>`:""}
+      ${mtgField("Try it on",`<input class="mtgin rfldate" type="date" data-rflf="tryDate" value="${esc(a.tryDate||"")}">`)}`,"Write it up")}
   const s=st.state?.settings||{},text=r.final!=null?r.final:(r.draft||"");
   const ja=/[぀-ヿ一-鿿]/.test(text),day=r.day||new Date(r.doneAt||Date.now()).toISOString().slice(0,10);
-  return top+`<section class="card mtgcard">
-    <div class="mtgnav"><button class="btn" type="button" data-rflstep="6">Back</button><button class="btn${text?"":" primary"}" type="button" data-rfldraft ${st.busy?"disabled":""}>${st.busy==="draft"?"Writing…":text?"Write it up again":"Write it up with Claude"}</button></div>
-    <p class="hint">Claude (Sonnet) reads your answers and what you said, and writes in the language you used. It leaves out other people's names and money unless you wrote them.</p>
+  return `<div id="rflwrap" class="rflwrap">${top}<section class="card rflcard">
+    <div class="rflrow2"><h2 class="rflq">Write-up</h2><button class="btn${text?"":" primary"}" type="button" data-rfldraft ${st.busy?"disabled":""}>${st.busy==="draft"?"Writing…":text?"Write it up again":"Write it up with Claude"}</button></div>
+    <p class="rflhelp">Claude (Sonnet) uses your answers and your view, in the language you used. Other people's names and money stay out unless you wrote them.</p>
     ${mtgField("Title",`<input class="mtgin" data-rflr="pageTitle" value="${esc(r.pageTitle||r.title||"")}">`)}
     ${mtgField("Reflection",`<textarea class="mtgin rfltext" data-rflr="final" rows="14" placeholder="Write it up with Claude, or write it yourself.">${esc(text)}</textarea>`,"[* Heading] makes a heading on Rhizome Box.")}
     <div class="rflsign"><p>${ja?"今後起こさないように誓います。":"I pledge not to let this happen again."}</p><p class="sub">${esc(s.sign||"")} — ${esc(day)}</p></div>
-    ${a.ifThen?`<div class="mtgnav"><span class="sub">Try: ${esc(a.ifThen)}${a.tryDate?" · "+esc(a.tryDate):""}</span>${r.tryTaskId?`<a class="btn sm" href="#task/${encodeURIComponent(r.tryTaskId)}">Open the task</a>`:`<button class="btn sm" type="button" data-rfltry>Make it a task</button>`}</div>`:""}
-    <div class="mtgnav">${r.rb?.pub?`<a class="btn" href="${esc(r.rb.url)}" target="_blank" rel="noopener">Open on Rhizome Box</a><button class="btn" type="button" data-rflpub="0" ${st.busy?"disabled":""}>Unpublish</button><button class="btn primary" type="button" data-rflpub="1" ${st.busy||!text?"disabled":""}>Update the page</button>`
-      :`<button class="btn primary" type="button" data-rflpub="1" ${st.busy||!text?"disabled":""}>${st.busy==="pub"?"Publishing…":"Publish to Rhizome Box"}</button>`}
-      ${done?"":`<button class="btn" type="button" data-rfldone ${!text?"disabled":""}>Keep it private</button>`}</div>
-    <p class="hint">Publishing makes a public page “Reflection: … (${esc(day)})” and adds it to the “Reflections” page. Nothing is sent until you press.</p>${msg}</section>`}
+    ${a.ifThen?`<div class="rfltry"><span><span class="sub">Try</span> ${esc(a.ifThen)}${a.tryDate?` <span class="sub">· ${esc(a.tryDate)}</span>`:""}</span>${r.tryTaskId?`<a class="btn sm" href="#task/${encodeURIComponent(r.tryTaskId)}">Open the task</a>`:`<button class="btn sm" type="button" data-rfltry>Make it a task</button>`}</div>`:""}
+    ${msg}</section>
+    <div class="rflfoot"><button class="btn" type="button" data-rflstep="${N-2}">Back</button><span class="rflgrow"></span>
+      ${done?"":`<button class="btn" type="button" data-rfldone ${!text?"disabled":""}>Keep it private</button>`}
+      ${r.rb?.pub?`<a class="btn" href="${esc(r.rb.url)}" target="_blank" rel="noopener">Open on Rhizome Box</a><button class="btn" type="button" data-rflpub="0" ${st.busy?"disabled":""}>Unpublish</button><button class="btn primary" type="button" data-rflpub="1" ${st.busy||!text?"disabled":""}>Update the page</button>`
+        :`<button class="btn primary" type="button" data-rflpub="1" ${st.busy||!text?"disabled":""}>${st.busy==="pub"?"Publishing…":"Publish to Rhizome Box"}</button>`}</div>
+    <p class="rflhelp rflnote">Publishing makes a public page “Reflection: … (${esc(day)})” and adds it to the “Reflections” page. Nothing is sent until you press.</p></div>`}
 const rflChoice=(r,k,opts)=>`<div class="mtgchoices" role="radiogroup">${opts.map(([v,l])=>`<button type="button" class="mtgch${(r.answers||{})[k]===v?" on":""}" role="radio" aria-checked="${(r.answers||{})[k]===v}" data-rflset="${k}" data-v="${esc(v)}">${esc(l)}</button>`).join("")}</div>`;
 const rflMulti=(r,k,opts)=>{const on=new Set((r.answers||{})[k]||[]);return `<div class="mtgchoices" role="group">${opts.map(([v,l])=>`<button type="button" class="mtgch${on.has(v)?" on":""}" aria-pressed="${on.has(v)}" data-rfltog="${k}" data-v="${esc(v)}">${esc(l)}</button>`).join("")}</div>`};
 function rflTaskBlock(t){const r=(rfl().list||[]).find(x=>x.id===t.sourceRef);
@@ -7717,6 +7772,11 @@ function wireRfl(){
   on("[data-rflr]",i=>i.oninput=()=>{r[i.dataset.rflr]=i.value;later()});
   on("button[data-rflset]",b=>b.onclick=()=>{r.answers[b.dataset.rflset]=b.dataset.v;if(r.status==="open")r.status="draft";rflSave(r).catch(()=>toast("Could not save"));rflDraw()});
   on("[data-rfltog]",b=>b.onclick=()=>{const k=b.dataset.rfltog,s=new Set(r.answers[k]||[]);s.has(b.dataset.v)?s.delete(b.dataset.v):s.add(b.dataset.v);r.answers[k]=[...s];rflSave(r).catch(()=>toast("Could not save"));rflDraw()});
+  on("[data-rflagree]",b=>b.onclick=()=>{const i=+b.dataset.rflagree,ag={...(r.answers.agree||{})};ag[i]=ag[i]===b.dataset.v?undefined:b.dataset.v;r.answers.agree=ag;
+    const it=(r.hypo?.items||[])[i];if(it&&ag[i]==="yes")r.answers.causes=[...new Set([...(r.answers.causes||[]),...(it.causes||[])])]; // a guess that fits fills the causes card
+    if(r.status==="open")r.status="draft";rflSave(r).catch(()=>toast("Could not save"));rflDraw()});
+  on("[data-rflhypo]",b=>b.onclick=()=>run("hypo",async()=>{await rflSave(r);const x=await rflApi("POST","/api/reflect/hypo",{id:r.id});rflPut(x)}));
+  on("#rflwrap textarea",i=>i.addEventListener("keydown",e=>{if(e.key==="Enter"&&(e.metaKey||e.ctrlKey)){e.preventDefault();$("[data-rflnext]")?.click()}}));
   on("[data-rflidea]",b=>b.onclick=()=>{const c=(r.answers.causes||[]).map(x=>RFL_IDEAS[x]).find(Boolean);r.answers.ifThen=c;rflSave(r).catch(()=>{});rflDraw()});
   on("[data-rflstep]",b=>b.onclick=async()=>{r.step=+b.dataset.rflstep;st.msg="";try{await rflSave(r)}catch(e){toast("Could not save")}rflDraw();window.scrollTo(0,0)});
   on("[data-rflnotmiss]",b=>b.onclick=async()=>{const why=prompt("Why is this not a miss? (for example: the date was only a guess)");if(why==null)return;r.status="notmiss";r.notMissWhy=why.slice(0,300);

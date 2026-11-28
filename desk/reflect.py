@@ -345,13 +345,13 @@ class ReflectError(Exception):
     pass
 
 
-def _ask(user):
+def _ask(user, system=None, schema=None):
     import lifelog
     key = lifelog.api_key()
     if not key:
         raise ReflectError("No Anthropic API key on this Mac. Write it yourself in the box.")
-    body = {"model": MODEL, "max_tokens": 2000, "system": SYSTEM,
-            "output_config": {"effort": "low", "format": {"type": "json_schema", "schema": SCHEMA}},
+    body = {"model": MODEL, "max_tokens": 2000, "system": system or SYSTEM,
+            "output_config": {"effort": "low", "format": {"type": "json_schema", "schema": schema or SCHEMA}},
             "messages": [{"role": "user", "content": user}]}
     req = urllib.request.Request(API, data=json.dumps(body).encode(), headers={
         "x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json", "user-agent": "tatsuki-desk"})
@@ -378,6 +378,9 @@ def _user_text(r, prev):
               "Causes: " + ", ".join(CAUSES.get(c, c) for c in a.get("causes") or []),
               f"What was going on: {a.get('deeper') or ''}", f"What still went well: {a.get('keep') or ''}",
               f"If-then plan: {a.get('ifThen') or ''}", f"Try on: {a.get('tryDate') or ''}",
+              "Claude's hypotheses the person read (use one only where the person's view agrees): "
+              + "; ".join(x.get("title", "") for x in (r.get("hypo") or {}).get("items") or []),
+              f"The person's own view of the causes: {a.get('view') or ''}",
               f"spoken (the person's own words, dictated):\n{str(r.get('spoken') or '')[:6000]}"]
     return "\n".join(lines)
 
@@ -406,6 +409,79 @@ def write_up(r, items, s=None):
     for sec in d.get("sections") or []:
         body += [f"[* {clean_title(sec.get('heading'))}]", *[x.strip() for x in str(sec.get("text") or "").splitlines() if x.strip()], ""]
     return {"title": title, "text": "\n".join(body).strip(), "lang": lang}
+
+
+# ---------- Claude's read: hypotheses for the person to agree or disagree with ----------
+
+HYPO_SYSTEM = """You help a person reflect on something that ran late or did not happen. Give your own read: hypotheses about why.
+Use the person's context (ADHD, habits, last weekly review), the item's history and what they said. Be honest and specific,
+strict about the system and the plan, never about the person's character. No diagnosis or medical advice.
+- items: 2 or 3 hypotheses, most likely first. title: one short line. why: 1-3 sentences that cite the evidence in the data
+  (dates, how often the due date moved, time recorded, other overdue tasks, the weekly review). Do not invent facts.
+  check: one question the person can answer to confirm or reject it. causes: the matching keys from the list given.
+- pattern: one sentence linking this to a bigger pattern, only if the data shows it; else an empty string.
+- ask: one question that helps the person write their own view.
+Write in Japanese. Plain words, short sentences. Never write another person's name."""
+HYPO_SCHEMA = {"type": "object", "additionalProperties": False, "required": ["items", "pattern", "ask"], "properties": {
+    "items": {"type": "array", "items": {"type": "object", "additionalProperties": False, "required": ["title", "why", "check", "causes"],
+              "properties": {"title": {"type": "string"}, "why": {"type": "string"}, "check": {"type": "string"},
+                             "causes": {"type": "array", "items": {"type": "string"}}}}},
+    "pattern": {"type": "string"}, "ask": {"type": "string"}}}
+
+
+def context_text():
+    try:
+        with open(os.path.join(DIR, "context.md"), encoding="utf-8") as f:
+            return f.read()[:6000]
+    except OSError:
+        return ""
+
+
+def item_history(r, tasks, timelog, projects):
+    """What the Desk knows about the item, as plain lines. Titles of other tasks are left out (names may be in them)."""
+    def d(v):  # due and done are ms; start may be a "YYYY-MM-DD" string
+        if isinstance(v, (int, float)) and v:
+            return day_of(v).isoformat()
+        return str(v)[:10] if v else "?"
+    out = [f"Kind: {r.get('kind')}", f"Item: {r.get('title')}", f"Facts: {facts_line(r)}"]
+    ids = [r.get("ref")] if r.get("kind") in ("late", "latedone", "reply") else (r.get("facts") or {}).get("tasks") or ([r.get("ref")] if r.get("kind") == "moved" else [])
+    by_id = {t.get("id"): t for t in tasks}
+    for tid in ids[:5]:
+        t = by_id.get(tid)
+        if not t:
+            continue
+        proj = next((p.get("name") for p in projects if p.get("id") == t.get("projectId")), "")
+        mins = round(sum(max(0, (x.get("end") or now_ms()) - (x.get("start") or 0) - (x.get("pausedMs") or 0)) for x in timelog
+                         if x.get("taskId") == tid and not x.get("deleted")) / 60000)
+        moves = t.get("dueMoves") or []
+        out.append(f"Task: made {d(t.get('createdAt'))}, start {d(t.get('start'))}, due {d(t.get('due'))}, status {t.get('status')}, "
+                   f"project {proj or 'none'}, estimate {t.get('estMin') or t.get('estimate') or (t.get('estAi') or {}).get('min') or 'none'} min, "
+                   f"time recorded {mins} min, due date moved {len(moves)} times, first step written: {'yes' if (t.get('clear') or {}).get('first') else 'no'}")
+        if t.get("projectId"):
+            now = now_ms()
+            same = [x for x in tasks if x.get("projectId") == t["projectId"] and not x.get("deleted")]
+            late = [x for x in same if x.get("status") in ("notyet", "doing") and isinstance(x.get("due"), (int, float)) and x["due"] < now]
+            out.append(f"Project: {len(same)} tasks, {sum(1 for x in same if x.get('status') == 'done')} done, {len(late)} past due now")
+    allopen = [t for t in tasks if _ok_task(t) and not _reply(t) and t.get("status") in ("notyet", "doing")]
+    out.append(f"All open tasks now: {len(allopen)}, in progress {sum(1 for t in allopen if t.get('status') == 'doing')}, "
+               f"past due {sum(1 for t in allopen if isinstance(t.get('due'), (int, float)) and day_of(t['due']) < day_of(now_ms()))}")
+    if r.get("spoken"):
+        out.append("What the person said:\n" + str(r["spoken"])[:3000])
+    return "\n".join(out)
+
+
+def hypotheses(r, tasks, timelog, projects):
+    user = (f"Cause keys: {json.dumps(CAUSES)}\n\n# Context\n{context_text() or '(none)'}\n\n# This item\n"
+            + item_history(r, tasks, timelog, projects))
+    if fake():
+        d = {"items": [{"title": "見積もりが小さかった", "why": facts_line(r), "check": "最初の一歩は決まっていた？", "causes": ["estimate"]}],
+             "pattern": "", "ask": "どれが一番近い？"}
+    else:
+        d = _ask(user, HYPO_SYSTEM, HYPO_SCHEMA)
+    keys = set(CAUSES)
+    items = [{"title": clean_title(x.get("title"))[:120], "why": str(x.get("why") or "")[:600], "check": str(x.get("check") or "")[:200],
+              "causes": [c for c in x.get("causes") or [] if c in keys]} for x in (d.get("items") or [])[:3]]
+    return {"items": items, "pattern": str(d.get("pattern") or "")[:300], "ask": str(d.get("ask") or "")[:200], "at": now_ms()}
 
 
 # ---------- publish ----------
@@ -513,6 +589,19 @@ def handle(path, rec, load, upsert, lock):
         items = load("reflections")
     r = next((x for x in items if x["id"] == str(rec.get("id") or "")), None)
     try:
+        if op == "hypo":
+            if not r:
+                return 404, {"error": "No such reflection"}
+            with lock:
+                tasks, tl, pj = load("tasks"), load("timelog"), load("projects")
+            try:
+                h = hypotheses(r, tasks, tl, pj)
+            except ReflectError:
+                raise
+            except Exception as e:  # one odd field must not drop the connection
+                print("reflect hypo:", repr(e), flush=True)
+                return 500, {"error": "Claude's read could not be made. Try again."}
+            return 200, upsert("reflections", r["id"], {**r, "hypo": h, "updatedAt": now_ms()}, False)
         if op == "start":
             with lock:
                 tasks = load("tasks")
