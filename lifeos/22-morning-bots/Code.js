@@ -45,11 +45,11 @@ var NUT = [
 // unit 'min' is shown as hours and minutes. A number outside the range is left out, not saved.
 var SLP = [
   ['night_min', 'Night sleep', 'min', 0, 1200, 0], ['nap_min', 'Nap', 'min', 0, 600, 0], ['deep_min', 'Deep', 'min', 0, 900, 0], ['light_min', 'Light', 'min', 0, 1200, 0],
-  ['rem_min', 'REM', 'min', 0, 900, 0], ['awake_min', 'Awake', 'min', 0, 600, 0], ['wake_count', 'Wake-ups', 'times', 0, 100, 0], ['sleep_score', 'Sleep score', 'pts', 0, 100, 0],
+  ['rem_min', 'REM', 'min', 0, 900, 0], ['awake_min', 'Awake', 'min', 0, 600, 0], ['wake_count', 'Wake-ups', '', 0, 100, 0], ['sleep_score', 'Sleep score', 'pts', 0, 100, 0],
   ['deep_continuity', 'Deep sleep continuity', 'pts', 0, 100, 0], ['breath_quality', 'Breathing quality', 'pts', 0, 100, 0], ['hr_avg', 'Heart rate', 'bpm', 20, 200, 0],
   ['hrv_avg', 'HRV', 'ms', 1, 400, 0], ['spo2_avg', 'SpO2', '%', 50, 100, 0], ['breath_rate', 'Breathing rate', 'brpm', 3, 60, 1]
 ];
-var STP = [['distance_km', 'Distance', 'km', 0, 300, 2], ['active_kcal', 'Active calories', 'kcal', 0, 20000, 0], ['active_min', 'Active time', 'min', 0, 1440, 0], ['floors', 'Floors', 'floors', 0, 2000, 0]];
+var STP = [['distance_km', 'Distance', 'km', 0, 300, 2], ['active_kcal', 'Active calories', 'kcal', 0, 20000, 0], ['active_min', 'Active time', 'min', 0, 1440, 0], ['floors', 'Floors', '', 0, 2000, 0]];
 var STAGES = ['deep_min', 'light_min', 'rem_min', 'awake_min'];
 function deskKey(n) { return n[5] || n[0]; }
 var FIX_HOURS = 6; // a message this soon after a meal may correct it
@@ -87,7 +87,7 @@ function dayWord(iso) {
   var t = localDate();
   return shortDate(iso) + (iso === t ? ' (today)' : iso === addDays(t, -1) ? ' (yesterday)' : '');
 }
-function hm(min) { var h = Math.floor(min / 60), m = min % 60; return h + 'h' + (m ? ' ' + m + 'm' : ''); }
+function hm(min) { var h = Math.floor(min / 60), m = min % 60; return h ? h + 'h' + (m ? ' ' + m + 'm' : '') : m + 'm'; }
 function num(n) { return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
 function newId() { return 'r' + Utilities.getUuid().replace(/-/g, '').slice(0, 11); } // a letter first: Sheets never turns it into a number
 function okDate(d) {
@@ -207,7 +207,7 @@ function details(list, r, total) {
     var v = r[x[0]];
     if (typeof v !== 'number' || isNaN(v) || v < x[3] || v > x[4]) return;
     v = round(v, x[5]); vals[x[0]] = v;
-    var w = x[2] === 'min' ? hm(Math.round(v)) : fmt(v, x[5]) + (x[2] === '%' ? '%' : ' ' + x[2]);
+    var w = x[2] === 'min' ? hm(Math.round(v)) : fmt(v, x[5]) + (x[2] === '%' ? '%' : x[2] ? ' ' + x[2] : '');
     if (STAGES.indexOf(x[0]) >= 0 && total > 0) w += ' (' + pct(v, total) + ')';
     words.push(x[1] + ' ' + w);
   });
