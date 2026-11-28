@@ -2340,6 +2340,7 @@ body.sffull{overflow:hidden}
 .rfltry{display:flex;justify-content:space-between;align-items:center;gap:var(--s2);flex-wrap:wrap;background:var(--surface-2);border-radius:var(--r-s);padding:var(--s2) var(--s3);font-size:var(--t2)}
 .rflnote{font-size:var(--t1)}
 .rfldate{max-width:220px}
+.rflnotmiss{display:grid;gap:var(--s2)}
 .rflquote{margin:0;font-size:var(--t3);font-weight:700;border-left:2px solid var(--accent);padding-left:var(--s3)}
 .rflfact{margin:0;font-size:var(--t3)}
 .rflkind{margin:0;color:var(--muted)}
@@ -7713,7 +7714,8 @@ function rflDetail(r){
   <div class="mtgdots rfldots" aria-hidden="true">${RFL_STEPS.slice(first).map((_,i)=>`<span class="${i+first<step?"done":i+first===step?"on":""}"></span>`).join("")}</div>
   <header class="rflhead"><p class="rflkick"><span class="rflchip">${esc(RFL_KIND[r.kind]||"")}</span><span class="sub">${esc(RFL_STEPS[step])}</span></p><h1 class="rfltitle">${esc(r.title||"Untitled")}</h1></header>`;
   const msg=st.msg?`<p class="sub" role="status">${esc(st.msg)}</p>`:"";
-  const foot=(next="Next")=>`<div class="rflfoot">${step>first?`<button class="btn" type="button" data-rflstep="${step-1}">Back</button>`:"<span></span>"}<span class="rflgrow"></span>${step===1?`<button class="rfllink" type="button" data-rflnotmiss>Not a miss</button>`:""}<button class="btn primary" type="button" data-rflstep="${step+1}" data-rflnext>${next}</button></div>`;
+  const foot=(next="Next")=>`<div class="rflfoot">${step>first?`<button class="btn" type="button" data-rflstep="${step-1}">Back</button>`:"<span></span>"}<span class="rflgrow"></span>${step===1&&!st.notmiss?`<button class="rfllink" type="button" data-rflnotmiss>Not a miss</button>`:""}<button class="btn primary" type="button" data-rflstep="${step+1}" data-rflnext>${next}</button></div>
+  ${step===1&&st.notmiss?`<div class="card rflnotmiss"><label class="sub" for="rflWhy">Why is this not a miss? For example: the date was only a guess.</label><input class="mtgin" id="rflWhy"><div class="rflfoot"><button class="btn" type="button" data-rflnmcancel>Cancel</button><span class="rflgrow"></span><button class="btn primary" type="button" data-rflnmsave>Not a miss</button></div></div>`:""}`;
   const card=(q,help,inner,next)=>`<div id="rflwrap" class="rflwrap">${top}<section class="card rflcard"><h2 class="rflq">${q}</h2>${help?`<p class="rflhelp">${help}</p>`:""}${inner}${msg}</section>${foot(next)}</div>`;
   if(step===0)return card("Did you do last time's plan?","",`<blockquote class="rflquote">${esc(lt.ifThen)}</blockquote>${rflChoice(r,"kept",[["yes","Yes"],["partly","Partly"],["no","No"]])}`);
   if(step===1){const t=rflTiles(r);
@@ -7800,7 +7802,9 @@ function wireRfl(){
   on("#rflwrap textarea",i=>i.addEventListener("keydown",e=>{if(e.key==="Enter"&&(e.metaKey||e.ctrlKey)){e.preventDefault();$("[data-rflnext]")?.click()}}));
   on("[data-rflidea]",b=>b.onclick=()=>{const c=(r.answers.causes||[]).map(x=>RFL_IDEAS[x]).find(Boolean);r.answers.ifThen=c;rflSave(r).catch(()=>{});rflDraw()});
   on("[data-rflstep]",b=>b.onclick=async()=>{r.step=+b.dataset.rflstep;st.msg="";try{await rflSave(r)}catch(e){toast("Could not save")}rflDraw();window.scrollTo(0,0)});
-  on("[data-rflnotmiss]",b=>b.onclick=async()=>{const why=prompt("Why is this not a miss? (for example: the date was only a guess)");if(why==null)return;r.status="notmiss";r.notMissWhy=why.slice(0,300);
+  on("[data-rflnotmiss]",b=>b.onclick=()=>{st.notmiss=true;rflDraw();$("#rflWhy")?.focus()});
+  on("[data-rflnmcancel]",b=>b.onclick=()=>{st.notmiss=false;rflDraw()});
+  on("[data-rflnmsave]",b=>b.onclick=async()=>{r.status="notmiss";r.notMissWhy=($("#rflWhy")?.value||"").slice(0,300);st.notmiss=false;
     try{await rflSave(r)}catch(e){toast("Could not save");return}rflApi("POST","/api/reflect/scan",{}).catch(()=>{});location.hash="#reflect"});
   on("[data-rflmic]",b=>voiceButton(b,b.closest(".rflbox").querySelector("textarea")));
   const run=async(kind,fn)=>{st.busy=kind;st.msg="";rflDraw();try{await fn()}catch(e){st.msg=e.message}st.busy="";rflDraw()};
@@ -7809,7 +7813,10 @@ function wireRfl(){
     const wid=winId("reflect-"+x.id);if(!S.wins.some(w=>w.id===wid&&!w.deleted))await store.putWin({id:wid,kind:"reflect",title:"Reflected: "+(x.title||""),ref:x.id});
     rflApi("POST","/api/reflect/scan",{}).catch(()=>{})}; // its "Write a reflection" task is marked done
   on("[data-rfldone]",b=>b.onclick=()=>run("done",async()=>{await finish(r);st.msg="Kept on the Desk only."}));
-  on("[data-rflpub]",b=>b.onclick=()=>{const pub=b.dataset.rflpub==="1";if(pub&&!confirm("Publish this reflection on Rhizome Box? Anyone can read it."))return;
+  on("[data-rflpub]",b=>b.onclick=()=>{const pub=b.dataset.rflpub==="1";
+    if(pub&&!b.dataset.sure){b.dataset.sure="1";const was=b.textContent;b.textContent="Press again to publish";st.msg="Anyone on the internet can read it.";
+      const m=b.closest(".rflwrap")?.querySelector('[role="status"]');if(m)m.textContent=st.msg;else b.insertAdjacentHTML("afterend",`<span class="sub" role="status">${esc(st.msg)}</span>`);
+      setTimeout(()=>{if(b.isConnected){delete b.dataset.sure;b.textContent=was}},6000);return}
     run("pub",async()=>{r.day=r.day||hcmcDate();r.doneAt=r.doneAt||Date.now();await rflSave(r);const x=await rflApi("POST","/api/reflect/publish",{id:r.id,pub});rflPut(x);await finish(x);st.msg=pub?"Published.":"It is private again."})});
   on("[data-rfltry]",b=>b.onclick=()=>run("try",async()=>{await rflSave(r);const x=await rflApi("POST","/api/reflect/try",{id:r.id});rflPut(x);toast("Added to Tasks")}));
 }
