@@ -71,6 +71,38 @@ async function saveWords(env, ctx, body) {
   const pub = typeof body.setPub === 'boolean' ? (body.setPub ? 1 : 0) : (old ? null : 0);
   return savePage(env, ctx, id, { lines, pub });
 }
+/* The Desk's reflections: its own key; pages titled "Reflection: ..." (the Desk writes them whole) and the index page
+   "Reflections" (only below its mark, so the owner's own lines above it stay). */
+const reflectKeyOk = (req, env) => !!env.REFLECT_KEY && safeEq((req.headers.get('Authorization') || '').replace(/^Bearer\s+/, ''), env.REFLECT_KEY);
+export const REFLECT_MARK = 'The Desk adds reflections below this line by itself.';
+export const REFLECT_INDEX = 'Reflections';
+const REFLECT_TITLE = /^Reflection: [^\[\]\n]{1,120}$/;
+async function saveReflection(env, ctx, body) {
+  const title = String(body.title || '').trim();
+  if (!REFLECT_TITLE.test(title)) return json({ error: 'title' }, 400);
+  const lines = body.lines;
+  if (!Array.isArray(lines) || !lines.length || lines.some((l) => typeof l !== 'string') || lines[0].trim() !== title) return json({ error: 'lines' }, 400);
+  const pub = typeof body.pub === 'boolean' ? body.pub : true;
+  const old = await env.DB.prepare('SELECT id FROM pages WHERE title = ? COLLATE NOCASE AND deleted = 0').bind(title).first();
+  const res = await savePage(env, ctx, old ? old.id : randHex(12), { lines, pub });
+  if (res.status !== 200) return res;
+  const out = await res.json();
+  const idx = body.index;
+  if (Array.isArray(idx) && idx.every((l) => typeof l === 'string')) {
+    const io = await env.DB.prepare('SELECT * FROM pages WHERE title = ? COLLATE NOCASE AND deleted = 0').bind(REFLECT_INDEX).first();
+    const head = ['Reflections on what ran late or did not happen, and what I will try next.', ''];
+    let il;
+    if (io) {
+      const cur = parseJSON(io.lines, []);
+      const at = cur.indexOf(REFLECT_MARK);
+      il = [...(at >= 0 ? cur.slice(0, at) : [...cur, '']), REFLECT_MARK, ...idx.slice(0, 2000)];
+    } else il = [REFLECT_INDEX, ...head, REFLECT_MARK, ...idx.slice(0, 2000)];
+    const ir = await savePage(env, ctx, io ? io.id : randHex(12), { lines: il, pub: io ? null : 1 });
+    if (ir.status !== 200) return ir;
+    out.index = (await ir.json()).page;
+  }
+  return json(out);
+}
 const bearerOk = (req, env) => !!env.BACKUP_KEY && safeEq((req.headers.get('Authorization') || '').replace(/^Bearer\s+/, ''), env.BACKUP_KEY);
 
 /* ---------- pages ---------- */
@@ -156,7 +188,7 @@ async function savePage(env, ctx, id, body) {
     .bind(id, title, JSON.stringify(lines), pub, pin, old ? old.created : t, t, rev, JSON.stringify(d.links), d.image, JSON.stringify(d.images), JSON.stringify(d.web), d.descr, d.css));
   const renamed = [];
   if (old && !old.deleted && old.title.toLowerCase() !== title.toLowerCase()) {
-    const { results } = await env.DB.prepare("SELECT * FROM pages WHERE deleted = 0 AND id != ? AND lower(links) LIKE ? ESCAPE '\\'").bind(id, '%' + likeEsc(JSON.stringify(old.title.toLowerCase()).slice(1, -1)) + '%').all();
+    const { results } = await env.DB.prepare('SELECT * FROM pages WHERE deleted = 0 AND id != ? AND instr(lower(links), ?) > 0').bind(id, JSON.stringify(old.title.toLowerCase()).slice(1, -1)).all();
     for (const r of results) {
       const nl = renameIn(parseJSON(r.lines, []), old.title, title);
       if (JSON.stringify(nl) === r.lines) continue;
@@ -536,8 +568,8 @@ async function related(env, row, owner) {
   const links = parseJSON(row.links, []);
   const map = await pagesByTitles(env, links, owner);
   const direct = [...map.values()].filter((p) => p.id !== row.id);
-  const { results: back } = await env.DB.prepare(`SELECT id, title, pub, image, descr FROM pages WHERE ${visibleSql(owner)} AND id != ? AND lower(links) LIKE ? ESCAPE '\\' LIMIT 60`)
-    .bind(row.id, '%' + likeEsc(JSON.stringify(row.title.toLowerCase()).slice(1, -1)) + '%').all();
+  const { results: back } = await env.DB.prepare(`SELECT id, title, pub, image, descr FROM pages WHERE ${visibleSql(owner)} AND id != ? AND instr(lower(links), ?) > 0 LIMIT 60`)
+    .bind(row.id, JSON.stringify(row.title.toLowerCase()).slice(1, -1)).all();  // instr, not LIKE: D1 refuses a LIKE pattern past 50 bytes (a long title)
   const seen = new Set(direct.map((p) => p.id)); const list = [...direct];
   for (const p of back) if (!seen.has(p.id)) { seen.add(p.id); list.push(p); }
   return { map, list };
@@ -589,6 +621,10 @@ export async function handle(req, env, ctx, deps) {
     if (api === 'desk/words' && method === 'PUT') {
       if (!wordsKeyOk(req, env)) return json({ error: 'auth' }, 401);
       return saveWords(env, ctx, await req.json().catch(() => ({})));
+    }
+    if (api === 'desk/reflection' && method === 'PUT') {
+      if (!reflectKeyOk(req, env)) return json({ error: 'auth' }, 401);
+      return saveReflection(env, ctx, await req.json().catch(() => ({})));
     }
     if (api === 'index' && method === 'GET') {
       const mark = owner && env.BACKUP_KEY && !(await knownDevice(req, env)) ? { 'Set-Cookie': await deviceCookie(env) } : {};

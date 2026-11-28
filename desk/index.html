@@ -2298,6 +2298,18 @@ body.sffull{overflow:hidden}
 .mtgnav{display:flex;flex-wrap:wrap;gap:var(--s2);align-items:center}
 .mtgfoot{display:flex;flex-wrap:wrap;gap:var(--s2);margin-bottom:var(--s3)}
 .mtgok{margin:0;color:var(--green);font-weight:700}
+.rflbox{display:grid;gap:var(--s2);min-width:0}
+.rflbox .btn{justify-self:start}
+.rflquote{margin:0;font-size:var(--t3);font-weight:700}
+.rflfact{margin:0;font-size:var(--t3)}
+.rflkind{margin:0;color:var(--muted)}
+.rfltext{min-height:280px;line-height:1.6}
+.rflsign{border-top:1px solid var(--line);padding-top:var(--s2)}
+.rflsign p{margin:0}
+.rflrow{display:flex;flex-wrap:wrap;gap:var(--s2);align-items:center;justify-content:space-between;padding:var(--s2) 0;border-bottom:1px solid var(--line)}
+.rflrow .mnt{flex:1 1 200px;min-width:0;overflow-wrap:anywhere}
+.rflset{display:grid;gap:var(--s2);max-width:420px}
+.rflhome .row{margin-top:var(--s2)}
 .mtgno{margin:0;color:var(--muted)}
 .mtgcost{margin:0;color:var(--muted)}
 .mtgcheck{display:flex;gap:var(--s2);align-items:center}
@@ -2355,7 +2367,7 @@ S.projects=[];S.sections=[];S.okrs=[];S.krOpen={};S.projFilter="all";S.pDone=fal
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const okUrl=u=>/^(https:\/\/|file:\/\/|#)/.test(u||"");
-const viewId=()=>{const h=(location.hash||"").slice(1);if(h==="mail")return "tasks";if(h==="inbox")return "presents";if(/^project\//.test(h))return "project";if(/^minutes\//.test(h))return "minutes";if(/^meetcheck\//.test(h))return "meetcheck";if(/^forms\//.test(h))return "forms";if(/^task\//.test(h))return "tasks";if(/^concept\//.test(h))return "translate";if(/^langmap[\/?]/.test(h)||/^language\//.test(h))return "langmap";if(/^reader\//.test(h))return "reader";if(/^words\//.test(h))return "words";if(h==="cards/review")return "cards";return VIEWS.some(v=>v.id===h&&v.g!=="hidden")?h:"home"}; // the morning mail screen moved into the tasks
+const viewId=()=>{const h=(location.hash||"").slice(1);if(h==="mail")return "tasks";if(h==="inbox")return "presents";if(/^project\//.test(h))return "project";if(/^minutes\//.test(h))return "minutes";if(/^meetcheck\//.test(h))return "meetcheck";if(/^reflect\//.test(h))return "reflect";if(/^forms\//.test(h))return "forms";if(/^task\//.test(h))return "tasks";if(/^concept\//.test(h))return "translate";if(/^langmap[\/?]/.test(h)||/^language\//.test(h))return "langmap";if(/^reader\//.test(h))return "reader";if(/^words\//.test(h))return "words";if(h==="cards/review")return "cards";return VIEWS.some(v=>v.id===h&&v.g!=="hidden")?h:"home"}; // the morning mail screen moved into the tasks
 const viewLabel=id=>(VIEWS.find(v=>v.id===id)||{}).label||id;
 /* Old mail data has Japanese topics: keep those titles in Japanese, new ones in English */
 const JA_RE=/[ぁ-んァ-ン一-龥]/;
@@ -2385,6 +2397,7 @@ if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="focus")+1,0,{id:"notices",e
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="notices")+1,0,{id:"glance",e:"👀",label:"Glance",g:"today"}); // camera + screen every 15 minutes with one remark, and the bedtime reminder (desk/glance.py, desk/bedtime.py)
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="calendar")+1,0,{id:"book",e:"🗓️",label:"Bookings",g:"today"}); // the rules and the list behind tany.im/book; the page runs in the tany.im Worker (desk/book.py)
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="calendar")+1,0,{id:"deadlines",e:"📅",label:"Deadlines",g:"today"}); // deadlines found in mail, on the Google calendar "Deadlines" (desk/deadlines.py)
+if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="notes"),0,{id:"reflect",e:"🪞",label:"Reflections",g:"write"}); // late or missed things, written up and published to Rhizome Box (desk/reflect.py)
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="calendar")+1,0,{id:"meetcheck",e:"🤝",label:"Should we meet?",g:"today"}); // four questions decide whether a meeting earns its place (desk/meetcheck.py)
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="memolink")+1,0,{id:"money",e:"💰",label:"Money",g:"write"}); // statements stay on this Mac
 if(LOCALAPI) VIEWS.splice(VIEWS.findIndex(v=>v.id==="money")+1,0,{id:"screentime",e:"📱",label:"Screen Time",g:"write"});
@@ -5991,6 +6004,7 @@ function home(){
   ${uniLine(true)}
   ${mdlLine()}
   ${todayBlock()}
+  ${rflHome()}
   ${suggCard()}
   ${uTag(progressCard(),"wins")}
   ${homeOrder().filter(id=>id!=="wins").map(id=>uTag(cards[id]||"",id)).join("\n  ")}`;
@@ -7067,6 +7081,7 @@ function render(){
   if(viewId()==="netspeed"){nsLoad();$("#view").innerHTML=searchResults()+nsView();wire();wireNs();return}
   if(viewId()==="wifi"){wfLoad();if(!$("#wfView")||!document.activeElement?.closest?.(".wffield"))wfDraw();return} // a redraw from elsewhere never takes the password being typed
   if(viewId()==="transcribe"){trLoad();mnLoad();if(Date.now()-(S.traCheck||0)>60000){S.traCheck=Date.now();trAutoLoad(true)}$("#view").innerHTML=searchResults()+trView();wire();wireTr();return}
+  if(viewId()==="reflect"){rflLoad();if(!document.activeElement?.closest?.("#rflView textarea,#rflView input")||!$("#rflView"))rflDraw();return} // a redraw from elsewhere never takes the words being typed
   if(viewId()==="meetcheck"){mtgLoad();if(!document.activeElement?.closest?.("#mtgView")||!$("#mtgView"))mtgDraw();return} // a redraw from elsewhere never takes the answer being typed
   if(viewId()==="minutes"){mnLoad();if(document.activeElement?.closest?.(".mnshare,.mntags"))return;
     {const st=mn();if(!st.force&&st.docView&&st.docView===mnId()&&$(".mnframe"))return;st.force=false} /* the embedded Google Doc loads once: a redraw would reload it (a new visit in the browser each time) */$("#view").innerHTML=searchResults()+mnView();wire();wireMn();return}
@@ -7564,6 +7579,138 @@ function wireFp(){
 async function fpHomeLoad(){if(!LOCALAPI)return;try{S.fpHome=await api("GET","/api/footprint/home");const el=$("#fpLine");if(el){const t=document.createElement("div");t.innerHTML=fpHomeLine();el.textContent=t.firstChild.textContent}}catch(e){}}
 const fpHomeLine=()=>{const h=S.fpHome;if(!LOCALAPI)return "";if(!h||!h.kg)return `<a class="sub pcline" id="fpLine" href="#footprint">Footprint: yesterday's CO2e</a>`;
   return `<a class="sub pcline" id="fpLine" href="#footprint">Footprint yesterday: ${fpKg(h.kg)} CO2e${h.cowHours?` · ${fpHours(h.cowHours)} of a cow`:""}</a>`};
+/* ---------- 🪞 Reflections (#reflect, #reflect/<id>): what ran late or did not happen gets a reflection, card by card (desk/reflect.py).
+   The Desk finds them; the person answers (Mac dictation works in every box), Claude writes it up in the language spoken,
+   and only "Publish" sends the final text to Rhizome Box. Records: the reflections collection. Blame-free words only. */
+const RFL_STEPS=["Last time","What happened","How it feels","Causes","One level deeper","What went well","If–then","Write-up"];
+const RFL_KIND={late:"Past due",latedone:"Done late",moved:"Due date moved",reply:"Slow reply",promise:"Promise missed",money:"Money"};
+const rfl=()=>S.rfl||(S.rfl={list:null,state:null,busy:"",msg:"",loading:false,loadedAt:0});
+const rflId=()=>{const m=/^#reflect\/(.+)$/.exec(location.hash||"");return m?decodeURIComponent(m[1]):null};
+const rflOpen=()=>(rfl().list||[]).filter(x=>!x.deleted&&(x.status==="open"||x.status==="draft")).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+const rflDoneList=()=>(rfl().list||[]).filter(x=>!x.deleted&&(x.status==="done"||x.status==="published")).sort((a,b)=>(b.doneAt||b.updatedAt||0)-(a.doneAt||a.updatedAt||0));
+const rflDay=ms=>ms?new Date(ms).toLocaleDateString("en-US",{month:"short",day:"numeric"}):"?";
+function rflFacts(r){const f=r.facts||{},k=r.kind;
+  if(k==="late")return `Due ${rflDay(f.due)}. Still open ${f.days} day${f.days===1?"":"s"} later.`;
+  if(k==="latedone")return `Due ${rflDay(f.due)}. Done ${rflDay(f.done)}, ${f.days} day${f.days===1?"":"s"} later.`;
+  if(k==="moved")return f.count?`${f.count} due dates in this project moved later on ${esc(f.day||"")}, by up to ${f.days} days.`:`Due date moved from ${rflDay(f.from)} to ${rflDay(f.to)}, ${f.days} days later.`;
+  if(k==="reply")return f.to?`The reply took ${f.hours} hours.`:`Waiting for a reply for ${f.hours} hours.`;
+  if(k==="promise")return f.target==null?`Not done on ${esc(f.day||"")}.`:`${f.count} of ${f.target} from ${esc(f.day||"")} to ${esc(f.end||"")}.`;
+  if(k==="money")return f.what==="net"?`${esc(f.month||"")}: in $${f.in}, out $${f.out}.`:`Spent $${f.spent} against the ${f.period==="week"?"weekly":"monthly"} limit of $${f.limit}.`;
+  return ""}
+async function rflApi(method,path,body){const r=await fetch(path,{method,headers:{"Content-Type":"application/json"},body:body?JSON.stringify(body):undefined});
+  const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||("Error "+r.status));return j}
+async function rflLoad(force){const st=rfl();if(!LOCALAPI||st.loading||(!force&&st.loadedAt&&Date.now()-st.loadedAt<60000))return;st.loading=true;
+  try{const [l,s]=await Promise.all([api("GET","/api/reflections"),rflApi("GET","/api/reflect")]);st.list=(l||[]).filter(x=>x&&x.id);st.state=s;st.err=""}
+  catch(e){st.err="Could not read the reflections. Is the Desk server running?"}
+  st.loading=false;st.loadedAt=Date.now();if(viewId()==="reflect")rflDraw();else if(viewId()==="home"&&!document.activeElement?.closest?.("input,textarea"))render()}
+async function rflSave(r){r.updatedAt=Date.now();const {id,...rec}=r;await api("PUT","/api/reflections/"+encodeURIComponent(id),rec);
+  const st=rfl();st.list=[...(st.list||[]).filter(x=>x.id!==id),r]}
+const rflPut=r=>{const st=rfl();st.list=[...(st.list||[]).filter(x=>x.id!==r.id),r]};
+function rflDraw(){if(viewId()!=="reflect")return;$("#view").innerHTML=searchResults()+rflView();wire();wireRfl()}
+function rflHome(){ // Home: everything waiting, the newest three shown
+  if(!LOCALAPI)return "";rflLoad();const o=rflOpen();if(!o.length)return "";
+  return `<section class="card rflhome" aria-label="Reflections to write"><div class="sgtop"><h2>Reflections to write</h2><span class="sub">${o.length} waiting</span></div>
+    ${o.slice(0,3).map(r=>`<a class="mnrow" href="#reflect/${encodeURIComponent(r.id)}" data-noauto><span class="mnt">${esc(r.title||"Untitled")}</span><span class="mns">${esc(RFL_KIND[r.kind]||"")} · ${rflFacts(r)}</span></a>`).join("")}
+    <div class="row"><a class="btn primary" href="#reflect/${encodeURIComponent(o[0].id)}">Write a reflection</a>${o.length>3?`<a class="btn sm" href="#reflect">See all ${o.length}</a>`:""}</div></section>`}
+const rflMic=()=>("webkitSpeechRecognition" in window||"SpeechRecognition" in window);
+const rflBox=(r,key,ph,rows)=>`<div class="rflbox"><textarea class="mtgin" data-rflf="${key}" rows="${rows||4}" placeholder="${esc(ph||"")}">${esc((key==="spoken"?r.spoken:(r.answers||{})[key])||"")}</textarea>
+  ${rflMic()?`<button class="btn sm" type="button" data-rflmic="${key}">Speak</button>`:""}</div>`;
+const RFL_HINT=`<p class="hint">To talk instead of type: click in the box and press fn twice (Mac dictation). The first time, turn it on in System Settings → Keyboard → Dictation.</p>`;
+const RFL_IDEAS={estimate:"If I plan a task, I will give it 1.5 times what the last one like it really took.",late:"If a task is due this week, I will put its first 25 minutes on the calendar today.",
+  unclear:"If I can't start, I will write the first 5-minute step before anything else.",energy:"If I am tired, I will do only the 5-minute version and stop.",
+  interrupt:"If something interrupts, I will write where I stopped before switching.",priority:"If priorities change, I will move or drop the old task the same day.",
+  forgot:"If a task has a due date, I will set a reminder the day before.",other:""};
+function rflView(){
+  const st=rfl(),id=rflId();rtLoad();
+  if(!st.list)return `<div id="rflView"><div class="card empty">${esc(st.err||"Loading…")}</div></div>`;
+  if(id){const r=(st.list||[]).find(x=>x.id===id);return `<div id="rflView">${r?rflDetail(r):`<a class="mnback" href="#reflect">← Reflections</a><div class="card empty">This reflection is not here any more.</div>`}</div>`}
+  const o=rflOpen(),d=rflDoneList(),e=st.state?.earlier||[],s=st.state?.settings||{};
+  const row=r=>`<a class="mnrow" href="#reflect/${encodeURIComponent(r.id)}" data-noauto><span class="mnt">${esc(r.title||"Untitled")}</span><span class="mns">${esc(RFL_KIND[r.kind]||"")} · ${rflFacts(r)}${r.status==="draft"?" · Started":""}${r.rb?.pub?" · On Rhizome Box":""}</span></a>`;
+  const proms=[...(S.habits||[]).filter(h=>!h.deleted).map(h=>({col:"habits",x:h,name:h.name})),...(S.routines||[]).filter(g=>g.kind==="goal").map(g=>({col:"routines",x:g,name:g.title}))];
+  return `<div id="rflView"><header class="head"><div><p class="eyebrow">Write & reflect</p><h1>Reflections</h1></div><button class="btn" type="button" data-rflscan>Look again now</button></header>
+  <p class="sub rflintro">When something runs late or doesn't happen, write about it: what happened, the causes, and one thing to try. It fixes the system, not you.</p>
+  <section class="card"><h2>To write <span class="sub">${o.length}</span></h2>${o.length?o.map(row).join(""):`<p class="sub">Nothing waiting.</p>`}</section>
+  <section class="card"><h2>Written <span class="sub">${d.length}</span></h2>${d.length?d.map(row).join(""):`<p class="sub">None yet.</p>`}</section>
+  ${e.length?`<section class="card"><details><summary><b>Earlier</b> <span class="sub">${e.length} tasks done late before this started</span></summary>${e.map(t=>`<div class="rflrow"><span class="mnt">${esc(t.title||"")}</span><span class="mns">${t.days} days late · ${rflDay(t.done)}</span><button class="btn sm" type="button" data-rflstart="${esc(t.ref)}">Write about it</button></div>`).join("")}</details></section>`:""}
+  <section class="card"><h2>Promises</h2><p class="sub">Only habits and goals you mark here get a reflection when missed. The rest stay as they are.</p>
+    ${proms.length?proms.map(p=>`<label class="mtgcheck"><input type="checkbox" data-rflprom="${p.col}:${esc(p.x.id)}" ${p.x.promise?"checked":""}> ${esc(p.name||"")}</label>`).join(""):`<p class="sub">No habits or goals yet.</p>`}</section>
+  <section class="card"><h2>Settings</h2><form class="rflset" data-rflset><label class="sub">Signature<input class="mtgin" name="sign" value="${esc(s.sign||"")}"></label>
+    <label class="sub">A reply is slow after (hours)<input class="mtgin" name="replyHours" type="number" min="12" max="336" value="${esc(s.replyHours||72)}"></label><button class="btn sm primary">Save</button></form>
+    ${st.state&&!st.state.hasKey?`<p class="hint">Publishing needs the Rhizome Box key once: run bash desk/reflect_setup.sh.</p>`:""}</section></div>`}
+function rflDetail(r){
+  const st=rfl(),lt=st.state?.lastTry&&st.state.lastTry.id!==r.id?st.state.lastTry:null,a=r.answers||{};
+  let step=r.step==null?(lt?0:1):r.step;if(step===0&&!lt)step=1;
+  const done=r.status==="done"||r.status==="published";
+  const top=`<a class="mnback" href="#reflect">← Reflections</a>
+  <header class="head mtghead"><div class="mnhd"><p class="eyebrow">${esc(RFL_KIND[r.kind]||"")} · ${step<7?`Card ${step+1} of 8 · ${RFL_STEPS[step]}`:"Write-up"}</p><h1 class="mtgtitle">${esc(r.title||"Untitled")}</h1></div></header>
+  <div class="mtgdots" aria-hidden="true">${RFL_STEPS.map((_,i)=>`<span class="${i<step?"done":i===step?"on":""}"></span>`).join("")}</div>`;
+  const msg=st.msg?`<p class="sub" role="status">${esc(st.msg)}</p>`:"";
+  const nav=(next="Next")=>`<div class="mtgnav">${step>(lt?0:1)?`<button class="btn" type="button" data-rflstep="${step-1}">Back</button>`:""}<button class="btn primary" type="button" data-rflstep="${step+1}">${next}</button>${step===1?`<button class="btn sm" type="button" data-rflnotmiss>Not a miss</button>`:""}</div>`;
+  const card=(inner,n)=>top+`<section class="card mtgcard">${inner}${nav(n)}${msg}</section>`;
+  if(step===0)return card(`<p class="mtgq">Last time you planned:</p><p class="rflquote">${esc(lt.ifThen)}</p><p class="sub">Did you do it?</p>
+    ${rflChoice(r,"kept",[["yes","Yes"],["partly","Partly"],["no","No"]])}`);
+  if(step===1)return card(`<p class="mtgq">What happened</p><p class="rflfact">${rflFacts(r)}</p>
+    ${r.kind==="moved"&&r.facts?.titles?`<p class="sub">${r.facts.titles.map(esc).join(" · ")}</p>`:""}
+    ${mtgField("Tell it in your own words. You can say everything here and skip the next cards.",rflBox(r,"spoken","What was planned, what really happened, in order.",6))}${RFL_HINT}`);
+  if(step===2)return card(`<p class="mtgq">How does it feel now?</p>${rflChoice(r,"feel",Object.entries(st.state?.feels||{}))}
+    ${a.feel?`<p class="rflkind">Delays happen to everyone. Systems can be fixed.</p>`:""}`);
+  if(step===3)return card(`<p class="mtgq">What got in the way? Pick all that fit.</p>${rflMulti(r,"causes",Object.entries(st.state?.causes||{}))}${mtgField("Anything else",rflBox(r,"causeNote","Optional",2))}`);
+  if(step===4){const c=(a.causes||[])[0],name=(st.state?.causes||{})[c]||"it";
+    return card(`<p class="mtgq">${a.causes?.length?`“${esc(name)}”: what was going on when that happened?`:"What was going on at the time?"}</p>${rflBox(r,"deeper","Where you were, what came up, what you were thinking.",4)}`)}
+  if(step===5)return card(`<p class="mtgq">What still went well?</p>${rflBox(r,"keep","Something that moved forward, or worth doing again. Can be empty.",3)}`);
+  if(step===6){const idea=(a.causes||[]).map(c=>RFL_IDEAS[c]).find(Boolean);
+    return card(`<p class="mtgq">One thing to try: “If …, I will …”</p>${rflBox(r,"ifThen",idea||"If …, I will …",3)}
+      ${idea&&!a.ifThen?`<button class="btn sm" type="button" data-rflidea>Use: ${esc(idea)}</button>`:""}
+      ${mtgField("Try it on",`<input class="mtgin" type="date" data-rflf="tryDate" value="${esc(a.tryDate||"")}">`)}`,"Write it up")}
+  // the write-up
+  const s=st.state?.settings||{},text=r.final!=null?r.final:(r.draft||"");
+  const ja=/[぀-ヿ一-鿿]/.test(text),day=r.day||new Date(r.doneAt||Date.now()).toISOString().slice(0,10);
+  return top+`<section class="card mtgcard">
+    <div class="mtgnav"><button class="btn" type="button" data-rflstep="6">Back</button><button class="btn${text?"":" primary"}" type="button" data-rfldraft ${st.busy?"disabled":""}>${st.busy==="draft"?"Writing…":text?"Write it up again":"Write it up with Claude"}</button></div>
+    <p class="hint">Claude (Sonnet) reads your answers and what you said, and writes in the language you used. It leaves out other people's names and money unless you wrote them.</p>
+    ${mtgField("Title",`<input class="mtgin" data-rflr="pageTitle" value="${esc(r.pageTitle||r.title||"")}">`)}
+    ${mtgField("Reflection",`<textarea class="mtgin rfltext" data-rflr="final" rows="14" placeholder="Write it up with Claude, or write it yourself.">${esc(text)}</textarea>`,"[* Heading] makes a heading on Rhizome Box.")}
+    <div class="rflsign"><p>${ja?"今後起こさないように誓います。":"I pledge not to let this happen again."}</p><p class="sub">${esc(s.sign||"")} — ${esc(day)}</p></div>
+    ${a.ifThen?`<div class="mtgnav"><span class="sub">Try: ${esc(a.ifThen)}${a.tryDate?" · "+esc(a.tryDate):""}</span>${r.tryTaskId?`<a class="btn sm" href="#task/${encodeURIComponent(r.tryTaskId)}">Open the task</a>`:`<button class="btn sm" type="button" data-rfltry>Make it a task</button>`}</div>`:""}
+    <div class="mtgnav">${r.rb?.pub?`<a class="btn" href="${esc(r.rb.url)}" target="_blank" rel="noopener">Open on Rhizome Box</a><button class="btn" type="button" data-rflpub="0" ${st.busy?"disabled":""}>Unpublish</button><button class="btn primary" type="button" data-rflpub="1" ${st.busy||!text?"disabled":""}>Update the page</button>`
+      :`<button class="btn primary" type="button" data-rflpub="1" ${st.busy||!text?"disabled":""}>${st.busy==="pub"?"Publishing…":"Publish to Rhizome Box"}</button>`}
+      ${done?"":`<button class="btn" type="button" data-rfldone ${!text?"disabled":""}>Keep it private</button>`}</div>
+    <p class="hint">Publishing makes a public page “Reflection: … (${esc(day)})” and adds it to the “Reflections” page. Nothing is sent until you press.</p>${msg}</section>`}
+const rflChoice=(r,k,opts)=>`<div class="mtgchoices" role="radiogroup">${opts.map(([v,l])=>`<button type="button" class="mtgch${(r.answers||{})[k]===v?" on":""}" role="radio" aria-checked="${(r.answers||{})[k]===v}" data-rflset="${k}" data-v="${esc(v)}">${esc(l)}</button>`).join("")}</div>`;
+const rflMulti=(r,k,opts)=>{const on=new Set((r.answers||{})[k]||[]);return `<div class="mtgchoices" role="group">${opts.map(([v,l])=>`<button type="button" class="mtgch${on.has(v)?" on":""}" aria-pressed="${on.has(v)}" data-rfltog="${k}" data-v="${esc(v)}">${esc(l)}</button>`).join("")}</div>`};
+function wireRfl(){
+  const st=rfl(),id=rflId(),r=id?(st.list||[]).find(x=>x.id===id):null,on=(q,f)=>document.querySelectorAll(q).forEach(f);
+  let t;const later=()=>{clearTimeout(t);t=setTimeout(()=>rflSave(r).catch(()=>toast("Could not save")),600)};
+  on("[data-rflscan]",b=>b.onclick=async()=>{b.disabled=true;try{const j=await rflApi("POST","/api/reflect/scan",{});toast(j.new?`${j.new} new`:"Nothing new")}catch(e){toast(e.message)}rflLoad(true)});
+  on("[data-rflstart]",b=>b.onclick=async()=>{try{const x=await rflApi("POST","/api/reflect/start",{ref:b.dataset.rflstart});rflPut(x);location.hash="#reflect/"+encodeURIComponent(x.id)}catch(e){toast(e.message)}});
+  on("[data-rflprom]",c=>c.onchange=async()=>{const [col,hid]=c.dataset.rflprom.split(":");const arr=col==="habits"?S.habits:(S.routines||[]);const x=arr.find(y=>y.id===hid);if(!x)return;
+    const rec={...x,promise:c.checked,promiseAt:c.checked?Date.now():x.promiseAt||null,updatedAt:Date.now()};Object.assign(x,rec);
+    try{const {id:_,...body}=rec;await api("PUT",`/api/${col}/${encodeURIComponent(hid)}`,body);toast(c.checked?"Marked as a promise":"No longer a promise")}catch(e){toast("Could not save")}});
+  on("[data-rflset]",f=>{if(f.tagName!=="FORM")return;f.onsubmit=async e=>{e.preventDefault();try{st.state.settings=await rflApi("PUT","/api/reflect/settings",{sign:f.sign.value,replyHours:f.replyHours.value});toast("Saved")}catch(err){toast(err.message)}}});
+  if(!r)return;
+  r.answers=r.answers||{};
+  on("[data-rflf]",i=>i.oninput=()=>{const k=i.dataset.rflf;if(k==="spoken")r.spoken=i.value;else r.answers[k]=i.value;if(r.status==="open")r.status="draft";later()});
+  on("[data-rflr]",i=>i.oninput=()=>{r[i.dataset.rflr]=i.value;later()});
+  on("button[data-rflset]",b=>b.onclick=()=>{r.answers[b.dataset.rflset]=b.dataset.v;if(r.status==="open")r.status="draft";rflSave(r).catch(()=>toast("Could not save"));rflDraw()});
+  on("[data-rfltog]",b=>b.onclick=()=>{const k=b.dataset.rfltog,s=new Set(r.answers[k]||[]);s.has(b.dataset.v)?s.delete(b.dataset.v):s.add(b.dataset.v);r.answers[k]=[...s];rflSave(r).catch(()=>toast("Could not save"));rflDraw()});
+  on("[data-rflidea]",b=>b.onclick=()=>{const c=(r.answers.causes||[]).map(x=>RFL_IDEAS[x]).find(Boolean);r.answers.ifThen=c;rflSave(r).catch(()=>{});rflDraw()});
+  on("[data-rflstep]",b=>b.onclick=async()=>{r.step=+b.dataset.rflstep;st.msg="";try{await rflSave(r)}catch(e){toast("Could not save")}rflDraw();window.scrollTo(0,0)});
+  on("[data-rflnotmiss]",b=>b.onclick=async()=>{const why=prompt("Why is this not a miss? (for example: the date was only a guess)");if(why==null)return;r.status="notmiss";r.notMissWhy=why.slice(0,300);
+    try{await rflSave(r)}catch(e){toast("Could not save");return}location.hash="#reflect"});
+  on("[data-rflmic]",b=>b.onclick=()=>{const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR)return;const box=b.parentNode.querySelector("textarea"),rec=new SR();
+    rec.lang=navigator.language||"ja-JP";rec.continuous=true;rec.interimResults=false;b.textContent="Listening… press to stop";
+    rec.onresult=e=>{for(let i=e.resultIndex;i<e.results.length;i++)if(e.results[i].isFinal)box.value+=(box.value?" ":"")+e.results[i][0].transcript;box.dispatchEvent(new Event("input"))};
+    rec.onend=()=>{b.textContent="Speak";b.onclick=null;wireRfl()};b.onclick=()=>rec.stop();rec.start()});
+  const run=async(kind,fn)=>{st.busy=kind;st.msg="";rflDraw();try{await fn()}catch(e){st.msg=e.message}st.busy="";rflDraw()};
+  on("[data-rfldraft]",b=>b.onclick=()=>run("draft",async()=>{await rflSave(r);const x=await rflApi("POST","/api/reflect/draft",{id:r.id});x.final=x.draft;rflPut(x);await rflSave(x)}));
+  const finish=async x=>{x.doneAt=x.doneAt||Date.now();x.day=x.day||hcmcDate();if(x.status!=="published")x.status="done";await rflSave(x);
+    const wid=winId("reflect-"+x.id);if(!S.wins.some(w=>w.id===wid&&!w.deleted))await store.putWin({id:wid,kind:"reflect",title:"Reflected: "+(x.title||""),ref:x.id})};
+  on("[data-rfldone]",b=>b.onclick=()=>run("done",async()=>{await finish(r);st.msg="Kept on the Desk only."}));
+  on("[data-rflpub]",b=>b.onclick=()=>{const pub=b.dataset.rflpub==="1";if(pub&&!confirm("Publish this reflection on Rhizome Box? Anyone can read it."))return;
+    run("pub",async()=>{r.day=r.day||hcmcDate();r.doneAt=r.doneAt||Date.now();await rflSave(r);const x=await rflApi("POST","/api/reflect/publish",{id:r.id,pub});rflPut(x);await finish(x);st.msg=pub?"Published.":"It is private again."})});
+  on("[data-rfltry]",b=>b.onclick=()=>run("try",async()=>{await rflSave(r);const x=await rflApi("POST","/api/reflect/try",{id:r.id});rflPut(x);toast("Added to Tasks")}));
+}
+
 /* ---------- 🤝 Should we meet? (#meetcheck, #meetcheck/<id>): a meeting has to earn its place. Four of the owner's answers decide;
    Claude only drafts them (desk/meetcheck.py). Meet → a pre-read Google Doc anyone with the link can comment on. Don't meet → an
    alternative, a reply to copy (never sent) and the time and yen saved. Records: the meetchecks collection (doc _settings holds the rate). */
@@ -10527,6 +10674,7 @@ const FDESC={ // what each screen is for, in plain words (English and Japanese k
   genres:"task genres: rename, merge, undo merges ジャンル",
   calendar:"Google Calendar events and task due dates カレンダー 予定",
   deadlines:"deadlines found in mail: reports, exams, paperwork, put on the Deadlines calendar 締め切り 期限 レポート 課題 試験",
+  reflect:"Reflections: write about what ran late or did not happen (past due, done late, due date moved, slow reply, promise, money); causes, if-then plan, publish to Rhizome Box 反省文 振り返り 遅れ",
   meetcheck:"Should we meet? Check if a meeting is needed: decision, decider, cost; pre-read Google Doc or an alternative 会議 判定 事前資料 会議しない",
   focus:"block apps and websites to focus (FocusBlock) 集中 ブロック",
   study:"Pomodoro study session in a forest, a plant that grows, noise, food money jar 勉強 集中タイム ポモドーロ 貯金箱",

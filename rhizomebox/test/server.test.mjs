@@ -262,6 +262,37 @@ test('the Desk word lists: own key, "<Language> words" pages only, the owner\'s 
   assert.equal((await t.call('GET', '/_/api/page/' + id)).status, 200);
 });
 
+test('the Desk reflections: own key, "Reflection: ..." pages written whole, the index below its mark', async () => {
+  const RK = 'r'.repeat(40);
+  const t = makeEnv({ REFLECT_KEY: RK, WORDS_KEY: 'w'.repeat(40) });
+  const tok = await t.signIn();
+  const H = { ...t.W, Authorization: 'Bearer ' + RK };
+  const send = (body, headers = H) => t.call('PUT', '/_/api/desk/reflection', { body, headers });
+  const body = { title: 'Reflection: Lessons 1-5 (2026-11-28)', lines: ['Reflection: Lessons 1-5 (2026-11-28)', 'What happened', ' It ran 12 days late.'], index: [' [Reflection: Lessons 1-5 (2026-11-28)]'] };
+  assert.equal((await send(body, { ...t.W, Authorization: 'Bearer ' + 'w'.repeat(40) })).status, 401, 'the words key cannot write reflections');
+  assert.equal((await send(body, t.W)).status, 401);
+  assert.equal((await send({ ...body, title: 'Diary', lines: ['Diary'] })).status, 400);
+  assert.equal((await send({ ...body, lines: ['Other title', 'x'] })).status, 400);
+  const r = await send(body);
+  assert.equal(r.status, 200);
+  const j = await r.json();
+  // public: a visitor without a cookie can read both pages
+  const pg = await (await t.call('GET', '/_/api/page/' + j.page.id)).json();
+  assert.deepEqual(pg.page.lines, body.lines);
+  const ix = await (await t.call('GET', '/_/api/page/' + j.index.id)).json();
+  assert.equal(ix.page.lines[0], 'Reflections');
+  assert.deepEqual(ix.page.lines.slice(-2), ['The Desk adds reflections below this line by itself.', ' [Reflection: Lessons 1-5 (2026-11-28)]']);
+  // the owner writes above the mark; the Desk's next write keeps it
+  const own = ['Reflections', 'my note', ...ix.page.lines.slice(1)];
+  assert.equal((await t.call('PUT', '/_/api/page/' + j.index.id, { body: { lines: own, baseRev: ix.page.rev }, cookie: tok, headers: t.W })).status, 200);
+  // unpublished: the page goes private and leaves the index
+  assert.equal((await send({ ...body, pub: false, index: [] })).status, 200);
+  assert.equal((await t.call('GET', '/_/api/page/' + j.page.id)).status, 404);
+  const ix2 = (await (await t.call('GET', '/_/api/page/' + j.index.id)).json()).page.lines;
+  assert.deepEqual(ix2.slice(0, 2), ['Reflections', 'my note']);
+  assert.equal(ix2[ix2.length - 1], 'The Desk adds reflections below this line by itself.');
+});
+
 /* ---------- files and storage ---------- */
 const PART = 16 * 1024 * 1024;
 async function send(t, name, buf) {

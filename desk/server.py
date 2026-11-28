@@ -39,6 +39,7 @@ import wifi_login
 import footprint
 import finder
 import transcribe_desk
+import reflect  # Reflections: late or missed things to reflect on, Claude's write-up, Rhizome Box (desk/reflect.py)
 import meetcheck  # Should we meet?: the questions, Claude drafts and the pre-read Google Doc (desk/meetcheck.py)
 import minutes_share  # Minutes → a Google Doc anyone with the link can read, and a thank-you Gmail draft (never sent)
 import minutes_mail  # Minutes → one mail to the owner's own inbox, and the thank-you draft made by itself
@@ -98,7 +99,7 @@ import wise_sync
 ROOT = os.path.dirname(os.path.abspath(__file__))
 DATA = os.environ.get("DESK_DATA_DIR") or os.path.join(ROOT, "data")  # DESK_DATA_DIR: a throwaway data folder for tests
 PORT = int(os.environ.get("DESK_PORT", "4747"))
-COLLECTIONS = ("memos", "dues", "tasks", "prompts", "notes", "habits", "lifemap", "wins", "worldlog", "presents", "heritagelog", "routines", "routinelog", "rewards", "ideaslog", "gear", "projects", "sections", "jobapps", "replywin", "genres", "tasktypes", "mergeprops", "timelog", "genrelog", "typeprops", "wboards", "wcards", "okrs", "readmarks", "lookups", "concepts", "cards", "cardlog", "studylog", "wallet", "meetchecks")
+COLLECTIONS = ("memos", "dues", "tasks", "prompts", "notes", "habits", "lifemap", "wins", "worldlog", "presents", "heritagelog", "routines", "routinelog", "rewards", "ideaslog", "gear", "projects", "sections", "jobapps", "replywin", "genres", "tasktypes", "mergeprops", "timelog", "genrelog", "typeprops", "wboards", "wcards", "okrs", "readmarks", "lookups", "concepts", "cards", "cardlog", "studylog", "wallet", "meetchecks", "reflections")
 # file in data/, global the page reads, value when the file is missing
 DATA_JS = [
     ("tools.js", "TOOLS", "[]"),
@@ -317,6 +318,18 @@ def keep_anki(col, old, new):
         new["image"] = old["image"]  # the same for the photo card_media.py found
 
 
+def note_due_move(old, new):
+    """Reflections: a due date pushed later is remembered on the task (dueMoves), whoever saves it. Kept against older pages."""
+    moves = list(old.get("dueMoves") or [])
+    if len(new.get("dueMoves") or []) > len(moves):
+        moves = list(new["dueMoves"])
+    a, b = old.get("due"), new.get("due")
+    if isinstance(a, (int, float)) and isinstance(b, (int, float)) and b - a >= 12 * 3600000 and old.get("status") in ("notyet", "doing", None):
+        moves.append({"from": a, "to": b, "at": int(time.time() * 1000)})
+    if moves:
+        new["dueMoves"] = moves[-30:]
+
+
 def upsert(col, doc_id, rec, merge):
     with LOCK:
         items = load(col)
@@ -326,6 +339,7 @@ def upsert(col, doc_id, rec, merge):
                 if col == "tasks":
                     keep_clear(x, items[i])
                     keep_labels(x, items[i])
+                    note_due_move(x, items[i])
                 keep_kr(col, x, items[i])
                 keep_anki(col, x, items[i])
                 break
@@ -1107,6 +1121,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(200, bank.view())
             except bank.BankError:
                 return self.send(500, {"error": "read"})
+        if path == "/api/reflect":
+            return self.send(200, reflect.state(load, LOCK))
         if path == "/api/meetcheck/status":
             return self.send(200, meetcheck.status())
         if path == "/api/minutes":
@@ -1501,6 +1517,16 @@ class Handler(BaseHTTPRequestHandler):
             return self.bank_write(method, rec)
         if urlsplit(self.path).path.startswith("/api/accounts/"):
             return self.accounts_write(method, rec)
+        if urlsplit(self.path).path.startswith("/api/reflect/"):  # Reflections (the records are the reflections collection)
+            if not (self.headers.get("Content-Type") or "").startswith("application/json"):
+                return self.send(415, {"error": "json only"})
+            if method == "PUT" and urlsplit(self.path).path == "/api/reflect/settings":
+                return self.send(*reflect.put_settings(rec if isinstance(rec, dict) else {}))
+            if method == "POST" and urlsplit(self.path).path == "/api/reflect/scan":
+                return self.send(200, {"new": reflect.scan(load, save, LOCK)})
+            if method != "POST":
+                return self.send(405, {"error": "method not allowed"})
+            return self.send(*reflect.handle(urlsplit(self.path).path, rec if isinstance(rec, dict) else {}, load, upsert, LOCK))
         if urlsplit(self.path).path.startswith("/api/meetcheck/"):  # Should we meet? (the records are the meetchecks collection)
             if method != "POST" or not (self.headers.get("Content-Type") or "").startswith("application/json"):
                 return self.send(415 if method == "POST" else 405, {"error": "json only" if method == "POST" else "method not allowed"})
@@ -1974,6 +2000,8 @@ if __name__ == "__main__":
     translate.bind(load, save, LOCK)  # lookups, concepts and cards are ordinary collections written under the same lock
     if PORT != 4747 and os.environ.get("ANKI_URL"):  # a test server sends to a fake AnkiConnect only (desk/tests/fake_ankiconnect.py)
         threading.Thread(target=anki.watch, args=(cards.Store(load_locked, upsert),), daemon=True).start()
+    if PORT == 4747 or os.environ.get("REFLECT_DIR"):  # Reflections: what ran late, every 10 minutes (a test server only with its own folder)
+        threading.Thread(target=reflect.watch, args=(load, save, LOCK), daemon=True).start()
     if PORT == 4747:  # a test server on another port shows nothing
         try:
             print("once:", once.run(load, save, LOCK), flush=True)  # one-time data changes (desk/once.py; a new step needs this file to change so pull.sh restarts the server)

@@ -4,7 +4,7 @@
     {
       "name": "rhizomebox-test",
       "runtimeExecutable": "bash",
-      "runtimeArgs": ["-c", "cd rhizomebox && D=/tmp/claude/rhizomebox-test && npx wrangler d1 execute rhizomebox --local --persist-to $D --file schema.sql -y >/dev/null && exec npx wrangler dev --local --persist-to $D --port ${PORT:-8794} --var BASE_URL:http://localhost:${PORT:-8794}"],
+      "runtimeArgs": ["-c", "cd rhizomebox && D=/tmp/claude/rhizomebox-test && npx wrangler d1 execute rhizomebox --local --persist-to $D --file schema.sql -y >/dev/null && exec npx wrangler dev --local --persist-to $D --port ${PORT:-8794} --var REFLECT_KEY:test-reflect-key-0000000000 --var BASE_URL:http://localhost:${PORT:-8794}"],
       "port": 8794
     },
     {
@@ -180,6 +180,12 @@
       "runtimeExecutable": "/bin/bash",
       "runtimeArgs": ["desk/tests/autorec_servers.sh"],
       "port": 4779
+    },
+    {
+      "name": "desk-reflect-test",
+      "runtimeExecutable": "/bin/sh",
+      "runtimeArgs": ["-c", "cd desk && D=/tmp/claude/rfl-test && mkdir -p $D && for f in tasks habits routines routinelog wins; do [ -f $D/$f.json ] || cp data/$f.json $D/; done && REFLECT_FAKE=1 REFLECT_DIR=$D/reflect REFLECT_SITE=http://localhost:8794 REFLECT_KEY=test-reflect-key-0000000000 DESK_DATA_DIR=$D DESK_PORT=${PORT:-4772} exec python3 server.py"],
+      "port": 4772
     }
   ]
 }

@@ -7,6 +7,7 @@
 #   MAIL_FROM    the sender of sign-in codes, an address at tany.im
 #   BACKUP_KEY   lets the Mac's Desk download a daily copy (macOS keychain item tatsuki-desk-rhizomebox)
 #   WORDS_KEY    lets the Desk write the "<Language> words" pages below their mark (keychain tatsuki-desk-rhizomebox-words)
+#   REFLECT_KEY  lets the Desk write "Reflection: ..." pages and the "Reflections" index below its mark (keychain tatsuki-desk-rhizomebox-reflect)
 name = "rhizomebox"
 main = "src/index.js"
 compatibility_date = "2026-11-01"
