@@ -76,7 +76,7 @@ class AnkiTest(unittest.TestCase):
         self.assertEqual(out["sent"], 1)
         self.assertIn("Desk Word", self.fake.models)
         self.assertEqual(self.fake.models["Desk Word"], anki.FIELDS)
-        notes = self.notes_in("Desk::English")
+        notes = self.notes_in("English::Desk")
         self.assertEqual(len(notes), 1)
         f = notes[0]["fields"]
         self.assertEqual(f["Term"]["value"], "went")
@@ -96,7 +96,7 @@ class AnkiTest(unittest.TestCase):
         out = anki.round_(s)
         a = s.cards()[0]["anki"]
         self.assertEqual((out["sent"], out["failed"]), (1, 0))
-        self.assertEqual((a["state"], a["noteId"], a["deck"]), ("sent", nid, "Desk::Russian"))
+        self.assertEqual((a["state"], a["noteId"], a["deck"]), ("sent", nid, "Russian::Desk"))
         self.assertEqual(len(self.fake.notes), 2)  # the seeded one + ours, nothing new
 
     def test_two_rounds_at_once_send_each_card_once(self):
@@ -127,7 +127,7 @@ class AnkiTest(unittest.TestCase):
                       card("Molim kafu.", lang="sr", kind="sheet"), card("idea", status="suggested")])
         out = anki.round_(s)
         self.assertEqual(out["sent"], 1)
-        self.assertEqual(len(self.notes_in("Desk::Serbian")), 1)
+        self.assertEqual(len(self.notes_in("Serbian::Language log")), 1)
         st = anki.status(s.cards())
         self.assertEqual((st["waiting"], st["noMeaning"]), (1, 1))  # "later" waits for its meaning; Anki's own and suggestions are not counted
 
@@ -191,18 +191,79 @@ class AnkiTest(unittest.TestCase):
         self.assertIn("<b>tag</b>", f["Context"])
 
     def test_deck_names(self):
-        self.assertEqual(anki.deck_for({"lang": "sr"}), "Desk::Serbian")
-        self.assertEqual(anki.deck_for({"lang": "eo"}), "Desk::Esperanto")
-        self.assertEqual(anki.deck_for({"lang": "ru"}), "Desk::Russian")
+        self.assertEqual(anki.deck_for({"lang": "eo", "book": {"title": "New Express", "chapter": "Lesson 3"}}), "Esperanto::New Express::Lesson 03")
+        self.assertEqual(anki.deck_for({"lang": "eo", "book": {"title": "New Express", "chapter": "Word list"}}), "Esperanto::New Express::Word list")
+        self.assertEqual(anki.deck_for({"lang": "eo", "book": {"id": "b1", "title": "La::Princo"}}), "Esperanto::Reader::La Princo")
+        self.assertEqual(anki.deck_for({"lang": "ru", "source": {"kind": "translate"}}), "Russian::Translate")
+        self.assertEqual(anki.deck_for({"lang": "sr", "source": {"kind": "sheet"}}), "Serbian::Language log")
+        self.assertEqual(anki.deck_for({"lang": "tok"}), "Toki Pona::Desk")
+
+    def test_old_deck_is_moved_and_history_kept(self):
+        c = card("kato", lang="eo", book={"title": "New Express", "chapter": "Lesson 2"})
+        s = MemStore([c])
+        anki.round_(s)
+        a = s.cards()[0]["anki"]
+        self.assertEqual(a["deck"], "Esperanto::New Express::Lesson 02")
+        cid = self.fake.notes[a["noteId"]]["cards"][0]
+        self.fake.cards[cid]["deckName"], self.fake.cards[cid]["reps"] = "Desk::Esperanto", 4  # sent by the older Desk, reviewed since
+        s.put({**s.cards()[0], "anki": {**a, "deck": "Desk::Esperanto"}})
+        out = anki.round_(s)
+        self.assertEqual(out["moved"], 1)
+        self.assertEqual(self.fake.cards[cid]["deckName"], "Esperanto::New Express::Lesson 02")
+        self.assertEqual(self.fake.cards[cid]["reps"], 4)
+        self.assertEqual(self.fake.notes["esti" and 1001]["modelName"], "Basic")  # the person's own note stays where it was
+        self.assertEqual(self.fake.cards[1001 + 500000]["deckName"], "Esperanto")
+
+    def test_photo_goes_in_and_out_and_old_type_gets_the_field(self):
+        import card_media
+        os.makedirs(card_media.IMG_DIR, exist_ok=True)
+        name = "0123456789abcdef.jpg"
+        with open(os.path.join(card_media.IMG_DIR, name), "wb") as f:
+            f.write(b"\xff\xd8fakejpeg")
+        self.fake.models["Desk Word"] = anki.FIELDS[:-1]  # a note type made before photos
+        c = card("pomo", lang="eo")
+        s = MemStore([c])
+        anki.round_(s)
+        self.assertIn("Image", self.fake.models["Desk Word"])
+        nid = s.cards()[0]["anki"]["noteId"]
+        self.assertEqual(self.fake.notes[nid]["fields"]["Image"]["value"], "")
+        s.put({**s.cards()[0], "image": {"state": "ok", "file": name, "author": "A. Person", "license": "CC BY 4.0", "at": 5}})
+        out = anki.round_(s)
+        self.assertEqual(out["media"], 1)
+        v = self.fake.notes[nid]["fields"]["Image"]["value"]
+        self.assertIn("desk-img-" + name, v)
+        self.assertIn("A. Person", v)
+        self.assertIn("desk-img-" + name, self.fake.media)
+        s.put({**s.cards()[0], "image": {"state": "off", "at": 6}})
+        anki.round_(s)
+        self.assertEqual(self.fake.notes[nid]["fields"]["Image"]["value"], "")
+
+    def test_photo_field_edited_in_anki_is_left_alone(self):
+        import card_media
+        name = "fedcba9876543210.jpg"
+        os.makedirs(card_media.IMG_DIR, exist_ok=True)
+        with open(os.path.join(card_media.IMG_DIR, name), "wb") as f:
+            f.write(b"\xff\xd8x")
+        s = MemStore([card("hundo", lang="eo")])
+        anki.round_(s)
+        nid = s.cards()[0]["anki"]["noteId"]
+        self.fake.notes[nid]["fields"]["Image"]["value"] = '<img src="my-own-dog.jpg">'
+        s.put({**s.cards()[0], "image": {"state": "ok", "file": name, "author": "B", "license": "CC0", "at": 5}})
+        anki.round_(s)
+        self.assertEqual(self.fake.notes[nid]["fields"]["Image"]["value"], '<img src="my-own-dog.jpg">')
 
     @unittest.skipUnless(sys.platform == "darwin", "say is macOS only")
     def test_audio_is_aac(self):
         os.environ.pop("ANKI_NO_AUDIO", None)
         try:
-            data = anki.audio(card("hello", context="Hello there."))
+            got = anki.audio(card("hello", context="Hello there."))
         finally:
             os.environ["ANKI_NO_AUDIO"] = "1"
-        self.assertTrue(data and b"ftyp" in data[:16])
+        self.assertTrue(got)
+        data, ext, kind = got
+        self.assertIn(kind, ("google", "mac"))
+        if kind == "mac":
+            self.assertTrue(b"ftyp" in data[:16])
 
 
 if __name__ == "__main__":

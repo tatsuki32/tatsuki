@@ -148,7 +148,7 @@
     {
       "name": "desk-anki-test",
       "runtimeExecutable": "/bin/sh",
-      "runtimeArgs": ["-c", "python3 desk/tests/fake_ankiconnect.py 8798 & cd desk && ANKI_URL=http://127.0.0.1:8798 ANKI_NO_AUDIO=1 DESK_READER_DIR=/tmp/claude/desk-anki-test DESK_PORT=${PORT:-4785} exec python3 server.py"],
+      "runtimeArgs": ["-c", "python3 desk/tests/fake_ankiconnect.py 8798 & mkdir -p /tmp/claude/desk-anki-test/data && cd desk && ANKI_URL=http://127.0.0.1:8798 ANKI_NO_AUDIO=1 DESK_DATA_DIR=/tmp/claude/desk-anki-test/data DESK_READER_DIR=/tmp/claude/desk-anki-test DESK_PORT=${PORT:-4785} exec python3 server.py"],
       "port": 4785
     },
     {

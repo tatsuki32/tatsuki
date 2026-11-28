@@ -121,5 +121,23 @@ class VoiceTest(unittest.TestCase):
         self.assertEqual(reader.speak({"text": ""})[0], 400)
 
 
+class BookLanguageTest(unittest.TestCase):
+    def test_esperanto_is_found_and_kept(self):
+        self.assertEqual(reader.detect_lang_sure("Ĉu vi parolas Esperanton? Ŝi manĝas ĉiam pomon."), ("eo", True))
+        self.assertEqual(reader.detect_lang_sure("La kato kaj la hundo estas en la domo. Mi ne scias kio estas tio, sed ĝi estas bona. " * 4)[0], "eo")
+
+    def test_too_few_words_is_unsure(self):
+        self.assertFalse(reader.detect_lang_sure("Hello there")[1])
+
+    def test_book_takes_esperanto_and_a_choice_is_sure(self):
+        b = reader.add_text("Hello there, a short text.")[1]
+        self.assertFalse(b["langSure"])
+        code, m = reader.edit(b["id"], {"lang": "eo"})
+        self.assertEqual((code, m["lang"], m["langSure"]), (200, "eo", True))
+        code, m = reader.edit(b["id"], {"lang": "xx"})
+        self.assertEqual(m["lang"], "eo")  # an unknown code is refused, the book keeps its language
+        reader.remove(b["id"])  # the other tests expect an empty shelf
+
+
 if __name__ == "__main__":
     unittest.main()

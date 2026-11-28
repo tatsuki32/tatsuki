@@ -384,27 +384,29 @@ def engine_state(key=None):
     return {"engine": "google", "why": why, "used": used, "limit": s["limit"]}
 
 
-def translate(text, to=None, gkey=None, akey=None, g_opener=urllib.request.urlopen, a_opener=urllib.request.urlopen):
-    """{text, from, to, result, engine, cached}. Google first (while the key and the month allow), else Claude."""
+def translate(text, to=None, gkey=None, akey=None, g_opener=urllib.request.urlopen, a_opener=urllib.request.urlopen, source=None):
+    """{text, from, to, result, engine, cached}. Google first (while the key and the month allow), else Claude.
+    `source`: the language the text is known to be in (the Reader passes its book's), so it is never guessed."""
     text = norm(text)
     if not text:
         raise ValueError("nothing to translate")
     if len(text) > MAX_TEXT:
         raise ValueError(f"The limit is {MAX_TEXT} characters at a time")
     langs = settings()["langs"]
-    hint = guess_lang(text)
+    source = source.split("-")[0].lower() if source and re.fullmatch(r"[a-zA-Z-]{2,7}", source) else None
+    hint = source or guess_lang(text)
     if to and not re.fullmatch(r"[a-zA-Z-]{2,7}", to):
         to = None
     target = to or default_target(hint.rstrip("?") if hint and hint != "zh?" else "", langs)
     hit = cache_get(text, target)
     if hit:
-        return {"text": text, "from": hit.get("from") or hint.rstrip("?"), "to": target, "result": hit["result"], "engine": hit.get("engine", ""), "cached": True}
+        return {"text": text, "from": source or hit.get("from") or hint.rstrip("?"), "to": target, "result": hit["result"], "engine": hit.get("engine", ""), "cached": True}
     st = engine_state(gkey)
     gkey = gkey or (google_key() if st["engine"] == "google" else None)
     from_lang, result, engine = "", "", ""
     if st["engine"] == "google" and gkey:
         try:
-            result, from_lang = google_translate(text, target, key=gkey, opener=g_opener)
+            result, from_lang = google_translate(text, target, source=source, key=gkey, opener=g_opener)
             engine = "google"
             if not to and from_lang.split("-")[0] == target.split("-")[0]:  # the text was already in the default language: go the other way
                 target = default_target(from_lang, langs)
@@ -419,7 +421,7 @@ def translate(text, to=None, gkey=None, akey=None, g_opener=urllib.request.urlop
         if not to and from_lang.split("-")[0] == target.split("-")[0]:
             target = default_target(from_lang, langs)
             result, from_lang = claude_translate(text, target, key=akey, opener=a_opener)
-    from_lang = (from_lang or hint.rstrip("?") or "").split("-")[0]  # zh-CN and zh-TW both count as zh: one word, one member
+    from_lang = source or (from_lang or hint.rstrip("?") or "").split("-")[0]  # zh-CN and zh-TW both count as zh: one word, one member
     cache_put(text, target, result, from_lang, engine)
     return {"text": text, "from": from_lang, "to": target, "result": result, "engine": engine, "cached": False}
 
@@ -439,7 +441,7 @@ def count_of(key):
 def handle_translate(rec, **kw):
     """POST /api/translate {text, to?, via?, save?} -> {lookup, count, concept?, engine, why}."""
     try:
-        tr = translate(rec.get("text"), rec.get("to") or None, **kw)
+        tr = translate(rec.get("text"), rec.get("to") or None, source=str(rec.get("from") or "") or None, **kw)
     except ValueError as e:
         return 400, {"error": str(e)}
     except Unavailable as e:

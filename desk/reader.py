@@ -33,6 +33,8 @@ PDFTEXT_SOURCE = os.path.join(ROOT, "app", "pdftext.swift")
 PDFTEXT = os.path.expanduser("~/Library/Application Support/TatsukiDesk/pdftext")
 SPEAK_MAX = 1200
 VOICE_LANG = {"en": "en_", "ja": "ja_", "ru": "ru_", "es": "es_", "fr": "fr_", "de": "de_", "vi": "vi_", "zh": "zh_", "ko": "ko_", "it": "it_", "pt": "pt_"}
+# the languages a book can be in: the Mac's voices above, and those read by OmniVoice or Google only (no Mac voice)
+BOOK_LANGS = set(VOICE_LANG) | {"eo", "sr", "hr", "uk", "pl", "nl", "tr", "el", "cs", "bg", "id", "th", "ar", "ka"}
 _voices = None
 _voices_at = 0.0
 
@@ -70,7 +72,7 @@ def meta(book):
     pos = book.get("pos") or {"ch": 0, "para": 0}
     before = sum(len(c.get("paras") or []) for c in chapters[: int(pos.get("ch") or 0)]) + int(pos.get("para") or 0)
     return {"id": book["id"], "title": book.get("title") or "Untitled", "author": book.get("author") or "", "lang": book.get("lang") or "en",
-            "chapters": [{"title": c.get("title") or "", "n": len(c.get("paras") or [])} for c in chapters], "paras": total,
+            "langSure": book.get("langSure", True), "chapters": [{"title": c.get("title") or "", "n": len(c.get("paras") or [])} for c in chapters], "paras": total,
             "pos": pos, "progress": round(before / total, 3) if total else 0, "addedAt": book.get("addedAt") or 0,
             "lastReadAt": book.get("lastReadAt") or 0, "words": book.get("words") or 0, "file": book.get("file") or ""}
 
@@ -94,6 +96,7 @@ STOP = {
     "de": "der die und in den von zu das mit sich des auf für ist im dem nicht ein eine als auch es an werden aus er hat dass sie nach wird bei einer um am sind noch wie einem über einen so zum war haben nur oder aber vor zur bis mehr durch man sein wurde sei ich du wir ihr euch mir mich dir dich uns ihnen ihm ihn",
     "it": "di che e la il un a per è in una sono mi ho ma lo ha le si ti con cosa io come non da questo qui del al ci anche sei bene più della me se gli tu nel solo quando era sua suo molto può ancora essere tutto tutti noi loro nella delle dei dal ne lei lui così dove perché",
     "pt": "de a o que e do da em um para é com não uma os no se na por mais as dos como mas foi ao ele das tem à seu sua ou ser quando muito há nos já está eu também só pelo pela até isso ela entre era depois sem mesmo aos ter seus quem nas me esse eles estão você tinha foram essa num nem suas meu às minha têm numa pelos elas havia seja qual será nós tenho lhe deles essas esses pelas este fosse dele",
+    "eo": "la kaj de en estas mi vi li ŝi ni ili ne al por ke kun ĉu tio tiu kio kiu sed ankaŭ estis estos pli tre unu du jes nun ĉi da el pri sur sub post antaŭ mia via lia ŝia nia ilia ĝi oni se ol tamen nur jam ankoraŭ iom multe bone",
     "vi": "và của là có không được trong một người cho những với để này các đã về khi đến từ như ra tôi anh thì cũng nhưng nó bị bạn lại họ chúng sẽ hay ở rất mà tại việc sự còn làm nhiều hơn vào theo trên thế đó nên",
 }
 STOP = {k: set(v.split()) for k, v in STOP.items()}
@@ -101,6 +104,12 @@ STOP = {k: set(v.split()) for k, v in STOP.items()}
 
 def detect_lang(text):
     """A guess from the script, then the common words. The person can change it."""
+    return detect_lang_sure(text)[0]
+
+
+def detect_lang_sure(text):
+    """(language, sure). Not sure when the script says nothing and the common words of two languages come close,
+    or when too few common words were found: the Reader then asks the person once."""
     s = text[:20000]
     n = max(1, len(re.sub(r"\s", "", s)))
     kana = len(re.findall(r"[ぁ-んァ-ヶー]", s))
@@ -110,28 +119,29 @@ def detect_lang(text):
     arab = len(re.findall(r"[؀-ۿ]", s))
     thai = len(re.findall(r"[฀-๿]", s))
     if kana / n > 0.05:
-        return "ja"
+        return "ja", True
     if hangul / n > 0.2:
-        return "ko"
+        return "ko", True
     if cjk / n > 0.3:
-        return "zh"
+        return "zh", True
     if cyr / n > 0.3:
-        return "ru"
+        return "ru", False  # Russian, Ukrainian, Serbian and Bulgarian share the script
     if arab / n > 0.3:
-        return "ar"
+        return "ar", True
     if thai / n > 0.3:
-        return "th"
-    words = re.findall(r"[a-zA-ZÀ-ɏ]+", s.lower())
+        return "th", True
+    low = s.lower()
+    if len(re.findall(r"[ĉĝĥĵŝŭ]", low)) >= 3:  # letters only Esperanto has
+        return "eo", True
+    words = re.findall(r"[a-zA-ZÀ-ɏ]+", low)
     if not words:
-        return "en"
-    best, score = "en", -1
-    for lang, stop in STOP.items():
-        hits = sum(1 for w in words if w in stop)
-        if hits > score:
-            best, score = lang, hits
-    if best == "vi" and len(re.findall(r"[ăâđêôơưạảấầẩẫậắằẳẵặẹẻẽếềểễệỉịọỏốồổỗộớờởỡợụủứừửữựỳỵỷỹ]", s.lower())) < 5:
-        return "en"
-    return best
+        return "en", False
+    scores = sorted(((sum(1 for w in words if w in stop), lang) for lang, stop in STOP.items()), reverse=True)
+    (score, best), (second, _) = scores[0], scores[1]
+    if best == "vi" and len(re.findall(r"[ăâđêôơưạảấầẩẫậắằẳẵặẹẻẽếềểễệỉịọỏốồổỗộớờởỡợụủứừửữựỳỵỷỹ]", low)) < 5:
+        return "en", False
+    sure = score >= 20 and score >= second * 1.5
+    return best, sure
 
 
 # ---------- text into chapters and paragraphs ----------
@@ -486,9 +496,11 @@ def _save_new(title, author, lang, chapters, ext=None, raw=None):
     if text_len > TEXT_MAX:
         raise ValueError("This book is too long for the reader (3 million characters)")
     sample = "\n".join(p for c in chapters[:3] for p in c["paras"][:40])
-    lang = (lang or "")[:2].lower() if lang and lang[:2].lower() in VOICE_LANG else ""
+    lang = str(lang or "").split("-")[0].lower()
+    lang = lang if lang in BOOK_LANGS else ""
+    guess, sure = detect_lang_sure(sample)
     rec = {"title": (title or "").strip()[:200] or (chapters[0]["paras"][0][:60] if chapters and chapters[0]["paras"] else "Untitled"),
-           "author": (author or "").strip()[:120], "lang": lang or detect_lang(sample), "chapters": chapters,
+           "author": (author or "").strip()[:120], "lang": lang or guess, "langSure": bool(lang) or sure, "chapters": chapters,
            "pos": {"ch": 0, "para": 0}, "addedAt": now_ms(), "lastReadAt": 0, "updatedAt": now_ms(), "words": _count_words(chapters), "file": ""}
     book_id = "b" + format(now_ms(), "x") + os.urandom(2).hex()
     if raw is not None and ext:
@@ -578,8 +590,9 @@ def edit(book_id, rec):
         b["title"] = str(rec["title"] or "").strip()[:200] or b["title"]
     if "author" in rec:
         b["author"] = str(rec["author"] or "").strip()[:120]
-    if "lang" in rec and str(rec["lang"])[:2].lower() in VOICE_LANG:
-        b["lang"] = str(rec["lang"])[:2].lower()
+    if "lang" in rec and str(rec["lang"] or "").split("-")[0].lower() in BOOK_LANGS:
+        b["lang"] = str(rec["lang"]).split("-")[0].lower()
+        b["langSure"] = True  # the person chose it (or confirmed the guess)
     b["updatedAt"] = now_ms()
     _write(_path(book_id), {k: v for k, v in b.items() if k != "id"})
     return 200, meta(b)

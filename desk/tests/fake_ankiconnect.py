@@ -64,6 +64,8 @@ class FakeAnki:
             first = self.models[n["modelName"]][0]
             if any(x["fields"].get(first, {}).get("value") == n["fields"].get(first) for x in self.notes.values()):
                 raise ValueError("cannot create note because it is a duplicate")
+            for k in self.models[n["modelName"]]:
+                n["fields"].setdefault(k, "")
             for a in n.get("audio") or []:
                 self.media[a["filename"]] = a.get("data", "")
                 for f in a.get("fields") or []:
@@ -77,7 +79,29 @@ class FakeAnki:
         if action == "findCards":
             if "is:due" in p["query"]:
                 return [c for c, x in self.cards.items() if x["due"]]
+            m = re.match(r"nid:([\d,]+)$", p["query"])
+            if m:
+                want = {int(x) for x in m.group(1).split(",")}
+                return [c for c, x in self.cards.items() if x["note"] in want]
             return list(self.cards)
+        if action == "changeDeck":
+            self.decks.add(p["deck"])
+            for c in p["cards"]:
+                self.cards[c]["deckName"] = p["deck"]
+            return None
+        if action == "storeMediaFile":
+            self.media[p["filename"]] = p.get("data", "")
+            return p["filename"]
+        if action == "modelFieldNames":
+            return list(self.models[p["modelName"]])
+        if action == "modelFieldAdd":
+            self.models[p["modelName"]].insert(p.get("index", len(self.models[p["modelName"]])), p["fieldName"])
+            for n in self.notes.values():
+                if n["modelName"] == p["modelName"]:
+                    n["fields"][p["fieldName"]] = {"value": "", "order": len(n["fields"])}
+            return None
+        if action in ("updateModelTemplates", "updateModelStyling"):
+            return None
         raise ValueError("unsupported action")
 
     def respond(self, body):

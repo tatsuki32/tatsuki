@@ -1906,6 +1906,13 @@ a.shelfbtn{text-decoration:none;display:inline-flex;align-items:center}
 .segs{display:flex;gap:var(--s1);flex-wrap:wrap}
 .chip.on{border-color:var(--accent);color:var(--ink);font-weight:700}
 .cdlist{display:grid}
+/* Esperanto's ĉ ĝ ĥ ĵ ŝ ŭ break in the Japanese Gothic fonts: words in a Latin-script language use the system font */
+[lang="eo"],[lang="eo"] *{font-family:-apple-system,"Helvetica Neue","Segoe UI",system-ui,sans-serif}
+.cdlangs a.chip{text-decoration:none;color:inherit}
+.cdlangs{display:flex;gap:var(--s1);overflow-x:auto;padding-bottom:var(--s1);margin:0 0 var(--s2);scrollbar-width:thin}.cdlangs .chip{flex:none}
+.cdimg{width:32px;height:32px;object-fit:cover;border-radius:4px;vertical-align:middle;margin-right:var(--s2)}
+.cdphoto img{max-width:100%;max-height:220px;border-radius:6px;display:block}.cdphoto .sub{margin:var(--s1) 0}
+.rdlangq{gap:var(--s2);padding:var(--s2) var(--s3);margin-bottom:var(--s2);border:1px solid var(--line);border-radius:8px;flex-wrap:wrap}
 .cdrow{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.6fr) auto;gap:var(--s2) var(--s3);align-items:center;padding:10px var(--s3);border:0;border-top:1px solid var(--line);background:none;color:var(--ink);font:inherit;text-align:left;cursor:pointer;width:100%}
 .cdrow:first-child{border-top:0}
 .cdrow:hover{background:var(--surface-2)}
@@ -6707,11 +6714,14 @@ const wbkN=n=>(n||0).toLocaleString("en-US");
 function wbkBars(days){const max=Math.max(1,...days.map(d=>d.looked+d.anki));
   return `<div class="wbkbars" role="img" aria-label="Words per day, last 30 days">${days.map(d=>`<div class="wbkbar" title="${esc(d.date)}: ${d.looked} looked up, ${d.anki} to Anki"><i class="lk" style="height:${d.looked/max*100}%"></i><i class="ak" style="height:${d.anki/max*100}%"></i></div>`).join("")}</div>
   <div class="wbkkey"><span><i style="background:var(--blue)"></i>Looked up</span><span><i style="background:var(--green)"></i>Into Anki</span><span style="margin-left:auto">${esc(days[0]?.date||"")} – today</span></div>`}
+function wbkTabs(cur){const st=S.wbk.st;
+  return `<div class="cdlangs" role="tablist" aria-label="Language">${[["","All",st.totals.looked+st.totals.inAnki],...st.langs.map(r=>[r.lang,r.name,Math.max(r.looked,r.inAnki)])].map(([k,l,n])=>`<a class="chip ${cur===k?"on":""}" href="#words${k?"/"+esc(k):""}" role="tab" aria-selected="${cur===k}">${esc(l)} <span class="count">${wbkN(n)}</span></a>`).join("")}</div>`}
 function wbkView(){
   const st=S.wbk.st;if(!st)return `<header class="head"><div><h1>📒 Words</h1></div></header><div class="card empty">${S.wbk.err?esc(S.wbk.err):"Loading…"}</div>`;
-  const lang=wbkLang();if(lang)return wbkLangView(lang);
+  const lang=wbkLang();if(lang){if(S.cd.lang!==lang)deskLang(lang);return wbkLangView(lang)}
   const t=st.totals, pub=st.publish||{}, ankiAt=st.anki?.at;
   return `<header class="head"><div><p class="eyebrow">Read</p><h1>📒 Words</h1><p class="sub">Every word you looked up or put in Anki, by language.</p></div></header>
+  ${wbkTabs("")}
   <section class="card"><div class="wbknums">
     <div class="wbknum"><b>${wbkN(t.looked)}</b><span>Looked up</span></div>
     <div class="wbknum"><b>${wbkN(t.inAnki)}</b><span>In Anki</span></div>
@@ -6742,7 +6752,8 @@ function wbkLangView(lang){
   const q=S.wbk.q.trim().toLowerCase(), f=S.wbk.filt;
   const shown=(list||[]).filter(w=>(f==="all"||(f==="anki"&&w.inAnki)||(f==="learned"&&w.learned)||(f==="looked"&&!w.inAnki))&&(!q||(w.term+" "+w.meaning.ja+" "+w.meaning.en).toLowerCase().includes(q)));
   const fb=(k,l)=>`<button class="btn sm${f===k?" primary":""}" data-wbkf="${k}">${l}</button>`;
-  return `<header class="head"><div><p class="eyebrow"><a href="#words">Words</a></p><h1>${esc(row.name)}</h1><p class="sub">${wbkN(row.looked)} looked up · ${wbkN(row.inAnki)} in Anki · ${wbkN(row.learned)} learned${p?` · <a href="${esc(p.url)}" target="_blank" rel="noopener" data-noauto>${esc(p.title)} ↗</a>`:""}</p></div></header>
+  return `<header class="head"><div><p class="eyebrow"><a href="#words">Words</a></p><h1>${esc(row.name)}</h1><p class="sub">${wbkN(row.looked)} looked up · ${wbkN(row.inAnki)} in Anki · ${wbkN(row.learned)} learned${p?` · <a href="${esc(p.url)}" target="_blank" rel="noopener" data-noauto>${esc(p.title)} ↗</a>`:""}</p></div><a class="btn" href="#cards">${esc(row.name)} cards →</a></header>
+  ${wbkTabs(lang)}
   <section class="card"><div class="wbkfilt">${fb("all","All")}${fb("anki","In Anki")}${fb("learned","Learned")}${fb("looked","Looked up only")}<input id="wbkQ" type="search" placeholder="Find a word" value="${esc(S.wbk.q)}"></div>
   ${!list?`<p class="sub">Loading…</p>`:shown.length?shown.map(w=>{const d=Math.max(w.first,w.ankiAt);const st=w.learned?"Learned":w.inAnki?"In Anki":"Looked up";
     return `<div class="wbkw" data-noauto><div><div><span class="t" lang="${esc(lang)}">${esc(w.term)}</span> <span class="m">— ${esc(w.meaning.ja||w.meaning.en||"")}</span></div>
@@ -10711,9 +10722,11 @@ document.addEventListener("keydown",e=>{const t=e.target.tagName;if(t==="INPUT"|
    meaning; the book's text never leaves the Mac. Nothing here blames: a pile of due cards only shows "Do 20 today". ---------- */
 S.cards=[];S.cardlog=[];
 S.rd={books:null,book:null,ch:0,playing:false,si:-1,rate:1,voice:null,word:null,at:0,busy:false,mac:null,font:1};
-S.cd={q:"",deck:"all",tab:"active",rev:null};
+S.cd={q:"",deck:"all",tab:"active",rev:null,lang:"all",src:"all",ch:"all"};
+try{S.cd.lang=localStorage.getItem("desk-lang")||"all"}catch(e){} // the language chosen last in Cards or Words
+const deskLang=l=>{S.cd.lang=l;try{localStorage.setItem("desk-lang",l)}catch(e){}};
 try{S.rd.font=+localStorage.getItem("desk-rd-font")||1;S.rd.rate=+localStorage.getItem("desk-rd-rate")||1}catch(e){}
-const RD_LANGS={en:"English",ja:"Japanese",ru:"Russian",es:"Spanish",fr:"French",de:"German",vi:"Vietnamese",zh:"Chinese",ko:"Korean",it:"Italian",pt:"Portuguese"};
+const RD_LANGS={en:"English",ja:"Japanese",eo:"Esperanto",ru:"Russian",es:"Spanish",fr:"French",de:"German",vi:"Vietnamese",zh:"Chinese",ko:"Korean",it:"Italian",pt:"Portuguese",sr:"Serbian",hr:"Croatian",uk:"Ukrainian",pl:"Polish",nl:"Dutch",tr:"Turkish",el:"Greek",cs:"Czech",bg:"Bulgarian",id:"Indonesian",th:"Thai",ar:"Arabic",ka:"Georgian"}; // a card or book keeps its own code even when it is not in this list (cdLangOpts)
 const RD_RATES=[0.7,0.85,1,1.15,1.3];
 const rdNorm=s=>String(s||"").replace(/’/g,"'").trim().replace(/^[\s"'“”‘(\[«]+|[\s"'“”’)\].,;:!?»]+$/g,"").toLowerCase();
 const rdSpaced=lang=>!["ja","zh","th"].includes(lang);
@@ -10784,6 +10797,16 @@ function cdDecks(){
 }
 const cdInDeck=(c,deck)=>deck==="all"||(deck.startsWith("lang:")&&(c.lang||"en")===deck.slice(5))||(deck.startsWith("book:")&&c.book?.id===deck.slice(5))||(deck==="src:translate"&&c.source?.kind==="translate");
 const cdMeaning=c=>{const m=c.meaning||{};return [m.ja,m.en].filter(Boolean)};
+/* where a card came from: a textbook word list (book title, no Reader book), a Reader book, Translate, or anything else */
+const CD_KINDS={translate:"Translate",anki:"From Anki",sheet:"Language log",phone:"iPhone",desk:"Added here"};
+const cdSrcOf=c=>c.book?.title&&!c.book?.id?"tb:"+c.book.title:c.book?.id?"rd:"+c.book.id:CD_KINDS[c.source?.kind]?"k:"+c.source.kind:"k:desk";
+const cdSrcName=(k,list)=>k.startsWith("k:")?CD_KINDS[k.slice(2)]:k.startsWith("tb:")?k.slice(3):"Reader · "+(list.find(c=>c.book?.id===k.slice(3))?.book?.title||"Book");
+const cdChNum=ch=>{const m=/^lesson\s*(\d+)$/i.exec(ch||"");return m?+m[1]:999};
+const cdLangName=l=>RD_LANGS[l]||l;
+const cdLangOpts=cur=>{const o={...RD_LANGS};if(cur&&!o[cur])o[cur]=cur;return Object.entries(o)};
+function cdCounts(list,key){const m=new Map();list.forEach(c=>{const k=key(c);m.set(k,(m.get(k)||0)+1)});return [...m].sort((a,b)=>b[1]-a[1])}
+function cdLangTabs(cur,counts,attr,total){
+  return `<div class="cdlangs" role="tablist" aria-label="Language">${[["all","All",total],...counts.map(([l,n])=>[l,cdLangName(l),n])].map(([k,l,n])=>`<button class="chip ${cur===k?"on":""}" ${attr}="${esc(k)}" role="tab" aria-selected="${cur===k}">${esc(l)} <span class="count">${n}</span></button>`).join("")}</div>`}
 const cdPending=c=>!(c.enrich?.state==="ok"||(!c.enrich&&cdMeaning(c).length));
 /* the one sentence with the word made a blank */
 function cdCloze(c){
@@ -10846,18 +10869,31 @@ async function cdWin(){const n=(cdDayDoc().entries||[]).length;if(!n)return;cons
 
 /* ---------- Cards screen ---------- */
 function cardsView(){
-  const d=cdDue(S.cd.deck), n=d.due.length+d.fresh.length, decks=cdDecks(), q=rdNorm(S.cd.q);
-  let list=S.cards.filter(c=>!c.deleted&&cdInDeck(c,S.cd.deck));
+  const live=S.cards.filter(c=>!c.deleted), langs=cdCounts(live,c=>c.lang||"en");
+  const lang=S.cd.lang!=="all"&&langs.some(([l])=>l===S.cd.lang)?S.cd.lang:"all"; // the remembered language, once its cards are there
+  S.cd.deck=lang==="all"?"all":"lang:"+lang; // the older Desk review follows the language chosen here
+  const inLang=live.filter(c=>lang==="all"||(c.lang||"en")===lang), srcs=cdCounts(inLang,cdSrcOf);
+  if(S.cd.src!=="all"&&!srcs.some(([k])=>k===S.cd.src))S.cd.src="all";
+  const src=S.cd.src==="all"&&srcs.length===1?srcs[0][0]:S.cd.src; // one source only: its lessons show right away
+  const inSrc=inLang.filter(c=>src==="all"||cdSrcOf(c)===src);
+  const chs=src.startsWith("tb:")?cdCounts(inSrc,c=>c.book?.chapter||"").sort((a,b)=>cdChNum(a[0])-cdChNum(b[0])||a[0].localeCompare(b[0])):[];
+  if(S.cd.ch!=="all"&&!chs.some(([k])=>k===S.cd.ch))S.cd.ch="all";
+  const d=cdDue(S.cd.deck), n=d.due.length+d.fresh.length, q=rdNorm(S.cd.q);
+  let list=inSrc.filter(c=>S.cd.ch==="all"||(c.book?.chapter||"")===S.cd.ch);
   list=S.cd.tab==="suggested"?list.filter(c=>c.status==="suggested"):S.cd.tab==="pending"?list.filter(c=>cdPending(c)&&c.status!=="suggested"):list.filter(c=>(c.status||"active")==="active");
   if(q)list=list.filter(c=>[c.term,c.lemma,c.meaning?.ja,c.meaning?.en,c.context].some(v=>rdNorm(v).includes(q)));
-  list.sort((a,b)=>S.cd.tab==="active"?(a.fsrs?.due||0)-(b.fsrs?.due||0):(b.createdAt||0)-(a.createdAt||0));
+  list.sort((a,b)=>S.cd.tab!=="active"?(b.createdAt||0)-(a.createdAt||0):src.startsWith("tb:")?cdChNum(a.book?.chapter)-cdChNum(b.book?.chapter)||(a.createdAt||0)-(b.createdAt||0):(a.fsrs?.due||0)-(b.fsrs?.due||0));
   const now=Date.now(), pending=S.cards.filter(c=>!c.deleted&&c.status!=="suggested"&&cdPending(c)).length;
   const row=c=>{const st=fsState(c.fsrs), due=c.fsrs?.due||0;
-    return `<button class="cdrow" data-cdopen="${esc(c.id)}" data-noauto><span class="cdt"><b>${esc(c.term)}</b>${c.lemma&&rdNorm(c.lemma)!==rdNorm(c.term)?` <span class="sub">→ ${esc(c.lemma)}</span>`:""}${c.ipa?` <span class="sub">/${esc(c.ipa)}/</span>`:""}</span><span class="cdm">${esc(cdMeaning(c).join(" · "))||`<span class="sub">${cdPending(c)?"Meaning coming":"No meaning yet"}</span>`}</span><span class="sub cdd ${ankiCls(c)}">${c.status==="suggested"?`Looked up ${c.lookups||1}×`:esc(ankiMark(c))}</span></button>`};
+    const im=c.image?.state==="ok"&&c.image.file?`<img class="cdimg" src="/card-images/${esc(c.image.file)}" alt="" loading="lazy">`:"";
+    return `<button class="cdrow" data-cdopen="${esc(c.id)}" data-noauto><span class="cdt">${im}<b lang="${esc(c.lang||"en")}">${esc(c.term)}</b>${c.lemma&&rdNorm(c.lemma)!==rdNorm(c.term)?` <span class="sub">→ ${esc(c.lemma)}</span>`:""}${c.ipa?` <span class="sub">/${esc(c.ipa)}/</span>`:""}</span><span class="cdm">${esc(cdMeaning(c).join(" · "))||`<span class="sub">${cdPending(c)?"Meaning coming":"No meaning yet"}</span>`}</span><span class="sub cdd ${ankiCls(c)}">${c.status==="suggested"?`Looked up ${c.lookups||1}×`:esc(ankiMark(c))}</span></button>`};
   const sugg=c=>`<div class="cdrow cdsg" data-noauto><span class="cdt"><b>${esc(c.term)}</b>${c.lang?` <span class="sub">${esc(RD_LANGS[c.lang]||c.lang)}</span>`:""}</span><span class="cdm">${esc(cdMeaning(c).join(" · ")||c.context||"")}</span><span class="row"><button class="btn sm primary" data-cdaccept="${esc(c.id)}">Add</button><button class="btn sm" data-cddrop="${esc(c.id)}">Not now</button></span></div>`;
   return `<div class="money cdv" id="cdView"><header class="head"><div><h1>Cards</h1><p class="sub">Words from the Reader and Translate, on their way to Anki · ${d.total} in all${pending?` · ${pending} waiting for a meaning`:""}</p></div>
       <div class="row"><button class="btn" id="cdAdd">Add a word</button></div></header>${ankiBox()}
-    <div class="row cdfilters"><input class="wd-field cdq" id="cdQ" type="search" placeholder="Search cards" value="${esc(S.cd.q)}" aria-label="Search cards"><select class="wd-field cdsel" id="cdDeck" aria-label="Deck">${decks.map(x=>`<option value="${esc(x.id)}" ${x.id===S.cd.deck?"selected":""}>${esc(x.label)}</option>`).join("")}</select>
+    ${cdLangTabs(lang,langs,"data-cdlang",live.length)}
+    ${srcs.length>1||S.cd.src!=="all"?`<div class="cdlangs cdsrcs" role="tablist" aria-label="Where the words came from">${[["all","All sources",inLang.length],...srcs.map(([k,v])=>[k,cdSrcName(k,inLang),v])].map(([k,l,v])=>`<button class="chip ${S.cd.src===k?"on":""}" data-cdsrc="${esc(k)}" role="tab" aria-selected="${S.cd.src===k}">${esc(l)} <span class="count">${v}</span></button>`).join("")}</div>`:""}
+    ${chs.length>1?`<div class="cdlangs cdchs" role="tablist" aria-label="Lesson">${[["all","All lessons",inSrc.length],...chs.map(([k,v])=>[k,k||"No lesson",v])].map(([k,l,v])=>`<button class="chip ${S.cd.ch===k?"on":""}" data-cdch="${esc(k)}" role="tab" aria-selected="${S.cd.ch===k}">${esc(l)} <span class="count">${v}</span></button>`).join("")}</div>`:""}
+    <div class="row cdfilters"><input class="wd-field cdq" id="cdQ" type="search" placeholder="Search cards" value="${esc(S.cd.q)}" aria-label="Search cards">${lang!=="all"?`<a class="btn sm" href="#words/${esc(lang)}">${esc(cdLangName(lang))} in Words →</a>`:""}
       <div class="segs" role="tablist">${[["active","Active"],["suggested",`Suggested${d.suggested?` ${d.suggested}`:""}`],["pending",`Needs meaning${pending?` ${pending}`:""}`]].map(([k,l])=>`<button class="chip ${S.cd.tab===k?"on":""}" data-cdtab="${k}" role="tab" aria-selected="${S.cd.tab===k}">${l}</button>`).join("")}</div></div>
     <section class="card cdlist">${list.length?list.slice(0,300).map(c=>S.cd.tab==="suggested"?sugg(c):row(c)).join(""):`<div class="empty"><b>${S.cd.tab==="suggested"?"No suggestions":S.cd.tab==="pending"?"Every card has its meaning":"No words yet"}</b>${S.cd.tab==="active"?"Tap a word in the Reader, or press Add a word. It goes on to Anki.":S.cd.tab==="suggested"?"Words looked up twice in Translate appear here.":""}</div>`}${list.length>300?`<p class="sub" style="padding:var(--s2) var(--s3)">Showing 300 of ${list.length}. Search to narrow.</p>`:""}</section>
     <details class="cdimport"><summary class="sub">Bring in the old sheet or Anki</summary><p class="sub">Export the vocabulary sheet as CSV, or Anki as a text file, then in Terminal:</p><pre class="cdcode">python3 desk/cards.py import-sheet &lt;file.csv&gt; --lang en
@@ -10869,7 +10905,9 @@ function wireCd(){
   on("#cdReview",()=>openReview({deck:S.cd.deck}));on("#cdReview20",()=>openReview({deck:S.cd.deck,limit:20}));
   on("#cdAdd",()=>cdAddPrompt());on("#cdPhone",cdPhoneLink);on("#ankiOpen",ankiOpen);on("#ankiSend",ankiSend);
   const q=$("#cdQ");if(q){q.oninput=()=>{S.cd.q=q.value;const keep=q.selectionStart;render();const q2=$("#cdQ");if(q2){q2.focus();q2.setSelectionRange(keep,keep)}}}
-  $("#cdDeck")&&($("#cdDeck").onchange=e=>{S.cd.deck=e.target.value;render()});
+  document.querySelectorAll("[data-cdlang]").forEach(b=>b.onclick=()=>{deskLang(b.dataset.cdlang);S.cd.src="all";S.cd.ch="all";render()});
+  document.querySelectorAll("[data-cdsrc]").forEach(b=>b.onclick=()=>{S.cd.src=b.dataset.cdsrc;S.cd.ch="all";render()});
+  document.querySelectorAll("[data-cdch]").forEach(b=>b.onclick=()=>{S.cd.ch=b.dataset.cdch;render()});
   document.querySelectorAll("[data-cdtab]").forEach(b=>b.onclick=()=>{S.cd.tab=b.dataset.cdtab;render()});
   document.querySelectorAll("[data-cdopen]").forEach(b=>b.onclick=()=>cdEdit(b.dataset.cdopen));
   document.querySelectorAll("[data-cdaccept]").forEach(b=>b.onclick=async()=>{const c=findCard(b.dataset.cdaccept);if(!c)return;await cdPut({...c,status:"active"});toast("Added · on to Anki");ankiSoon();if(cdPending(c))cdEnrich(c.id);render()});
@@ -10880,19 +10918,30 @@ function cdEdit(id){
   const c=findCard(id);if(!c||$("#modal").firstChild)return;
   const f=(k,label,v,multi)=>`<label class="cdf"><span class="sub">${label}</span>${multi?`<textarea class="wd-field" data-k="${k}" rows="2">${esc(v||"")}</textarea>`:`<input class="wd-field" data-k="${k}" value="${esc(v||"")}">`}</label>`;
   $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop cdpop" role="dialog" aria-modal="true" aria-label="Edit card"><div class="top"><h2>Card</h2><button class="ibtn" id="cdX" aria-label="Close">✕</button></div>
-    <div class="cdform" data-noauto>${f("term","Word",c.term)}${f("lemma","Base form",c.lemma)}<label class="cdf"><span class="sub">Language</span><select class="wd-field" data-k="lang">${Object.entries(RD_LANGS).map(([k,l])=>`<option value="${k}" ${(c.lang||"en")===k?"selected":""}>${l}</option>`).join("")}</select></label>
+    <div class="cdform" data-noauto>${f("term","Word",c.term)}${f("lemma","Base form",c.lemma)}<label class="cdf"><span class="sub">Language</span><select class="wd-field" data-k="lang">${cdLangOpts(c.lang||"en").map(([k,l])=>`<option value="${k}" ${(c.lang||"en")===k?"selected":""}>${l}</option>`).join("")}</select></label>
       ${f("ja","Meaning (Japanese)",c.meaning?.ja)}${f("en","Meaning (English)",c.meaning?.en)}${f("ipa","Pronunciation",c.ipa)}${f("example","Example",c.example,true)}${f("context","Sentence it came from",c.context,true)}</div>
-    <p class="sub">${c.book?.title?`From ${esc(c.book.title)}${c.book.chapter?" · "+esc(c.book.chapter):""}. `:""}${fsState(c.fsrs)==="new"?"Not reviewed yet.":`Reviewed ${c.fsrs.reps||0}×, next ${fsWhen(c.fsrs.due||0)}.`}${c.lookups>1?` Looked up ${c.lookups}×.`:""}</p>
+    ${cdPhotoHtml(c)}
+    <p class="sub">${c.book?.title?`From ${esc(c.book.title)}${c.book.chapter?" · "+esc(c.book.chapter):""}. `:""}${c.anki?.deck&&c.anki.state==="sent"?`In Anki: ${esc(c.anki.deck)}. `:""}${fsState(c.fsrs)==="new"?"Not reviewed yet.":`Reviewed ${c.fsrs.reps||0}×, next ${fsWhen(c.fsrs.due||0)}.`}${c.lookups>1?` Looked up ${c.lookups}×.`:""}</p>
     <div class="row"><button class="btn primary" id="cdSave">Save</button>${cdPending(c)?`<button class="btn" id="cdFill">Fill with Claude</button>`:""}<button class="btn" id="cdSay">🔊 Say</button><button class="btn" id="cdDel">Delete</button></div></div></div>`;
   const close=()=>{$("#modal").innerHTML=""};
   $("#cdX").onclick=close;$("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};$("#scrim").onkeydown=e=>{if(e.key==="Escape"){e.stopPropagation();close()}};
   const vals=()=>{const o={};document.querySelectorAll("#modal [data-k]").forEach(el=>o[el.dataset.k]=el.value.trim());return o};
   $("#cdSave").onclick=async()=>{const v=vals();if(!v.term){toast("A word is needed");return}await cdPut({...c,term:v.term,lemma:v.lemma,lang:v.lang,meaning:{ja:v.ja,en:v.en},ipa:v.ipa,example:v.example,context:v.context,...(v.ja||v.en?{enrich:{state:"ok",at:Date.now(),by:"me"}}:{})});close();render()};
   $("#cdFill")&&($("#cdFill").onclick=()=>{close();cdEnrich(c.id)});
+  document.querySelectorAll("#modal [data-cdimg]").forEach(b=>b.onclick=async()=>{const action=b.dataset.cdimg;b.disabled=true;
+    try{const r=await api("POST","/api/cards/image",{id:c.id,action,q:$("#cdImgQ")?.value||""});if(r.card)S.cards=[...S.cards.filter(x=>x.id!==r.card.id),r.card];close();cdEdit(c.id);
+      toast(action==="off"?"No photo on this card":"Looking for a photo · it shows in a minute or two");setTimeout(async()=>{await cdLoad();if($("#modal").firstChild&&$("#cdImgBox"))cdRedrawPhoto(c.id)},90000)}catch(e){b.disabled=false;toast("Could not save")}});
   $("#cdSay").onclick=()=>rdSay(vals().term||c.term,vals().lang||c.lang||"en");
   $("#cdDel").onclick=async()=>{await cdPut({...c,deleted:true});close();toast("Card removed");render()};
   $("#modal input").focus();
 }
+function cdPhotoHtml(c){
+  const im=c.image||{};
+  if(im.state==="ok"&&im.file)return `<div class="cdphoto" id="cdImgBox"><img src="/card-images/${esc(im.file)}" alt="Photo for ${esc(c.term)}"><p class="sub">Photo: ${esc(im.author||"")} · ${esc(im.license||"")}${im.page?` · <a href="${esc(im.page)}" target="_blank" rel="noopener" data-noauto>Wikimedia Commons ↗</a>`:""}</p><div class="row"><button class="btn sm" data-cdimg="next">Another photo</button><button class="btn sm" data-cdimg="off">No photo</button></div></div>`;
+  if(im.state==="want")return `<div class="cdphoto" id="cdImgBox"><p class="sub">Looking for a photo on Wikimedia Commons (“${esc(im.q||"")}”)…</p><div class="row"><button class="btn sm" data-cdimg="off">No photo</button></div></div>`;
+  if(!im.state)return cdHasMeaning(c)?`<div class="cdphoto" id="cdImgBox"><p class="sub">Claude decides in a few minutes whether a photo fits this word.</p></div>`:"";
+  return `<div class="cdphoto" id="cdImgBox"><p class="sub">${im.state==="off"?"No photo, as you chose.":im.state==="missing"?"No usable photo was found.":"No photo: a picture would not show this word."}</p><div class="row"><input class="wd-field" id="cdImgQ" placeholder="Search in English, e.g. cat" value="${esc(im.q||c.meaning?.en||"")}" aria-label="Photo search" style="flex:1"><button class="btn sm" data-cdimg="on">Find a photo</button></div></div>`}
+function cdRedrawPhoto(id){const c=findCard(id), box=$("#cdImgBox");if(!c||!box)return;$("#modal").innerHTML="";cdEdit(id)}
 function cdAddPrompt(){
   if($("#modal").firstChild)return;
   $("#modal").innerHTML=`<div class="scrim" id="scrim"><div class="pop cdpop" role="dialog" aria-modal="true" aria-label="Add a word"><div class="top"><h2>Add a word</h2><button class="ibtn" id="cdX" aria-label="Close">✕</button></div>
@@ -11040,6 +11089,7 @@ function rdReadView(id){
       <button class="btn sm" id="rdFontDn" aria-label="Smaller text" ${S.rd.font<=1?"disabled":""}>A−</button><button class="btn sm" id="rdFontUp" aria-label="Larger text" ${S.rd.font>=3?"disabled":""}>A+</button><button class="btn sm" id="rdEdit" aria-label="Book details">Details</button></span></div>
     <div class="rdmain">
       <div class="rdcol">
+        ${b.langSure===false?`<div class="rdlangq row" role="status"><span class="sub">This book is read as <b>${esc(RD_LANGS[b.lang]||b.lang)}</b>. Words you tap are counted and sent to Anki in that language.</span><button class="btn sm primary" id="rdLangOk">That's right</button><select class="wd-field cdsel" id="rdLangSet" aria-label="Change the book's language"><option value="">Change…</option>${Object.entries(RD_LANGS).filter(([k])=>k!==b.lang).map(([k,l])=>`<option value="${k}">${l}</option>`).join("")}</select></div>`:""}
         <div class="rdchap"><button class="btn sm" id="rdPrev" ${ch<=0?"disabled":""} aria-label="Previous chapter">‹</button><select class="wd-field cdsel" id="rdChSel" aria-label="Chapter">${chs.map((x,i)=>`<option value="${i}" ${i===ch?"selected":""}>${esc(x.title||`Chapter ${i+1}`)}</option>`).join("")}</select><button class="btn sm" id="rdNext" ${ch>=chs.length-1?"disabled":""} aria-label="Next chapter">›</button></div>
         ${par?`<div id="rdParBar">${rdParBar(pst)}</div>`:""}<article class="rdsheet${turn}" id="rdSheet"><div class="rdbody" id="rdBody" data-noauto>${c.title?`<h2 class="rdh">${esc(c.title)}</h2>`:""}${paras||`<p class="sub">This chapter has no text.</p>`}</div>
           <div class="rdfoot">${ch<chs.length-1?`<button class="btn" id="rdNext2">Next chapter →</button>`:`<span class="sub">The end.</span>`}<span class="sub">${ch+1} / ${chs.length}</span>${par&&pst&&["done","partial","error"].includes(pst.state)?`<button class="btn sm" id="rdParAgain">Translate again</button>`:""}</div></article>
@@ -11066,6 +11116,9 @@ function wireRd(){
   on("#rdAdd",rdAddPrompt);
   const b=S.rd.book;if(!b||!$("#rdBody"))return;
   S.rd.turn=null;
+  const setLang=async lang=>{try{const m=await api("PUT","/api/reader/books/"+encodeURIComponent(b.id),{lang});const was=b.lang;Object.assign(b,{lang:m.lang,langSure:true});S.rd.at=0;
+    if(m.moved)await cdLoad();toast(was===m.lang?"Kept as "+(RD_LANGS[m.lang]||m.lang):`Now ${RD_LANGS[m.lang]||m.lang}${m.moved?` · ${m.moved} card${m.moved===1?"":"s"} moved with it`:""}`);render()}catch(e){toast("Could not save")}};
+  on("#rdLangOk",()=>setLang(b.lang));$("#rdLangSet")&&($("#rdLangSet").onchange=e=>{if(e.target.value)setLang(e.target.value)});
   on("#rdPrev",()=>rdGoCh(S.rd.ch-1,"prev"));on("#rdNext",()=>rdGoCh(S.rd.ch+1,"next"));on("#rdNext2",()=>rdGoCh(S.rd.ch+1,"next"));
   $("#rdChSel").onchange=e=>rdGoCh(+e.target.value);
   document.querySelectorAll("[data-rdtheme]").forEach(x=>x.onclick=()=>{S.rd.theme=x.dataset.rdtheme;try{localStorage.setItem("desk-rd-theme",S.rd.theme)}catch(e){}rdThemeBody();
@@ -11110,7 +11163,7 @@ function rdEditPrompt(){
     <p class="sub">${b.words?b.words.toLocaleString("en-US")+" words · ":""}${(b.chapters_full||[]).length} chapters${b.file?" · from a "+esc(b.file.slice(1))+" file":""}</p>
     <div class="row"><button class="btn primary" id="rdESave">Save</button><button class="btn" id="rdERemove">Remove from the list</button></div></div></div>`;
   const close=()=>{$("#modal").innerHTML=""};$("#cdX").onclick=close;$("#scrim").onclick=e=>{if(e.target.id==="scrim")close()};$("#scrim").onkeydown=e=>{if(e.key==="Escape"){e.stopPropagation();close()}};
-  $("#rdESave").onclick=async()=>{try{const m=await api("PUT","/api/reader/books/"+encodeURIComponent(b.id),{title:$("#rdETitle").value,author:$("#rdEAuthor").value,lang:$("#rdELang").value});Object.assign(b,{title:m.title,author:m.author,lang:m.lang});S.rd.at=0;close();render()}catch(e){toast("Could not save")}};
+  $("#rdESave").onclick=async()=>{try{const m=await api("PUT","/api/reader/books/"+encodeURIComponent(b.id),{title:$("#rdETitle").value,author:$("#rdEAuthor").value,lang:$("#rdELang").value});Object.assign(b,{title:m.title,author:m.author,lang:m.lang,langSure:true});if(m.moved)cdLoad();S.rd.at=0;close();render()}catch(e){toast("Could not save")}};
   $("#rdERemove").onclick=async()=>{try{await api("POST",`/api/reader/books/${encodeURIComponent(b.id)}/remove`,{});close();S.rd.book=null;S.rd.at=0;location.hash="reader";toast("Removed. Its cards stay.")}catch(e){toast("Could not remove")}};
   $("#rdETitle").focus();
 }
@@ -11202,7 +11255,7 @@ async function rdLookup(o){
   try{
     if(word){const i=await api("POST","/api/cards/lookup",{term:o.text,context:cur.context,lang});
       cur.info={lemma:i.lemma||"",meaning_ja:i.meaning_ja||"",meaning_en:i.meaning_en||"",ipa:i.ipa||"",pos:i.pos||"",example:i.example||""};cur.result=i.meaning_ja||i.meaning_en||""}
-    else{const v=await xlPost("/api/translate",{text:o.text,via:"reader"});cur.result=v.lookup?.result||"";cur.to=v.lookup?.to||"";
+    else{const v=await xlPost("/api/translate",{text:o.text,via:"reader",from:lang});cur.result=v.lookup?.result||"";cur.to=v.lookup?.to||"";
       if(v.lookup&&Array.isArray(S.lookups)&&!S.lookups.some(x=>x.id===v.lookup.id))S.lookups.unshift(v.lookup)}
     cur.busy=false;cur.at=Date.now();
     const {busy,err,...rec}=cur;const saved=await rdPutMark(rec);if(S.rd.cur===cur)S.rd.cur=saved;

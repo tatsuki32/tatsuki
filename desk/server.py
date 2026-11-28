@@ -67,6 +67,7 @@ import eo_tts
 import cards
 import words
 import cards_sync
+import card_media  # flashcard photos from Wikimedia Commons (desk/card_media.py)
 import reader
 import reader_parallel  # Reader side by side: a chapter and its translation (sent to Claude only when asked)
 import langmap  # Language Map: countries, languages, regions and peoples from public data (desk/langmap.py, langmap_build.py)
@@ -312,6 +313,8 @@ def keep_anki(col, old, new):
     """Flashcards: a page holding an older copy of a card must not erase what the Anki sender wrote (anki.at says which is newer)."""
     if col == "cards" and old.get("anki") and ((new.get("anki") or {}).get("at") or 0) < (old["anki"].get("at") or 0):
         new["anki"] = old["anki"]
+    if col == "cards" and old.get("image") and ((new.get("image") or {}).get("at") or 0) < (old["image"].get("at") or 0):
+        new["image"] = old["image"]  # the same for the photo card_media.py found
 
 
 def upsert(col, doc_id, rec, merge):
@@ -332,6 +335,25 @@ def upsert(col, doc_id, rec, merge):
             items.append({**rec, "id": doc_id})
         save(col, items)
         return next(x for x in items if x["id"] == doc_id)
+
+
+def book_relang(book_id, lang):
+    """A book's language was changed: its cards and its marks move with it. A card already in Anki goes to the new
+    language's deck on the next round (anki.deck_for reads the card's language). Returns how many cards moved."""
+    if not lang:
+        return 0
+    n = 0
+    with LOCK:
+        for col, mine in (("cards", lambda x: (x.get("book") or {}).get("id") == book_id),
+                          ("readmarks", lambda x: x.get("bookId") == book_id)):
+            items, changed = load(col), False
+            for x in items:
+                if mine(x) and not x.get("deleted") and x.get("lang") != lang:
+                    x["lang"], x["updatedAt"], changed = lang, int(time.time() * 1000), True
+                    n += col == "cards"
+            if changed:
+                save(col, items)
+    return n
 
 
 def load_locked(col):
@@ -1045,6 +1067,20 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, {"url": routine_sync.APP + ("#key=" + urllib.parse.quote(k, safe="") if k else ""), "sync": bool(k)})
         if path.startswith("/uploads/"):
             return self.upload_get(path.rsplit("/", 1)[1])
+        if path.startswith("/card-images/"):  # flashcard photos saved from Wikimedia Commons
+            p = card_media.image_path(path.rsplit("/", 1)[1])
+            if not p:
+                return self.send(404, {"error": "no such file"})
+            with open(p, "rb") as f:
+                data = f.read()
+            self.send_response(200)
+            self.send_header("Content-Type", "image/png" if p.endswith(".png") else "image/jpeg")
+            self.send_header("Content-Length", str(len(data)))
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.send_header("Cache-Control", "max-age=31536000, immutable")
+            self.end_headers()
+            self.wfile.write(data)
+            return
         if path.startswith("/videos/"):
             return self.video_get(path.rsplit("/", 1)[1])
         if path.startswith("/heritage-photos/"):
@@ -1420,7 +1456,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.words_write(urlsplit(self.path).path)
         if method == "POST" and urlsplit(self.path).path in ("/api/anki/open", "/api/anki/sync"):
             return self.anki_post(urlsplit(self.path).path)
-        if urlsplit(self.path).path.startswith("/api/reader/") or urlsplit(self.path).path in ("/api/cards/add", "/api/cards/lookup", "/api/cards/enrich", "/api/cards/suggest"):
+        if urlsplit(self.path).path.startswith("/api/reader/") or urlsplit(self.path).path in ("/api/cards/add", "/api/cards/lookup", "/api/cards/enrich", "/api/cards/suggest", "/api/cards/image"):
             return self.reader_write(method, urlsplit(self.path).path.split("/")[2:])  # PUT /api/cards/<id> stays an ordinary collection write
         if method == "POST" and urlsplit(self.path).path.startswith("/api/utilities/"):
             return self.utilities_post(urlsplit(self.path).path)
@@ -1749,7 +1785,10 @@ class Handler(BaseHTTPRequestHandler):
             if method == "PUT" and len(step) == 4 and step[1] == "books" and step[3] == "pos":
                 return self.send(*reader.set_pos(step[2], rec))
             if method == "PUT" and len(step) == 3 and step[1] == "books":
-                return self.send(*reader.edit(step[2], rec))
+                code, out = reader.edit(step[2], rec)
+                if code == 200 and "lang" in rec:
+                    out["moved"] = book_relang(step[2], out.get("lang"))
+                return self.send(code, out)
             if method == "POST" and len(step) == 5 and step[1] == "books" and step[3] == "parallel" and step[4].isdigit():
                 return self.send(*reader_parallel.start(step[2], int(step[4]), again=bool(rec.get("again"))))
             if method == "POST" and len(step) == 4 and step[1] == "books" and step[3] == "remove":
@@ -1777,6 +1816,10 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(*cards.enrich_one(store, str(rec.get("id") or "")))
         if method == "POST" and step[1:] == ["suggest"]:
             return self.send(*cards.suggest(store, rec))
+        if method == "POST" and step[1:] == ["image"]:  # Next / Off / On for a card's photo; Anki follows on its next round
+            code, out = card_media.act(store, rec)
+            anki.kick()
+            return self.send(code, out)
         return self.send(404, {"error": "not found"})
 
     def focus(self, action, rec):
@@ -1955,6 +1998,7 @@ if __name__ == "__main__":
         threading.Thread(target=cards_sync.watch, daemon=True).start()  # flashcards <-> the Cards app on the phone
         threading.Thread(target=cards.watch, args=(cards.Store(load_locked, upsert),), daemon=True).start()  # fills missing meanings every 30 minutes
         threading.Thread(target=anki.watch, args=(cards.Store(load_locked, upsert),), daemon=True).start()  # words -> Anki, every minute
+        threading.Thread(target=card_media.watch, args=(cards.Store(load_locked, upsert),), daemon=True).start()  # photos for cards, every 2 minutes
         threading.Thread(target=words.watch, args=(load_locked,), daemon=True).start()  # Anki's learned words, Rhizome Box word pages
         try:
             lifelog.ensure_log_habits()  # "Log sleep" / "Log meals": tick themselves when a record arrives
