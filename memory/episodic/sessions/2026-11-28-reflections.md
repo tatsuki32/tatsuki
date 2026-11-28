@@ -20,3 +20,6 @@
 ## 残り
 - Worker の deploy と `bash desk/reflect_setup.sh` は済んだ（同じ日、本人の OK のあと）。
 - 本物の遅れたタスク1件で本人が書いて公開する。
+
+## 追加（同じ日、本人の希望）
+- Home のいちばん上に出す、Desk を開いたときのポップアップで最初の問いを聞く（× で閉じる）、反省文ごとに Tasks に「Write a reflection: …」のタスク（書き終えると Done）。

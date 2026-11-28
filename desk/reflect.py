@@ -98,7 +98,8 @@ def day_of(ms):
 
 
 def _ok_task(t):
-    return isinstance(t, dict) and not t.get("deleted") and t.get("by") != "claude"
+    """A task that can run late. The Desk's own reflection tasks never count (a late one would ask for a reflection on itself)."""
+    return isinstance(t, dict) and not t.get("deleted") and t.get("by") != "claude" and t.get("source") not in ("reflect", "reflect-write")
 
 
 def _reply(t):
@@ -226,17 +227,52 @@ def scan(load, save, lock, now=None, money=None):
     with lock:
         tasks, habits, routines, rlog = load("tasks"), load("habits"), load("routines"), load("routinelog")
     found = find(tasks, habits, routines, rlog, money_misses(s) if money is None else money, s, now)
-    if not found:
-        return 0
     with lock:
         items = load("reflections")
         have = {x["id"] for x in items}
         # a late task that is then done late is the same miss: one reflection
         new = [{**r, "id": i} for i, r in found.items() if i not in have and not (i.startswith("latedone-") and "late-" + i[9:] in have)]
-        if new:
-            items.extend(new)
+        items.extend(new)
+        tasks = load("tasks")
+        if sync_tasks(items, tasks, now):
+            save("tasks", tasks)
+            save("reflections", items)
+        elif new:
             save("reflections", items)
     return len(new)
+
+
+def task_id(rid):
+    return "rw-" + re.sub(r"[^\w-]", "_", rid)[:120]
+
+
+def sync_tasks(items, tasks, now=None):
+    """Every reflection waiting to be written is also a task on Tasks ("Write a reflection: ..."), due today, so it is
+    not missed. Written or published: the task is done. "Not a miss": the task is dropped. Changes the lists in place;
+    returns True when something changed."""
+    now = now or now_ms()
+    by_id = {t.get("id"): t for t in tasks}
+    noon = int(dt.datetime.combine(day_of(now), dt.time(12)).timestamp() * 1000)
+    changed = False
+    for r in items:
+        if not isinstance(r, dict) or r.get("deleted"):
+            continue
+        st, tid = r.get("status"), r.get("writeTaskId")
+        t = by_id.get(tid) if tid else None
+        if st in ("open", "draft") and not t:
+            tid = tid or task_id(r["id"])
+            t = {"id": tid, "title": "Write a reflection: " + str(r.get("title") or "")[:160], "status": "notyet", "due": noon,
+                 "source": "reflect-write", "sourceRef": r["id"], "createdAt": now, "updatedAt": now}
+            tasks.append(t)
+            by_id[tid] = t
+            r["writeTaskId"], changed = tid, True
+        elif t and st in ("done", "published") and t.get("status") in ("notyet", "doing"):
+            t.update(status="done", doneAt=now, updatedAt=now)
+            changed = True
+        elif t and st == "notmiss" and t.get("status") in ("notyet", "doing"):
+            t.update(status="dropped", droppedAt=now, updatedAt=now)
+            changed = True
+    return changed
 
 
 def earlier(tasks, items, s=None):

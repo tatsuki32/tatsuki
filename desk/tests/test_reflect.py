@@ -76,6 +76,26 @@ class Find(unittest.TestCase):
         self.assertEqual(reflect.scan(load, save, lock, now=NOW, money=[]), 0)
 
 
+class Tasks(unittest.TestCase):
+    def test_each_waiting_reflection_is_a_task_until_written(self):
+        items = [{"id": "late-a", "status": "open", "title": "A"}, {"id": "late-b", "status": "notmiss", "title": "B"}]
+        tasks = []
+        self.assertTrue(reflect.sync_tasks(items, tasks, NOW))
+        self.assertEqual(len(tasks), 1)
+        t = tasks[0]
+        self.assertEqual((t["title"], t["source"], t["sourceRef"], t["status"]), ("Write a reflection: A", "reflect-write", "late-a", "notyet"))
+        self.assertEqual(reflect.day_of(t["due"]).isoformat(), "2026-11-28")
+        self.assertFalse(reflect.sync_tasks(items, tasks, NOW), "not made twice")
+        items[0]["status"] = "published"
+        reflect.sync_tasks(items, tasks, NOW)
+        self.assertEqual(tasks[0]["status"], "done")
+
+    def test_reflection_tasks_never_count_as_late(self):
+        tasks = [{"id": "rw-x", "title": "Write a reflection: X", "status": "notyet", "due": ms("2026-11-20"), "source": "reflect-write"},
+                 {"id": "rf1", "title": "Try: x", "status": "notyet", "due": ms("2026-11-20"), "source": "reflect"}]
+        self.assertEqual(reflect.find(tasks, s=S, now=NOW), {})
+
+
 class Page(unittest.TestCase):
     def test_pledge_signature_and_language(self):
         r = {"id": "late-a", "title": "Lessons 1-5", "pageTitle": "Lessons 1-5", "final": "[* 何があった]\n12日遅れた。\n", "day": "2026-11-28"}
