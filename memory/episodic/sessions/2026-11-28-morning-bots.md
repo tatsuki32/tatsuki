@@ -12,7 +12,7 @@
 - Meals の Undo の callback_data は64バイトまで → 1つの案は食事の種類ごとに1行（最大4行）にまとめた。
 - 時間帯：Mac の `/etc/localtime` を Desk が毎日 `op=tz` で送る。位置の送信・`/tz` は、Mac の時間帯が変わるまで勝つ（`MAC_TZ` と比べる）。
 - `desk/lifebots.py`：取り込みは `lifelog.check` を通すので範囲外は review に回る。id は `mb-<行id>`。
-- 試験：`node --test lifeos/22-morning-bots/test/`（vm に偽の Apps Script を作って Code.js を走らせる）11件、`desk.tests.test_lifebots` 5件。
+- 試験：`node --test lifeos/22-morning-bots/test/*.mjs`（vm に偽の Apps Script を作って Code.js を走らせる）11件、`desk.tests.test_lifebots` 5件。
 
 ## 決めたこと
 - 本人の「もう伝えることない」を受け、質問なしで要件定義（https://claude.ai/artifact/7M9jcYFCYoaw5Wro11ps4t ）→ OK → 実装。

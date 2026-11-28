@@ -27,4 +27,4 @@
 `Code.js` を直したら、Apps Script に貼り直して「デプロイを管理」で新しいバージョンにする。
 
 ## 試験
-`node --test lifeos/22-morning-bots/test/`（偽の Telegram・Sheets・Claude）、`python3 -m unittest desk.tests.test_lifebots`。
+`node --test lifeos/22-morning-bots/test/*.mjs`（偽の Telegram・Sheets・Claude）、`python3 -m unittest desk.tests.test_lifebots`。
