@@ -129,6 +129,8 @@ LOCK = threading.Lock()
 # Task Desk Chrome extension (Applications/programming/Tatsuki Desk/task-desk-extension). Its id is fixed by the "key" in its manifest.
 TASKDESK_ORIGIN = "chrome-extension://nofajepofefkhjckmgciabfjbeeenhlm"
 MEMOLINK_LOCK = threading.Lock()
+# Site Timer Chrome extension (Applications/programming/Tatsuki Desk/site-timer-extension): its idea box adds tasks
+SITETIMER_ORIGIN = "chrome-extension://kjnkbnpoamaginmplgoeigbgeggdfmjb"
 # Task Desk Chrome extension (Applications/programming/Tatsuki Desk/task-desk-extension). Its id is fixed by the "key" in its manifest.
 TASKDESK_ORIGIN = "chrome-extension://nofajepofefkhjckmgciabfjbeeenhlm"
 REPO = os.path.dirname(ROOT)
@@ -786,6 +788,10 @@ class Handler(BaseHTTPRequestHandler):
                 # the Task Desk Chrome extension may only save tasks, add memos and log the time it measured
                 p = urlsplit(self.path).path
                 return (self.command == "PUT" and p.startswith(("/api/tasks/", "/api/timelog/"))) or (self.command == "POST" and p == "/api/memos")
+            if origin == SITETIMER_ORIGIN:
+                # the Site Timer Chrome extension may only add new tasks from its idea box (ids it makes, "idea-…")
+                p = urlsplit(self.path).path
+                return self.command == "PUT" and re.fullmatch(r"/api/tasks/idea-[a-z0-9]{6,24}", p) is not None
             if origin == igfans.EXTENSION_ORIGIN:
                 # the Followers side panel may only save the owner's decisions about who to keep
                 return self.command == "POST" and urlsplit(self.path).path == "/api/igfans/cleanup"
