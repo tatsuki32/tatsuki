@@ -168,68 +168,110 @@ test('a number out of range is not saved', () => {
   assert.match(w.said('sleep').at(-1), /looks off/);
 });
 
-const DRAFT = { food: true, date: '2026-11-28', meals: [{ meal: 'lunch', items: [{ name: 'Curry rice', amount: '1 plate', kcal: 750, protein_g: 20, fat_g: 25, carb_g: 110, salt_g: 3 }] }] };
+const NUTS = { kcal: 750, protein_g: 20, fat_g: 25, saturated_fat_g: 9, carb_g: 110, fiber_g: 4, salt_g: 3, calcium_mg: 60, magnesium_mg: 50,
+  iron_mg: 1.5, zinc_mg: 2.4, vitamin_a_ug: 120, vitamin_d_ug: 0.2, vitamin_b1_mg: 0.15, vitamin_b2_mg: 0.12, vitamin_b6_mg: 0.3, vitamin_c_mg: 8 };
+const CURRY = { name: 'Curry rice', amount: '1 plate', ...NUTS };
+const MEAL = (items, change = 'new', meal = 'lunch') => ({ food: true, change, date: '2026-11-28', meals: [{ meal, items }] });
+const TARGETS = JSON.stringify({ energy_kcal: [1850, 'below'], protein_g: [130, 'above'], salt_g: [6, 'below'], vitamin_c_mg: [300, 'above'], steps: [15000, 'above'], total_min: [480, 'above'], bogus: [1, 'above'] });
+const byHead = rows => { const [h, ...r] = rows; return r.map(x => Object.fromEntries(h.map((k, i) => [k, x[i] ?? '']))); };
 
-test('a meal is a draft first; a correction makes a new draft; yes saves it', () => {
+test('a meal is saved at once with all 17 nutrients, its share of each target and the day so far', () => {
   const w = owned({ at: '2026-11-28T20:00:00Z' }); // 5:00 in Tokyo: the default day is yesterday
-  w.claudeAnswers.push(DRAFT);
+  w.ctx.doGet({ parameter: { key: 'desk-secret', op: 'tz', tz: 'Asia/Tokyo', targets: TARGETS } });
+  assert.deepEqual(Object.keys(JSON.parse(w.props.get('TARGETS'))).sort(), ['energy_kcal', 'protein_g', 'salt_g', 'steps', 'total_min', 'vitamin_c_mg']);
+  w.claudeAnswers.push(MEAL([CURRY]));
   w.send('meals', { text: '昼 カレー' });
   w.tick();
-  assert.equal(w.rows('Meals').length, 0);
-  assert.match(w.said('meals').at(-1), /Curry rice \(1 plate\) — 750 kcal[\s\S]*Save this/);
-  assert.match(w.claudeAsked[0].system, /2026-11-28 unless/);
-
-  w.claudeAnswers.push({ ...DRAFT, meals: [{ meal: 'lunch', items: [{ ...DRAFT.meals[0].items[0], amount: 'half rice', kcal: 600 }] }] });
-  w.send('meals', { text: 'ご飯は半分' });
-  w.tick();
-  assert.match(w.claudeAsked[1].messages[0].content.at(-1).text, /Current draft:[\s\S]*Curry rice/);
-  assert.match(w.said('meals').at(-1), /600 kcal/);
-  assert.equal(w.rows('Meals').length, 0);
-
-  w.send('meals', { text: 'はい' });
-  w.tick();
-  const rows = w.rows('Meals');
+  const rows = byHead(w.sheets.get('Meals'));
   assert.equal(rows.length, 1);
-  assert.deepEqual([rows[0][1], rows[0][2], rows[0][3], rows[0][4]], ['2026-11-28', 'lunch', 'Curry rice (half rice)', 600]);
-  assert.match(w.said('meals').at(-1), /Saved 1 meal for Nov 28 \(yesterday\) · 600 kcal/);
-  assert.equal(w.claudeAsked.length, 2);
-  assert.equal(w.props.has('PENDING_MEAL'), false);
+  assert.equal(rows[0].date, '2026-11-28');
+  assert.equal(rows[0].items, 'Curry rice (1 plate)');
+  assert.equal(rows[0].kcal, 750);
+  assert.equal(rows[0].vitamin_b1_mg, 0.15);
+  assert.equal(rows[0].iron_mg, 1.5);
+  const text = w.said('meals').at(-1);
+  assert.match(text, /^Saved: Nov 28 \(yesterday\)/);
+  assert.match(text, /Curry rice \(1 plate\) — 750 kcal/);
+  assert.match(text, /Energy 750 kcal \(41%\)/);
+  assert.match(text, /Vitamin B6 0\.3 mg\n/);
+  assert.match(text, /Energy 750 \/ 1,850 kcal · 41% · 1,100 kcal left/);
+  assert.match(text, /Protein 20 \/ 130 g · 15% · 110 g to go/);
+  for (const label of ['Saturated fat', 'Fiber', 'Calcium', 'Magnesium', 'Iron', 'Zinc', 'Vitamin A', 'Vitamin D', 'Vitamin B1', 'Vitamin B2', 'Vitamin C']) assert.match(text, new RegExp(label + ' '));
+  assert.match(w.claudeAsked[0].system, /vitamin_b6_mg/);
+  assert.deepEqual(w.claudeAsked[0].output_config.format.schema.properties.meals.items.properties.items.items.required.length, 19);
 });
 
-test('the Save button saves only the draft it was shown with', () => {
+test('a fix replaces the last meal; new food adds to the day; salt over the limit says so', () => {
   const w = owned({ at: '2026-11-28T20:00:00Z' });
-  w.claudeAnswers.push(DRAFT);
+  w.ctx.doGet({ parameter: { key: 'desk-secret', op: 'tz', tz: 'Asia/Tokyo', targets: TARGETS } });
+  w.claudeAnswers.push(MEAL([CURRY]));
   w.send('meals', { text: 'lunch curry' });
   w.tick();
-  const first = w.sent.filter(s => s.method === 'sendMessage').at(-1).payload.reply_markup.inline_keyboard[0][0].callback_data;
-  w.claudeAnswers.push({ ...DRAFT, meals: [{ meal: 'dinner', items: DRAFT.meals[0].items }] });
-  w.send('meals', { text: 'it was dinner' });
+  w.claudeAnswers.push(MEAL([{ ...CURRY, amount: 'half rice', kcal: 600 }], 'fix'));
+  w.send('meals', { text: 'ご飯は半分' });
   w.tick();
-  w.press('meals', first);
+  assert.match(w.claudeAsked[1].messages[0].content.at(-1).text, /Last saved meal:[\s\S]*Curry rice/);
+  let rows = byHead(w.sheets.get('Meals'));
+  assert.deepEqual(rows.map(r => [r.kcal, r.deleted]), [[750, true], [600, '']]);
+  assert.match(w.said('meals').at(-1), /^Fixed and saved:[\s\S]*so far, 1 meal[\s\S]*Energy 600 \/ 1,850/);
+
+  w.claudeAnswers.push(MEAL([{ ...CURRY, name: 'Ramen', amount: '1 bowl', kcal: 500, salt_g: 5 }], 'new', 'dinner'));
+  w.send('meals', { text: '夜 ラーメン' });
   w.tick();
-  assert.equal(w.rows('Meals').length, 0);
-  const second = w.sent.filter(s => s.method === 'sendMessage').at(-1).payload.reply_markup.inline_keyboard[0][0].callback_data;
-  w.press('meals', second);
-  w.tick();
-  assert.equal(w.rows('Meals')[0][2], 'dinner');
+  rows = byHead(w.sheets.get('Meals'));
+  assert.equal(rows.filter(r => r.deleted !== true).length, 2);
+  const text = w.said('meals').at(-1);
+  assert.match(text, /so far, 2 meals/);
+  assert.match(text, /Energy 1,100 \/ 1,850 kcal · 59% · 750 kcal left/);
+  assert.match(text, /Salt 8 \/ 6 g · 133% · 2 g over the limit/);
 });
 
-test('cancel drops the draft; yes with no draft saves nothing', () => {
+test('Undo and cancel remove a meal; yes needs no draft any more', () => {
   const w = owned({ at: '2026-11-28T20:00:00Z' });
-  w.send('meals', { text: 'yes' });
-  w.tick();
-  assert.match(w.said('meals').at(-1), /no draft/);
-  w.claudeAnswers.push(DRAFT);
+  w.claudeAnswers.push(MEAL([CURRY]));
   w.send('meals', { text: 'curry' });
+  w.tick();
+  const undo = w.sent.filter(s => s.method === 'sendMessage').at(-1).payload.reply_markup.inline_keyboard[0][0].callback_data;
+  w.press('meals', undo);
+  w.tick();
+  assert.equal(byHead(w.sheets.get('Meals'))[0].deleted, true);
+  assert.equal(w.props.has('LAST_MEAL'), false);
+  w.claudeAnswers.push(MEAL([CURRY]));
+  w.send('meals', { text: 'curry again' });
+  w.send('meals', { text: 'はい' });
   w.send('meals', { text: 'cancel' });
   w.tick();
-  assert.equal(w.rows('Meals').length, 0);
+  assert.match(w.said('meals').at(-2), /already saved/);
+  assert.match(w.said('meals').at(-1), /Removed the last meal/);
+  assert.deepEqual(byHead(w.sheets.get('Meals')).map(r => r.deleted), [true, true]);
+});
+
+test('a draft left from the old flow is saved on the next minute', () => {
+  const w = owned({ at: '2026-11-28T20:00:00Z' });
+  w.props.set('PENDING_MEAL', JSON.stringify({ v: 'rx', date: '2026-11-28', meals: [{ meal: 'lunch', items: [{ name: 'Pho', amount: '1 bowl', kcal: 450, protein_g: 25, fat_g: 8, carb_g: 60, salt_g: 4 }] }], texts: ['pho'] }));
+  w.tick();
+  const rows = byHead(w.sheets.get('Meals'));
+  assert.deepEqual([rows[0].items, rows[0].kcal, rows[0].fiber_g], ['Pho (1 bowl)', 450, 0]);
   assert.equal(w.props.has('PENDING_MEAL'), false);
+  assert.match(w.said('meals').at(-1), /^Saved:/);
+});
+
+test('an older Meals sheet gets the new nutrient columns at its right end', () => {
+  const w = owned({ at: '2026-11-28T20:00:00Z' });
+  const old = ['id', 'date', 'meal', 'items', 'kcal', 'protein_g', 'fat_g', 'carb_g', 'salt_g', 'text', 'saved_at', 'imported_at', 'deleted'];
+  w.sheets.set('Meals', [old.slice(), ['rold', '2026-11-28', 'breakfast', 'Toast', 200, 6, 3, 35, 0.8, 'toast', 'x', '', '']]);
+  w.claudeAnswers.push(MEAL([CURRY]));
+  w.send('meals', { text: 'curry' });
+  w.tick();
+  const head = w.sheets.get('Meals')[0];
+  assert.deepEqual(head.slice(0, 13), old);
+  assert.equal(head.length, 25);
+  assert.match(w.said('meals').at(-1), /so far, 2 meals[\s\S]*Energy 950 kcal/);
 });
 
 test('a photo goes to Claude as an image', () => {
   const w = owned({ at: '2026-11-28T20:00:00Z' });
-  w.claudeAnswers.push(DRAFT);
+  w.claudeAnswers.push(MEAL([CURRY]));
   w.send('meals', { photo: [{ file_id: 'a', width: 320, height: 240 }, { file_id: 'b', width: 1280, height: 960 }, { file_id: 'c', width: 2560, height: 1920 }] });
   w.tick();
   assert.equal(w.sent.find(s => s.method === 'getFile').payload.file_id, 'b');
