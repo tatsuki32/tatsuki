@@ -17,3 +17,9 @@
 ## 決めたこと
 - 本人の「もう伝えることない」を受け、質問なしで要件定義（https://claude.ai/artifact/7M9jcYFCYoaw5Wro11ps4t ）→ OK → 実装。
 - lifeos のテストの既存の失敗4件（11・14・replywin・base の一部）はこの変更の前からある。
+
+## 導入（同じ日の午後）
+- ボット2つを BotFather で作成、スプレッドシートに Apps Script を貼って setup・ウェブアプリのデプロイ（アクセス：全員）、Mac で `lifebots.py setup`（setup true）。
+- 鍵3つと Desk key は本人が貼った。Apps Script のコードは GitHub の raw から Monaco に流し込むと速い。
+- 最初の /start は setup の前に送ると拾われなかった。setup のあとに送り直すと両方とも返事が来た。
+- 残り：朝4時の問いと、翌朝 5:00 以降の Desk への取り込み。
